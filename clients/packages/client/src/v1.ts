@@ -228,40 +228,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/magic_link/request": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Magic Link.Request */
-        post: operations["magic_link:magic_link.request"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/magic_link/authenticate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Magic Link.Authenticate */
-        post: operations["magic_link:magic_link.authenticate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/login-code/request": {
         parameters: {
             query?: never;
@@ -545,7 +511,7 @@ export interface paths {
          * Get Organization Account
          * @description Get the account for an organization.
          *
-         *     **Scopes**: `organizations:write`
+         *     **Scopes**: `organizations:read` `organizations:write`
          */
         get: operations["organizations:get_account"];
         put?: never;
@@ -553,13 +519,27 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{id}/payment-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
-         * Set Organization Account
-         * @description Set the account for an organization.
-         *
-         *     **Scopes**: `organizations:write`
+         * Get Organization Payment Status
+         * @description Get payment status and onboarding steps for an organization.
          */
-        patch: operations["organizations:set_account"];
+        get: operations["organizations:get_payment_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/organizations/{id}/members": {
@@ -573,7 +553,7 @@ export interface paths {
          * Members
          * @description List members in an organization.
          *
-         *     **Scopes**: `organizations:write`
+         *     **Scopes**: `organizations:read` `organizations:write`
          */
         get: operations["organizations:members"];
         put?: never;
@@ -600,6 +580,72 @@ export interface paths {
          *     **Scopes**: `organizations:write`
          */
         post: operations["organizations:invite_member"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{id}/ai-validation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Organization Details with AI
+         * @description Validate organization details using AI compliance check.
+         *
+         *     **Scopes**: `organizations:write`
+         */
+        post: operations["organizations:validate_with_ai"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{id}/appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Appeal for Organization Review
+         * @description Submit an appeal for organization review after AI validation failure.
+         *
+         *     **Scopes**: `organizations:write`
+         */
+        post: operations["organizations:submit_appeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{id}/review-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Organization Review Status
+         * @description Get the current review status and appeal information for an organization.
+         *
+         *     **Scopes**: `organizations:read` `organizations:write`
+         */
+        get: operations["organizations:get_review_status"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1699,6 +1745,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/license-keys/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate License Key
+         * @description Validate a license key.
+         *
+         *     **Scopes**: `license_keys:write`
+         */
+        post: operations["license_keys:validate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/license-keys/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activate License Key
+         * @description Activate a license key instance.
+         *
+         *     **Scopes**: `license_keys:write`
+         */
+        post: operations["license_keys:activate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/license-keys/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deactivate License Key
+         * @description Deactivate a license key instance.
+         *
+         *     **Scopes**: `license_keys:write`
+         */
+        post: operations["license_keys:deactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/checkout-links/": {
         parameters: {
             query?: never;
@@ -2428,6 +2540,11 @@ export interface paths {
         /**
          * Validate License Key
          * @description Validate a license key.
+         *
+         *     > This endpoint doesn't require authentication and can be safely used on a public
+         *     > client, like a desktop application or a mobile app.
+         *     > If you plan to validate a license key on a server, use the `/v1/license-keys/validate`
+         *     > endpoint instead.
          */
         post: operations["customer_portal:license_keys:validate"];
         delete?: never;
@@ -2448,6 +2565,11 @@ export interface paths {
         /**
          * Activate License Key
          * @description Activate a license key instance.
+         *
+         *     > This endpoint doesn't require authentication and can be safely used on a public
+         *     > client, like a desktop application or a mobile app.
+         *     > If you plan to validate a license key on a server, use the `/v1/license-keys/activate`
+         *     > endpoint instead.
          */
         post: operations["customer_portal:license_keys:activate"];
         delete?: never;
@@ -2468,6 +2590,11 @@ export interface paths {
         /**
          * Deactivate License Key
          * @description Deactivate a license key instance.
+         *
+         *     > This endpoint doesn't require authentication and can be safely used on a public
+         *     > client, like a desktop application or a mobile app.
+         *     > If you plan to validate a license key on a server, use the `/v1/license-keys/deactivate`
+         *     > endpoint instead.
          */
         post: operations["customer_portal:license_keys:deactivate"];
         delete?: never;
@@ -2588,6 +2715,50 @@ export interface paths {
          *     **Scopes**: `customer_portal:read` `customer_portal:write`
          */
         post: operations["customer_portal:orders:generate_invoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customer-portal/orders/{id}/payment-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Order Payment Status
+         * @description Get the current payment status for an order.
+         *
+         *     **Scopes**: `customer_portal:read` `customer_portal:write`
+         */
+        get: operations["customer_portal:orders:get_payment_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customer-portal/orders/{id}/confirm-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Retry Payment
+         * @description Confirm a retry payment using a Stripe confirmation token.
+         *
+         *     **Scopes**: `customer_portal:write`
+         */
+        post: operations["customer_portal:orders:confirm_retry_payment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3786,8 +3957,14 @@ export interface components {
             /** Organizations */
             organizations: components["schemas"]["Organization"][];
         };
-        /** AccountCreate */
-        AccountCreate: {
+        /** AccountCreateForOrganization */
+        AccountCreateForOrganization: {
+            /**
+             * Organization Id
+             * Format: uuid
+             * @description Organization ID to create or get account for
+             */
+            organization_id: string;
             /**
              * Account Type
              * @constant
@@ -3808,7 +3985,7 @@ export interface components {
          * AccountType
          * @enum {string}
          */
-        AccountType: "stripe" | "open_collective";
+        AccountType: "stripe" | "manual" | "open_collective";
         /** AccountUpdate */
         AccountUpdate: {
             /**
@@ -3864,6 +4041,11 @@ export interface components {
             /** Detail */
             detail: string;
         };
+        /**
+         * AppealDecision
+         * @enum {string}
+         */
+        AppealDecision: "approved" | "rejected";
         /**
          * AttachedCustomField
          * @description Schema of a custom field attached to a resource.
@@ -5811,6 +5993,13 @@ export interface components {
              * @description The ID of the order associated with this payment.
              */
             order_id: string | null;
+            /**
+             * Processor Metadata
+             * @description Additional metadata from the payment processor for internal use.
+             */
+            processor_metadata?: {
+                [key: string]: unknown;
+            };
             /** @description Additional metadata for the card payment method. */
             method_metadata: components["schemas"]["CardPaymentMetadata"];
         };
@@ -6222,7 +6411,7 @@ export interface components {
             /** Code */
             code: string | null;
         };
-        CheckoutForbiddenError: components["schemas"]["AlreadyActiveSubscriptionError"] | components["schemas"]["NotOpenCheckout"];
+        CheckoutForbiddenError: components["schemas"]["AlreadyActiveSubscriptionError"] | components["schemas"]["NotOpenCheckout"] | components["schemas"]["PaymentNotReady"];
         /**
          * CheckoutLink
          * @description Checkout link data.
@@ -6517,7 +6706,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -6757,7 +6946,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -8920,12 +9109,6 @@ export interface components {
              */
             net_amount: number;
             /**
-             * Amount
-             * @deprecated
-             * @description Amount in cents, after discounts but before taxes.
-             */
-            amount: number;
-            /**
              * Tax Amount
              * @description Sales tax amount in cents.
              */
@@ -8988,6 +9171,32 @@ export interface components {
              * @description Line items composing the order.
              */
             items: components["schemas"]["OrderItemSchema"][];
+            /**
+             * Next Payment Attempt At
+             * @description When the next payment retry is scheduled
+             */
+            next_payment_attempt_at?: string | null;
+        };
+        /**
+         * CustomerOrderConfirmPayment
+         * @description Schema to confirm a retry payment using either a saved payment method or a new confirmation token.
+         */
+        CustomerOrderConfirmPayment: {
+            /**
+             * Confirmation Token Id
+             * @description ID of the Stripe confirmation token for new payment methods.
+             */
+            confirmation_token_id?: string | null;
+            /**
+             * Payment Method Id
+             * @description ID of an existing saved payment method.
+             */
+            payment_method_id?: string | null;
+            /**
+             * @description Payment processor used.
+             * @default stripe
+             */
+            payment_processor: components["schemas"]["PaymentProcessor"];
         };
         /**
          * CustomerOrderInvoice
@@ -8999,6 +9208,43 @@ export interface components {
              * @description The URL to the invoice.
              */
             url: string;
+        };
+        /**
+         * CustomerOrderPaymentConfirmation
+         * @description Response after confirming a retry payment.
+         */
+        CustomerOrderPaymentConfirmation: {
+            /**
+             * Status
+             * @description Payment status after confirmation.
+             */
+            status: string;
+            /**
+             * Client Secret
+             * @description Client secret for handling additional actions.
+             */
+            client_secret?: string | null;
+            /**
+             * Error
+             * @description Error message if confirmation failed.
+             */
+            error?: string | null;
+        };
+        /**
+         * CustomerOrderPaymentStatus
+         * @description Payment status for an order.
+         */
+        CustomerOrderPaymentStatus: {
+            /**
+             * Status
+             * @description Current payment status.
+             */
+            status: string;
+            /**
+             * Error
+             * @description Error message if payment failed.
+             */
+            error?: string | null;
         };
         /** CustomerOrderProduct */
         CustomerOrderProduct: {
@@ -9029,7 +9275,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -9183,6 +9429,7 @@ export interface components {
             /** Products */
             products: components["schemas"]["CustomerProduct"][];
         };
+        CustomerPaymentMethod: components["schemas"]["PaymentMethodCard"] | components["schemas"]["PaymentMethodGeneric"];
         /** CustomerPaymentMethodCreate */
         CustomerPaymentMethodCreate: {
             /** Confirmation Token Id */
@@ -9217,6 +9464,8 @@ export interface components {
             email_verified: boolean;
             /** Name */
             name: string | null;
+            /** Billing Name */
+            billing_name: string | null;
             billing_address: components["schemas"]["Address"] | null;
             /** Tax Id */
             tax_id: [
@@ -9232,10 +9481,8 @@ export interface components {
         };
         /** CustomerPortalCustomerUpdate */
         CustomerPortalCustomerUpdate: {
-            /** Email */
-            email?: string | null;
-            /** Name */
-            name?: string | null;
+            /** Billing Name */
+            billing_name?: string | null;
             billing_address?: components["schemas"]["Address"] | null;
             /** Tax Id */
             tax_id?: string | null;
@@ -9279,7 +9526,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -9944,7 +10191,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -10975,7 +11222,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -11509,6 +11756,13 @@ export interface components {
              * @description The ID of the order associated with this payment.
              */
             order_id: string | null;
+            /**
+             * Processor Metadata
+             * @description Additional metadata from the payment processor for internal use.
+             */
+            processor_metadata?: {
+                [key: string]: unknown;
+            };
         };
         /** GitHubInvitesBenefitOrganization */
         GitHubInvitesBenefitOrganization: {
@@ -12189,6 +12443,12 @@ export interface components {
             items: components["schemas"]["CustomerOrder"][];
             pagination: components["schemas"]["Pagination"];
         };
+        /** ListResource[CustomerPaymentMethod] */
+        ListResource_CustomerPaymentMethod_: {
+            /** Items */
+            items: components["schemas"]["CustomerPaymentMethod"][];
+            pagination: components["schemas"]["Pagination"];
+        };
         /** ListResource[CustomerSubscription] */
         ListResource_CustomerSubscription_: {
             /** Items */
@@ -12309,12 +12569,6 @@ export interface components {
             items: components["schemas"]["Transaction"][];
             pagination: components["schemas"]["Pagination"];
         };
-        /** ListResource[Union[PaymentMethodCard, PaymentMethodGeneric]] */
-        ListResource_Union_PaymentMethodCard__PaymentMethodGeneric__: {
-            /** Items */
-            items: (components["schemas"]["PaymentMethodCard"] | components["schemas"]["PaymentMethodGeneric"])[];
-            pagination: components["schemas"]["Pagination"];
-        };
         /** ListResource[WebhookDelivery] */
         ListResource_WebhookDelivery_: {
             /** Items */
@@ -12335,17 +12589,6 @@ export interface components {
         };
         /** LoginCodeRequest */
         LoginCodeRequest: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /** Return To */
-            return_to?: string | null;
-            attribution?: components["schemas"]["UserSignupAttribution"] | null;
-        };
-        /** MagicLinkRequest */
-        MagicLinkRequest: {
             /**
              * Email
              * Format: email
@@ -12529,7 +12772,7 @@ export interface components {
              * Aggregation
              * @description The aggregation to apply on the filtered events to calculate the meter.
              */
-            aggregation: components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"];
+            aggregation: components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"] | components["schemas"]["UniqueAggregation"];
             /**
              * Organization Id
              * Format: uuid4
@@ -12567,7 +12810,7 @@ export interface components {
              * Aggregation
              * @description The aggregation to apply on the filtered events to calculate the meter.
              */
-            aggregation: components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"];
+            aggregation: components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"] | components["schemas"]["UniqueAggregation"];
             /**
              * Organization Id
              * @description The ID of the organization owning the meter. **Required unless you use an organization token.**
@@ -12743,7 +12986,7 @@ export interface components {
              * Aggregation
              * @description The aggregation to apply on the filtered events to calculate the meter.
              */
-            aggregation?: (components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"]) | null;
+            aggregation?: (components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"] | components["schemas"]["UniqueAggregation"]) | null;
         };
         /**
          * Metric
@@ -12775,26 +13018,40 @@ export interface components {
             orders: number;
             /** Revenue */
             revenue: number;
+            /** Net Revenue */
+            net_revenue: number;
             /** Cumulative Revenue */
             cumulative_revenue: number;
+            /** Net Cumulative Revenue */
+            net_cumulative_revenue: number;
             /** Average Order Value */
             average_order_value: number;
+            /** Net Average Order Value */
+            net_average_order_value: number;
             /** One Time Products */
             one_time_products: number;
             /** One Time Products Revenue */
             one_time_products_revenue: number;
+            /** One Time Products Net Revenue */
+            one_time_products_net_revenue: number;
             /** New Subscriptions */
             new_subscriptions: number;
             /** New Subscriptions Revenue */
             new_subscriptions_revenue: number;
+            /** New Subscriptions Net Revenue */
+            new_subscriptions_net_revenue: number;
             /** Renewed Subscriptions */
             renewed_subscriptions: number;
             /** Renewed Subscriptions Revenue */
             renewed_subscriptions_revenue: number;
+            /** Renewed Subscriptions Net Revenue */
+            renewed_subscriptions_net_revenue: number;
             /** Active Subscriptions */
             active_subscriptions: number;
             /** Monthly Recurring Revenue */
             monthly_recurring_revenue: number;
+            /** Committed Monthly Recurring Revenue */
+            committed_monthly_recurring_revenue: number;
             /** Checkouts */
             checkouts: number;
             /** Succeeded Checkouts */
@@ -12811,16 +13068,23 @@ export interface components {
         Metrics: {
             orders: components["schemas"]["Metric"];
             revenue: components["schemas"]["Metric"];
+            net_revenue: components["schemas"]["Metric"];
             cumulative_revenue: components["schemas"]["Metric"];
+            net_cumulative_revenue: components["schemas"]["Metric"];
             average_order_value: components["schemas"]["Metric"];
+            net_average_order_value: components["schemas"]["Metric"];
             one_time_products: components["schemas"]["Metric"];
             one_time_products_revenue: components["schemas"]["Metric"];
+            one_time_products_net_revenue: components["schemas"]["Metric"];
             new_subscriptions: components["schemas"]["Metric"];
             new_subscriptions_revenue: components["schemas"]["Metric"];
+            new_subscriptions_net_revenue: components["schemas"]["Metric"];
             renewed_subscriptions: components["schemas"]["Metric"];
             renewed_subscriptions_revenue: components["schemas"]["Metric"];
+            renewed_subscriptions_net_revenue: components["schemas"]["Metric"];
             active_subscriptions: components["schemas"]["Metric"];
             monthly_recurring_revenue: components["schemas"]["Metric"];
+            committed_monthly_recurring_revenue: components["schemas"]["Metric"];
             checkouts: components["schemas"]["Metric"];
             succeeded_checkouts: components["schemas"]["Metric"];
             checkouts_conversion: components["schemas"]["Metric"];
@@ -12887,26 +13151,40 @@ export interface components {
             orders: number;
             /** Revenue */
             revenue: number;
+            /** Net Revenue */
+            net_revenue: number;
             /** Cumulative Revenue */
             cumulative_revenue: number;
+            /** Net Cumulative Revenue */
+            net_cumulative_revenue: number;
             /** Average Order Value */
             average_order_value: number;
+            /** Net Average Order Value */
+            net_average_order_value: number;
             /** One Time Products */
             one_time_products: number;
             /** One Time Products Revenue */
             one_time_products_revenue: number;
+            /** One Time Products Net Revenue */
+            one_time_products_net_revenue: number;
             /** New Subscriptions */
             new_subscriptions: number;
             /** New Subscriptions Revenue */
             new_subscriptions_revenue: number;
+            /** New Subscriptions Net Revenue */
+            new_subscriptions_net_revenue: number;
             /** Renewed Subscriptions */
             renewed_subscriptions: number;
             /** Renewed Subscriptions Revenue */
             renewed_subscriptions_revenue: number;
+            /** Renewed Subscriptions Net Revenue */
+            renewed_subscriptions_net_revenue: number;
             /** Active Subscriptions */
             active_subscriptions: number;
             /** Monthly Recurring Revenue */
             monthly_recurring_revenue: number;
+            /** Committed Monthly Recurring Revenue */
+            committed_monthly_recurring_revenue: number;
             /** Checkouts */
             checkouts: number;
             /** Succeeded Checkouts */
@@ -13253,12 +13531,6 @@ export interface components {
              */
             net_amount: number;
             /**
-             * Amount
-             * @deprecated
-             * @description Amount in cents, after discounts but before taxes.
-             */
-            amount: number;
-            /**
              * Tax Amount
              * @description Sales tax amount in cents.
              */
@@ -13463,6 +13735,16 @@ export interface components {
              */
             product_price_id: string | null;
         };
+        /** OrderNotEligibleForRetry */
+        OrderNotEligibleForRetry: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "OrderNotEligibleForRetry";
+            /** Detail */
+            detail: string;
+        };
         /** OrderProduct */
         OrderProduct: {
             /** Metadata */
@@ -13496,7 +13778,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -13519,7 +13801,7 @@ export interface components {
          * OrderSortProperty
          * @enum {string}
          */
-        OrderSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "net_amount" | "-net_amount" | "customer" | "-customer" | "product" | "-product" | "discount" | "-discount" | "subscription" | "-subscription";
+        OrderSortProperty: "created_at" | "-created_at" | "status" | "-status" | "invoice_number" | "-invoice_number" | "amount" | "-amount" | "net_amount" | "-net_amount" | "customer" | "-customer" | "product" | "-product" | "discount" | "-discount" | "subscription" | "-subscription";
         /**
          * OrderStatus
          * @enum {string}
@@ -13699,6 +13981,8 @@ export interface components {
              * @description Links to social profiles.
              */
             socials: components["schemas"]["OrganizationSocialLink"][];
+            /** @description Current organization status */
+            status: components["schemas"]["Status"];
             /**
              * Details Submitted At
              * @description When the business details were submitted.
@@ -13775,6 +14059,33 @@ export interface components {
             comment?: string | null;
             /** Scopes */
             scopes?: components["schemas"]["AvailableScope"][] | null;
+        };
+        /** OrganizationAppealRequest */
+        OrganizationAppealRequest: {
+            /**
+             * Reason
+             * @description Detailed explanation of why this organization should be approved. Minimum 50 characters.
+             */
+            reason: string;
+        };
+        /** OrganizationAppealResponse */
+        OrganizationAppealResponse: {
+            /**
+             * Success
+             * @description Whether the appeal was successfully submitted
+             */
+            success: boolean;
+            /**
+             * Message
+             * @description Success or error message
+             */
+            message: string;
+            /**
+             * Appeal Submitted At
+             * Format: date-time
+             * @description When the appeal was submitted
+             */
+            appeal_submitted_at: string;
         };
         /**
          * OrganizationAvatarFileCreate
@@ -13971,55 +14282,73 @@ export interface components {
             /** New Subscription */
             new_subscription: boolean;
         };
-        /** OrganizationProfileSettings */
-        OrganizationProfileSettings: {
+        /** OrganizationPaymentStatus */
+        OrganizationPaymentStatus: {
             /**
-             * Enabled
-             * @description If this organization has a profile enabled
+             * Payment Ready
+             * @description Whether the organization is ready to accept payments
              */
-            enabled?: boolean | null;
+            payment_ready: boolean;
+            /**
+             * Steps
+             * @description List of onboarding steps
+             */
+            steps: components["schemas"]["OrganizationPaymentStep"][];
+            /** @description Current organization status */
+            organization_status: components["schemas"]["Status"];
+        };
+        /** OrganizationPaymentStep */
+        OrganizationPaymentStep: {
+            /**
+             * Id
+             * @description Step identifier
+             */
+            id: string;
+            /**
+             * Title
+             * @description Step title
+             */
+            title: string;
             /**
              * Description
-             * @description A description of the organization
+             * @description Step description
              */
-            description?: string | null;
+            description: string;
             /**
-             * Featured Projects
-             * @description A list of featured projects
+             * Completed
+             * @description Whether the step is completed
              */
-            featured_projects?: string[] | null;
-            /**
-             * Featured Organizations
-             * @description A list of featured organizations
-             */
-            featured_organizations?: string[] | null;
-            /**
-             * Links
-             * @description A list of links associated with the organization
-             */
-            links?: string[] | null;
-            /**
-             * @description Subscription promotion settings
-             * @default {
-             *       "promote": true,
-             *       "show_count": true,
-             *       "count_free": true
-             *     }
-             */
-            subscribe: components["schemas"]["OrganizationSubscribePromoteSettings"] | null;
-            /**
-             * Accent Color
-             * @description Accent color for the organization
-             */
-            accent_color?: string | null;
+            completed: boolean;
         };
-        /** OrganizationSetAccount */
-        OrganizationSetAccount: {
+        /** OrganizationReviewStatus */
+        OrganizationReviewStatus: {
             /**
-             * Account Id
-             * Format: uuid4
+             * Verdict
+             * @description AI validation verdict
              */
-            account_id: string;
+            verdict?: ("PASS" | "FAIL" | "UNCERTAIN") | null;
+            /**
+             * Reason
+             * @description Reason for the verdict
+             */
+            reason?: string | null;
+            /**
+             * Appeal Submitted At
+             * @description When appeal was submitted
+             */
+            appeal_submitted_at?: string | null;
+            /**
+             * Appeal Reason
+             * @description Reason for the appeal
+             */
+            appeal_reason?: string | null;
+            /** @description Decision on the appeal (approved/rejected) */
+            appeal_decision?: components["schemas"]["AppealDecision"] | null;
+            /**
+             * Appeal Reviewed At
+             * @description When appeal was reviewed
+             */
+            appeal_reviewed_at?: string | null;
         };
         /**
          * OrganizationSlugLookup
@@ -14053,27 +14382,6 @@ export interface components {
          * @enum {string}
          */
         OrganizationSortProperty: "created_at" | "-created_at" | "slug" | "-slug" | "name" | "-name";
-        /** OrganizationSubscribePromoteSettings */
-        OrganizationSubscribePromoteSettings: {
-            /**
-             * Promote
-             * @description Promote email subscription (free)
-             * @default true
-             */
-            promote: boolean;
-            /**
-             * Show Count
-             * @description Show subscription count publicly
-             * @default true
-             */
-            show_count: boolean;
-            /**
-             * Count Free
-             * @description Include free subscribers in total count
-             * @default true
-             */
-            count_free: boolean;
-        };
         /** OrganizationSubscriptionSettings */
         OrganizationSubscriptionSettings: {
             /** Allow Multiple Subscriptions */
@@ -14109,6 +14417,26 @@ export interface components {
             subscription_settings?: components["schemas"]["OrganizationSubscriptionSettings"] | null;
             notification_settings?: components["schemas"]["OrganizationNotificationSettings"] | null;
         };
+        /** OrganizationValidationResult */
+        OrganizationValidationResult: {
+            /**
+             * Reason
+             * @description A 1 or 3 line explanation of the verdict and the reasoning behind it. The reason will be shown to our customer.
+             */
+            reason: string;
+            /**
+             * Verdict
+             * @description PASS | FAIL | UNCERTAIN - indicates compliance status.
+             * @enum {string}
+             */
+            verdict: "PASS" | "FAIL" | "UNCERTAIN";
+            /**
+             * Timed Out
+             * @description Whether the validation timed out
+             * @default false
+             */
+            timed_out: boolean;
+        };
         /** Pagination */
         Pagination: {
             /** Total Count */
@@ -14117,6 +14445,16 @@ export interface components {
             max_page: number;
         };
         Payment: components["schemas"]["CardPayment"] | components["schemas"]["GenericPayment"];
+        /** PaymentAlreadyInProgress */
+        PaymentAlreadyInProgress: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "PaymentAlreadyInProgress";
+            /** Detail */
+            detail: string;
+        };
         /** PaymentError */
         PaymentError: {
             /**
@@ -14199,6 +14537,16 @@ export interface components {
             customer_id: string;
             /** Type */
             type: string;
+        };
+        /** PaymentNotReady */
+        PaymentNotReady: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "PaymentNotReady";
+            /** Detail */
+            detail: string;
         };
         /**
          * PaymentProcessor
@@ -14325,7 +14673,7 @@ export interface components {
          * @description Supported payment or payout processors, i.e rails for transactions.
          * @enum {string}
          */
-        Processor: "stripe" | "open_collective";
+        Processor: "stripe" | "manual" | "open_collective";
         /**
          * Product
          * @description A product.
@@ -14358,7 +14706,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -14449,7 +14797,7 @@ export interface components {
              * @description The description of the product.
              */
             description?: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * ProductPriceCreateList
@@ -14495,10 +14843,10 @@ export interface components {
             price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             cover: components["schemas"]["ProductMediaFileRead"] | null;
             /**
-             * Benefits
+             * BenefitPublic
              * @description List of benefits granted by the product.
              */
-            benefits: components["schemas"]["Benefit"][];
+            benefits: components["schemas"]["BenefitPublic"][];
             /** Etag */
             etag: string;
         };
@@ -14968,7 +15316,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -15286,7 +15634,7 @@ export interface components {
          * Scope
          * @enum {string}
          */
-        Scope: "openid" | "profile" | "email" | "user:read" | "admin" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "transactions:read" | "transactions:write" | "payouts:read" | "payouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "orders:write" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notifications:read" | "notifications:write" | "notification_recipients:read" | "notification_recipients:write";
+        Scope: "openid" | "profile" | "email" | "user:read" | "web:read" | "web:write" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "transactions:read" | "transactions:write" | "payouts:read" | "payouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "orders:write" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notifications:read" | "notifications:write" | "notification_recipients:read" | "notification_recipients:write";
         /**
          * Status
          * @enum {string}
@@ -15541,6 +15889,16 @@ export interface components {
             /** Avatar Url */
             readonly avatar_url: string;
         };
+        /** SubscriptionLocked */
+        SubscriptionLocked: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "SubscriptionLocked";
+            /** Detail */
+            detail: string;
+        };
         /**
          * SubscriptionMeter
          * @description Current consumption and spending for a subscription meter.
@@ -15596,7 +15954,7 @@ export interface components {
          * SubscriptionRecurringInterval
          * @enum {string}
          */
-        SubscriptionRecurringInterval: "month" | "year";
+        SubscriptionRecurringInterval: "day" | "week" | "month" | "year";
         /** SubscriptionRevoke */
         SubscriptionRevoke: {
             /** @description Customer reason for cancellation.
@@ -16021,6 +16379,16 @@ export interface components {
             /** Detail */
             detail: string;
         };
+        /** UniqueAggregation */
+        UniqueAggregation: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            func: "unique";
+            /** Property */
+            property: string;
+        };
         /** UserBase */
         UserBase: {
             /**
@@ -16137,6 +16505,8 @@ export interface components {
             id: string;
             /** Accepted Terms Of Service */
             accepted_terms_of_service: boolean;
+            /** Is Admin */
+            is_admin: boolean;
             /** Identity Verified */
             identity_verified: boolean;
             identity_verification_status: components["schemas"]["IdentityVerificationStatus"];
@@ -16839,11 +17209,6 @@ export interface components {
             type: "subscription.updated";
             data: components["schemas"]["Subscription"];
         };
-        /** Body_magic_link:magic_link.authenticate */
-        authenticate: {
-            /** Token */
-            token: string;
-        };
         /** MetadataQuery */
         MetadataQuery: {
             [key: string]: string | number | boolean | string[] | number[] | boolean[];
@@ -17266,74 +17631,6 @@ export interface operations {
             };
         };
     };
-    "magic_link:magic_link.request": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MagicLinkRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "magic_link:magic_link.authenticate": {
-        parameters: {
-            query?: {
-                return_to?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["authenticate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     "login_code:request_login_code": {
         parameters: {
             query?: never;
@@ -17673,7 +17970,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AccountCreate"];
+                "application/json": components["schemas"]["AccountCreateForOrganization"];
             };
         };
         responses: {
@@ -17965,37 +18262,27 @@ export interface operations {
             };
         };
     };
-    "organizations:set_account": {
+    "organizations:get_payment_status": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only perform account verification checks, skip product and integration checks */
+                account_verification_only?: boolean;
+            };
             header?: never;
             path: {
                 id: string;
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["OrganizationSetAccount"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Organization account set. */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Organization"];
-                };
-            };
-            /** @description You don't have the permission to update this organization. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotPermitted"];
+                    "application/json": components["schemas"]["OrganizationPaymentStatus"];
                 };
             };
             /** @description Organization not found. */
@@ -18065,12 +18352,143 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["OrganizationMember"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "organizations:validate_with_ai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Organization validated with AI. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationValidationResult"];
+                };
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "organizations:submit_appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationAppealRequest"];
+            };
+        };
+        responses: {
+            /** @description Appeal submitted successfully. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAppealResponse"];
+                };
+            };
+            /** @description Invalid appeal request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "organizations:get_review_status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Organization review status retrieved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationReviewStatus"];
+                };
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
                 };
             };
             /** @description Validation Error */
@@ -18246,6 +18664,15 @@ export interface operations {
                     "application/json": components["schemas"]["ResourceNotFound"];
                 };
             };
+            /** @description Subscription is pending an update. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionLocked"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -18298,6 +18725,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Subscription is pending an update. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionLocked"];
                 };
             };
             /** @description Validation Error */
@@ -20011,7 +20447,7 @@ export interface operations {
                     "application/json": components["schemas"]["Checkout"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -20115,7 +20551,7 @@ export interface operations {
                     "application/json": components["schemas"]["CheckoutPublic"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -20220,7 +20656,7 @@ export interface operations {
                     "application/json": components["schemas"]["PaymentError"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -20803,6 +21239,139 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Unauthorized"];
                 };
+            };
+            /** @description License key not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "license_keys:validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LicenseKeyValidate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidatedLicenseKey"];
+                };
+            };
+            /** @description License key not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "license_keys:activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LicenseKeyActivate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenseKeyActivationRead"];
+                };
+            };
+            /** @description License key activation not supported or limit reached. Use /validate endpoint for licenses without activations. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotPermitted"];
+                };
+            };
+            /** @description License key not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "license_keys:deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LicenseKeyDeactivate"];
+            };
+        };
+        responses: {
+            /** @description License key activation deactivated. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description License key not found. */
             404: {
@@ -22198,7 +22767,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListResource_Union_PaymentMethodCard__PaymentMethodGeneric__"];
+                    "application/json": components["schemas"]["ListResource_CustomerPaymentMethod_"];
                 };
             };
             /** @description Validation Error */
@@ -22231,7 +22800,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaymentMethodCard"] | components["schemas"]["PaymentMethodGeneric"];
+                    "application/json": components["schemas"]["CustomerPaymentMethod"];
                 };
             };
             /** @description Validation Error */
@@ -22687,7 +23256,7 @@ export interface operations {
                     "application/json": components["schemas"]["LicenseKeyActivationRead"];
                 };
             };
-            /** @description License key activation not required or permitted (limit reached). */
+            /** @description License key activation not supported or limit reached. Use /validate endpoint for licenses without activations. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -23032,6 +23601,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MissingInvoiceBillingDetails"] | components["schemas"]["NotPaidOrder"];
+                };
+            };
+        };
+    };
+    "customer_portal:orders:get_payment_status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The order ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerOrderPaymentStatus"];
+                };
+            };
+            /** @description Order not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "customer_portal:orders:confirm_retry_payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The order ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerOrderConfirmPayment"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerOrderPaymentConfirmation"];
+                };
+            };
+            /** @description Order not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Payment already in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentAlreadyInProgress"];
+                };
+            };
+            /** @description Order not eligible for retry or payment confirmation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderNotEligibleForRetry"];
                 };
             };
         };
@@ -25166,7 +25830,8 @@ type ReadonlyArray<T> = [
     unknown[]
 ] ? Readonly<Exclude<T, undefined>> : Readonly<Exclude<T, undefined>[]>;
 export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<paths["/v1/metrics/"]["get"]["parameters"]["query"]["timezone"]> = ["Africa/Abidjan", "Africa/Accra", "Africa/Addis_Ababa", "Africa/Algiers", "Africa/Asmara", "Africa/Asmera", "Africa/Bamako", "Africa/Bangui", "Africa/Banjul", "Africa/Bissau", "Africa/Blantyre", "Africa/Brazzaville", "Africa/Bujumbura", "Africa/Cairo", "Africa/Casablanca", "Africa/Ceuta", "Africa/Conakry", "Africa/Dakar", "Africa/Dar_es_Salaam", "Africa/Djibouti", "Africa/Douala", "Africa/El_Aaiun", "Africa/Freetown", "Africa/Gaborone", "Africa/Harare", "Africa/Johannesburg", "Africa/Juba", "Africa/Kampala", "Africa/Khartoum", "Africa/Kigali", "Africa/Kinshasa", "Africa/Lagos", "Africa/Libreville", "Africa/Lome", "Africa/Luanda", "Africa/Lubumbashi", "Africa/Lusaka", "Africa/Malabo", "Africa/Maputo", "Africa/Maseru", "Africa/Mbabane", "Africa/Mogadishu", "Africa/Monrovia", "Africa/Nairobi", "Africa/Ndjamena", "Africa/Niamey", "Africa/Nouakchott", "Africa/Ouagadougou", "Africa/Porto-Novo", "Africa/Sao_Tome", "Africa/Timbuktu", "Africa/Tripoli", "Africa/Tunis", "Africa/Windhoek", "America/Adak", "America/Anchorage", "America/Anguilla", "America/Antigua", "America/Araguaina", "America/Argentina/Buenos_Aires", "America/Argentina/Catamarca", "America/Argentina/ComodRivadavia", "America/Argentina/Cordoba", "America/Argentina/Jujuy", "America/Argentina/La_Rioja", "America/Argentina/Mendoza", "America/Argentina/Rio_Gallegos", "America/Argentina/Salta", "America/Argentina/San_Juan", "America/Argentina/San_Luis", "America/Argentina/Tucuman", "America/Argentina/Ushuaia", "America/Aruba", "America/Asuncion", "America/Atikokan", "America/Atka", "America/Bahia", "America/Bahia_Banderas", "America/Barbados", "America/Belem", "America/Belize", "America/Blanc-Sablon", "America/Boa_Vista", "America/Bogota", "America/Boise", "America/Buenos_Aires", "America/Cambridge_Bay", "America/Campo_Grande", "America/Cancun", "America/Caracas", "America/Catamarca", "America/Cayenne", "America/Cayman", "America/Chicago", "America/Chihuahua", "America/Ciudad_Juarez", "America/Coral_Harbour", "America/Cordoba", "America/Costa_Rica", "America/Coyhaique", "America/Creston", "America/Cuiaba", "America/Curacao", "America/Danmarkshavn", "America/Dawson", "America/Dawson_Creek", "America/Denver", "America/Detroit", "America/Dominica", "America/Edmonton", "America/Eirunepe", "America/El_Salvador", "America/Ensenada", "America/Fort_Nelson", "America/Fort_Wayne", "America/Fortaleza", "America/Glace_Bay", "America/Godthab", "America/Goose_Bay", "America/Grand_Turk", "America/Grenada", "America/Guadeloupe", "America/Guatemala", "America/Guayaquil", "America/Guyana", "America/Halifax", "America/Havana", "America/Hermosillo", "America/Indiana/Indianapolis", "America/Indiana/Knox", "America/Indiana/Marengo", "America/Indiana/Petersburg", "America/Indiana/Tell_City", "America/Indiana/Vevay", "America/Indiana/Vincennes", "America/Indiana/Winamac", "America/Indianapolis", "America/Inuvik", "America/Iqaluit", "America/Jamaica", "America/Jujuy", "America/Juneau", "America/Kentucky/Louisville", "America/Kentucky/Monticello", "America/Knox_IN", "America/Kralendijk", "America/La_Paz", "America/Lima", "America/Los_Angeles", "America/Louisville", "America/Lower_Princes", "America/Maceio", "America/Managua", "America/Manaus", "America/Marigot", "America/Martinique", "America/Matamoros", "America/Mazatlan", "America/Mendoza", "America/Menominee", "America/Merida", "America/Metlakatla", "America/Mexico_City", "America/Miquelon", "America/Moncton", "America/Monterrey", "America/Montevideo", "America/Montreal", "America/Montserrat", "America/Nassau", "America/New_York", "America/Nipigon", "America/Nome", "America/Noronha", "America/North_Dakota/Beulah", "America/North_Dakota/Center", "America/North_Dakota/New_Salem", "America/Nuuk", "America/Ojinaga", "America/Panama", "America/Pangnirtung", "America/Paramaribo", "America/Phoenix", "America/Port-au-Prince", "America/Port_of_Spain", "America/Porto_Acre", "America/Porto_Velho", "America/Puerto_Rico", "America/Punta_Arenas", "America/Rainy_River", "America/Rankin_Inlet", "America/Recife", "America/Regina", "America/Resolute", "America/Rio_Branco", "America/Rosario", "America/Santa_Isabel", "America/Santarem", "America/Santiago", "America/Santo_Domingo", "America/Sao_Paulo", "America/Scoresbysund", "America/Shiprock", "America/Sitka", "America/St_Barthelemy", "America/St_Johns", "America/St_Kitts", "America/St_Lucia", "America/St_Thomas", "America/St_Vincent", "America/Swift_Current", "America/Tegucigalpa", "America/Thule", "America/Thunder_Bay", "America/Tijuana", "America/Toronto", "America/Tortola", "America/Vancouver", "America/Virgin", "America/Whitehorse", "America/Winnipeg", "America/Yakutat", "America/Yellowknife", "Antarctica/Casey", "Antarctica/Davis", "Antarctica/DumontDUrville", "Antarctica/Macquarie", "Antarctica/Mawson", "Antarctica/McMurdo", "Antarctica/Palmer", "Antarctica/Rothera", "Antarctica/South_Pole", "Antarctica/Syowa", "Antarctica/Troll", "Antarctica/Vostok", "Arctic/Longyearbyen", "Asia/Aden", "Asia/Almaty", "Asia/Amman", "Asia/Anadyr", "Asia/Aqtau", "Asia/Aqtobe", "Asia/Ashgabat", "Asia/Ashkhabad", "Asia/Atyrau", "Asia/Baghdad", "Asia/Bahrain", "Asia/Baku", "Asia/Bangkok", "Asia/Barnaul", "Asia/Beirut", "Asia/Bishkek", "Asia/Brunei", "Asia/Calcutta", "Asia/Chita", "Asia/Choibalsan", "Asia/Chongqing", "Asia/Chungking", "Asia/Colombo", "Asia/Dacca", "Asia/Damascus", "Asia/Dhaka", "Asia/Dili", "Asia/Dubai", "Asia/Dushanbe", "Asia/Famagusta", "Asia/Gaza", "Asia/Harbin", "Asia/Hebron", "Asia/Ho_Chi_Minh", "Asia/Hong_Kong", "Asia/Hovd", "Asia/Irkutsk", "Asia/Istanbul", "Asia/Jakarta", "Asia/Jayapura", "Asia/Jerusalem", "Asia/Kabul", "Asia/Kamchatka", "Asia/Karachi", "Asia/Kashgar", "Asia/Kathmandu", "Asia/Katmandu", "Asia/Khandyga", "Asia/Kolkata", "Asia/Krasnoyarsk", "Asia/Kuala_Lumpur", "Asia/Kuching", "Asia/Kuwait", "Asia/Macao", "Asia/Macau", "Asia/Magadan", "Asia/Makassar", "Asia/Manila", "Asia/Muscat", "Asia/Nicosia", "Asia/Novokuznetsk", "Asia/Novosibirsk", "Asia/Omsk", "Asia/Oral", "Asia/Phnom_Penh", "Asia/Pontianak", "Asia/Pyongyang", "Asia/Qatar", "Asia/Qostanay", "Asia/Qyzylorda", "Asia/Rangoon", "Asia/Riyadh", "Asia/Saigon", "Asia/Sakhalin", "Asia/Samarkand", "Asia/Seoul", "Asia/Shanghai", "Asia/Singapore", "Asia/Srednekolymsk", "Asia/Taipei", "Asia/Tashkent", "Asia/Tbilisi", "Asia/Tehran", "Asia/Tel_Aviv", "Asia/Thimbu", "Asia/Thimphu", "Asia/Tokyo", "Asia/Tomsk", "Asia/Ujung_Pandang", "Asia/Ulaanbaatar", "Asia/Ulan_Bator", "Asia/Urumqi", "Asia/Ust-Nera", "Asia/Vientiane", "Asia/Vladivostok", "Asia/Yakutsk", "Asia/Yangon", "Asia/Yekaterinburg", "Asia/Yerevan", "Atlantic/Azores", "Atlantic/Bermuda", "Atlantic/Canary", "Atlantic/Cape_Verde", "Atlantic/Faeroe", "Atlantic/Faroe", "Atlantic/Jan_Mayen", "Atlantic/Madeira", "Atlantic/Reykjavik", "Atlantic/South_Georgia", "Atlantic/St_Helena", "Atlantic/Stanley", "Australia/ACT", "Australia/Adelaide", "Australia/Brisbane", "Australia/Broken_Hill", "Australia/Canberra", "Australia/Currie", "Australia/Darwin", "Australia/Eucla", "Australia/Hobart", "Australia/LHI", "Australia/Lindeman", "Australia/Lord_Howe", "Australia/Melbourne", "Australia/NSW", "Australia/North", "Australia/Perth", "Australia/Queensland", "Australia/South", "Australia/Sydney", "Australia/Tasmania", "Australia/Victoria", "Australia/West", "Australia/Yancowinna", "Brazil/Acre", "Brazil/DeNoronha", "Brazil/East", "Brazil/West", "CET", "CST6CDT", "Canada/Atlantic", "Canada/Central", "Canada/Eastern", "Canada/Mountain", "Canada/Newfoundland", "Canada/Pacific", "Canada/Saskatchewan", "Canada/Yukon", "Chile/Continental", "Chile/EasterIsland", "Cuba", "EET", "EST", "EST5EDT", "Egypt", "Eire", "Etc/GMT", "Etc/GMT+0", "Etc/GMT+1", "Etc/GMT+10", "Etc/GMT+11", "Etc/GMT+12", "Etc/GMT+2", "Etc/GMT+3", "Etc/GMT+4", "Etc/GMT+5", "Etc/GMT+6", "Etc/GMT+7", "Etc/GMT+8", "Etc/GMT+9", "Etc/GMT-0", "Etc/GMT-1", "Etc/GMT-10", "Etc/GMT-11", "Etc/GMT-12", "Etc/GMT-13", "Etc/GMT-14", "Etc/GMT-2", "Etc/GMT-3", "Etc/GMT-4", "Etc/GMT-5", "Etc/GMT-6", "Etc/GMT-7", "Etc/GMT-8", "Etc/GMT-9", "Etc/GMT0", "Etc/Greenwich", "Etc/UCT", "Etc/UTC", "Etc/Universal", "Etc/Zulu", "Europe/Amsterdam", "Europe/Andorra", "Europe/Astrakhan", "Europe/Athens", "Europe/Belfast", "Europe/Belgrade", "Europe/Berlin", "Europe/Bratislava", "Europe/Brussels", "Europe/Bucharest", "Europe/Budapest", "Europe/Busingen", "Europe/Chisinau", "Europe/Copenhagen", "Europe/Dublin", "Europe/Gibraltar", "Europe/Guernsey", "Europe/Helsinki", "Europe/Isle_of_Man", "Europe/Istanbul", "Europe/Jersey", "Europe/Kaliningrad", "Europe/Kiev", "Europe/Kirov", "Europe/Kyiv", "Europe/Lisbon", "Europe/Ljubljana", "Europe/London", "Europe/Luxembourg", "Europe/Madrid", "Europe/Malta", "Europe/Mariehamn", "Europe/Minsk", "Europe/Monaco", "Europe/Moscow", "Europe/Nicosia", "Europe/Oslo", "Europe/Paris", "Europe/Podgorica", "Europe/Prague", "Europe/Riga", "Europe/Rome", "Europe/Samara", "Europe/San_Marino", "Europe/Sarajevo", "Europe/Saratov", "Europe/Simferopol", "Europe/Skopje", "Europe/Sofia", "Europe/Stockholm", "Europe/Tallinn", "Europe/Tirane", "Europe/Tiraspol", "Europe/Ulyanovsk", "Europe/Uzhgorod", "Europe/Vaduz", "Europe/Vatican", "Europe/Vienna", "Europe/Vilnius", "Europe/Volgograd", "Europe/Warsaw", "Europe/Zagreb", "Europe/Zaporozhye", "Europe/Zurich", "Factory", "GB", "GB-Eire", "GMT", "GMT+0", "GMT-0", "GMT0", "Greenwich", "HST", "Hongkong", "Iceland", "Indian/Antananarivo", "Indian/Chagos", "Indian/Christmas", "Indian/Cocos", "Indian/Comoro", "Indian/Kerguelen", "Indian/Mahe", "Indian/Maldives", "Indian/Mauritius", "Indian/Mayotte", "Indian/Reunion", "Iran", "Israel", "Jamaica", "Japan", "Kwajalein", "Libya", "MET", "MST", "MST7MDT", "Mexico/BajaNorte", "Mexico/BajaSur", "Mexico/General", "NZ", "NZ-CHAT", "Navajo", "PRC", "PST8PDT", "Pacific/Apia", "Pacific/Auckland", "Pacific/Bougainville", "Pacific/Chatham", "Pacific/Chuuk", "Pacific/Easter", "Pacific/Efate", "Pacific/Enderbury", "Pacific/Fakaofo", "Pacific/Fiji", "Pacific/Funafuti", "Pacific/Galapagos", "Pacific/Gambier", "Pacific/Guadalcanal", "Pacific/Guam", "Pacific/Honolulu", "Pacific/Johnston", "Pacific/Kanton", "Pacific/Kiritimati", "Pacific/Kosrae", "Pacific/Kwajalein", "Pacific/Majuro", "Pacific/Marquesas", "Pacific/Midway", "Pacific/Nauru", "Pacific/Niue", "Pacific/Norfolk", "Pacific/Noumea", "Pacific/Pago_Pago", "Pacific/Palau", "Pacific/Pitcairn", "Pacific/Pohnpei", "Pacific/Ponape", "Pacific/Port_Moresby", "Pacific/Rarotonga", "Pacific/Saipan", "Pacific/Samoa", "Pacific/Tahiti", "Pacific/Tarawa", "Pacific/Tongatapu", "Pacific/Truk", "Pacific/Wake", "Pacific/Wallis", "Pacific/Yap", "Poland", "Portugal", "ROC", "ROK", "Singapore", "Turkey", "UCT", "US/Alaska", "US/Aleutian", "US/Arizona", "US/Central", "US/East-Indiana", "US/Eastern", "US/Hawaii", "US/Indiana-Starke", "US/Michigan", "US/Mountain", "US/Pacific", "US/Samoa", "UTC", "Universal", "W-SU", "WET", "Zulu"];
-export const accountTypeValues: ReadonlyArray<components["schemas"]["AccountType"]> = ["stripe", "open_collective"];
+export const accountTypeValues: ReadonlyArray<components["schemas"]["AccountType"]> = ["stripe", "manual", "open_collective"];
+export const appealDecisionValues: ReadonlyArray<components["schemas"]["AppealDecision"]> = ["approved", "rejected"];
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseOrganization"]["sub_type"]> = ["organization"];
 export const authorizeResponseUserSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseUser"]["sub_type"]> = ["user"];
 export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "transactions:read", "transactions:write", "payouts:read", "payouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notifications:read", "notifications:write", "notification_recipients:read", "notification_recipients:write"];
@@ -25258,14 +25923,16 @@ export const oAuth2ClientConfigurationUpdateToken_endpoint_auth_methodValues: Re
 export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfigurationUpdate"]["grant_types"]> = ["authorization_code", "refresh_token"];
 export const oAuthPlatformValues: ReadonlyArray<components["schemas"]["OAuthPlatform"]> = ["github", "github_repository_benefit", "google"];
 export const orderBillingReasonValues: ReadonlyArray<components["schemas"]["OrderBillingReason"]> = ["purchase", "subscription_create", "subscription_cycle", "subscription_update"];
-export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "net_amount", "-net_amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];
+export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "status", "-status", "invoice_number", "-invoice_number", "amount", "-amount", "net_amount", "-net_amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];
 export const orderStatusValues: ReadonlyArray<components["schemas"]["OrderStatus"]> = ["pending", "paid", "refunded", "partially_refunded"];
 export const organizationAccessTokenSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationAccessTokenSortProperty"]> = ["created_at", "-created_at", "comment", "-comment", "last_used_at", "-last_used_at", "organization_id", "-organization_id"];
 export const organizationAvatarFileCreateServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileCreate"]["service"]> = ["organization_avatar"];
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileRead"]["service"]> = ["organization_avatar"];
 export const organizationDetailsSwitching_fromValues: ReadonlyArray<components["schemas"]["OrganizationDetails"]["switching_from"]> = ["paddle", "lemon_squeezy", "gumroad", "stripe", "other"];
+export const organizationReviewStatusVerdictValues: ReadonlyArray<components["schemas"]["OrganizationReviewStatus"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];
 export const organizationSocialPlatformsValues: ReadonlyArray<components["schemas"]["OrganizationSocialPlatforms"]> = ["x", "github", "facebook", "instagram", "youtube", "tiktok", "linkedin", "other"];
 export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name"];
+export const organizationValidationResultVerdictValues: ReadonlyArray<components["schemas"]["OrganizationValidationResult"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
 export const paymentSortPropertyValues: ReadonlyArray<components["schemas"]["PaymentSortProperty"]> = ["created_at", "-created_at", "status", "-status", "amount", "-amount", "method", "-method"];
 export const paymentStatusValues: ReadonlyArray<components["schemas"]["PaymentStatus"]> = ["pending", "succeeded", "failed"];
@@ -25273,7 +25940,7 @@ export const payoutSortPropertyValues: ReadonlyArray<components["schemas"]["Payo
 export const payoutStatusValues: ReadonlyArray<components["schemas"]["PayoutStatus"]> = ["pending", "in_transit", "succeeded"];
 export const platformFeeTypeValues: ReadonlyArray<components["schemas"]["PlatformFeeType"]> = ["payment", "international_payment", "subscription", "invoice", "cross_border_transfer", "payout", "account", "dispute", "platform"];
 export const pledgeStateValues: ReadonlyArray<components["schemas"]["PledgeState"]> = ["initiated", "created", "pending", "refunded", "disputed", "charge_disputed", "cancelled"];
-export const processorValues: ReadonlyArray<components["schemas"]["Processor"]> = ["stripe", "open_collective"];
+export const processorValues: ReadonlyArray<components["schemas"]["Processor"]> = ["stripe", "manual", "open_collective"];
 export const productBillingTypeValues: ReadonlyArray<components["schemas"]["ProductBillingType"]> = ["one_time", "recurring"];
 export const productMediaFileCreateServiceValues: ReadonlyArray<components["schemas"]["ProductMediaFileCreate"]["service"]> = ["product_media"];
 export const productMediaFileReadServiceValues: ReadonlyArray<components["schemas"]["ProductMediaFileRead"]["service"]> = ["product_media"];
@@ -25287,17 +25954,18 @@ export const propertyAggregationFuncValues: ReadonlyArray<components["schemas"][
 export const refundReasonValues: ReadonlyArray<components["schemas"]["RefundReason"]> = ["duplicate", "fraudulent", "customer_request", "service_disruption", "satisfaction_guarantee", "other"];
 export const refundSortPropertyValues: ReadonlyArray<components["schemas"]["RefundSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const refundStatusValues: ReadonlyArray<components["schemas"]["RefundStatus"]> = ["pending", "succeeded", "failed", "canceled"];
-export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "transactions:read", "transactions:write", "payouts:read", "payouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notifications:read", "notifications:write", "notification_recipients:read", "notification_recipients:write"];
+export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "web:read", "web:write", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "transactions:read", "transactions:write", "payouts:read", "payouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notifications:read", "notifications:write", "notification_recipients:read", "notification_recipients:write"];
 export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "denied", "active"];
 export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];
 export const subscriptionProrationBehaviorValues: ReadonlyArray<components["schemas"]["SubscriptionProrationBehavior"]> = ["invoice", "prorate"];
-export const subscriptionRecurringIntervalValues: ReadonlyArray<components["schemas"]["SubscriptionRecurringInterval"]> = ["month", "year"];
+export const subscriptionRecurringIntervalValues: ReadonlyArray<components["schemas"]["SubscriptionRecurringInterval"]> = ["day", "week", "month", "year"];
 export const subscriptionSortPropertyValues: ReadonlyArray<components["schemas"]["SubscriptionSortProperty"]> = ["customer", "-customer", "status", "-status", "started_at", "-started_at", "current_period_end", "-current_period_end", "amount", "-amount", "product", "-product", "discount", "-discount"];
 export const subscriptionStatusValues: ReadonlyArray<components["schemas"]["SubscriptionStatus"]> = ["incomplete", "incomplete_expired", "trialing", "active", "past_due", "canceled", "unpaid"];
 export const taxIDFormatValues: ReadonlyArray<components["schemas"]["TaxIDFormat"]> = ["ad_nrt", "ae_trn", "ar_cuit", "au_abn", "au_arn", "bg_uic", "bh_vat", "bo_tin", "br_cnpj", "br_cpf", "ca_bn", "ca_gst_hst", "ca_pst_bc", "ca_pst_mb", "ca_pst_sk", "ca_qst", "ch_uid", "ch_vat", "cl_tin", "cn_tin", "co_nit", "cr_tin", "de_stn", "do_rcn", "ec_ruc", "eg_tin", "es_cif", "eu_oss_vat", "eu_vat", "gb_vat", "ge_vat", "hk_br", "hr_oib", "hu_tin", "id_npwp", "il_vat", "in_gst", "is_vat", "jp_cn", "jp_rn", "jp_trn", "ke_pin", "kr_brn", "kz_bin", "li_uid", "mx_rfc", "my_frp", "my_itn", "my_sst", "ng_tin", "no_vat", "no_voec", "nz_gst", "om_vat", "pe_ruc", "ph_tin", "ro_tin", "rs_pib", "ru_inn", "ru_kpp", "sa_vat", "sg_gst", "sg_uen", "si_tin", "sv_nit", "th_vat", "tr_tin", "tw_vat", "ua_vat", "us_ein", "uy_ruc", "ve_rif", "vn_tin", "za_vat"];
 export const timeIntervalValues: ReadonlyArray<components["schemas"]["TimeInterval"]> = ["year", "month", "week", "day", "hour"];
 export const transactionSortPropertyValues: ReadonlyArray<components["schemas"]["TransactionSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const transactionTypeValues: ReadonlyArray<components["schemas"]["TransactionType"]> = ["payment", "processor_fee", "refund", "refund_reversal", "dispute", "dispute_reversal", "balance", "payout"];
+export const uniqueAggregationFuncValues: ReadonlyArray<components["schemas"]["UniqueAggregation"]["func"]> = ["unique"];
 export const userEventSourceValues: ReadonlyArray<components["schemas"]["UserEvent"]["source"]> = ["user"];
 export const userSignupAttributionIntentValues: ReadonlyArray<components["schemas"]["UserSignupAttribution"]["intent"]> = ["creator", "pledge", "purchase", "subscription", "newsletter_subscription"];
 export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "customer.created", "customer.updated", "customer.deleted", "customer.state_changed", "order.created", "order.updated", "order.paid", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.cycled", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated"];

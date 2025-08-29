@@ -82,6 +82,7 @@ For example, if you want to count the number of events that match the filter, yo
 - **Average** — Computes the average value of a property.
 - **Minimum** — Computes the minimum value of a property.
 - **Maximum** — Computes the maximum value of a property.
+- **Unique** — Counts the number of unique values of a property.
 
 <AccordionGroup>
   <Accordion title="Example">
@@ -110,17 +111,25 @@ Consider the following events:
     "metadata": {
       "total_tokens": 30
     }
+  },
+  {
+    "name": "ai_usage",
+    "external_customer_id": "cus_123",
+    "metadata": {
+      "total_tokens": 30
+    }
   }
 ]
 ```
 
 Here is the result of each aggregation function, over the `total_tokens` metadata property:
 
-- **Count**: 3 units
-- **Sum**: 60 units
-- **Average**: 20 units
+- **Count**: 4 units
+- **Sum**: 90 units
+- **Average**: 22.5 units
 - **Minimum**: 10 units
 - **Maximum**: 30 units
+- **Unique**: 3 units
 
 </Accordion>
 </AccordionGroup>
@@ -148,9 +157,13 @@ The following Meter Filter & Aggregation will match events that have the name `o
 
 A few things to keep in mind when creating and managing meters:
 
+### Renaming a Meter
+
+Until https://github.com/polarsource/polar/issues/6490 is resolved, please [contact support](/support) to help you with renaming the meter.
+
 ### Updating a Meter
 
-You may update a meter's filters or aggregation function as long as the meter doesn't have any processed events.
+You may update a meter's filters or aggregation function as long as the meter doesn't have any processed events or does not have any customer purchase associated with it.
 
 ### Deleting a Meter
 

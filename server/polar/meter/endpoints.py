@@ -18,9 +18,7 @@ from .schemas import Meter as MeterSchema
 from .schemas import MeterCreate, MeterID, MeterQuantities, MeterUpdate
 from .service import meter as meter_service
 
-router = APIRouter(
-    prefix="/meters", tags=["meters", APITag.documented, APITag.featured]
-)
+router = APIRouter(prefix="/meters", tags=["meters", APITag.public])
 
 
 MeterNotFound = {

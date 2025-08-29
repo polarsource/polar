@@ -24,7 +24,7 @@ from .schemas import (
 )
 from .service import file as file_service
 
-router = APIRouter(prefix="/files", tags=["files", APITag.documented])
+router = APIRouter(prefix="/files", tags=["files", APITag.public])
 
 FileID = Annotated[UUID4, Path(description="The file ID.")]
 FileNotFound = {"description": "File not found.", "model": ResourceNotFound.schema()}

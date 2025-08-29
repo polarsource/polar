@@ -4,6 +4,7 @@ import { Hero } from '@/components/Landing/Hero/Hero'
 import { MerchantOfRecord } from '@/components/Landing/MOR'
 import { Testimonials } from '@/components/Landing/Testimonials'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Adapters } from './Adapters'
 import { Benefits } from './Benefits'
@@ -27,8 +28,8 @@ export default function Page() {
 export const PageContent = () => {
   return (
     <>
-      <Section className="flex flex-col gap-y-24 pt-0 md:pt-0">
-        <Hero className="relative z-10" />
+      <Section className="flex flex-col gap-y-32 pt-0 md:pt-0">
+        <Hero />
         <Features />
         <Adapters />
         <SDKs />
@@ -48,8 +49,12 @@ export const PageContent = () => {
           <div className="flex flex-col items-center gap-y-4">
             <Avatar
               name="Guillermo Rauch"
-              className="h-16 w-16"
               avatar_url="/assets/landing/testamonials/rauch.jpg"
+              className="h-16 w-16"
+              width={64}
+              height={64}
+              loading="lazy"
+              CustomImageComponent={Image}
             />
             <div className="flex flex-col">
               <span className="">Guillermo Rauch</span>

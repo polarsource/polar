@@ -1,3 +1,4 @@
+import { Toaster } from '@/components/Toast/Toaster'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -53,6 +54,7 @@ export default async function Layout({
         <Navigation organization={organization} themePreset={themePreset} />
         <div className="flex w-full flex-col md:py-12">{children}</div>
       </div>
+      <Toaster />
     </div>
   )
 }

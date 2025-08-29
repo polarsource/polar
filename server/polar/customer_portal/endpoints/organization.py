@@ -12,7 +12,7 @@ from ..service.organization import (
     customer_organization as customer_organization_service,
 )
 
-router = APIRouter(prefix="/organizations", tags=["organizations", APITag.documented])
+router = APIRouter(prefix="/organizations", tags=["organizations", APITag.public])
 
 OrganizationSlug = Annotated[str, Path(description="The organization slug.")]
 OrganizationNotFound = {

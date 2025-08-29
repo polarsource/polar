@@ -105,6 +105,8 @@ class User(RecordModel):
         ),
     )
 
+    is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)

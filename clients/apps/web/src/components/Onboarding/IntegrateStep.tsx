@@ -129,7 +129,7 @@ export const IntegrateStep = ({ product }: IntegrateStepProps) => {
 
   return (
     <div className="flex h-full flex-col md:flex-row">
-      <div className="flex h-full min-h-0 w-full flex-col gap-12 overflow-y-auto p-12 md:max-w-lg">
+      <div className="flex h-full min-h-0 w-full flex-col gap-8 overflow-y-auto p-12 md:max-w-lg">
         <div className="flex flex-col gap-y-12">
           <LogoIcon size={50} />
           <div className="flex flex-col gap-y-4">
@@ -139,18 +139,8 @@ export const IntegrateStep = ({ product }: IntegrateStepProps) => {
             </p>
           </div>
         </div>
-        <div className="flex flex-row gap-4">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div
-              key={index}
-              className={twMerge(
-                'dark:bg-polar-700 flex h-2 flex-1 rounded-full bg-gray-300',
-                index < 3 && 'bg-black dark:bg-white',
-              )}
-            />
-          ))}
-        </div>
-        <div className="hidden flex-col gap-y-6 md:flex">
+
+        <div className="hidden flex-col gap-y-8 md:flex">
           <div className="grid grid-cols-2 gap-4">
             {frameworks(product).map((framework) => (
               <FrameworkCard
@@ -161,37 +151,28 @@ export const IntegrateStep = ({ product }: IntegrateStepProps) => {
               />
             ))}
           </div>
-          <Link
-            href={`https://docs.polar.sh/integrate/sdk/adapters/nextjs`}
-            target="_blank"
-            className="w-full"
-          >
-            <Button size="lg" fullWidth variant="secondary">
-              <span>Explore All Adapters</span>
-              <ArrowOutwardOutlined className="ml-2" fontSize="small" />
-            </Button>
-          </Link>
+          <div className="flex flex-col gap-y-4">
+            <Link
+              href={`https://docs.polar.sh/integrate/sdk/adapters/nextjs`}
+              target="_blank"
+              className="w-full"
+            >
+              <Button size="lg" fullWidth variant="secondary">
+                <span>Explore All Adapters</span>
+                <ArrowOutwardOutlined className="ml-2" fontSize="small" />
+              </Button>
+            </Link>
+            <Link href={`/dashboard/${organization.slug}`} className="w-full">
+              <Button size="lg" fullWidth>
+                Go to Dashboard
+              </Button>
+            </Link>
+          </div>
         </div>
-        <Link href={`/dashboard/${organization.slug}`} className="w-full">
-          <Button size="lg" fullWidth>
-            Go to Dashboard
-          </Button>
-        </Link>
       </div>
       <SyntaxHighlighterProvider>
-        <div className="dark:bg-polar-800 hidden flex-1 flex-grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
+        <div className="dark:bg-polar-950 hidden flex-1 flex-grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
           <div className="dark:bg-polar-900 flex w-full max-w-3xl flex-col gap-y-12 rounded-3xl bg-white p-12">
-            <div className="flex flex-col items-center gap-y-6 text-center">
-              <LogoIcon size={40} />
-              <div className="flex flex-col gap-y-4">
-                <h1 className="text-3xl">Integrate Checkout</h1>
-                <p className="dark:text-polar-500 text-lg text-gray-500">
-                  Follow the instructions below to integrate Checkout into your
-                  application.
-                </p>
-              </div>
-            </div>
-
             <div className="flex flex-col gap-y-6">
               <h2 className="text-lg">1. Install Dependencies</h2>
               <CodeWrapper>

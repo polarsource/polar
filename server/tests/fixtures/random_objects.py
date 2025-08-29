@@ -4,7 +4,7 @@ import string
 import typing
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any, Literal, TypeAlias, Unpack
 
@@ -117,6 +117,11 @@ async def create_organization(
     save_fixture: SaveFixture, name_prefix: str = "testorg", **kwargs: Any
 ) -> Organization:
     name = rstr(name_prefix)
+    # Create organizations in the past so they are grandfathered for payment readiness
+    # unless created_at is explicitly provided
+    if "created_at" not in kwargs:
+        kwargs["created_at"] = datetime(2025, 7, 1, tzinfo=UTC)
+
     organization = Organization(
         name=name,
         slug=name,
@@ -796,6 +801,8 @@ async def create_order(
     invoice_number: str | None = None,
     checkout: Checkout | None = None,
     discount: Discount | None = None,
+    next_payment_attempt_at: datetime | None = None,
+    payment_lock_acquired_at: datetime | None = None,
 ) -> Order:
     order = Order(
         created_at=created_at or utc_now(),
@@ -826,6 +833,8 @@ async def create_order(
         discount=discount,
         custom_field_data=custom_field_data or {},
         user_metadata=user_metadata or {},
+        next_payment_attempt_at=next_payment_attempt_at,
+        payment_lock_acquired_at=payment_lock_acquired_at,
     )
     await save_fixture(order)
     return order
@@ -897,6 +906,7 @@ async def create_subscription(
     prices: Sequence[ProductPrice] | None = None,
     customer: Customer,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
+    tax_exempted: bool = False,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
     ends_at: datetime | None = None,
@@ -909,13 +919,18 @@ async def create_subscription(
     user_metadata: dict[str, Any] | None = None,
 ) -> Subscription:
     prices = prices or product.prices
-    now = datetime.now(UTC)
-    if not current_period_end:
-        current_period_end = now + timedelta(days=30)
 
     recurring_interval = product.recurring_interval
     if product.is_legacy_recurring_price:
         recurring_interval = product.prices[0].recurring_interval
+    if not recurring_interval:
+        recurring_interval = SubscriptionRecurringInterval.month
+
+    now = datetime.now(UTC)
+    if not current_period_start:
+        current_period_start = now
+    if not current_period_end:
+        current_period_end = recurring_interval.get_next_period(current_period_start)
 
     canceled_at = None
     if ends_at is None:
@@ -932,9 +947,8 @@ async def create_subscription(
         stripe_subscription_id=stripe_subscription_id,
         recurring_interval=recurring_interval,
         status=status,
-        current_period_start=(
-            now if current_period_start is None else current_period_start
-        ),
+        tax_exempted=tax_exempted,
+        current_period_start=current_period_start,
         current_period_end=current_period_end,
         cancel_at_period_end=cancel_at_period_end,
         canceled_at=canceled_at,
@@ -960,7 +974,7 @@ async def create_active_subscription(
     product: Product,
     prices: Sequence[ProductPrice] | None = None,
     customer: Customer,
-    organization: Organization | None = None,
+    tax_exempted: bool = False,
     discount: Discount | None = None,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
@@ -973,6 +987,7 @@ async def create_active_subscription(
         product=product,
         prices=prices,
         customer=customer,
+        tax_exempted=tax_exempted,
         discount=discount,
         status=SubscriptionStatus.active,
         started_at=started_at or utc_now(),

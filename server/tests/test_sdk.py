@@ -146,7 +146,7 @@ class TestSDK:
 
         response = await polar.subscriptions.update_async(
             id=str(subscription.id),
-            subscription_update={"cancel_at_period_end": True},  # type: ignore
+            subscription_update={"cancel_at_period_end": True},
         )
 
         assert response is not None
@@ -164,18 +164,14 @@ class TestSDK:
     ) -> None:
         response = await polar.checkouts.create_async(
             request={
-                "product_id": str(product.id),
-                # Test deprecated field for backward compatibility
-                # The current field is `external_customer_id`
-                "customer_external_id": "EXTERNAL_CUSTOMER_ID",
+                "products": [str(product.id)],
+                "external_customer_id": "EXTERNAL_CUSTOMER_ID",
             }
         )
         assert response is not None
 
         assert response.product_id == str(product.id)
-        # Test deprecated field for backward compatibility
-        # The current field is `external_customer_id`
-        assert response.customer_external_id == "EXTERNAL_CUSTOMER_ID"
+        assert response.external_customer_id == "EXTERNAL_CUSTOMER_ID"
 
     async def test_create_checkout_link(
         self,
@@ -193,4 +189,4 @@ class TestSDK:
         )
         assert response is not None
 
-        assert response.product_id == str(product.id)
+        assert len(response.products) == 1

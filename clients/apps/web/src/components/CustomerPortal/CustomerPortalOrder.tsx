@@ -2,15 +2,18 @@
 
 import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
 import { useCustomerBenefitGrants } from '@/hooks/queries'
+import { canRetryOrderPayment } from '@/utils/order'
 import { Client, schemas } from '@polar-sh/client'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import { DetailRow } from '../Shared/DetailRow'
+import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
 
 const statusColors = {
   paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
@@ -33,6 +36,8 @@ const CustomerPortalOrder = ({
   customerSessionToken: string
   themingPreset: ThemingPresetProps
 }) => {
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     order_id: order.id,
     limit: 100,
@@ -52,6 +57,18 @@ const CustomerPortalOrder = ({
             status={order.status.split('_').join(' ')}
             className={twMerge(statusColors[order.status], 'capitalize')}
           />
+
+          {/* Retry button */}
+          {canRetryOrderPayment(order) && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsPaymentModalOpen(true)}
+              className={twMerge(themingPreset?.polar.buttonSecondary)}
+            >
+              Update Payment Method
+            </Button>
+          )}
         </div>
 
         <div className="flex flex-col gap-8">
@@ -166,6 +183,15 @@ const CustomerPortalOrder = ({
           )}
         </div>
       </div>
+
+      {/* Payment Retry Modal */}
+      <OrderPaymentRetryModal
+        order={order}
+        api={api}
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        themingPreset={themingPreset}
+      />
     </div>
   )
 }

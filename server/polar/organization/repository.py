@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import Select, select
 
-from polar.auth.models import AuthSubject, User, is_organization, is_user
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -12,7 +12,9 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.repository.base import Options
-from polar.models import Organization, UserOrganization
+from polar.models import Account, Organization, User, UserOrganization
+from polar.models.organization_review import OrganizationReview
+from polar.postgres import AsyncSession
 
 from .sorting import OrganizationSortProperty
 
@@ -60,10 +62,16 @@ class OrganizationRepository(
         )
         return await self.get_all(statement)
 
-    async def get_all_by_account(self, account: UUID) -> Sequence[Organization]:
-        statement = self.get_base_statement().where(
-            Organization.account_id == account,
-            Organization.blocked_at.is_(None),
+    async def get_all_by_account(
+        self, account: UUID, *, options: Options = ()
+    ) -> Sequence[Organization]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Organization.account_id == account,
+                Organization.blocked_at.is_(None),
+            )
+            .options(*options)
         )
         return await self.get_all(statement)
 
@@ -97,3 +105,34 @@ class OrganizationRepository(
             )
 
         return statement
+
+    async def get_admin_user(
+        self, session: AsyncSession, organization: Organization
+    ) -> User | None:
+        """Get the admin user of the organization from the associated account."""
+        if not organization.account_id:
+            return None
+
+        statement = (
+            select(User)
+            .join(Account, Account.admin_id == User.id)
+            .where(
+                Account.id == organization.account_id,
+                User.deleted_at.is_(None),
+            )
+        )
+        result = await session.execute(statement)
+        return result.unique().scalar_one_or_none()
+
+
+class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):
+    model = OrganizationReview
+
+    async def get_by_organization(
+        self, organization_id: UUID
+    ) -> OrganizationReview | None:
+        statement = self.get_base_statement().where(
+            OrganizationReview.organization_id == organization_id,
+            OrganizationReview.deleted_at.is_(None),
+        )
+        return await self.get_one_or_none(statement)

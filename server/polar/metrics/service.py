@@ -30,6 +30,7 @@ class MetricsService:
         product_id: Sequence[uuid.UUID] | None = None,
         billing_type: Sequence[ProductBillingType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
+        now: datetime | None = None,
     ) -> MetricsResponse:
         await session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
         start_timestamp = datetime(
@@ -50,6 +51,7 @@ class MetricsService:
                 interval,
                 auth_subject,
                 METRICS,
+                now or datetime.now(tz=timezone),
                 organization_id=organization_id,
                 product_id=product_id,
                 billing_type=billing_type,

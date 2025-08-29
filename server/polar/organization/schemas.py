@@ -29,9 +29,13 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.organization import (
+    Organization as OrganizationModel,
+)
+from polar.models.organization import (
     OrganizationNotificationSettings,
     OrganizationSubscriptionSettings,
 )
+from polar.models.organization_review import OrganizationReview
 
 OrganizationID = Annotated[
     UUID4,
@@ -69,14 +73,14 @@ class OrganizationDetails(Schema):
         ..., description="Main customer acquisition channels."
     )
     future_annual_revenue: int = Field(
-        ..., description="Estimated revenue in the next 12 months"
+        ..., ge=0, description="Estimated revenue in the next 12 months"
     )
     switching: bool = Field(True, description="Switching from another platform?")
     switching_from: (
         Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
     ) = Field(None, description="Which platform the organization is migrating from.")
     previous_annual_revenue: int = Field(
-        0, description="Revenue from last year if applicable."
+        0, ge=0, description="Revenue from last year if applicable."
     )
 
 
@@ -179,6 +183,7 @@ class Organization(IDSchema, TimestampedSchema):
     socials: list[OrganizationSocialLink] = Field(
         description="Links to social profiles.",
     )
+    status: OrganizationModel.Status = Field(description="Current organization status")
     details_submitted_at: datetime | None = Field(
         description="When the business details were submitted.",
     )
@@ -291,6 +296,23 @@ class CreditBalance(Schema):
     )
 
 
+class OrganizationPaymentStep(Schema):
+    id: str = Field(description="Step identifier")
+    title: str = Field(description="Step title")
+    description: str = Field(description="Step description")
+    completed: bool = Field(description="Whether the step is completed")
+
+
+class OrganizationPaymentStatus(Schema):
+    payment_ready: bool = Field(
+        description="Whether the organization is ready to accept payments"
+    )
+    steps: list[OrganizationPaymentStep] = Field(description="List of onboarding steps")
+    organization_status: OrganizationModel.Status = Field(
+        description="Current organization status"
+    )
+
+
 # Internal model
 class RepositoryBadgeSettingsUpdate(Schema):
     id: UUID4
@@ -327,3 +349,49 @@ class OrganizationBadgeSettingsRead(Schema):
     minimum_amount: int
     message: str | None
     repositories: Sequence[RepositoryBadgeSettingsRead]
+
+
+class OrganizationValidationResult(Schema):
+    reason: str = Field(
+        ...,
+        description="A 1 or 3 line explanation of the verdict and the reasoning behind it. The reason will be shown to our customer.",
+    )
+    verdict: Literal["PASS", "FAIL", "UNCERTAIN"] = Field(
+        ..., description="PASS | FAIL | UNCERTAIN - indicates compliance status."
+    )
+    timed_out: bool = Field(
+        default=False, description="Whether the validation timed out"
+    )
+
+
+class OrganizationAppealRequest(Schema):
+    reason: Annotated[
+        str,
+        StringConstraints(min_length=50, max_length=5000),
+        Field(
+            description="Detailed explanation of why this organization should be approved. Minimum 50 characters."
+        ),
+    ]
+
+
+class OrganizationAppealResponse(Schema):
+    success: bool = Field(description="Whether the appeal was successfully submitted")
+    message: str = Field(description="Success or error message")
+    appeal_submitted_at: datetime = Field(description="When the appeal was submitted")
+
+
+class OrganizationReviewStatus(Schema):
+    verdict: Literal["PASS", "FAIL", "UNCERTAIN"] | None = Field(
+        default=None, description="AI validation verdict"
+    )
+    reason: str | None = Field(default=None, description="Reason for the verdict")
+    appeal_submitted_at: datetime | None = Field(
+        default=None, description="When appeal was submitted"
+    )
+    appeal_reason: str | None = Field(default=None, description="Reason for the appeal")
+    appeal_decision: OrganizationReview.AppealDecision | None = Field(
+        default=None, description="Decision on the appeal (approved/rejected)"
+    )
+    appeal_reviewed_at: datetime | None = Field(
+        default=None, description="When appeal was reviewed"
+    )

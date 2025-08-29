@@ -9,11 +9,13 @@ import WithdrawModal from './WithdrawModal'
 
 interface AccountBalanceProps {
   account: schemas['Account']
+  organization: schemas['Organization']
   onWithdrawSuccess?: (payoutId: string) => void
 }
 
 const AccountBalance: React.FC<AccountBalanceProps> = ({
   account,
+  organization,
   onWithdrawSuccess: _onWithdrawSuccess,
 }) => {
   const {
@@ -22,7 +24,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     isLoading,
   } = useTransactionsSummary(account.id)
   const canWithdraw =
-    account.status === 'active' &&
+    organization.status === 'active' &&
     summary?.balance?.amount &&
     summary.balance.amount > 1000
 

@@ -124,12 +124,22 @@ class ResourceAlreadyExists(PolarError):
         super().__init__(message, status_code)
 
 
+class PaymentNotReady(PolarError):
+    def __init__(
+        self,
+        message: str = "Organization is not ready to accept payments",
+        status_code: int = 403,
+    ) -> None:
+        super().__init__(message, status_code)
+
+
 class ValidationError(TypedDict):
     loc: tuple[int | str, ...]
     msg: LiteralString
     type: LiteralString
     input: Any
     ctx: NotRequired[dict[str, Any]]
+    url: NotRequired[str]
 
 
 class PolarRequestValidationError(PolarError):

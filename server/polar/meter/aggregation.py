@@ -5,6 +5,7 @@ from pydantic import AfterValidator, BaseModel, Discriminator, TypeAdapter
 from sqlalchemy import (
     ColumnExpressionArgument,
     Dialect,
+    Float,
     TypeDecorator,
     false,
     func,
@@ -19,6 +20,7 @@ class AggregationFunction(StrEnum):
     max = "max"
     min = "min"
     avg = "avg"
+    unique = "unique"
 
 
 class CountAggregation(BaseModel):
@@ -48,18 +50,19 @@ class PropertyAggregation(BaseModel):
     def get_sql_column(self, model: type[Any]) -> Any:
         if self.property in model._filterable_fields:
             _, attr = model._filterable_fields[self.property]
+            attr = func.cast(attr, Float)
+        else:
+            attr = model.user_metadata[self.property].as_float()
 
-        attr = model.user_metadata[self.property].as_float()
-
-        if self.func == AggregationFunction.sum:
-            return func.sum(attr)
-        elif self.func == AggregationFunction.max:
-            return func.max(attr)
-        elif self.func == AggregationFunction.min:
-            return func.min(attr)
-        elif self.func == AggregationFunction.avg:
-            return func.avg(attr)
-        raise ValueError(f"Unsupported aggregation function: {self.func}")
+        match self.func:
+            case AggregationFunction.sum:
+                return func.sum(attr)
+            case AggregationFunction.max:
+                return func.max(attr)
+            case AggregationFunction.min:
+                return func.min(attr)
+            case AggregationFunction.avg:
+                return func.avg(attr)
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         if self.property in model._filterable_fields:
@@ -69,7 +72,19 @@ class PropertyAggregation(BaseModel):
         return func.jsonb_typeof(model.user_metadata[self.property]) == "number"
 
 
-_Aggregation = CountAggregation | PropertyAggregation
+class UniqueAggregation(BaseModel):
+    func: Literal[AggregationFunction.unique] = AggregationFunction.unique
+    property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
+
+    def get_sql_column(self, model: type[Any]) -> Any:
+        attr = model.user_metadata[self.property]
+        return func.count(func.distinct(attr))
+
+    def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
+        return true()
+
+
+_Aggregation = CountAggregation | PropertyAggregation | UniqueAggregation
 Aggregation = Annotated[_Aggregation, Discriminator("func")]
 AggregationTypeAdapter: TypeAdapter[Aggregation] = TypeAdapter(Aggregation)
 

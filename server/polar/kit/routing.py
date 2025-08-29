@@ -1,7 +1,7 @@
 import functools
 import inspect
 from collections.abc import Callable
-from typing import Any, ParamSpec, TypeVar
+from typing import Any
 
 from fastapi import APIRouter as _APIRouter
 from fastapi.routing import APIRoute
@@ -57,7 +57,7 @@ class IncludedInSchemaAPIRoute(APIRoute):
         if self.include_in_schema:
             if APITag.private in tags:
                 self.include_in_schema = settings.is_development()
-            elif APITag.documented in tags:
+            elif APITag.public in tags:
                 self.include_in_schema = True
             else:
                 self.include_in_schema = False
@@ -89,7 +89,7 @@ class SpeakeasyIgnoreAPIRoute(APIRoute):
     def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
         super().__init__(path, endpoint, **kwargs)
         tags = self.tags
-        if APITag.documented not in tags:
+        if APITag.public not in tags:
             openapi_extra = self.openapi_extra or {}
             self.openapi_extra = {**openapi_extra, "x-speakeasy-ignore": True}
 
@@ -179,13 +179,9 @@ class SpeakeasyMCPAPIRoute(APIRoute):
         self.openapi_extra = openapi_extra
 
 
-_P = ParamSpec("_P")
-_T = TypeVar("_T")
-
-
-def _inherit_signature_from(
-    _to: Callable[_P, _T],
-) -> Callable[[Callable[..., _T]], Callable[_P, _T]]:
+def _inherit_signature_from[**P, T](
+    _to: Callable[P, T],
+) -> Callable[[Callable[..., T]], Callable[P, T]]:
     return lambda x: x  # pyright: ignore
 
 

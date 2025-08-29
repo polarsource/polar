@@ -1,5 +1,4 @@
-import math
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
@@ -27,17 +26,12 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from polar.config import settings
 from polar.kit.db.models import RecordModel
+from polar.kit.math import polar_round
 from polar.kit.metadata import MetadataMixin
-from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
     from . import DiscountProduct, DiscountRedemption, Organization, Product
-
-
-def get_expires_at() -> datetime:
-    return utc_now() + timedelta(seconds=settings.MAGIC_LINK_TTL_SECONDS)
 
 
 class DiscountType(StrEnum):
@@ -210,11 +204,7 @@ class DiscountPercentage(Discount):
 
     def get_discount_amount(self, amount: int) -> int:
         discount_amount_float = amount * (self.basis_points / 10_000)
-        return (
-            math.ceil(discount_amount_float)
-            if discount_amount_float - int(discount_amount_float) >= 0.5
-            else math.floor(discount_amount_float)
-        )
+        return polar_round(discount_amount_float)
 
     def get_stripe_coupon_params(self) -> stripe_lib.Coupon.CreateParams:
         params = super().get_stripe_coupon_params()

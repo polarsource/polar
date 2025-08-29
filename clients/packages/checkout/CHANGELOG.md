@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.1.12
+
+### Patch Changes
+
+- 4d49e8f: Fix console error when the iframe is already closed
+
 ## 0.1.11
 
 ### Patch Changes

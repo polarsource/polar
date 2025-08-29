@@ -3,6 +3,7 @@ import uuid
 import sentry_sdk
 import stripe as stripe_lib
 
+from polar.enums import AccountType
 from polar.exceptions import PolarTaskError
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
@@ -30,6 +31,9 @@ async def payout_created(payout_id: uuid.UUID) -> None:
         )
         if payout is None:
             raise PayoutDoesNotExist(payout_id)
+
+        if payout.processor == AccountType.stripe:
+            await payout_service.transfer_stripe(session, payout)
 
 
 @actor(

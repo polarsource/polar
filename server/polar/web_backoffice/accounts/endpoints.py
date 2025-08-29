@@ -68,46 +68,6 @@ class IdentityVerificationStatusDescriptionListItem(
         return None
 
 
-@router.api_route("/{id}/delete", name="accounts:delete", methods=["GET", "POST"])
-async def delete(
-    request: Request,
-    id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    repository = AccountRepository.from_session(session)
-    account = await repository.get_by_id(id)
-
-    if account is None:
-        raise HTTPException(status_code=404)
-
-    if request.method == "POST":
-        await account_service.delete(session, account)
-        await add_toast(
-            request,
-            f"Account with ID {account.id} has been deleted",
-            "success",
-        )
-
-        return
-
-    with modal(f"Delete account {account.id}", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p():
-                text("Are you sure you want to delete this account? ")
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
-                with tag.form(method="dialog"):
-                    with button(
-                        type="button",
-                        variant="primary",
-                        hx_post=str(request.url),
-                        hx_target="#modal",
-                    ):
-                        text("Delete")
-
-
 @router.api_route(
     "/{id}/delete-stripe", name="accounts:delete-stripe", methods=["GET", "POST"]
 )
@@ -137,10 +97,11 @@ async def delete_stripe(
             )
             return
 
-        await stripe.delete_account(account.stripe_id)
+        await account_service.delete_stripe_account(session, account)
+
         await add_toast(
             request,
-            f"Stripe Connect account with ID {account.stripe_id} has been deleted",
+            f"Stripe Connect account with ID {stripe_account_id} has been deleted",
             "success",
         )
 

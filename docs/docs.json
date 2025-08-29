@@ -173,7 +173,7 @@
         "groups": [
           {
             "group": "General",
-            "pages": ["api-reference/rate-limits"]
+            "pages": ["api-reference/introduction"]
           },
           {
             "group": "Core API",
@@ -313,7 +313,10 @@
                   "api-reference/license-keys/get",
                   "api-reference/license-keys/list",
                   "api-reference/license-keys/update",
-                  "api-reference/license-keys/get-activation"
+                  "api-reference/license-keys/get-activation",
+                  "api-reference/license-keys/validate",
+                  "api-reference/license-keys/activate",
+                  "api-reference/license-keys/deactivate"
                 ]
               },
               {

@@ -2,7 +2,7 @@ from typing import Any, Literal
 
 import pytest
 
-from polar.auth.models import Anonymous, AuthMethod, AuthSubject, Subject
+from polar.auth.models import Anonymous, AuthSubject, Subject
 from polar.auth.scope import Scope
 from polar.models import Customer, Organization, User
 
@@ -21,23 +21,16 @@ class AuthSubjectFixture:
             "organization_blocked",
             "customer",
         ] = "user",
-        scopes: set[Scope] = {Scope.web_default},
-        method: AuthMethod = AuthMethod.COOKIE,
+        scopes: set[Scope] = {Scope.web_read, Scope.web_write},
     ):
         self.subject = subject
         self.scopes = scopes
-        self.method = method
 
     def __repr__(self) -> str:
         scopes = (
             "{" + ", ".join(repr(scope.value) for scope in sorted(self.scopes)) + "}"
         )
-        return (
-            "AuthSubjectFixture("
-            f"subject={self.subject!r}, "
-            f"scopes={scopes}, "
-            f"method={self.method})"
-        )
+        return f"AuthSubjectFixture(subject={self.subject!r}, scopes={scopes})"
 
 
 CUSTOMER_AUTH_SUBJECT = AuthSubjectFixture(
@@ -76,9 +69,7 @@ def auth_subject(
         "customer": customer,
     }
     return AuthSubject(
-        subjects_map[auth_subject_fixture.subject],
-        auth_subject_fixture.scopes,
-        auth_subject_fixture.method,
+        subjects_map[auth_subject_fixture.subject], auth_subject_fixture.scopes, None
     )
 
 

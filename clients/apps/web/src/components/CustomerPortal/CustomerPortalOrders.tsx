@@ -4,6 +4,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -25,8 +26,10 @@ export const CustomerPortalOrders = ({
 }: CustomerPortalOrdersProps) => {
   const api = createClientSideAPI(customerSessionToken)
 
+  const theme = useTheme()
   const themingPreset = useThemePreset(
     organization.slug === 'midday' ? 'midday' : 'polar',
+    theme.resolvedTheme as 'light' | 'dark',
   )
 
   const [selectedOrder, setSelectedOrder] = useState<
@@ -78,36 +81,40 @@ export const CustomerPortalOrders = ({
           {
             accessorKey: 'id',
             header: '',
-            cell: ({ row }) => (
-              <span className="flex justify-end">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setSelectedOrder(row.original)
-                    showOrderModal()
-                  }}
-                  className={twMerge(
-                    'hidden md:flex',
-                    themingPreset.polar.buttonSecondary,
-                  )}
-                  size="sm"
-                >
-                  View Order
-                </Button>
-                <Link
-                  className="md:hidden"
-                  href={`/${organization.slug}/portal/orders/${row.original.id}?customer_session_token=${customerSessionToken}`}
-                >
+            cell: ({ row }) => {
+              const order = row.original
+
+              return (
+                <span className="flex justify-end gap-2">
                   <Button
                     variant="secondary"
+                    onClick={() => {
+                      setSelectedOrder(order)
+                      showOrderModal()
+                    }}
+                    className={twMerge(
+                      'hidden md:flex',
+                      themingPreset.polar.buttonSecondary,
+                    )}
                     size="sm"
-                    className={twMerge(themingPreset.polar.buttonSecondary)}
                   >
                     View Order
                   </Button>
-                </Link>
-              </span>
-            ),
+                  <Link
+                    className="md:hidden"
+                    href={`/${organization.slug}/portal/orders/${order.id}?customer_session_token=${customerSessionToken}`}
+                  >
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className={twMerge(themingPreset.polar.buttonSecondary)}
+                    >
+                      View Order
+                    </Button>
+                  </Link>
+                </span>
+              )
+            },
           },
         ]}
       />

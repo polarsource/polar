@@ -103,7 +103,12 @@ export const useOrganizationAccount = (id?: string) =>
           params: { path: { id: id ?? '' } },
         }),
       ),
-    retry: defaultRetry,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 403 || error?.response?.status === 404) {
+        return false
+      }
+      return defaultRetry(failureCount, error)
+    },
     enabled: !!id,
   })
 
@@ -200,3 +205,56 @@ export const useDeleteOrganizationAccessToken = () =>
       })
     },
   })
+
+export const useOrganizationPaymentStatus = (
+  id: string,
+  enabled: boolean = true,
+  accountVerificationOnly: boolean = false,
+) =>
+  useQuery({
+    queryKey: ['organizations', 'payment-status', id, accountVerificationOnly],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/payment-status', {
+          params: { 
+            path: { id },
+            query: accountVerificationOnly ? { account_verification_only: true } : {}
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!id,
+  })
+
+export const useOrganizationAIValidation = (id: string) =>
+  useMutation({
+    mutationFn: () => {
+      return api.POST('/v1/organizations/{id}/ai-validation', {
+        params: { path: { id } },
+      })
+    },
+    retry: defaultRetry,
+  })
+
+export const useOrganizationAppeal = (id: string) =>
+  useMutation({
+    mutationFn: ({ reason }: { reason: string }) => {
+      return api.POST('/v1/organizations/{id}/appeal', {
+        params: { path: { id } },
+        body: { reason },
+      })
+    },
+    retry: defaultRetry,
+  })
+
+export const useOrganizationReviewStatus = (id: string, enabled: boolean = true) =>
+  useQuery({
+    queryKey: ['organizationReviewStatus', id],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/review-status', { params: { path: { id } } }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!id,
+  })
+

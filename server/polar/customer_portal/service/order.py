@@ -7,6 +7,7 @@ from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject
+from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.db.postgres import AsyncSession
@@ -18,7 +19,11 @@ from polar.order.service import InvoiceDoesNotExist
 from polar.order.service import order as order_service
 
 from ..repository.order import CustomerOrderRepository
-from ..schemas.order import CustomerOrderInvoice, CustomerOrderUpdate
+from ..schemas.order import (
+    CustomerOrderInvoice,
+    CustomerOrderPaymentConfirmation,
+    CustomerOrderUpdate,
+)
 
 
 class CustomerOrderError(PolarError): ...
@@ -29,6 +34,20 @@ class InvoiceNotAvailable(CustomerOrderError):
         self.order = order
         message = "The invoice is not available for this order."
         super().__init__(message, 404)
+
+
+class OrderNotEligibleForRetry(CustomerOrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = "Order is not eligible for payment retry."
+        super().__init__(message, 422)
+
+
+class PaymentAlreadyInProgress(CustomerOrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = "Payment for order is already in progress."
+        super().__init__(message, 409)
 
 
 class CustomerOrderSortProperty(StrEnum):
@@ -131,6 +150,18 @@ class CustomerOrderService:
 
         url, _ = await invoice_service.get_order_invoice_url(order)
         return CustomerOrderInvoice(url=url)
+
+    async def confirm_retry_payment(
+        self,
+        session: AsyncSession,
+        order: Order,
+        confirmation_token_id: str | None,
+        payment_processor: PaymentProcessor,
+        payment_method_id: uuid.UUID | None = None,
+    ) -> CustomerOrderPaymentConfirmation:
+        return await order_service.process_retry_payment(
+            session, order, confirmation_token_id, payment_processor, payment_method_id
+        )
 
 
 customer_order = CustomerOrderService()

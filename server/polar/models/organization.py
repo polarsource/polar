@@ -1,10 +1,12 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
+    CheckConstraint,
     ColumnElement,
     ForeignKey,
     Integer,
@@ -18,11 +20,13 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior
-from polar.kit.db.models import RecordModel
+from polar.kit.db.models import RateLimitGroupMixin, RecordModel
+from polar.kit.extensions.sqlalchemy import StringEnum
 
 from .account import Account
 
 if TYPE_CHECKING:
+    from .organization_review import OrganizationReview
     from .product import Product
 
 
@@ -66,9 +70,30 @@ _default_subscription_settings: OrganizationSubscriptionSettings = {
 }
 
 
-class Organization(RecordModel):
+class Organization(RateLimitGroupMixin, RecordModel):
+    class Status(StrEnum):
+        CREATED = "created"
+        ONBOARDING_STARTED = "onboarding_started"
+        UNDER_REVIEW = "under_review"
+        DENIED = "denied"
+        ACTIVE = "active"
+
+        def get_display_name(self) -> str:
+            return {
+                Organization.Status.CREATED: "Created",
+                Organization.Status.ONBOARDING_STARTED: "Onboarding Started",
+                Organization.Status.UNDER_REVIEW: "Under Review",
+                Organization.Status.DENIED: "Denied",
+                Organization.Status.ACTIVE: "Active",
+            }[self]
+
     __tablename__ = "organizations"
-    __table_args__ = (UniqueConstraint("slug"),)
+    __table_args__ = (
+        UniqueConstraint("slug"),
+        CheckConstraint(
+            "next_review_threshold >= 0", name="next_review_threshold_positive"
+        ),
+    )
 
     name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     slug: Mapped[str] = mapped_column(CITEXT, nullable=False, unique=True)
@@ -93,6 +118,14 @@ class Organization(RecordModel):
 
     account_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("accounts.id", ondelete="set null"), nullable=True
+    )
+    status: Mapped[Status] = mapped_column(
+        StringEnum(Status),
+        nullable=False,
+        default=Status.CREATED,
+    )
+    next_review_threshold: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
     )
 
     @declared_attr
@@ -197,10 +230,26 @@ class Organization(RecordModel):
             viewonly=True,
         )
 
+    @declared_attr
+    def review(cls) -> Mapped["OrganizationReview | None"]:
+        return relationship(
+            "OrganizationReview",
+            lazy="raise",
+            back_populates="organization",
+            cascade="delete, delete-orphan",
+            uselist=False,  # This makes it a one-to-one relationship
+        )
+
     def is_blocked(self) -> bool:
         if self.blocked_at is not None:
             return True
         return False
+
+    def is_under_review(self) -> bool:
+        return self.status == Organization.Status.UNDER_REVIEW
+
+    def is_active(self) -> bool:
+        return self.status == Organization.Status.ACTIVE
 
     @property
     def statement_descriptor(self) -> str:

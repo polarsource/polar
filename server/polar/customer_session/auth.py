@@ -8,7 +8,10 @@ from polar.auth.scope import Scope
 from polar.models.organization import Organization
 
 _CustomerSessionWrite = Authenticator(
-    required_scopes={Scope.web_default, Scope.customer_sessions_write},
+    required_scopes={
+        Scope.web_write,
+        Scope.customer_sessions_write,
+    },
     allowed_subjects={User, Organization},
 )
 CustomerSessionWrite = Annotated[

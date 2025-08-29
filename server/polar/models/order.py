@@ -92,6 +92,8 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     refunded_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     refunded_tax_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
+    platform_fee_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
     billing_name: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )
@@ -121,6 +123,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     next_payment_attempt_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+    )
+
+    payment_lock_acquired_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     customer_id: Mapped[UUID] = mapped_column(
@@ -219,6 +225,15 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def _total_amount_expression(cls) -> ColumnElement[int]:
         return cls.net_amount + cls.tax_amount
 
+    @hybrid_property
+    def payout_amount(self) -> int:
+        return self.net_amount - self.platform_fee_amount - self.refunded_amount
+
+    @payout_amount.inplace.expression
+    @classmethod
+    def _payout_amount_expression(cls) -> ColumnElement[int]:
+        return cls.net_amount - cls.platform_fee_amount - cls.refunded_amount
+
     @property
     def taxed(self) -> int:
         return self.tax_amount > 0
@@ -235,7 +250,8 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def refundable_tax_amount(self) -> int:
         return self.tax_amount - self.refunded_tax_amount
 
-    def get_remaining_balance(self) -> int:
+    @property
+    def remaining_balance(self) -> int:
         return self.refundable_amount + self.refundable_tax_amount
 
     def update_refunds(self, refunded_amount: int, refunded_tax_amount: int) -> None:

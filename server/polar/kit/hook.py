@@ -1,11 +1,10 @@
 from collections.abc import Callable, Coroutine
-from typing import Any, Generic, TypeVar
+from typing import Any
 
-T = TypeVar("T")
-HookFunc = Callable[[T], Coroutine[Any, Any, Any]]
+type HookFunc[T] = Callable[[T], Coroutine[Any, Any, Any]]
 
 
-class Hook(Generic[T]):
+class Hook[T]:
     hooks: list[HookFunc[T]]
 
     def __init__(self) -> None:

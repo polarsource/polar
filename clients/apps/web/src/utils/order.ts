@@ -23,3 +23,16 @@ const _getOrderById = async (
 
 // Tell React to memoize it for the duration of the request
 export const getOrderById = cache(_getOrderById)
+
+/**
+ * Determines if an order is eligible for payment retry
+ */
+export const canRetryOrderPayment = (
+  order: schemas['CustomerOrder'],
+): boolean => {
+  return (
+    order.status === 'pending' &&
+    order.next_payment_attempt_at !== null &&
+    order.subscription !== null
+  )
+}

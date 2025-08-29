@@ -47,7 +47,8 @@ file_extension = ".exe" if os.name == "nt" else ""
 
 class Settings(BaseSettings):
     ENV: Environment = Environment.development
-    DEBUG: bool = False
+    SQLALCHEMY_DEBUG: bool = False
+    POSTHOG_DEBUG: bool = False
     LOG_LEVEL: str = "DEBUG"
     TESTING: bool = False
 
@@ -89,8 +90,9 @@ class Settings(BaseSettings):
     CUSTOMER_SESSION_CODE_TTL: timedelta = timedelta(minutes=30)
     CUSTOMER_SESSION_CODE_LENGTH: int = 6
 
-    # Magic link
-    MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
+    # Impersonation session
+    IMPERSONATION_COOKIE_KEY: str = "polar_original_session"
+    IMPERSONATION_INDICATOR_COOKIE_KEY: str = "polar_is_impersonating"
 
     # Login code
     LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
@@ -159,6 +161,10 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
+    # OpenAI
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "o4-mini-2025-04-16"
+
     # Stripe
     STRIPE_SECRET_KEY: str = ""
     STRIPE_PUBLISHABLE_KEY: str = ""
@@ -224,9 +230,7 @@ class Settings(BaseSettings):
         state="CA",
         country=CountryAlpha2("US"),
     )
-    INVOICES_ADDITIONAL_INFO: str | None = (
-        "[support@polar.sh](mailto:support@polar.sh)\n"
-    )
+    INVOICES_ADDITIONAL_INFO: str | None = "[support@polar.sh](mailto:support@polar.sh)"
     PAYOUT_INVOICES_PREFIX: str = "POLAR-"
 
     # Application behaviours

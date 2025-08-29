@@ -12,6 +12,7 @@ from polar.kit.repository import (
 )
 from polar.kit.utils import utc_now
 from polar.models import OrganizationAccessToken, UserOrganization
+from polar.postgres import sql
 
 
 class OrganizationAccessTokenRepository(
@@ -60,3 +61,16 @@ class OrganizationAccessTokenRepository(
             )
         )
         return statement
+
+    async def count_by_organization_id(
+        self,
+        organization_id: UUID,
+    ) -> int:
+        """Count active organization access tokens for an organization."""
+        count = await self.session.scalar(
+            sql.select(sql.func.count(OrganizationAccessToken.id)).where(
+                OrganizationAccessToken.organization_id == organization_id,
+                OrganizationAccessToken.deleted_at.is_(None),
+            )
+        )
+        return count or 0

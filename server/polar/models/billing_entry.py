@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, Index, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.types import Integer
 
@@ -28,6 +28,21 @@ class BillingEntryDirection(StrEnum):
 
 class BillingEntry(RecordModel):
     __tablename__ = "billing_entry"
+    __table_args__ = (
+        Index(
+            "ix_billing_entries_s_oi_pp",
+            "subscription_id",
+            "order_item_id",
+            "product_price_id",
+        ),
+        Index(
+            "ix_billing_entries_s_d_oi_pp",
+            "subscription_id",
+            "deleted_at",
+            "order_item_id",
+            "product_price_id",
+        ),
+    )
 
     start_timestamp: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, index=True
@@ -44,16 +59,25 @@ class BillingEntry(RecordModel):
         Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False, index=True
     )
     product_price_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("product_prices.id", ondelete="restrict"), nullable=False
+        Uuid,
+        ForeignKey("product_prices.id", ondelete="restrict"),
+        nullable=False,
+        index=True,
     )
     subscription_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("subscriptions.id", ondelete="cascade"), nullable=True
+        Uuid,
+        ForeignKey("subscriptions.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
     )
     event_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("events.id", ondelete="cascade"), nullable=False
     )
     order_item_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("order_items.id", ondelete="cascade"), nullable=True
+        Uuid,
+        ForeignKey("order_items.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
     )
 
     @declared_attr

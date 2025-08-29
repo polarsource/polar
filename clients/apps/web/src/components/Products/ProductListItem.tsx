@@ -5,7 +5,6 @@ import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import { toast } from '@/components/Toast/use-toast'
 import { useUpdateProduct } from '@/hooks/queries/products'
-import { markdownOptionsJustText } from '@/utils/markdown'
 import { hasLegacyRecurringPrices, isMeteredPrice } from '@/utils/product'
 import { MoreVertOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
@@ -17,7 +16,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import {
@@ -25,11 +23,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
-import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface ProductListItemProps {
   product: schemas['Product'] | schemas['CheckoutProduct']
@@ -94,18 +90,6 @@ export const ProductListItem = ({
         <ProductThumbnail product={product} />
         <div className="flex flex-col">
           <span className="truncate">{product.name}</span>
-          {product.description && (
-            <div
-              className={twMerge(
-                'prose dark:prose-invert dark:text-polar-500 hidden flex-shrink text-sm leading-normal text-gray-500 md:flex',
-                'w-full max-w-sm',
-              )}
-            >
-              <Markdown className="truncate" options={markdownOptionsJustText}>
-                {product.description}
-              </Markdown>
-            </div>
-          )}
         </div>
       </div>
       <div className="flex flex-row items-center gap-x-4 md:gap-x-6">
@@ -170,7 +154,6 @@ export const ProductListItem = ({
                 >
                   Copy Product ID
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
                 <DropdownMenuItem
                   onClick={handleContextMenuCallback(() => {
                     router.push(
@@ -180,7 +163,6 @@ export const ProductListItem = ({
                 >
                   Integrate Checkout
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
                 <DropdownMenuItem
                   onClick={handleContextMenuCallback(showModal)}
                 >

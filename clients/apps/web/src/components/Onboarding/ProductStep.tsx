@@ -3,7 +3,6 @@ import {
   useCreateProduct,
   useUpdateProductBenefits,
 } from '@/hooks/queries'
-import { useMeters } from '@/hooks/queries/meters'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
@@ -16,11 +15,12 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { memo, useCallback, useContext, useMemo, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
+import { FadeUp } from '../Animated/FadeUp'
 import LogoIcon from '../Brand/LogoIcon'
 import { CheckoutCard } from '../Checkout/CheckoutCard'
 import CheckoutProductInfo from '../Checkout/CheckoutProductInfo'
@@ -50,9 +50,6 @@ export const ProductStep = () => {
     () => benefits.data?.items ?? [],
     [benefits],
   )
-  const meters = useMeters(organization.id, {
-    sorting: ['name'],
-  })
 
   const form = useForm<ProductCreateForm>({
     defaultValues: {
@@ -147,86 +144,82 @@ export const ProductStep = () => {
 
   return (
     <Form {...form}>
-      <div className="flex h-full flex-col md:flex-row">
-        <div className="flex h-full min-h-0 w-full flex-col gap-12 overflow-y-auto p-12 md:max-w-lg">
-          <div className="flex flex-col gap-y-12">
+      <div className="dark:md:bg-polar-950 flex flex-col pt-16 md:items-center md:p-16">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          transition={{ duration: 1, staggerChildren: 0.3 }}
+          className="flex min-h-0 w-full flex-shrink-0 flex-col gap-12 md:max-w-xl md:p-8"
+        >
+          <FadeUp className="flex flex-col items-center gap-y-8">
             <LogoIcon size={50} />
             <div className="flex flex-col gap-y-4">
-              <h1 className="text-3xl">Your first product</h1>
-              <p className="dark:text-polar-400 text-lg text-gray-600">
+              <h1 className="text-center text-3xl">Your first product</h1>
+              <p className="dark:text-polar-400 text-center text-lg text-gray-600">
                 Setup your first digital product to get started.
               </p>
             </div>
-          </div>
-          <div className="flex flex-row gap-4">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div
-                key={index}
-                className={twMerge(
-                  'dark:bg-polar-700 flex h-2 flex-1 rounded-full bg-gray-300',
-                  index < 2 && 'bg-black dark:bg-white',
-                )}
-              />
-            ))}
-          </div>
-          <div className="flex flex-col">
+          </FadeUp>
+
+          <div className="flex flex-col md:gap-y-4">
             <form
               onSubmit={handleSubmit(onSubmit)}
-              className="flex flex-col gap-y-6 [&>div>*]:px-0 [&>div>*]:py-6 [&>div>:first-child]:pt-0"
+              className="flex flex-col gap-y-6 [&>div>*]:px-0 [&>div>:first-child]:pt-0"
             >
-              <div className="flex flex-col">
-                <ProductInfoSection compact />
-                <ProductMediaSection organization={organization} compact />
-                <ProductPricingSection organization={organization} compact />
+              <div className="flex flex-col md:gap-y-4">
+                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
+                  <ProductInfoSection compact />
+                </FadeUp>
+
+                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
+                  <ProductMediaSection
+                    className="py-0"
+                    organization={organization}
+                    compact
+                  />
+                </FadeUp>
+
+                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
+                  <ProductPricingSection
+                    className="py-0"
+                    organization={organization}
+                    compact
+                  />
+                </FadeUp>
               </div>
             </form>
-            <ProductBenefitsForm
-              className="px-0"
-              organization={organization}
-              organizationBenefits={organizationBenefits.filter(
-                (benefit) =>
-                  // Hide not selectable benefits unless they are already enabled
-                  benefit.selectable ||
-                  enabledBenefits.some((b) => b.id === benefit.id),
-              )}
-              benefits={enabledBenefits}
-              onSelectBenefit={onSelectBenefit}
-              onRemoveBenefit={onRemoveBenefit}
-            />
-            <div className="flex flex-row gap-x-4">
+            <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
+              <ProductBenefitsForm
+                className="px-0 py-0"
+                organization={organization}
+                organizationBenefits={organizationBenefits.filter(
+                  (benefit) =>
+                    // Hide not selectable benefits unless they are already enabled
+                    benefit.selectable ||
+                    enabledBenefits.some((b) => b.id === benefit.id),
+                )}
+                benefits={enabledBenefits}
+                onSelectBenefit={onSelectBenefit}
+                onRemoveBenefit={onRemoveBenefit}
+              />
+            </FadeUp>
+            <FadeUp className="flex flex-col gap-y-2 p-8 md:p-0">
               <Button
-                className="self-start"
                 onClick={() => handleSubmit(onSubmit)()}
                 disabled={!formState.isValid}
                 loading={createProduct.isPending}
+                size="lg"
               >
                 Create Product
               </Button>
               <Link href={`/dashboard/${organization.slug}`}>
-                <Button variant="secondary">Skip</Button>
+                <Button className="w-full" size="lg" variant="secondary">
+                  Skip
+                </Button>
               </Link>
-            </div>
+            </FadeUp>
           </div>
-        </div>
-        <div className="dark:bg-polar-800 hidden flex-1 flex-grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
-          <div className="dark:bg-polar-900 rounded-4xl flex w-full max-w-2xl flex-col gap-y-12 bg-gray-50 p-12">
-            <div className="flex flex-col items-center gap-y-6 text-center">
-              <LogoIcon size={40} />
-              <div className="flex flex-col gap-y-4">
-                <h1 className="text-3xl">Product Preview</h1>
-                <p className="dark:text-polar-500 text-lg text-gray-500">
-                  Product information will be shown on your checkout page.
-                </p>
-              </div>
-            </div>
-
-            <CheckoutPreview
-              enabledBenefitIds={enabledBenefitIds}
-              organizationBenefits={organizationBenefits}
-              meters={meters.data?.items ?? []}
-            />
-          </div>
-        </div>
+        </motion.div>
       </div>
     </Form>
   )
@@ -278,7 +271,7 @@ const CheckoutPreview = memo(
     const themePreset = useThemePreset('polar')
 
     return (
-      <ShadowBox className="dark:bg-polar-900 flex w-full flex-col gap-y-8 bg-white">
+      <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex w-full flex-col gap-y-8 border border-gray-200 bg-white">
         <CheckoutProductInfo
           organization={checkoutPreview.organization}
           product={checkoutPreview.product}

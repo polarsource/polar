@@ -1,7 +1,17 @@
-from enum import Enum, auto
+from functools import cached_property
 from typing import Generic, TypeGuard, TypeVar
 
-from polar.models import Customer, Organization, User
+from polar.enums import RateLimitGroup
+from polar.models import (
+    Customer,
+    CustomerSession,
+    OAuth2Token,
+    Organization,
+    OrganizationAccessToken,
+    PersonalAccessToken,
+    User,
+    UserSession,
+)
 
 from .scope import Scope
 
@@ -11,70 +21,101 @@ class Anonymous: ...
 
 Subject = User | Organization | Customer | Anonymous
 SubjectType = type[User] | type[Organization] | type[Customer] | type[Anonymous]
-
-
-class AuthMethod(Enum):
-    NONE = auto()
-    COOKIE = auto()
-    PERSONAL_ACCESS_TOKEN = auto()
-    ORGANIZATION_ACCESS_TOKEN = auto()
-    OAUTH2_ACCESS_TOKEN = auto()
-    CUSTOMER_SESSION_TOKEN = auto()
+Session = (
+    UserSession
+    | OrganizationAccessToken
+    | OAuth2Token
+    | PersonalAccessToken
+    | CustomerSession
+)
 
 
 S = TypeVar("S", bound=Subject, covariant=True)
 
 
-class AuthSubject(Generic[S]):
+class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it allows us to force covariant typing
     subject: S
     scopes: set[Scope]
-    method: AuthMethod
+    session: Session | None
 
-    def __init__(self, subject: S, scopes: set[Scope], method: AuthMethod) -> None:
+    def __init__(self, subject: S, scopes: set[Scope], session: Session | None) -> None:
         self.subject = subject
         self.scopes = scopes
-        self.method = method
+        self.session = session
 
-    def has_web_default_scope(self) -> bool:
-        return Scope.web_default in self.scopes
+    @cached_property
+    def rate_limit_key(self) -> tuple[str, RateLimitGroup]:
+        return self.rate_limit_user, self.rate_limit_group
+
+    @cached_property
+    def rate_limit_user(self) -> str:
+        if isinstance(self.session, OAuth2Token):
+            return f"oauth2_client:{self.session.client_id}"
+
+        match self.subject:
+            case User():
+                return f"user:{self.subject.id}"
+            case Organization():
+                return f"organization:{self.subject.id}"
+            case Customer():
+                return f"customer:{self.subject.id}"
+            case Anonymous():
+                return "anonymous"
+
+    @cached_property
+    def rate_limit_group(self) -> RateLimitGroup:
+        if isinstance(self.session, UserSession):
+            return RateLimitGroup.web
+
+        if isinstance(self.subject, Organization):
+            return self.subject.rate_limit_group
+
+        if isinstance(self.session, OAuth2Token):
+            return self.session.client.rate_limit_group
+
+        return RateLimitGroup.default
+
+    @cached_property
+    def log_context(self) -> dict[str, str]:
+        baggage: dict[str, str] = {
+            "subject_type": self.subject.__class__.__name__,
+            "rate_limit_group": self.rate_limit_group.value,
+            "rate_limit_user": self.rate_limit_user,
+        }
+        if isinstance(self.subject, User | Organization | Customer):
+            baggage["subject_id"] = str(self.subject.id)
+
+        if self.session:
+            baggage["session_type"] = self.session.__class__.__name__
+
+        return baggage
 
 
-def is_anonymous(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[Anonymous]]:
+def is_anonymous[S: Subject](
+    auth_subject: AuthSubject[S],
+) -> TypeGuard[AuthSubject[Anonymous]]:
     return isinstance(auth_subject.subject, Anonymous)
 
 
-def is_user(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[User]]:
+def is_user[S: Subject](auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[User]]:
     return isinstance(auth_subject.subject, User)
 
 
-def is_direct_user(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[User]]:
-    """
-    Whether we can trust this subject to be a user acting directly.
-
-    Useful when creating checkout sessions or subscriptions, where we need to
-    be sure we can tie it to the calling user (i.e., not being a creator with
-    a PAT).
-    """
-    return is_user(auth_subject) and auth_subject.method in {
-        AuthMethod.COOKIE,
-        AuthMethod.OAUTH2_ACCESS_TOKEN,
-    }
-
-
-def is_organization(
+def is_organization[S: Subject](
     auth_subject: AuthSubject[S],
 ) -> TypeGuard[AuthSubject[Organization]]:
     return isinstance(auth_subject.subject, Organization)
 
 
-def is_customer(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[Customer]]:
+def is_customer[S: Subject](
+    auth_subject: AuthSubject[S],
+) -> TypeGuard[AuthSubject[Customer]]:
     return isinstance(auth_subject.subject, Customer)
 
 
 __all__ = [
     "Subject",
     "SubjectType",
-    "AuthMethod",
     "AuthSubject",
     "is_anonymous",
     "is_user",

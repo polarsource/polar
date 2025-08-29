@@ -84,6 +84,13 @@ class CheckoutLinkRepository(
 
         return statement
 
+    async def count_by_organization_id(self, organization_id: UUID) -> int:
+        """Count checkout links for a specific organization."""
+        statement = self.get_base_statement().where(
+            CheckoutLink.organization_id == organization_id
+        )
+        return await self.count(statement)
+
     async def archive_product(self, product_id: UUID) -> None:
         statement = (
             self.get_base_statement()

@@ -9,7 +9,8 @@ from polar.models.organization import Organization
 
 _PaymentRead = Authenticator(
     required_scopes={
-        Scope.web_default,
+        Scope.web_read,
+        Scope.web_write,
         Scope.payments_read,
     },
     allowed_subjects={User, Organization},

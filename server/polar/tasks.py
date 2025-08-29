@@ -1,6 +1,6 @@
-from polar.account import tasks as account
 from polar.auth import tasks as auth
 from polar.benefit import tasks as benefit
+from polar.billing_entry import tasks as billing_entry
 from polar.checkout import tasks as checkout
 from polar.customer import tasks as customer
 from polar.customer_meter import tasks as customer_meter
@@ -11,7 +11,6 @@ from polar.event import tasks as event
 from polar.eventstream import tasks as eventstream
 from polar.integrations.loops import tasks as loops
 from polar.integrations.stripe import tasks as stripe
-from polar.magic_link import tasks as magic_link
 from polar.meter import tasks as meter
 from polar.notifications import tasks as notifications
 from polar.order import tasks as order
@@ -26,9 +25,9 @@ from polar.user import tasks as user
 from polar.webhook import tasks as webhook
 
 __all__ = [
-    "account",
     "auth",
     "benefit",
+    "billing_entry",
     "checkout",
     "customer",
     "customer_meter",
@@ -40,7 +39,6 @@ __all__ = [
     "loops",
     "meter",
     "stripe",
-    "magic_link",
     "order",
     "notifications",
     "organization",

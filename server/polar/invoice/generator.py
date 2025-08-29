@@ -5,7 +5,7 @@ from typing import Self
 import pycountry
 from babel.dates import format_date as _format_date
 from babel.numbers import format_currency as _format_currency
-from babel.numbers import format_number as _format_number
+from babel.numbers import format_decimal as _format_decimal
 from babel.numbers import format_percent as _format_percent
 from fontTools.misc.configTools import ClassVar
 from fpdf import FPDF
@@ -25,7 +25,7 @@ def format_currency(amount: int, currency: str) -> str:
 
 
 def format_number(n: int) -> str:
-    return _format_number(n, locale="en_US")
+    return _format_decimal(n, locale="en_US")
 
 
 def format_percent(basis_points: int) -> str:
@@ -301,6 +301,7 @@ class InvoiceGenerator(FPDF):
                 text=self.data.seller_additional_info,
                 markdown=True,
             )
+        left_seller_end_y = self.get_y()
 
         # Customer on right column
         self.set_xy(110, addresses_y_start)
@@ -331,9 +332,11 @@ class InvoiceGenerator(FPDF):
                 text=self.data.customer_additional_info,
                 markdown=True,
             )
+        right_seller_end_y = self.get_y()
+        bottom = max(left_seller_end_y, right_seller_end_y)
 
         # Add spacing before table
-        self.set_y(self.get_y() + self.elements_y_margin)
+        self.set_y(bottom + self.elements_y_margin)
 
         # Invoice items table
         self.set_draw_color(*self.table_borders_color)  # Light grey color for borders

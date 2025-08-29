@@ -30,19 +30,24 @@ class APITag(StrEnum):
     **Example**
 
         ```py
-        router = APIRouter(prefix="/products", tags=["products", APITag.featured])
+        router = APIRouter(prefix="/products", tags=["products", APITag.public])
         ```
     """
 
+    public = "public"
     private = "private"
-    documented = "documented"
-    featured = "featured"
     mcp = "mcp"
-    issue_funding = "issue_funding"
 
     @classmethod
     def metadata(cls) -> list[OpenAPITag]:
         return [
+            {
+                "name": cls.public,
+                "description": (
+                    "Endpoints shown and documented in the Polar API documentation "
+                    "and available in our SDKs."
+                ),
+            },
             {
                 "name": cls.private,
                 "description": (
@@ -51,27 +56,8 @@ class APITag(StrEnum):
                 ),
             },
             {
-                "name": cls.documented,
-                "description": (
-                    "Endpoints shown and documented in the Polar API documentation."
-                ),
-            },
-            {
-                "name": cls.featured,
-                "description": (
-                    "Endpoints featured in the Polar API documentation "
-                    "for their interest in common use-cases."
-                ),
-            },
-            {
                 "name": cls.mcp,
                 "description": "Endpoints enabled in the MCP server.",
-            },
-            {
-                "name": cls.issue_funding,
-                "description": (
-                    "Endpoints related to issue funding and rewards in the Polar API."
-                ),
             },
         ]
 

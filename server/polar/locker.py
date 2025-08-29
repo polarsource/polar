@@ -23,10 +23,6 @@ class LockerError(PolarError):
         super().__init__(message, status_code)
 
 
-class ExpiredLockError(LockerError):
-    pass
-
-
 class TimeoutLockError(LockerError):
     pass
 
@@ -61,8 +57,6 @@ class Locker:
             Defaults to 0.1 seconds.
 
         Raises:
-            ExpiredLockError: The lock reached its `timeout` lifetime before
-            we released it.
             TimeoutLockError: The lock could not be acquired within `blocking_timeout`
             limit.
         """
@@ -106,14 +100,14 @@ class Locker:
             finally:
                 try:
                     await lock.release()
-                except LockNotOwnedError as e:
-                    log.error(
-                        "could not release lock as it already expired",
+                except LockNotOwnedError:
+                    log.warning(
+                        "Already expired lock cannot be released",
                         name=name,
                         timeout=timeout,
                     )
-                    raise ExpiredLockError() from e
-                log.debug("released lock", name=name)
+                else:
+                    log.debug("released lock", name=name)
 
     async def is_locked(self, name: str) -> bool:
         """

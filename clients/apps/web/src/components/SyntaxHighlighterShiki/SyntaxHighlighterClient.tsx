@@ -6,14 +6,16 @@ import {
   Highlighter,
   ShikiError,
   createHighlighter,
-} from 'shiki/bundle/full'
+} from 'shiki/bundle/web'
 import { themeConfig, themesList, transformers } from '../../../shiki.config'
 
+const highlighterPromise = createHighlighter({
+  langs: ['bash', 'js'],
+  themes: themesList,
+})
+
 const getHighlighter = async (): Promise<Highlighter> => {
-  return createHighlighter({
-    langs: ['bash', 'js'],
-    themes: themesList,
-  })
+  return highlighterPromise
 }
 
 const loadLanguage = async (

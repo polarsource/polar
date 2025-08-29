@@ -17,7 +17,7 @@ from ..sorting import customer_meter as sorting
 
 router = APIRouter(
     prefix="/meters",
-    tags=["customer_meters", APITag.documented, APITag.featured],
+    tags=["customer_meters", APITag.public],
 )
 
 

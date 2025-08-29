@@ -1,0 +1,502 @@
+'use client'
+
+import AIValidationResult from '@/components/Organization/AIValidationResult'
+import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
+import { schemas } from '@polar-sh/client'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import { Card } from '@polar-sh/ui/components/ui/card'
+import {
+  ArrowRight,
+  Check,
+  CheckCircle,
+  Shield,
+  ShieldCheck,
+  UserCheck,
+} from 'lucide-react'
+import React, { useState } from 'react'
+
+type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
+
+type StepStatus =
+  | 'pending'
+  | 'current'
+  | 'completed'
+  | 'blocked'
+  | 'in_progress'
+  | 'failed'
+
+interface StepConfig {
+  id: Step
+  title: string
+  description: string
+  icon: React.ReactNode
+  status: StepStatus
+}
+
+interface StreamlinedAccountReviewProps {
+  organization: schemas['Organization']
+  currentStep: Step
+  requireDetails: boolean
+  organizationAccount?: schemas['Account']
+  identityVerified?: boolean
+  identityVerificationStatus?: string
+  organizationReviewStatus?: schemas['OrganizationReviewStatus']
+  isNotAdmin?: boolean
+  onDetailsSubmitted: () => void
+  onValidationCompleted: () => void
+  onStartAccountSetup: () => void
+  onStartIdentityVerification: () => void
+  onSkipAccountSetup?: () => void
+  onAppealApproved?: () => void
+}
+
+const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
+  // Calculate progress based on completed steps
+  const calculateProgress = () => {
+    if (steps.length <= 1) {
+      return 0
+    }
+
+    const currentStepIndex = steps.findIndex(
+      (step) =>
+        step.status === 'current' ||
+        step.status === 'in_progress' ||
+        step.status === 'failed',
+    )
+
+    // If no step is current, it means all are completed or pending
+    if (currentStepIndex === -1) {
+      const allCompleted = steps.every((step) => step.status === 'completed')
+      return allCompleted ? 100 : 0
+    }
+
+    // Calculate percentage based on the segments between steps
+    return (currentStepIndex / (steps.length - 1)) * 100
+  }
+
+  return (
+    <div className="relative">
+      {/* Progress bar background */}
+      <div className="absolute left-6 right-6 top-6 h-0.5 bg-gray-200 dark:bg-gray-700" />
+
+      {/* Progress bar fill */}
+      <div
+        className="absolute left-6 top-6 h-0.5 bg-gray-500 transition-all duration-500 ease-out dark:bg-gray-400"
+        style={{
+          width: `calc(${calculateProgress()}% - 24px)`,
+        }}
+      />
+
+      <div className="flex items-center justify-between">
+        {steps.map((step) => {
+          const isCompleted = step.status === 'completed'
+          const isCurrent = step.status === 'current'
+          const isBlocked = step.status === 'blocked'
+          const isPending = step.status === 'in_progress'
+          const isFailed = step.status === 'failed'
+
+          return (
+            <div key={step.id} className="relative flex flex-col items-center">
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                  isCompleted
+                    ? 'border-gray-500 bg-gray-500 text-white dark:border-gray-400 dark:bg-gray-400 dark:text-gray-950'
+                    : isPending
+                      ? 'border-blue-500 bg-blue-400 text-white'
+                      : isFailed
+                        ? 'border-red-500 bg-red-500 text-white'
+                        : isCurrent
+                          ? 'border-blue-500 bg-blue-400 text-white'
+                          : isBlocked
+                            ? 'border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gray-800'
+                            : 'border-gray-300 bg-white text-gray-400 dark:border-gray-600 dark:bg-gray-900'
+                } `}
+              >
+                {isCompleted ? (
+                  <Check className="h-5 w-5" />
+                ) : isPending ? (
+                  <svg
+                    className="h-5 w-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : isFailed ? (
+                  <svg
+                    className="h-5 w-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  <div className="text-sm font-medium">{step.icon}</div>
+                )}
+              </div>
+
+              <div className="mt-3 max-w-24 text-center">
+                <p
+                  className={`text-xs font-medium ${
+                    isCompleted
+                      ? 'text-gray-600 dark:text-gray-300'
+                      : isPending
+                        ? 'text-gray-600 dark:text-gray-300'
+                        : isFailed
+                          ? 'text-red-600 dark:text-red-400'
+                          : isCurrent
+                            ? 'text-gray-600 dark:text-gray-300'
+                            : 'text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  {step.title}
+                </p>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const StepCard = ({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode
+  className?: string
+}) => <Card className={`p-6 ${className}`}>{children}</Card>
+
+export default function StreamlinedAccountReview({
+  organization,
+  currentStep,
+  requireDetails,
+  organizationAccount,
+  identityVerified,
+  identityVerificationStatus,
+  organizationReviewStatus,
+  isNotAdmin = false,
+  onDetailsSubmitted,
+  onValidationCompleted,
+  onStartAccountSetup,
+  onStartIdentityVerification,
+  onSkipAccountSetup,
+  onAppealApproved,
+}: StreamlinedAccountReviewProps) {
+  const [validationCompleted, setValidationCompleted] = useState(false)
+
+  const handleDetailsSubmitted = () => {
+    onDetailsSubmitted()
+  }
+
+  const handleValidationCompleted = () => {
+    setValidationCompleted(true)
+    onValidationCompleted()
+  }
+
+  // Determine completion status for each step
+  const isReviewCompleted = !!organization.details_submitted_at
+
+  // Check if validation is completed through AI result PASS or approved appeal
+  const isAIValidationPassed = organizationReviewStatus?.verdict === 'PASS'
+  const isAppealApproved =
+    organizationReviewStatus?.appeal_decision === 'approved'
+  const isValidationCompleted =
+    validationCompleted || isAIValidationPassed || isAppealApproved
+  const isAccountCompleted =
+    (organizationAccount !== undefined &&
+      organizationAccount.is_details_submitted) ||
+    isNotAdmin // Non-admins skip account setup, so consider it "completed"
+  const isIdentityCompleted = !!identityVerified
+
+  const getStepStatus = (
+    stepId: Step,
+    isCompleted: boolean,
+    currentStep: Step,
+    prerequisiteCompleted?: boolean,
+  ): StepStatus => {
+    if (stepId === 'account' && isNotAdmin) {
+      return currentStep === 'account' ? 'blocked' : 'completed'
+    }
+
+    if (isCompleted) return 'completed'
+    if (prerequisiteCompleted !== undefined && !prerequisiteCompleted)
+      return 'blocked'
+
+    if (currentStep === stepId) {
+      if (stepId === 'identity') {
+        if (identityVerificationStatus === 'pending') {
+          return 'in_progress'
+        } else if (identityVerificationStatus === 'failed') {
+          return 'failed'
+        }
+      }
+      return 'current'
+    }
+    return 'pending'
+  }
+
+  const steps: StepConfig[] = [
+    {
+      id: 'review' as Step,
+      title: 'Review',
+      description: 'Details & compliance',
+      icon: <Shield className="h-5 w-5" />,
+      status: getStepStatus('review', isReviewCompleted, currentStep),
+    },
+    {
+      id: 'validation' as Step,
+      title: 'Validation',
+      description: 'Compliance check',
+      icon: <ShieldCheck className="h-5 w-5" />,
+      status: getStepStatus(
+        'validation',
+        isValidationCompleted,
+        currentStep,
+        isReviewCompleted,
+      ),
+    },
+    {
+      id: 'account' as Step,
+      title: 'Account',
+      description: isNotAdmin ? 'Admin only' : 'Payout setup',
+      icon: <UserCheck className="h-5 w-5" />,
+      status: getStepStatus(
+        'account',
+        isAccountCompleted,
+        currentStep,
+        isValidationCompleted,
+      ),
+    },
+    {
+      id: 'identity' as Step,
+      title: 'Identity',
+      description:
+        identityVerificationStatus === 'pending'
+          ? 'Processing...'
+          : identityVerificationStatus === 'failed'
+            ? 'Failed'
+            : 'Verification',
+      icon: <CheckCircle className="h-5 w-5" />,
+      status: getStepStatus(
+        'identity',
+        isIdentityCompleted,
+        currentStep,
+        isAccountCompleted,
+      ),
+    },
+  ]
+
+  const currentStepConfig = steps.find((s) => s.id === currentStep)
+
+  return (
+    <div className="mx-auto w-full max-w-4xl space-y-8">
+      {/* Header */}
+      <div className="space-y-2 text-center">
+        <h1 className="text-2xl font-semibold">Set up your payout account</h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Complete these steps to start accepting payments
+        </p>
+      </div>
+
+      {/* Progress indicator */}
+      <div className="px-8">
+        <ProgressIndicator steps={steps} />
+      </div>
+
+      {/* Current step content */}
+      <div className="space-y-6">
+        {currentStep === 'review' && requireDetails && (
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="space-y-3 text-center">
+              <div className="flex items-center justify-center space-x-3">
+                <h1 className="text-2xl font-semibold">Organization Details</h1>
+              </div>
+              <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400">
+                Tell us about your organization so we can review if it&apos;s an
+                acceptable use case for Polar.
+              </p>
+            </div>
+
+            {/* Use the consolidated OrganizationProfileSettings with KYC mode */}
+            <OrganizationProfileSettings
+              organization={organization}
+              kyc={true}
+              onSubmitted={handleDetailsSubmitted}
+            />
+          </div>
+        )}
+
+        {currentStep === 'validation' && (
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="space-y-3 text-center">
+              <div className="flex items-center justify-center space-x-3">
+                <h1 className="text-2xl font-semibold">Compliance Check</h1>
+              </div>
+              <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400">
+                Our AI is reviewing your organization details against our
+                acceptable use policy.
+              </p>
+            </div>
+
+            {/* AI Validation Results */}
+            <AIValidationResult
+              organization={organization}
+              autoValidate={true}
+              onValidationCompleted={handleValidationCompleted}
+              onAppealApproved={onAppealApproved}
+            />
+          </div>
+        )}
+
+        {currentStep === 'account' && (
+          <StepCard
+            className={isNotAdmin ? 'border-gray-300 dark:border-gray-600' : ''}
+          >
+            {isNotAdmin ? (
+              <div className="space-y-4">
+                <div className="space-y-4 text-center">
+                  <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8 dark:border-gray-600 dark:bg-gray-800">
+                    <div className="mb-4 flex justify-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
+                        <UserCheck className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+                      </div>
+                    </div>
+                    <h4 className="mb-2 font-medium text-gray-600 dark:text-gray-400">
+                      Account Setup Restricted
+                    </h4>
+                    <p className="mx-auto mb-4 max-w-md text-sm text-gray-500 dark:text-gray-500">
+                      You are not the admin of the account. Only the account
+                      admin can set up payout accounts.
+                    </p>
+                    <Button
+                      onClick={onSkipAccountSetup}
+                      variant="default"
+                      className="w-auto"
+                    >
+                      Skip & Continue to Identity Verification
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                    <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                      The account admin will need to complete this step
+                      separately
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-4 text-center">
+                  <div className="rounded-lg bg-gray-50 p-8 dark:bg-gray-800">
+                    <h4 className="mb-2 font-medium">Create Payout Account</h4>
+                    <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
+                      Connect or create a Stripe account to receive payments
+                      from your customers.
+                    </p>
+                    <Button onClick={onStartAccountSetup} className="w-auto">
+                      Continue with Account Setup
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </StepCard>
+        )}
+
+        {currentStep === 'identity' && (
+          <StepCard>
+            <div className="space-y-4">
+              <div className="space-y-4 text-center">
+                <div className="rounded-lg bg-gray-50 p-8 dark:bg-gray-800">
+                  {identityVerificationStatus === 'pending' ? (
+                    <>
+                      <h4 className="mb-2 font-medium">
+                        Identity Verification Pending
+                      </h4>
+                      <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
+                        Your identity verification is being processed. This
+                        usually takes a few minutes but can take up to 24 hours.
+                      </p>
+                      <div className="text-xs text-gray-500">
+                        We&apos;ll notify you once verification is complete.
+                      </div>
+                    </>
+                  ) : identityVerificationStatus === 'verified' ? (
+                    <>
+                      <h4 className="mb-2 font-medium">Identity Verified</h4>
+                      <p className="mx-auto text-sm text-gray-600 dark:text-gray-400">
+                        Your identity has been successfully verified.
+                      </p>
+                    </>
+                  ) : identityVerificationStatus === 'failed' ? (
+                    <>
+                      <h4 className="mb-2 font-medium text-red-600 dark:text-red-400">
+                        Identity Verification Failed
+                      </h4>
+                      <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
+                        We were unable to verify your identity. This could be
+                        due to document quality or information mismatch. Please
+                        try again.
+                      </p>
+                      <Button
+                        onClick={onStartIdentityVerification}
+                        className="w-auto"
+                        variant="default"
+                      >
+                        Try Again
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mb-4 flex justify-center">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900/30">
+                          <CheckCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                        </div>
+                      </div>
+                      <h4 className="mb-2 font-medium">Verify Your Identity</h4>
+                      <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
+                        To comply with financial regulations and secure your
+                        account, we need to verify your identity using a
+                        government-issued ID.
+                      </p>
+                      <Button
+                        onClick={onStartIdentityVerification}
+                        className="w-auto"
+                      >
+                        Start Identity Verification
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </StepCard>
+        )}
+      </div>
+
+      {/* Status footer */}
+      {currentStepConfig && (
+        <div className="text-center">
+          <p className="text-sm text-gray-500">
+            Step {steps.findIndex((s) => s.id === currentStep) + 1} of{' '}
+            {steps.length}: {currentStepConfig.description}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}

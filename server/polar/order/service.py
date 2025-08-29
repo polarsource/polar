@@ -1,11 +1,12 @@
 import uuid
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any, Literal
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import UnaryExpression, asc, desc, select
+from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
@@ -14,15 +15,16 @@ from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
-from polar.customer_meter.service import customer_meter as customer_meter_service
-from polar.customer_portal.schemas.order import CustomerOrderUpdate
+from polar.customer.repository import CustomerRepository
+from polar.customer_portal.schemas.order import (
+    CustomerOrderPaymentConfirmation,
+    CustomerOrderUpdate,
+)
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
 from polar.enums import PaymentProcessor
-from polar.event.service import event as event_service
-from polar.event.system import SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.held_balance.service import held_balance as held_balance_service
@@ -75,6 +77,7 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.guard import is_custom_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -245,6 +248,13 @@ class InvoiceDoesNotExist(OrderError):
         super().__init__(message, 404)
 
 
+class OrderNotEligibleForRetry(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Order {order.id} is not eligible for payment retry."
+        super().__init__(message, 422)
+
+
 class NoPendingBillingEntries(OrderError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
@@ -261,11 +271,54 @@ class OrderNotPending(OrderError):
         super().__init__(message)
 
 
+class PaymentAlreadyInProgress(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Payment for order {order.id} is already in progress"
+        super().__init__(message, 409)
+
+
+class InvalidPaymentProcessor(OrderError):
+    def __init__(self, payment_processor: PaymentProcessor) -> None:
+        self.payment_processor = payment_processor
+        message = f"Invalid payment processor: {payment_processor}"
+        super().__init__(message, 422)
+
+
+class PaymentRetryValidationError(OrderError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, 422)
+
+
 def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
     return customer_address is None or customer_address["country"] is None
 
 
 class OrderService:
+    @asynccontextmanager
+    async def acquire_payment_lock(
+        self, session: AsyncSession, order: Order, *, release_on_success: bool = True
+    ) -> AsyncIterator[None]:
+        """
+        Context manager to acquire and release a payment lock for an order.
+        """
+
+        repository = OrderRepository.from_session(session)
+
+        # Try to acquire the lock
+        lock_acquired = await repository.acquire_payment_lock_by_id(order.id)
+        if not lock_acquired:
+            raise PaymentAlreadyInProgress(order)
+
+        try:
+            yield
+        except Exception:
+            await repository.release_payment_lock(order, flush=True)
+            raise
+        else:
+            if release_on_success:
+                await repository.release_payment_lock(order, flush=True)
+
     async def list(
         self,
         session: AsyncSession,
@@ -322,22 +375,7 @@ class OrderService:
         if metadata is not None:
             statement = apply_metadata_clause(Order, statement, metadata)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == OrderSortProperty.created_at:
-                order_by_clauses.append(clause_function(Order.created_at))
-            elif criterion in {OrderSortProperty.amount, OrderSortProperty.net_amount}:
-                order_by_clauses.append(clause_function(Order.net_amount))
-            elif criterion == OrderSortProperty.customer:
-                order_by_clauses.append(clause_function(Customer.email))
-            elif criterion == OrderSortProperty.product:
-                order_by_clauses.append(clause_function(Product.name))
-            elif criterion == OrderSortProperty.discount:
-                order_by_clauses.append(clause_function(Discount.name))
-            elif criterion == OrderSortProperty.subscription:
-                order_by_clauses.append(clause_function(Order.subscription_id))
-        statement = statement.order_by(*order_by_clauses)
+        statement = repository.apply_sorting(statement, sorting)
 
         return await paginate(session, statement, pagination=pagination)
 
@@ -627,6 +665,7 @@ class OrderService:
                 product.stripe_product_id,
                 billing_address,
                 [tax_id] if tax_id is not None else [],
+                subscription.tax_exempted,
             )
             tax_calculation_processor_id = tax_calculation["processor_id"]
             tax_amount = tax_calculation["amount"]
@@ -667,33 +706,8 @@ class OrderService:
         )
 
         # Reset the associated meters, if any
-        for subscription_meter in subscription.meters:
-            rollover_units = await customer_meter_service.get_rollover_units(
-                session, customer, subscription_meter.meter
-            )
-            await event_service.create_event(
-                session,
-                build_system_event(
-                    SystemEvent.meter_reset,
-                    customer=customer,
-                    organization=subscription.organization,
-                    metadata={"meter_id": str(subscription_meter.meter_id)},
-                ),
-            )
-            if rollover_units > 0:
-                await event_service.create_event(
-                    session,
-                    build_system_event(
-                        SystemEvent.meter_credited,
-                        customer=customer,
-                        organization=subscription.organization,
-                        metadata={
-                            "meter_id": str(subscription_meter.meter_id),
-                            "units": rollover_units,
-                            "rollover": True,
-                        },
-                    ),
-                )
+        if billing_reason == OrderBillingReason.subscription_cycle:
+            await subscription_service.reset_meters(session, subscription)
 
         # If the order total amount is zero, mark it as paid immediately
         if order.total_amount <= 0:
@@ -717,24 +731,232 @@ class OrderService:
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 
-        if payment_method.processor == PaymentProcessor.stripe:
-            metadata: dict[str, Any] = {"order_id": str(order.id)}
-            if order.tax_rate is not None:
-                metadata["tax_amount"] = order.tax_amount
-                metadata["tax_country"] = order.tax_rate["country"]
-                metadata["tax_state"] = order.tax_rate["state"]
+        if order.payment_lock_acquired_at is not None:
+            log.warn("Payment already in progress", order_id=order.id)
+            raise PaymentAlreadyInProgress(order)
 
-            stripe_customer_id = order.customer.stripe_customer_id
-            assert stripe_customer_id is not None
-            await stripe_service.create_payment_intent(
-                amount=order.total_amount,
-                currency=order.currency,
-                payment_method=payment_method.processor_id,
-                customer=stripe_customer_id,
-                confirm=True,
-                off_session=True,
-                statement_descriptor_suffix=order.organization.statement_descriptor,
-                metadata=metadata,
+        async with self.acquire_payment_lock(session, order, release_on_success=False):
+            if payment_method.processor == PaymentProcessor.stripe:
+                metadata: dict[str, Any] = {"order_id": str(order.id)}
+                if order.tax_rate is not None:
+                    metadata["tax_amount"] = order.tax_amount
+                    metadata["tax_country"] = order.tax_rate["country"]
+                    metadata["tax_state"] = order.tax_rate["state"]
+
+                stripe_customer_id = order.customer.stripe_customer_id
+                assert stripe_customer_id is not None
+                await stripe_service.create_payment_intent(
+                    amount=order.total_amount,
+                    currency=order.currency,
+                    payment_method=payment_method.processor_id,
+                    customer=stripe_customer_id,
+                    confirm=True,
+                    off_session=True,
+                    statement_descriptor_suffix=order.organization.statement_descriptor,
+                    description=f"{order.organization.name} — {order.product.name}",
+                    metadata=metadata,
+                )
+
+    async def process_retry_payment(
+        self,
+        session: AsyncSession,
+        order: Order,
+        confirmation_token_id: str | None,
+        payment_processor: PaymentProcessor,
+        payment_method_id: uuid.UUID | None = None,
+    ) -> CustomerOrderPaymentConfirmation:
+        """
+        Process retry payment with direct confirmation (confirm=True).
+        Follows checkout flow pattern - creates PaymentIntent and lets webhooks handle everything else.
+        """
+
+        if order.status != OrderStatus.pending:
+            log.warning("Order is not pending", order_id=order.id, status=order.status)
+            raise OrderNotEligibleForRetry(order)
+
+        if order.next_payment_attempt_at is None:
+            log.warning("Order is not eligible for retry", order_id=order.id)
+            raise OrderNotEligibleForRetry(order)
+
+        if order.subscription is None:
+            log.warning("Order is not a subscription", order_id=order.id)
+            raise OrderNotEligibleForRetry(order)
+
+        if order.payment_lock_acquired_at is not None:
+            log.warning(
+                "Payment already in progress",
+                order_id=order.id,
+                lock_acquired_at=order.payment_lock_acquired_at,
+            )
+            raise PaymentAlreadyInProgress(order)
+
+        if payment_processor != PaymentProcessor.stripe:
+            log.warning(
+                "Invalid payment processor", payment_processor=payment_processor
+            )
+            raise OrderNotEligibleForRetry(payment_processor)
+
+        if confirmation_token_id is None and payment_method_id is None:
+            raise PaymentRetryValidationError(
+                "Either confirmation_token_id or payment_method_id must be provided"
+            )
+        if confirmation_token_id is not None and payment_method_id is not None:
+            raise PaymentRetryValidationError(
+                "Only one of confirmation_token_id or payment_method_id can be provided"
+            )
+
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(order.customer_id)
+        assert customer is not None, "Customer must exist"
+
+        org_repository = OrganizationRepository.from_session(session)
+        organization = await org_repository.get_by_id(customer.organization_id)
+        assert organization is not None, "Organization must exist"
+
+        if customer.stripe_customer_id is None:
+            log.warning("Customer is not a Stripe customer", customer_id=customer.id)
+            raise OrderNotEligibleForRetry(order)
+
+        saved_payment_method: PaymentMethod | None = None
+        if payment_method_id is not None:
+            payment_method_repository = PaymentMethodRepository.from_session(session)
+            saved_payment_method = await payment_method_repository.get_by_id(
+                payment_method_id
+            )
+            if (
+                saved_payment_method is None
+                or saved_payment_method.customer_id != customer.id
+            ):
+                raise PaymentRetryValidationError(
+                    "Payment method does not belong to customer"
+                )
+
+        metadata: dict[str, Any] = {
+            "order_id": str(order.id),
+        }
+        if order.tax_rate is not None:
+            metadata["tax_amount"] = str(order.tax_amount)
+            metadata["tax_country"] = order.tax_rate["country"]
+            metadata["tax_state"] = order.tax_rate["state"]
+
+        try:
+            async with self.acquire_payment_lock(
+                session, order, release_on_success=True
+            ):
+                if saved_payment_method is not None:
+                    # Using saved payment method
+                    payment_intent = await stripe_service.create_payment_intent(
+                        amount=order.total_amount,
+                        currency=order.currency,
+                        payment_method=saved_payment_method.processor_id,
+                        customer=customer.stripe_customer_id,
+                        confirm=True,
+                        statement_descriptor_suffix=organization.statement_descriptor,
+                        description=f"{organization.name} — {order.product.name}",
+                        metadata=metadata,
+                        return_url=settings.generate_frontend_url(
+                            f"/portal/orders/{str(order.id)}"
+                        ),
+                    )
+                else:
+                    # Using confirmation token (new payment method)
+                    assert confirmation_token_id is not None
+                    payment_intent = await stripe_service.create_payment_intent(
+                        amount=order.total_amount,
+                        currency=order.currency,
+                        automatic_payment_methods={"enabled": True},
+                        confirm=True,
+                        confirmation_token=confirmation_token_id,
+                        customer=customer.stripe_customer_id,
+                        statement_descriptor_suffix=organization.statement_descriptor,
+                        description=f"{organization.name} — {order.product.name}",
+                        metadata=metadata,
+                        return_url=settings.generate_frontend_url(
+                            f"/portal/orders/{str(order.id)}"
+                        ),
+                    )
+
+                if payment_intent.status == "succeeded":
+                    log.info(
+                        "Retry payment succeeded immediately",
+                        order_id=order.id,
+                        payment_intent_id=payment_intent.id,
+                    )
+
+                    return CustomerOrderPaymentConfirmation(
+                        status="succeeded",
+                        client_secret=None,
+                        error=None,
+                    )
+
+                elif payment_intent.status == "requires_action":
+                    log.info(
+                        "Retry payment requires additional action",
+                        order_id=order.id,
+                        payment_intent_id=payment_intent.id,
+                        status=payment_intent.status,
+                    )
+
+                    return CustomerOrderPaymentConfirmation(
+                        status="requires_action",
+                        client_secret=payment_intent.client_secret,
+                        error=None,
+                    )
+
+                else:
+                    error_message = "Payment failed"
+                    if (
+                        payment_intent.last_payment_error
+                        and payment_intent.last_payment_error.message
+                    ):
+                        error_message = payment_intent.last_payment_error.message
+
+                    log.warning(
+                        "Retry payment failed",
+                        order_id=order.id,
+                        payment_intent_id=payment_intent.id,
+                        status=payment_intent.status,
+                        error=error_message,
+                    )
+
+                    return CustomerOrderPaymentConfirmation(
+                        status="failed",
+                        client_secret=None,
+                        error=error_message,
+                    )
+
+        except stripe_lib.StripeError as stripe_exc:
+            log.warning(
+                "Stripe error during retry payment",
+                order_id=order.id,
+                stripe_error_code=stripe_exc.code,
+                stripe_error_message=str(stripe_exc),
+            )
+
+            error_message = (
+                stripe_exc.error.message
+                if stripe_exc.error and stripe_exc.error.message
+                else "Payment failed. Please try again."
+            )
+
+            return CustomerOrderPaymentConfirmation(
+                status="failed",
+                client_secret=None,
+                error=error_message,
+            )
+
+        except Exception as exc:
+            log.error(
+                "Exception during retry payment",
+                order_id=order.id,
+                error=str(exc),
+                exc_info=True,  # Include full traceback
+            )
+
+            return CustomerOrderPaymentConfirmation(
+                status="failed",
+                client_secret=None,
+                error="Payment failed. Please try again.",
             )
 
     async def handle_payment(
@@ -753,6 +975,14 @@ class OrderService:
         # Clear retry attempt date on successful payment
         if order.next_payment_attempt_at is not None:
             update_dict["next_payment_attempt_at"] = None
+
+        # Clear payment lock on successful payment
+        if order.payment_lock_acquired_at is not None:
+            log.info(
+                "Clearing payment lock on order due to successful payment",
+                order_id=order.id,
+            )
+            update_dict["payment_lock_acquired_at"] = None
 
         # Balance the order in the ledger
         if payment is not None:
@@ -851,7 +1081,6 @@ class OrderService:
         checkout_id = invoice_metadata.get("checkout_id") or subscription_metadata.get(
             "checkout_id"
         )
-        subscription_details = invoice.subscription_details
         if checkout_id is not None:
             chekout_repository = CheckoutRepository.from_session(session)
             checkout = await chekout_repository.get_by_id(uuid.UUID(checkout_id))
@@ -932,23 +1161,48 @@ class OrderService:
                 discount_amount += stripe_discount_amount.amount
 
         # Retrieve tax data
+        tax_id = customer.tax_id
+        tax_calculation_processor_id: str | None = None
         tax_amount = invoice.tax or 0
         taxability_reason: TaxabilityReason | None = None
-        tax_id = customer.tax_id
         tax_rate: TaxRate | None = None
-        for total_tax_amount in invoice.total_tax_amounts:
-            taxability_reason = TaxabilityReason.from_stripe(
-                total_tax_amount.taxability_reason, tax_amount
+
+        # If the subscription is tax-exempted, we need to retrieve tax rate manually:
+        # we don't apply tax on the invoice, but we need to know the rate for our
+        # accounting and fulfillment purposes.
+        if subscription.tax_exempted:
+            product = subscription.product
+            assert invoice.id is not None
+            assert product.stripe_product_id is not None
+            assert customer.billing_address is not None
+            tax_calculation = await calculate_tax(
+                invoice.id,
+                invoice.currency,
+                invoice.subtotal,
+                product.stripe_product_id,
+                customer.billing_address,
+                [customer.tax_id] if customer.tax_id is not None else [],
+                subscription.tax_exempted,
             )
-            stripe_tax_rate = await stripe_service.get_tax_rate(
-                get_expandable_id(total_tax_amount.tax_rate)
-            )
-            try:
-                tax_rate = from_stripe_tax_rate(stripe_tax_rate)
-            except ValueError:
-                continue
-            else:
-                break
+            tax_calculation_processor_id = tax_calculation["processor_id"]
+            tax_amount = tax_calculation["amount"]
+            taxability_reason = tax_calculation["taxability_reason"]
+            tax_rate = tax_calculation["tax_rate"]
+        # Automatic tax is enabled, so we can directly take the data from Stripe
+        else:
+            for total_tax_amount in invoice.total_tax_amounts:
+                taxability_reason = TaxabilityReason.from_stripe(
+                    total_tax_amount.taxability_reason, tax_amount
+                )
+                stripe_tax_rate = await stripe_service.get_tax_rate(
+                    get_expandable_id(total_tax_amount.tax_rate)
+                )
+                try:
+                    tax_rate = from_stripe_tax_rate(stripe_tax_rate)
+                except ValueError:
+                    continue
+                else:
+                    break
 
         # Ensure it inherits original metadata and custom fields
         user_metadata = (
@@ -983,6 +1237,7 @@ class OrderService:
                 taxability_reason=taxability_reason,
                 tax_id=tax_id,
                 tax_rate=tax_rate,
+                tax_calculation_processor_id=tax_calculation_processor_id,
                 invoice_number=invoice_number,
                 customer=customer,
                 product=subscription.product,
@@ -998,33 +1253,8 @@ class OrderService:
         )
 
         # Reset the associated meters, if any
-        for subscription_meter in subscription.meters:
-            rollover_units = await customer_meter_service.get_rollover_units(
-                session, customer, subscription_meter.meter
-            )
-            await event_service.create_event(
-                session,
-                build_system_event(
-                    SystemEvent.meter_reset,
-                    customer=customer,
-                    organization=subscription.organization,
-                    metadata={"meter_id": str(subscription_meter.meter_id)},
-                ),
-            )
-            if rollover_units > 0:
-                await event_service.create_event(
-                    session,
-                    build_system_event(
-                        SystemEvent.meter_credited,
-                        customer=customer,
-                        organization=subscription.organization,
-                        metadata={
-                            "meter_id": str(subscription_meter.meter_id),
-                            "units": rollover_units,
-                            "rollover": True,
-                        },
-                    ),
-                )
+        if billing_reason == OrderBillingReason.subscription_cycle:
+            await subscription_service.reset_meters(session, subscription)
 
         await self._on_order_created(session, order)
 
@@ -1208,9 +1438,15 @@ class OrderService:
                 order=order,
             )
         )
-        await platform_fee_transaction_service.create_fees_reversal_balances(
-            session, balance_transactions=balance_transactions
+        platform_fee_transactions = (
+            await platform_fee_transaction_service.create_fees_reversal_balances(
+                session, balance_transactions=balance_transactions
+            )
         )
+        order.platform_fee_amount = sum(
+            incoming.amount for _, incoming in platform_fee_transactions
+        )
+        session.add(order)
 
     async def send_webhook(
         self,
@@ -1276,6 +1512,15 @@ class OrderService:
         self, session: AsyncSession, order: Order
     ) -> Order:
         """Handle payment failure for an order, initiating dunning if necessary."""
+        # Clear payment lock on failure
+        if order.payment_lock_acquired_at is not None:
+            log.info(
+                "Clearing payment lock on order due to payment failure",
+                order_id=order.id,
+            )
+            repository = OrderRepository.from_session(session)
+            order = await repository.release_payment_lock(order)
+
         if order.subscription is None:
             return order
 
@@ -1324,7 +1569,7 @@ class OrderService:
             )
 
             if order.subscription is not None:
-                await subscription_service.cancel(session, order.subscription)
+                await subscription_service.revoke(session, order.subscription)
 
             return order
 

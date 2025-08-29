@@ -1,6 +1,6 @@
 import os
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import httpx
 import logfire
@@ -74,10 +74,14 @@ def _worker_health_matcher(name: str, attributes: "Attributes | None") -> bool:
     )
 
 
-def configure_logfire(service_name: Literal["server", "worker"]) -> None:
-    if settings.is_testing():
-        return
+def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
+    # Don't scrub auth subject in log messages
+    if match.path == ("attributes", "subject"):
+        return match.value
+    return None
 
+
+def configure_logfire(service_name: Literal["server", "worker"]) -> None:
     logfire.configure(
         send_to_logfire="if-token-present",
         token=settings.LOGFIRE_TOKEN,
@@ -87,13 +91,11 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         sampling=logfire.SamplingOptions(
             head=ParentBased(IgnoreSampler((_healthz_matcher, _worker_health_matcher))),
         ),
+        scrubbing=logfire.ScrubbingOptions(callback=_scrubbing_callback),
     )
 
 
 def instrument_httpx(client: httpx.AsyncClient | httpx.Client | None = None) -> None:
-    if settings.is_testing():
-        return
-
     if client:
         HTTPXClientInstrumentor().instrument_client(client)
     else:
@@ -101,16 +103,10 @@ def instrument_httpx(client: httpx.AsyncClient | httpx.Client | None = None) -> 
 
 
 def instrument_fastapi(app: FastAPI) -> None:
-    if settings.is_testing():
-        return
-
     logfire.instrument_fastapi(app)
 
 
 def instrument_sqlalchemy(engine: Engine) -> None:
-    if settings.is_testing():
-        return
-
     SQLAlchemyInstrumentor().instrument(engine=engine)
 
 

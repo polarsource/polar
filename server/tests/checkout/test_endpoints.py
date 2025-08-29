@@ -17,7 +17,15 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
 from polar.kit.tax import calculate_tax
 from polar.kit.utils import utc_now
-from polar.models import Checkout, Product, User, UserOrganization
+from polar.models import (
+    Checkout,
+    Customer,
+    Discount,
+    Product,
+    Subscription,
+    User,
+    UserOrganization,
+)
 from polar.models.checkout import CheckoutStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -83,6 +91,43 @@ async def create_blocked_product(
     )
     await save_fixture(user_organization)
     return product
+
+
+@pytest.mark.asyncio
+class TestList:
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        api_prefix: str,
+        user_organization: UserOrganization,
+        client: AsyncClient,
+        product: Product,
+        product_one_time: Product,
+        customer: Customer,
+        subscription: Subscription,
+        discount_percentage_50: Discount,
+    ) -> None:
+        checkouts = [
+            await create_checkout(save_fixture, products=[product]),
+            await create_checkout(
+                save_fixture, products=[product], subscription=subscription
+            ),
+            await create_checkout(
+                save_fixture, products=[product], discount=discount_percentage_50
+            ),
+            await create_checkout(save_fixture, products=[product], customer=customer),
+            await create_checkout(save_fixture, products=[product_one_time]),
+        ]
+
+        session.expunge_all()
+
+        response = await client.get(f"{api_prefix}/")
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["items"]) == len(checkouts)
 
 
 @pytest.mark.asyncio

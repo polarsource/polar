@@ -18,7 +18,7 @@ class RefreshTokenGrant(_RefreshTokenGrant):
     server: "AuthorizationServer"
 
     INCLUDE_NEW_REFRESH_TOKEN = True
-    TOKEN_ENDPOINT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
+    TOKEN_ENDPOINT_AUTH_METHODS = ["client_secret_basic", "client_secret_post", "none"]
 
     def authenticate_refresh_token(self, refresh_token: str) -> OAuth2Token | None:
         refresh_token_hash = get_token_hash(refresh_token, secret=settings.SECRET)

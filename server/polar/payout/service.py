@@ -1,7 +1,7 @@
 import datetime
 import uuid
 from collections.abc import AsyncIterable, Sequence
-from typing import Any
+from typing import Any, cast
 
 import stripe as stripe_lib
 import structlog
@@ -12,6 +12,7 @@ from polar.enums import AccountType
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncSessionMaker
@@ -211,12 +212,7 @@ class PayoutService:
         if await locker.is_locked(lock_name):
             raise PendingPayoutCreation(account)
 
-        async with locker.lock(
-            lock_name,
-            # Creating a payout may take lot of time because of individual Stripe transfers
-            timeout=datetime.timedelta(hours=1).total_seconds(),
-            blocking_timeout=1,
-        ):
+        async with locker.lock(lock_name, timeout=60, blocking_timeout=1):
             if account.is_under_review():
                 raise UnderReviewAccount(account)
             if not account.is_payout_ready():
@@ -267,6 +263,72 @@ class PayoutService:
 
             return payout
 
+    async def transfer_stripe(self, session: AsyncSession, payout: Payout) -> Payout:
+        """
+        The Stripe payout is a two-steps process:
+
+        1. Make the transfer to the Stripe Connect account
+        2. Trigger a payout on the Stripe Connect account,
+        but later once the balance is actually available.
+
+        This function performs the first step.
+        """
+        account = payout.account
+        assert account.stripe_id is not None
+
+        payout_transaction_repository = PayoutTransactionRepository.from_session(
+            session
+        )
+        transaction = await payout_transaction_repository.get_by_payout_id(payout.id)
+        assert transaction is not None
+
+        stripe_transfer = await stripe_service.transfer(
+            account.stripe_id,
+            payout.amount,
+            metadata={
+                "payout_id": str(payout.id),
+                "payout_transaction_id": str(transaction.id),
+            },
+            idempotency_key=f"payout-{payout.id}",
+        )
+
+        transaction.transfer_id = stripe_transfer.id
+
+        # Different source and destination currencies: get the converted amount
+        account_amount = payout.account_amount
+        if transaction.currency != transaction.account_currency:
+            assert stripe_transfer.destination_payment is not None
+            stripe_destination_charge = await stripe_service.get_charge(
+                get_expandable_id(stripe_transfer.destination_payment),
+                stripe_account=account.stripe_id,
+                expand=["balance_transaction"],
+            )
+            # Case where the charge don't lead to a balance transaction,
+            # e.g. when the converted amount is 0
+            if stripe_destination_charge.balance_transaction is None:
+                account_amount = 0
+            else:
+                stripe_destination_balance_transaction = cast(
+                    stripe_lib.BalanceTransaction,
+                    stripe_destination_charge.balance_transaction,
+                )
+                account_amount = stripe_destination_balance_transaction.amount
+
+        await payout_transaction_repository.update(
+            transaction,
+            update_dict={
+                "account_amount": -account_amount,
+                "transfer_id": stripe_transfer.id,
+            },
+        )
+
+        payout_repository = PayoutRepository.from_session(session)
+        payout = await payout_repository.update(
+            payout, update_dict={"account_amount": account_amount}
+        )
+
+        return payout
+
     async def update_from_stripe(
         self, session: AsyncSession, stripe_payout: stripe_lib.Payout
     ) -> Payout:
@@ -289,7 +351,7 @@ class PayoutService:
         """
         The Stripe payout is a two-steps process:
 
-        1. Transfer the balance transactions to the Stripe Connect account.
+        1. Make the transfer to the Stripe Connect account.
         2. Trigger a payout on the Stripe Connect account,
         but later once our safety delay is passed and the balance is actually available.
 

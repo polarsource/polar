@@ -2,7 +2,7 @@
 name = "polar"
 version = "0.0.0"
 readme = "README.md"
-requires-python = "==3.12.*"
+requires-python = "==3.12.11"
 dependencies = [
   "fastapi>=0.115.2",
   "uvicorn[standard]>=0.31.1",
@@ -16,8 +16,7 @@ dependencies = [
   "sse-starlette>=2.0.0",
   "stripe>=10.12.0,<12",
   "pyjwt>=2.6.0",
-  "pydantic>=2.10,<2.11",
-  "jinja2>=3.1.2",
+  "pydantic>=2.11",
   "sentry-sdk[fastapi,sqlalchemy]>=2.16.0",
   "posthog>=3.6.0",
   "python-slugify>=8.0.1",
@@ -30,11 +29,10 @@ dependencies = [
   "python-dateutil>=2.9.0.post0",
   "pydantic-extra-types>=2.9.0",
   "sqlalchemy-utils>=0.41.1",
-  "authlib<1.6.0",
+  "authlib>=1.6.0",
   "standardwebhooks>=1.0.0",
   "typer>=0.12.5",
   "logfire[fastapi,httpx,sqlalchemy,redis]>=2.6.0",
-  "netaddr>=1.2.1",
   "makefun>=1.15.6",
   "boto3>=1.38.30",
   "itsdangerous>=2.2.0",
@@ -46,11 +44,13 @@ dependencies = [
   "taskipy>=1.10.3",
   "psycopg2-binary>=2.9.5",
   "apscheduler>=3.10.4",
-  "plain-client>=0.0.1",
+  "plain-client>=0.0.3",
   "tagflow>=0.7.0",
   "exponent-server-sdk>=2.1.0",
   "dramatiq[redis,watch]>=1.17.1",
   "fpdf2>=2.8.3",
+  "pydantic-ai-slim[openai]>=0.7.1",
+  "asgi-ratelimit>=0.10.0",
 ]
 
 [dependency-groups]
@@ -76,7 +76,7 @@ dev = [
   "pytest-xdist[psutil]>=3.6.1",
   "sqlalchemy-utils>=0.41.2",
   "minio>=7.2.9",
-  "polar-sdk==0.16.13",
+  "polar-sdk==0.22.6",
 ]
 
 [tool.taskipy.tasks]
@@ -86,12 +86,12 @@ api = { cmd = "env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reloa
 worker = { cmd = "dramatiq -p 1 -t 1 --watch polar -f polar.worker.scheduler:start polar.worker.run", help = "run worker" }
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
-watch_email = { cmd = "POLAR_TEST_WATCH=1 pytest -s -m", help = "preview emails" }
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
 lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
 lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
+db_reparent = { cmd = "python -m scripts.db reparent", help = "try to auto-fix conflicting migrations" }
 clean = { cmd = "find * -name '*.pyc' -delete && find * -name '__pycache__' -delete", help = "clean up .pyc and __pycache__" }
 verify_github_app = { cmd = "python -m polar.verify_github_app", help = "verify that the github app is correctly configured" }
 generate_dev_jwks = { cmd = "python -m polar.kit.jwk polar_dev > ./.jwks.json", help = "generate a development JWKS file" }
@@ -99,11 +99,7 @@ seeds_load = { cmd = "python -m scripts.seeds_load", help = "load sample/test da
 pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render" }
 
 [tool.pytest.ini_options]
-markers = [
-  "auth",
-  "email_order_confirmation",
-  "email_subscription_confirmation",
-]
+markers = ["auth"]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 
@@ -147,5 +143,5 @@ skip_cache_mtime_checks = true
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
-warn_required_dynamic_aliases = true
+warn_required_dynamic_aliases = false
 warn_untyped_fields = true

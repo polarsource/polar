@@ -1,3 +1,9 @@
 ---
 openapi: post /v1/customer-portal/license-keys/activate
 ---
+
+<Tip>
+You only need to use this endpoint if you have device **activations** enabled on the license key benefit. You then use this endpoint to reserve an allocation for a specific device. Storing the unique activation ID from the response on the device and using it as extra validation in the [/validate](/api-reference/customer-portal/license-keys/validate) endpoint.
+
+Not using **activations**? Just use the [/validate](/api-reference/customer-portal/license-keys/validate) endpoint directly instead.
+</Tip>

@@ -4,7 +4,14 @@ import { cache } from 'react'
 
 export const hasIntervals = (
   product: schemas['ProductStorefront'] | schemas['CheckoutProduct'],
-): [boolean, boolean, boolean] => {
+): [boolean, boolean, boolean, boolean, boolean] => {
+  const hasDayInterval = product.prices.some(
+    (price) => price.type === 'recurring' && price.recurring_interval === 'day',
+  )
+  const hasWeekInterval = product.prices.some(
+    (price) =>
+      price.type === 'recurring' && price.recurring_interval === 'week',
+  )
   const hasMonthInterval = product.prices.some(
     (price) =>
       price.type === 'recurring' && price.recurring_interval === 'month',
@@ -15,7 +22,13 @@ export const hasIntervals = (
   )
   const hasBothIntervals = hasMonthInterval && hasYearInterval
 
-  return [hasMonthInterval, hasYearInterval, hasBothIntervals]
+  return [
+    hasDayInterval,
+    hasWeekInterval,
+    hasMonthInterval,
+    hasYearInterval,
+    hasBothIntervals,
+  ]
 }
 
 export const isLegacyRecurringPrice = (

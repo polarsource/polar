@@ -18,7 +18,7 @@ from .service import customer_meter as customer_meter_service
 
 router = APIRouter(
     prefix="/customer-meters",
-    tags=["customer_meters", APITag.documented, APITag.featured, APITag.mcp],
+    tags=["customer_meters", APITag.public, APITag.mcp],
 )
 
 

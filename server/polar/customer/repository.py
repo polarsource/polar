@@ -1,3 +1,5 @@
+import contextlib
+from collections.abc import AsyncGenerator
 from typing import Any
 from uuid import UUID
 
@@ -29,10 +31,16 @@ class CustomerRepository(
             customer_id = Customer.__table__.c.id.default.arg(None)
             customer.id = customer_id
 
+        return customer
+
+    @contextlib.asynccontextmanager
+    async def create_context(
+        self, object: Customer, *, flush: bool = False
+    ) -> AsyncGenerator[Customer]:
+        customer = await self.create(object, flush=flush)
+        yield customer
         assert customer.id is not None, "Customer.id is None"
         enqueue_job("customer.webhook", WebhookEventType.customer_created, customer.id)
-
-        return customer
 
     async def update(
         self,

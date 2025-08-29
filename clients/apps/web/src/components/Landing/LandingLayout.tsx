@@ -4,12 +4,16 @@ import { TopbarNavigation } from '@/components/Landing/TopbarNavigation'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
-import { ArrowForward } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@polar-sh/ui/components/ui/popover'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
 import { Modal } from '../Modal'
@@ -18,16 +22,6 @@ import { useModal } from '../Modal/useModal'
 export default function Layout({ children }: PropsWithChildren) {
   return (
     <div className="dark:bg-polar-950 relative flex flex-col bg-gray-50 md:w-full md:flex-1 md:items-center">
-      <Link
-        className="flex w-full flex-col items-center bg-indigo-50 py-4 text-indigo-400 transition-opacity hover:opacity-50 dark:bg-indigo-950"
-        href="/blog/polar-seed-announcement"
-        prefetch
-      >
-        <div className="flex flex-row items-center gap-x-2 text-sm md:text-base">
-          <span>Announcing our $10M Seed Round, led by Accel</span>
-          <ArrowForward fontSize="inherit" />
-        </div>
-      </Link>
       <div className="flex flex-col gap-y-2 md:w-full">
         <LandingPageTopbar />
         <LandingPageDesktopNavigation />
@@ -72,6 +66,8 @@ const NavLink = ({
 const LandingPageDesktopNavigation = () => {
   const posthog = usePostHog()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
+  const [isResourcesOpen, setIsResourcesOpen] = useState(false)
+  const pathname = usePathname()
 
   const onLoginClick = () => {
     posthog.capture('global:user:login:click')
@@ -79,18 +75,130 @@ const LandingPageDesktopNavigation = () => {
   }
 
   return (
-    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-12 md:flex">
-      <div className="relative flex w-full flex-row items-center justify-between md:max-w-3xl xl:max-w-7xl">
-        <BrandingMenu logoVariant="logotype" size={100} />
+    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-8 md:flex md:px-8">
+      <div className="relative flex w-full flex-row items-center justify-between">
+        <BrandingMenu logoVariant="icon" size={40} />
 
-        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-6 font-medium">
+        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-8 font-medium">
           <li>
             <NavLink href="/" isActive={(pathname) => pathname === '/'}>
               Features
             </NavLink>
           </li>
           <li>
-            <NavLink href="https://docs.polar.sh">Docs</NavLink>
+            <Popover open={isResourcesOpen} onOpenChange={setIsResourcesOpen}>
+              <PopoverTrigger
+                className={twMerge(
+                  'dark:text-polar-500 flex items-center gap-x-2 text-gray-500 transition-colors hover:text-black focus:outline-none dark:hover:text-white',
+                  (isResourcesOpen || pathname.includes('/resources')) &&
+                    'text-black dark:text-white',
+                )}
+                onMouseEnter={() => setIsResourcesOpen(true)}
+                onMouseLeave={() => setIsResourcesOpen(false)}
+              >
+                Resources
+              </PopoverTrigger>
+              <PopoverContent
+                className="grid w-fit grid-cols-3 divide-x p-0"
+                onMouseEnter={() => setIsResourcesOpen(true)}
+                onMouseLeave={() => setIsResourcesOpen(false)}
+              >
+                <div className="flex flex-col p-2">
+                  <h3 className="dark:text-polar-500 px-4 py-2 text-sm text-gray-500">
+                    Polar Software Inc.
+                  </h3>
+                  <div>
+                    {[
+                      {
+                        href: '/company',
+                        label: 'Company',
+                        subtitle: 'Who we are',
+                      },
+                      {
+                        href: '/company',
+                        label: 'Careers',
+                        subtitle: "We're hiring",
+                      },
+                      {
+                        href: 'https://polar.sh/assets/brand/polar_brand.zip',
+                        target: '_blank',
+                        label: 'Brand Assets',
+                        subtitle: 'Logotype & Graphics',
+                      },
+                    ].map(({ href, label, subtitle, target }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        prefetch
+                        target={target}
+                        className="dark:hover:bg-polar-800 flex w-48 flex-col rounded-md px-4 py-2 text-sm transition-colors hover:bg-gray-100"
+                      >
+                        <span className="font-medium">{label}</span>
+                        <span className="dark:text-polar-500 text-gray-500">
+                          {subtitle}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+                <div className="col-span-2 flex flex-col p-2">
+                  <h3 className="dark:text-polar-500 px-4 py-2 text-sm text-gray-500">
+                    Platform
+                  </h3>
+                  <div className="grid grid-cols-2">
+                    {[
+                      {
+                        href: 'https://docs.polar.sh',
+                        label: 'Documentation',
+                        target: '_blank',
+                        subtitle: 'Get up to speed',
+                      },
+                      {
+                        href: '/resources/why',
+                        label: 'Why Polar',
+                        subtitle: 'Migrate to Polar today',
+                      },
+                      {
+                        href: '/resources/pricing',
+                        label: 'Pricing',
+                        subtitle: 'Cheap and fair pricing',
+                      },
+                      {
+                        href: 'https://github.com/polarsource',
+                        target: '_blank',
+                        label: 'Open Source',
+                        subtitle: 'Star our projects',
+                      },
+                      {
+                        href: 'https://status.polar.sh',
+                        label: 'Status',
+                        subtitle: 'API Service Status',
+                        target: '_blank',
+                      },
+                      {
+                        href: 'https://x.com/polar_sh',
+                        label: 'X',
+                        subtitle: 'Join the conversation',
+                        target: '_blank',
+                      },
+                    ].map(({ href, label, subtitle, target }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        prefetch
+                        target={target}
+                        className="dark:hover:bg-polar-800 flex w-48 flex-col rounded-md px-4 py-2 text-sm transition-colors hover:bg-gray-100"
+                      >
+                        <span className="font-medium">{label}</span>
+                        <span className="dark:text-polar-500 text-gray-500">
+                          {subtitle}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </li>
           <li>
             <NavLink href="/company">Company</NavLink>
@@ -100,11 +208,7 @@ const LandingPageDesktopNavigation = () => {
           </li>
         </ul>
 
-        <Button
-          onClick={onLoginClick}
-          className="rounded-full"
-          variant="secondary"
-        >
+        <Button onClick={onLoginClick} variant="ghost" className="rounded-full">
           Log In
         </Button>
       </div>

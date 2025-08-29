@@ -20,7 +20,7 @@ This will start a development server at [http://localhost:3000](http://localhost
 
 ## How to create a new email?
 
-1. Create a new TSX file in the `src/emails` directory with the name of the email template, as snake case, e.g. `magic_link.tsx`.
+1. Create a new TSX file in the `src/emails` directory with the name of the email template, as snake case, e.g. `login_code.tsx`.
 2. Implement the email template using the `react-email` components.
 3. Make sure the props are JSON serializable.
 
@@ -37,9 +37,9 @@ Then, use the `render_email_template` function:
 ```python
 from polar.email.react import render_email_template
 
-body = render_email_template("magic_link", {
-    "token_lifetime_minutes": 30,
-    "url": "https://example.com",
+body = render_email_template("login_code", {
+    "code": "ABC123",
+    "code_lifetime_minutes": 30,
 })
 ```
 

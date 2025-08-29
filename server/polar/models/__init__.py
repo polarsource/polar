@@ -27,7 +27,6 @@ from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
 from .login_code import LoginCode
-from .magic_link import MagicLink
 from .meter import Meter
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
@@ -39,6 +38,7 @@ from .order import Order
 from .order_item import OrderItem
 from .organization import Organization
 from .organization_access_token import OrganizationAccessToken
+from .organization_review import OrganizationReview
 from .payment import Payment
 from .payment_method import PaymentMethod
 from .payout import Payout
@@ -103,7 +103,6 @@ __all__ = [
     "LicenseKey",
     "LicenseKeyActivation",
     "LoginCode",
-    "MagicLink",
     "Meter",
     "Notification",
     "NotificationRecipient",
@@ -116,6 +115,7 @@ __all__ = [
     "OrderItem",
     "Organization",
     "OrganizationAccessToken",
+    "OrganizationReview",
     "Payment",
     "PaymentMethod",
     "Payout",

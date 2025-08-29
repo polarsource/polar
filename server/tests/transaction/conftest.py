@@ -1,6 +1,5 @@
 from collections.abc import AsyncIterator, Sequence
 from datetime import datetime
-from typing import TypeVar
 
 import pytest_asyncio
 
@@ -11,6 +10,7 @@ from polar.models import (
     IssueReward,
     Order,
     Organization,
+    Payout,
     Pledge,
     Transaction,
     User,
@@ -41,6 +41,7 @@ async def create_transaction(
     order: Order | None = None,
     payout_transaction: Transaction | None = None,
     payment_transaction: Transaction | None = None,
+    payout: Payout | None = None,
     charge_id: str | None = None,
     refund_id: str | None = None,
     dispute_id: str | None = None,
@@ -64,6 +65,7 @@ async def create_transaction(
         order=order,
         payout_transaction=payout_transaction,
         payment_transaction=payment_transaction,
+        payout=payout,
         charge_id=charge_id,
         refund_id=refund_id,
         dispute_id=dispute_id,
@@ -198,9 +200,6 @@ async def all_transactions(
     ]
 
 
-T = TypeVar("T")
-
-
-async def create_async_iterator(iterable: Sequence[T]) -> AsyncIterator[T]:
+async def create_async_iterator[T](iterable: Sequence[T]) -> AsyncIterator[T]:
     for item in iterable:
         yield item

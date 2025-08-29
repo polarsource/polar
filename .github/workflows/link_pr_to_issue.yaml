@@ -8,6 +8,9 @@ permissions:
   pull-requests: write
   contents: read
 
+env:
+  TICKET_PREFIX: "pub-"
+
 jobs:
   link-pr-to-issue:
     runs-on: ubuntu-latest
@@ -18,8 +21,8 @@ jobs:
           BRANCH_NAME="${{ github.head_ref }}"
           echo "Branch name: $BRANCH_NAME"
 
-          # Extract pol-XXX pattern from branch name
-          TICKET_NUMBER=$(echo $BRANCH_NAME | grep -oE 'pol-[0-9]+' || echo "")
+          # Extract TICKET_PREFIX-XXX pattern from the start of branch name
+          TICKET_NUMBER=$(echo $BRANCH_NAME | grep -oE "^${TICKET_PREFIX}[0-9]+" || echo "")
           echo "ticket_number=$TICKET_NUMBER" >> $GITHUB_OUTPUT
 
           if [ -z "$TICKET_NUMBER" ]; then

@@ -112,6 +112,14 @@ class LicenseKey(RecordModel):
         last_six_digits = self.key[-6:]
         return f"{prefix}-{last_six_digits}"
 
+    @property
+    def activation(self) -> "LicenseKeyActivation | None":
+        return getattr(self, "_activation", None)
+
+    @activation.setter
+    def activation(self, value: "LicenseKeyActivation") -> None:
+        self._activation = value
+
     def mark_revoked(self) -> None:
         self.status = LicenseKeyStatus.revoked
 

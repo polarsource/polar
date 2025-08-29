@@ -1,11 +1,17 @@
 'use client'
 
+import CreateMeterModalContent from '@/components/Meter/CreateMeterModalContent'
+import { InlineModal } from '@/components/Modal/InlineModal'
+import { useModal } from '@/components/Modal/useModal'
+import { SpinnerNoMargin } from '@/components/Shared/Spinner'
+import { useAuth } from '@/hooks/auth'
 import { useMeters } from '@/hooks/queries/meters'
 import {
   isLegacyRecurringPrice,
   isMeteredPrice,
   isStaticPrice,
 } from '@/utils/product'
+import { PlusIcon } from '@heroicons/react/20/solid'
 import { ErrorMessage } from '@hookform/error-message'
 import { CloseOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
@@ -168,103 +174,179 @@ export const ProductPriceMeteredUnitItem: React.FC<
   ProductPriceMeteredUnitItemProps
 > = ({ organization, index }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
-  const { data: meters } = useMeters(organization.id, {
+
+  const { data: meters, refetch } = useMeters(organization.id, {
     sorting: ['name'],
+    limit: 30,
   })
+
+  const {
+    isShown: isCreateMeterModalShown,
+    show: showCreateMeterModal,
+    hide: hideCreateMeterModal,
+  } = useModal(false)
+
+  const onSelectMeter = useCallback(
+    async (meter: schemas['Meter']) => {
+      // This is embarrassing but the <Select /> component has to re-render
+      // with the updated `meters` as options,
+      // before it'll accept this as a valid select value.
+      //
+      // This is an open issue with Radix UI since 2024
+      // (https://github.com/radix-ui/primitives/issues/2817)
+
+      // To work around this, we run an explicit `refetch` that we can await
+      // and then set the value in a double requestAnimationFrame callback.
+      // First rAF ensures this component is updated,
+      // second rAF ensures the <SelectContent /> was updated too.
+      await refetch()
+
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          setValue(`prices.${index}.meter_id`, meter.id)
+        })
+      })
+    },
+    [setValue, index],
+  )
+
+  if (!meters) {
+    return (
+      <div className="flex w-full items-center justify-center py-4">
+        <SpinnerNoMargin />
+      </div>
+    )
+  }
 
   return (
     <>
-      {meters && meters.items && (
-        <FormField
-          control={control}
-          name={`prices.${index}.meter_id`}
-          rules={{
-            required: 'This field is required',
+      {meters.items.length === 0 ? (
+        <Button
+          onClick={(e) => {
+            e.preventDefault()
+            showCreateMeterModal()
           }}
-          render={({ field }) => {
-            return (
-              <FormItem>
-                <FormLabel>Meter</FormLabel>
-                <FormControl>
-                  <Select
-                    {...field}
-                    onValueChange={(v) => {
-                      field.onChange(v)
-                      setValue(`prices.${index}.id`, '')
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a meter" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {meters.items.map((meter) => (
-                        <SelectItem key={meter.id} value={meter.id}>
-                          {meter.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
+          size="sm"
+        >
+          Create a Meter
+        </Button>
+      ) : (
+        <>
+          <FormField
+            control={control}
+            name={`prices.${index}.meter_id`}
+            rules={{
+              required: 'This field is required',
+            }}
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <div className="flex flex-row items-center justify-between gap-x-2">
+                    <FormLabel>Meter</FormLabel>
+                    <button
+                      type="button"
+                      className="flex flex-row items-center gap-x-1 text-sm font-medium text-gray-500"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        showCreateMeterModal()
+                      }}
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                      Add Meter
+                    </button>
+                  </div>
+                  <FormControl>
+                    <Select
+                      {...field}
+                      onValueChange={(v) => {
+                        field.onChange(v)
+                        setValue(`prices.${index}.id`, '')
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a meter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {meters.items.map((meter) => (
+                          <SelectItem key={meter.id} value={meter.id}>
+                            {meter.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+          <FormField
+            control={control}
+            name={`prices.${index}.unit_amount`}
+            rules={{
+              min: 0,
+              required: 'This field is required',
+            }}
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel>Amount per unit</FormLabel>
+                  <FormControl>
+                    <UnitAmountInput
+                      {...field}
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={(v) => {
+                        field.onChange(v)
+                        setValue(`prices.${index}.id`, '')
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+          <FormField
+            control={control}
+            name={`prices.${index}.cap_amount`}
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel>Cap amount</FormLabel>
+                  <FormControl>
+                    <MoneyInput
+                      {...field}
+                      name={field.name}
+                      value={field.value || undefined}
+                      onChange={(v) => {
+                        field.onChange(v)
+                        setValue(`prices.${index}.id`, '')
+                      }}
+                      placeholder={10000}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Optional maximum amount that can be charged, regardless of
+                    the number of units consumed.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        </>
       )}
-      <FormField
-        control={control}
-        name={`prices.${index}.unit_amount`}
-        rules={{
-          min: 0,
-          required: 'This field is required',
-        }}
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <FormLabel>Amount per unit</FormLabel>
-              <FormControl>
-                <UnitAmountInput
-                  {...field}
-                  name={field.name}
-                  value={field.value}
-                  onValueChange={(v) => {
-                    field.onChange(v)
-                    setValue(`prices.${index}.id`, '')
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
-      <FormField
-        control={control}
-        name={`prices.${index}.cap_amount`}
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <FormLabel>Cap amount</FormLabel>
-              <FormControl>
-                <MoneyInput
-                  {...field}
-                  name={field.name}
-                  value={field.value || undefined}
-                  onChange={(v) => {
-                    field.onChange(v)
-                    setValue(`prices.${index}.id`, '')
-                  }}
-                  placeholder={10000}
-                />
-              </FormControl>
-              <FormDescription>
-                Optional maximum amount that can be charged, regardless of the
-                number of units consumed.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
+      <InlineModal
+        isShown={isCreateMeterModalShown}
+        hide={hideCreateMeterModal}
+        modalContent={
+          <CreateMeterModalContent
+            organization={organization}
+            onSelectMeter={onSelectMeter}
+            hideModal={hideCreateMeterModal}
+          />
+        }
       />
     </>
   )
@@ -302,8 +384,6 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
     useFormContext<ProductFormType>()
   const amountType = watch(`prices.${index}.amount_type`)
   const recurringInterval = watch('recurring_interval')
-
-  const { data: meters } = useMeters(organization.id)
 
   const prices = watch('prices')
   const staticPriceIndex = prices
@@ -371,12 +451,11 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       <SelectItem value="fixed">Fixed price</SelectItem>
                       <SelectItem value="custom">Pay what you want</SelectItem>
                       <SelectItem value="free">Free</SelectItem>
-                      {recurringInterval !== null &&
-                        (meters?.pagination.total_count ?? 0) > 0 && (
-                          <SelectItem value="metered_unit">
-                            Metered price
-                          </SelectItem>
-                        )}
+                      {recurringInterval !== null && (
+                        <SelectItem value="metered_unit">
+                          Metered price
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -471,6 +550,8 @@ export const ProductPricingSection = ({
     })
   }, [recurringInterval, prices, remove])
 
+  const { currentUser } = useAuth()
+
   return (
     <Section
       title="Pricing"
@@ -520,6 +601,12 @@ export const ProductPricingSection = ({
                             One-time purchase
                           </SelectItem>
                         )}
+                        {currentUser && currentUser.is_admin && (
+                          <>
+                            <SelectItem value="day">Daily</SelectItem>
+                            <SelectItem value="week">Weekly</SelectItem>
+                          </>
+                        )}
                         <SelectItem value="month">Monthly</SelectItem>
                         <SelectItem value="year">Yearly</SelectItem>
                       </SelectContent>
@@ -556,6 +643,7 @@ export const ProductPricingSection = ({
           {recurringInterval !== null && (
             <Button
               className="self-start"
+              variant="secondary"
               onClick={() =>
                 append({
                   amount_type: 'metered_unit',
@@ -565,7 +653,7 @@ export const ProductPricingSection = ({
                 })
               }
             >
-              Add Price
+              Add Additional Price
             </Button>
           )}
           <ErrorMessage

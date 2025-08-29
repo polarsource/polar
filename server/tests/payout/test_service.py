@@ -1,5 +1,6 @@
 import datetime
 from functools import partial
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -8,11 +9,13 @@ from pytest_mock import MockerFixture
 
 from polar.config import settings
 from polar.exceptions import PolarRequestValidationError
+from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.utils import utc_now
 from polar.locker import Locker
-from polar.models import Account, Organization, Transaction, User
+from polar.models import Organization, Transaction, User
 from polar.models.payout import PayoutStatus
+from polar.models.transaction import TransactionType
 from polar.payout.schemas import PayoutGenerateInvoice
 from polar.payout.service import (
     InsufficientBalance,
@@ -20,22 +23,30 @@ from polar.payout.service import (
     MissingInvoiceBillingDetails,
     NotReadyAccount,
     PayoutNotSucceeded,
-    UnderReviewAccount,
 )
 from polar.payout.service import payout as payout_service
 from polar.postgres import AsyncSession
+from polar.transaction.repository import PayoutTransactionRepository
 from polar.transaction.service.payout import (
     PayoutTransactionService,
 )
 from tests.fixtures import random_objects as ro
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_account, create_payout
+from tests.transaction.conftest import create_transaction
 
 
 @pytest.fixture(autouse=True)
 def payout_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=PayoutTransactionService)
     mocker.patch("polar.payout.service.payout_transaction_service", new=mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
+    mock = MagicMock(spec=StripeService)
+    mocker.patch("polar.payout.service.stripe_service", new=mock)
     return mock
 
 
@@ -62,36 +73,6 @@ class TestCreate:
         await create_balance_transaction(save_fixture, account=account, amount=balance)
 
         with pytest.raises(InsufficientBalance):
-            await payout_service.create(session, locker, account=account)
-
-    async def test_under_review_account(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        locker: Locker,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        account = await create_account(
-            save_fixture, organization, user, status=Account.Status.UNDER_REVIEW
-        )
-
-        with pytest.raises(UnderReviewAccount):
-            await payout_service.create(session, locker, account=account)
-
-    async def test_inactive_account(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        locker: Locker,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        account = await create_account(
-            save_fixture, organization, user, status=Account.Status.ONBOARDING_STARTED
-        )
-
-        with pytest.raises(NotReadyAccount):
             await payout_service.create(session, locker, account=account)
 
     async def test_payout_disabled_account(
@@ -223,6 +204,52 @@ class TestTriggerStripePayouts:
         enqueue_job_mock.assert_any_call(
             "payout.trigger_stripe_payout", payout_id=payout_3.id
         )
+
+
+@pytest.mark.asyncio
+class TestTransferStripe:
+    async def test_valid(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID", destination_payment=None
+        )
+        account = await create_account(save_fixture, organization, user)
+        payout = await create_payout(save_fixture, account=account)
+        transaction = await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.payout,
+            amount=-payout.amount,
+            account_currency=account.currency,
+            payout=payout,
+        )
+
+        await payout_service.transfer_stripe(session, payout)
+
+        stripe_service_mock.transfer.assert_any_call(
+            account.stripe_id,
+            payout.amount,
+            metadata={
+                "payout_id": str(payout.id),
+                "payout_transaction_id": str(transaction.id),
+            },
+            idempotency_key=f"payout-{payout.id}",
+        )
+
+        payout_transaction_repository = PayoutTransactionRepository.from_session(
+            session
+        )
+        updated_transaction = await payout_transaction_repository.get_by_id(
+            transaction.id
+        )
+        assert updated_transaction is not None
+        assert updated_transaction.transfer_id == "STRIPE_TRANSFER_ID"
 
 
 @pytest.mark.asyncio

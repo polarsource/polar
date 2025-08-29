@@ -5,6 +5,7 @@ import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
+import { GeistMono } from 'geist/font/mono'
 import { GeistSans } from 'geist/font/sans'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Metadata } from 'next/types'
@@ -78,12 +79,6 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin={''}
-        />
         <link
           href="/favicon.png"
           rel="icon"
@@ -96,7 +91,11 @@ export default async function RootLayout({
         ></link>
       </head>
       <body
-        className={twMerge(`antialiased`, GeistSans.className)}
+        className={twMerge(
+          `antialiased`,
+          GeistSans.className,
+          GeistMono.variable,
+        )}
         style={{
           textRendering: 'optimizeLegibility',
         }}

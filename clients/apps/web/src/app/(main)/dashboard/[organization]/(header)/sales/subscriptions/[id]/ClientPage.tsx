@@ -10,7 +10,8 @@ import { DetailRow } from '@/components/Shared/DetailRow'
 import CancelSubscriptionModal from '@/components/Subscriptions/CancelSubscriptionModal'
 import SubscriptionDetails from '@/components/Subscriptions/SubscriptionDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
-import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
+import { toast } from '@/components/Toast/use-toast'
+import { useCustomFields, useProduct, useSubscription, useUncancelSubscription } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List } from '@polar-sh/ui/components/atoms/List'
@@ -42,6 +43,25 @@ const ClientPage: React.FC<ClientPageProps> = ({
     show: showUpdateModal,
     isShown: isShownUpdateModal,
   } = useModal()
+  
+  const uncancelSubscription = useUncancelSubscription(_subscription.id)
+
+  const handleUncancel = async () => {
+    try {
+      await uncancelSubscription.mutateAsync()
+      toast({
+        title: 'Subscription Uncanceled',
+        description: 'The subscription has been successfully uncanceled and will continue at the next billing cycle.',
+        variant: 'success',
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to uncancel the subscription. Please try again.',
+        variant: 'error',
+      })
+    }
+  }
 
   if (!subscription || !product) {
     return null
@@ -57,6 +77,31 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
       }
       className="gap-y-8"
+      header={
+        <div className="flex flex-row gap-4">
+          <Button type="button" onClick={showUpdateModal}>
+            Update Subscription
+          </Button>
+          {subscription.cancel_at_period_end && subscription.status !== 'canceled' ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleUncancel}
+              loading={uncancelSubscription.isPending}
+            >
+              Uncancel
+            </Button>
+          ) : subscription.status !== 'canceled' ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={showCancellationModal}
+            >
+              Cancel
+            </Button>
+          ) : null}
+        </div>
+      }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden"
       contextView={
         <CustomerContextView
@@ -64,7 +109,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
           customer={subscription.customer as schemas['Customer']}
         />
       }
-      wide
     >
       <List size="small">
         <ProductListItem organization={organization} product={product} />
@@ -117,21 +161,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
             </div>
           </div>
         )}
-
-        <div className="flex flex-row gap-4 p-8">
-          <Button type="button" onClick={showUpdateModal}>
-            Update Subscription
-          </Button>
-          {subscription.status !== 'canceled' && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={showCancellationModal}
-            >
-              Cancel Subscription
-            </Button>
-          )}
-        </div>
       </ShadowBox>
 
       <div className="flex flex-col gap-4 md:hidden">

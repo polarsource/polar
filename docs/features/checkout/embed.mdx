@@ -40,8 +40,15 @@ You can style the trigger element any way you want, as long as you keep the `dat
 If you have a more advanced project in JavaScript, like a React app, adding the `<script>` tag may not be an option. In this case, you can install our dedicated library.
 
 <CodeGroup>
-  ```bash npm npm install @polar-sh/checkout ``` ```bash pnpm pnpm add
-  @polar-sh/checkout ``` ```bash yarn yarn add @polar-sh/checkout ```
+  ```bash npm
+  npm install @polar-sh/checkout
+  ```
+  ```bash pnpm
+  pnpm add @polar-sh/checkout
+  ```
+  ```bash yarn
+  yarn add @polar-sh/checkout
+  ```
 </CodeGroup>
 
 Then, you should import the `PolarEmbedCheckout` helper class and manually call `PolarEmbedCheckout.init()`. This will add the required handlers on elements having the `data-polar-checkout` attribute.
@@ -271,6 +278,24 @@ document
 
 ## Enabling Wallet Payment Methods (Apple Pay, Google Pay, etc.)
 
-By default, wallet payment methods such as Apple Pay and Google Pay are not enabled when embedding our checkout form into your website. For security reasons, your website domain needs to be manually validated.
+Wallet payment methods such as Apple Pay and Google Pay are supported in the checkout with the following conditions:
 
-To enable wallet payment methods on your website, please [email us](mailto:support@polar.sh) with your organization slug and the domain you wish to allow.
+- **Apple Pay** appears automatically in the checkout if:
+  - The user is on an Apple device
+  - The browser is Safari
+  - The device is connected to an Apple account with Apple Pay configured
+
+- **Google Pay** appears automatically in the checkout if:
+  - The user is on Google Chrome
+  - The browser is connected to a Google account with Google Pay configured
+
+**No additional action is required** if you meet these conditions and are not using an embedded checkout.
+
+### Enabling Wallet Payments for Embedded Checkout
+
+By default, wallet payment methods (Apple Pay, Google Pay, etc.) are **not enabled** when you embed our checkout form into your website. For security reasons, your website domain needs to be manually validated before enabling these payment methods in embedded mode.
+
+To enable wallet payment methods on your embedded checkout, please [email us](mailto:support@polar.sh) with:
+
+- Your organization slug
+- The domain you wish to allow for wallet payments

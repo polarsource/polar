@@ -21,17 +21,26 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 <Tabs>
   <Tab title="npm">
     Install the BetterAuth and Polar required libraries using the following
-    command: ```bash npm install better-auth @polar-sh/better-auth @polar-sh/sdk
+    command:
+    
+    ```bash
+    npm install better-auth @polar-sh/better-auth @polar-sh/sdk
     ```
   </Tab>
   <Tab title="yarn">
     Install the BetterAuth and Polar required libraries using the following
-    command: ```bash yarn add better-auth @polar-sh/better-auth @polar-sh/sdk
+    command:
+    
+    ```bash
+    yarn add better-auth @polar-sh/better-auth @polar-sh/sdk
     ```
   </Tab>
   <Tab title="pnpm">
     Install the BetterAuth and Polar required libraries using the following
-    command: ```bash pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk
+    command:
+    
+    ```bash
+    pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk
     ```
   </Tab>
 </Tabs>
@@ -324,7 +333,7 @@ To set up the Polar `webhooks` plugin with the BetterAuth client, follow the ste
 
 <Steps>
   <Step title="Configure Webhook Endpoints in Polar">
-    Configure a Webhook endpoint in your Polar Organization Settings page by following [this guide](/integrate/webhooks/endpoints). Webhook endpoint is configured at /polar/webhooks.
+    Configure a Webhook endpoint in your Polar Organization Settings page by following [this guide](/integrate/webhooks/endpoints). Webhook endpoint is configured at `/api/auth/polar/webhooks`.
   </Step>
   <Step title="Add the Webhook Secret">
     Add the obtained webhook secret to your application environment as an environment variable (to be used as `process.env.POLAR_WEBHOOK_SECRET`):

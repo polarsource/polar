@@ -66,13 +66,11 @@ class LoggingEmailSender(EmailSender):
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
     ) -> None:
         log.info(
-            "logging email",
+            "Sending an email",
             to_email_addr=to_ascii_email(to_email_addr),
             subject=subject,
-            html_content=html_content,
             from_name=from_name,
             from_email_addr=to_ascii_email(from_email_addr),
-            email_headers=email_headers,
         )
 
 

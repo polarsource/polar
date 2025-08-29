@@ -73,7 +73,7 @@ export default function FrameworkSelector() {
         >
           <motion.div
             key={framework.name}
-            className="dark:hover:bg-polar-900 group flex h-full w-full flex-1 flex-col items-center justify-center rounded-md hover:bg-gray-100"
+            className="group flex h-full w-full flex-1 flex-col items-center justify-center rounded-md"
             variants={itemVariants}
           >
             <div className="flex flex-col opacity-50 transition-all duration-200 group-hover:opacity-100">

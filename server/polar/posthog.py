@@ -58,7 +58,7 @@ class Service:
 
         self.client = Posthog(settings.POSTHOG_PROJECT_API_KEY)
         self.client.disabled = settings.is_testing()
-        self.client.debug = settings.DEBUG
+        self.client.debug = settings.POSTHOG_DEBUG
         self.client.feature_enabled
 
     def has_feature_flag(self, auth_subject: AuthSubject[Subject], flag: str) -> bool:
@@ -87,8 +87,8 @@ class Service:
             return
 
         self.client.capture(
-            distinct_id,
-            event=event,
+            event,
+            distinct_id=distinct_id,
             groups=groups,
             properties={
                 **self._get_common_properties(),
@@ -172,8 +172,8 @@ class Service:
         if not self.client:
             return
 
-        self.client.identify(
-            user.posthog_distinct_id,
+        self.client.set(
+            distinct_id=user.posthog_distinct_id,
             properties={
                 **self._get_common_properties(),
                 **self._get_user_properties(user),

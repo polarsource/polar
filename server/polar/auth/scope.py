@@ -11,8 +11,8 @@ class Scope(StrEnum):
     email = "email"
     user_read = "user:read"
 
-    admin = "admin"  # Admin scope. For Polar staff only.
-    web_default = "web_default"  # Web default scope. For users logged in on the web.
+    web_read = "web:read"  # Read-only web access
+    web_write = "web:write"  # Write web access
 
     organizations_read = "organizations:read"
     organizations_write = "organizations:write"
@@ -102,13 +102,14 @@ class Scope(StrEnum):
         return json_schema
 
 
-RESERVED_SCOPES = {Scope.admin, Scope.web_default}
+RESERVED_SCOPES = {Scope.web_read, Scope.web_write}
 SCOPES_SUPPORTED = [s.value for s in Scope if s not in RESERVED_SCOPES]
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",
     Scope.profile: "Read your profile",
     Scope.email: "Read your email address",
-    Scope.web_default: "Web Default",
+    Scope.web_read: "Web Read Access",
+    Scope.web_write: "Web Write Access",
     Scope.user_read: "User Read",
     Scope.organizations_read: "Read your organizations",
     Scope.organizations_write: "Create or modify organizations",

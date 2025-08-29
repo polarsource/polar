@@ -24,7 +24,7 @@ from . import auth
 from .schemas import MetricsLimits, MetricsResponse
 from .service import metrics as metrics_service
 
-router = APIRouter(prefix="/metrics", tags=["metrics", APITag.documented, APITag.mcp])
+router = APIRouter(prefix="/metrics", tags=["metrics", APITag.public, APITag.mcp])
 
 
 @router.get("/", summary="Get Metrics", response_model=MetricsResponse)

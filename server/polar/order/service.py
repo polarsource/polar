@@ -716,7 +716,10 @@ class OrderService:
         )
 
         # Reset the associated meters, if any
-        if billing_reason == OrderBillingReason.subscription_cycle:
+        if billing_reason in {
+            OrderBillingReason.subscription_cycle,
+            OrderBillingReason.subscription_update,
+        }:
             await subscription_service.reset_meters(session, subscription)
 
         # If the order total amount is zero, mark it as paid immediately

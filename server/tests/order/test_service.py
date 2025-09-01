@@ -25,6 +25,7 @@ from polar.kit.tax import TaxabilityReason, TaxCalculation, TaxID, calculate_tax
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
+    BillingEntry,
     Customer,
     Discount,
     Product,
@@ -58,6 +59,7 @@ from polar.order.service import (
 )
 from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_static_price
+from polar.subscription.service import SubscriptionService
 from polar.transaction.service.balance import (
     PaymentTransactionForChargeDoesNotExist,
 )
@@ -74,6 +76,7 @@ from tests.fixtures.random_objects import (
     create_checkout,
     create_customer,
     create_discount,
+    create_event,
     create_order,
     create_payment,
     create_payment_method,
@@ -1445,6 +1448,53 @@ class TestCreateSubscriptionOrder:
                 customer_balance
                 == setup["expected_subtotal"] - setup["expected_discount"]
             )
+
+    @pytest.mark.parametrize(
+        "billing_reason",
+        [
+            OrderBillingReason.subscription_cycle,
+            OrderBillingReason.subscription_update,
+        ],
+    )
+    async def test_metered(
+        self,
+        billing_reason: OrderBillingReason,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_metered: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription_service_mock = mocker.patch(
+            "polar.order.service.subscription_service", spec=SubscriptionService
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+        )
+        await save_fixture(
+            BillingEntry.from_metered_event(
+                customer, subscription.subscription_product_prices[0], event
+            )
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, billing_reason
+        )
+
+        assert len(order.items) == 1
+        assert order.subtotal_amount == 100
+
+        subscription_service_mock.reset_meters.assert_awaited_once_with(
+            session, subscription
+        )
 
 
 @pytest.mark.asyncio

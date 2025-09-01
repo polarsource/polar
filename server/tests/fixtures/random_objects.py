@@ -23,7 +23,7 @@ from polar.meter.aggregation import (
     Aggregation,
     CountAggregation,
 )
-from polar.meter.filter import Filter, FilterConjunction
+from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
     Account,
     Benefit,
@@ -1565,12 +1565,16 @@ async def create_balance_transaction(
     return transaction
 
 
+METER_ID = uuid.uuid4()
+METER_TEST_EVENT = "TEST_EVENT"
+
+
 async def create_event(
     save_fixture: SaveFixture,
     *,
     organization: Organization,
     source: EventSource = EventSource.user,
-    name: str = "test",
+    name: str = METER_TEST_EVENT,
     timestamp: datetime | None = None,
     customer: Customer | None = None,
     external_customer_id: str | None = None,
@@ -1589,16 +1593,20 @@ async def create_event(
     return event
 
 
-METER_ID = uuid.uuid4()
-
-
 async def create_meter(
     save_fixture: SaveFixture,
     *,
     organization: Organization,
     id: uuid.UUID = METER_ID,
     name: str = "My Meter",
-    filter: Filter = Filter(conjunction=FilterConjunction.and_, clauses=[]),
+    filter: Filter = Filter(
+        conjunction=FilterConjunction.and_,
+        clauses=[
+            FilterClause(
+                property="name", operator=FilterOperator.eq, value=METER_TEST_EVENT
+            )
+        ],
+    ),
     aggregation: Aggregation = CountAggregation(),
     last_billed_event: Event | None = None,
 ) -> Meter:

@@ -434,6 +434,36 @@ class PlainService:
                         ],
                     )
                 ),
+                ComponentContainerContentInput(
+                    component_row=ComponentRowInput(
+                        row_main_content=[
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text="Customer Portal",
+                                    text_size=ComponentTextSize.S,
+                                    text_color=ComponentTextColor.MUTED,
+                                )
+                            ),
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text=settings.generate_frontend_url(
+                                        f"/{organization.slug}/portal"
+                                    )
+                                )
+                            ),
+                        ],
+                        row_aside_content=[
+                            ComponentRowContentInput(
+                                component_copy_button=ComponentCopyButtonInput(
+                                    copy_button_value=settings.generate_frontend_url(
+                                        f"/{organization.slug}/portal"
+                                    ),
+                                    copy_button_tooltip_label="Copy URL",
+                                )
+                            )
+                        ],
+                    )
+                ),
                 *(
                     [
                         ComponentContainerContentInput(

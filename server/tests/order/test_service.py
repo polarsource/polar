@@ -666,6 +666,36 @@ class TestCreateFromCheckoutSubscription:
         assert order.product == product
         assert len(order.items) == len(product.prices)
 
+    async def test_metered(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_recurring_metered],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+
+        order = await order_service.create_from_checkout_subscription(
+            session, checkout, subscription, OrderBillingReason.subscription_create
+        )
+
+        assert order.net_amount == checkout.net_amount
+        assert order.discount_amount == 0
+        assert order.billing_reason == OrderBillingReason.subscription_create
+        assert order.customer == checkout.customer
+        assert order.product == product_recurring_metered
+        assert len(order.items) == len(
+            [p for p in product_recurring_metered.prices if is_static_price(p)]
+        )
+
 
 @pytest.mark.asyncio
 class TestCreateSubscriptionOrderWithStripe:

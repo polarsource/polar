@@ -36,6 +36,7 @@ from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
     create_active_subscription,
     create_event,
     create_meter,
@@ -581,7 +582,9 @@ class TestGetQuantities:
                 conjunction=FilterConjunction.and_,
                 clauses=[
                     FilterClause(
-                        property="name", operator=FilterOperator.eq, value="test"
+                        property="name",
+                        operator=FilterOperator.eq,
+                        value=METER_TEST_EVENT,
                     )
                 ],
             ),

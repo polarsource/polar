@@ -17,6 +17,9 @@ from polar.event.system import (
     BenefitGrantMetadata,
     MeterCreditedMetadata,
     MeterResetMetadata,
+    SubscriptionCycledMetadata,
+    SubscriptionProductUpdatedMetadata,
+    SubscriptionRevokedMetadata,
 )
 from polar.event.system import (
     SystemEvent as SystemEventEnum,
@@ -173,13 +176,49 @@ class BenefitRevokedEvent(SystemEventBase):
     )
 
 
+class SubscriptionCycledEvent(SystemEventBase):
+    """An event created by Polar when a subscription is cycled."""
+
+    name: Literal[SystemEventEnum.subscription_cycled] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionCycledMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class SubscriptionRevokedEvent(SystemEventBase):
+    """An event created by Polar when a subscription is revoked from a customer."""
+
+    name: Literal[SystemEventEnum.subscription_revoked] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionRevokedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class SubscriptionProductUpdatedEvent(SystemEventBase):
+    """An event created by Polar when a subscription changes the product."""
+
+    name: Literal[SystemEventEnum.subscription_product_updated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionProductUpdatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 SystemEvent = Annotated[
     MeterCreditEvent
     | MeterResetEvent
     | BenefitGrantedEvent
     | BenefitCycledEvent
     | BenefitUpdatedEvent
-    | BenefitRevokedEvent,
+    | BenefitRevokedEvent
+    | SubscriptionCycledEvent
+    | SubscriptionRevokedEvent
+    | SubscriptionProductUpdatedEvent,
     Discriminator("name"),
     SetSchemaReference("SystemEvent"),
     ClassName("SystemEvent"),

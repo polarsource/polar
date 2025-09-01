@@ -139,6 +139,11 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
+def enqueue_job_mock_billing_entry(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.billing_entry.service.enqueue_job")
+
+
+@pytest.fixture
 def publish_checkout_event_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.order.service.publish_checkout_event")
 
@@ -161,6 +166,29 @@ def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
         "tax_rate": {},
     }
     return mock
+
+
+def assert_set_order_item_ids(
+    enqueue_job_mock: MagicMock,
+    expected_billing_entry_ids: list[uuid.UUID],
+    expected_order_item_ids: list[uuid.UUID],
+) -> None:
+    # `enqueue_job` gets called a couple of times, only one of which
+    # we care about. We do the following to extract only that "one" and
+    # assert that it's just called once or never in the two cases.
+    calls = [
+        (args, kwargs)
+        for args, kwargs in enqueue_job_mock.call_args_list
+        if args[0] == "billing_entry.set_order_item"
+    ]
+    billing_entry_ids = set()
+    order_item_ids = set()
+    for args, kwargs in calls:
+        billing_entry_ids |= set(args[1])
+        order_item_ids.add(args[2])
+
+    assert billing_entry_ids == set(expected_billing_entry_ids)
+    assert order_item_ids == set(expected_order_item_ids)
 
 
 @pytest.mark.asyncio
@@ -1003,6 +1031,7 @@ class TestCreateSubscriptionOrder:
         self,
         calculate_tax_mock: MagicMock,
         enqueue_job_mock: MagicMock,
+        enqueue_job_mock_billing_entry: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -1084,22 +1113,15 @@ class TestCreateSubscriptionOrder:
         # assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
         assert order.tax_transaction_processor_id is None
 
-        billing_entry_repository = BillingEntryRepository.from_session(session)
-        updated_billing_entry = await billing_entry_repository.get_by_id(
-            billing_entry_credit.id
+        assert_set_order_item_ids(
+            enqueue_job_mock_billing_entry,
+            [
+                billing_entry_credit.id,
+                billing_entry_debit.id,
+                billing_entry_cycle.id,
+            ],
+            [o.id for o in order_items],
         )
-        assert updated_billing_entry is not None
-        assert updated_billing_entry.order_item_id == order_items[0].id
-        updated_billing_entry = await billing_entry_repository.get_by_id(
-            billing_entry_debit.id
-        )
-        assert updated_billing_entry is not None
-        assert updated_billing_entry.order_item_id == order_items[1].id
-        updated_billing_entry = await billing_entry_repository.get_by_id(
-            billing_entry_cycle.id
-        )
-        assert updated_billing_entry is not None
-        assert updated_billing_entry.order_item_id == order_items[2].id
 
         enqueue_job_mock.assert_any_call(
             "order.trigger_payment",
@@ -1279,6 +1301,7 @@ class TestCreateSubscriptionOrder:
         self,
         calculate_tax_mock: MagicMock,
         enqueue_job_mock: MagicMock,
+        enqueue_job_mock_billing_entry: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -1372,16 +1395,12 @@ class TestCreateSubscriptionOrder:
         assert order.billing_reason == OrderBillingReason.subscription_cycle
         assert order.subscription == subscription
 
-        billing_entry_repository = BillingEntryRepository.from_session(session)
-        order_ids = set()
-        for billing_entry in entries:
-            updated_billing_entry = await billing_entry_repository.get_by_id(
-                billing_entry.id
-            )
-            assert updated_billing_entry is not None
-            order_ids.add(updated_billing_entry.order_item_id)
-
-        assert order_ids == set([oi.id for oi in order.items])
+        # assert order_ids == set([oi.id for oi in order.items])
+        assert_set_order_item_ids(
+            enqueue_job_mock_billing_entry,
+            [e.id for e in entries],
+            [oi.id for oi in order.items],
+        )
 
         customer_balance = await order_service.customer_balance(session, customer)
         if order.subtotal_amount >= 0:

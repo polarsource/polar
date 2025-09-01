@@ -13,7 +13,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.math import non_negative_running_sum
 from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, Event, OrderItem, Subscription
-from polar.models.billing_entry import BillingEntryType
+from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.product.guard import (
@@ -151,11 +151,18 @@ class BillingEntryService:
 
         start = format_date(entry.start_timestamp.date(), locale="en_US")
         end = format_date(entry.end_timestamp.date(), locale="en_US")
-        label = f"{product.name} — From {start} to {end}"
+        amount = entry.amount
+
+        if entry.direction == BillingEntryDirection.credit:
+            label = f"Remaining time on {product.name} — From {start} to {end}"
+            amount = -amount
+        elif entry.direction == BillingEntryDirection.debit:
+            label = f"{product.name} — From {start} to {end}"
+            amount = amount
 
         return StaticLineItem(
             price=price,
-            amount=entry.amount,
+            amount=amount,
             currency=entry.currency,
             label=label,
             proration=entry.type == BillingEntryType.proration,

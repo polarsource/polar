@@ -63,6 +63,7 @@ from polar.models import (
 )
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
@@ -643,6 +644,9 @@ class OrderService:
         discount = subscription.discount
         discount_amount = 0
         if discount is not None:
+            # Discount only applies to cycle and meter items, as prorations
+            # use "last month's" discount and so this month's discount
+            # shouldn't apply to those.
             discountable_amount = sum(
                 item.amount for item in items if item.discountable
             )
@@ -1463,6 +1467,12 @@ class OrderService:
     ) -> None:
         await session.refresh(order.product, {"prices"})
 
+        # Refresh order items with their product_price.product relationship loaded
+        # This is needed for webhook serialization which accesses `legacy_product_price.product`
+        for item in order.items:
+            if item.product_price:
+                await session.refresh(item.product_price, {"product"})
+
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
             order.product.organization_id
@@ -1630,6 +1640,40 @@ class OrderService:
         )
 
         return order
+
+    async def customer_balance(self, session: AsyncSession, customer: Customer) -> int:
+        """
+        Returns what the customer is "owed".
+
+        This can happen if the customer switches from e.g. a yearly plan at $100/yr to
+        a monthly plan at $15/mo. In that case the customer has $85 in "credit" or balance
+        on their account (depending on when they changed the plan).
+        """
+        order_repository = OrderRepository.from_session(session)
+        paid_orders = await order_repository.get_all(
+            order_repository.get_base_statement()
+            # .join(Customer, Order.customer_id == Customer.id)
+            .where(
+                Customer.id == customer.id,
+                Order.deleted_at.is_(None),
+                Order.status == OrderStatus.paid,
+            )
+        )
+        payment_repository = PaymentRepository.from_session(session)
+        payments = await payment_repository.get_all(
+            payment_repository.get_base_statement()
+            .join(Order, Payment.order_id == Order.id)
+            .where(
+                Order.customer_id == customer.id,
+                Order.deleted_at.is_(None),
+                Payment.status == PaymentStatus.succeeded,
+            )
+        )
+
+        total_orders = sum(order.total_amount for order in paid_orders)
+        total_paid = sum(payment.amount for payment in payments)
+
+        return total_orders - total_paid
 
 
 order = OrderService()

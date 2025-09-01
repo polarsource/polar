@@ -48,8 +48,8 @@ class SubscriptionRecurringInterval(StrEnum):
 
 
 class SubscriptionProrationBehavior(StrEnum):
-    invoice = "invoice"
-    prorate = "prorate"
+    invoice = "invoice"  # Invoice immediately
+    prorate = "prorate"  # Add prorations to next invoice
 
     def to_stripe(self) -> Literal["always_invoice", "create_prorations"]:
         if self == SubscriptionProrationBehavior.invoice:

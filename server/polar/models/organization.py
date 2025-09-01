@@ -161,7 +161,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         JSONB, nullable=False, default=dict
     )
     subscriptions_billing_engine: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
+        Boolean, nullable=False, default=settings.ORGANIZATIONS_BILLING_ENGINE_DEFAULT
     )
 
     #

@@ -4,7 +4,8 @@ keywords: careers, join, team, polar, open source, jobs, company, about, polar, 
 ---
 
 import Image from 'next/image'
-import { JobLink } from './JobLink'
+import Link from 'next/link'
+import { ArrowOutwardOutlined } from '@mui/icons-material'
 
 <InnerHeaderWrapper className="flex h-96 flex-col items-center justify-center !pt-0 md:h-[640px]">
   <div className="flex flex-col items-center text-center">
@@ -68,38 +69,15 @@ experiences. Simplicity and opinionated iterations vs. perfection are key to ena
 We&apos;re not a 9-5 nor 24/7. We don&apos;t track time nor search for people
 who count it down. We love to work and pour our heart into what we build to continuously push the envelope of our creativity and productivity.
 
-## Open Roles
+## Join Us
 
-<div className="flex flex-col gap-4">
-  <JobLink
-    role="Staff Frontend Engineer"
-    description="Lead the development of our frontend codebase and how we ship composible billing components for developers"
-    location="Remote — Europe"
-    link="https://jobs.gem.com/polar/am9icG9zdDparTigzDB_RewSqH5o5htc"
-  />
-  <JobLink
-    role="Staff Product Engineer"
-    description="Work across our entire stack to ship innovative features to enhance how developers monetize their software."
-    location="Remote — Europe"
-    link="https://jobs.gem.com/polar/am9icG9zdDpgsiQcAqkm5Om5LnR4TJs2"
-  />
-  <JobLink
-    role="Senior Product Engineer"
-    description="Work across our entire stack to ship innovative features to enhance how developers monetize their software."
-    location="Remote — Europe"
-    link="https://jobs.gem.com/polar/am9icG9zdDpzKcc8t-KY2aAP96pbMHP_"
-  />
-  <JobLink
-    role="Support Engineer"
-    description="Help our customers get the most out of Polar. Improve our docs, build internal tooling and automations to scale those efforts."
-    location="Remote — Europe"
-    link="https://jobs.gem.com/polar/am9icG9zdDq-gyYKkPmJozQGu_MfvgJ_"
-  />
-  <JobLink
-    role="Chief of Staff"
-    description="Help us scale from an early-stage startup to scale-up."
-    location="Stockholm"
-    link="https://jobs.gem.com/polar/am9icG9zdDp6OvHLVgSUOIC87Ij7TiE9"
-  />
-</div>
+We're hiring across engineering, product, and operations roles to help build the future of software monetization.
+
+<Link
+  href="/careers"
+  className="pb-0.5 border-b border-black dark:border-white dark:!text-white !text-black w-fit"
+>
+  <span>View Open Positions</span>
+  <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
+</Link>
 </InnerWrapper>

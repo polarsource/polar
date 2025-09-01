@@ -138,7 +138,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return relationship("Customer", lazy="raise")
 
     product_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("products.id"), nullable=False
+        Uuid, ForeignKey("products.id"), nullable=False, index=True
     )
 
     @declared_attr

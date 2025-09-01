@@ -79,7 +79,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
-from polar.product.guard import is_custom_price
+from polar.product.guard import is_custom_price, is_static_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
@@ -537,6 +537,9 @@ class OrderService:
 
         items: list[OrderItem] = []
         for price in prices:
+            # Don't create an item for metered prices
+            if not is_static_price(price):
+                continue
             if is_custom_price(price):
                 item = OrderItem.from_price(price, 0, checkout.amount)
             else:

@@ -14,6 +14,7 @@ from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.models import (
     Customer,
+    Event,
     Meter,
     Organization,
     Subscription,
@@ -66,7 +67,7 @@ async def assert_system_events(
     subscription: Subscription,
     customer: Customer,
     num_events_expected: int,
-):
+) -> list[Event]:
     event_repository = EventRepository.from_session(session)
     events = await event_repository.get_all_by_name(
         SystemEvent.subscription_product_updated
@@ -90,7 +91,7 @@ async def assert_billing_entries(
     session: AsyncSession,
     subscription: Subscription,
     expected_billing_entries: list[ExpectedBillingEntry],
-):
+) -> None:
     billing_entry_repository = BillingEntryRepository.from_session(session)
     billing_entries = await billing_entry_repository.get_pending_by_subscription(
         subscription.id
@@ -281,8 +282,8 @@ class TestUpdateProductProrations:
         enqueue_job_mock: MagicMock,
         organization: Organization,
         customer: Customer,
-        old_product_param,
-        new_product_param,
+        old_product_param: tuple[SubscriptionRecurringInterval, int],
+        new_product_param: tuple[SubscriptionRecurringInterval, int],
         cycle_start: datetime,
         time_of_update: datetime,
         entry_0_amount: int,

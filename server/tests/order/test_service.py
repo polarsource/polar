@@ -1355,7 +1355,7 @@ class TestCreateSubscriptionOrder:
                 duration=setup["discount"]["duration"],
                 duration_in_months=setup["discount"].get("duration_in_months"),
                 organization=organization,
-                products=[products[key] for key in setup["discount"]["applies_to"]]
+                products=[products[key] for key in setup["discount"]["applies_to"]]  # type: ignore
                 if setup["discount"].get("applies_to")
                 else None,
             )

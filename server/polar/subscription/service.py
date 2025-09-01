@@ -945,7 +945,7 @@ class SubscriptionService:
             new_static_prices = [p for p in product.prices if is_static_price(p)]
 
             for old_price in old_static_prices:
-                base_amount = old_price.price_amount
+                base_amount = old_price.price_amount  # type: ignore
                 discount_amount = 0
                 if subscription.discount:
                     discount_amount = subscription.discount.get_discount_amount(
@@ -985,7 +985,7 @@ class SubscriptionService:
                 # that means a debit billing entry for the new cycle will be added automatically.
                 # So debit prorations only apply when the cycle interval is the same.
                 for new_price in new_static_prices:
-                    base_amount = new_price.price_amount
+                    base_amount = new_price.price_amount  # type: ignore
                     discount_amount = 0
                     if subscription.discount and subscription.discount.is_applicable(
                         new_price.product

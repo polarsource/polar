@@ -29,6 +29,7 @@ import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
+import UnitChart from '../Metrics/UnitChart'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerStatBox } from './CustomerStatBox'
 
@@ -155,6 +156,12 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             />
           </CustomerStatBox>
         </div>
+
+        <UnitChart
+          data={metricsData?.periods ?? []}
+          interval={interval}
+          height={300}
+        />
 
         <MetricChartBox
           metric={selectedMetric}

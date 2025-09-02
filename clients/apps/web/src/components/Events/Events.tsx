@@ -1,7 +1,7 @@
-import MoreHorizOutlined from '@mui/icons-material/MoreHorizOutlined'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { List } from '@polar-sh/ui/components/atoms/List'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -77,8 +77,10 @@ const EventRow = ({
           </Link>
         </td>
         <td className="px-4 py-2">
-          <span className="dark:bg-polar-700 dark:text-polar-500 w-fit items-center justify-center rounded-md bg-gray-100 px-1.5 py-0.5 text-gray-500">
-            <MoreHorizOutlined className="small" />
+          <span className="font-mono text-xs">
+            {event.cost
+              ? formatCurrencyAndAmount(event.cost.cost, event.cost.currency)
+              : '—'}
           </span>
         </td>
       </tr>
@@ -117,7 +119,7 @@ export const Events = ({
               <span className="font-mono text-xs capitalize">Customer</span>
             </th>
             <th className="px-4 py-2 text-left font-normal">
-              <span className="font-mono text-xs capitalize">Metadata</span>
+              <span className="font-mono text-xs capitalize">Cost</span>
             </th>
           </tr>
         </thead>

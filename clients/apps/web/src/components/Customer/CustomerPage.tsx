@@ -21,6 +21,7 @@ import {
 import Link from 'next/link'
 import React from 'react'
 import MetricChartBox from '../Metrics/MetricChartBox'
+import UnitChart from '../Metrics/UnitChart'
 import { DetailRow } from '../Shared/DetailRow'
 
 interface CustomerPageProps {
@@ -70,6 +71,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <TabsTrigger value="usage">Usage</TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-12">
+        <UnitChart
+          data={metricsData?.periods ?? []}
+          interval={interval}
+          height={300}
+        />
         <MetricChartBox
           metric={selectedMetric}
           onMetricChange={setSelectedMetric}

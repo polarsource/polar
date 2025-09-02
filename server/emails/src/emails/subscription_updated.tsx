@@ -32,10 +32,7 @@ export function SubscriptionUpdated({
       <Preview>Your subscription has been updated to {product.name}</Preview>
       <OrganizationHeader organization={organization} />
       <Section className="pt-10">
-        <Heading
-          as="h1"
-          className="text-xl font-bold text-gray-900 dark:text-white"
-        >
+        <Heading as="h1" className="text-xl font-bold text-gray-900">
           Your subscription has been updated
         </Heading>
         <BodyText>
@@ -48,10 +45,7 @@ export function SubscriptionUpdated({
             <BodyText>Your subscription now includes:</BodyText>
             <ul className="mt-2 list-disc pl-6">
               {product.benefits.map((benefit, index) => (
-                <li
-                  key={index}
-                  className="mb-1 text-gray-700 dark:text-gray-300"
-                >
+                <li key={index} className="mb-1 text-gray-700">
                   {benefit.description}
                 </li>
               ))}
@@ -69,16 +63,13 @@ export function SubscriptionUpdated({
       <Section className="my-8 text-center">
         <Button href={url}>View my subscription</Button>
       </Section>
-      <Section className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
-        <Text className="text-sm text-gray-600 dark:text-gray-400">
+      <Section className="mt-6 border-t border-gray-200 pt-6">
+        <Text className="text-sm text-gray-600">
           If you're having trouble with the button above, copy and paste the URL
           below into your web browser.
         </Text>
         <Text className="text-sm">
-          <Link
-            href={url}
-            className="text-blue-600 underline dark:text-blue-400"
-          >
+          <Link href={url} className="text-blue-600 underline">
             {url}
           </Link>
         </Text>

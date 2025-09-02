@@ -35,17 +35,14 @@ export function SubscriptionPastDue({
       <Preview>Your {product.name} subscription payment is past due</Preview>
       <OrganizationHeader organization={organization} />
       <Section className="pt-10">
-        <Heading
-          as="h1"
-          className="text-xl font-bold text-gray-900 dark:text-white"
-        >
+        <Heading as="h1" className="text-xl font-bold text-gray-900">
           Your subscription payment is past due
         </Heading>
         <BodyText>
           We were unable to process your payment for your{' '}
           <span className="font-bold">{product.name}</span> subscription. Your
-          subscription is now past due and access to benefits has been temporarily
-          suspended.
+          subscription is now past due and access to benefits has been
+          temporarily suspended.
         </BodyText>
         <BodyText>
           To restore access to your subscription benefits, please update your
@@ -60,16 +57,13 @@ export function SubscriptionPastDue({
       <Section className="my-8 text-center">
         <Button href={url}>Manage my subscription</Button>
       </Section>
-      <Section className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
-        <Text className="text-sm text-gray-600 dark:text-gray-400">
+      <Section className="mt-6 border-t border-gray-200 pt-6">
+        <Text className="text-sm text-gray-600">
           If you're having trouble with the button above, copy and paste the URL
           below into your web browser:
         </Text>
         <Text className="text-sm">
-          <Link
-            href={url}
-            className="text-blue-600 underline dark:text-blue-400"
-          >
+          <Link href={url} className="text-blue-600 underline">
             {url}
           </Link>
         </Text>

@@ -29,16 +29,13 @@ export function EmailUpdate({ token_lifetime_minutes, url }: EmailUpdateProps) {
         </Button>
       </Section>
       <Hr />
-      <Section className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
-        <Text className="text-sm text-gray-600 dark:text-gray-400">
+      <Section className="mt-6 border-t border-gray-200 pt-6">
+        <Text className="text-sm text-gray-600">
           If you're having trouble with the button above, copy and paste the URL
           below into your web browser.
         </Text>
         <Text className="text-sm">
-          <Link
-            href={url}
-            className="text-blue-600 underline dark:text-blue-400"
-          >
+          <Link href={url} className="text-blue-600 underline">
             {url}
           </Link>
         </Text>

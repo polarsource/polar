@@ -23,14 +23,20 @@ interface SubscriptionCancellationProps {
   current_year: number
 }
 
-function BenefitsSection({ benefits }: { benefits: Array<{ description: string }> }) {
+function BenefitsSection({
+  benefits,
+}: {
+  benefits: Array<{ description: string }>
+}) {
   // Only render if there are actual benefits to display
   if (benefits.length === 0) {
     return null
   }
   return (
     <>
-      <BodyText>Meanwhile, you will continue to have access to the following benefits:</BodyText>
+      <BodyText>
+        Meanwhile, you will continue to have access to the following benefits:
+      </BodyText>
       <ul className="list-disc space-y-1 pl-6">
         {benefits.map((benefit, index) => (
           <li key={index}>{benefit.description}</li>
@@ -57,10 +63,7 @@ export function SubscriptionCancellation({
       <Preview>Your subscription to {product.name} has been canceled</Preview>
       <OrganizationHeader organization={organization} />
       <Section className="pt-10">
-        <Heading
-          as="h1"
-          className="text-xl font-bold text-gray-900 dark:text-white"
-        >
+        <Heading as="h1" className="text-xl font-bold text-gray-900">
           Your subscription has been canceled
         </Heading>
         <BodyText>
@@ -78,16 +81,13 @@ export function SubscriptionCancellation({
       <Section className="my-8 text-center">
         <Button href={url}>Manage my subscription</Button>
       </Section>
-      <Section className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
-        <Text className="text-sm text-gray-600 dark:text-gray-400">
+      <Section className="mt-6 border-t border-gray-200 pt-6">
+        <Text className="text-sm text-gray-600">
           If you're having trouble with the button above, copy and paste the URL
           below into your web browser:
         </Text>
         <Text className="text-sm">
-          <Link
-            href={url}
-            className="text-blue-600 underline dark:text-blue-400"
-          >
+          <Link href={url} className="text-blue-600 underline">
             {url}
           </Link>
         </Text>

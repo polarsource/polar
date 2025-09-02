@@ -82,6 +82,35 @@ class TestListEvents:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(event2.id)
 
+    @pytest.mark.auth
+    async def test_cost_event(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=utc_now() + timedelta(days=1),
+            cost={
+                "cost": 10000,
+                "currency": "usd",
+                "vendor": "openai",
+            },
+        )
+        response = await client.get("/v1/events/")
+
+        assert response.status_code == 200
+        json = response.json()
+
+        assert json["items"][0]["cost"] == {
+            "cost": 10000,
+            "currency": "usd",
+            "vendor": "openai",
+        }
+
 
 @pytest.mark.asyncio
 class TestIngest:
@@ -104,6 +133,33 @@ class TestIngest:
         ],
     )
     async def test_valid(
+        self, events: list[dict[str, Any]], client: AsyncClient
+    ) -> None:
+        response = await client.post("/v1/events/ingest", json={"events": events})
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json == {"inserted": len(events)}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize(
+        "events",
+        [
+            [
+                {
+                    "name": "event1",
+                    "external_customer_id": "CUSTOMER_ID",
+                    "metadata": {"usage": 127.32},
+                    "cost": {
+                        "cost": 10000,
+                        "currency": "usd",
+                        "vendor": "openai",
+                    },
+                }
+            ]
+        ],
+    )
+    async def test_cost_event(
         self, events: list[dict[str, Any]], client: AsyncClient
     ) -> None:
         response = await client.post("/v1/events/ingest", json={"events": events})

@@ -13,6 +13,7 @@ from pydantic import (
 from pydantic.type_adapter import TypeAdapter
 
 from polar.customer.schemas.customer import Customer
+from polar.discount.schemas import Currency
 from polar.event.system import (
     BenefitGrantMetadata,
     MeterCreditedMetadata,
@@ -49,6 +50,18 @@ def is_past_timestamp(timestamp: datetime) -> datetime:
     return timestamp
 
 
+class EventCost(Schema):
+    cost: int = Field(..., description="The cost of the event in cents.")
+    currency: Currency = Field(
+        default="usd",
+        description="The currency of the event. Currently, only `usd` is supported.",
+    )
+    vendor: str | None = Field(
+        default=None,
+        description="The vendor which is associated with the cost.",
+    )
+
+
 class EventCreateBase(Schema, MetadataInputMixin):
     timestamp: Annotated[
         AwareDatetime,
@@ -58,6 +71,10 @@ class EventCreateBase(Schema, MetadataInputMixin):
         description="The timestamp of the event.",
     )
     name: str = Field(..., description="The name of the event.")
+    cost: EventCost | None = Field(
+        default=None,
+        description="Optional cost associated with the event.",
+    )
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -107,6 +124,9 @@ class BaseEvent(IDSchema):
     )
     external_customer_id: str | None = Field(
         description="ID of the customer in your system associated with the event."
+    )
+    cost: EventCost | None = Field(
+        description="The cost associated with the event.",
     )
 
 

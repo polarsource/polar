@@ -32,6 +32,7 @@ from polar.models import (
     Discount,
     DiscountProduct,
     Event,
+    EventCost,
     IssueReward,
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
@@ -1653,6 +1654,7 @@ async def create_event(
     timestamp: datetime | None = None,
     customer: Customer | None = None,
     external_customer_id: str | None = None,
+    cost: EventCost | None = None,
     metadata: dict[str, str | int | bool | float] | None = None,
 ) -> Event:
     event = Event(
@@ -1661,6 +1663,7 @@ async def create_event(
         name=name,
         customer_id=customer.id if customer else None,
         external_customer_id=external_customer_id,
+        cost=cost,
         organization=organization,
         user_metadata=metadata or {},
     )

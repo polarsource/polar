@@ -1,6 +1,6 @@
 import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 from uuid import UUID
 
 from sqlalchemy import (
@@ -23,6 +23,7 @@ from sqlalchemy import (
 from sqlalchemy import (
     cast as sqla_cast,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Mapped,
@@ -104,6 +105,12 @@ class CustomerComparator(Relationship.Comparator[Customer]):
         raise NotImplementedError()
 
 
+class EventCost(TypedDict):
+    cost: int
+    currency: str
+    vendor: str | None
+
+
 class Event(Model, MetadataMixin):
     __tablename__ = "events"
 
@@ -118,6 +125,7 @@ class Event(Model, MetadataMixin):
     source: Mapped[EventSource] = mapped_column(
         String, nullable=False, default=EventSource.system, index=True
     )
+    cost: Mapped[EventCost] = mapped_column(JSONB, nullable=True, default=None)
 
     customer_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("customers.id"), nullable=True, index=True
@@ -171,6 +179,10 @@ class Event(Model, MetadataMixin):
             # ⚠️ We don't use `SystemEvent` here to avoid circular imports.
             self.name == "meter.credited"
         )
+
+    @hybrid_property
+    def is_cost_event(self) -> bool:
+        return self.cost is not None
 
     @is_meter_credit.inplace.expression
     @classmethod

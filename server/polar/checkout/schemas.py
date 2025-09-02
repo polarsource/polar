@@ -343,7 +343,17 @@ CheckoutConfirm = CheckoutConfirmStripe
 
 class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     payment_processor: PaymentProcessor = Field(description="Payment processor used.")
-    status: CheckoutStatus = Field(description="Status of the checkout session.")
+    status: CheckoutStatus = Field(
+        description="""
+        Status of the checkout session.
+
+        - Open: the checkout session was opened
+        - Expired: the checkout session was expired and is no more accessible
+        - Confirmed: the user on the checkout session clicked Pay (but this does not mean that they successfully paid)
+        - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached
+        - Succeeded: the payment on the checkout succeeded!
+        """
+    )
     client_secret: str = Field(
         description=(
             "Client secret used to update and complete "

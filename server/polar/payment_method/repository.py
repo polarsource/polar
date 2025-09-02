@@ -56,6 +56,22 @@ class PaymentMethodRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def list_by_customer(
+        self,
+        customer_id: UUID,
+        *,
+        exclude_id: UUID | None = None,
+        options: Options = (),
+    ) -> list[PaymentMethod]:
+        statement = self.get_base_statement().where(
+            PaymentMethod.customer_id == customer_id
+        )
+        if exclude_id is not None:
+            statement = statement.where(PaymentMethod.id != exclude_id)
+        statement = statement.options(*options)
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())
+
     async def soft_delete(
         self, object: PaymentMethod, *, flush: bool = False
     ) -> PaymentMethod:

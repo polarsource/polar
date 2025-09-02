@@ -62,11 +62,9 @@ export const GitHubRepositoryBenefitForm = ({
 
   useEffect(() => {
     if (repositoriesError) {
-      repositoriesError.response.json().then((data: any) => {
-        setError('properties.repository_owner', {
-          message: data['detail'],
-          type: data['type'],
-        })
+      setError('properties.repository_owner', {
+        message: repositoriesError.error['detail'],
+        type: repositoriesError.error['type'],
       })
     } else {
       clearErrors('properties.repository_owner')
@@ -130,7 +128,7 @@ export const GitHubRepositoryBenefitForm = ({
       setValue('properties.repository_owner', repo.repository_owner)
       onChange(repo.repository_name)
     },
-    [clearErrors, repos, setValue],
+    [repos, setValue],
   )
 
   const formRepoOwner = watch('properties.repository_owner')

@@ -351,7 +351,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
         - Expired: the checkout session was expired and is no more accessible.
         - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
         - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
-        - Succeeded: the payment on the checkout was performed succesfully.
+        - Succeeded: the payment on the checkout was performed successfully.
         """
     )
     client_secret: str = Field(

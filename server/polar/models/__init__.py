@@ -19,7 +19,7 @@ from .discount_product import DiscountProduct
 from .discount_redemption import DiscountRedemption
 from .downloadable import Downloadable
 from .email_verification import EmailVerification
-from .event import Event
+from .event import Event, EventCost
 from .external_event import ExternalEvent
 from .file import File
 from .held_balance import HeldBalance
@@ -96,6 +96,7 @@ __all__ = [
     "Downloadable",
     "EmailVerification",
     "Event",
+    "EventCost",
     "ExternalEvent",
     "File",
     "HeldBalance",

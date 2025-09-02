@@ -230,6 +230,7 @@ class EventService:
                     {
                         "source": EventSource.user,
                         "organization_id": organization_id,
+                        "cost": event_create.cost,
                         **event_create.model_dump(
                             exclude={"organization_id"}, by_alias=True
                         ),

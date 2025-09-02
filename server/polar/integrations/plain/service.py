@@ -826,6 +826,7 @@ class PlainService:
 
         def _get_order_container(order: Order) -> ComponentContainerInput:
             product = order.product
+            organization = order.customer.organization
 
             return ComponentContainerInput(
                 container_content=[
@@ -865,7 +866,7 @@ class PlainService:
                                 ),
                                 ComponentRowContentInput(
                                     component_text=ComponentTextInput(
-                                        text=order.customer.organization.name
+                                        text=organization.name
                                     )
                                 ),
                             ],
@@ -874,8 +875,43 @@ class PlainService:
                                     component_link_button=ComponentLinkButtonInput(
                                         link_button_label="Backoffice ↗",
                                         link_button_url=settings.generate_external_url(
-                                            f"/backoffice/organizations/{order.customer.organization_id}"
+                                            f"/backoffice/organizations/{organization.id}"
                                         ),
+                                    )
+                                )
+                            ],
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_spacer=ComponentSpacerInput(
+                            spacer_size=ComponentSpacerSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_row=ComponentRowInput(
+                            row_main_content=[
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text="Customer Portal",
+                                        text_size=ComponentTextSize.S,
+                                        text_color=ComponentTextColor.MUTED,
+                                    )
+                                ),
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text=settings.generate_frontend_url(
+                                            f"/{organization.slug}/portal"
+                                        )
+                                    )
+                                ),
+                            ],
+                            row_aside_content=[
+                                ComponentRowContentInput(
+                                    component_copy_button=ComponentCopyButtonInput(
+                                        copy_button_value=settings.generate_frontend_url(
+                                            f"/{organization.slug}/portal"
+                                        ),
+                                        copy_button_tooltip_label="Copy URL",
                                     )
                                 )
                             ],

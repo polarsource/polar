@@ -20,6 +20,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
 from polar.models import Checkout, Order, Subscription
 from polar.models.checkout import CheckoutStatus
+from polar.models.event import Event
 from polar.models.subscription import CustomerCancellationReason
 
 from .queries import MetricQuery
@@ -691,10 +692,45 @@ class CanceledSubscriptionsOtherMetric(Metric):
         return sum
 
 
+class CostsMetric(Metric):
+    slug = "costs"
+    display_name = "Costs"
+    type = MetricType.currency
+    query = MetricQuery.costs
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Event.cost["cost"].as_integer())
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class CumulativeCostsMetric(Metric):
+    slug = "cumulative_costs"
+    display_name = "Cumulative Costs"
+    type = MetricType.currency
+    query = MetricQuery.cumulative_costs
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Event.cost["cost"].as_integer())
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return last
+
+
 METRICS: list[type[Metric]] = [
     OrdersMetric,
     RevenueMetric,
     NetRevenueMetric,
+    CostsMetric,
     CumulativeRevenueMetric,
     NetCumulativeRevenueMetric,
     AverageOrderValueMetric,

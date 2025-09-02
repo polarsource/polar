@@ -633,6 +633,7 @@ class SubscriptionService:
             OrderBillingReason.subscription_cycle,
         )
 
+        await self.send_cycled_email(session, subscription)
         await self._after_subscription_updated(
             session,
             subscription,
@@ -1600,6 +1601,16 @@ class SubscriptionService:
             subscription,
             subject_template="Your {product.name} subscription",
             template_name="subscription_confirmation",
+        )
+
+    async def send_cycled_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} subscription has been renewed",
+            template_name="subscription_cycled",
         )
 
     async def send_uncanceled_email(

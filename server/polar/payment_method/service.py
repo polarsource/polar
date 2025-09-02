@@ -34,15 +34,9 @@ class NotRecurringProduct(PaymentMethodError):
 class PaymentMethodInUseByActiveSubscription(PaymentMethodError):
     def __init__(self, subscription_ids: list[uuid.UUID]) -> None:
         self.subscription_ids = subscription_ids
-        subscription_word = (
-            "subscription" if len(subscription_ids) == 1 else "subscriptions"
-        )
-        subscription_list = ", ".join(str(id) for id in subscription_ids)
         message = (
-            f"Cannot delete payment method. It is currently used by active "
-            f"{subscription_word} ({subscription_list}) and no alternative payment methods "
-            f"are available. Please add another payment method or cancel the "
-            f"{subscription_word} before deleting this payment method."
+            "Cannot delete payment method. It is currently used by active "
+            "subscription and no alternative payment methods "
         )
         super().__init__(message, 400)
 

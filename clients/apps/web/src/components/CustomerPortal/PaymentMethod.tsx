@@ -1,3 +1,4 @@
+import { toast } from '@/components/Toast/use-toast'
 import { useDeleteCustomerPaymentMethod } from '@/hooks/queries'
 import type { Client, operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -51,7 +52,19 @@ const PaymentMethod = ({
   const deletePaymentMethod = useDeleteCustomerPaymentMethod(api)
 
   const onDeletePaymentMethod = async () => {
-    await deletePaymentMethod.mutateAsync(paymentMethod.id)
+    try {
+      await deletePaymentMethod.mutateAsync(paymentMethod.id)
+      toast({
+        title: 'Payment method deleted',
+        description: 'Your payment method has been successfully removed.',
+      })
+    } catch (error) {
+      toast({
+        title: 'Failed to delete payment method',
+        description: error instanceof Error ? error.message : 'An error occurred while deleting the payment method.',
+        variant: 'error',
+      })
+    }
   }
 
   return (

@@ -1,12 +1,14 @@
 import uuid
 
 import stripe as stripe_lib
+from sqlalchemy import select
 
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.models import Checkout, Customer, PaymentMethod
+from polar.models import Checkout, Customer, PaymentMethod, Subscription
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 
 from .repository import PaymentMethodRepository
@@ -27,6 +29,22 @@ class NotRecurringProduct(PaymentMethodError):
         self.product_id = product_id
         message = f"Product with ID {product_id} is not a recurring product."
         super().__init__(message)
+
+
+class PaymentMethodInUseByActiveSubscription(PaymentMethodError):
+    def __init__(self, subscription_ids: list[uuid.UUID]) -> None:
+        self.subscription_ids = subscription_ids
+        subscription_word = (
+            "subscription" if len(subscription_ids) == 1 else "subscriptions"
+        )
+        subscription_list = ", ".join(str(id) for id in subscription_ids)
+        message = (
+            f"Cannot delete payment method. It is currently used by active "
+            f"{subscription_word} ({subscription_list}) and no alternative payment methods "
+            f"are available. Please add another payment method or cancel the "
+            f"{subscription_word} before deleting this payment method."
+        )
+        super().__init__(message, 400)
 
 
 class PaymentMethodService:
@@ -81,11 +99,98 @@ class PaymentMethodService:
             session, checkout.customer, stripe_payment_method
         )
 
+    async def _get_active_subscription_ids(
+        self,
+        session: AsyncSession,
+        payment_method: PaymentMethod,
+    ) -> list[uuid.UUID]:
+        repository = PaymentMethodRepository.from_session(session)
+        stmt = select(Subscription.id).where(
+            Subscription.payment_method_id == payment_method.id,
+            Subscription.status.in_(SubscriptionStatus.active_statuses()),
+        )
+        result = await session.execute(stmt)
+        return [row[0] for row in result.fetchall()]
+
+    async def _get_alternative_payment_method(
+        self,
+        session: AsyncSession,
+        payment_method: PaymentMethod,
+    ) -> PaymentMethod | None:
+        repository = PaymentMethodRepository.from_session(session)
+        alternative_methods = await repository.list_by_customer(
+            payment_method.customer_id,
+            exclude_id=payment_method.id,
+        )
+
+        if not alternative_methods:
+            return None
+
+        # Prefer the customer's default payment method if it's different from the one being deleted
+        stmt = select(Customer.default_payment_method_id).where(
+            Customer.id == payment_method.customer_id
+        )
+        result = await session.execute(stmt)
+        default_pm_id = result.scalar_one_or_none()
+
+        if default_pm_id and default_pm_id != payment_method.id:
+            for method in alternative_methods:
+                if method.id == default_pm_id:
+                    return method
+
+        # Otherwise, return the first available alternative
+        return alternative_methods[0]
+
+    async def _reassign_subscriptions_payment_method(
+        self,
+        session: AsyncSession,
+        from_payment_method: PaymentMethod,
+        to_payment_method: PaymentMethod,
+        subscription_ids: list[uuid.UUID],
+    ) -> None:
+        stmt = select(Subscription).where(Subscription.id.in_(subscription_ids))
+        result = await session.execute(stmt)
+        subscriptions = list(result.scalars().all())
+
+        for subscription in subscriptions:
+            subscription.payment_method = to_payment_method
+
+            if (
+                subscription.stripe_subscription_id
+                and to_payment_method.processor == PaymentProcessor.stripe
+            ):
+                await stripe_service.set_automatically_charged_subscription(
+                    subscription.stripe_subscription_id,
+                    payment_method=to_payment_method.processor_id,
+                )
+
+        await session.flush()
+
     async def delete(
         self,
         session: AsyncSession,
         payment_method: PaymentMethod,
     ) -> None:
+        active_subscription_ids = await self._get_active_subscription_ids(
+            session, payment_method
+        )
+
+        if active_subscription_ids:
+            alternative_payment_method = await self._get_alternative_payment_method(
+                session, payment_method
+            )
+
+            if alternative_payment_method:
+                await self._reassign_subscriptions_payment_method(
+                    session,
+                    from_payment_method=payment_method,
+                    to_payment_method=alternative_payment_method,
+                    subscription_ids=active_subscription_ids,
+                )
+            else:
+                # No alternative payment method available, raise exception
+                raise PaymentMethodInUseByActiveSubscription(active_subscription_ids)
+
         if payment_method.processor == PaymentProcessor.stripe:
             await stripe_service.delete_payment_method(payment_method.processor_id)
 

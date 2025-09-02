@@ -8,6 +8,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Customer, PaymentMethod
 from polar.openapi import APITag
+from polar.payment_method.service import PaymentMethodInUseByActiveSubscription
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
@@ -110,6 +111,10 @@ async def add_payment_method(
     status_code=204,
     responses={
         204: {"description": "Payment method deleted."},
+        400: {
+            "description": "Payment method is used by active subscription(s).",
+            "model": PaymentMethodInUseByActiveSubscription.schema(),
+        },
         404: {
             "description": "Payment method not found.",
             "model": ResourceNotFound.schema(),

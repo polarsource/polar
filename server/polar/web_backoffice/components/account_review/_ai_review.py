@@ -261,10 +261,10 @@ class AIReviewVerdict:
                                 # Import forms at method level to avoid circular imports
                                 from polar.web_backoffice.components import button
                                 from polar.web_backoffice.organizations.forms import (
-                                    ApproveAppealForm,
+                                    ApproveOrganizationAppealForm,
                                 )
 
-                                with ApproveAppealForm.render(
+                                with ApproveOrganizationAppealForm.render(
                                     method="POST",
                                     action=str(self.request.url),
                                     classes="space-y-4",

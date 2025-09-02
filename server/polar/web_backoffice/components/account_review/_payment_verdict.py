@@ -6,8 +6,8 @@ from tagflow import tag, text
 
 from polar.web_backoffice.components import button
 from polar.web_backoffice.organizations.forms import (
-    ApproveAccountForm,
-    UnderReviewAccountForm,
+    ApproveOrganizationForm,
+    UnderReviewOrganizationForm,
 )
 from polar.web_backoffice.organizations.schemas import PaymentStatistics
 
@@ -21,7 +21,6 @@ class PaymentVerdict:
         organization: Any = None,
         show_actions: bool = False,
         request: Any = None,
-        account: Any = None,
         validation_error: Any = None,
     ):
         self.payment_count = payment_stats.payment_count
@@ -34,7 +33,6 @@ class PaymentVerdict:
         self.organization = organization
         self.show_actions = show_actions
         self.request = request
-        self.account = account
         self.validation_error = validation_error
 
     @property
@@ -186,8 +184,8 @@ class PaymentVerdict:
                                                 "Based on the financial analysis above"
                                             )
 
-                                    with ApproveAccountForm.render(
-                                        self.account,
+                                    with ApproveOrganizationForm.render(
+                                        data=None,
                                         method="POST",
                                         action=str(self.request.url),
                                         classes="space-y-4",
@@ -226,8 +224,8 @@ class PaymentVerdict:
                                                 "Based on financial threshold analysis"
                                             )
 
-                                    with UnderReviewAccountForm.render(
-                                        self.account,
+                                    with UnderReviewOrganizationForm.render(
+                                        data=None,
                                         method="POST",
                                         action=str(self.request.url),
                                         classes="space-y-4",

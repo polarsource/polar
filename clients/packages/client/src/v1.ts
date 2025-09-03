@@ -24214,6 +24214,8 @@ export interface operations {
                 organization_id?: string | string[] | null;
                 /** @description Filter by name. */
                 query?: string | null;
+                /** @description Filter on archived meters. */
+                is_archived?: boolean | null;
                 /** @description Page number, defaults to 1. */
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */

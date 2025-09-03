@@ -13073,6 +13073,8 @@ export interface components {
             net_revenue: number;
             /** Costs */
             costs: number;
+            /** Cumulative Costs */
+            cumulative_costs: number;
             /** Cumulative Revenue */
             cumulative_revenue: number;
             /** Net Cumulative Revenue */
@@ -13123,6 +13125,7 @@ export interface components {
             revenue: components["schemas"]["Metric"];
             net_revenue: components["schemas"]["Metric"];
             costs: components["schemas"]["Metric"];
+            cumulative_costs: components["schemas"]["Metric"];
             cumulative_revenue: components["schemas"]["Metric"];
             net_cumulative_revenue: components["schemas"]["Metric"];
             average_order_value: components["schemas"]["Metric"];
@@ -13209,6 +13212,8 @@ export interface components {
             net_revenue: number;
             /** Costs */
             costs: number;
+            /** Cumulative Costs */
+            cumulative_costs: number;
             /** Cumulative Revenue */
             cumulative_revenue: number;
             /** Net Cumulative Revenue */

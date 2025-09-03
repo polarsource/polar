@@ -14,6 +14,7 @@ import {
   ArrowUpward,
   CheckOutlined,
   FilterList,
+  MoreVertOutlined,
   Search,
 } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
@@ -155,22 +156,25 @@ const ClientPage = ({
       }
       header={
         selectedMeter && (
-          <div className="flex items-center gap-x-2">
-            <Button
-              wrapperClassNames="flex items-center flex-row gap-x-2"
-              onClick={showEditMeterModal}
-            >
-              <span>Edit Meter</span>
-            </Button>
-            <Button
-              variant={selectedMeter.archived_at ? 'secondary' : 'destructive'}
-              wrapperClassNames="flex items-center flex-row gap-x-2"
-              onClick={() => handleArchiveMeter(selectedMeter)}
-            >
-              <span>
-                {selectedMeter.archived_at ? 'Unarchive' : 'Archive'} Meter
-              </span>
-            </Button>
+          <div className="flex flex-row items-center gap-4">
+            <Button onClick={showEditMeterModal}>Edit Meter</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="focus:outline-none" asChild>
+                <Button className="h-10 w-10" variant="secondary">
+                  <MoreVertOutlined fontSize="inherit" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+              >
+                <DropdownMenuItem
+                  onClick={() => handleArchiveMeter(selectedMeter)}
+                >
+                  {selectedMeter.archived_at ? 'Unarchive' : 'Archive'} Meter
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )
       }

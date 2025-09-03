@@ -8,7 +8,6 @@ interface OAuth2LeakedTokenProps {
   notifier: string
   url?: string
   client_name: string
-  current_year: number
 }
 
 export function OAuth2LeakedToken({
@@ -77,7 +76,6 @@ OAuth2LeakedToken.PreviewProps = {
   notifier: 'GitHub',
   url: 'https://github.com/example/repo',
   client_name: 'My OAuth2 App',
-  current_year: new Date().getFullYear(),
 }
 
 export default OAuth2LeakedToken

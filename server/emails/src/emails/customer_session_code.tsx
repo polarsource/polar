@@ -13,7 +13,6 @@ interface CustomerSessionCodeProps {
   code: string
   code_lifetime_minutes: number
   url: string
-  current_year: number
 }
 
 export function CustomerSessionCode({
@@ -59,7 +58,6 @@ CustomerSessionCode.PreviewProps = {
   code: 'ABC123',
   code_lifetime_minutes: 30,
   url: 'https://polar.sh/acme-inc/portal/authenticate',
-  current_year: new Date().getFullYear(),
 }
 
 export default CustomerSessionCode

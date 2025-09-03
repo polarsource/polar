@@ -17,6 +17,7 @@ interface MetricChartProps {
   ref: React.RefObject<HTMLDivElement>
   data: ParsedMetricsResponse['periods']
   interval: schemas['TimeInterval']
+  displayType: 'cumulative' | 'periodic'
   height?: number
   width?: number
   grid?: boolean
@@ -24,11 +25,12 @@ interface MetricChartProps {
   simple?: boolean
 }
 
-const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
+export const ProfitChart = forwardRef<HTMLDivElement, MetricChartProps>(
   (
     {
       data,
       interval,
+      displayType,
       height: _height,
       width: _width,
       onDataIndexHover,
@@ -52,11 +54,12 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
             color: '#0062FF',
           },
           cost: {
-            label: 'Cumulative Cost',
+            label: displayType === 'cumulative' ? 'Cumulative Cost' : 'Cost',
             color: '#ef4444',
           },
           profit: {
-            label: 'Cumulative Profit',
+            label:
+              displayType === 'cumulative' ? 'Cumulative Profit' : 'Profit',
             color: '#6366f1',
           },
           metric: {
@@ -68,9 +71,18 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
           accessibilityLayer
           data={data.map((period) => ({
             timestamp: period.timestamp,
-            revenue: period.cumulative_revenue,
-            cost: period.cumulative_costs,
-            profit: period.cumulative_revenue - period.cumulative_costs,
+            revenue:
+              displayType === 'cumulative'
+                ? period.cumulative_revenue
+                : period.revenue,
+            cost:
+              displayType === 'cumulative'
+                ? period.cumulative_costs
+                : period.costs,
+            profit:
+              displayType === 'cumulative'
+                ? period.cumulative_revenue - period.cumulative_costs
+                : period.revenue - period.costs,
           }))}
           margin={{
             left: 24,
@@ -169,7 +181,3 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
     )
   },
 )
-
-MetricChart.displayName = 'MetricChart'
-
-export default MetricChart

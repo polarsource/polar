@@ -2,6 +2,7 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useMetrics, useUpdateProduct } from '@/hooks/queries'
+import { apiErrorToast } from '@/utils/api/errors'
 import { getChartRangeParams } from '@/utils/metrics'
 import { MoreVert } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
@@ -75,19 +76,36 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
   } = useModal()
 
   const handleArchiveProduct = useCallback(async () => {
-    await updateProduct.mutateAsync({
+    const { error } = await updateProduct.mutateAsync({
       id: product.id,
       body: { is_archived: true },
     })
 
-    router.push(`/dashboard/${organization.slug}/products`)
-  }, [product, updateProduct, organization, router])
+    if (error) {
+      apiErrorToast(error, toast, {
+        title: 'Error Archiving Product',
+      })
+      return
+    }
+
+    toast({
+      title: 'Product Archived',
+      description: 'Product has been successfully archived',
+    })
+  }, [product, updateProduct])
 
   const handleUnarchiveProduct = useCallback(async () => {
-    await updateProduct.mutateAsync({
+    const { error } = await updateProduct.mutateAsync({
       id: product.id,
       body: { is_archived: false },
     })
+
+    if (error) {
+      apiErrorToast(error, toast, {
+        title: 'Error Unarchiving Product',
+      })
+      return
+    }
 
     toast({
       title: 'Product Unarchived',

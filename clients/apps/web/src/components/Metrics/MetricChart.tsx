@@ -102,7 +102,7 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
             <CartesianGrid
               horizontal={false}
               vertical={true}
-              stroke={isDark ? '#222225' : '#ccc'}
+              stroke={isDark ? '#222225' : '#ddd'}
               strokeDasharray="6 6"
             />
           )}

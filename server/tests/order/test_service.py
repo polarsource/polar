@@ -45,6 +45,7 @@ from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.order.service import (
+    CardPaymentFailed,
     MissingCheckoutCustomer,
     NoPendingBillingEntries,
     NotAnOrderInvoice,
@@ -2645,6 +2646,77 @@ class TestTriggerPayment:
         with pytest.raises(Exception, match="Payment failed"):
             await order_service.trigger_payment(session, order, payment_method)
 
+        await session.refresh(order)
+        assert order.payment_lock_acquired_at is None
+
+    async def test_trigger_payment_card_error_raises_card_payment_failed(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Given
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        await save_fixture(order)
+
+        # Mock Stripe service to raise CardError
+        card_error = stripe_lib.CardError(
+            message="Your card was declined.",
+            param="card",
+            code="card_declined",
+        )
+        stripe_service_mock.create_payment_intent.side_effect = card_error
+
+        # When/Then
+        with pytest.raises(CardPaymentFailed) as exc_info:
+            await order_service.trigger_payment(session, order, payment_method)
+
+        # Verify the exception details
+        assert exc_info.value.order == order
+        assert exc_info.value.stripe_error == card_error
+        assert "Your card was declined." in str(exc_info.value)
+
+        # Verify lock is released on failure
+        await session.refresh(order)
+        assert order.payment_lock_acquired_at is None
+
+    async def test_trigger_payment_other_stripe_errors_not_converted(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Given
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        await save_fixture(order)
+
+        # Mock Stripe service to raise APIConnectionError
+        api_error = stripe_lib.APIConnectionError("Network connection failed")
+        stripe_service_mock.create_payment_intent.side_effect = api_error
+
+        # When/Then - should raise the original exception, not CardPaymentFailed
+        with pytest.raises(stripe_lib.APIConnectionError) as exc_info:
+            await order_service.trigger_payment(session, order, payment_method)
+
+        assert str(exc_info.value) == "Network connection failed"
+
+        # Verify lock is released on failure
         await session.refresh(order)
         assert order.payment_lock_acquired_at is None
 

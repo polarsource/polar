@@ -52,11 +52,11 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
             color: '#0062FF',
           },
           cost: {
-            label: 'Cost',
+            label: 'Cumulative Cost',
             color: '#ef4444',
           },
           profit: {
-            label: 'Profit',
+            label: 'Cumulative Profit',
             color: '#6366f1',
           },
           metric: {
@@ -67,10 +67,10 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
         <LineChart
           accessibilityLayer
           data={data.map((period) => ({
-            ...period,
+            timestamp: period.timestamp,
             revenue: period.cumulative_revenue,
-            cost: period.costs,
-            profit: period.revenue - period.costs,
+            cost: period.cumulative_costs,
+            profit: period.cumulative_revenue - period.cumulative_costs,
           }))}
           margin={{
             left: 24,

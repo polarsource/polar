@@ -12,6 +12,13 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
   Tabs,
@@ -25,9 +32,9 @@ import {
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
 import Link from 'next/link'
-import React from 'react'
+import React, { useState } from 'react'
 import MetricChartBox from '../Metrics/MetricChartBox'
-import UnitChart from '../Metrics/UnitChart'
+import { ProfitChart } from '../Metrics/ProfitChart'
 import { DetailRow } from '../Shared/DetailRow'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
 
@@ -70,6 +77,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     customer_id: [customer.id],
   })
 
+  const [graphType, setGraphType] = useState<'cumulative' | 'periodic'>(
+    'cumulative',
+  )
+
   return (
     <Tabs defaultValue="overview" className="flex flex-col">
       <TabsList className="mb-8">
@@ -81,27 +92,44 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <Well className="rounded-4xl p-2">
           <WellHeader className="flex-row items-center justify-between px-4 pt-4">
             <h3 className="text-xl">Revenue vs. Cost</h3>
-            <Tooltip>
-              <TooltipTrigger>
-                <Link
-                  href="https://docs.polar.sh/features/usage-based-billing/event-ingestion"
-                  target="_blank"
-                >
-                  <Info className="inherit dark:text-polar-600 text-gray-400 transition-colors hover:text-black dark:hover:text-white" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="max-w-sm">
-                <p className="text-sm">
-                  Provide customer cost data using the Event Ingestion API, and
-                  it will automatically be added to the chart.
-                </p>
-              </TooltipContent>
-            </Tooltip>
+            <div className="flex flex-row items-center gap-x-4">
+              <Select
+                value={graphType}
+                onValueChange={(value) =>
+                  setGraphType(value as 'cumulative' | 'periodic')
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Graph Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cumulative">Cumulative</SelectItem>
+                  <SelectItem value="periodic">Periodic</SelectItem>
+                </SelectContent>
+              </Select>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Link
+                    href="https://docs.polar.sh/features/usage-based-billing/event-ingestion"
+                    target="_blank"
+                  >
+                    <Info className="inherit dark:text-polar-600 text-gray-400 transition-colors hover:text-black dark:hover:text-white" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="max-w-sm">
+                  <p className="text-sm">
+                    Provide customer cost data using the Event Ingestion API,
+                    and it will automatically be added to the chart.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </WellHeader>
           <WellContent className="dark:bg-polar-900 flex flex-col rounded-3xl bg-white p-4">
-            <UnitChart
+            <ProfitChart
               data={metricsData?.periods ?? []}
               interval={interval}
+              displayType={graphType}
               height={300}
             />
           </WellContent>

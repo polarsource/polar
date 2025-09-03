@@ -1,4 +1,5 @@
 import { Client, schemas } from '@polar-sh/client'
+import * as Sentry from '@sentry/nextjs'
 import { headers } from 'next/headers'
 import { cache } from 'react'
 
@@ -21,6 +22,7 @@ const _getUserOrganizations = async (
 ): Promise<schemas['Organization'][]> => {
   const user = await getAuthenticatedUser()
   if (!user) {
+    console.log('No authenticated user found')
     return []
   }
 
@@ -38,6 +40,8 @@ const _getUserOrganizations = async (
   })
 
   if (error) {
+    console.error('getUserOrganizations failed:', user.id, error)
+    Sentry.captureException(error, { user: { id: user.id, email: user.email } })
     return []
   }
 

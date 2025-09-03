@@ -12,12 +12,20 @@ import {
   AddOutlined,
   ArrowDownward,
   ArrowUpward,
+  CheckOutlined,
+  FilterList,
   Search,
 } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import Link from 'next/link'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useEffect, useMemo } from 'react'
@@ -43,6 +51,12 @@ const ClientPage = ({
   const [query, setQuery] = useQueryState('query', {
     defaultValue: '',
   })
+  const [archivedFilter, setArchivedFilter] = useQueryState(
+    'filter',
+    parseAsStringLiteral(['all', 'active', 'archived'] as const).withDefault(
+      'active',
+    ),
+  )
 
   const {
     isShown: isEditMeterModalShown,
@@ -58,6 +72,7 @@ const ClientPage = ({
     {
       sorting: [sorting],
       query,
+      is_archived: archivedFilter === 'all' ? undefined : archivedFilter === 'archived',
     },
   )
 
@@ -167,6 +182,42 @@ const ClientPage = ({
           <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
             <div>Meters</div>
             <div className="flex flex-row items-center gap-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" className="h-6 w-6" variant="ghost">
+                    <FilterList fontSize="small" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setArchivedFilter('all')}>
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        archivedFilter !== 'all' && 'invisible',
+                      )}
+                    />
+                    <span>All</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setArchivedFilter('active')}>
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        archivedFilter !== 'active' && 'invisible',
+                      )}
+                    />
+                    <span>Active</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setArchivedFilter('archived')}>
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        archivedFilter !== 'archived' && 'invisible',
+                      )}
+                    />
+                    <span>Archived</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 variant="ghost"
                 size="icon"

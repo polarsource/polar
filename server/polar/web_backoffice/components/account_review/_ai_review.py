@@ -243,9 +243,6 @@ class AIReviewVerdict:
                             and self.request
                             and hasattr(self.review, "appeal_decision")
                             and self.review.appeal_decision is None
-                            and hasattr(self.organization.status, "DENIED")
-                            and self.organization.status
-                            == self.organization.status.DENIED
                         ):
                             with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
                                 with tag.div(classes="text-center mb-3"):

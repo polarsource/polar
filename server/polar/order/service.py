@@ -1531,6 +1531,14 @@ class OrderService:
         self, session: AsyncSession, order: Order
     ) -> Order:
         """Handle payment failure for an order, initiating dunning if necessary."""
+        # Don't process payment failure if the order is already paid
+        if order.status == OrderStatus.paid:
+            log.warning(
+                "Ignoring payment failure for already paid order",
+                order_id=order.id,
+            )
+            return order
+
         # Clear payment lock on failure
         if order.payment_lock_acquired_at is not None:
             log.info(

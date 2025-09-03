@@ -1745,6 +1745,7 @@ class SubscriptionService:
         subject = subject_template.format(product=product)
 
         enqueue_email(
+            **organization.email_from_reply,
             to_email_addr=subscription.customer.email,
             subject=subject,
             html_content=body,

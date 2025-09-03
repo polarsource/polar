@@ -97,6 +97,7 @@ class CustomerSessionService:
         )
 
         enqueue_email(
+            **organization.email_from_reply,
             to_email_addr=customer.email,
             subject=f"Access your {organization.name} purchases",
             html_content=body,

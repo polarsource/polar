@@ -1340,6 +1340,7 @@ class OrderService:
         )
 
         enqueue_email(
+            **organization.email_from_reply,
             to_email_addr=customer.email,
             subject=f"Your {product.name} order confirmation",
             html_content=body,

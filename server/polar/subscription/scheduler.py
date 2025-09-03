@@ -116,6 +116,7 @@ class SubscriptionJobStore(BaseJobStore):
                 subscription_id, current_period_end = result._tuple()
                 trigger = DateTrigger(current_period_end, datetime.UTC)
                 job_kwargs = {
+                    **(self._scheduler._job_defaults if self._scheduler else {}),
                     "trigger": trigger,
                     "executor": self.executor,
                     "func": enqueue_subscription_cycle,
@@ -124,7 +125,7 @@ class SubscriptionJobStore(BaseJobStore):
                     "id": f"subscriptions:cycle:{subscription_id}",
                     "name": None,
                     "next_run_time": trigger.run_date,
-                    **(self._scheduler._job_defaults if self._scheduler else {}),
+                    "misfire_grace_time": None,
                 }
                 job = Job(self._scheduler, **job_kwargs)
                 jobs.append(job)

@@ -12826,6 +12826,11 @@ export interface components {
              * @description The ID of the organization owning the meter.
              */
             organization_id: string;
+            /**
+             * Archived At
+             * @description Whether the meter is archived and the time it was archived.
+             */
+            archived_at?: string | null;
         };
         /** MeterCreate */
         MeterCreate: {
@@ -13038,6 +13043,11 @@ export interface components {
              * @description The aggregation to apply on the filtered events to calculate the meter.
              */
             aggregation?: (components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"] | components["schemas"]["UniqueAggregation"]) | null;
+            /**
+             * Is Archived
+             * @description Whether the meter is archived. Archived meters are no longer used for billing.
+             */
+            is_archived?: boolean | null;
         };
         /**
          * Metric

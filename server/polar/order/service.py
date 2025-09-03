@@ -1595,8 +1595,9 @@ class OrderService:
                 order, update_dict={"next_payment_attempt_at": None}
             )
 
-            if order.subscription is not None:
-                await subscription_service.revoke(session, order.subscription)
+            subscription = order.subscription
+            if subscription is not None and subscription.can_cancel(immediately=True):
+                await subscription_service.revoke(session, subscription)
 
             return order
 

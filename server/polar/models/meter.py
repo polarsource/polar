@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
@@ -22,6 +23,9 @@ class Meter(RecordModel, MetadataMixin):
     aggregation: Mapped[Aggregation] = mapped_column(AggregationType, nullable=False)
     last_billed_event_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("events.id"), nullable=True, index=True, default=None
+    )
+    archived_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     @declared_attr

@@ -15,6 +15,8 @@ import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
+import { useToast } from '../Toast/use-toast'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { AddPaymentMethodModal } from './AddPaymentMethodModal'
 import EditBillingDetails from './EditBillingDetails'
 import PaymentMethod from './PaymentMethod'
@@ -37,6 +39,10 @@ export const CustomerPortalSettings = ({
   } = useModal()
   const { data: customer } = useAuthenticatedCustomer(api)
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
+  const { toast } = useToast()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const theme = useTheme()
   const themingPreset = useThemePreset(
@@ -102,6 +108,12 @@ export const CustomerPortalSettings = ({
             customer={customer}
             onSuccess={() => {
               revalidate(`customer_portal`)
+              const newSearchParams = new URLSearchParams(searchParams.toString())
+              newSearchParams.set('toast', 'true')
+              newSearchParams.set('status', 'Details updated')
+              newSearchParams.set('status_description', 'Your billing details have been updated')
+              const redirectPath = `${pathname}?${newSearchParams.toString()}`
+              router.replace(redirectPath, { scroll: false })
             }}
             themingPreset={themingPreset}
           />

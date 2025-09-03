@@ -18,7 +18,13 @@ from polar.postgres import AsyncSession
 
 log: Logger = structlog.get_logger()
 
-TOKEN_PREFIX = "polar_pat_"
+# We no longer allow the creation of Personal Access Tokens (PATs), so the
+# below prefix is now unused in active code. However, customers may still
+# actively be using PATs for API authentication and we continue to support
+# that.
+# The prefix is listed here for later reference.
+#
+# TOKEN_PREFIX = "polar_pat_"
 
 
 class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):

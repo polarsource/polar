@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, TypedDict
 
 import httpx
 import structlog
@@ -14,7 +14,7 @@ from polar.worker import enqueue_job
 log: Logger = structlog.get_logger()
 
 DEFAULT_FROM_NAME = settings.EMAIL_FROM_NAME
-DEFAULT_FROM_EMAIL_ADDRESS = settings.EMAIL_FROM_EMAIL_ADDRESS
+DEFAULT_FROM_EMAIL_ADDRESS = f"{settings.EMAIL_FROM_LOCAL}@{settings.EMAIL_FROM_DOMAIN}"
 DEFAULT_REPLY_TO_NAME = "Polar Support"
 DEFAULT_REPLY_TO_EMAIL_ADDRESS = "support@polar.sh"
 
@@ -125,6 +125,13 @@ class ResendEmailSender(EmailSender):
             subject=subject,
             email_id=email["id"],
         )
+
+
+class EmailFromReply(TypedDict):
+    from_name: str
+    from_email_addr: str
+    reply_to_name: str
+    reply_to_email_addr: str
 
 
 def enqueue_email(

@@ -1,5 +1,6 @@
 import asyncio
 import random
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Literal, NotRequired, TypedDict
 
@@ -21,6 +22,7 @@ from polar.config import settings
 from polar.customer.schemas.customer import CustomerCreate
 from polar.customer.service import customer as customer_service
 from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
+from polar.event.repository import EventRepository
 from polar.kit.db.postgres import create_async_engine
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import CountAggregation
@@ -612,6 +614,43 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 ),
                 auth_subject=auth_subject,
             )
+
+            # Create meter events for ColdMail customers
+            if org_data["slug"] == "coldmail" and coldmail_meter and i == 0:
+                # Create events for the first customer showing usage over time
+                event_repository = EventRepository.from_session(session)
+                events_to_insert = []
+
+                # Create 150 email send events over the past 30 days
+                base_time = datetime.now(UTC) - timedelta(days=30)
+
+                for day in range(30):
+                    # Variable number of emails per day (between 1 and 10)
+                    num_emails = random.randint(1, 10)
+                    for _ in range(num_emails):
+                        event_time = base_time + timedelta(
+                            days=day,
+                            hours=random.randint(0, 23),
+                            minutes=random.randint(0, 59),
+                        )
+                        events_to_insert.append(
+                            {
+                                "name": "email_sent",
+                                "source": "user",
+                                "timestamp": event_time,
+                                "organization_id": organization.id,
+                                "customer_id": customer.id,
+                                "user_metadata": {
+                                    "type": "email_sent",
+                                    "recipient": f"user{random.randint(1, 100)}@example.com",
+                                    "subject": f"Email subject {random.randint(1, 1000)}",
+                                },
+                            }
+                        )
+
+                # Insert all events in batch
+                if events_to_insert:
+                    await event_repository.insert_batch(events_to_insert)
 
             # TODO: Create some checkouts for customers
             # This would require more complex checkout creation logic

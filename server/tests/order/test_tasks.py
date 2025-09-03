@@ -1,6 +1,8 @@
+import uuid
 from datetime import timedelta
 
 import pytest
+import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.kit.db.postgres import AsyncSession
@@ -11,7 +13,13 @@ from polar.models.payment import PaymentStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
-from polar.order.tasks import process_dunning, process_dunning_order
+from polar.order.tasks import (
+    OrderDoesNotExist,
+    PaymentMethodDoesNotExist,
+    process_dunning,
+    process_dunning_order,
+    trigger_payment,
+)
 from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -410,3 +418,141 @@ class TestProcessDunningOrder:
         updated_subscription = await subscription_repo.get_by_id(subscription.id)
         assert updated_subscription is not None
         assert updated_subscription.status == SubscriptionStatus.canceled
+
+
+@pytest.mark.asyncio
+class TestTriggerPayment:
+    async def test_trigger_payment_success(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        # Mock the Stripe service instead of the order service
+        mock_create_payment_intent = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+            return_value=None,
+        )
+
+        # When
+        await trigger_payment(order.id, payment_method.id)
+
+        # Then
+        mock_create_payment_intent.assert_called_once()
+
+    async def test_trigger_payment_card_error_no_retry(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        # Mock Stripe service to raise CardError
+        card_error = stripe_lib.CardError(
+            message="Your card was declined.",
+            param="card",
+            code="card_declined",
+        )
+        mock_create_payment_intent = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+            side_effect=card_error,
+        )
+
+        # When
+        await trigger_payment(order.id, payment_method.id)
+
+        # Then
+        mock_create_payment_intent.assert_called_once()
+        # Task should complete without raising exception (no retry)
+
+    async def test_trigger_payment_api_error_with_retry(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        # Mock Stripe service to raise APIConnectionError
+        api_error = stripe_lib.APIConnectionError("Network error")
+        mock_create_payment_intent = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+            side_effect=api_error,
+        )
+
+        # Mock can_retry to return True
+        mocker.patch("polar.order.tasks.can_retry", return_value=True)
+
+        # When/Then - should raise Retry exception
+        with pytest.raises(Exception):  # Retry exception
+            await trigger_payment(order.id, payment_method.id)
+
+        mock_create_payment_intent.assert_called_once()
+
+    async def test_trigger_payment_order_not_found(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given
+        import uuid
+
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        non_existent_order_id = uuid.uuid4()
+
+        # When/Then
+        with pytest.raises(OrderDoesNotExist):
+            await trigger_payment(non_existent_order_id, payment_method.id)
+
+    async def test_trigger_payment_payment_method_not_found(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        non_existent_payment_method_id = uuid.uuid4()
+
+        # When/Then
+        with pytest.raises(PaymentMethodDoesNotExist):
+            await trigger_payment(order.id, non_existent_payment_method_id)

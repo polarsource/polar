@@ -279,6 +279,16 @@ class PaymentAlreadyInProgress(OrderError):
         super().__init__(message, 409)
 
 
+class CardPaymentFailed(OrderError):
+    """Exception for card-related payment failures that should not be retried."""
+
+    def __init__(self, order: Order, stripe_error: stripe_lib.CardError) -> None:
+        self.order = order
+        self.stripe_error = stripe_error
+        message = f"Card payment failed for order {order.id}: {stripe_error.user_message or stripe_error.code}"
+        super().__init__(message, 402)
+
+
 class InvalidPaymentProcessor(OrderError):
     def __init__(self, payment_processor: PaymentProcessor) -> None:
         self.payment_processor = payment_processor
@@ -758,17 +768,29 @@ class OrderService:
 
                 stripe_customer_id = order.customer.stripe_customer_id
                 assert stripe_customer_id is not None
-                await stripe_service.create_payment_intent(
-                    amount=order.total_amount,
-                    currency=order.currency,
-                    payment_method=payment_method.processor_id,
-                    customer=stripe_customer_id,
-                    confirm=True,
-                    off_session=True,
-                    statement_descriptor_suffix=order.organization.statement_descriptor,
-                    description=f"{order.organization.name} — {order.product.name}",
-                    metadata=metadata,
-                )
+
+                try:
+                    await stripe_service.create_payment_intent(
+                        amount=order.total_amount,
+                        currency=order.currency,
+                        payment_method=payment_method.processor_id,
+                        customer=stripe_customer_id,
+                        confirm=True,
+                        off_session=True,
+                        statement_descriptor_suffix=order.organization.statement_descriptor,
+                        description=f"{order.organization.name} — {order.product.name}",
+                        metadata=metadata,
+                    )
+                except stripe_lib.CardError as e:
+                    # Card errors (declines, expired cards, etc.) should not be retried
+                    # They will be handled by the dunning process
+                    log.info(
+                        "Card payment failed",
+                        order_id=order.id,
+                        error_code=e.code,
+                        error_message=e.user_message,
+                    )
+                    raise CardPaymentFailed(order, e) from e
 
     async def process_retry_payment(
         self,

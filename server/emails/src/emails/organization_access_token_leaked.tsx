@@ -8,7 +8,6 @@ interface OrganizationAccessTokenLeakedProps {
   notifier: string
   url?: string
   organization_access_token: string
-  current_year: number
 }
 
 export function OrganizationAccessTokenLeaked({
@@ -81,7 +80,6 @@ OrganizationAccessTokenLeaked.PreviewProps = {
   notifier: 'GitHub',
   url: 'https://github.com/example/repo',
   organization_access_token: 'token_abc123',
-  current_year: new Date().getFullYear(),
 }
 
 export default OrganizationAccessTokenLeaked

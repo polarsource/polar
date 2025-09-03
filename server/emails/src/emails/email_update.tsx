@@ -8,7 +8,6 @@ import Wrapper from '../components/Wrapper'
 interface EmailUpdateProps {
   token_lifetime_minutes: number
   url: string
-  current_year: number
 }
 
 export function EmailUpdate({ token_lifetime_minutes, url }: EmailUpdateProps) {
@@ -48,7 +47,6 @@ export function EmailUpdate({ token_lifetime_minutes, url }: EmailUpdateProps) {
 EmailUpdate.PreviewProps = {
   token_lifetime_minutes: 30,
   url: 'https://polar.sh/settings/account/email/update?token=abc123',
-  current_year: new Date().getFullYear(),
 }
 
 export default EmailUpdate

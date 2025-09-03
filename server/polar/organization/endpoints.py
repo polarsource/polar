@@ -1,4 +1,3 @@
-import datetime
 from typing import cast
 
 from fastapi import Depends, Query, Response, status
@@ -320,7 +319,6 @@ async def invite_member(
             "invite_url": settings.generate_frontend_url(
                 f"/dashboard/{organization.slug}"
             ),
-            "current_year": datetime.datetime.now().year,
         },
     )
 

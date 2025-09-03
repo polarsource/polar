@@ -21,7 +21,6 @@ interface OrderConfirmationProps {
     name: string
   }
   url: string
-  current_year: number
 }
 
 export function OrderConfirmation({
@@ -71,7 +70,6 @@ OrderConfirmation.PreviewProps = {
     name: 'Premium Subscription',
   },
   url: 'https://polar.sh/acme-inc/portal/orders/12345',
-  current_year: new Date().getFullYear(),
 }
 
 export default OrderConfirmation

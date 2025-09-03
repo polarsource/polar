@@ -1345,7 +1345,6 @@ class OrderService:
                 "url": settings.generate_frontend_url(
                     f"/{organization.slug}/portal?customer_session_token={token}&id={order.id}"
                 ),
-                "current_year": datetime.now().year,
             },
         )
 

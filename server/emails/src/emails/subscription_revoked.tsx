@@ -14,7 +14,6 @@ interface SubscriptionRevokedProps {
     name: string
   }
   url: string
-  current_year: number
 }
 
 export function SubscriptionRevoked({
@@ -66,7 +65,6 @@ SubscriptionRevoked.PreviewProps = {
     name: 'Premium Subscription',
   },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
-  current_year: new Date().getFullYear(),
 }
 
 export default SubscriptionRevoked

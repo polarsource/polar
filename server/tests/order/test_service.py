@@ -2405,6 +2405,7 @@ class TestHandlePaymentFailure:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
         await save_fixture(order)

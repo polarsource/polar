@@ -2340,6 +2340,55 @@ class TestHandlePaymentFailure:
         mock_mark_past_due.assert_not_called()
 
     @freeze_time("2024-01-01 12:00:00")
+    async def test_final_attempt_canceled_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that order service cancels subscription after final retry attempt"""
+        # Given
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+            revoke=True,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+        order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
+        await save_fixture(order)
+
+        # Create 4 failed payments for this order (equal to DUNNING_RETRY_INTERVALS length)
+        for _ in range(4):
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                order=order,
+            )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+        mock_revoke = mocker.patch("polar.subscription.service.subscription.revoke")
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is None
+        mock_revoke.assert_not_called()
+        mock_mark_past_due.assert_not_called()
+
+    @freeze_time("2024-01-01 12:00:00")
     async def test_only_failed_payments_counted(
         self,
         session: AsyncSession,

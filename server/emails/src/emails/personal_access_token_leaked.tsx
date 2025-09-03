@@ -8,7 +8,6 @@ interface PersonalAccessTokenLeakedProps {
   notifier: string
   url?: string
   personal_access_token: string
-  current_year: number
 }
 
 export function PersonalAccessTokenLeaked({
@@ -80,7 +79,6 @@ PersonalAccessTokenLeaked.PreviewProps = {
   notifier: 'GitHub',
   url: 'https://github.com/example/repo',
   personal_access_token: 'token_xyz789',
-  current_year: new Date().getFullYear(),
 }
 
 export default PersonalAccessTokenLeaked

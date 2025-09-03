@@ -1,4 +1,3 @@
-import datetime
 from collections.abc import Sequence
 
 import structlog
@@ -99,7 +98,6 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
                 "client_name": client.client_name,
                 "notifier": notifier,
                 "url": url or "",
-                "current_year": datetime.datetime.now().year,
             },
         )
 

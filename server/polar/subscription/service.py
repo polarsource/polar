@@ -1744,7 +1744,6 @@ class SubscriptionService:
             "url": settings.generate_frontend_url(
                 f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
             ),
-            "current_year": datetime.now().year,
         }
 
         # Add extra context if provided

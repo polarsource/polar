@@ -20,7 +20,6 @@ interface SubscriptionCancellationProps {
     ends_at: string // ISO date string
   }
   url: string
-  current_year: number
 }
 
 function BenefitsSection({
@@ -114,7 +113,6 @@ SubscriptionCancellation.PreviewProps = {
     ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
   },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
-  current_year: new Date().getFullYear(),
 }
 
 export default SubscriptionCancellation

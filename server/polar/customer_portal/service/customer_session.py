@@ -1,4 +1,3 @@
-import datetime
 import secrets
 import string
 import uuid
@@ -97,7 +96,6 @@ class CustomerSessionService:
                 "url": settings.generate_frontend_url(
                     f"/{organization.slug}/portal/authenticate"
                 ),
-                "current_year": datetime.datetime.now().year,
             },
         )
 

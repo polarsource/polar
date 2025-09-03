@@ -259,3 +259,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def statement_descriptor_prefixed(self) -> str:
         # Cannot use *. Setting separator to # instead.
         return f"{settings.STRIPE_STATEMENT_DESCRIPTOR}# {self.statement_descriptor}"
+
+    @property
+    def email_props(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "slug": self.slug,
+            "logo_url": self.avatar_url,
+            "website_url": self.website,
+        }

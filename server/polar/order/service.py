@@ -1331,17 +1331,8 @@ class OrderService:
         body = render_email_template(
             "order_confirmation",
             {
-                "organization": {
-                    "name": organization.name,
-                    "slug": organization.slug,
-                },
-                "product": {
-                    "name": product.name,
-                    "benefits": [
-                        {"description": benefit.description}
-                        for benefit in product.benefits
-                    ],
-                },
+                "organization": organization.email_props,
+                "product": product.email_props,
                 "url": settings.generate_frontend_url(
                     f"/{organization.slug}/portal?customer_session_token={token}&id={order.id}"
                 ),

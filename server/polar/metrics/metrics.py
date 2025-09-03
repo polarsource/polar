@@ -731,6 +731,7 @@ METRICS: list[type[Metric]] = [
     RevenueMetric,
     NetRevenueMetric,
     CostsMetric,
+    CumulativeCostsMetric,
     CumulativeRevenueMetric,
     NetCumulativeRevenueMetric,
     AverageOrderValueMetric,

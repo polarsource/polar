@@ -918,6 +918,7 @@ async def create_subscription(
     cancel_at_period_end: bool = False,
     revoke: bool = False,
     user_metadata: dict[str, Any] | None = None,
+    scheduler_locked: bool = False,
 ) -> Subscription:
     prices = prices or product.prices
 
@@ -963,6 +964,7 @@ async def create_subscription(
         ],
         discount=discount,
         user_metadata=user_metadata or {},
+        scheduler_locked=scheduler_locked,
     )
     await save_fixture(subscription)
 
@@ -982,6 +984,7 @@ async def create_active_subscription(
     cancel_at_period_end: bool = False,
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
     user_metadata: dict[str, Any] | None = None,
+    scheduler_locked: bool = False,
 ) -> Subscription:
     return await create_subscription(
         save_fixture,
@@ -996,6 +999,7 @@ async def create_active_subscription(
         cancel_at_period_end=cancel_at_period_end,
         stripe_subscription_id=stripe_subscription_id,
         user_metadata=user_metadata or {},
+        scheduler_locked=scheduler_locked,
     )
 
 

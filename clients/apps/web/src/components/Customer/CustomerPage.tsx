@@ -6,7 +6,7 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useListSubscriptions, useMetrics } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
-import { getChartRangeParams } from '@/utils/metrics'
+import { getChartRangeParams, getFormattedMetricValue } from '@/utils/metrics'
 import { Info } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -32,7 +32,7 @@ import {
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
 import Link from 'next/link'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { ProfitChart } from '../Metrics/ProfitChart'
 import { DetailRow } from '../Shared/DetailRow'
@@ -81,6 +81,38 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     'cumulative',
   )
 
+  const [hoverIndex, setHoverIndex] = useState<number | undefined>(undefined)
+
+  const profit = useMemo(() => {
+    if (!metricsData) return 0
+
+    if (hoverIndex === undefined) {
+      if (graphType === 'cumulative') {
+        return (
+          metricsData.totals.cumulative_revenue -
+          metricsData.totals.cumulative_costs
+        )
+      }
+
+      return (
+        metricsData.periods[metricsData.periods.length - 1].revenue -
+        metricsData.periods[metricsData.periods.length - 1].costs
+      )
+    }
+
+    if (graphType === 'cumulative') {
+      return (
+        metricsData.periods[hoverIndex].cumulative_revenue -
+        metricsData.periods[hoverIndex].cumulative_costs
+      )
+    }
+
+    return (
+      metricsData.periods[hoverIndex].revenue -
+      metricsData.periods[hoverIndex].costs
+    )
+  }, [metricsData, graphType, hoverIndex])
+
   return (
     <Tabs defaultValue="overview" className="flex flex-col">
       <TabsList className="mb-8">
@@ -91,7 +123,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       <TabsContent value="overview" className="flex flex-col gap-y-12">
         <Well className="rounded-4xl p-2">
           <WellHeader className="flex-row items-center justify-between px-4 pt-4">
-            <h3 className="text-xl">Revenue vs. Cost</h3>
+            <h3 className="text-lg">Profit</h3>
             <div className="flex flex-row items-center gap-x-4">
               <Select
                 value={graphType}
@@ -125,12 +157,27 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               </Tooltip>
             </div>
           </WellHeader>
+          <div className="flex flex-col gap-4 px-4 pb-4">
+            <h3 className="text-5xl font-light">
+              {getFormattedMetricValue(
+                {
+                  slug: 'revenue_vs_cost',
+                  display_name: 'Revenue vs. Cost',
+                  type: 'currency',
+                },
+                profit,
+              )}
+            </h3>
+          </div>
           <WellContent className="dark:bg-polar-900 flex flex-col rounded-3xl bg-white p-4">
             <ProfitChart
               data={metricsData?.periods ?? []}
               interval={interval}
               displayType={graphType}
               height={300}
+              onDataIndexHover={(index) => {
+                setHoverIndex(index)
+              }}
             />
           </WellContent>
         </Well>

@@ -4,29 +4,18 @@ import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
+import type { BenefitProps, OrganizationProps, ProductProps } from '../types'
 
 interface SubscriptionCancellationProps {
-  organization: {
-    name: string
-    slug: string
-  }
-  product: {
-    name: string
-    benefits: Array<{
-      description: string
-    }>
-  }
+  organization: OrganizationProps
+  product: ProductProps
   subscription: {
     ends_at: string // ISO date string
   }
   url: string
 }
 
-function BenefitsSection({
-  benefits,
-}: {
-  benefits: Array<{ description: string }>
-}) {
+function BenefitsSection({ benefits }: { benefits: BenefitProps[] }) {
   // Only render if there are actual benefits to display
   if (benefits.length === 0) {
     return null
@@ -100,6 +89,9 @@ SubscriptionCancellation.PreviewProps = {
   organization: {
     name: 'Acme Inc.',
     slug: 'acme-inc',
+    logo_url:
+      'https://polar-public-sandbox-files.s3.amazonaws.com/organization_avatar/b3281d01-7b90-4a5b-8225-e8e150f4009c/9e5f848b-8b1d-4592-9fe1-7cad2cfa53ee/unicorn-dev-logo.png',
+    website_url: 'https://www.example.com',
   },
   product: {
     name: 'Premium Subscription',

@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, String, Text, Uuid
@@ -75,3 +75,9 @@ class Benefit(MetadataMixin, RecordModel):
         return relationship(
             "BenefitGrant", lazy="raise", back_populates="benefit", viewonly=True
         )
+
+    @property
+    def email_props(self) -> dict[str, Any]:
+        return {
+            "description": self.description,
+        }

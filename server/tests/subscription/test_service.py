@@ -1792,7 +1792,7 @@ async def test_send_change_email(
     )
 
     await subscription_service.send_subscription_updated_email(
-        session, subscription, product, product
+        session, subscription, product, product, SubscriptionProrationBehavior.prorate
     )
 
 

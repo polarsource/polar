@@ -1,6 +1,6 @@
 import hashlib
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -201,3 +201,10 @@ class Product(MetadataMixin, RecordModel):
         h.update(str(last_modified).encode("utf-8"))
         etag = h.hexdigest()
         return etag
+
+    @property
+    def email_props(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "benefits": [benefit.email_props for benefit in self.benefits],
+        }

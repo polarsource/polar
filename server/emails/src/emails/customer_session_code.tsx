@@ -4,12 +4,10 @@ import IntroWithHi from '../components/IntroWithHi'
 import OrganizationHeader from '../components/OrganizationHeader'
 import OTPCode from '../components/OTPCode'
 import Wrapper from '../components/Wrapper'
+import type { OrganizationProps } from '../types'
 
 interface CustomerSessionCodeProps {
-  organization: {
-    name: string
-    slug: string
-  }
+  organization: OrganizationProps
   code: string
   code_lifetime_minutes: number
   url: string
@@ -54,6 +52,9 @@ CustomerSessionCode.PreviewProps = {
   organization: {
     name: 'Acme Inc.',
     slug: 'acme-inc',
+    logo_url:
+      'https://polar-public-sandbox-files.s3.amazonaws.com/organization_avatar/b3281d01-7b90-4a5b-8225-e8e150f4009c/9e5f848b-8b1d-4592-9fe1-7cad2cfa53ee/unicorn-dev-logo.png',
+    website_url: 'https://www.example.com',
   },
   code: 'ABC123',
   code_lifetime_minutes: 30,

@@ -2099,6 +2099,7 @@ class TestHandlePaymentFailure:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = None
         await save_fixture(order)
@@ -2117,6 +2118,44 @@ class TestHandlePaymentFailure:
         assert result_order.next_payment_attempt_at == expected_retry_date
 
         mock_mark_past_due.assert_called_once_with(session, subscription)
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_ignores_payment_failure_for_already_paid_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that payment failure is ignored for orders that are already paid"""
+        # Given
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.paid,  # Order is already paid
+        )
+        await save_fixture(order)
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is None  # No retry scheduled
+        assert result_order.status == OrderStatus.paid  # Status unchanged
+        mock_mark_past_due.assert_not_called()  # Subscription not marked past_due
 
     async def test_stripe_subscription(
         self,
@@ -2139,6 +2178,7 @@ class TestHandlePaymentFailure:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = None
         order.subscription.stripe_subscription_id = "sub_stripe_123"
@@ -2209,6 +2249,7 @@ class TestHandlePaymentFailure:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
         await save_fixture(order)
@@ -2258,6 +2299,7 @@ class TestHandlePaymentFailure:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
         await save_fixture(order)
@@ -2313,6 +2355,7 @@ class TestHandlePaymentFailure:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
         await save_fixture(order)
@@ -2362,6 +2405,7 @@ class TestHandlePaymentFailure:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
         await save_fixture(order)
@@ -2410,6 +2454,7 @@ class TestHandlePaymentFailure:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
         await save_fixture(order)
@@ -2493,6 +2538,7 @@ class TestProcessDunningOrder:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = utc_now() + timedelta(days=1)
         await save_fixture(order)
@@ -2519,6 +2565,7 @@ class TestProcessDunningOrder:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
         subscription.payment_method_id = None
         await save_fixture(subscription)
@@ -2550,6 +2597,7 @@ class TestProcessDunningOrder:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
 
         # When

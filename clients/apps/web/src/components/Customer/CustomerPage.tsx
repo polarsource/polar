@@ -14,6 +14,7 @@ import {
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { getChartRangeParams } from '@/utils/metrics'
+import { Info } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -25,12 +26,18 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import UnitChart from '../Metrics/UnitChart'
 import { DetailRow } from '../Shared/DetailRow'
+import { Well, WellContent, WellHeader } from '../Shared/Well'
 import { CustomerStatBox } from './CustomerStatBox'
 
 interface CustomerPageProps {
@@ -157,11 +164,34 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </CustomerStatBox>
         </div>
 
-        <UnitChart
-          data={metricsData?.periods ?? []}
-          interval={interval}
-          height={300}
-        />
+        <Well className="rounded-4xl p-2">
+          <WellHeader className="flex-row items-center justify-between px-4 pt-4">
+            <h3 className="text-xl">Revenue vs. Cost</h3>
+            <Tooltip>
+              <TooltipTrigger>
+                <Link
+                  href="https://docs.polar.sh/features/usage-based-billing/event-ingestion"
+                  target="_blank"
+                >
+                  <Info className="inherit dark:text-polar-600 text-gray-400 transition-colors hover:text-black dark:hover:text-white" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="max-w-sm">
+                <p className="text-sm">
+                  Provide customer cost data using the Event Ingestion API, and
+                  it will automatically be added to the chart.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </WellHeader>
+          <WellContent className="dark:bg-polar-900 flex flex-col rounded-3xl bg-white p-4">
+            <UnitChart
+              data={metricsData?.periods ?? []}
+              interval={interval}
+              height={300}
+            />
+          </WellContent>
+        </Well>
 
         <MetricChartBox
           metric={selectedMetric}

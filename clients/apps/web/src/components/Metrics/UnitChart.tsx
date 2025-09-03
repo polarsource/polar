@@ -49,7 +49,7 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
         config={{
           revenue: {
             label: 'Revenue',
-            color: '#10b981',
+            color: '#0062FF',
           },
           cost: {
             label: 'Cost',
@@ -68,7 +68,7 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
           accessibilityLayer
           data={data.map((period) => ({
             ...period,
-            revenue: period.revenue,
+            revenue: period.cumulative_revenue,
             cost: period.costs,
             profit: period.revenue - period.costs,
           }))}
@@ -137,7 +137,7 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
             <CartesianGrid
               horizontal={false}
               vertical={true}
-              stroke={isDark ? '#222225' : '#ccc'}
+              stroke={isDark ? '#222225' : '#ddd'}
               strokeDasharray="6 6"
             />
           )}

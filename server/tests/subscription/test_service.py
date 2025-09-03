@@ -485,7 +485,7 @@ class TestCycle:
         customer: Customer,
     ) -> None:
         subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
+            save_fixture, product=product, customer=customer, scheduler_locked=True
         )
 
         previous_current_period_end = subscription.current_period_end
@@ -495,6 +495,7 @@ class TestCycle:
         assert updated_subscription.ended_at is None
         assert updated_subscription.current_period_start == previous_current_period_end
         assert updated_subscription.current_period_end > previous_current_period_end
+        assert updated_subscription.scheduler_locked is False
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_name(SystemEvent.subscription_cycled)
@@ -537,7 +538,10 @@ class TestCycle:
         customer: Customer,
     ) -> None:
         subscription = await create_active_subscription(
-            save_fixture, product=product_recurring_free_price, customer=customer
+            save_fixture,
+            product=product_recurring_free_price,
+            customer=customer,
+            scheduler_locked=True,
         )
 
         await subscription_service.cycle(session, subscription)
@@ -572,7 +576,11 @@ class TestCycle:
             organization=organization,
         )
         subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer, discount=discount
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            scheduler_locked=True,
         )
 
         second_month_subscription = await subscription_service.cycle(
@@ -614,7 +622,11 @@ class TestCycle:
         customer: Customer,
     ) -> None:
         subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer, cancel_at_period_end=True
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+            scheduler_locked=True,
         )
 
         previous_current_period_start = subscription.current_period_start
@@ -628,6 +640,7 @@ class TestCycle:
             updated_subscription.current_period_start == previous_current_period_start
         )
         assert updated_subscription.current_period_end == previous_current_period_end
+        assert updated_subscription.scheduler_locked is False
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_name(

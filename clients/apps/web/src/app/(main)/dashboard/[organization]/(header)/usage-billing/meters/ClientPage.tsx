@@ -8,6 +8,7 @@ import Spinner from '@/components/Shared/Spinner'
 import { useToast } from '@/components/Toast/use-toast'
 import { useMetersInfinite, useUpdateMeter } from '@/hooks/queries/meters'
 import { useInViewport } from '@/hooks/utils'
+import { apiErrorToast } from '@/utils/api/errors'
 import {
   AddOutlined,
   ArrowDownward,
@@ -73,7 +74,8 @@ const ClientPage = ({
     {
       sorting: [sorting],
       query,
-      is_archived: archivedFilter === 'all' ? undefined : archivedFilter === 'archived',
+      is_archived:
+        archivedFilter === 'all' ? undefined : archivedFilter === 'archived',
     },
   )
 
@@ -103,15 +105,12 @@ const ClientPage = ({
   const handleArchiveMeter = useCallback(
     async (meter: schemas['Meter']) => {
       const isArchiving = !meter.archived_at
-      const { data, error } = await updateMeter.mutateAsync({
+      const { error } = await updateMeter.mutateAsync({
         is_archived: isArchiving,
       })
 
       if (error) {
-        toast({
-          title: 'Error',
-          description: error.detail[0].msg,
-        })
+        apiErrorToast(error, toast)
         return
       }
 
@@ -211,7 +210,9 @@ const ClientPage = ({
                     />
                     <span>Active</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setArchivedFilter('archived')}>
+                  <DropdownMenuItem
+                    onClick={() => setArchivedFilter('archived')}
+                  >
                     <CheckOutlined
                       className={twMerge(
                         'h-4 w-4',

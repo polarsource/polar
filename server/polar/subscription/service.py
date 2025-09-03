@@ -1031,7 +1031,7 @@ class SubscriptionService:
 
         # Send product change email notification
         await self.send_subscription_updated_email(
-            session, subscription, previous_product, product
+            session, subscription, previous_product, product, proration_behavior
         )
 
         # Trigger subscription updated events and re-evaluate benefits
@@ -1683,6 +1683,7 @@ class SubscriptionService:
         subscription: Subscription,
         previous_product: Product,
         new_product: Product,
+        proration_behavior: SubscriptionProrationBehavior,
     ) -> None:
         subject = f"Your subscription has changed to {new_product.name}"
         return await self._send_customer_email(
@@ -1691,9 +1692,8 @@ class SubscriptionService:
             subject_template=subject,
             template_name="subscription_updated",
             extra_context={
-                "previous_product": {
-                    "name": previous_product.name or "",
-                },
+                "proration_behavior": proration_behavior,
+                "previous_product": previous_product.email_props,
             },
         )
 
@@ -1708,7 +1708,7 @@ class SubscriptionService:
     ) -> None:
         product = subscription.product
         organization_repository = OrganizationRepository.from_session(session)
-        featured_organization = await organization_repository.get_by_id(
+        organization = await organization_repository.get_by_id(
             product.organization_id,
             # We block organizations in case of fraud and then refund/cancel
             # so make sure we can still fetch them for the purpose of sending
@@ -1716,7 +1716,7 @@ class SubscriptionService:
             include_deleted=True,
             include_blocked=True,
         )
-        assert featured_organization is not None
+        assert organization is not None
 
         customer = subscription.customer
         token, _ = await customer_session_service.create_customer_session(
@@ -1724,25 +1724,15 @@ class SubscriptionService:
         )
 
         context: dict[str, JSONProperty] = {
-            "organization": {
-                "name": featured_organization.name,
-                "slug": featured_organization.slug,
-                "proration_behavior": featured_organization.proration_behavior,
-            },
-            "product": {
-                "name": product.name or "",
-                "benefits": [
-                    {"description": benefit.description or ""}
-                    for benefit in product.benefits
-                ],
-            },
+            "organization": organization.email_props,
+            "product": product.email_props,
             "subscription": {
                 "ends_at": subscription.ends_at.isoformat()
                 if subscription.ends_at
                 else "",
             },
             "url": settings.generate_frontend_url(
-                f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
+                f"/{organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
             ),
         }
 

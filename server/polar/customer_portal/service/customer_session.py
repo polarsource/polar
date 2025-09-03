@@ -87,10 +87,7 @@ class CustomerSessionService:
         body = render_email_template(
             "customer_session_code",
             {
-                "organization": {
-                    "name": organization.name,
-                    "slug": organization.slug,
-                },
+                "organization": organization.email_props,
                 "code": code,
                 "code_lifetime_minutes": code_lifetime_minutes,
                 "url": settings.generate_frontend_url(

@@ -1,5 +1,6 @@
 import asyncio
 import random
+from decimal import Decimal
 from typing import Any, Literal, NotRequired, TypedDict
 
 import dramatiq
@@ -22,6 +23,10 @@ from polar.customer.service import customer as customer_service
 from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.kit.db.postgres import create_async_engine
 from polar.kit.utils import utc_now
+from polar.meter.aggregation import CountAggregation
+from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
+from polar.meter.schemas import MeterCreate
+from polar.meter.service import meter as meter_service
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.file import File, FileServiceTypes
@@ -30,7 +35,11 @@ from polar.models.product_price import ProductPriceAmountType
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
-from polar.product.schemas import ProductCreate, ProductPriceFixedCreate
+from polar.product.schemas import (
+    ProductCreate,
+    ProductPriceFixedCreate,
+    ProductPriceMeteredUnitCreate,
+)
 from polar.product.service import product as product_service
 from polar.redis import Redis, create_redis
 from polar.user.repository import UserRepository
@@ -57,9 +66,12 @@ class OrganizationDict(TypedDict):
 class ProductDict(TypedDict):
     name: str
     description: str
-    price: int
+    price: NotRequired[int]
     recurring: SubscriptionRecurringInterval | None
     benefits: NotRequired[list[str]]
+    metered: NotRequired[bool]
+    unit_amount: NotRequired[float]
+    cap_amount: NotRequired[int | None]
 
 
 class BenefitDictBase(TypedDict):
@@ -348,6 +360,14 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     "price": 60000,
                     "recurring": SubscriptionRecurringInterval.year,
                 },
+                {
+                    "name": "Coldmail Pay-As-You-Go",
+                    "description": "Pay per email sent - perfect for low-volume or occasional use",
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "metered": True,
+                    "unit_amount": 0.01,  # $0.01 per email
+                    "cap_amount": 10000,  # $100 maximum per month
+                },
             ],
         },
         {
@@ -495,15 +515,50 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             )
             org_benefits[key] = benefit
 
+        # Create meter for ColdMail organization
+        coldmail_meter = None
+        if org_data["slug"] == "coldmail":
+            meter_create = MeterCreate(
+                name="Email Sends",
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="type",
+                            operator=FilterOperator.eq,
+                            value="email_sent",
+                        )
+                    ],
+                ),
+                aggregation=CountAggregation(),
+                organization_id=organization.id,
+            )
+            coldmail_meter = await meter_service.create(
+                session=session,
+                meter_create=meter_create,
+                auth_subject=auth_subject,
+            )
+
         # Create products for organization
         org_products = []
         for product_data in org_data.get("products", []):
-            # Create price for product
-            price_create = ProductPriceFixedCreate(
-                amount_type=ProductPriceAmountType.fixed,
-                price_amount=product_data["price"],
-                price_currency="usd",
-            )
+            # Handle metered products
+            price_create: ProductPriceMeteredUnitCreate | ProductPriceFixedCreate
+            if product_data.get("metered", False) and coldmail_meter:
+                price_create = ProductPriceMeteredUnitCreate(
+                    amount_type=ProductPriceAmountType.metered_unit,
+                    price_currency="usd",
+                    unit_amount=Decimal(str(product_data["unit_amount"])),
+                    meter_id=coldmail_meter.id,
+                    cap_amount=product_data.get("cap_amount"),
+                )
+            else:
+                # Create fixed price for product
+                price_create = ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=product_data["price"],
+                    price_currency="usd",
+                )
 
             product_create = ProductCreate(
                 name=product_data["name"],

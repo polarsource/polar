@@ -67,11 +67,11 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
         style={{ height: _height, width: _width }}
         config={{
           current: {
-            label: 'Current',
+            label: 'Current Period',
             color: '#2563eb',
           },
           previous: {
-            label: 'Previous',
+            label: 'Previous Period',
             color: isDark ? '#383942' : '#ccc',
           },
           metric: {
@@ -102,7 +102,7 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
             <CartesianGrid
               horizontal={false}
               vertical={true}
-              stroke={isDark ? '#222225' : '#ddd'}
+              stroke={isDark ? '#222225' : '#ccc'}
               strokeDasharray="6 6"
             />
           )}
@@ -125,38 +125,33 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
           <ChartTooltip
             cursor={true}
             content={
-              // Tooltip content is useful only if we show previous data
-              previousData ? (
-                <ChartTooltipContent
-                  className="text-black dark:text-white"
-                  indicator="dot"
-                  labelKey="metric"
-                  formatter={(value, name, item) => {
-                    const formattedValue = getFormattedMetricValue(
-                      metric,
-                      value as number,
-                    )
-                    return (
-                      <div className="flex w-40 flex-row justify-between gap-x-8">
-                        <div className="flex flex-row items-center gap-x-2">
-                          <span
-                            className={twMerge('h-2 w-2 rounded-full')}
-                            style={{
-                              backgroundColor: item?.color,
-                            }}
-                          />
-                          <span className="capitalize">
-                            {name.toString().split('_').join(' ')}
-                          </span>
-                        </div>
-                        <span>{formattedValue}</span>
+              <ChartTooltipContent
+                className="text-black dark:text-white"
+                indicator="dot"
+                labelKey="metric"
+                formatter={(value, name, item) => {
+                  const formattedValue = getFormattedMetricValue(
+                    metric,
+                    value as number,
+                  )
+                  return (
+                    <div className="flex w-40 flex-row justify-between gap-x-8">
+                      <div className="flex flex-row items-center gap-x-2">
+                        <span
+                          className={twMerge('h-2 w-2 rounded-full')}
+                          style={{
+                            backgroundColor: item?.color,
+                          }}
+                        />
+                        <span className="capitalize">
+                          {name.toString().split('_').join(' ')}
+                        </span>
                       </div>
-                    )
-                  }}
-                />
-              ) : (
-                <></>
-              )
+                      <span>{formattedValue}</span>
+                    </div>
+                  )
+                }}
+              />
             }
           />
           {previousData && (

@@ -54,12 +54,16 @@ const ClientPage = ({
   const [query, setQuery] = useQueryState('query', {
     defaultValue: '',
   })
-  const [archivedFilter, setArchivedFilter] = useQueryState(
+  const [archivedFilter, _setArchivedFilter] = useQueryState(
     'filter',
     parseAsStringLiteral(['all', 'active', 'archived'] as const).withDefault(
       'active',
     ),
   )
+  const setArchivedFilter = (state: 'all' | 'active' | 'archived') => {
+    setSelectedMeterId('')
+    _setArchivedFilter(state)
+  }
 
   const router = useRouter()
 
@@ -315,7 +319,7 @@ const ClientPage = ({
           isEditMeterModalShown={isEditMeterModalShown}
           hideEditMeterModal={hideEditMeterModal}
         />
-      ) : !isLoading ? (
+      ) : !isLoading && !selectedMeterId ? (
         <MeterIngestionGuide />
       ) : (
         <div className="flex h-full items-center justify-center">

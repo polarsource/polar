@@ -626,7 +626,7 @@ class SubscriptionService:
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(
-            subscription, update_dict={"scheduler_locked": False}
+            subscription, update_dict={"scheduler_locked_at": None}
         )
 
         enqueue_job(

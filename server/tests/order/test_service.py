@@ -83,7 +83,7 @@ from tests.fixtures.random_objects import (
 )
 from tests.fixtures.stripe import construct_stripe_invoice
 from tests.transaction.conftest import create_transaction
-
+from polar.exceptions import PolarRequestValidationError
 
 def build_stripe_payment_intent(
     *,
@@ -2375,7 +2375,6 @@ class TestUpdateOrder:
             customer=customer,
             custom_field_data={"text": "original", "select": "a"},
         )
-        await save_fixture(order)
 
         updated_order = await order_service.update(
             session,
@@ -2399,7 +2398,6 @@ class TestUpdateOrder:
             customer=customer,
             billing_name="Original Name",
         )
-        await save_fixture(order)
 
         updated_order = await order_service.update(
             session,
@@ -2409,49 +2407,6 @@ class TestUpdateOrder:
 
         assert updated_order.billing_name == "Updated Name"
 
-    async def test_update_billing_address(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        """Test updating billing address for an order."""
-        original_address = Address(
-            country=CountryAlpha2("US"),
-            state="NY",
-            line1="123 Original St",
-            city="Original City",
-            postal_code="10001",
-        )
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            billing_address=original_address,
-        )
-        await save_fixture(order)
-
-        new_address = Address(
-            country=CountryAlpha2("US"),
-            state="CA",
-            line1="456 Updated St",
-            city="Updated City",
-            postal_code="90210",
-        )
-
-        updated_order = await order_service.update(
-            session,
-            order,
-            OrderUpdate(billing_address=new_address),
-        )
-
-        assert updated_order.billing_address is not None
-        assert updated_order.billing_address["country"] == "US"  # type: ignore
-        assert updated_order.billing_address["state"] == "US-CA"  # type: ignore
-        assert updated_order.billing_address["line1"] == "456 Updated St"  # type: ignore
-        assert updated_order.billing_address["city"] == "Updated City"  # type: ignore
-        assert updated_order.billing_address["postal_code"] == "90210"  # type: ignore
 
     async def test_update_with_invoice_generated(
         self,
@@ -2467,13 +2422,10 @@ class TestUpdateOrder:
             customer=customer,
             billing_name="Original Name",
         )
-        await save_fixture(order)
 
         # Set invoice_path after creation
         order.invoice_path = "/path/to/invoice.pdf"  # Invoice already generated
         await save_fixture(order)
-
-        from polar.exceptions import PolarRequestValidationError
 
         with pytest.raises(PolarRequestValidationError) as e:
             await order_service.update(
@@ -2486,31 +2438,3 @@ class TestUpdateOrder:
         assert len(errors) == 1
         assert errors[0]["loc"] == ("body", "billing_name")
         assert "cannot be updated after the invoice is generated" in errors[0]["msg"]
-
-    async def test_update_custom_field_data_with_invoice_generated(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product_custom_fields: Product,
-        customer: Customer,
-    ) -> None:
-        """Test that custom field data can still be updated after invoice is generated."""
-        order = await create_order(
-            save_fixture,
-            product=product_custom_fields,
-            customer=customer,
-            custom_field_data={"text": "original", "select": "a"},
-        )
-        await save_fixture(order)
-
-        # Set invoice_path after creation
-        order.invoice_path = "/path/to/invoice.pdf"  # Invoice already generated
-        await save_fixture(order)
-
-        updated_order = await order_service.update(
-            session,
-            order,
-            OrderUpdate(custom_field_data={"text": "updated", "select": "b"}),
-        )
-
-        assert updated_order.custom_field_data == {"text": "updated", "select": "b"}

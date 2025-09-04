@@ -7,7 +7,7 @@ from typing import Any, Literal
 import stripe as stripe_lib
 import structlog
 from sqlalchemy import select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
@@ -392,8 +392,9 @@ class OrderService:
             .options(
                 *repository.get_eager_options(
                     customer_load=contains_eager(Order.customer),
-                    product_load=joinedload(Order.product).joinedload(
-                        Product.organization
+                    product_load=joinedload(Order.product).options(
+                        joinedload(Product.organization),
+                        selectinload(Product.attached_custom_fields),
                     ),
                 )
             )
@@ -426,7 +427,6 @@ class OrderService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        # Handle custom field data validation and update
         update_dict = order_update.model_dump(exclude_unset=True)
 
         if "custom_field_data" in update_dict:
@@ -440,9 +440,6 @@ class OrderService:
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict)
-
-        # Refresh the order to get the updated data, including the product relationship
-        await session.refresh(order, {"product"})
 
         await self.send_webhook(session, order, WebhookEventType.order_updated)
 

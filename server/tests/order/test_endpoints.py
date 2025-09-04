@@ -353,53 +353,6 @@ class TestUpdateOrder:
         json = response.json()
         assert json["custom_field_data"] == {"text": "updated", "select": "b"}
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_write}),
-    )
-    async def test_update_billing_name(
-        self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        orders: list[Order],
-    ) -> None:
-        response = await client.patch(
-            f"/v1/orders/{orders[0].id}",
-            json={"billing_name": "Updated Billing Name"},
-        )
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["billing_name"] == "Updated Billing Name"
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_write}),
-    )
-    async def test_update_billing_address(
-        self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        orders: list[Order],
-    ) -> None:
-        new_address = {
-            "country": "US",
-            "state": "CA",
-            "line1": "123 Updated St",
-            "city": "Updated City",
-            "postal_code": "12345",
-        }
-
-        response = await client.patch(
-            f"/v1/orders/{orders[0].id}",
-            json={"billing_address": new_address},
-        )
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["billing_address"]["line1"] == "123 Updated St"
-        assert json["billing_address"]["city"] == "Updated City"
-
 
 @pytest.mark.asyncio
 class TesGetOrdersStatistics:

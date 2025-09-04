@@ -11,18 +11,11 @@ from typing import Any, Literal, TypeAlias, Unpack
 import pytest_asyncio
 from typing_extensions import TypeIs
 
-from polar.enums import (
-    AccountType,
-    PaymentProcessor,
-    SubscriptionRecurringInterval,
-)
+from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.kit.address import Address
 from polar.kit.tax import TaxID
 from polar.kit.utils import utc_now
-from polar.meter.aggregation import (
-    Aggregation,
-    CountAggregation,
-)
+from polar.meter.aggregation import Aggregation, CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
     Account,
@@ -94,10 +87,7 @@ from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.models.payout import PayoutStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
-from polar.models.product_price import (
-    ProductPriceAmountType,
-    ProductPriceType,
-)
+from polar.models.product_price import ProductPriceAmountType, ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.models.user import OAuthAccount, OAuthPlatform
@@ -147,11 +137,6 @@ async def organization_second(save_fixture: SaveFixture) -> Organization:
 @pytest_asyncio.fixture
 async def second_organization(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture)
-
-
-@pytest_asyncio.fixture
-async def organization_blocked(save_fixture: SaveFixture) -> Organization:
-    return await create_organization(save_fixture, blocked_at=utc_now())
 
 
 @pytest_asyncio.fixture
@@ -227,18 +212,6 @@ async def user_second(save_fixture: SaveFixture) -> User:
     return await create_user(save_fixture)
 
 
-@pytest_asyncio.fixture
-async def user_blocked(save_fixture: SaveFixture) -> User:
-    user = User(
-        id=uuid.uuid4(),
-        email=rstr("test") + "@example.com",
-        avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
-        blocked_at=utc_now(),
-    )
-    await save_fixture(user)
-    return user
-
-
 async def create_pledge(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -298,17 +271,6 @@ async def user_organization_second(
     user_second: User,
 ) -> UserOrganization:
     user_organization = UserOrganization(user=user_second, organization=organization)
-    await save_fixture(user_organization)
-    return user_organization
-
-
-@pytest_asyncio.fixture
-async def user_organization_blocked(
-    save_fixture: SaveFixture,
-    organization_blocked: Organization,
-    user: User,
-) -> UserOrganization:
-    user_organization = UserOrganization(user=user, organization=organization_blocked)
     await save_fixture(user_organization)
     return user_organization
 

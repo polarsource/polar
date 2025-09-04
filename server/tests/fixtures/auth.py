@@ -15,10 +15,8 @@ class AuthSubjectFixture:
             "anonymous",
             "user",
             "user_second",
-            "user_blocked",
             "organization",
             "organization_second",
-            "organization_blocked",
             "customer",
         ] = "user",
         scopes: set[Scope] = {Scope.web_read, Scope.web_write},
@@ -43,10 +41,8 @@ def auth_subject(
     request: pytest.FixtureRequest,
     user: User,
     user_second: User,
-    user_blocked: User,
     organization: Organization,
     organization_second: Organization,
-    organization_blocked: Organization,
     customer: Customer,
 ) -> AuthSubject[Subject]:
     """
@@ -62,10 +58,8 @@ def auth_subject(
         "anonymous": Anonymous(),
         "user": user,
         "user_second": user_second,
-        "user_blocked": user_blocked,
         "organization": organization,
         "organization_second": organization_second,
-        "organization_blocked": organization_blocked,
         "customer": customer,
     }
     return AuthSubject(

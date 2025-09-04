@@ -25,6 +25,7 @@ from polar.order.service import (
 from polar.order.service import order as order_service
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
+from polar.payment_method.service import payment_method as payment_method_service
 from polar.payout.service import payout as payout_service
 from polar.pledge.service import pledge as pledge_service
 from polar.refund.service import refund as refund_service
@@ -109,6 +110,17 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
                         session=session,
                         payload=payload,
                     )
+                return
+
+            # Handle retry payments - check if this is an order retry payment
+            if payment_intent.metadata and payment_intent.metadata.get("order_id"):
+                order = await payment.resolve_order(session, payment_intent, None)
+                if order is not None:
+                    # Save payment method for recurring products
+                    await payment_method_service.upsert_from_stripe_payment_intent_for_order(
+                        session, payment_intent, order
+                    )
+                    await session.commit()
                 return
 
 

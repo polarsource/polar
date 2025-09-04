@@ -22,7 +22,6 @@ const _getUserOrganizations = async (
 ): Promise<schemas['Organization'][]> => {
   const user = await getAuthenticatedUser()
   if (!user) {
-    console.log('No authenticated user found')
     return []
   }
 

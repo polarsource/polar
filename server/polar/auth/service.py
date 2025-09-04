@@ -70,6 +70,9 @@ class AuthService:
         if user_session is None:
             return None
 
+        if not user_session.user.can_authenticate:
+            return None
+
         return user_session
 
     async def delete_expired(self, session: AsyncSession) -> None:

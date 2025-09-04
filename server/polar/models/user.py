@@ -8,14 +8,17 @@ from sqlalchemy import (
     TIMESTAMP,
     Boolean,
     Column,
+    ColumnElement,
     ForeignKey,
     Integer,
     String,
     Text,
     Uuid,
+    and_,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
@@ -161,6 +164,15 @@ class User(RecordModel):
     )
 
     meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    @hybrid_property
+    def can_authenticate(self) -> bool:
+        return self.deleted_at is None and self.blocked_at is None
+
+    @can_authenticate.inplace.expression
+    @classmethod
+    def _can_authenticate_expression(cls) -> ColumnElement[bool]:
+        return and_(cls.deleted_at.is_(None), cls.blocked_at.is_(None))
 
     @property
     def signup_attribution(self) -> dict[str, Any]:

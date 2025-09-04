@@ -20,6 +20,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
@@ -56,6 +57,7 @@ class OrderFixture(TypedDict):
     created_at: date
     amount: int
     product: str
+    status: OrderStatus
     subscription: NotRequired[str]
 
 
@@ -103,29 +105,34 @@ ORDERS: dict[str, OrderFixture] = {
         "created_at": date(2024, 1, 1),
         "amount": 100_00,
         "product": "one_time_product",
+        "status": OrderStatus.paid,
     },
     "order_2": {
         "created_at": date(2024, 1, 1),
         "amount": 100_00,
         "product": "monthly_subscription",
+        "status": OrderStatus.paid,
         "subscription": "subscription_1",
     },
     "order_3": {
         "created_at": date(2024, 2, 1),
         "amount": 100_00,
         "product": "monthly_subscription",
+        "status": OrderStatus.paid,
         "subscription": "subscription_1",
     },
     "order_4": {
         "created_at": date(2024, 1, 1),
         "amount": 1000_00,
         "product": "yearly_subscription",
+        "status": OrderStatus.paid,
         "subscription": "subscription_3",
     },
     "order_5": {
         "created_at": date(2024, 6, 1),
         "amount": 100_00,
         "product": "monthly_subscription",
+        "status": OrderStatus.paid,
         "subscription": "subscription_2",
     },
 }
@@ -194,6 +201,7 @@ async def _create_fixtures(
             order_subscription = subscriptions[subscription_id]
         order = await create_order(
             save_fixture,
+            status=order_fixture["status"],
             product=products[order_fixture["product"]],
             customer=customer,
             subtotal_amount=order_fixture["amount"],
@@ -908,3 +916,62 @@ class TestGetMetrics:
 
         feb = metrics.periods[1]
         assert feb.monthly_recurring_revenue == 50_00
+
+    @pytest.mark.auth
+    async def test_values_unpaid_orders(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        orders: dict[str, OrderFixture] = {
+            "order_1": {
+                "created_at": date(2024, 1, 1),
+                "amount": 100_00,
+                "product": "one_time_product",
+                "status": OrderStatus.paid,
+            },
+            "order_2": {
+                "created_at": date(2024, 1, 1),
+                "amount": 100_00,
+                "product": "one_time_product",
+                "status": OrderStatus.refunded,
+            },
+            "order_3": {
+                "created_at": date(2024, 1, 1),
+                "amount": 100_00,
+                "product": "one_time_product",
+                "status": OrderStatus.pending,
+            },
+        }
+        await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, {}, orders
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 1),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+        )
+
+        assert len(metrics.periods) == 1
+
+        jan_1 = metrics.periods[0]
+        assert jan_1.orders == 2
+        assert jan_1.revenue == 200_00
+        assert jan_1.cumulative_revenue == 200_00
+        assert jan_1.average_order_value == 100_00
+        assert jan_1.one_time_products == 2
+        assert jan_1.one_time_products_revenue == 200_00
+        assert jan_1.new_subscriptions == 0
+        assert jan_1.new_subscriptions_revenue == 0
+        assert jan_1.renewed_subscriptions == 0
+        assert jan_1.renewed_subscriptions_revenue == 0
+        assert jan_1.active_subscriptions == 0
+        assert jan_1.monthly_recurring_revenue == 0

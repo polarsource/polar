@@ -143,8 +143,8 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    scheduler_locked: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, index=True
+    scheduler_locked_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
 
     customer_id: Mapped[UUID] = mapped_column(

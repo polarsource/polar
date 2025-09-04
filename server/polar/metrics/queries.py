@@ -153,6 +153,7 @@ def get_orders_cte(
                 onclause=and_(
                     interval.sql_date_trunc(Order.created_at)
                     == interval.sql_date_trunc(timestamp_column),
+                    Order.paid.is_(True),
                     Order.id.in_(readable_orders_statement),
                 ),
             ).join(
@@ -202,6 +203,7 @@ def get_cumulative_orders_cte(
                 onclause=and_(
                     interval.sql_date_trunc(Order.created_at)
                     <= interval.sql_date_trunc(timestamp_column),
+                    Order.paid.is_(True),
                     Order.id.in_(readable_orders_statement),
                 ),
             ).join(

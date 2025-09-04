@@ -109,7 +109,7 @@ class CustomerBenefitGrantUpdateBase(Schema):
 
 
 class CustomerBenefitGrantDiscordPropertiesUpdate(TypedDict):
-    account_id: str
+    account_id: str | None
 
 
 class CustomerBenefitGrantDiscordUpdate(CustomerBenefitGrantUpdateBase):
@@ -121,7 +121,7 @@ class CustomerBenefitGrantDiscordUpdate(CustomerBenefitGrantUpdateBase):
 
 
 class CustomerBenefitGrantGitHubRepositoryPropertiesUpdate(TypedDict):
-    account_id: str
+    account_id: str | None
 
 
 class CustomerBenefitGrantGitHubRepositoryUpdate(CustomerBenefitGrantUpdateBase):

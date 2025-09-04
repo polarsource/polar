@@ -36,6 +36,7 @@ export const MeterCreditBenefitForm = ({
 }) => {
   const { data: meters, refetch } = useMeters(organization.id, {
     sorting: ['name'],
+    is_archived: false,
   })
 
   const { control, setValue } =

@@ -5132,11 +5132,13 @@ export interface components {
         /** BenefitGrantDiscordProperties */
         BenefitGrantDiscordProperties: {
             /** Account Id */
-            account_id?: string;
+            account_id?: string | null;
             /** Guild Id */
             guild_id?: string;
             /** Role Id */
             role_id?: string;
+            /** Granted Account Id */
+            granted_account_id?: string;
         };
         /** BenefitGrantDownloadablesProperties */
         BenefitGrantDownloadablesProperties: {
@@ -5155,7 +5157,7 @@ export interface components {
         /** BenefitGrantGitHubRepositoryProperties */
         BenefitGrantGitHubRepositoryProperties: {
             /** Account Id */
-            account_id?: string;
+            account_id?: string | null;
             /** Repository Owner */
             repository_owner?: string;
             /** Repository Name */
@@ -5165,6 +5167,8 @@ export interface components {
              * @enum {string}
              */
             permission?: "pull" | "triage" | "push" | "maintain" | "admin";
+            /** Granted Account Id */
+            granted_account_id?: string;
         };
         /** BenefitGrantLicenseKeysProperties */
         BenefitGrantLicenseKeysProperties: {
@@ -6050,7 +6054,15 @@ export interface components {
             };
             /** @description Payment processor used. */
             payment_processor: components["schemas"]["PaymentProcessor"];
-            /** @description Status of the checkout session. */
+            /** @description
+             *             Status of the checkout session.
+             *
+             *             - Open: the checkout session was opened.
+             *             - Expired: the checkout session was expired and is no more accessible.
+             *             - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
+             *             - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
+             *             - Succeeded: the payment on the checkout was performed successfully.
+             *              */
             status: components["schemas"]["CheckoutStatus"];
             /**
              * Client Secret
@@ -7247,7 +7259,15 @@ export interface components {
             };
             /** @description Payment processor used. */
             payment_processor: components["schemas"]["PaymentProcessor"];
-            /** @description Status of the checkout session. */
+            /** @description
+             *             Status of the checkout session.
+             *
+             *             - Open: the checkout session was opened.
+             *             - Expired: the checkout session was expired and is no more accessible.
+             *             - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
+             *             - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
+             *             - Succeeded: the payment on the checkout was performed successfully.
+             *              */
             status: components["schemas"]["CheckoutStatus"];
             /**
              * Client Secret
@@ -8639,7 +8659,7 @@ export interface components {
         /** CustomerBenefitGrantDiscordPropertiesUpdate */
         CustomerBenefitGrantDiscordPropertiesUpdate: {
             /** Account Id */
-            account_id: string;
+            account_id: string | null;
         };
         /** CustomerBenefitGrantDiscordUpdate */
         CustomerBenefitGrantDiscordUpdate: {
@@ -8751,7 +8771,7 @@ export interface components {
         /** CustomerBenefitGrantGitHubRepositoryPropertiesUpdate */
         CustomerBenefitGrantGitHubRepositoryPropertiesUpdate: {
             /** Account Id */
-            account_id: string;
+            account_id: string | null;
         };
         /** CustomerBenefitGrantGitHubRepositoryUpdate */
         CustomerBenefitGrantGitHubRepositoryUpdate: {
@@ -12779,6 +12799,11 @@ export interface components {
              * @description The ID of the organization owning the meter.
              */
             organization_id: string;
+            /**
+             * Archived At
+             * @description Whether the meter is archived and the time it was archived.
+             */
+            archived_at?: string | null;
         };
         /** MeterCreate */
         MeterCreate: {
@@ -12987,6 +13012,11 @@ export interface components {
              * @description The aggregation to apply on the filtered events to calculate the meter.
              */
             aggregation?: (components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"] | components["schemas"]["UniqueAggregation"]) | null;
+            /**
+             * Is Archived
+             * @description Whether the meter is archived. Archived meters are no longer used for billing.
+             */
+            is_archived?: boolean | null;
         };
         /**
          * Metric
@@ -14538,6 +14568,16 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** PaymentMethodInUseByActiveSubscription */
+        PaymentMethodInUseByActiveSubscription: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "PaymentMethodInUseByActiveSubscription";
+            /** Detail */
+            detail: string;
+        };
         /** PaymentNotReady */
         PaymentNotReady: {
             /**
@@ -15889,6 +15929,59 @@ export interface components {
             /** Avatar Url */
             readonly avatar_url: string;
         };
+        /**
+         * SubscriptionCycledEvent
+         * @description An event created by Polar when a subscription is cycled.
+         */
+        SubscriptionCycledEvent: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description The timestamp of the event.
+             */
+            timestamp: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the event.
+             */
+            organization_id: string;
+            /**
+             * Customer Id
+             * @description ID of the customer in your Polar organization associated with the event.
+             */
+            customer_id: string | null;
+            /** @description The customer associated with the event. */
+            customer: components["schemas"]["Customer"] | null;
+            /**
+             * External Customer Id
+             * @description ID of the customer in your system associated with the event.
+             */
+            external_customer_id: string | null;
+            /**
+             * Source
+             * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+             * @constant
+             */
+            source: "system";
+            /**
+             * @description The name of the event. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            name: "subscription.cycled";
+            metadata: components["schemas"]["SubscriptionCycledMetadata"];
+        };
+        /** SubscriptionCycledMetadata */
+        SubscriptionCycledMetadata: {
+            /** Subscription Id */
+            subscription_id: string;
+        };
         /** SubscriptionLocked */
         SubscriptionLocked: {
             /**
@@ -15946,6 +16039,63 @@ export interface components {
             meter: components["schemas"]["Meter"];
         };
         /**
+         * SubscriptionProductUpdatedEvent
+         * @description An event created by Polar when a subscription changes the product.
+         */
+        SubscriptionProductUpdatedEvent: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description The timestamp of the event.
+             */
+            timestamp: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the event.
+             */
+            organization_id: string;
+            /**
+             * Customer Id
+             * @description ID of the customer in your Polar organization associated with the event.
+             */
+            customer_id: string | null;
+            /** @description The customer associated with the event. */
+            customer: components["schemas"]["Customer"] | null;
+            /**
+             * External Customer Id
+             * @description ID of the customer in your system associated with the event.
+             */
+            external_customer_id: string | null;
+            /**
+             * Source
+             * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+             * @constant
+             */
+            source: "system";
+            /**
+             * @description The name of the event. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            name: "subscription.product_updated";
+            metadata: components["schemas"]["SubscriptionProductUpdatedMetadata"];
+        };
+        /** SubscriptionProductUpdatedMetadata */
+        SubscriptionProductUpdatedMetadata: {
+            /** Subscription Id */
+            subscription_id: string;
+            /** Old Product Id */
+            old_product_id: string;
+            /** New Product Id */
+            new_product_id: string;
+        };
+        /**
          * SubscriptionProrationBehavior
          * @enum {string}
          */
@@ -15996,6 +16146,59 @@ export interface components {
             revoke: true;
         };
         /**
+         * SubscriptionRevokedEvent
+         * @description An event created by Polar when a subscription is revoked from a customer.
+         */
+        SubscriptionRevokedEvent: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description The timestamp of the event.
+             */
+            timestamp: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the event.
+             */
+            organization_id: string;
+            /**
+             * Customer Id
+             * @description ID of the customer in your Polar organization associated with the event.
+             */
+            customer_id: string | null;
+            /** @description The customer associated with the event. */
+            customer: components["schemas"]["Customer"] | null;
+            /**
+             * External Customer Id
+             * @description ID of the customer in your system associated with the event.
+             */
+            external_customer_id: string | null;
+            /**
+             * Source
+             * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+             * @constant
+             */
+            source: "system";
+            /**
+             * @description The name of the event. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            name: "subscription.revoked";
+            metadata: components["schemas"]["SubscriptionRevokedMetadata"];
+        };
+        /** SubscriptionRevokedMetadata */
+        SubscriptionRevokedMetadata: {
+            /** Subscription Id */
+            subscription_id: string;
+        };
+        /**
          * SubscriptionSortProperty
          * @enum {string}
          */
@@ -16041,7 +16244,7 @@ export interface components {
             /** Github Username */
             github_username?: string | null;
         };
-        SystemEvent: components["schemas"]["MeterCreditEvent"] | components["schemas"]["MeterResetEvent"] | components["schemas"]["BenefitGrantedEvent"] | components["schemas"]["BenefitCycledEvent"] | components["schemas"]["BenefitUpdatedEvent"] | components["schemas"]["BenefitRevokedEvent"];
+        SystemEvent: components["schemas"]["MeterCreditEvent"] | components["schemas"]["MeterResetEvent"] | components["schemas"]["BenefitGrantedEvent"] | components["schemas"]["BenefitCycledEvent"] | components["schemas"]["BenefitUpdatedEvent"] | components["schemas"]["BenefitRevokedEvent"] | components["schemas"]["SubscriptionCycledEvent"] | components["schemas"]["SubscriptionRevokedEvent"] | components["schemas"]["SubscriptionProductUpdatedEvent"];
         /**
          * TaxIDFormat
          * @description List of supported tax ID formats.
@@ -18240,6 +18443,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Account"];
+                };
+            };
+            /** @description User is not the admin of the account. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotPermitted"];
                 };
             };
             /** @description Organization not found or account not set. */
@@ -22832,6 +23044,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Payment method is used by active subscription(s). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentMethodInUseByActiveSubscription"];
+                };
+            };
             /** @description Payment method not found. */
             404: {
                 headers: {
@@ -25959,8 +26180,11 @@ export const refundStatusValues: ReadonlyArray<components["schemas"]["RefundStat
 export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "web:read", "web:write", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "transactions:read", "transactions:write", "payouts:read", "payouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notifications:read", "notifications:write", "notification_recipients:read", "notification_recipients:write"];
 export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "denied", "active"];
 export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];
+export const subscriptionCycledEventNameValues: ReadonlyArray<components["schemas"]["SubscriptionCycledEvent"]["name"]> = ["subscription.cycled"];
+export const subscriptionProductUpdatedEventNameValues: ReadonlyArray<components["schemas"]["SubscriptionProductUpdatedEvent"]["name"]> = ["subscription.product_updated"];
 export const subscriptionProrationBehaviorValues: ReadonlyArray<components["schemas"]["SubscriptionProrationBehavior"]> = ["invoice", "prorate"];
 export const subscriptionRecurringIntervalValues: ReadonlyArray<components["schemas"]["SubscriptionRecurringInterval"]> = ["day", "week", "month", "year"];
+export const subscriptionRevokedEventNameValues: ReadonlyArray<components["schemas"]["SubscriptionRevokedEvent"]["name"]> = ["subscription.revoked"];
 export const subscriptionSortPropertyValues: ReadonlyArray<components["schemas"]["SubscriptionSortProperty"]> = ["customer", "-customer", "status", "-status", "started_at", "-started_at", "current_period_end", "-current_period_end", "amount", "-amount", "product", "-product", "discount", "-discount"];
 export const subscriptionStatusValues: ReadonlyArray<components["schemas"]["SubscriptionStatus"]> = ["incomplete", "incomplete_expired", "trialing", "active", "past_due", "canceled", "unpaid"];
 export const taxIDFormatValues: ReadonlyArray<components["schemas"]["TaxIDFormat"]> = ["ad_nrt", "ae_trn", "ar_cuit", "au_abn", "au_arn", "bg_uic", "bh_vat", "bo_tin", "br_cnpj", "br_cpf", "ca_bn", "ca_gst_hst", "ca_pst_bc", "ca_pst_mb", "ca_pst_sk", "ca_qst", "ch_uid", "ch_vat", "cl_tin", "cn_tin", "co_nit", "cr_tin", "de_stn", "do_rcn", "ec_ruc", "eg_tin", "es_cif", "eu_oss_vat", "eu_vat", "gb_vat", "ge_vat", "hk_br", "hr_oib", "hu_tin", "id_npwp", "il_vat", "in_gst", "is_vat", "jp_cn", "jp_rn", "jp_trn", "ke_pin", "kr_brn", "kz_bin", "li_uid", "mx_rfc", "my_frp", "my_itn", "my_sst", "ng_tin", "no_vat", "no_voec", "nz_gst", "om_vat", "pe_ruc", "ph_tin", "ro_tin", "rs_pib", "ru_inn", "ru_kpp", "sa_vat", "sg_gst", "sg_uen", "si_tin", "sv_nit", "th_vat", "tr_tin", "tw_vat", "ua_vat", "us_ein", "uy_ruc", "ve_rif", "vn_tin", "za_vat"];

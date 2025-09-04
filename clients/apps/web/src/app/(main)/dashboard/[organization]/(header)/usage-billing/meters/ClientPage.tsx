@@ -288,9 +288,6 @@ const ClientPage = ({
                 <div className="flex min-w-0 flex-col gap-y-1 px-6 py-2">
                   <div className="flex items-center gap-x-2">
                     <div className="w-full truncate text-sm">{meter.name}</div>
-                    {meter.archived_at && (
-                      <span className="text-xs text-red-500">Archived</span>
-                    )}
                   </div>
                   <div className="w-full truncate text-xs capitalize text-gray-500 dark:text-gray-500">
                     {meter.aggregation.func}

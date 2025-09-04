@@ -60,7 +60,7 @@ const Footer = () => {
             </div>
           </div>
           <div className="flex flex-col gap-y-4">
-            <h3 className="text-lg dark:text-white">Community</h3>
+            <h3 className="text-base dark:text-white">Community</h3>
             <div className="flex flex-col gap-y-2">
               <FooterLink href="https://discord.gg/Pnhfz3UThd">
                 Join our Discord

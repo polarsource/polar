@@ -112,14 +112,19 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
                     )
                 return
 
-            # Handle retry payments - check if this is an order retry payment
+            # Handle retry payments - save credit card and update subscription payment method
             if payment_intent.metadata and payment_intent.metadata.get("order_id"):
                 order = await payment.resolve_order(session, payment_intent, None)
                 if order is not None:
-                    # Save payment method for recurring products
-                    await payment_method_service.upsert_from_stripe_payment_intent_for_order(
+                    payment_method = await payment_method_service.upsert_from_stripe_payment_intent_for_order(
                         session, payment_intent, order
                     )
+
+                    if payment_method and order.subscription:
+                        await subscription_service.update_payment_method_from_retry(
+                            session, order.subscription, payment_method
+                        )
+
                     await session.commit()
                 return
 

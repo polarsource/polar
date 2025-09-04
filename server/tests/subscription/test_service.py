@@ -16,7 +16,11 @@ from sqlalchemy.util.typing import TypeAlias
 from polar.auth.models import AuthSubject
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
-from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.enums import (
+    PaymentProcessor,
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+)
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import (
@@ -1895,3 +1899,141 @@ class TestMarkPastDue:
         # Then
         assert result_subscription.status == SubscriptionStatus.past_due
         send_past_due_email_mock.assert_called_once_with(session, subscription)
+
+
+@pytest.mark.asyncio
+class TestUpdatePaymentMethodFromRetry:
+    async def test_stripe_managed_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given: Stripe-managed subscription with old payment method
+        old_payment_method = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id="pm_old",
+            type="card",
+            customer=customer,
+        )
+        await save_fixture(old_payment_method)
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.stripe_subscription_id = "sub_123"
+        subscription.payment_method = old_payment_method
+        await save_fixture(subscription)
+
+        # New payment method from retry
+        new_payment_method = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id="pm_new",
+            type="card",
+            customer=customer,
+        )
+        await save_fixture(new_payment_method)
+
+        # When
+        updated_subscription = (
+            await subscription_service.update_payment_method_from_retry(
+                session, subscription, new_payment_method
+            )
+        )
+
+        # Then: Stripe subscription is updated with new payment method
+        stripe_service_mock.set_automatically_charged_subscription.assert_called_once_with(
+            "sub_123", "pm_new"
+        )
+
+        # And: Local subscription record is updated
+        assert updated_subscription.payment_method == new_payment_method
+
+    async def test_polar_managed_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given: Polar-managed subscription (no stripe_subscription_id)
+        old_payment_method = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id="pm_old",
+            type="card",
+            customer=customer,
+        )
+        await save_fixture(old_payment_method)
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        # No stripe_subscription_id for Polar-managed
+        subscription.stripe_subscription_id = None
+        subscription.payment_method = old_payment_method
+        await save_fixture(subscription)
+
+        # New payment method from retry
+        new_payment_method = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id="pm_new",
+            type="card",
+            customer=customer,
+        )
+        await save_fixture(new_payment_method)
+
+        # When
+        updated_subscription = (
+            await subscription_service.update_payment_method_from_retry(
+                session, subscription, new_payment_method
+            )
+        )
+
+        # Then: Stripe service is NOT called for Polar-managed subscriptions
+        stripe_service_mock.set_automatically_charged_subscription.assert_not_called()
+
+        # But: Local subscription record is still updated
+        assert updated_subscription.payment_method == new_payment_method
+
+    async def test_subscription_without_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given: Subscription without payment method
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.stripe_subscription_id = "sub_123"
+        subscription.payment_method = None
+        await save_fixture(subscription)
+
+        # New payment method from retry
+        new_payment_method = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id="pm_new",
+            type="card",
+            customer=customer,
+        )
+        await save_fixture(new_payment_method)
+
+        # When
+        updated_subscription = (
+            await subscription_service.update_payment_method_from_retry(
+                session, subscription, new_payment_method
+            )
+        )
+
+        # Then: Stripe subscription is updated
+        stripe_service_mock.set_automatically_charged_subscription.assert_called_once_with(
+            "sub_123", "pm_new"
+        )
+
+        # And: Local subscription record is updated
+        assert updated_subscription.payment_method == new_payment_method

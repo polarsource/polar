@@ -13,12 +13,14 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     Uuid,
+    and_,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
+from polar.email.sender import DEFAULT_REPLY_TO_EMAIL_ADDRESS, EmailFromReply
 from polar.enums import SubscriptionProrationBehavior
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
@@ -161,7 +163,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         JSONB, nullable=False, default=dict
     )
     subscriptions_billing_engine: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
+        Boolean, nullable=False, default=settings.ORGANIZATIONS_BILLING_ENGINE_DEFAULT
     )
 
     #
@@ -180,6 +182,15 @@ class Organization(RateLimitGroupMixin, RecordModel):
     #
     # End: Fields synced from GitHub
     #
+
+    @hybrid_property
+    def can_authenticate(self) -> bool:
+        return self.deleted_at is None and self.blocked_at is None
+
+    @can_authenticate.inplace.expression
+    @classmethod
+    def _can_authenticate_expression(cls) -> ColumnElement[bool]:
+        return and_(cls.deleted_at.is_(None), cls.blocked_at.is_(None))
 
     @hybrid_property
     def storefront_enabled(self) -> bool:
@@ -259,3 +270,21 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def statement_descriptor_prefixed(self) -> str:
         # Cannot use *. Setting separator to # instead.
         return f"{settings.STRIPE_STATEMENT_DESCRIPTOR}# {self.statement_descriptor}"
+
+    @property
+    def email_props(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "slug": self.slug,
+            "logo_url": self.avatar_url,
+            "website_url": self.website,
+        }
+
+    @property
+    def email_from_reply(self) -> EmailFromReply:
+        return {
+            "from_name": f"{self.name} (via {settings.EMAIL_FROM_NAME})",
+            "from_email_addr": f"{self.slug}@{settings.EMAIL_FROM_DOMAIN}",
+            "reply_to_name": self.name,
+            "reply_to_email_addr": self.email or DEFAULT_REPLY_TO_EMAIL_ADDRESS,
+        }

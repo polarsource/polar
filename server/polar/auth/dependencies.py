@@ -7,7 +7,7 @@ from fastapi.security import HTTPBearer, OpenIdConnect
 from makefun import with_signature
 
 from polar.auth.scope import RESERVED_SCOPES, Scope
-from polar.exceptions import NotPermitted, Unauthorized
+from polar.exceptions import Unauthorized
 from polar.oauth2.exceptions import InsufficientScopeError
 
 from .models import (
@@ -140,11 +140,6 @@ class _Authenticator:
                 return auth_subject
             else:
                 raise Unauthorized()
-
-        # Blocked subjects
-        blocked_at = getattr(auth_subject.subject, "blocked_at", None)
-        if blocked_at is not None:
-            raise NotPermitted()
 
         # No required scopes
         if not self.required_scopes:

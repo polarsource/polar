@@ -6,7 +6,7 @@ from pydantic import Discriminator, Field, TypeAdapter
 from .. import forms
 
 
-class ApproveAccountForm(forms.BaseForm):
+class ApproveOrganizationForm(forms.BaseForm):
     action: Annotated[Literal["approve"], forms.SkipField]
     next_review_threshold: Annotated[
         int,
@@ -17,33 +17,33 @@ class ApproveAccountForm(forms.BaseForm):
     ]
 
 
-class DenyAccountForm(forms.BaseForm):
+class DenyOrganizationForm(forms.BaseForm):
     action: Annotated[Literal["deny"], forms.SkipField]
 
 
-class UnderReviewAccountForm(forms.BaseForm):
+class UnderReviewOrganizationForm(forms.BaseForm):
     action: Annotated[Literal["under_review"], forms.SkipField]
 
 
-class ApproveAppealForm(forms.BaseForm):
+class ApproveOrganizationAppealForm(forms.BaseForm):
     action: Annotated[Literal["approve_appeal"], forms.SkipField]
 
 
-class DenyAppealForm(forms.BaseForm):
+class DenyOrganizationAppealForm(forms.BaseForm):
     action: Annotated[Literal["deny_appeal"], forms.SkipField]
 
 
-AccountStatusForm = Annotated[
-    ApproveAccountForm
-    | DenyAccountForm
-    | UnderReviewAccountForm
-    | ApproveAppealForm
-    | DenyAppealForm,
+OrganizationStatusForm = Annotated[
+    ApproveOrganizationForm
+    | DenyOrganizationForm
+    | UnderReviewOrganizationForm
+    | ApproveOrganizationAppealForm
+    | DenyOrganizationAppealForm,
     Discriminator("action"),
 ]
 
-AccountStatusFormAdapter: TypeAdapter[AccountStatusForm] = TypeAdapter(
-    AccountStatusForm
+OrganizationStatusFormAdapter: TypeAdapter[OrganizationStatusForm] = TypeAdapter(
+    OrganizationStatusForm
 )
 
 

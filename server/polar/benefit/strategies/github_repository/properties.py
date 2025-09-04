@@ -10,7 +10,8 @@ class BenefitGitHubRepositoryProperties(BenefitProperties):
 
 
 class BenefitGrantGitHubRepositoryProperties(BenefitGrantProperties, total=False):
-    account_id: str
+    account_id: str | None
     repository_owner: str
     repository_name: str
     permission: Literal["pull", "triage", "push", "maintain", "admin"]
+    granted_account_id: str

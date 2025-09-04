@@ -3,7 +3,7 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy import or_, select, update
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager
 
 from polar.config import settings
 from polar.email.react import render_email_template
@@ -13,7 +13,7 @@ from polar.kit.crypto import get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.models import PersonalAccessToken
+from polar.models import PersonalAccessToken, User
 from polar.postgres import AsyncSession
 
 log: Logger = structlog.get_logger()
@@ -28,11 +28,13 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         token_hash = get_token_hash(token, secret=settings.SECRET)
         statement = (
             select(PersonalAccessToken)
+            .join(PersonalAccessToken.user)
             .where(
                 PersonalAccessToken.token == token_hash,
                 PersonalAccessToken.deleted_at.is_(None),
+                User.can_authenticate.is_(True),
             )
-            .options(joinedload(PersonalAccessToken.user))
+            .options(contains_eager(PersonalAccessToken.user))
         )
         if not expired:
             statement = statement.where(
@@ -78,7 +80,6 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
                 "personal_access_token": personal_access_token.comment,
                 "notifier": notifier,
                 "url": url or "",
-                "current_year": datetime.now().year,
             },
         )
 

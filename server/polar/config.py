@@ -136,7 +136,8 @@ class Settings(BaseSettings):
     EMAIL_SENDER: EmailSender = EmailSender.logger
     RESEND_API_KEY: str = ""
     EMAIL_FROM_NAME: str = "Polar"
-    EMAIL_FROM_EMAIL_ADDRESS: str = "noreply@notifications.polar.sh"
+    EMAIL_FROM_DOMAIN: str = "notifications.polar.sh"
+    EMAIL_FROM_LOCAL: str = "mail"
 
     # Github App
     GITHUB_CLIENT_ID: str = ""
@@ -273,6 +274,8 @@ class Settings(BaseSettings):
         # Misc
         ".well-known",
     ]
+
+    ORGANIZATIONS_BILLING_ENGINE_DEFAULT: bool = False
 
     # Dunning Configuration
     DUNNING_RETRY_INTERVALS: list[timedelta] = [

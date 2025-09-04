@@ -115,7 +115,7 @@ const LandingPageDesktopNavigation = () => {
                         subtitle: 'Who we are',
                       },
                       {
-                        href: '/company',
+                        href: '/careers',
                         label: 'Careers',
                         subtitle: "We're hiring",
                       },

@@ -5,7 +5,6 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import PaymentOnboardingStepper from '@/components/Onboarding/PaymentOnboardingStepper'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
-import CheckoutsWidget from '@/components/Widgets/CheckoutsWidget'
 import { MonthWidget } from '@/components/Widgets/MonthWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
@@ -80,7 +79,7 @@ interface OverviewPageProps {
 
 export default function OverviewPage({ organization }: OverviewPageProps) {
   const { data: paymentStatus } = useOrganizationPaymentStatus(organization.id)
-  
+
   const motionVariants = {
     variants: {
       initial: { opacity: 0 },
@@ -123,12 +122,6 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
           {...motionVariants}
         >
           <RevenueWidget />
-        </motion.div>
-        <motion.div
-          className={twMerge(cardClassName, 'xl:col-span-2')}
-          {...motionVariants}
-        >
-          <CheckoutsWidget />
         </motion.div>
         <motion.div className={cardClassName} {...motionVariants}>
           <OrdersWidget />

@@ -12,13 +12,6 @@ const errorMiddleware: Middleware = {
       description: 'Please try again later',
     })
   },
-  onResponse: async ({ response }) => {
-    if (!response.ok && response.status === 401) {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login'
-      }
-    }
-  },
 }
 
 export const createClientSideAPI = (token?: string): Client => {

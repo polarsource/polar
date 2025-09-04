@@ -1,5 +1,6 @@
 import uuid
 
+import stripe as stripe_lib
 import structlog
 from dramatiq import Retry
 from sqlalchemy.orm import joinedload
@@ -22,7 +23,7 @@ from polar.worker import (
 )
 
 from .repository import OrderRepository
-from .service import NoPendingBillingEntries
+from .service import CardPaymentFailed, NoPendingBillingEntries
 from .service import order as order_service
 
 log: Logger = structlog.get_logger()
@@ -61,8 +62,10 @@ class PaymentMethodDoesNotExist(OrderTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="order.subscription_cycle", priority=TaskPriority.LOW)
-async def create_subscription_cycle_order(subscription_id: uuid.UUID) -> None:
+@actor(actor_name="order.create_subscription_order", priority=TaskPriority.LOW)
+async def create_subscription_order(
+    subscription_id: uuid.UUID, order_reason: OrderBillingReason
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.get_by_id(
@@ -73,7 +76,7 @@ async def create_subscription_cycle_order(subscription_id: uuid.UUID) -> None:
 
         try:
             await order_service.create_subscription_order(
-                session, subscription, OrderBillingReason.subscription_cycle
+                session, subscription, order_reason
             )
         except NoPendingBillingEntries:
             # Skip creating an order if there are no pending billing entries.
@@ -98,7 +101,32 @@ async def trigger_payment(order_id: uuid.UUID, payment_method_id: uuid.UUID) -> 
         if payment_method is None:
             raise PaymentMethodDoesNotExist(payment_method_id)
 
-        await order_service.trigger_payment(session, order, payment_method)
+        try:
+            await order_service.trigger_payment(session, order, payment_method)
+        except CardPaymentFailed:
+            # Card errors should not be retried - they will be handled by the dunning process
+            # Log the failure but don't retry the task
+            log.info(
+                "Card payment failed, not retrying - will be handled by dunning",
+                order_id=order_id,
+            )
+            return
+        except (
+            stripe_lib.APIConnectionError,
+            stripe_lib.APIError,
+            stripe_lib.RateLimitError,
+        ) as e:
+            # Network/availability errors should be retried
+            log.error(
+                "Stripe service error during payment trigger, retrying",
+                order_id=order_id,
+                error_type=type(e).__name__,
+                error_message=str(e),
+            )
+            if can_retry():
+                raise Retry() from e
+            else:
+                raise
 
 
 @actor(actor_name="order.balance", priority=TaskPriority.LOW)

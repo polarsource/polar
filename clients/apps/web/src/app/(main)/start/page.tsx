@@ -17,7 +17,7 @@ import { redirect } from 'next/navigation'
 
 export default async function Page() {
   const api = getServerSideAPI()
-  const userOrganizations = await getUserOrganizations(api)
+  const userOrganizations = await getUserOrganizations(api, true)
 
   if (userOrganizations.length === 0) {
     redirect('/dashboard/create')

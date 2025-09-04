@@ -8,6 +8,7 @@ class BenefitDiscordProperties(BenefitProperties):
 
 
 class BenefitGrantDiscordProperties(BenefitGrantProperties, total=False):
-    account_id: str
+    account_id: str | None
     guild_id: str
     role_id: str
+    granted_account_id: str

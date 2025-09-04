@@ -94,6 +94,8 @@ async def _card_getter_task(
 
 
 class PlainService:
+    enabled = settings.PLAIN_TOKEN is not None
+
     async def get_cards(
         self, session: AsyncSession, request: CustomerCardsRequest
     ) -> CustomerCardsResponse:
@@ -130,6 +132,9 @@ class PlainService:
     async def create_account_review_thread(
         self, session: AsyncSession, organization: Organization
     ) -> None:
+        if not self.enabled:
+            return
+
         user_repository = UserRepository.from_session(session)
         if organization.account is None:
             from polar.organization.tasks import OrganizationAccountNotSet
@@ -195,6 +200,125 @@ class PlainService:
             if thread_result.error is not None:
                 raise AccountReviewThreadCreationError(
                     organization.account.id, thread_result.error.message
+                )
+
+    async def create_appeal_review_thread(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        review: OrganizationReview,
+    ) -> None:
+        """Create Plain ticket for organization appeal review."""
+        if not self.enabled:
+            return
+
+        user_repository = UserRepository.from_session(session)
+        users = await user_repository.get_all_by_organization(organization.id)
+        if len(users) == 0:
+            raise NoUserFoundError(organization.id)
+        user = users[0]
+
+        # Create Plain ticket for appeal review
+        async with self._get_plain_client() as plain:
+            customer_result = await plain.upsert_customer(
+                UpsertCustomerInput(
+                    identifier=UpsertCustomerIdentifierInput(email_address=user.email),
+                    on_create=UpsertCustomerOnCreateInput(
+                        external_id=str(user.id),
+                        full_name=user.email,
+                        email=EmailAddressInput(
+                            email=user.email, is_verified=user.email_verified
+                        ),
+                    ),
+                    on_update=UpsertCustomerOnUpdateInput(
+                        external_id=OptionalStringInput(value=str(user.id)),
+                        email=EmailAddressInput(
+                            email=user.email, is_verified=user.email_verified
+                        ),
+                    ),
+                )
+            )
+
+            if customer_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    user.id, customer_result.error.message
+                )
+
+            # Create the thread with detailed appeal information
+            thread_result = await plain.create_thread(
+                CreateThreadInput(
+                    customer_identifier=CustomerIdentifierInput(
+                        external_id=str(user.id)
+                    ),
+                    title=f"Organization Appeal - {organization.slug}",
+                    label_type_ids=["lt_01K3QWYTDV7RSS7MM2RC584X41"],
+                    components=[
+                        ComponentInput(
+                            component_text=ComponentTextInput(
+                                text=f"The organization `{organization.slug}` has submitted an appeal for review after AI validation {review.verdict}."
+                            )
+                        ),
+                        ComponentInput(
+                            component_container=ComponentContainerInput(
+                                container_content=[
+                                    ComponentContainerContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=organization.name or organization.slug
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_divider=ComponentDividerInput(
+                                            divider_spacing_size=ComponentDividerSpacingSize.M
+                                        )
+                                    ),
+                                    # Organization ID
+                                    ComponentContainerContentInput(
+                                        component_row=ComponentRowInput(
+                                            row_main_content=[
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text="Organization ID",
+                                                        text_size=ComponentTextSize.S,
+                                                        text_color=ComponentTextColor.MUTED,
+                                                    )
+                                                ),
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text=str(organization.id)
+                                                    )
+                                                ),
+                                            ],
+                                            row_aside_content=[
+                                                ComponentRowContentInput(
+                                                    component_copy_button=ComponentCopyButtonInput(
+                                                        copy_button_value=str(
+                                                            organization.id
+                                                        ),
+                                                        copy_button_tooltip_label="Copy Organization ID",
+                                                    )
+                                                )
+                                            ],
+                                        )
+                                    ),
+                                    # Backoffice Link
+                                    ComponentContainerContentInput(
+                                        component_link_button=ComponentLinkButtonInput(
+                                            link_button_url=settings.generate_external_url(
+                                                f"/backoffice/organizations/{organization.id}"
+                                            ),
+                                            link_button_label="View in Backoffice",
+                                        )
+                                    ),
+                                ]
+                            )
+                        ),
+                    ],
+                )
+            )
+
+            if thread_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    user.id, thread_result.error.message
                 )
 
     async def _get_user_card(
@@ -434,6 +558,36 @@ class PlainService:
                         ],
                     )
                 ),
+                ComponentContainerContentInput(
+                    component_row=ComponentRowInput(
+                        row_main_content=[
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text="Customer Portal",
+                                    text_size=ComponentTextSize.S,
+                                    text_color=ComponentTextColor.MUTED,
+                                )
+                            ),
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text=settings.generate_frontend_url(
+                                        f"/{organization.slug}/portal"
+                                    )
+                                )
+                            ),
+                        ],
+                        row_aside_content=[
+                            ComponentRowContentInput(
+                                component_copy_button=ComponentCopyButtonInput(
+                                    copy_button_value=settings.generate_frontend_url(
+                                        f"/{organization.slug}/portal"
+                                    ),
+                                    copy_button_tooltip_label="Copy URL",
+                                )
+                            )
+                        ],
+                    )
+                ),
                 *(
                     [
                         ComponentContainerContentInput(
@@ -485,122 +639,6 @@ class PlainService:
                 ),
             ]
         )
-
-    async def create_appeal_review_thread(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        review: OrganizationReview,
-    ) -> None:
-        """Create Plain ticket for organization appeal review."""
-        user_repository = UserRepository.from_session(session)
-        users = await user_repository.get_all_by_organization(organization.id)
-        if len(users) == 0:
-            raise NoUserFoundError(organization.id)
-        user = users[0]
-
-        # Create Plain ticket for appeal review
-        async with self._get_plain_client() as plain:
-            customer_result = await plain.upsert_customer(
-                UpsertCustomerInput(
-                    identifier=UpsertCustomerIdentifierInput(email_address=user.email),
-                    on_create=UpsertCustomerOnCreateInput(
-                        external_id=str(user.id),
-                        full_name=user.email,
-                        email=EmailAddressInput(
-                            email=user.email, is_verified=user.email_verified
-                        ),
-                    ),
-                    on_update=UpsertCustomerOnUpdateInput(
-                        external_id=OptionalStringInput(value=str(user.id)),
-                        email=EmailAddressInput(
-                            email=user.email, is_verified=user.email_verified
-                        ),
-                    ),
-                )
-            )
-
-            if customer_result.error is not None:
-                raise AccountReviewThreadCreationError(
-                    user.id, customer_result.error.message
-                )
-
-            # Create the thread with detailed appeal information
-            thread_result = await plain.create_thread(
-                CreateThreadInput(
-                    customer_identifier=CustomerIdentifierInput(
-                        external_id=str(user.id)
-                    ),
-                    title=f"Organization Appeal - {organization.slug}",
-                    label_type_ids=["lt_01K3QWYTDV7RSS7MM2RC584X41"],
-                    components=[
-                        ComponentInput(
-                            component_text=ComponentTextInput(
-                                text=f"The organization `{organization.slug}` has submitted an appeal for review after AI validation {review.verdict}."
-                            )
-                        ),
-                        ComponentInput(
-                            component_container=ComponentContainerInput(
-                                container_content=[
-                                    ComponentContainerContentInput(
-                                        component_text=ComponentTextInput(
-                                            text=organization.name or organization.slug
-                                        )
-                                    ),
-                                    ComponentContainerContentInput(
-                                        component_divider=ComponentDividerInput(
-                                            divider_spacing_size=ComponentDividerSpacingSize.M
-                                        )
-                                    ),
-                                    # Organization ID
-                                    ComponentContainerContentInput(
-                                        component_row=ComponentRowInput(
-                                            row_main_content=[
-                                                ComponentRowContentInput(
-                                                    component_text=ComponentTextInput(
-                                                        text="Organization ID",
-                                                        text_size=ComponentTextSize.S,
-                                                        text_color=ComponentTextColor.MUTED,
-                                                    )
-                                                ),
-                                                ComponentRowContentInput(
-                                                    component_text=ComponentTextInput(
-                                                        text=str(organization.id)
-                                                    )
-                                                ),
-                                            ],
-                                            row_aside_content=[
-                                                ComponentRowContentInput(
-                                                    component_copy_button=ComponentCopyButtonInput(
-                                                        copy_button_value=str(
-                                                            organization.id
-                                                        ),
-                                                        copy_button_tooltip_label="Copy Organization ID",
-                                                    )
-                                                )
-                                            ],
-                                        )
-                                    ),
-                                    # Backoffice Link
-                                    ComponentContainerContentInput(
-                                        component_link_button=ComponentLinkButtonInput(
-                                            link_button_url=settings.generate_external_url(
-                                                f"/backoffice/organizations/{organization.id}"
-                                            ),
-                                            link_button_label="View in Backoffice",
-                                        )
-                                    ),
-                                ]
-                            )
-                        ),
-                    ],
-                )
-            )
-
-            if thread_result.error is not None:
-                raise AccountReviewThreadCreationError(
-                    user.id, thread_result.error.message
-                )
 
     async def get_customer_card(
         self, session: AsyncSession, request: CustomerCardsRequest
@@ -796,6 +834,7 @@ class PlainService:
 
         def _get_order_container(order: Order) -> ComponentContainerInput:
             product = order.product
+            organization = order.customer.organization
 
             return ComponentContainerInput(
                 container_content=[
@@ -835,7 +874,7 @@ class PlainService:
                                 ),
                                 ComponentRowContentInput(
                                     component_text=ComponentTextInput(
-                                        text=order.customer.organization.name
+                                        text=organization.name
                                     )
                                 ),
                             ],
@@ -844,8 +883,43 @@ class PlainService:
                                     component_link_button=ComponentLinkButtonInput(
                                         link_button_label="Backoffice ↗",
                                         link_button_url=settings.generate_external_url(
-                                            f"/backoffice/organizations/{order.customer.organization_id}"
+                                            f"/backoffice/organizations/{organization.id}"
                                         ),
+                                    )
+                                )
+                            ],
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_spacer=ComponentSpacerInput(
+                            spacer_size=ComponentSpacerSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_row=ComponentRowInput(
+                            row_main_content=[
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text="Customer Portal",
+                                        text_size=ComponentTextSize.S,
+                                        text_color=ComponentTextColor.MUTED,
+                                    )
+                                ),
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text=settings.generate_frontend_url(
+                                            f"/{organization.slug}/portal"
+                                        )
+                                    )
+                                ),
+                            ],
+                            row_aside_content=[
+                                ComponentRowContentInput(
+                                    component_copy_button=ComponentCopyButtonInput(
+                                        copy_button_value=settings.generate_frontend_url(
+                                            f"/{organization.slug}/portal"
+                                        ),
+                                        copy_button_tooltip_label="Copy URL",
                                     )
                                 )
                             ],
@@ -984,14 +1058,13 @@ class PlainService:
 
     @contextlib.asynccontextmanager
     async def _get_plain_client(self) -> AsyncIterator[Plain]:
-        token = settings.PLAIN_TOKEN
         async with httpx.AsyncClient(
-            headers={"Authorization": f"Bearer {token}"},
-            # Set a MockTransport if API key is None
+            headers={"Authorization": f"Bearer {settings.PLAIN_TOKEN}"},
+            # Set a MockTransport if not enabled
             # Basically, we disable Plain requests.
             transport=(
                 httpx.MockTransport(lambda _: httpx.Response(200))
-                if token is None
+                if not self.enabled
                 else None
             ),
         ) as client:

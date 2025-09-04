@@ -308,8 +308,8 @@ envVarGroups:
         value: resend
       - key: POLAR_EMAIL_FROM_NAME
         value: Polar
-      - key: POLAR_EMAIL_FROM_EMAIL_ADDRESS
-        value: noreply@notifications.polar.sh
+      - key: POLAR_EMAIL_FROM_DOMAIN
+        value: notifications.polar.sh
       - key: POLAR_ENV
         value: production
       - key: POLAR_FRONTEND_BASE_URL
@@ -335,6 +335,8 @@ envVarGroups:
       - key: POLAR_PLAIN_TOKEN
         sync: false
       - key: POLAR_TESTING
+        value: 0
+      - key: POLAR_ORGANIZATIONS_BILLING_ENGINE_DEFAULT
         value: 0
 
   - name: aws-s3-production
@@ -424,8 +426,8 @@ envVarGroups:
         value: resend
       - key: POLAR_EMAIL_FROM_NAME
         value: "[SANDBOX] Polar"
-      - key: POLAR_EMAIL_FROM_EMAIL_ADDRESS
-        value: noreply@notifications.sandbox.polar.sh
+      - key: POLAR_EMAIL_FROM_DOMAIN
+        value: notifications.sandbox.polar.sh
       - key: POLAR_ENV
         value: sandbox
       - key: POLAR_FRONTEND_BASE_URL
@@ -447,6 +449,8 @@ envVarGroups:
       - key: POLAR_SENTRY_DSN
         sync: false
       - key: POLAR_TESTING
+        value: 0
+      - key: POLAR_ORGANIZATIONS_BILLING_ENGINE_DEFAULT
         value: 0
 
   - name: aws-s3-sandbox

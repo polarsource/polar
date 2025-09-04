@@ -255,6 +255,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <MiniMetricChartBox
+            title="Orders"
             value={metricsData?.totals.orders}
             metric={metricsData?.metrics.orders}
           />
@@ -264,6 +265,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             metric={todayMetricsData?.metrics.revenue}
           />
           <MiniMetricChartBox
+            title="Cumulative Revenue"
             value={metricsData?.totals.revenue}
             metric={metricsData?.metrics.cumulative_revenue}
           />

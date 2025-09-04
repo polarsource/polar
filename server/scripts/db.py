@@ -32,7 +32,9 @@ def _reparent(force: bool = False) -> None:
         text=True,
     )
     p_out.check_returncode()
-    heads = [line.removesuffix(" (head)") for line in p_out.stdout.strip().split("\n")]
+    heads = set(
+        [line.removesuffix(" (head)") for line in p_out.stdout.strip().split("\n")]
+    )
 
     if force:
         pass
@@ -57,6 +59,9 @@ def _reparent(force: bool = False) -> None:
         if p_out.returncode == 0:
             main_head = head
             main_migration_file = p_out.stdout.strip().removeprefix("main:")
+
+    if main_head:
+        heads.remove(main_head)
 
     for head in heads:
         # `git grep {head} HEAD -- "server/migrations/versions/*"`

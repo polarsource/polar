@@ -64,6 +64,7 @@ from polar.models import (
 )
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
@@ -79,7 +80,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
-from polar.product.guard import is_custom_price
+from polar.product.guard import is_custom_price, is_static_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
@@ -277,6 +278,16 @@ class PaymentAlreadyInProgress(OrderError):
         self.order = order
         message = f"Payment for order {order.id} is already in progress"
         super().__init__(message, 409)
+
+
+class CardPaymentFailed(OrderError):
+    """Exception for card-related payment failures that should not be retried."""
+
+    def __init__(self, order: Order, stripe_error: stripe_lib.CardError) -> None:
+        self.order = order
+        self.stripe_error = stripe_error
+        message = f"Card payment failed for order {order.id}: {stripe_error.user_message or stripe_error.code}"
+        super().__init__(message, 402)
 
 
 class InvalidPaymentProcessor(OrderError):
@@ -547,6 +558,9 @@ class OrderService:
 
         items: list[OrderItem] = []
         for price in prices:
+            # Don't create an item for metered prices
+            if not is_static_price(price):
+                continue
             if is_custom_price(price):
                 item = OrderItem.from_price(price, 0, checkout.amount)
             else:
@@ -654,7 +668,13 @@ class OrderService:
         discount = subscription.discount
         discount_amount = 0
         if discount is not None:
-            discount_amount = discount.get_discount_amount(subtotal_amount)
+            # Discount only applies to cycle and meter items, as prorations
+            # use "last month's" discount and so this month's discount
+            # shouldn't apply to those.
+            discountable_amount = sum(
+                item.amount for item in items if item.discountable
+            )
+            discount_amount = discount.get_discount_amount(discountable_amount)
 
         # Calculate tax
         tax_amount = 0
@@ -717,7 +737,10 @@ class OrderService:
         )
 
         # Reset the associated meters, if any
-        if billing_reason == OrderBillingReason.subscription_cycle:
+        if billing_reason in {
+            OrderBillingReason.subscription_cycle,
+            OrderBillingReason.subscription_update,
+        }:
             await subscription_service.reset_meters(session, subscription)
 
         # If the order total amount is zero, mark it as paid immediately
@@ -756,17 +779,29 @@ class OrderService:
 
                 stripe_customer_id = order.customer.stripe_customer_id
                 assert stripe_customer_id is not None
-                await stripe_service.create_payment_intent(
-                    amount=order.total_amount,
-                    currency=order.currency,
-                    payment_method=payment_method.processor_id,
-                    customer=stripe_customer_id,
-                    confirm=True,
-                    off_session=True,
-                    statement_descriptor_suffix=order.organization.statement_descriptor,
-                    description=f"{order.organization.name} — {order.product.name}",
-                    metadata=metadata,
-                )
+
+                try:
+                    await stripe_service.create_payment_intent(
+                        amount=order.total_amount,
+                        currency=order.currency,
+                        payment_method=payment_method.processor_id,
+                        customer=stripe_customer_id,
+                        confirm=True,
+                        off_session=True,
+                        statement_descriptor_suffix=order.organization.statement_descriptor,
+                        description=f"{order.organization.name} — {order.product.name}",
+                        metadata=metadata,
+                    )
+                except stripe_lib.CardError as e:
+                    # Card errors (declines, expired cards, etc.) should not be retried
+                    # They will be handled by the dunning process
+                    log.info(
+                        "Card payment failed",
+                        order_id=order.id,
+                        error_code=e.code,
+                        error_message=e.user_message,
+                    )
+                    raise CardPaymentFailed(order, e) from e
 
     async def process_retry_payment(
         self,
@@ -879,6 +914,7 @@ class OrderService:
                         confirm=True,
                         confirmation_token=confirmation_token_id,
                         customer=customer.stripe_customer_id,
+                        setup_future_usage="off_session",
                         statement_descriptor_suffix=organization.statement_descriptor,
                         description=f"{organization.name} — {order.product.name}",
                         metadata=metadata,
@@ -1329,25 +1365,16 @@ class OrderService:
         body = render_email_template(
             "order_confirmation",
             {
-                "organization": {
-                    "name": organization.name,
-                    "slug": organization.slug,
-                },
-                "product": {
-                    "name": product.name,
-                    "benefits": [
-                        {"description": benefit.description}
-                        for benefit in product.benefits
-                    ],
-                },
+                "organization": organization.email_props,
+                "product": product.email_props,
                 "url": settings.generate_frontend_url(
                     f"/{organization.slug}/portal?customer_session_token={token}&id={order.id}"
                 ),
-                "current_year": datetime.now().year,
             },
         )
 
         enqueue_email(
+            **organization.email_from_reply,
             to_email_addr=customer.email,
             subject=f"Your {product.name} order confirmation",
             html_content=body,
@@ -1471,6 +1498,12 @@ class OrderService:
     ) -> None:
         await session.refresh(order.product, {"prices"})
 
+        # Refresh order items with their product_price.product relationship loaded
+        # This is needed for webhook serialization which accesses `legacy_product_price.product`
+        for item in order.items:
+            if item.product_price:
+                await session.refresh(item.product_price, {"product"})
+
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
             order.product.organization_id
@@ -1523,6 +1556,14 @@ class OrderService:
         self, session: AsyncSession, order: Order
     ) -> Order:
         """Handle payment failure for an order, initiating dunning if necessary."""
+        # Don't process payment failure if the order is already paid
+        if order.status == OrderStatus.paid:
+            log.warning(
+                "Ignoring payment failure for already paid order",
+                order_id=order.id,
+            )
+            return order
+
         # Clear payment lock on failure
         if order.payment_lock_acquired_at is not None:
             log.info(
@@ -1579,8 +1620,9 @@ class OrderService:
                 order, update_dict={"next_payment_attempt_at": None}
             )
 
-            if order.subscription is not None:
-                await subscription_service.revoke(session, order.subscription)
+            subscription = order.subscription
+            if subscription is not None and subscription.can_cancel(immediately=True):
+                await subscription_service.revoke(session, subscription)
 
             return order
 
@@ -1638,6 +1680,40 @@ class OrderService:
         )
 
         return order
+
+    async def customer_balance(self, session: AsyncSession, customer: Customer) -> int:
+        """
+        Returns what the customer is "owed".
+
+        This can happen if the customer switches from e.g. a yearly plan at $100/yr to
+        a monthly plan at $15/mo. In that case the customer has $85 in "credit" or balance
+        on their account (depending on when they changed the plan).
+        """
+        order_repository = OrderRepository.from_session(session)
+        paid_orders = await order_repository.get_all(
+            order_repository.get_base_statement()
+            # .join(Customer, Order.customer_id == Customer.id)
+            .where(
+                Customer.id == customer.id,
+                Order.deleted_at.is_(None),
+                Order.status == OrderStatus.paid,
+            )
+        )
+        payment_repository = PaymentRepository.from_session(session)
+        payments = await payment_repository.get_all(
+            payment_repository.get_base_statement()
+            .join(Order, Payment.order_id == Order.id)
+            .where(
+                Order.customer_id == customer.id,
+                Order.deleted_at.is_(None),
+                Payment.status == PaymentStatus.succeeded,
+            )
+        )
+
+        total_orders = sum(order.total_amount for order in paid_orders)
+        total_paid = sum(payment.amount for payment in payments)
+
+        return total_orders - total_paid
 
 
 order = OrderService()

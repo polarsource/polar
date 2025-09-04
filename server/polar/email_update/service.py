@@ -1,4 +1,3 @@
-import datetime
 from math import ceil
 from urllib.parse import urlencode
 
@@ -84,7 +83,6 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
             {
                 "token_lifetime_minutes": token_lifetime_minutes,
                 "url": f"{base_url}?{urlencode(url_params)}",
-                "current_year": datetime.datetime.now().year,
             },
         )
 

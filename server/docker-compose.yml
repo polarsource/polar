@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   redis:
     image: redis
@@ -61,12 +59,12 @@ services:
       - POLICY_FILE=/tmp/config/policy.json
       - ACCESS_KEY=${POLAR_AWS_ACCESS_KEY_ID}
       - SECRET_ACCESS_KEY=${POLAR_AWS_SECRET_ACCESS_KEY}
-    entrypoint: [
-      "bash",
-      "-c",
-      "chmod +x /tmp/config/local.sh && chmod +x /tmp/config/configure.sh && /tmp/config/local.sh /tmp/config/configure.sh"
-    ]
-
+    entrypoint:
+      [
+        "bash",
+        "-c",
+        "chmod +x /tmp/config/local.sh && chmod +x /tmp/config/configure.sh && /tmp/config/local.sh /tmp/config/configure.sh",
+      ]
 
 volumes:
   postgres_data:

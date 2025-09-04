@@ -66,7 +66,7 @@ from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
 from .forms import (
-    AccountStatusFormAdapter,
+    OrganizationStatusFormAdapter,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationForm,
 )
@@ -1077,12 +1077,12 @@ async def get(
     validation_error: ValidationError | None = None
     # Always show actions in the payment section (context-sensitive based on status)
     show_actions = True
-    if account and request.method == "POST":
+    if request.method == "POST":
         # This part handles the "Approve" action
         # It's a POST to the current page URL, not the status update URL
         data = await request.form()
         try:
-            account_status = AccountStatusFormAdapter.validate_python(data)
+            account_status = OrganizationStatusFormAdapter.validate_python(data)
             if account_status.action == "approve":
                 await organization_service.confirm_organization_reviewed(
                     session, organization, account_status.next_review_threshold
@@ -1107,7 +1107,6 @@ async def get(
         organization,
         show_actions,
         request,
-        account,
         validation_error,
     )
 

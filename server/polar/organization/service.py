@@ -413,6 +413,15 @@ class OrganizationService:
         organization.next_review_threshold = next_review_threshold
         await self._sync_account_status(session, organization)
         session.add(organization)
+
+        # If there's a pending appeal, mark it as approved
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+        if review and review.appeal_submitted_at and review.appeal_decision is None:
+            review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
+            review.appeal_reviewed_at = datetime.now(UTC)
+            session.add(review)
+
         enqueue_job("organization.reviewed", organization_id=organization.id)
         return organization
 
@@ -422,6 +431,15 @@ class OrganizationService:
         organization.status = Organization.Status.DENIED
         await self._sync_account_status(session, organization)
         session.add(organization)
+
+        # If there's a pending appeal, mark it as rejected
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+        if review and review.appeal_submitted_at and review.appeal_decision is None:
+            review.appeal_decision = OrganizationReview.AppealDecision.REJECTED
+            review.appeal_reviewed_at = datetime.now(UTC)
+            session.add(review)
+
         return organization
 
     async def set_organization_under_review(

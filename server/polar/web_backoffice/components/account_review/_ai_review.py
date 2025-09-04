@@ -243,9 +243,6 @@ class AIReviewVerdict:
                             and self.request
                             and hasattr(self.review, "appeal_decision")
                             and self.review.appeal_decision is None
-                            and hasattr(self.organization.status, "DENIED")
-                            and self.organization.status
-                            == self.organization.status.DENIED
                         ):
                             with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
                                 with tag.div(classes="text-center mb-3"):
@@ -261,10 +258,10 @@ class AIReviewVerdict:
                                 # Import forms at method level to avoid circular imports
                                 from polar.web_backoffice.components import button
                                 from polar.web_backoffice.organizations.forms import (
-                                    ApproveAppealForm,
+                                    ApproveOrganizationAppealForm,
                                 )
 
-                                with ApproveAppealForm.render(
+                                with ApproveOrganizationAppealForm.render(
                                     method="POST",
                                     action=str(self.request.url),
                                     classes="space-y-4",

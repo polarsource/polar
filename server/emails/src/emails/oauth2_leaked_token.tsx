@@ -8,7 +8,6 @@ interface OAuth2LeakedTokenProps {
   notifier: string
   url?: string
   client_name: string
-  current_year: number
 }
 
 export function OAuth2LeakedToken({
@@ -24,7 +23,7 @@ export function OAuth2LeakedToken({
       </Preview>
       <PolarHeader />
       <Section>
-        <Text className="text-xl font-bold text-gray-900 dark:text-white">
+        <Text className="text-xl font-bold text-gray-900">
           Important security notice
         </Text>
         <Text>
@@ -43,25 +42,25 @@ export function OAuth2LeakedToken({
           {url && <li>URL: {url}</li>}
           <li>OAuth2 Client: {client_name}</li>
         </ul>
-        <Text className="mb-0 mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <Text className="mb-0 mt-4 text-sm text-gray-600">
           As a reminder, access and refresh tokens are super sensitive values
           that shouldn't be shared publicly on the web or in a code repository.
           Use dedicated features to safely store secrets, like{' '}
           <Link
             href="https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions"
-            className="text-blue-600 underline dark:text-blue-400"
+            className="text-blue-600 underline"
           >
             GitHub Actions secrets
           </Link>
           .
         </Text>
       </InfoBox>
-      <Section className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
-        <Text className="text-sm text-gray-600 dark:text-gray-400">
+      <Section className="mt-6 border-t border-gray-200 pt-6">
+        <Text className="text-sm text-gray-600">
           You can read more about why you received this alert in our{' '}
           <Link
             href="https://docs.polar.sh/documentation/integration-guides/authenticating-with-polar#security"
-            className="text-blue-600 underline dark:text-blue-400"
+            className="text-blue-600 underline"
           >
             FAQ
           </Link>
@@ -77,7 +76,6 @@ OAuth2LeakedToken.PreviewProps = {
   notifier: 'GitHub',
   url: 'https://github.com/example/repo',
   client_name: 'My OAuth2 App',
-  current_year: new Date().getFullYear(),
 }
 
 export default OAuth2LeakedToken

@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -59,6 +60,8 @@ const ClientPage = ({
       'active',
     ),
   )
+
+  const router = useRouter()
 
   const {
     isShown: isEditMeterModalShown,
@@ -120,8 +123,17 @@ const ClientPage = ({
           isArchiving ? 'archived' : 'unarchived'
         } successfully.`,
       })
+
+      let filterArg = ''
+      if (isArchiving) {
+        filterArg = '&filter=archived'
+      }
+
+      router.push(
+        `/dashboard/${organization.slug}/usage-billing/meters?selectedMeter=${meter.id}${filterArg}`,
+      )
     },
-    [updateMeter, toast],
+    [updateMeter, toast, organization, router],
   )
 
   return (

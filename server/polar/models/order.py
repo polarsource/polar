@@ -79,7 +79,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     status: Mapped[OrderStatus] = mapped_column(
-        String, nullable=False, default=OrderStatus.pending
+        String, nullable=False, default=OrderStatus.pending, index=True
     )
     subtotal_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     discount_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

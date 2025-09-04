@@ -61,12 +61,12 @@ const CustomerPortalOrder = ({
           {/* Retry button */}
           {canRetryOrderPayment(order) && (
             <Button
-              variant="secondary"
+              variant="default"
               size="sm"
               onClick={() => setIsPaymentModalOpen(true)}
               className={twMerge(themingPreset?.polar.buttonSecondary)}
             >
-              Update Payment Method
+              Retry payment
             </Button>
           )}
         </div>

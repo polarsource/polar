@@ -38,9 +38,17 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         )
         result = await session.execute(statement)
         token = result.unique().scalar_one_or_none()
-        if token is not None and not cast(bool, token.is_revoked()):
-            return token
-        return None
+
+        if token is None:
+            return None
+
+        if cast(bool, token.is_revoked()):
+            return None
+
+        if not token.sub.can_authenticate:
+            return None
+
+        return token
 
     async def revoke_leaked(
         self,

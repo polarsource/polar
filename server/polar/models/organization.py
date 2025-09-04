@@ -13,6 +13,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     Uuid,
+    and_,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -181,6 +182,15 @@ class Organization(RateLimitGroupMixin, RecordModel):
     #
     # End: Fields synced from GitHub
     #
+
+    @hybrid_property
+    def can_authenticate(self) -> bool:
+        return self.deleted_at is None and self.blocked_at is None
+
+    @can_authenticate.inplace.expression
+    @classmethod
+    def _can_authenticate_expression(cls) -> ColumnElement[bool]:
+        return and_(cls.deleted_at.is_(None), cls.blocked_at.is_(None))
 
     @hybrid_property
     def storefront_enabled(self) -> bool:

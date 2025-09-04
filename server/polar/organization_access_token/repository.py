@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select, or_, select, update
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, User
 from polar.kit.repository import (
@@ -11,7 +11,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.kit.utils import utc_now
-from polar.models import OrganizationAccessToken, UserOrganization
+from polar.models import Organization, OrganizationAccessToken, UserOrganization
 from polar.postgres import sql
 
 
@@ -27,8 +27,12 @@ class OrganizationAccessTokenRepository(
     ) -> OrganizationAccessToken | None:
         statement = (
             self.get_base_statement()
-            .where(OrganizationAccessToken.token == token_hash)
-            .options(joinedload(OrganizationAccessToken.organization))
+            .join(OrganizationAccessToken.organization)
+            .where(
+                OrganizationAccessToken.token == token_hash,
+                Organization.can_authenticate.is_(True),
+            )
+            .options(contains_eager(OrganizationAccessToken.organization))
         )
         if not expired:
             statement = statement.where(

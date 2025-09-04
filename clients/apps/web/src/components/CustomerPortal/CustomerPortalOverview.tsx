@@ -8,9 +8,6 @@ import {
 	ActiveSubscriptionsOverview,
 	InactiveSubscriptionsOverview,
 } from "./CustomerPortalSubscriptions";
-import SubscriptionsIcon from "@mui/icons-material/Subscriptions";
-import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
-import HistoryIcon from "@mui/icons-material/History";
 import { EmptyState } from "./EmptyState";
 import { AllInclusiveOutlined, DiamondOutlined } from "@mui/icons-material";
 export interface CustomerPortalProps {

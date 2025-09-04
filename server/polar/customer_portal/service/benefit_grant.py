@@ -150,24 +150,27 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
             benefit_grant_update, CustomerBenefitGrantGitHubRepositoryUpdate
         ):
             account_id = benefit_grant_update.properties["account_id"]
-            platform = benefit_grant_update.get_oauth_platform()
+            if account_id is not None:
+                platform = benefit_grant_update.get_oauth_platform()
 
-            customer_repository = CustomerRepository.from_session(session)
-            customer = await customer_repository.get_by_id(benefit_grant.customer_id)
-            assert customer is not None
-
-            oauth_account = customer.get_oauth_account(account_id, platform)
-            if oauth_account is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "properties", "account_id"),
-                            "msg": "OAuth account does not exist.",
-                            "input": account_id,
-                        }
-                    ]
+                customer_repository = CustomerRepository.from_session(session)
+                customer = await customer_repository.get_by_id(
+                    benefit_grant.customer_id
                 )
+                assert customer is not None
+
+                oauth_account = customer.get_oauth_account(account_id, platform)
+                if oauth_account is None:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "properties", "account_id"),
+                                "msg": "OAuth account does not exist.",
+                                "input": account_id,
+                            }
+                        ]
+                    )
 
             benefit_grant.properties = cast(
                 Any,

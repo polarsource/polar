@@ -180,7 +180,7 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
     items: list[OrderItemSchema] = Field(description="Line items composing the order.")
 
 
-class OrderUpdateBase(Schema):
+class OrderUpdateBase(CustomFieldDataInputMixin, Schema):
     billing_name: str | None = Field(
         default=None,
         description=(
@@ -194,10 +194,6 @@ class OrderUpdateBase(Schema):
             "The address of the customer that should appear on the invoice. "
             "Can't be updated after the invoice is generated."
         ),
-    )
-    custom_field_data: CustomFieldDataInputMixin | None = Field(
-        default=None,
-        description="Key-value object storing custom field values. Can be updated by merchants to correct errors.",
     )
 
 

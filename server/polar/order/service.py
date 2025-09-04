@@ -433,7 +433,7 @@ class OrderService:
             # Validate custom field data against the product's attached custom fields
             custom_field_data = validate_custom_field_data(
                 order.product.attached_custom_fields,
-                update_dict["custom_field_data"],
+                order_update.custom_field_data,
                 validate_required=False,  # Allow merchants to update even if required fields are missing
             )
             update_dict["custom_field_data"] = custom_field_data

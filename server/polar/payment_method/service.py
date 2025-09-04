@@ -3,11 +3,12 @@ import uuid
 import stripe as stripe_lib
 from sqlalchemy import select
 
+from polar.customer.repository import CustomerRepository
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.models import Checkout, Customer, PaymentMethod, Subscription
+from polar.models import Checkout, Customer, Order, PaymentMethod, Subscription
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 
@@ -92,6 +93,32 @@ class PaymentMethodService:
         return await self.upsert_from_stripe(
             session, checkout.customer, stripe_payment_method
         )
+
+    async def upsert_from_stripe_payment_intent_for_order(
+        self,
+        session: AsyncSession,
+        payment_intent: stripe_lib.PaymentIntent,
+        order: Order,
+    ) -> PaymentMethod | None:
+        """
+        Upsert payment method from PaymentIntent for order retry payments.
+        Only saves if the order is for a recurring product and has a payment method attached.
+        """
+        if payment_intent.payment_method is None:
+            return None
+
+        if not order.product.is_recurring:
+            return None
+
+        stripe_payment_method = await stripe_service.get_payment_method(
+            get_expandable_id(payment_intent.payment_method)
+        )
+
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(order.customer_id)
+        assert customer is not None
+
+        return await self.upsert_from_stripe(session, customer, stripe_payment_method)
 
     async def _get_active_subscription_ids(
         self,

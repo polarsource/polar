@@ -1824,5 +1824,26 @@ class SubscriptionService:
 
         return subscription
 
+    async def update_payment_method_from_retry(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        payment_method: PaymentMethod,
+    ) -> Subscription:
+        """
+        Update subscription payment method after successful retry payment.
+
+        This method updates both the local subscription record and the Stripe
+        subscription (if Stripe-managed) to use the new payment method as default.
+        """
+        if subscription.stripe_subscription_id:
+            await stripe_service.set_automatically_charged_subscription(
+                subscription.stripe_subscription_id, payment_method.processor_id
+            )
+
+        subscription.payment_method = payment_method
+        repository = SubscriptionRepository.from_session(session)
+        return await repository.update(subscription)
+
 
 subscription = SubscriptionService()

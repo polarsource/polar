@@ -903,6 +903,7 @@ class OrderService:
                         confirm=True,
                         confirmation_token=confirmation_token_id,
                         customer=customer.stripe_customer_id,
+                        setup_future_usage="off_session",
                         statement_descriptor_suffix=organization.statement_descriptor,
                         description=f"{organization.name} — {order.product.name}",
                         metadata=metadata,

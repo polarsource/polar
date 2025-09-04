@@ -1,7 +1,7 @@
 """add organization reviews for grandfathered organizations
 
 Revision ID: 25b8cacd8269
-Revises: 3ee37a022b30
+Revises: f3109d4baff8
 Create Date: 2025-09-04 11:27:21.127990
 
 """
@@ -15,7 +15,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "25b8cacd8269"
-down_revision = "3ee37a022b30"
+down_revision = "f3109d4baff8"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

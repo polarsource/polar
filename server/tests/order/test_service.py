@@ -14,6 +14,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
+from polar.exceptions import PolarRequestValidationError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
@@ -83,7 +84,7 @@ from tests.fixtures.random_objects import (
 )
 from tests.fixtures.stripe import construct_stripe_invoice
 from tests.transaction.conftest import create_transaction
-from polar.exceptions import PolarRequestValidationError
+
 
 def build_stripe_payment_intent(
     *,
@@ -2406,7 +2407,6 @@ class TestUpdateOrder:
         )
 
         assert updated_order.billing_name == "Updated Name"
-
 
     async def test_update_with_invoice_generated(
         self,

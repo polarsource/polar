@@ -62,7 +62,7 @@ class AuthService:
         cookie: str = settings.USER_SESSION_COOKIE_KEY,
     ) -> UserSession | None:
         token = request.cookies.get(cookie)
-        if token is None:
+        if token is None or not token.isascii():
             return None
 
         user_session = await self._get_user_session_by_token(session, token)

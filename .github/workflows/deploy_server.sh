@@ -2,19 +2,18 @@
 
 set -euo pipefail
 
+# Usage: ./deploy_server.sh <docker_digest> <service_id_1> [service_id_2] [service_id_n]
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 <docker_digest> <service_id_1> [service_id_2] [service_id_n]"
+  echo "Example: $0 sha256:abc123... srv-123 srv-456"
+  exit 1
+fi
+
 IMG="ghcr.io/polarsource/polar@${1}"
+shift # Remove the first argument, leaving only service IDs
 
-# Sandbox servers
-declare -a sandbox_servers=(
-  "srv-crkocgbtq21c73ddsdbg"  # API Sandbox
-  "srv-d089jj7diees73934kgg"  # Worker Sandbox
-)
-
-# Production servers
-declare -a production_servers=(
-  "srv-ci4r87h8g3ne0dmvvl60"  # API Production
-  "srv-d089jj7diees73934ka0"  # Worker Production
-)
+# Read service IDs from remaining arguments
+declare -a servers=("$@")
 
 # Configuration
 TIMEOUT=300  # 5 minutes timeout
@@ -38,7 +37,7 @@ check_deployment_status() {
 # Function to deploy a set of servers
 deploy_servers() {
   local -n servers_ref=$1
-  local environment=$2
+  local environment=${2:-"unknown"}
 
   echo "🚀 Starting deployment to ${environment}..."
 
@@ -54,7 +53,7 @@ deploy_servers() {
       -H "Content-Type: application/json" \
       -d "{\"imageUrl\":\"${IMG}\"}" \
       "https://api.render.com/v1/services/${server_id}/deploys")
-    
+
     deploy_id=$(echo "$deploy_response" | jq -r '.id' 2>/dev/null)
     if [[ "$deploy_id" != "null" && -n "$deploy_id" ]]; then
       deploy_map["$server_id"]="$deploy_id"
@@ -117,13 +116,10 @@ deploy_servers() {
     fi
   done
 
-  echo "✅ All ${environment} deployments completed successfully!"
+  echo "✅ All deployments completed successfully!"
 }
 
-# Deploy sandbox first
-deploy_servers sandbox_servers "sandbox"
+# Deploy the provided servers
+deploy_servers servers "environment"
 
-# Deploy production after sandbox completes
-deploy_servers production_servers "production"
-
-echo "🎉 Staged deployment completed successfully!"
+echo "🎉 Deployment completed successfully!"

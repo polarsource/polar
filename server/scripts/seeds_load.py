@@ -142,6 +142,17 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "contact@acme-corp.com",
             "website": "https://acme-corp.com",
             "bio": "Leading provider of innovative solutions for modern businesses.",
+            "status": Organization.Status.ACTIVE,
+            "details": {
+                "about": "We provide business intelligence dashboard",
+                "intended_use": "Well have a checkout on our website granting.",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "Our business intellignce dashboard are mostly monthly subscriptions, but our mobile app is accessible after a one-time payment.",
+                "customer_acquisition": ["website"],
+                "future_annual_revenue": 2000000,
+                "previous_annual_revenue": 0,
+            },
             "products": [
                 {
                     "name": "Premium Business Suite",
@@ -301,6 +312,17 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "hello@coldmail.com",
             "website": "https://coldmail.com",
             "bio": "Online mail services like it's 1999!",
+            "status": Organization.Status.ACTIVE,
+            "details": {
+                "about": "We're a hottest cloud provider since sliced bread",
+                "intended_use": "We'll be selling various plans allowing access to our cloud storage and cloud document services.",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "We sell ColdMail which provides an email inbox plus file storage. We also sell TemperateDocs which allows creating and editing documents online.",
+                "customer_acquisition": ["website"],
+                "future_annual_revenue": 2000000,
+                "previous_annual_revenue": 0,
+            },
             "products": [
                 {
                     "name": "ColdMail 10 GB",
@@ -378,6 +400,17 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "hello@examplenewsinc.com",
             "website": "https://examplenewsinc.com",
             "bio": "Your source of news",
+            "status": Organization.Status.ACTIVE,
+            "details": {
+                "about": "We provide news in various formats",
+                "intended_use": "We'll have a checkout on our website where you buy subscriptions to our various news products.",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "We send out our news products as emails daily and weekly",
+                "customer_acquisition": ["website"],
+                "future_annual_revenue": 2000000,
+                "previous_annual_revenue": 0,
+            },
             "products": [
                 {
                     "name": "Daily newspaper",
@@ -487,12 +520,12 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         )
         session.add(organization)
 
-        # Create an Account for MeltedSQL organization
-        if org_data["slug"] == "melted-sql":
+        # Create an Account for all organizations except Widget Industries
+        if org_data["slug"] != "widget-industries":
             account = Account(
                 account_type=AccountType.stripe,
                 admin_id=user.id,
-                stripe_id="acct_meltedsql_test",  # Test Stripe account ID
+                stripe_id=f"acct_{organization.slug}_test",  # Test Stripe account ID
                 country="US",
                 currency="USD",
                 is_details_submitted=True,

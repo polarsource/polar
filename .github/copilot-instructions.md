@@ -30,27 +30,6 @@ Polar is a payment infrastructure platform with a monorepo structure.
 
 The primary setup and workflow instructions are in `DEVELOPMENT.md`.
 
-### Prerequisites
-
-The backend requires `uv` to be installed. It can be installed via pip:
-
-```bash
-pip install uv
-```
-
-The frontend requires `pnpm` to be installed. It can be installed via npm:
-
-```bash
-npm install -g pnpm
-```
-
-### Setup
-
-1.  **Environment Variables**: Run `./dev/setup-environment` to create the necessary `.env` files for both the server and the web client.
-2.  **Dependencies**:
-    - Backend (in `server/`): Use `uv sync` to install Python dependencies.
-    - Frontend (in `clients/`): Use `pnpm install` to install JavaScript dependencies.
-
 ### Running the Application
 
 - **Backend**: In the `server/` directory, run the following commands in separate terminals:

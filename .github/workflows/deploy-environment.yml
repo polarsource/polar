@@ -17,6 +17,16 @@ on:
         description: "Comma-separated list of Render service IDs to deploy to"
         required: true
         type: string
+      skip-backend:
+        description: "Skip backend deployment if no backend changes"
+        required: false
+        type: boolean
+        default: false
+      skip-frontend:
+        description: "Skip frontend deployment if no frontend changes"
+        required: false
+        type: boolean
+        default: false
     secrets:
       RENDER_API_TOKEN:
         required: true
@@ -38,6 +48,7 @@ on:
 jobs:
   build-frontend:
     name: "Frontend: Build and Deploy to Preview"
+    if: inputs.skip-frontend != true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     outputs:
@@ -63,6 +74,7 @@ jobs:
   deploy-backend:
     name: "Backend: Deploy to ${{ inputs.environment }}"
     needs: build-frontend
+    if: always() && inputs.skip-backend != true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
@@ -90,6 +102,7 @@ jobs:
   promote-frontend:
     name: "Frontend: Promote to Production"
     needs: [build-frontend, deploy-backend]
+    if: always() && !failure() && !cancelled() && inputs.skip-frontend != true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
@@ -101,7 +114,7 @@ jobs:
       - name: Promote Frontend to Production
         run: |
           echo "Promoting deployment: ${{ needs.build-frontend.outputs.deployment-url }}"
-          vercel promote ${{ needs.build-frontend.outputs.deployment-url }} --token=${{ secrets.VERCEL_TOKEN }}
+          vercel promote ${{ needs.build-frontend.outputs.deployment-url }} --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
           echo "Successfully promoted to production: ${{ needs.build-frontend.outputs.deployment-url }}"
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

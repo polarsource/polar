@@ -454,6 +454,8 @@ class TestCreateOrUpdateFromCheckout:
         # Started at doesn't change, but current period does
         assert updated_subscription.started_at == previous_started_at
         assert updated_subscription.current_period_start > previous_current_period_start
+        assert updated_subscription.current_period_end is not None
+        assert previous_current_period_end is not None
         assert updated_subscription.current_period_end > previous_current_period_end
 
         publish_checkout_event_mock.assert_called_once_with(
@@ -501,6 +503,8 @@ class TestCycle:
 
         assert updated_subscription.ended_at is None
         assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.current_period_end is not None
+        assert previous_current_period_end is not None
         assert updated_subscription.current_period_end > previous_current_period_end
         assert updated_subscription.scheduler_locked_at is None
 

@@ -574,6 +574,7 @@ class SubscriptionService:
         else:
             if update_cycle_dates:
                 current_period_end = subscription.current_period_end
+                assert current_period_end is not None
                 subscription.current_period_start = current_period_end
                 subscription.current_period_end = (
                     subscription.recurring_interval.get_next_period(current_period_end)

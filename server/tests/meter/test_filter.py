@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import pytest
+from pydantic import ValidationError
 
 from polar.event.repository import EventRepository
 from polar.kit.utils import utc_now
@@ -24,6 +25,59 @@ def test_strip_metadata_prefix() -> None:
     clause = filter.clauses[0]
     assert isinstance(clause, FilterClause)
     assert clause.property == "property"
+
+
+class TestFilterClauseValueValidation:
+    """Test validation of FilterClause.value field to prevent database overflow."""
+
+    def test_valid_integer_values(self) -> None:
+        """Test that valid integers within int32 range are accepted."""
+        # Test boundary values
+        max_valid = FilterClause(property="test", operator=FilterOperator.eq, value=2147483647)
+        assert max_valid.value == 2147483647
+        
+        min_valid = FilterClause(property="test", operator=FilterOperator.eq, value=-2147483648)
+        assert min_valid.value == -2147483648
+        
+        # Test normal value
+        normal = FilterClause(property="test", operator=FilterOperator.eq, value=123)
+        assert normal.value == 123
+        
+        # Test zero
+        zero = FilterClause(property="test", operator=FilterOperator.eq, value=0)
+        assert zero.value == 0
+
+    def test_invalid_integer_values(self) -> None:
+        """Test that integers outside int32 range are rejected."""
+        # Test value too large
+        with pytest.raises(ValidationError) as exc_info:
+            FilterClause(property="test", operator=FilterOperator.eq, value=2147483648)
+        assert "less than or equal to 2147483647" in str(exc_info.value)
+        
+        # Test value too small
+        with pytest.raises(ValidationError) as exc_info:
+            FilterClause(property="test", operator=FilterOperator.eq, value=-2147483649)
+        assert "greater than or equal to -2147483648" in str(exc_info.value)
+        
+        # Test extremely large value
+        with pytest.raises(ValidationError):
+            FilterClause(property="test", operator=FilterOperator.eq, value=9999999999999999)
+
+    def test_non_integer_values_unaffected(self) -> None:
+        """Test that string and boolean values are not affected by integer validation."""
+        # Test string values (including numeric strings)
+        string_clause = FilterClause(property="test", operator=FilterOperator.eq, value="9999999999999999")
+        assert string_clause.value == "9999999999999999"
+        
+        empty_string = FilterClause(property="test", operator=FilterOperator.eq, value="")
+        assert empty_string.value == ""
+        
+        # Test boolean values
+        true_clause = FilterClause(property="test", operator=FilterOperator.eq, value=True)
+        assert true_clause.value is True
+        
+        false_clause = FilterClause(property="test", operator=FilterOperator.eq, value=False)
+        assert false_clause.value is False
 
 
 @pytest.mark.asyncio

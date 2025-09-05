@@ -10,7 +10,8 @@ import { Client, schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { resolveBenefitIcon } from '../Benefit/utils'
@@ -65,6 +66,9 @@ const CustomerChangePlanModal = ({
   themingPreset: ThemingPresetProps
 }) => {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const settingsPath = `/${organization.slug}/portal/settings?${searchParams.toString()}`
+
   const products = useMemo(
     () =>
       _products.filter((p) => p.is_recurring && !hasLegacyRecurringPrices(p)),
@@ -256,10 +260,28 @@ const CustomerChangePlanModal = ({
           )}
         </div>
         {needToAddPaymentMethod && (
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            You need to add a payment method before updating your plan. Head to
-            the Customer Portal Settings to add a payment method.
-          </p>
+          <div className="flex flex-row items-center gap-x-2">
+            <div className="h-6 w-6 shrink-0 items-center justify-center rounded-full text-2xl">
+              <svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  fill="#f44336"
+                  d="M6.2244898 12.67346931L1.3265307 7.7755102c-.43537415-.43537414-.43537415-1.11564624 0-1.55102039l4.8979591-4.89795913c.43537414-.43537414 1.11564624-.43537414 1.55102039 0l4.89795912 4.89795912c.43537414.43537415.43537414 1.11564625 0 1.5510204L7.7755102 12.6734693c-.43537415.43537415-1.14285713.43537415-1.5510204 0z"
+                />
+                <path
+                  fill="#ffffff"
+                  d="M6.33333334 9.38095235c0-.08163265.02721089-.1632653.05442177-.24489796.02721089-.08163265.08163265-.13605442.13605442-.19047619.05442177-.05442176.13605442-.10884353.21768707-.13605442.08163266-.02721088.1632653-.05442176.27210884-.05442176.10884354 0 .1904762.02721088.27210884.05442176.08163266.02721089.1632653.08163266.21768708.13605442.05442176.05442177.10884353.10884354.13605442.1904762.02721088.08163264.05442176.1632653.05442176.24489795s-.02721088.1632653-.05442176.24489795c-.02721089.08163266-.08163266.13605442-.13605442.1904762-.05442177.05442176-.13605442.10884353-.21768708.13605441-.08163265.02721089-.1632653.05442177-.27210884.05442177-.10884353 0-.19047618-.02721088-.27210884-.05442177-.08163265-.02721088-.13605442-.08163265-.21768707-.13605442-.05442177-.05442177-.10884353-.10884353-.13605442-.19047619-.02721088-.08163265-.05442177-.13605442-.05442177-.24489795zm1.14285713-1.25170067h-.97959182L6.36054423 4.0204082h1.25170066l-.13605442 4.10884348z"
+                />
+              </svg>
+            </div>
+            <p className="text-polar-600 text-sm dark:text-yellow-200">
+              You need to add a payment method before updating your plan. Head
+              to the&nbsp;
+              <Link href={settingsPath} className="underline">
+                Customer Portal Settings
+              </Link>
+              &nbsp; to add a payment method.
+            </p>
+          </div>
         )}
         <Button
           disabled={!canChangePlan}

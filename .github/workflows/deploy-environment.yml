@@ -1,4 +1,6 @@
 name: Deploy Environment
+permissions:
+  contents: read
 
 on:
   workflow_call:

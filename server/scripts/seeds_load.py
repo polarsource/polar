@@ -373,6 +373,33 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             ],
         },
         {
+            "name": "Example News Inc.",
+            "slug": "example-news-inc",
+            "email": "hello@examplenewsinc.com",
+            "website": "https://examplenewsinc.com",
+            "bio": "Your source of news",
+            "products": [
+                {
+                    "name": "Daily newspaper",
+                    "description": "Your source of truthful, subjective daily news",
+                    "price": 800,
+                    "recurring": SubscriptionRecurringInterval.day,
+                },
+                {
+                    "name": "Daily tabloid",
+                    "description": "Slander like there's no tomorrow!",
+                    "price": 1000,
+                    "recurring": SubscriptionRecurringInterval.day,
+                },
+                {
+                    "name": "Weekly paper",
+                    "description": "In-depth journalism and the weekly crossword",
+                    "price": 2500,
+                    "recurring": SubscriptionRecurringInterval.week,
+                },
+            ],
+        },
+        {
             "name": "Admin Org",
             "slug": "admin-org",
             "email": "admin@polar.sh",
@@ -429,7 +456,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         await user_repository.update(
             user,
             update_dict={
-                "is_admin": org_data.get("is_admin", False),
+                # Start with the user being admin, so that we can create daily and weekly products
+                "is_admin": True,
                 "identity_verification_status": IdentityVerificationStatus.verified,
                 "identity_verification_id": f"vs_{org_data['slug']}_test",
             },
@@ -655,6 +683,11 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             # TODO: Create some checkouts for customers
             # This would require more complex checkout creation logic
             pass
+
+        # Downgrade user from admin (for non-admin users)
+        await user_repository.update(
+            user, update_dict={"is_admin": org_data.get("is_admin", False)}
+        )
 
     await session.commit()
     print("✅ Sample data created successfully!")

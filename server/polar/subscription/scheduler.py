@@ -45,6 +45,7 @@ class SubscriptionJobStore(BaseJobStore):
                 Subscription.scheduler_locked_at.is_(None),
                 Subscription.stripe_subscription_id.is_(None),
                 Subscription.active.is_(True),
+                Subscription.current_period_end.is_not(None),
                 Subscription.current_period_end <= now,
             )
             .order_by(Subscription.current_period_end.asc())
@@ -60,6 +61,7 @@ class SubscriptionJobStore(BaseJobStore):
                 Subscription.scheduler_locked_at.is_(None),
                 Subscription.stripe_subscription_id.is_(None),
                 Subscription.active.is_(True),
+                Subscription.current_period_end.is_not(None),
             )
             .order_by(Subscription.current_period_end.asc())
             .limit(1)
@@ -77,6 +79,7 @@ class SubscriptionJobStore(BaseJobStore):
                 Subscription.scheduler_locked_at.is_(None),
                 Subscription.stripe_subscription_id.is_(None),
                 Subscription.active.is_(True),
+                Subscription.current_period_end.is_not(None),
             )
             .order_by(Subscription.current_period_end.asc())
         )

@@ -28,7 +28,7 @@ jobs:
         env:
           POSTGRES_USER: polar
           POSTGRES_PASSWORD: polar
-          POSTGRES_DB: polar_test
+          POSTGRES_DB: polar_development
           POSTGRES_PORT: 5432
         options: >-
           --health-cmd pg_isready
@@ -56,6 +56,15 @@ jobs:
     # If you do not check out your code, Copilot will do this for you.
     steps:
       - uses: actions/checkout@v5
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            server/.mypy_cache
+          key: mypy-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            mypy-${{ runner.os }}-
+            mypy-
 
       - name: 💿 MinIO Setup
         working-directory: ./server/.minio

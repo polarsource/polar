@@ -46,6 +46,8 @@ def get_bearer_token(request: Request) -> str | None:
     scheme, value = get_authorization_scheme_param(authorization)
     if not scheme or not value or scheme.lower() != "bearer":
         return None
+    if not value.isascii():
+        return None
     return value
 
 

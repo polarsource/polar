@@ -47,7 +47,7 @@ on:
 
 jobs:
   build-frontend:
-    name: "Frontend: Build and Deploy to Preview"
+    name: "Frontend: Build"
     if: inputs.skip-frontend != true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}

@@ -14,6 +14,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
@@ -22,7 +28,7 @@ import Icon from '../Icons/Icon'
 
 type NotificationSchema = schemas['NotificationsList']['notifications'][number]
 
-export const NotificationsPopover = () => {
+export const NotificationsPopover = ({ isCollapsed }: { isCollapsed: boolean }) => {
   const [show, setShow] = useState(false)
   const [showBadge, setShowBadge] = useState(false)
 
@@ -83,23 +89,32 @@ export const NotificationsPopover = () => {
 
   return (
     <Popover>
-      <Button
-        className="relative h-8 w-8"
-        variant="ghost"
-        onMouseDown={clickBell}
-        asChild
-      >
-        <PopoverTrigger>
-          <BoltOutlined
-            className="!h-5 !w-5"
-            fontSize="medium"
-            aria-hidden="true"
-          />
-          {showBadge && (
-            <div className="dark:border-polar-700 absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-blue-500" />
-          )}
-        </PopoverTrigger>
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              className="relative h-8 w-8"
+              variant="ghost"
+              onMouseDown={clickBell}
+              asChild
+              aria-label="Notifications"
+            >
+              <PopoverTrigger>
+                <span className="sr-only">Notifications</span>
+                <BoltOutlined
+                  className="!h-5 !w-5"
+                  fontSize="medium"
+                  aria-hidden="true"
+                />
+                {showBadge && (
+                  <div className="dark:border-polar-700 absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-blue-500" />
+                )}
+              </PopoverTrigger>
+            </Button>
+          </TooltipTrigger>
+          {isCollapsed && <TooltipContent side="right">Notifications</TooltipContent>}
+        </Tooltip>
+      </TooltipProvider>
       <PopoverContent sideOffset={12} align="start">
         <List
           notifications={notifs.data?.notifications ?? []}

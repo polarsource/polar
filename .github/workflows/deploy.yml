@@ -3,10 +3,40 @@ name: Build and Deploy
 on:
   push:
     branches: ["main"]
+    paths:
+      - "server/**"
+      - "clients/**"
+      - ".github/workflows/deploy.yml"
+      - ".github/workflows/deploy-environment.yml"
+      - ".github/workflows/deploy_server.sh"
 
 jobs:
+  changes:
+    name: "Detect Changes 🔍"
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'server/**'
+              - '.github/workflows/deploy.yml'
+              - '.github/workflows/deploy-environment.yml'
+              - '.github/workflows/deploy_server.sh'
+            frontend:
+              - 'clients/**'
+              - '.github/workflows/deploy.yml'
+              - '.github/workflows/deploy-environment.yml'
+
   build:
     name: "Build Docker Image 🐳"
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
@@ -61,12 +91,15 @@ jobs:
 
   deploy-sandbox:
     name: "Deploy to Sandbox 🧪"
-    needs: build
+    needs: [changes, build]
+    if: always() && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true')
     uses: ./.github/workflows/deploy-environment.yml
     with:
       environment: sandbox
       docker-digest: ${{ needs.build.outputs.digest }}
       render-service-ids: "srv-crkocgbtq21c73ddsdbg,srv-d089jj7diees73934kgg"
+      skip-backend: ${{ needs.changes.outputs.backend != 'true' }}
+      skip-frontend: ${{ needs.changes.outputs.frontend != 'true' }}
     secrets:
       RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -77,12 +110,15 @@ jobs:
 
   deploy-production:
     name: "Deploy to Production 🚀"
-    needs: [build, deploy-sandbox]
+    needs: [changes, build, deploy-sandbox]
+    if: always() && !failure() && !cancelled() && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true')
     uses: ./.github/workflows/deploy-environment.yml
     with:
       environment: production
       docker-digest: ${{ needs.build.outputs.digest }}
       render-service-ids: "srv-ci4r87h8g3ne0dmvvl60,srv-d089jj7diees73934ka0"
+      skip-backend: ${{ needs.changes.outputs.backend != 'true' }}
+      skip-frontend: ${{ needs.changes.outputs.frontend != 'true' }}
     secrets:
       RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

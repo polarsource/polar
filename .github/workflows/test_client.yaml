@@ -5,6 +5,9 @@ on:
     branches: ["main"]
   pull_request:
     types: [opened, synchronize]
+    paths:
+      - "clients/**"
+      - ".github/workflows/test_client.yaml"
 
 permissions:
   contents: read

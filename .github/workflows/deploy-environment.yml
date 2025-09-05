@@ -95,7 +95,7 @@ jobs:
         with:
           environment: ${{ inputs.environment }}
           dist: ${{ inputs.docker-digest }}
-          version: ${{ github.sha }}
+          release: ${{ github.sha }}
           projects: server
           working_directory: ./server
 

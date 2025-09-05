@@ -57,6 +57,34 @@ class TestFilterClauseValueValidation:
         with pytest.raises(ValidationError):
             FilterClause(property="test", operator=FilterOperator.eq, value=value)
 
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "short",  # normal string
+            "a" * 1000,  # max length string
+            "",  # empty string
+            "test@example.com",  # email format
+            "https://example.com/path",  # URL format
+        ],
+    )
+    def test_valid_string_values(self, value: str) -> None:
+        """Test that valid strings within length limit are accepted."""
+        clause = FilterClause(property="test", operator=FilterOperator.eq, value=value)
+        assert clause.value == value
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "a" * 1001,  # exceeds max length by 1
+            "a" * 2000,  # significantly exceeds max length
+            "a" * 10000,  # extremely long string
+        ],
+    )
+    def test_invalid_string_values(self, value: str) -> None:
+        """Test that strings exceeding length limit are rejected."""
+        with pytest.raises(ValidationError):
+            FilterClause(property="test", operator=FilterOperator.eq, value=value)
+
 
 @pytest.mark.asyncio
 class TestFilter:

@@ -136,3 +136,4 @@ playground.py
 *.mmdb
 server/tests/invoice/test_invoice*.pdf
 supervisord.pid
+server/.minio/

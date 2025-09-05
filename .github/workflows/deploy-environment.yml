@@ -50,7 +50,6 @@ jobs:
 
       - name: Deploy to Vercel (Staged Production)
         id: deploy
-        working-directory: clients/apps/web
         run: |
           # Deploy as staged production build (Vercel builds remotely)
           # --prod --skip-domain creates a production build without assigning to domain

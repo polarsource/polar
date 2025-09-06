@@ -212,3 +212,135 @@ async def test_webhook_standard_webhooks_compatible(
     request = route_mock.calls.last.request
     w = StandardWebhook(secret.encode("utf-8"))
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
+
+
+@pytest.mark.asyncio
+async def test_webhook_event_skipped_when_endpoint_no_longer_supports_event_type(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    respx_mock: respx.MockRouter,
+    organization: Organization,
+) -> None:
+    """Test that webhook events are skipped when endpoint no longer supports the event type."""
+    # Mock HTTP endpoint - should never be called
+    route_mock = respx_mock.post("https://example.com/hook").mock(
+        return_value=httpx.Response(200)
+    )
+
+    # Create endpoint that only supports order.created events
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret="mysecret",
+        events=[WebhookEventType.order_created],  # Only supports order.created
+    )
+    await save_fixture(endpoint)
+
+    # Create a webhook event for subscription.created (not supported by endpoint)
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        payload='{"type": "subscription.created", "data": {"id": "sub_123"}}',
+        succeeded=None,  # Not yet processed
+    )
+    await save_fixture(event)
+
+    # Process the webhook event
+    await _webhook_event_send(session=session, webhook_event_id=event.id)
+
+    # Refresh the event from database to check its status
+    await session.refresh(event)
+
+    # The event should be marked as succeeded (to prevent retries)
+    assert event.succeeded is True
+
+    # The HTTP endpoint should never have been called
+    assert len(route_mock.calls) == 0
+
+
+@pytest.mark.asyncio
+async def test_webhook_event_processed_when_endpoint_supports_event_type(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    respx_mock: respx.MockRouter,
+    organization: Organization,
+) -> None:
+    """Test that webhook events are processed normally when endpoint supports the event type."""
+    # Mock HTTP endpoint - should be called
+    route_mock = respx_mock.post("https://example.com/hook").mock(
+        return_value=httpx.Response(200)
+    )
+
+    # Create endpoint that supports subscription.created events
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret="mysecret",
+        events=[WebhookEventType.subscription_created],  # Supports subscription.created
+    )
+    await save_fixture(endpoint)
+
+    # Create a webhook event for subscription.created (supported by endpoint)
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        payload='{"type": "subscription.created", "data": {"id": "sub_123"}}',
+        succeeded=None,  # Not yet processed
+    )
+    await save_fixture(event)
+
+    # Process the webhook event
+    await _webhook_event_send(session=session, webhook_event_id=event.id)
+
+    # Refresh the event from database to check its status
+    await session.refresh(event)
+
+    # The event should be marked as succeeded after successful delivery
+    assert event.succeeded is True
+
+    # The HTTP endpoint should have been called exactly once
+    assert len(route_mock.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_webhook_event_processed_with_malformed_payload(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    respx_mock: respx.MockRouter,
+    organization: Organization,
+) -> None:
+    """Test that webhook events with malformed payloads are still processed (fallback behavior)."""
+    # Mock HTTP endpoint - should be called despite malformed payload
+    route_mock = respx_mock.post("https://example.com/hook").mock(
+        return_value=httpx.Response(200)
+    )
+
+    # Create endpoint
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret="mysecret",
+        events=[WebhookEventType.subscription_created],
+    )
+    await save_fixture(endpoint)
+
+    # Create a webhook event with malformed JSON payload
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        payload='{"invalid": json}',  # Malformed JSON
+        succeeded=None,  # Not yet processed
+    )
+    await save_fixture(event)
+
+    # Process the webhook event - should not raise an exception
+    await _webhook_event_send(session=session, webhook_event_id=event.id)
+
+    # Refresh the event from database to check its status
+    await session.refresh(event)
+
+    # The event should be marked as succeeded (webhook was delivered despite parsing error)
+    assert event.succeeded is True
+
+    # The HTTP endpoint should have been called (fallback behavior)
+    assert len(route_mock.calls) == 1

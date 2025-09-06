@@ -1,4 +1,5 @@
 import base64
+import json
 from collections.abc import Mapping
 from ssl import SSLError
 from uuid import UUID
@@ -34,6 +35,33 @@ async def _webhook_event_send(session: AsyncSession, *, webhook_event_id: UUID) 
     event = await webhook_service.get_event_by_id(session, webhook_event_id)
     if not event:
         raise Exception(f"webhook event not found id={webhook_event_id}")
+
+    # Parse the event type from the payload to check if endpoint still supports it
+    try:
+        payload_data = json.loads(event.payload)
+        event_type = payload_data.get("type")
+        
+        # Check if the endpoint still supports this event type
+        if event_type and event_type not in event.webhook_endpoint.events:
+            log.info(
+                "Skipping webhook event - endpoint no longer supports this event type",
+                webhook_event_id=webhook_event_id,
+                event_type=event_type,
+                endpoint_id=event.webhook_endpoint.id,
+                supported_events=event.webhook_endpoint.events,
+            )
+            # Mark as succeeded to prevent further retries
+            event.succeeded = True
+            session.add(event)
+            await session.commit()
+            return
+    except (json.JSONDecodeError, KeyError) as e:
+        # If we can't parse the payload, log and continue with delivery
+        log.warning(
+            "Failed to parse webhook event payload for validation",
+            webhook_event_id=webhook_event_id,
+            error=str(e),
+        )
 
     ts = utc_now()
 

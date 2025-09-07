@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypedDict
+from urllib.parse import unquote
 from uuid import UUID
 
 from sqlalchemy import (
@@ -229,7 +230,8 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
                 f"/checkout/{self.client_secret}/confirmation"
             )
         try:
-            return self._success_url.format(CHECKOUT_ID=self.id)
+            decoded = unquote(self._success_url)
+            return decoded.format(CHECKOUT_ID=self.id)
         except KeyError:
             return self._success_url
 

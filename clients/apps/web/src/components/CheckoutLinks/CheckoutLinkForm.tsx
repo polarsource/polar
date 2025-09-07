@@ -265,7 +265,7 @@ export const CheckoutLinkForm = ({
                   <Input
                     placeholder="https://example.com/success?checkout_id={CHECKOUT_ID}"
                     {...field}
-                    value={field.value || ''}
+                    value={decodeURIComponent(field.value || '')}
                   />
                 </FormControl>
                 <FormDescription className="text-xs">

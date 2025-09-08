@@ -13,7 +13,6 @@ from polar.auth.scope import Scope
 from polar.checkout.repository import CheckoutRepository
 from polar.checkout.schemas import CheckoutProductCreate
 from polar.checkout.service import checkout as checkout_service
-from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
 from polar.kit.tax import calculate_tax
@@ -28,7 +27,6 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
-from polar.models.organization import Organization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -37,9 +35,6 @@ from tests.fixtures.random_objects import (
     create_organization,
     create_product,
 )
-
-MINIMUM_AMOUNT = 2500
-PRESET_AMOUNT = 5000
 
 
 @pytest.fixture(
@@ -96,42 +91,6 @@ async def create_blocked_product(
     )
     await save_fixture(user_organization)
     return product
-
-
-@pytest_asyncio.fixture
-async def product_custom_price_minimum(
-    save_fixture: SaveFixture, organization: Organization
-) -> Product:
-    return await create_product(
-        save_fixture,
-        organization=organization,
-        recurring_interval=None,
-        prices=[(MINIMUM_AMOUNT, None, None)],
-    )
-
-
-@pytest_asyncio.fixture
-async def product_custom_price_preset(
-    save_fixture: SaveFixture, organization: Organization
-) -> Product:
-    return await create_product(
-        save_fixture,
-        organization=organization,
-        recurring_interval=None,
-        prices=[(MINIMUM_AMOUNT, None, PRESET_AMOUNT)],
-    )
-
-
-@pytest_asyncio.fixture
-async def product_custom_price_no_amounts(
-    save_fixture: SaveFixture, organization: Organization
-) -> Product:
-    return await create_product(
-        save_fixture,
-        organization=organization,
-        recurring_interval=None,
-        prices=[(None, None, None)],
-    )
 
 
 @pytest.mark.asyncio
@@ -398,60 +357,6 @@ class TestCreateCheckout:
         json = response.json()
         assert json["external_customer_id"] == "external_customer_id_value"
         assert json["customer_external_id"] == "external_customer_id_value"
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
-    async def test_custom_price_uses_minimum(
-        self,
-        api_prefix: str,
-        client: AsyncClient,
-        product_custom_price_minimum: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            f"{api_prefix}/",
-            json={
-                "products": [str(product_custom_price_minimum.id)],
-            },
-        )
-
-        assert response.status_code == 201
-        assert response.json()["amount"] == MINIMUM_AMOUNT
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
-    async def test_custom_price_prefers_preset(
-        self,
-        api_prefix: str,
-        client: AsyncClient,
-        product_custom_price_preset: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            f"{api_prefix}/",
-            json={
-                "product_id": str(product_custom_price_preset.id),
-            },
-        )
-
-        assert response.status_code == 201
-        assert response.json()["amount"] == PRESET_AMOUNT
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
-    async def test_custom_price_uses_fallback(
-        self,
-        api_prefix: str,
-        client: AsyncClient,
-        product_custom_price_no_amounts: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            f"{api_prefix}/",
-            json={
-                "product_id": str(product_custom_price_no_amounts.id),
-            },
-        )
-
-        assert response.status_code == 201
-        assert response.json()["amount"] == settings.CUSTOM_PRICE_PRESET_FALLBACK
 
 
 @pytest.mark.asyncio

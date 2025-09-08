@@ -28,7 +28,7 @@ from polar.checkout.service import (
     NotOpenCheckout,
 )
 from polar.checkout.service import checkout as checkout_service
-from polar.config import Environment
+from polar.config import Environment, settings
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
@@ -86,6 +86,9 @@ from tests.fixtures.random_objects import (
     create_subscription,
 )
 
+MINIMUM_AMOUNT = 2500
+PRESET_AMOUNT = 5000
+
 
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
@@ -114,6 +117,11 @@ def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
     mocker.patch("polar.checkout.service.calculate_tax", new=mock)
     mock.return_value = {"processor_id": "TAX_PROCESSOR_ID", "amount": 0}
     return mock
+
+
+@pytest.fixture
+def product_parametrization_helper(request: pytest.FixtureRequest) -> Product:
+    return request.getfixturevalue(request.param)
 
 
 @pytest_asyncio.fixture
@@ -247,6 +255,42 @@ async def checkout_tax_not_applicable(
     save_fixture: SaveFixture, product_tax_not_applicable: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_tax_not_applicable])
+
+
+@pytest_asyncio.fixture
+async def product_custom_price_minimum(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+        prices=[(MINIMUM_AMOUNT, None, None)],
+    )
+
+
+@pytest_asyncio.fixture
+async def product_custom_price_preset(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+        prices=[(MINIMUM_AMOUNT, None, PRESET_AMOUNT)],
+    )
+
+
+@pytest_asyncio.fixture
+async def product_custom_price_no_amounts(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+        prices=[(None, None, None)],
+    )
 
 
 @pytest.mark.asyncio
@@ -1326,6 +1370,31 @@ class TestCreate:
 
         assert checkout.require_billing_address == require_billing_address
 
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "product_parametrization_helper,expected_amount",
+        [
+            ("product_custom_price_minimum", MINIMUM_AMOUNT),
+            ("product_custom_price_preset", PRESET_AMOUNT),
+            ("product_custom_price_no_amounts", settings.CUSTOM_PRICE_PRESET_FALLBACK),
+        ],
+        indirect=["product_parametrization_helper"],
+    )
+    async def test_custom_price_amount(
+        self,
+        product_parametrization_helper: Product,
+        expected_amount: int,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+    ) -> None:
+        product = product_parametrization_helper
+
+        checkout_create = CheckoutProductsCreate(products=[product.id])
+        checkout = await checkout_service.create(session, checkout_create, auth_subject)
+
+        assert checkout.amount == expected_amount
+
 
 @pytest.mark.asyncio
 class TestClientCreate:
@@ -1411,6 +1480,31 @@ class TestClientCreate:
         assert checkout.product == product_one_time_custom_price
         assert checkout.amount == price.preset_amount
         assert checkout.currency == price.price_currency
+
+    @pytest.mark.parametrize(
+        "product_parametrization_helper,expected_amount",
+        [
+            ("product_custom_price_minimum", MINIMUM_AMOUNT),
+            ("product_custom_price_preset", PRESET_AMOUNT),
+            ("product_custom_price_no_amounts", settings.CUSTOM_PRICE_PRESET_FALLBACK),
+        ],
+        indirect=["product_parametrization_helper"],
+    )
+    async def test_custom_price_amount(
+        self,
+        product_parametrization_helper: Product,
+        expected_amount: int,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+    ) -> None:
+        product = product_parametrization_helper
+
+        checkout_create = CheckoutCreatePublic(product_id=product.id)
+        checkout = await checkout_service.client_create(
+            session, checkout_create, auth_subject
+        )
+
+        assert checkout.amount == expected_amount
 
 
 @pytest.mark.asyncio
@@ -1515,6 +1609,29 @@ class TestCheckoutLinkCreate:
             "reference_id": "test_reference_id",
             "utm_campaign": "test_campaign",
         }
+
+    @pytest.mark.parametrize(
+        "product_parametrization_helper,expected_amount",
+        [
+            ("product_custom_price_minimum", MINIMUM_AMOUNT),
+            ("product_custom_price_preset", PRESET_AMOUNT),
+            ("product_custom_price_no_amounts", settings.CUSTOM_PRICE_PRESET_FALLBACK),
+        ],
+        indirect=["product_parametrization_helper"],
+    )
+    async def test_custom_price_amount(
+        self,
+        product_parametrization_helper: Product,
+        expected_amount: int,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+    ) -> None:
+        product = product_parametrization_helper
+
+        checkout_link = await create_checkout_link(save_fixture, products=[product])
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.amount == expected_amount
 
 
 @pytest.mark.asyncio

@@ -681,18 +681,24 @@ class OrderService:
             tax_calculation = await calculate_tax(
                 order_id,
                 subscription.currency,
+                # Stripe doesn't support calculating negative tax amounts
                 taxable_amount if taxable_amount >= 0 else -taxable_amount,
                 product.stripe_product_id,
                 billing_address,
                 [tax_id] if tax_id is not None else [],
                 subscription.tax_exempted,
             )
-            tax_calculation_processor_id = tax_calculation["processor_id"]
-            tax_amount = (
-                tax_calculation["amount"]
-                if taxable_amount >= 0
-                else -tax_calculation["amount"]
-            )
+            if taxable_amount >= 0:
+                tax_calculation_processor_id = tax_calculation["processor_id"]
+                tax_amount = tax_calculation["amount"]
+            else:
+                # When the taxable amount is negative it's usually due to a credit proration
+                # this means we "owe" the customer money -- but we don't pay it back at this
+                # point. This also means that there's no money transaction going on, and we
+                # don't have to record the tax transaction either.
+                tax_calculation_processor_id = None
+                tax_amount = -tax_calculation["amount"]
+
             taxability_reason = tax_calculation["taxability_reason"]
             tax_rate = tax_calculation["tax_rate"]
 

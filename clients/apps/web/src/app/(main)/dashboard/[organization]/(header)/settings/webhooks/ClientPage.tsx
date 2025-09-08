@@ -28,7 +28,7 @@ export default function ClientPage({
       }
       wide
     >
-      <WebhookSettings org={org} />
+      <WebhookSettings org={org} filters={filters} />
     </DashboardBody>
   )
 }

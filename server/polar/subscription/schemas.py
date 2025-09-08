@@ -66,6 +66,10 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     current_period_end: datetime | None = Field(
         description="The end timestamp of the current billing period."
     )
+    trial_ends_at: datetime | None = Field(
+        default=None,
+        description="The end timestamp of the trial period. Only set for subscriptions with a trial.",
+    )
     cancel_at_period_end: bool = Field(
         description=(
             "Whether the subscription will be canceled "

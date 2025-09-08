@@ -1,7 +1,7 @@
 import contextlib
 import uuid
 from collections.abc import AsyncGenerator, Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Literal, cast, overload
 
@@ -22,7 +22,10 @@ from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
 from polar.email.react import JSONProperty, render_email_template
 from polar.email.sender import enqueue_email
-from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.enums import (
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+)
 from polar.event.service import event as event_service
 from polar.event.system import SystemEvent, build_system_event
 from polar.exceptions import (
@@ -302,10 +305,26 @@ class SubscriptionService:
         current_period_start = utc_now()
         current_period_end = recurring_interval.get_next_period(current_period_start)
 
+        # Check if product has a trial period
+        trial_ends_at = None
+        status = SubscriptionStatus.active
+        if product.trial_days and product.trial_days > 0:
+            # Only apply trial for new subscriptions
+            if subscription is None:
+                trial_ends_at = current_period_start + timedelta(
+                    days=product.trial_days
+                )
+                status = SubscriptionStatus.trialing
+                # During trial, set the first billing period to start after trial ends
+                current_period_start = trial_ends_at
+                current_period_end = recurring_interval.get_next_period(
+                    current_period_start
+                )
+
         # New subscription
         if subscription is None:
             subscription = Subscription(
-                started_at=current_period_start,
+                started_at=utc_now() if status == SubscriptionStatus.active else None,
                 cancel_at_period_end=False,
                 customer=customer,
             )
@@ -315,9 +334,10 @@ class SubscriptionService:
         # we start a billing cycle from the checkout date.
         subscription.current_period_start = current_period_start
         subscription.current_period_end = current_period_end
+        subscription.trial_ends_at = trial_ends_at
 
         subscription.recurring_interval = recurring_interval
-        subscription.status = SubscriptionStatus.active
+        subscription.status = status
         subscription.payment_method = payment_method
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
@@ -1845,6 +1865,40 @@ class SubscriptionService:
         subscription.payment_method = payment_method
         repository = SubscriptionRepository.from_session(session)
         return await repository.update(subscription)
+
+    async def activate_trial_subscription(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Subscription:
+        """
+        Activate a subscription after trial period ends.
+        Creates the first order/invoice for the subscription.
+        """
+        repository = SubscriptionRepository.from_session(session)
+
+        # Update the subscription in the database
+        subscription = await repository.update(subscription)
+
+        # Create the first order for the subscription
+        from polar.order.service import order as order_service
+
+        await order_service.create_subscription_order(
+            session,
+            subscription,
+            OrderBillingReason.subscription_cycle,
+        )
+
+        # Send notification events
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=SubscriptionStatus.trialing,
+            previous_is_canceled=False,
+        )
+
+        # Grant benefits now that subscription is active
+        await self.enqueue_benefits_grants(session, subscription)
+
+        return subscription
 
 
 subscription = SubscriptionService()

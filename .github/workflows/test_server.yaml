@@ -107,7 +107,7 @@ jobs:
           version: 10.5.2
 
       - name: 📬 Setup Node.js environment for server/emails
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version-file: server/emails/.node-version
           cache: "pnpm"

@@ -706,6 +706,12 @@ class OrderService:
             session, subscription.organization
         )
 
+        customer_balance = await self.customer_balance(session, subscription.customer)
+        from_balance_amount = 0
+        if customer_balance > 0:
+            total_amount = subtotal_amount - discount_amount + tax_amount
+            from_balance_amount = min(customer_balance, total_amount)
+
         repository = OrderRepository.from_session(session)
         order = await repository.create(
             Order(
@@ -714,6 +720,7 @@ class OrderService:
                 subtotal_amount=subtotal_amount,
                 discount_amount=discount_amount,
                 tax_amount=tax_amount,
+                from_balance_amount=from_balance_amount,
                 currency=subscription.currency,
                 billing_reason=billing_reason,
                 billing_name=customer.billing_name,
@@ -741,6 +748,8 @@ class OrderService:
             OrderBillingReason.subscription_update,
         }:
             await subscription_service.reset_meters(session, subscription)
+
+        customer_balance = await self.customer_balance(session, subscription.customer)
 
         # If the order total amount is zero, mark it as paid immediately
         if order.total_amount <= 0:
@@ -771,8 +780,11 @@ class OrderService:
         async with self.acquire_payment_lock(session, order, release_on_success=False):
             if payment_method.processor == PaymentProcessor.stripe:
                 metadata: dict[str, Any] = {"order_id": str(order.id)}
+
+                to_be_paid_amount = order.total_amount - order.from_balance_amount
+
                 if order.tax_rate is not None:
-                    metadata["tax_amount"] = order.tax_amount
+                    metadata["tax_amount"] = order.tax_amount  # ???
                     metadata["tax_country"] = order.tax_rate["country"]
                     metadata["tax_state"] = order.tax_rate["state"]
 
@@ -781,7 +793,7 @@ class OrderService:
 
                 try:
                     await stripe_service.create_payment_intent(
-                        amount=order.total_amount,
+                        amount=to_be_paid_amount,
                         currency=order.currency,
                         payment_method=payment_method.processor_id,
                         customer=stripe_customer_id,

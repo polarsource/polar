@@ -1,7 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import {
-  type CheckoutPublic,
   CheckoutPublic$inboundSchema,
+  type CheckoutPublic,
 } from '@polar-sh/sdk/models/components/checkoutpublic'
 
 const PRODUCT_DESCRIPTION = `# Et Tritonia pectora partus praebentem
@@ -271,6 +271,7 @@ export const ORDER_PREVIEW: schemas['CustomerOrder'] = {
   net_amount: 10000,
   tax_amount: 1200,
   total_amount: 11200,
+  from_balance_amount: 0,
   refunded_amount: 0,
   refunded_tax_amount: 0,
   currency: 'usd',

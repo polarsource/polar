@@ -752,6 +752,7 @@ async def create_order(
     discount_amount: int = 0,
     refunded_amount: int = 0,
     refunded_tax_amount: int = 0,
+    order_items: list[OrderItem] | None = None,
     subscription: Subscription | None = None,
     stripe_invoice_id: str | None = "INVOICE_ID",
     billing_reason: OrderBillingReason = OrderBillingReason.purchase,
@@ -766,6 +767,16 @@ async def create_order(
     next_payment_attempt_at: datetime | None = None,
     payment_lock_acquired_at: datetime | None = None,
 ) -> Order:
+    if order_items is None:
+        order_items = [
+            OrderItem(
+                label="",
+                amount=subtotal_amount,
+                tax_amount=tax_amount,
+                proration=False,
+            )
+        ]
+
     order = Order(
         created_at=created_at or utc_now(),
         status=status,
@@ -774,14 +785,7 @@ async def create_order(
         discount_amount=discount_amount,
         refunded_amount=refunded_amount,
         refunded_tax_amount=refunded_tax_amount,
-        items=[
-            OrderItem(
-                label="",
-                amount=subtotal_amount,
-                tax_amount=tax_amount,
-                proration=False,
-            )
-        ],
+        items=order_items,
         currency="usd",
         billing_reason=billing_reason,
         stripe_invoice_id=stripe_invoice_id,

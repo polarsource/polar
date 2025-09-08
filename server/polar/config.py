@@ -98,6 +98,9 @@ class Settings(BaseSettings):
     LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
     LOGIN_CODE_LENGTH: int = 6
 
+    # Two-Factor Authentication (TOTP)
+    TOTP_ISSUER_NAME: str = "Polar"
+
     # Email verification
     EMAIL_VERIFICATION_TTL_SECONDS: int = 60 * 30  # 30 minutes
 

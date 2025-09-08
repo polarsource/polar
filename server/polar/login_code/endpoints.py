@@ -79,6 +79,17 @@ async def authenticate_login_code(
         posthog.user_login(user, "code")
         await loops_service.user_update(session, user, emailLogin=True)
 
+    # Check if user has 2FA enabled
+    if user.totp_enabled:
+        # Redirect to 2FA verification page
+        base_url = str(settings.generate_frontend_url("/2fa/verify"))
+        url_params = {
+            "return_to": return_to,
+            "email": user.email,
+        }
+        totp_return_to = f"{base_url}?{urlencode(url_params)}"
+        return RedirectResponse(totp_return_to, 303)
+
     return await auth_service.get_login_response(
         session, request, user, return_to=return_to
     )

@@ -9,6 +9,7 @@ import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
+import TwoFactorAuthenticationSettings from './TwoFactorAuthenticationSettings'
 interface AuthenticationMethodProps {
   icon: React.ReactNode
   title: React.ReactNode
@@ -197,6 +198,10 @@ const AuthenticationSettings = () => {
           subtitle="You can sign in with OTP codes sent to your email"
           action={updateEmailContent[updateEmailStage]}
         />
+      </ShadowListGroup.Item>
+
+      <ShadowListGroup.Item>
+        <TwoFactorAuthenticationSettings />
       </ShadowListGroup.Item>
     </ShadowListGroup>
   )

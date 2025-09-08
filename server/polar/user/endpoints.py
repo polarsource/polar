@@ -13,8 +13,12 @@ from polar.routing import APIRouter
 from polar.user.service import user as user_service
 
 from .schemas import UserIdentityVerification, UserRead, UserScopes
+from .totp_endpoints import router as totp_router
 
 router = APIRouter(prefix="/users", tags=["users", APITag.private])
+
+# Include 2FA endpoints
+router.include_router(totp_router)
 
 # Include customer portal endpoints for backwards compatibility
 router.include_router(order_router, deprecated=True, include_in_schema=False)

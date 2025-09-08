@@ -165,6 +165,15 @@ class User(RecordModel):
 
     meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
+    # Two-Factor Authentication fields
+    totp_secret: Mapped[str | None] = mapped_column(
+        String(32), nullable=True, default=None
+    )
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    backup_codes: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True, default=None
+    )
+
     @hybrid_property
     def can_authenticate(self) -> bool:
         return self.deleted_at is None and self.blocked_at is None

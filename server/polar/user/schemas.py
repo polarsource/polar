@@ -2,7 +2,7 @@ import uuid
 from typing import Annotated, Literal
 
 from fastapi import Depends
-from pydantic import UUID4, EmailStr
+from pydantic import UUID4, EmailStr, Field
 
 from polar.auth.scope import Scope
 from polar.kit.schemas import Schema, TimestampedSchema, UUID4ToStr
@@ -29,6 +29,7 @@ class UserRead(UserBase, TimestampedSchema):
     identity_verified: bool
     identity_verification_status: IdentityVerificationStatus
     oauth_accounts: list[OAuthAccountRead]
+    totp_enabled: bool
 
 
 class UserIdentityVerification(Schema):
@@ -46,6 +47,42 @@ class UserStripePortalSession(Schema):
 
 class UserScopes(Schema):
     scopes: list[Scope]
+
+
+###############################################################################
+# TWO-FACTOR AUTHENTICATION
+###############################################################################
+
+
+class TOTPSetupRequest(Schema):
+    pass
+
+
+class TOTPSetupResponse(Schema):
+    secret: str = Field(..., description="TOTP secret (base32 encoded)")
+    qr_code: str = Field(..., description="QR code as base64 encoded PNG")
+    backup_codes: list[str] = Field(..., description="Backup codes for recovery")
+
+
+class TOTPEnableRequest(Schema):
+    verification_code: str = Field(..., min_length=6, max_length=6, description="6-digit TOTP code")
+
+
+class TOTPDisableRequest(Schema):
+    verification_code: str = Field(..., min_length=6, max_length=8, description="6-digit TOTP code or backup code")
+
+
+class TOTPVerificationRequest(Schema):
+    code: str = Field(..., min_length=6, max_length=8, description="6-digit TOTP code or backup code")
+
+
+class TOTPStatusResponse(Schema):
+    enabled: bool = Field(..., description="Whether TOTP is enabled")
+    backup_codes_remaining: int = Field(default=0, description="Number of unused backup codes")
+
+
+class TOTPBackupCodesResponse(Schema):
+    backup_codes: list[str] = Field(..., description="New backup codes for recovery")
 
 
 ###############################################################################

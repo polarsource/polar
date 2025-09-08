@@ -53,10 +53,14 @@ export const SubscriptionStatus = ({
 }: {
   subscription: schemas['Subscription']
 }) => {
-  const { status, ends_at } = subscription
+  const { status, ends_at, trial_ends_at } = subscription
   const isEnding = useMemo(() => ends_at !== null, [ends_at])
+  const isTrialing = useMemo(() => status === 'trialing', [status])
 
   const color = useMemo(() => {
+    if (status === 'trialing') {
+      return 'border-blue-500'
+    }
     if (status === 'active') {
       return isEnding ? 'border-yellow-500' : 'border-emerald-500'
     }
@@ -64,6 +68,9 @@ export const SubscriptionStatus = ({
   }, [status, isEnding])
 
   const icon = useMemo(() => {
+    if (isTrialing && trial_ends_at) {
+      return <AccessTimeOutlined fontSize="inherit" />
+    }
     if (!isEnding) {
       return null
     }
@@ -71,10 +78,17 @@ export const SubscriptionStatus = ({
       return <CancelOutlined fontSize="inherit" />
     }
     return <AccessTimeOutlined fontSize="inherit" />
-  }, [isEnding, status])
+  }, [isTrialing, trial_ends_at, isEnding, status])
+
+  const dateToShow = useMemo(() => {
+    if (isTrialing && trial_ends_at) {
+      return trial_ends_at
+    }
+    return ends_at
+  }, [isTrialing, trial_ends_at, ends_at])
 
   return (
-    <StatusLabel color={color} dt={ends_at} icon={icon}>
+    <StatusLabel color={color} dt={dateToShow} icon={icon}>
       {subscriptionStatusDisplayNames[subscription.status]}
     </StatusLabel>
   )

@@ -27,6 +27,8 @@ export const SubscriptionStatusLabel = ({
 }) => {
   const label = useMemo(() => {
     switch (subscription.status) {
+      case 'trialing':
+        return 'Trialing'
       case 'active':
         return subscription.ends_at ? 'To be cancelled' : 'Active'
       default:
@@ -36,6 +38,8 @@ export const SubscriptionStatusLabel = ({
 
   const statusColor = useMemo(() => {
     switch (subscription.status) {
+      case 'trialing':
+        return 'border-blue-500'
       case 'active':
         return subscription.cancel_at_period_end
           ? 'border-yellow-500'

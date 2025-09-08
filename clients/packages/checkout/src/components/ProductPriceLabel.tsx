@@ -14,28 +14,53 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   product,
   price,
 }) => {
+  const showTrial = product.trialDays && product.trialDays > 0 && product.isRecurring
+  
   if (price.amountType === 'fixed') {
     return (
-      <AmountLabel
-        amount={price.priceAmount}
-        currency={price.priceCurrency}
-        interval={
-          isLegacyRecurringPrice(price)
-            ? price.recurringInterval
-            : product.recurringInterval
-        }
-      />
+      <div className="flex flex-col">
+        <AmountLabel
+          amount={price.priceAmount}
+          currency={price.priceCurrency}
+          interval={
+            isLegacyRecurringPrice(price)
+              ? price.recurringInterval
+              : product.recurringInterval
+          }
+        />
+        {showTrial && (
+          <span className="text-sm text-gray-500">
+            after {product.trialDays} day{product.trialDays > 1 ? 's' : ''} free trial
+          </span>
+        )}
+      </div>
     )
   } else if (price.amountType === 'custom') {
-    return <div className="text-[min(1em,24px)]">Pay what you want</div>
+    return (
+      <div className="flex flex-col">
+        <div className="text-[min(1em,24px)]">Pay what you want</div>
+        {showTrial && (
+          <span className="text-sm text-gray-500">
+            after {product.trialDays} day{product.trialDays > 1 ? 's' : ''} free trial
+          </span>
+        )}
+      </div>
+    )
   } else if (price.amountType === 'free') {
     return <div className="text-[min(1em,24px)]">Free</div>
   } else if (price.amountType === 'metered_unit') {
     return (
-      <div className="flex flex-row gap-1 text-[min(1em,24px)]">
-        {price.meter.name}
-        {' — '}
-        <MeteredPriceLabel price={price} />
+      <div className="flex flex-col">
+        <div className="flex flex-row gap-1 text-[min(1em,24px)]">
+          {price.meter.name}
+          {' — '}
+          <MeteredPriceLabel price={price} />
+        </div>
+        {showTrial && (
+          <span className="text-sm text-gray-500">
+            after {product.trialDays} day{product.trialDays > 1 ? 's' : ''} free trial
+          </span>
+        )}
       </div>
     )
   }

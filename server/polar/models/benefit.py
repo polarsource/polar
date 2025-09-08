@@ -2,12 +2,13 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, String, Text, Uuid
+from sqlalchemy import Boolean, ForeignKey, Text, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 
 if TYPE_CHECKING:
@@ -30,6 +31,16 @@ class BenefitType(StrEnum):
     license_keys = "license_keys"
     meter_credit = "meter_credit"
 
+    def get_display_name(self) -> str:
+        return {
+            BenefitType.custom: "Custom",
+            BenefitType.discord: "Discord",
+            BenefitType.github_repository: "GitHub Repository",
+            BenefitType.downloadables: "Downloadables",
+            BenefitType.license_keys: "License Keys",
+            BenefitType.meter_credit: "Meter Credit",
+        }[self]
+
     def is_tax_applicable(self) -> bool:
         try:
             _is_tax_applicable_map: dict[BenefitType, bool] = {
@@ -48,7 +59,9 @@ class BenefitType(StrEnum):
 class Benefit(MetadataMixin, RecordModel):
     __tablename__ = "benefits"
 
-    type: Mapped[BenefitType] = mapped_column(String, nullable=False, index=True)
+    type: Mapped[BenefitType] = mapped_column(
+        StringEnum(BenefitType), nullable=False, index=True
+    )
     description: Mapped[str] = mapped_column(Text, nullable=False)
     is_tax_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False

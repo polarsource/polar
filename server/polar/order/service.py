@@ -673,22 +673,26 @@ class OrderService:
         tax_calculation_processor_id: str | None = None
 
         if (
-            subtotal_amount > 0
-            and product.is_tax_applicable
+            product.is_tax_applicable
             and billing_address is not None
             and product.stripe_product_id is not None
         ):
+            taxable_amount = subtotal_amount - discount_amount
             tax_calculation = await calculate_tax(
                 order_id,
                 subscription.currency,
-                subtotal_amount - discount_amount,
+                taxable_amount if taxable_amount >= 0 else -taxable_amount,
                 product.stripe_product_id,
                 billing_address,
                 [tax_id] if tax_id is not None else [],
                 subscription.tax_exempted,
             )
             tax_calculation_processor_id = tax_calculation["processor_id"]
-            tax_amount = tax_calculation["amount"]
+            tax_amount = (
+                tax_calculation["amount"]
+                if taxable_amount >= 0
+                else -tax_calculation["amount"]
+            )
             taxability_reason = tax_calculation["taxability_reason"]
             tax_rate = tax_calculation["tax_rate"]
 

@@ -20,6 +20,7 @@ from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams
 from polar.kit.tax import TaxabilityReason, TaxCalculation, TaxID, calculate_tax
 from polar.kit.utils import utc_now
@@ -1035,7 +1036,7 @@ class TestCreateSubscriptionOrder:
         ) -> TaxCalculation:
             return {
                 "processor_id": "TAX_PROCESSOR_ID",
-                "amount": int(amount * 0.20),
+                "amount": polar_round(amount * 0.20),
                 "taxability_reason": TaxabilityReason.standard_rated,
                 "tax_rate": None,
             }
@@ -1166,23 +1167,9 @@ class TestCreateSubscriptionOrder:
     @pytest.mark.parametrize(
         "setup",
         [
-            #### Basic monthly to Pro monthly ####
-            # pytest.param(
-            #     {
-            #         "discount": None,
-            #         # (SubscriptionRecurringInterval.month, 10000),
-            #         # (SubscriptionRecurringInterval.month, 30000),
-            #         # # - Start subscription on June 1st (June has 30 days)
-            #         # # - Update subscription at the end of June 15th (== start of 16th)
-            #         # # = 50% of price on both entries
-            #         # datetime(2025, 6, 1, tzinfo=UTC),
-            #         # datetime(2025, 6, 16, tzinfo=UTC),
-            #         # 5000,
-            #         # 15000,
-            #         # id="monthly-basic-to-pro-middle-of-month",
-            #     }
-            # ),
             pytest.param(
+                # 25% off every month for 3 months
+                # Switch from Basic to Pro middle of month
                 {
                     "discount": {
                         # 25% off on Basic
@@ -1288,14 +1275,12 @@ class TestCreateSubscriptionOrder:
                 id="fixed-discount-on-first-product",
             ),
             pytest.param(
-                # 50% off for 3 months
                 # Switch from yearly to monthly after 3 months and 1 day
                 {
                     "discount": {
                         "type": DiscountType.percentage,
                         "basis_points": 5000,
                         "duration": DiscountDuration.forever,
-                        # "duration_in_months": None,
                     },
                     "products": {
                         "p-monthly": (SubscriptionRecurringInterval.month, 3000),
@@ -1306,7 +1291,7 @@ class TestCreateSubscriptionOrder:
                             "p-yearly",
                             BillingEntryType.proration,
                             # INCLUDES discount
-                            # 15000 * (365 - 30 - 31 - 31) / 365 = 11.219,1780821918
+                            # 30000 * 50% * (365 - 30 - 31 - 31) / 365 = 11219
                             (BillingEntryDirection.credit, 11219, 11219),
                             datetime(2025, 6, 1, tzinfo=UTC),
                             datetime(2025, 9, 1, tzinfo=UTC),
@@ -1321,11 +1306,8 @@ class TestCreateSubscriptionOrder:
                         ),
                     ],
                     "expected_discount": 1500,
-                    # (4500 - 1750) - (1500 - 1000) = 2250
                     "expected_subtotal": -11219 + 3000,
-                    "expected_tax": 0,
-                    # 50% off full year = 15000, then switch 3 months in = 15000 - 3750 = 11250 in credit
-                    # then discount shouldn't apply to new monthly plan (because it expired) = 3000 in debit
+                    "expected_tax": -1944,  # (-11219 + 3000 - 1500) * 20%
                 },
                 id="yearly-to-monthly",
             ),
@@ -1416,7 +1398,7 @@ class TestCreateSubscriptionOrder:
         if order.subtotal_amount < 0:
             assert order.status == OrderStatus.paid
             assert order.tax_calculation_processor_id is None
-            assert order.taxability_reason is None
+            assert order.taxability_reason == TaxabilityReason.standard_rated
             # assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
             assert order.tax_transaction_processor_id is None
         else:
@@ -1447,7 +1429,9 @@ class TestCreateSubscriptionOrder:
         else:
             assert (
                 customer_balance
-                == setup["expected_subtotal"] - setup["expected_discount"]
+                == setup["expected_subtotal"]
+                - setup["expected_discount"]
+                + setup["expected_tax"]
             )
 
     @pytest.mark.parametrize(

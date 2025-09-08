@@ -7,7 +7,6 @@ from pytest_mock import MockerFixture
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.models import (
-    Customer,
     OrderItem,
     ProductPriceFixed,
     Subscription,
@@ -76,7 +75,7 @@ class BalanceFixture(TypedDict):
                     },
                 ],
                 "payments": [],
-                "expected_balance": 3000,
+                "expected_balance": -3000,
             },
             id="no-payments-positive-balance",
         ),
@@ -97,7 +96,7 @@ class BalanceFixture(TypedDict):
                     },
                 ],
                 "payments": [],
-                "expected_balance": -3000,
+                "expected_balance": 3000,
             },
             id="no-payments-negative-balance",
         ),
@@ -160,7 +159,7 @@ class BalanceFixture(TypedDict):
                     },
                 ],
                 "payments": [(0, 3000, PaymentStatus.failed)],
-                "expected_balance": 3000,
+                "expected_balance": -3000,
             },
             id="payment-failed",
         ),

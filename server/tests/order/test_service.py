@@ -1321,10 +1321,11 @@ class TestCreateSubscriptionOrder:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
-        customer: Customer,
         subscription: Subscription,
         setup: ProrationFixture,
     ) -> None:
+        customer = subscription.customer
+
         products = {}
         prices = {}
         for key, (recurring_interval, price_amount) in setup["products"].items():
@@ -1428,7 +1429,7 @@ class TestCreateSubscriptionOrder:
             assert customer_balance == 0
         else:
             assert (
-                customer_balance
+                -customer_balance
                 == setup["expected_subtotal"]
                 - setup["expected_discount"]
                 + setup["expected_tax"]

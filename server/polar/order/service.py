@@ -1696,6 +1696,9 @@ class OrderService:
         """
         Returns what the customer is "owed".
 
+        The returned integer is positive if the customer is owed, and negative
+        if the customer owes the selling organization.
+
         This can happen if the customer switches from e.g. a yearly plan at $100/yr to
         a monthly plan at $15/mo. In that case the customer has $85 in "credit" or balance
         on their account (depending on when they changed the plan).
@@ -1724,7 +1727,7 @@ class OrderService:
         total_orders = sum(order.total_amount for order in paid_orders)
         total_paid = sum(payment.amount for payment in payments)
 
-        return total_orders - total_paid
+        return total_paid - total_orders
 
 
 order = OrderService()

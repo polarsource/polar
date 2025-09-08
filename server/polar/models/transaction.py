@@ -171,6 +171,11 @@ class PlatformFeeType(StrEnum):
     Fee applied when a dispute was opened on a payment.
     """
 
+    llm = "llm"
+    """
+    Fee applied when a LLM call was used.
+    """
+
     platform = "platform"
     """
     Polar platform fee.

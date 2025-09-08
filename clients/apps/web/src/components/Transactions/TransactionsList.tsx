@@ -41,6 +41,11 @@ const getTransactionMeta = (transaction: schemas['Transaction']) => {
       type: 'Payout',
       meta: undefined,
     }
+  } else if (transaction.type === 'processor_fee') {
+    return {
+      type: 'Processor Fee',
+      meta: undefined,
+    }
   }
   return {
     type: transaction.type,
@@ -107,6 +112,7 @@ export const platformFeesDisplayNames: {
   account: 'Active payout account fee',
   dispute: 'Dispute fee',
   platform: 'Polar fee',
+  llm: 'LLM fee',
 }
 
 interface TransactionsListProps {
@@ -139,6 +145,49 @@ const TransactionsList = ({
   extraColumns,
   isLoading,
 }: TransactionsListProps) => {
+  transactions = [
+    {
+      id: 'llm',
+      created_at: '2025-01-01',
+      amount: 799,
+      currency: 'USD',
+      platform_fee_type: 'llm',
+      modified_at: '2025-01-01',
+      type: 'processor_fee',
+      processor: 'stripe',
+      account_currency: 'USD',
+      net_amount: -799,
+      gross_amount: 799,
+      incurred_amount: 0,
+      account_amount: -799,
+      pledge_id: null,
+      issue_reward_id: null,
+      order_id: null,
+      payout_transaction_id: null,
+      incurred_by_transaction_id: null,
+      pledge: null,
+      issue_reward: null,
+      order: null,
+      account_incurred_transactions: [
+        {
+          id: 'llm',
+          created_at: '2025-01-01',
+          amount: 165,
+          currency: 'USD',
+          platform_fee_type: 'llm',
+        },
+        {
+          id: 'llm',
+          created_at: '2025-01-01',
+          amount: 634,
+          currency: 'USD',
+          platform_fee_type: 'llm',
+        },
+      ],
+    } as schemas['Transaction'],
+    ...transactions,
+  ]
+
   const columns: DataTableColumnDef<
     schemas['Transaction'] | schemas['TransactionEmbedded']
   >[] = [

@@ -14747,7 +14747,7 @@ export interface components {
          * @description Type of fees applied by Polar, and billed to the users.
          * @enum {string}
          */
-        PlatformFeeType: "payment" | "international_payment" | "subscription" | "invoice" | "cross_border_transfer" | "payout" | "account" | "dispute" | "platform";
+        PlatformFeeType: "payment" | "international_payment" | "subscription" | "invoice" | "cross_border_transfer" | "payout" | "account" | "dispute" | "llm" | "platform";
         /**
          * PledgeState
          * @enum {string}
@@ -26214,7 +26214,7 @@ export const paymentSortPropertyValues: ReadonlyArray<components["schemas"]["Pay
 export const paymentStatusValues: ReadonlyArray<components["schemas"]["PaymentStatus"]> = ["pending", "succeeded", "failed"];
 export const payoutSortPropertyValues: ReadonlyArray<components["schemas"]["PayoutSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "fees_amount", "-fees_amount", "status", "-status", "paid_at", "-paid_at", "account_id", "-account_id"];
 export const payoutStatusValues: ReadonlyArray<components["schemas"]["PayoutStatus"]> = ["pending", "in_transit", "succeeded"];
-export const platformFeeTypeValues: ReadonlyArray<components["schemas"]["PlatformFeeType"]> = ["payment", "international_payment", "subscription", "invoice", "cross_border_transfer", "payout", "account", "dispute", "platform"];
+export const platformFeeTypeValues: ReadonlyArray<components["schemas"]["PlatformFeeType"]> = ["payment", "international_payment", "subscription", "invoice", "cross_border_transfer", "payout", "account", "dispute", "llm", "platform"];
 export const pledgeStateValues: ReadonlyArray<components["schemas"]["PledgeState"]> = ["initiated", "created", "pending", "refunded", "disputed", "charge_disputed", "cancelled"];
 export const processorValues: ReadonlyArray<components["schemas"]["Processor"]> = ["stripe", "manual", "open_collective"];
 export const productBillingTypeValues: ReadonlyArray<components["schemas"]["ProductBillingType"]> = ["one_time", "recurring"];

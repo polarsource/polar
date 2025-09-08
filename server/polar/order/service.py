@@ -706,10 +706,10 @@ class OrderService:
             session, subscription.organization
         )
 
+        total_amount = subtotal_amount - discount_amount + tax_amount
         customer_balance = await self.customer_balance(session, subscription.customer)
         from_balance_amount = 0
-        if customer_balance > 0:
-            total_amount = subtotal_amount - discount_amount + tax_amount
+        if total_amount > 0 and customer_balance > 0:
             from_balance_amount = min(customer_balance, total_amount)
 
         repository = OrderRepository.from_session(session)

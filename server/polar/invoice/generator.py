@@ -64,6 +64,7 @@ class Invoice(BaseModel):
     customer_address: Address
     customer_additional_info: str | None = None
     subtotal_amount: int
+    from_balance_amount: int | None = None
     discount_amount: int
     taxability_reason: TaxabilityReason | None
     tax_amount: int
@@ -89,6 +90,21 @@ class Invoice(BaseModel):
     def formatted_total_amount(self) -> str:
         total = self.subtotal_amount - self.discount_amount + self.tax_amount
         return format_currency(total, self.currency)
+
+    @property
+    def formatted_from_balance_amount(self) -> str | None:
+        if self.from_balance_amount:
+            return format_currency(self.from_balance_amount, self.currency)
+        else:
+            return None
+
+    @property
+    def formatted_to_be_paid_amount(self) -> str | None:
+        total = self.subtotal_amount - self.discount_amount + self.tax_amount
+        if self.from_balance_amount:
+            return format_currency(total - self.from_balance_amount, self.currency)
+        else:
+            return None
 
     @property
     def tax_displayed(self) -> bool:
@@ -141,6 +157,7 @@ class Invoice(BaseModel):
             customer_additional_info=order.tax_id[0] if order.tax_id else None,
             customer_address=order.billing_address,
             subtotal_amount=order.subtotal_amount,
+            from_balance_amount=order.from_balance_amount,
             discount_amount=order.discount_amount,
             taxability_reason=order.taxability_reason,
             tax_amount=order.tax_amount,
@@ -401,6 +418,22 @@ class InvoiceGenerator(FPDF):
             total_row = totals_table.row()
             total_row.cell("Total")
             total_row.cell(self.data.formatted_total_amount)
+
+            if (
+                self.data.formatted_from_balance_amount
+                and self.data.formatted_to_be_paid_amount
+            ):
+                # Applied balance row
+                self.set_font(style="B")
+                total_row = totals_table.row()
+                total_row.cell("Applied balance")
+                total_row.cell(self.data.formatted_from_balance_amount)
+
+                # To be paid row
+                self.set_font(style="B")
+                total_row = totals_table.row()
+                total_row.cell("To be paid")
+                total_row.cell(self.data.formatted_to_be_paid_amount)
 
         # Add notes section
         self.set_font(style="")

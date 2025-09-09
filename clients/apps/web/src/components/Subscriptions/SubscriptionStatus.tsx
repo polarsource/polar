@@ -53,7 +53,8 @@ export const SubscriptionStatus = ({
 }: {
   subscription: schemas['Subscription']
 }) => {
-  const { status, ends_at, trial_ends_at } = subscription
+  const { status, ends_at } = subscription
+  const trial_ends_at = 'trial_ends_at' in subscription ? subscription.trial_ends_at as string | undefined : undefined
   const isEnding = useMemo(() => ends_at !== null, [ends_at])
   const isTrialing = useMemo(() => status === 'trialing', [status])
 

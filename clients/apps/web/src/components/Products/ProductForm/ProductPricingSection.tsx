@@ -16,6 +16,7 @@ import { ErrorMessage } from '@hookform/error-message'
 import { CloseOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   Select,
@@ -618,6 +619,40 @@ export const ProductPricingSection = ({
               )
             }}
           />
+          {recurringInterval !== null && (
+            <FormField
+              control={control}
+              name="trial_days"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Free Trial Period (days)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        value={field.value || ''}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          field.onChange(
+                            value === '' ? null : parseInt(value, 10),
+                          )
+                        }}
+                        min="0"
+                        max="365"
+                        placeholder="0"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Optional free trial period for new subscriptions.
+                      Customers will be charged after the trial ends.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+          )}
           {prices.map((price, index) => (
             <ProductPriceItemWrapper
               prices={prices as schemas['ProductPrice'][]}

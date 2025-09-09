@@ -16,6 +16,7 @@ export type ProductFormType = Omit<
 > &
   ProductFullMediasMixin & {
     metadata: { key: string; value: string | number | boolean }[]
+    trial_days?: number | null
   }
 
 interface ProductFormProps {

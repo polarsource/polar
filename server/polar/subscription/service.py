@@ -34,6 +34,7 @@ from polar.exceptions import (
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
+from polar.invoice.generator import format_currency
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -1599,11 +1600,15 @@ class SubscriptionService:
     async def send_confirmation_email(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
+        purchase_details = self._build_purchase_details(subscription)
         return await self._send_customer_email(
             session,
             subscription,
             subject_template="Your {product.name} subscription",
             template_name="subscription_confirmation",
+            extra_context={
+                "purchase_details": purchase_details,
+            },
         )
 
     async def send_cycled_email(
@@ -1753,6 +1758,48 @@ class SubscriptionService:
             subject=subject,
             html_content=body,
         )
+
+    def _build_purchase_details(self, subscription: Subscription) -> dict[str, JSONProperty]:
+        base_amount = sum(price.amount for price in subscription.subscription_product_prices)
+
+        discount_data = None
+        discount_amount = 0
+        if subscription.discount:
+            discount_amount = subscription.discount.get_discount_amount(base_amount)
+            discount_data = {
+                "name": subscription.discount.name,
+                "code": subscription.discount.code,
+                "type": subscription.discount.type,
+            }
+            if subscription.discount.type == "fixed":
+                discount_data["amount"] = subscription.discount.amount
+                discount_data["currency"] = subscription.discount.currency
+            elif subscription.discount.type == "percentage":
+                discount_data["basis_points"] = subscription.discount.basis_points
+
+        final_amount = base_amount - discount_amount
+
+        currency = subscription.currency
+        formatted_base_amount = format_currency(base_amount, currency)
+        formatted_final_amount = format_currency(final_amount, currency)
+        formatted_discount_amount = format_currency(discount_amount, currency) if discount_amount > 0 else None
+
+        result: dict[str, JSONProperty] = {
+            "amount": base_amount,
+            "currency": currency,
+            "recurring_interval": subscription.recurring_interval,
+            "discounted_amount": final_amount,
+            "formatted_amount": formatted_base_amount,
+            "formatted_discounted_amount": formatted_final_amount,
+        }
+
+        if discount_data is not None:
+            result["discount"] = discount_data
+
+        if formatted_discount_amount is not None:
+            result["formatted_discount_amount"] = formatted_discount_amount
+
+        return result
 
     async def _get_outdated_grants(
         self,

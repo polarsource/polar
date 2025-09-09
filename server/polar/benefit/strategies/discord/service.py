@@ -143,7 +143,10 @@ class BenefitDiscordService(
 
         bound_logger.debug("Benefit revoked")
 
-        return {}
+        # Keep account_id in case we need to re-grant later
+        return {
+            "account_id": grant_properties.get("account_id"),
+        }
 
     async def requires_update(
         self, benefit: Benefit, previous_properties: BenefitDiscordProperties

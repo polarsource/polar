@@ -629,7 +629,7 @@ export const ProductPricingSection = ({
                     <FormLabel>Free Trial Period (days)</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
+                        type="text"
                         {...field}
                         value={field.value || ''}
                         onChange={(e) => {
@@ -638,9 +638,6 @@ export const ProductPricingSection = ({
                             value === '' ? null : parseInt(value, 10),
                           )
                         }}
-                        min="0"
-                        max="365"
-                        placeholder="0"
                       />
                     </FormControl>
                     <FormDescription>

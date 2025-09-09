@@ -27,12 +27,14 @@ import { CellContext } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { WebhookFilterState } from './WebhookFilter'
 
 interface DeliveriesTableProps {
   organization: schemas['Organization']
   endpoint: schemas['WebhookEndpoint']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
+  filters?: WebhookFilterState
 }
 
 type DeliveryRow = schemas['WebhookDelivery'] & {
@@ -44,6 +46,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   endpoint,
   pagination,
   sorting,
+  filters = {},
 }) => {
   const getSearchParams = (
     pagination: DataTablePaginationState,
@@ -91,9 +94,19 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
     )
   }
 
+  const filterParams = {
+    ...(filters.dateRange?.from && {
+      startDate: filters.dateRange.from.toISOString()
+    }),
+    ...(filters.dateRange?.to && {
+      endDate: filters.dateRange.to.toISOString()
+    }),
+  }
+
   const deliveriesHook = useListWebhooksDeliveries({
     webhookEndpointId: endpoint.id,
     ...getAPIParams(pagination, sorting),
+    ...filterParams,
   })
 
   const deliveries: DeliveryRow[] = deliveriesHook.data?.items || []

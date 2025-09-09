@@ -10,12 +10,8 @@ import Link from "next/link";
 import { InlineModal } from "../../Modal/InlineModal";
 import { useModal } from "../../Modal/useModal";
 import NewWebhookModal from "./NewWebhookModal";
-import { WebhookFilterState } from "./WebhookFilter";
 
-const WebhookSettings = (props: {
-	org: schemas["Organization"]
-	filters?: WebhookFilterState
-}) => {
+const WebhookSettings = (props: { org: schemas["Organization"] }) => {
 	const {
 		isShown: isNewWebhookModalShown,
 		show: showNewWebhookModal,
@@ -28,33 +24,11 @@ const WebhookSettings = (props: {
 		page: 1,
 	});
 
-	const filteredEndpoints = endpoints.data?.items?.filter((endpoint) => {
-		if (!props.filters?.dateRange) return true;
-
-		const createdAt = new Date(endpoint.created_at);
-		const { from, to } = props.filters.dateRange;
-
-		if (from && createdAt < from) return false;
-		if (to && createdAt > to) return false;
-
-		return true;
-	}) || [];
-
-	const hasFilters = props.filters?.dateRange?.from || props.filters?.dateRange?.to;
-	const hasWebhooks = endpoints.data?.items && endpoints.data.items.length > 0;
-
-	const getEmptyMessage = () => {
-		if (hasFilters && hasWebhooks && filteredEndpoints.length === 0) {
-			return "No webhooks found for the selected date range";
-		}
-		return `${props.org.name} doesn't have any webhooks yet`;
-	};
-
 	return (
 		<>
 			<ShadowListGroup>
-				{filteredEndpoints && filteredEndpoints.length > 0 ? (
-					filteredEndpoints.map((e) => {
+				{endpoints.data?.items && endpoints.data.items.length > 0 ? (
+					endpoints.data?.items.map((e) => {
 						return (
 							<ShadowListGroup.Item key={e.id}>
 								<Endpoint organization={props.org} endpoint={e} />
@@ -64,7 +38,7 @@ const WebhookSettings = (props: {
 				) : (
 					<ShadowListGroup.Item>
 						<p className="dark:text-polar-400 text-sm text-gray-500">
-							{getEmptyMessage()}
+							{props.org.name} doesn&apos;t have any webhooks yet
 						</p>
 					</ShadowListGroup.Item>
 				)}

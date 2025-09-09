@@ -1706,7 +1706,7 @@ class OrderService:
         order_repository = OrderRepository.from_session(session)
         paid_orders = await order_repository.get_all(
             order_repository.get_base_statement()
-            # .join(Customer, Order.customer_id == Customer.id)
+            .join(Customer, Order.customer_id == Customer.id)
             .where(
                 Customer.id == customer.id,
                 Order.deleted_at.is_(None),

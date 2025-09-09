@@ -5852,7 +5852,7 @@ export interface components {
          * BenefitSortProperty
          * @enum {string}
          */
-        BenefitSortProperty: "created_at" | "-created_at" | "description" | "-description";
+        BenefitSortProperty: "created_at" | "-created_at" | "description" | "-description" | "type" | "-type";
         /**
          * BenefitType
          * @enum {string}
@@ -26071,7 +26071,7 @@ export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeysCreate"]["type"]> = ["license_keys"];
 export const benefitMeterCreditCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitMeterCreditCreate"]["type"]> = ["meter_credit"];
 export const benefitRevokedEventNameValues: ReadonlyArray<components["schemas"]["BenefitRevokedEvent"]["name"]> = ["benefit.revoked"];
-export const benefitSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitSortProperty"]> = ["created_at", "-created_at", "description", "-description"];
+export const benefitSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitSortProperty"]> = ["created_at", "-created_at", "description", "-description", "type", "-type"];
 export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "discord", "github_repository", "downloadables", "license_keys", "meter_credit"];
 export const benefitUpdatedEventNameValues: ReadonlyArray<components["schemas"]["BenefitUpdatedEvent"]["name"]> = ["benefit.updated"];
 export const billingAddressFieldModeValues: ReadonlyArray<components["schemas"]["BillingAddressFieldMode"]> = ["required", "optional", "disabled"];

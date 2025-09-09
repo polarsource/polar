@@ -179,6 +179,7 @@ class BenefitGrant(RecordModel):
 
     def set_grant_failed(self, error: Exception) -> None:
         self.granted_at = None
+        self.revoked_at = None
         self.error = BenefitGrantError(
             message=str(error),
             type=error.__class__.__name__,

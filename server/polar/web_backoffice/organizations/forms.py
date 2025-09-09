@@ -3,6 +3,8 @@ from typing import Annotated, Literal
 from annotated_types import Ge
 from pydantic import Discriminator, Field, TypeAdapter
 
+from polar.organization.schemas import NameInput, SlugInput
+
 from .. import forms
 
 
@@ -48,8 +50,8 @@ OrganizationStatusFormAdapter: TypeAdapter[OrganizationStatusForm] = TypeAdapter
 
 
 class UpdateOrganizationForm(forms.BaseForm):
-    name: str
-    slug: str
+    name: NameInput
+    slug: SlugInput
 
 
 class UpdateOrganizationDetailsForm(forms.BaseForm):

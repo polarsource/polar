@@ -405,12 +405,10 @@ async def cancel(
 
     with modal("Cancel subscription", open=True):
         with CancelForm.render(
-            method="POST",
-            action=str(request.url_for("subscriptions:cancel", id=id)),
+            hx_post=str(request.url_for("subscriptions:cancel", id=id)),
+            hx_target="#modal",
             classes="flex flex-col gap-4",
             validation_error=validation_error,
-            hx_boost="true",
-            hx_target="#modal",
         ):
             with tag.div(classes="modal-action"):
                 with tag.form(method="dialog"):

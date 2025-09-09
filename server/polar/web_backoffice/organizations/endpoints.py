@@ -6,6 +6,7 @@ from typing import Annotated, Any
 from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
+from pydantic_core import PydanticCustomError
 from sqlalchemy import or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import classes, tag, text
@@ -345,6 +346,22 @@ async def update(
         data = await request.form()
         try:
             form = UpdateOrganizationForm.model_validate(data)
+            if form.slug != organization.slug:
+                existing_slug = await org_repo.get_by_slug(form.slug)
+                if existing_slug is not None:
+                    raise ValidationError.from_exception_data(
+                        title="SlugAlreadyExists",
+                        line_errors=[
+                            {
+                                "loc": ("slug",),
+                                "type": PydanticCustomError(
+                                    "SlugAlreadyExists",
+                                    "An organization with this slug already exists.",
+                                ),
+                                "input": form.slug,
+                            }
+                        ],
+                    )
             organization = await org_repo.update(
                 organization, update_dict=form.model_dump(exclude_none=True)
             )
@@ -357,9 +374,9 @@ async def update(
 
     with modal("Update Organization", open=True):
         with UpdateOrganizationForm.render(
-            {"name": organization.name, "slug": organization.slug},
-            method="POST",
-            action=str(request.url_for("organizations:update", id=id)),
+            organization,
+            hx_post=str(request.url_for("organizations:update", id=id)),
+            hx_target="#modal",
             classes="flex flex-col gap-4",
             validation_error=validation_error,
         ):

@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
@@ -1716,10 +1716,16 @@ class OrderService:
         payment_repository = PaymentRepository.from_session(session)
         payments = await payment_repository.get_all(
             payment_repository.get_base_statement()
-            .join(Order, Payment.order_id == Order.id)
+            .join(Order, Payment.order_id == Order.id, isouter=True)
+            .join(Checkout, Payment.checkout_id == Checkout.id, isouter=True)
             .where(
-                Order.customer_id == customer.id,
-                Order.deleted_at.is_(None),
+                or_(
+                    and_(Order.customer_id == customer.id, Order.deleted_at.is_(None)),
+                    and_(
+                        Checkout.customer_id == customer.id,
+                        Checkout.deleted_at.is_(None),
+                    ),
+                ),
                 Payment.status == PaymentStatus.succeeded,
             )
         )

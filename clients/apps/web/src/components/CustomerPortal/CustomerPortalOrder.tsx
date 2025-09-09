@@ -138,6 +138,28 @@ const CustomerPortalOrder = ({
               label="Total"
               value={<span>{formatCurrencyAndAmount(order.total_amount)}</span>}
             />
+            {order.from_balance_amount > 0 && (
+              <DetailRow
+                label="From customer balance"
+                value={
+                  <span>
+                    {formatCurrencyAndAmount(-order.from_balance_amount)}
+                  </span>
+                }
+              />
+            )}
+            {order.from_balance_amount > 0 && (
+              <DetailRow
+                label="To be paid"
+                value={
+                  <span>
+                    {formatCurrencyAndAmount(
+                      order.total_amount - order.from_balance_amount,
+                    )}
+                  </span>
+                }
+              />
+            )}
 
             {isPartiallyOrFullyRefunded && (
               <DetailRow

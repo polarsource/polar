@@ -56,7 +56,7 @@ export default function CareersPage() {
 		<div className="mx-auto flex max-w-7xl flex-col gap-16 md:gap-24">
 			<div className="flex items-center flex-col gap-y-6 h-96 justify-center lg:dark:bg-polar-900 lg:bg-white text-center text-balance">
 				<h1 className="text-3xl md:text-5xl max-w-2xl text-center !leading-tight w-full">
-					Help us making software simple to monetize
+					Help us make software simple to monetize
 				</h1>
 				<p>
 					Craft beautiful & world-class experiences for software entrepreneurs

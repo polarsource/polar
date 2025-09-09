@@ -6870,6 +6870,7 @@ export interface components {
             /** Url */
             readonly url: string;
         };
+        CheckoutLinkCreate: components["schemas"]["CheckoutLinkCreateProductPrice"] | components["schemas"]["CheckoutLinkCreateProduct"] | components["schemas"]["CheckoutLinkCreateProducts"];
         /**
          * CheckoutLinkCreateProduct
          * @description Schema to create a new checkout link from a a single product.
@@ -22276,7 +22277,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CheckoutLinkCreateProductPrice"] | components["schemas"]["CheckoutLinkCreateProduct"] | components["schemas"]["CheckoutLinkCreateProducts"];
+                "application/json": components["schemas"]["CheckoutLinkCreate"];
             };
         };
         responses: {

@@ -181,19 +181,16 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
       accessorKey: 'webhook_event',
       enableSorting: false,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Data" />
+        <DataTableColumnHeader column={column} title="Type" />
       ),
 
       cell: (props) => {
         const { row } = props
         const { original: delivery } = row
-        const payload = JSON.parse(delivery.webhook_event.payload)
-
         if (delivery.isSubRow) {
           return null
         }
-
-        return <pre>{payload['type']}</pre>
+        return <pre>{delivery.webhook_event.type}</pre>
       },
     },
     {
@@ -265,7 +262,10 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
   const { row } = props
 
   const { original: delivery } = row
-  const payload = JSON.parse(delivery.webhook_event.payload)
+  const isArchived = delivery.webhook_event.is_archived
+  const payload = delivery.webhook_event.payload
+    ? JSON.stringify(JSON.parse(delivery.webhook_event.payload), undefined, 2)
+    : null
 
   const redeliver = useRedeliverWebhookEvent()
 
@@ -300,6 +300,9 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
         <div>Event ID</div>
         <code className="text-xs">{delivery.webhook_event.id}</code>
 
+        <div>Event Timestamp</div>
+        <code className="text-xs">{delivery.webhook_event.created_at}</code>
+
         <div>Delivery ID</div>
         <code className="text-xs">{delivery.id}</code>
 
@@ -307,18 +310,22 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
         <code className="text-xs">{delivery.created_at}</code>
       </div>
       <div>
-        <Button
-          variant={'default'}
-          onClick={handleRedeliver}
-          loading={redeliver.isPending}
-        >
-          Redeliver
-        </Button>
+        {!isArchived && (
+          <Button
+            variant={'default'}
+            onClick={handleRedeliver}
+            loading={redeliver.isPending}
+          >
+            Redeliver
+          </Button>
+        )}
       </div>
       <hr />
-      <pre className="whitespace-pre-wrap text-xs">
-        {JSON.stringify(payload, undefined, 2)}
-      </pre>
+      {payload ? (
+        <pre className="whitespace-pre-wrap text-xs">{payload}</pre>
+      ) : (
+        <div className="text-sm italic text-gray-500">Archived event</div>
+      )}
     </div>
   )
 }

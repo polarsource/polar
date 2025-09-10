@@ -26,7 +26,7 @@ class WebhookEvent(RecordModel):
     last_http_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
     succeeded: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     type: Mapped[WebhookEventType] = mapped_column(
-        StringEnum(WebhookEventType), nullable=True
+        StringEnum(WebhookEventType), nullable=False, index=True
     )
     payload: Mapped[str | None] = mapped_column(String, nullable=True)
 

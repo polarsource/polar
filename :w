@@ -32,12 +32,12 @@ export default function Layout({ children }: PropsWithChildren) {
 		<div className="dark:bg-polar-950 relative flex flex-col bg-gray-50 md:w-full md:flex-1 md:items-center">
 			<div className="flex flex-col gap-y-2 md:w-full">
 				<LandingPageDesktopNavigation />
-				<SidebarProvider className="flex flex-col items-start md:hidden absolute inset-0">
+				<SidebarProvider className="md:hidden">
 					<LandingPageTopbar />
 					<LandingPageMobileNavigation />
 				</SidebarProvider>
 
-				<div className="dark:bg-polar-950 relative flex flex-col px-4 md:w-full md:px-0 pt-32 md:pt-0">
+				<div className="dark:bg-polar-950 relative flex flex-col px-4 md:w-full md:px-0">
 					{children}
 				</div>
 				<LandingPageFooter />
@@ -88,7 +88,7 @@ interface NavigationItem {
 
 const mobileNavigationItems: NavigationItem[] = [
 	{
-		title: "Home",
+		title: "Features",
 		href: "/",
 		isActive: (pathname) => pathname === "/",
 	},

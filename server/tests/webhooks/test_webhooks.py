@@ -112,7 +112,11 @@ async def test_webhook_delivery(
     )
     await save_fixture(endpoint)
 
-    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        payload='{"foo":"bar"}',
+    )
     await save_fixture(event)
 
     await webhook_event_send(webhook_event_id=event.id)
@@ -136,7 +140,11 @@ async def test_webhook_delivery_500(
     )
     await save_fixture(endpoint)
 
-    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        payload='{"foo":"bar"}',
+    )
     await save_fixture(event)
 
     # failures
@@ -169,7 +177,11 @@ async def test_webhook_delivery_http_error(
     )
     await save_fixture(endpoint)
 
-    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        payload='{"foo":"bar"}',
+    )
     await save_fixture(event)
 
     # failures
@@ -203,7 +215,11 @@ async def test_webhook_standard_webhooks_compatible(
     )
     await save_fixture(endpoint)
 
-    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        payload='{"foo":"bar"}',
+    )
     await save_fixture(event)
 
     await _webhook_event_send(session=session, webhook_event_id=event.id)

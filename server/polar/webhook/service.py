@@ -526,17 +526,40 @@ class WebhookService:
         return events
 
     async def archive_events(
-        self, session: AsyncSession, older_than: datetime.datetime
+        self,
+        session: AsyncSession,
+        older_than: datetime.datetime,
+        batch_size: int = 5000,
     ) -> None:
-        statement = (
-            update(WebhookEvent)
-            .where(
-                WebhookEvent.created_at < older_than,
-                WebhookEvent.is_archived.is_(False),
-            )
-            .values(payload=None)
+        log.debug(
+            "Archive webhook events", older_than=older_than, batch_size=batch_size
         )
-        await session.execute(statement)
+
+        while True:
+            batch_subquery = (
+                select(WebhookEvent.id)
+                .where(
+                    WebhookEvent.created_at < older_than,
+                    WebhookEvent.is_archived.is_(False),
+                    WebhookEvent.payload.is_not(None),
+                )
+                .order_by(WebhookEvent.created_at.asc())
+                .limit(batch_size)
+            )
+            statement = (
+                update(WebhookEvent)
+                .where(WebhookEvent.id.in_(batch_subquery))
+                .values(payload=None)
+            )
+            result = await session.execute(statement)
+            updated_count = result.rowcount
+
+            await session.commit()
+
+            log.debug("Archived webhook events batch", updated_count=updated_count)
+
+            if updated_count < batch_size:
+                break
 
     def _get_readable_endpoints_statement(
         self, auth_subject: AuthSubject[User | Organization]

@@ -107,8 +107,7 @@ async def webhook_event_success(webhook_event_id: UUID) -> None:
     priority=TaskPriority.LOW,
 )
 async def webhook_event_archive() -> None:
-    return
-    # async with AsyncSessionMaker() as session:
-    #     return await webhook_service.archive_events(
-    #         session, older_than=utc_now() - settings.WEBHOOK_EVENT_RETENTION_PERIOD
-    #     )
+    async with AsyncSessionMaker() as session:
+        return await webhook_service.archive_events(
+            session, older_than=utc_now() - settings.WEBHOOK_EVENT_RETENTION_PERIOD
+        )

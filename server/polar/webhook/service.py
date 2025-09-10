@@ -540,7 +540,6 @@ class WebhookService:
                 select(WebhookEvent.id)
                 .where(
                     WebhookEvent.created_at < older_than,
-                    WebhookEvent.is_archived.is_(False),
                     WebhookEvent.payload.is_not(None),
                 )
                 .order_by(WebhookEvent.created_at.asc())

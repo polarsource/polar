@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import Boolean, ColumnElement, ForeignKey, Integer, String, Uuid
+from sqlalchemy import Boolean, ColumnElement, ForeignKey, Index, Integer, String, Uuid
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -11,6 +11,13 @@ from polar.models.webhook_endpoint import WebhookEndpoint, WebhookEventType
 
 class WebhookEvent(RecordModel):
     __tablename__ = "webhook_events"
+    __table_args__ = (
+        Index(
+            "ix_webhook_events_created_at_non_archived",
+            "created_at",
+            postgresql_where="payload IS NOT NULL",
+        ),
+    )
 
     webhook_endpoint_id: Mapped[UUID] = mapped_column(
         Uuid,

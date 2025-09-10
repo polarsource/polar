@@ -48,6 +48,9 @@ class Product(MetadataMixin, RecordModel):
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    purchase_email_note: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
+    )
     is_tax_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )

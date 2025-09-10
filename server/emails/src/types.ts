@@ -12,4 +12,5 @@ export interface BenefitProps {
 export interface ProductProps {
   name: string
   benefits: BenefitProps[]
+  purchase_email_note: string | null
 }

@@ -207,6 +207,11 @@ class ProductCreate(MetadataInputMixin, Schema):
 
     name: ProductName
     description: ProductDescription = None
+    purchase_email_note: str | None = Field(
+        default=None,
+        max_length=500,
+        description="Custom note shown in purchase confirmation emails. Maximum 500 characters.",
+    )
     recurring_interval: SubscriptionRecurringInterval | None = Field(
         description=(
             "The recurring interval of the product. "
@@ -262,6 +267,11 @@ class ProductUpdate(MetadataInputMixin, Schema):
 
     name: ProductName | None = None
     description: ProductDescription = None
+    purchase_email_thank_you_note: str | None = Field(
+        default=None,
+        max_length=500,
+        description="Custom thank you note shown in purchase confirmation emails. Maximum 500 characters.",
+    )
     recurring_interval: SubscriptionRecurringInterval | None = Field(
         default=None,
         description=(

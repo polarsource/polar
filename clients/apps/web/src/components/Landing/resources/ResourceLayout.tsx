@@ -2,15 +2,18 @@
 
 import { ArrowDownwardOutlined } from "@mui/icons-material";
 import { PropsWithChildren, useCallback } from "react";
+import { twMerge } from "tailwind-merge";
 
 export const ResourceLayout = ({
 	title,
 	children,
 	toc,
+	decoration = true,
 }: PropsWithChildren<{
 	title: string;
+	decoration?: boolean;
 	children: React.ReactNode;
-	toc: { id: string; title: string }[];
+	toc?: { id: string; title: string }[];
 }>) => {
 	const scrollToSection = useCallback((id: string) => {
 		const section = document.getElementById(id);
@@ -28,27 +31,37 @@ export const ResourceLayout = ({
 					<div className="dark:md:bg-polar-900 flex flex-col gap-y-8 rounded-lg border-gray-200 shadow-sm md:gap-y-12 md:border md:bg-white md:p-24 md:px-16 dark:border-gray-800">
 						{/* Top Section */}
 						<div className="flex flex-col">
-							<div className="flex flex-col gap-y-8 border-t border-dashed border-gray-200 pt-4 dark:border-gray-700">
-								<p className="dark:text-polar-500 font-mono text-sm uppercase tracking-widest text-gray-500">
-									Resources
-								</p>
+							<div
+								className={twMerge(
+									"flex flex-col gap-y-8 ",
+									decoration &&
+										"border-t border-dashed border-gray-200 pt-4 dark:border-gray-700",
+								)}
+							>
+								{decoration && (
+									<p className="dark:text-polar-500 font-mono text-sm uppercase tracking-widest text-gray-500">
+										Resources
+									</p>
+								)}
 								<h1 className="text-balance text-5xl !leading-tight md:text-6xl">
 									{title}
 								</h1>
 							</div>
 						</div>
-						<div className="divide-y divide-gray-200 dark:divide-gray-700">
-							{toc.map((item) => (
-								<button
-									key={item.id}
-									onClick={() => scrollToSection(item.id)}
-									className="dark:hover:bg-polar-800 flex w-full cursor-pointer items-center gap-3 p-3 transition-colors duration-200 hover:bg-gray-100"
-								>
-									<ArrowDownwardOutlined fontSize="inherit" />
-									<span>{item.title}</span>
-								</button>
-							))}
-						</div>
+						{toc && (
+							<div className="divide-y divide-gray-200 dark:divide-gray-700">
+								{toc.map((item) => (
+									<button
+										key={item.id}
+										onClick={() => scrollToSection(item.id)}
+										className="dark:hover:bg-polar-800 flex w-full cursor-pointer items-center gap-3 p-3 transition-colors duration-200 hover:bg-gray-100"
+									>
+										<ArrowDownwardOutlined fontSize="inherit" />
+										<span>{item.title}</span>
+									</button>
+								))}
+							</div>
+						)}
 						<div className="flex flex-col gap-y-12">{children}</div>
 					</div>
 				</div>

@@ -226,6 +226,7 @@ class WebhookService:
         if event.webhook_endpoint.format != WebhookFormat.raw:
             return
 
+        assert event.payload is not None
         payload = WebhookPayloadTypeAdapter.validate_json(event.payload)
 
         if payload.type == WebhookEventType.checkout_updated:
@@ -507,7 +508,7 @@ class WebhookService:
             try:
                 payload_data = payload.get_payload(e.format, target)
                 event_type = WebhookEvent(
-                    webhook_endpoint_id=e.id, payload=payload_data
+                    webhook_endpoint_id=e.id, type=event, payload=payload_data
                 )
                 session.add(event_type)
                 events.append(event_type)

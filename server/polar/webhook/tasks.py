@@ -35,6 +35,9 @@ async def _webhook_event_send(session: AsyncSession, *, webhook_event_id: UUID) 
     if not event:
         raise Exception(f"webhook event not found id={webhook_event_id}")
 
+    if event.payload is None:
+        return
+
     ts = utc_now()
 
     b64secret = base64.b64encode(event.webhook_endpoint.secret.encode("utf-8")).decode(

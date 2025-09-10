@@ -15,7 +15,7 @@ from polar.models import (
     WebhookEndpoint,
     WebhookEvent,
 )
-from polar.models.webhook_endpoint import WebhookFormat
+from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.postgres import AsyncSession
 from polar.webhook.schemas import HttpsUrl, WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import EventDoesNotExist, EventNotSuccessul
@@ -168,6 +168,7 @@ class TestOnEventSuccess:
         event = WebhookEvent(
             webhook_endpoint=webhook_endpoint_organization,
             succeeded=False,
+            type=WebhookEventType.checkout_updated,
             payload="{}",
         )
         await save_fixture(event)
@@ -191,6 +192,7 @@ class TestOnEventSuccess:
             webhook_endpoint=webhook_endpoint_organization,
             succeeded=True,
             last_http_code=200,
+            type=WebhookEventType.checkout_updated,
             payload=WebhookCheckoutUpdatedPayload.model_validate(
                 {"type": "checkout.updated", "data": checkout}
             ).model_dump_json(),

@@ -14,8 +14,9 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   product,
   price,
 }) => {
-  const showTrial = product.trialDays && product.trialDays > 0 && product.isRecurring
-  
+  const showTrial =
+    product.trialDays && product.trialDays > 0 && product.isRecurring
+
   if (price.amountType === 'fixed') {
     return (
       <div className="flex flex-col">
@@ -28,9 +29,10 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
               : product.recurringInterval
           }
         />
-        {showTrial && (
+        {false && showTrial && (
           <span className="text-sm text-gray-500">
-            after {product.trialDays} day{product.trialDays > 1 ? 's' : ''} free trial
+            after {product.trialDays} day{product.trialDays > 1 ? 's' : ''} free
+            trial
           </span>
         )}
       </div>
@@ -41,7 +43,8 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
         <div className="text-[min(1em,24px)]">Pay what you want</div>
         {showTrial && (
           <span className="text-sm text-gray-500">
-            after {product.trialDays} day{product.trialDays > 1 ? 's' : ''} free trial
+            after {product.trialDays} day{product.trialDays > 1 ? 's' : ''} free
+            trial
           </span>
         )}
       </div>
@@ -58,7 +61,8 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
         </div>
         {showTrial && (
           <span className="text-sm text-gray-500">
-            after {product.trialDays} day{product.trialDays > 1 ? 's' : ''} free trial
+            after {product.trialDays} day{product.trialDays > 1 ? 's' : ''} free
+            trial
           </span>
         )}
       </div>

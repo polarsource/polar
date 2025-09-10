@@ -1,5 +1,6 @@
 'use client'
 
+import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct.js'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
@@ -56,6 +57,7 @@ const CheckoutProductSwitcher = ({
   }
 
   const getDescription = (
+    product: CheckoutProduct,
     price: ProductPrice | LegacyRecurringProductPrice,
   ) => {
     let recurringLabel = ''
@@ -67,6 +69,10 @@ const CheckoutProductSwitcher = ({
       recurringLabel = 'monthly'
     } else if (price.recurringInterval === 'year') {
       recurringLabel = 'yearly'
+    }
+
+    if (product.trialDays) {
+      return `${product.trialDays} day trial — then billed ${recurringLabel}`
     }
 
     if (price.recurringInterval) {
@@ -109,7 +115,7 @@ const CheckoutProductSwitcher = ({
                 </div>
                 <div className="flex grow flex-row items-center justify-between p-4 text-sm">
                   <p className="dark:text-polar-500 text-gray-500">
-                    {getDescription(price)}
+                    {getDescription(product, price)}
                   </p>
                 </div>
               </label>
@@ -142,7 +148,7 @@ const CheckoutProductSwitcher = ({
             </div>
             <div className="flex grow flex-row items-center justify-between p-4 text-sm">
               <p className="dark:text-polar-500 text-gray-500">
-                {getDescription(product.prices[0])}
+                {getDescription(product, product.prices[0])}
               </p>
             </div>
           </label>

@@ -5,6 +5,7 @@ from uuid import UUID
 
 import httpx
 import structlog
+from apscheduler.triggers.cron import CronTrigger
 from dramatiq import Retry
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
@@ -98,3 +99,15 @@ async def _webhook_event_send(session: AsyncSession, *, webhook_event_id: UUID) 
 async def webhook_event_success(webhook_event_id: UUID) -> None:
     async with AsyncSessionMaker() as session:
         return await webhook_service.on_event_success(session, webhook_event_id)
+
+
+@actor(
+    actor_name="webhook_event.archive",
+    cron_trigger=CronTrigger(hour=0, minute=0),
+    priority=TaskPriority.LOW,
+)
+async def webhook_event_archive() -> None:
+    async with AsyncSessionMaker() as session:
+        return await webhook_service.archive_events(
+            session, older_than=utc_now() - settings.WEBHOOK_EVENT_RETENTION_PERIOD
+        )

@@ -1,9 +1,10 @@
+import datetime
 from collections.abc import Sequence
 from typing import Literal, overload
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, desc, select, text
+from sqlalchemy import Select, desc, select, text, update
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -196,6 +197,7 @@ class WebhookService:
             .where(
                 WebhookEvent.id == id,
                 WebhookEvent.deleted_at.is_(None),
+                WebhookEvent.is_archived.is_(False),
                 WebhookEndpoint.id.in_(
                     readable_endpoints_statement.with_only_columns(WebhookEndpoint.id)
                 ),
@@ -522,6 +524,19 @@ class WebhookService:
                 continue
 
         return events
+
+    async def archive_events(
+        self, session: AsyncSession, older_than: datetime.datetime
+    ) -> None:
+        statement = (
+            update(WebhookEvent)
+            .where(
+                WebhookEvent.created_at < older_than,
+                WebhookEvent.is_archived.is_(False),
+            )
+            .values(payload=None)
+        )
+        await session.execute(statement)
 
     def _get_readable_endpoints_statement(
         self, auth_subject: AuthSubject[User | Organization]

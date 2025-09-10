@@ -88,7 +88,7 @@ interface NavigationItem {
 
 const mobileNavigationItems: NavigationItem[] = [
 	{
-		title: "Home",
+		title: "Overview",
 		href: "/",
 		isActive: (pathname) => pathname === "/",
 	},

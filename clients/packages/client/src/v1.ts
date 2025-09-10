@@ -17165,7 +17165,14 @@ export interface components {
              * Payload
              * @description The payload of the webhook event.
              */
-            payload: string;
+            payload: string | null;
+            /** @description The type of the webhook event. */
+            type: components["schemas"]["WebhookEventType"];
+            /**
+             * Is Archived
+             * @description Whether this event is archived. Archived events can't be redelivered, and the payload is not accessible anymore.
+             */
+            is_archived: boolean;
         };
         /**
          * WebhookEventType

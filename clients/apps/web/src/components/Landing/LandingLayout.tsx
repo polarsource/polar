@@ -98,12 +98,8 @@ const mobileNavigationItems: NavigationItem[] = [
 		target: "_blank",
 	},
 	{
-		title: "Why Polar",
-		href: "/resources/why",
-	},
-	{
-		title: "Pricing",
-		href: "/resources/pricing",
+		title: "Resources",
+		href: "/resources",
 	},
 	{
 		title: "Company",

@@ -6,7 +6,6 @@ from typing import Any, Literal, NotRequired, TypedDict
 
 import dramatiq
 import typer
-from sqlalchemy.ext.asyncio import AsyncSession
 
 import polar.tasks  # noqa: F401
 from polar.auth.models import AuthSubject
@@ -18,12 +17,11 @@ from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesC
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
 from polar.checkout_link.schemas import CheckoutLinkCreateProducts
 from polar.checkout_link.service import checkout_link as checkout_link_service
-from polar.config import settings
 from polar.customer.schemas.customer import CustomerCreate
 from polar.customer.service import customer as customer_service
 from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.event.repository import EventRepository
-from polar.kit.db.postgres import create_async_engine
+from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
@@ -37,6 +35,7 @@ from polar.models.product_price import ProductPriceAmountType
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
+from polar.postgres import AsyncSession, create_async_engine
 from polar.product.schemas import (
     ProductCreate,
     ProductPriceFixedCreate,
@@ -734,14 +733,10 @@ def seeds_load() -> None:
     async def run() -> None:
         redis = create_redis("app")
         async with JobQueueManager.open(dramatiq.get_broker(), redis):
-            engine = create_async_engine(
-                dsn=str(settings.get_postgres_dsn("asyncpg")),
-                pool_size=5,
-                pool_recycle=3600,
-            )
-            async with engine.begin() as conn:
-                async with AsyncSession(bind=conn, expire_on_commit=False) as session:
-                    await create_seed_data(session, redis)
+            engine = create_async_engine("script")
+            sessionmaker = create_async_sessionmaker(engine)
+            async with sessionmaker() as session:
+                await create_seed_data(session, redis)
 
     asyncio.run(run())
 

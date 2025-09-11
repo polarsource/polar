@@ -1,4 +1,5 @@
 import asyncio
+import atexit
 import logging.config
 import re
 import sys
@@ -10,6 +11,7 @@ from typing import Any, Never
 
 import dramatiq
 import structlog
+from sqlalchemy.orm import sessionmaker
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession, create_async_engine
@@ -219,18 +221,26 @@ def shell_asyncio(
     options: None = None,
 ) -> None:
     # FROM: https://github.com/python/cpython/blob/v3.12.0/Lib/asyncio/__main__.py
+    import asyncio.__main__ as aio_main
     from asyncio.__main__ import AsyncIOInteractiveConsole, REPLThread
 
     imported_objects = {
         **namespace,
         "session": session,
         **get_namespace(),
-    }  # **options)
-
+        "asyncio": asyncio,
+        "__name__": "__main__",
+        "__package__": None,
+        "__builtins__": __builtins__,
+    }
     console = AsyncIOInteractiveConsole(imported_objects, loop)
 
-    repl_future = None
-    keyboard_interrupted = False
+    # Wire globals in asyncio.__main__ that REPLThread expects
+    aio_main.console = console
+    aio_main.loop = loop
+    aio_main.return_code = 0
+    aio_main.repl_future = None
+    aio_main.keyboard_interrupted = False
 
     readline: object | None
     try:
@@ -263,15 +273,13 @@ def shell_asyncio(
         try:
             loop.run_forever()
         except KeyboardInterrupt:
-            keyboard_interrupted = True
-            if repl_future and not repl_future.done():
-                repl_future.cancel()
+            aio_main.keyboard_interrupted = True
+            if aio_main.repl_future and not aio_main.repl_future.done():
+                aio_main.repl_future.cancel()
             repl_thread.interrupt()
             continue
         else:
             break
-
-    console.write("exiting asyncio REPL...\n")
 
 
 def shell_python(
@@ -345,19 +353,20 @@ def shell_python(
 SHELLS = [
     shell_ipython,
     shell_bpython,
-    # shell_asyncio,
-    shell_python,
+    shell_asyncio,
+    # shell_python,
 ]
 
 
-async def start_shell() -> None:
+def start_shell() -> None:
     print("""
 customer_repository = CustomerRepository.from_session(session)
 stmt = customer_repository.get_base_statement().where(Customer.email == 'test+customer045@polar.sh')
 await customer_repository.get_one_or_none(stmt)
 """)
 
-    loop = asyncio.get_running_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
     def iawait(expr: Coroutine[Any, Any, Never]) -> Any:
         return asyncio.run_coroutine_threadsafe(expr, loop).result()
@@ -371,27 +380,35 @@ await customer_repository.get_one_or_none(stmt)
     }
 
     redis = create_redis("app")
-    async with JobQueueManager.open(dramatiq.get_broker(), redis):
-        engine = create_async_engine(
-            dsn=str(settings.get_postgres_dsn("asyncpg")),
-            pool_size=5,
-            pool_recycle=3600,
-        )
-        async with engine.begin() as conn:
-            async with AsyncSession(bind=conn, expire_on_commit=False) as session:
-                # loop.stop()
-                for shell in SHELLS:
-                    try:
-                        return shell(
-                            loop=loop, namespace={"session": session, **namespace}
-                        )
-                    except ImportError:
-                        pass
-                raise ValueError(f"Couldn't import {shell} interface.")
+    JobQueueManager.open(dramatiq.get_broker(), redis)
+    engine = create_async_engine(
+        dsn=str(settings.get_postgres_dsn("asyncpg")),
+        pool_size=5,
+        pool_recycle=3600,
+    )
+    # engine.begin()
+    _Session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)  # type: ignore
+    session = _Session()
+
+    def _cleanup() -> None:
+        try:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(session.close())
+            loop.run_until_complete(engine.dispose())
+        except Exception as e:
+            print(f"cleanup failed: {e!r}")
+
+    atexit.register(_cleanup)
+
+    for shell in SHELLS:
+        try:
+            return shell(
+                loop=loop, session=session, namespace={**namespace, "session": session}
+            )
+        except ImportError:
+            pass
+    raise ValueError(f"Couldn't import {shell} interface.")
 
 
 if __name__ == "__main__":
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    loop.run_until_complete(start_shell())
+    start_shell()

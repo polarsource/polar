@@ -109,3 +109,8 @@ jobs:
         run: |
           uv sync --dev
           uv run task generate_dev_jwks
+
+      - name: 📚 Setup documentation
+        working-directory: ./docs
+        run: |
+          pnpm install --frozen-lockfile

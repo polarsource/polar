@@ -15,6 +15,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
+from polar.exceptions import PolarRequestValidationError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
@@ -38,6 +39,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
+from polar.models.custom_field import CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountFixed, DiscountType
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.organization import Organization
@@ -45,6 +47,7 @@ from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
+from polar.order.schemas import OrderUpdate
 from polar.order.service import (
     CardPaymentFailed,
     MissingCheckoutCustomer,
@@ -76,6 +79,7 @@ from tests.fixtures.random_objects import (
     create_billing_entry,
     create_canceled_subscription,
     create_checkout,
+    create_custom_field,
     create_customer,
     create_discount,
     create_event,
@@ -3119,3 +3123,107 @@ class TestProcessRetryPayment:
             await order_service.process_retry_payment(
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
+
+
+@pytest_asyncio.fixture
+async def product_custom_fields(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    text_field = await create_custom_field(
+        save_fixture, type=CustomFieldType.text, slug="text", organization=organization
+    )
+    select_field = await create_custom_field(
+        save_fixture,
+        type=CustomFieldType.select,
+        slug="select",
+        organization=organization,
+        properties={
+            "options": [{"value": "a", "label": "A"}, {"value": "b", "label": "B"}],
+        },
+    )
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        attached_custom_fields=[(text_field, False), (select_field, True)],
+    )
+
+
+@pytest.mark.asyncio
+class TestUpdateOrder:
+    async def test_update_custom_field_data(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_custom_fields: Product,
+        customer: Customer,
+    ) -> None:
+        """Test updating custom field data for an order."""
+        order = await create_order(
+            save_fixture,
+            product=product_custom_fields,
+            customer=customer,
+            custom_field_data={"text": "original", "select": "a"},
+        )
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(custom_field_data={"text": "updated", "select": "b"}),
+        )
+
+        assert updated_order.custom_field_data == {"text": "updated", "select": "b"}
+
+    async def test_update_billing_name(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test updating billing name for an order."""
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="Original Name",
+        )
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(billing_name="Updated Name"),
+        )
+
+        assert updated_order.billing_name == "Updated Name"
+
+    async def test_update_with_invoice_generated(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that billing fields cannot be updated after invoice is generated."""
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="Original Name",
+        )
+
+        # Set invoice_path after creation
+        order.invoice_path = "/path/to/invoice.pdf"  # Invoice already generated
+        await save_fixture(order)
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await order_service.update(
+                session,
+                order,
+                OrderUpdate(billing_name="Updated Name"),
+            )
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "billing_name")
+        assert "cannot be updated after the invoice is generated" in errors[0]["msg"]

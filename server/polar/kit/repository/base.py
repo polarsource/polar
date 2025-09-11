@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 
@@ -56,7 +56,7 @@ class RepositoryProtocol[M](Protocol):
 class RepositoryBase[M]:
     model: type[M]
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession | AsyncReadSession) -> None:
         self.session = session
 
     async def get_one_or_none(self, statement: Select[tuple[M]]) -> M | None:
@@ -127,7 +127,7 @@ class RepositoryBase[M]:
         return result.scalar_one()
 
     @classmethod
-    def from_session(cls, session: AsyncSession) -> Self:
+    def from_session(cls, session: AsyncSession | AsyncReadSession) -> Self:
         return cls(session)
 
 

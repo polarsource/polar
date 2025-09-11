@@ -7,12 +7,13 @@ import pytest_asyncio
 from pydantic_core import Url
 from pytest_mock import MockerFixture
 from sqlalchemy import Integer, String, Uuid
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from polar.config import settings
-from polar.kit.db.postgres import AsyncSession, create_async_engine
+from polar.kit.db.postgres import create_async_engine
 from polar.kit.utils import generate_uuid
 from polar.models import Model
 

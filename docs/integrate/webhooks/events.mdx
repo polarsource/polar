@@ -125,13 +125,13 @@ In order to properly implement logic for handling subscriptions, you should look
   horizontal
 ></Card>
 
-#### Subscription Cancellation Sequences
+#### Cancellation Sequences
 
-Understanding the sequence of webhook events during subscription cancellation is crucial for proper integration. The events triggered depend on whether the cancellation is immediate or scheduled for the end of the billing period.
+When a subscription is canceled, the events triggered depend on whether the cancellation is immediate or scheduled for the end of the billing period.
 
-##### End-of-Period Cancellation (Default)
+**End-of-Period Cancellation (default)**
 
-When a subscription is **cancelled** (by customer action from the portal or merchant action from their dashboard), the following events are sent immediately:
+When a subscription is **canceled** (by customer action from the portal or by the merchant from the dashboard/API), the following events are sent immediately:
 
 1. `subscription.updated`
 2. `subscription.canceled`
@@ -140,28 +140,20 @@ Both events contain the same subscription data. The subscription will still have
 
 When the end of the current billing period arrives, the subscription is definitively revoked: billing cycles stop and benefits are revoked. The following events are then sent:
 
-3. `subscription.updated`  
+3. `subscription.updated`
 4. `subscription.revoked`
 
 Both events contain the same subscription data. The subscription will have the `canceled` status.
 
-##### Immediate Revocation
+**Immediate Revocation**
 
-When a merchant cancels a subscription with **immediate revocation**, all events are sent at once:
+When a merchant cancels a subscription with **immediate revocation**, those events are sent at once:
 
 1. `subscription.updated`
 2. `subscription.canceled`
 3. `subscription.revoked`
 
 All three events contain the same subscription data. The subscription will have the `canceled` status immediately.
-
-<Note>
-**Timing Considerations:**
-- All webhook events for a single cancellation action are sent in rapid succession
-- Each event contains identical subscription data for that moment in time
-- The `subscription.updated` event serves as a catch-all notification that should be used as your primary integration point
-- Always check the `cancel_at_period_end` flag and subscription `status` to determine the current state
-</Note>
 
 ### Order
 

@@ -354,7 +354,7 @@ SHELLS = [
     shell_ipython,
     shell_bpython,
     shell_asyncio,
-    # shell_python,
+    shell_python,
 ]
 
 
@@ -368,11 +368,11 @@ await customer_repository.get_one_or_none(stmt)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    def iawait(expr: Coroutine[Any, Any, Never]) -> Any:
-        return asyncio.run_coroutine_threadsafe(expr, loop).result()
+    # def iawait(expr: Coroutine[Any, Any, Never]) -> Any:
+    #     return asyncio.run_coroutine_threadsafe(expr, loop).result()
 
-    # def iawait(expr):
-    #     return loop.run_until_complete(expr)
+    def iawait(expr: Coroutine[Any, Any, Never]) -> Any:
+        return loop.run_until_complete(expr)
 
     namespace = {
         "loop": loop,

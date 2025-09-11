@@ -35,7 +35,7 @@ from polar.models import (
     SubscriptionProductPrice,
 )
 from polar.organization.resolver import get_payload_organization
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.subscription.repository import SubscriptionProductPriceRepository
 from polar.worker import enqueue_job
 
@@ -50,7 +50,7 @@ class MeterError(PolarError): ...
 class MeterService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -95,7 +95,7 @@ class MeterService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Meter | None:
@@ -261,7 +261,7 @@ class MeterService:
 
     async def get_quantities(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         meter: Meter,
         *,
         start_timestamp: datetime,

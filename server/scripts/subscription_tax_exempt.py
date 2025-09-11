@@ -9,7 +9,7 @@ import typer
 from sqlalchemy import select
 
 from polar.integrations.stripe.service import stripe_lib  # type: ignore[attr-defined]
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Customer, Subscription
 from polar.postgres import create_async_engine
 
@@ -79,50 +79,43 @@ async def subscription_tax_exempt(
         raise typer.Exit(1)
 
     engine = create_async_engine("script")
-    async with engine.connect() as connection:
-        async with connection.begin() as transaction:
-            session = AsyncSession(
-                bind=connection,
-                expire_on_commit=False,
-                join_transaction_mode="create_savepoint",
+    sessionmaker = create_async_sessionmaker(engine)
+    async with sessionmaker() as session:
+        subscriptions_statement = (
+            select(Subscription)
+            .join(Subscription.customer)
+            .where(
+                Subscription.billable.is_(True),
+                Subscription.tax_exempted.is_(False),
+            )
+        )
+        if id is not None:
+            subscriptions_statement = subscriptions_statement.where(
+                Subscription.id == id
+            )
+        if country is not None:
+            subscriptions_statement = subscriptions_statement.where(
+                Customer.billing_address["country"].as_string() == country
+            )
+        if state is not None:
+            subscriptions_statement = subscriptions_statement.where(
+                Customer.billing_address["state"].as_string() == f"{country}-{state}"
             )
 
-            subscriptions_statement = (
-                select(Subscription)
-                .join(Subscription.customer)
-                .where(
-                    Subscription.billable.is_(True),
-                    Subscription.tax_exempted.is_(False),
-                )
-            )
-            if id is not None:
-                subscriptions_statement = subscriptions_statement.where(
-                    Subscription.id == id
-                )
-            if country is not None:
-                subscriptions_statement = subscriptions_statement.where(
-                    Customer.billing_address["country"].as_string() == country
-                )
-            if state is not None:
-                subscriptions_statement = subscriptions_statement.where(
-                    Customer.billing_address["state"].as_string()
-                    == f"{country}-{state}"
+        subscriptions = await session.stream_scalars(subscriptions_statement)
+        async for subscription in subscriptions:
+            typer.echo("\n---\n")
+            typer.echo(f"🔄 Handling Subscription {subscription.id}")
+
+            if subscription.stripe_subscription_id is not None:
+                await stripe_lib.Subscription.modify_async(
+                    subscription.stripe_subscription_id,
+                    automatic_tax={"enabled": False},
                 )
 
-            subscriptions = await session.stream_scalars(subscriptions_statement)
-            async for subscription in subscriptions:
-                typer.echo("\n---\n")
-                typer.echo(f"🔄 Handling Subscription {subscription.id}")
-
-                if subscription.stripe_subscription_id is not None:
-                    await stripe_lib.Subscription.modify_async(
-                        subscription.stripe_subscription_id,
-                        automatic_tax={"enabled": False},
-                    )
-
-                subscription.tax_exempted = True
-                session.add(subscription)
-                await session.commit()
+            subscription.tax_exempted = True
+            session.add(subscription)
+            await session.commit()
 
 
 if __name__ == "__main__":

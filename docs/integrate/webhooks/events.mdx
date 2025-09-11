@@ -155,7 +155,7 @@ When a merchant cancels a subscription with **immediate revocation**, those even
 
 All three events contain the same subscription data. The subscription will have the `canceled` status immediately.
 
-#### Subscription Renewal Sequences
+#### Renewal Sequences
 
 When a subscription is renewed for a new cycle, the webhook events are triggered in a specific sequence to help you track the renewal process and handle billing logic appropriately.
 
@@ -178,13 +178,6 @@ Shortly after the initial renewal events, the platform will trigger a payment fo
 4. `order.paid`
 
 Both events will contain the same order data, with the order status changed to `paid`.
-
-**Timing and Edge Case Considerations**
-
-- The time between the initial renewal events (`subscription.updated`, `order.created`) and payment events (`order.updated`, `order.paid`) can vary depending on payment processing times
-- If payment fails, additional webhook events may be triggered related to payment retry attempts
-- For subscriptions with usage-based billing, the final amount in the order may differ from the base subscription price due to consumption charges from the previous period
-- The `billing_reason` field in the order will be set to `subscription_cycle` to distinguish renewal orders from other order types
 
 ### Order
 

@@ -5,6 +5,7 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import WebhookContextView from '@/components/Settings/Webhook/WebhookContextView'
 import DeliveriesTable from '@/components/Settings/Webhook/WebhookDeliveriesTable'
+import { WebhookFilter, WebhookFilterState } from '@/components/Settings/Webhook/WebhookFilter'
 import { toast } from '@/components/Toast/use-toast'
 import { getStatusRedirect } from '@/components/Toast/utils'
 import {
@@ -20,7 +21,7 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { useParams, useRouter } from 'next/navigation'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
 export default function ClientPage({
   organization,
@@ -33,6 +34,7 @@ export default function ClientPage({
 }) {
   const { id }: { id: string } = useParams()
   const router = useRouter()
+  const [filters, setFilters] = useState<WebhookFilterState>({})
 
   const { data: endpoint } = useWebhookEndpoint(id)
 
@@ -125,12 +127,17 @@ export default function ClientPage({
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl font-medium">Deliveries</h2>
+          <WebhookFilter
+            onFilterChange={setFilters}
+            initialFilters={filters}
+          />
         </div>
         <DeliveriesTable
           endpoint={endpoint}
           pagination={pagination}
           sorting={sorting}
           organization={organization}
+          filters={filters}
         />
       </div>
 

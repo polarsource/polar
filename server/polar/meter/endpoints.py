@@ -10,7 +10,12 @@ from polar.kit.time_queries import MIN_DATETIME, TimeInterval, is_under_limits
 from polar.models import Meter
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
 from . import auth, sorting
@@ -43,7 +48,7 @@ async def list(
     ),
     query: str | None = Query(None, description="Filter by name."),
     is_archived: bool | None = Query(None, description="Filter on archived meters."),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[MeterSchema]:
     """List meters."""
     results, count = await meter_service.list(
@@ -73,7 +78,7 @@ async def list(
 async def get(
     id: MeterID,
     auth_subject: auth.MeterRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Meter:
     """Get a meter by ID."""
     meter = await meter_service.get(session, auth_subject, id)
@@ -110,7 +115,7 @@ async def quantities(
         title="ExternalCustomerID Filter",
         description="Filter by external customer ID.",
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> MeterQuantities:
     """Get quantities of a meter over a time period."""
     meter = await meter_service.get(session, auth_subject, id)

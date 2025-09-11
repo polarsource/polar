@@ -266,11 +266,14 @@ databases:
   - name: db
     databaseName: polar_cpit
     user: polar_cpit_user
-    plan: pro-4gb
-    diskSizeGB: 16
+    plan: pro-16gb
+    diskSizeGB: 100
     region: ohio
     postgresMajorVersion: "15"
+    highAvailability:
+      enabled: true
     readReplicas:
+      - name: polar-read
       - name: polar-replica
 
 envVarGroups:

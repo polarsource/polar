@@ -114,3 +114,4 @@ jobs:
         working-directory: ./docs
         run: |
           pnpm install --frozen-lockfile
+          pnpm exec mintlify update

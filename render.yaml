@@ -55,6 +55,26 @@ services:
         fromDatabase:
           name: db
           property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        fromDatabase:
+          name: polar-read
+          property: database
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
+          property: user
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
@@ -112,6 +132,26 @@ services:
       - key: POLAR_POSTGRES_USER
         fromDatabase:
           name: db
+          property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        fromDatabase:
+          name: polar-read
+          property: database
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
           property: user
       - key: POLAR_REDIS_HOST
         fromService:
@@ -188,6 +228,24 @@ services:
         fromDatabase:
           name: db
           property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        value: polar_sandbox
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
+          property: user
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
@@ -242,6 +300,24 @@ services:
       - key: POLAR_POSTGRES_USER
         fromDatabase:
           name: db
+          property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        value: polar_sandbox
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
           property: user
       - key: POLAR_REDIS_HOST
         fromService:

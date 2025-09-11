@@ -5,13 +5,11 @@ import sys
 import traceback
 from collections import defaultdict
 from collections.abc import Coroutine
-from functools import wraps
 from importlib import import_module
 from typing import Any, Never
 
 import dramatiq
 import structlog
-import typer
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession, create_async_engine
@@ -32,8 +30,6 @@ My personal favorite Python shell is `ptpython` which can be installed with
 the command `uv pip install ptpython`.
 """
 
-cli = typer.Typer()
-
 
 def drop_all(*args: Any, **kwargs: Any) -> Any:
     raise structlog.DropEvent
@@ -46,16 +42,6 @@ logging.config.dictConfig(
         "disable_existing_loggers": True,
     }
 )
-
-
-def typer_async(f):  # type: ignore
-    # From https://github.com/tiangolo/typer/issues/85
-    @wraps(f)
-    def wrapper(*args, **kwargs):  # type: ignore
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
-
 
 type Namespace = dict[str, object]
 
@@ -364,8 +350,6 @@ SHELLS = [
 ]
 
 
-@cli.command()
-@typer_async
 async def start_shell() -> None:
     print("""
 customer_repository = CustomerRepository.from_session(session)
@@ -407,4 +391,7 @@ await customer_repository.get_one_or_none(stmt)
 
 
 if __name__ == "__main__":
-    cli()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    loop.run_until_complete(start_shell())

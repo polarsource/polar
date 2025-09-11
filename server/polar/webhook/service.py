@@ -4,7 +4,7 @@ from typing import Literal, overload
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, desc, select, text, update
+from sqlalchemy import Select, desc, func, select, text, update
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -248,6 +248,22 @@ class WebhookService:
         )
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
+
+    async def is_latest_event(self, session: AsyncSession, event: WebhookEvent) -> bool:
+        statement = (
+            select(func.count(WebhookEvent.id))
+            .where(
+                WebhookEvent.deleted_at.is_(None),
+                WebhookEvent.webhook_endpoint_id == event.webhook_endpoint_id,
+                WebhookEvent.last_http_code.is_(None),
+                WebhookEvent.id != event.id,
+                WebhookEvent.created_at < event.created_at,
+            )
+            .limit(1)
+        )
+        res = await session.execute(statement)
+        count = res.scalar_one()
+        return count == 0
 
     @overload
     async def send(

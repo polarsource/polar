@@ -9,6 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.checkout.eventstream import CheckoutEvent
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
+from polar.kit.utils import utc_now
 from polar.models import (
     Organization,
     Product,
@@ -188,13 +189,15 @@ class TestOnEventSuccess:
             "polar.webhook.service.publish_checkout_event"
         )
         checkout = await create_checkout(save_fixture, products=[product])
+        timestamp = utc_now()
         event = WebhookEvent(
+            created_at=timestamp,
             webhook_endpoint=webhook_endpoint_organization,
             succeeded=True,
             last_http_code=200,
             type=WebhookEventType.checkout_updated,
             payload=WebhookCheckoutUpdatedPayload.model_validate(
-                {"type": "checkout.updated", "data": checkout}
+                {"type": "checkout.updated", "timestamp": timestamp, "data": checkout}
             ).model_dump_json(),
         )
         await save_fixture(event)

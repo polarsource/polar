@@ -499,18 +499,22 @@ class WebhookService:
         event: WebhookEventType,
         data: object,
     ) -> list[WebhookEvent]:
+        now = utc_now()
         payload = WebhookPayloadTypeAdapter.validate_python(
-            {"type": event, "data": data}
+            {"type": event, "timestamp": now, "data": data}
         )
 
         events: list[WebhookEvent] = []
-        for e in await self._get_event_target_endpoints(
-            session, event=payload.type, target=target
+        for endpoint in await self._get_event_target_endpoints(
+            session, event=event, target=target
         ):
             try:
-                payload_data = payload.get_payload(e.format, target)
+                payload_data = payload.get_payload(endpoint.format, target)
                 event_type = WebhookEvent(
-                    webhook_endpoint_id=e.id, type=event, payload=payload_data
+                    created_at=payload.timestamp,
+                    webhook_endpoint=endpoint,
+                    type=event,
+                    payload=payload_data,
                 )
                 session.add(event_type)
                 events.append(event_type)

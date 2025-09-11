@@ -358,6 +358,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/personal_access_tokens/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Personal Access Tokens
+         * @description List personal access tokens.
+         */
+        get: operations["personal_access_token:list_personal_access_tokens"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/personal_access_tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Personal Access Token */
+        delete: operations["personal_access_token:delete_personal_access_token"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/accounts/search": {
         parameters: {
             query?: never;
@@ -12565,6 +12602,12 @@ export interface components {
             items: components["schemas"]["Payout"][];
             pagination: components["schemas"]["Pagination"];
         };
+        /** ListResource[PersonalAccessToken] */
+        ListResource_PersonalAccessToken_: {
+            /** Items */
+            items: components["schemas"]["PersonalAccessToken"][];
+            pagination: components["schemas"]["Pagination"];
+        };
         /** ListResource[Product] */
         ListResource_Product_: {
             /** Items */
@@ -14697,6 +14740,33 @@ export interface components {
          * @enum {string}
          */
         PayoutStatus: "pending" | "in_transit" | "succeeded";
+        /** PersonalAccessToken */
+        PersonalAccessToken: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /** Scopes */
+            scopes: components["schemas"]["Scope"][];
+            /** Expires At */
+            expires_at: string | null;
+            /** Comment */
+            comment: string;
+            /** Last Used At */
+            last_used_at: string | null;
+        };
         /**
          * PlatformFeeType
          * @description Type of fees applied by Polar, and billed to the users.
@@ -16822,6 +16892,11 @@ export interface components {
              * @constant
              */
             type: "benefit.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             /** Benefit */
             data: components["schemas"]["Benefit"];
         };
@@ -16837,6 +16912,11 @@ export interface components {
              * @constant
              */
             type: "benefit_grant.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16852,6 +16932,11 @@ export interface components {
              * @constant
              */
             type: "benefit_grant.cycled";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16866,6 +16951,11 @@ export interface components {
              * @constant
              */
             type: "benefit_grant.revoked";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16880,6 +16970,11 @@ export interface components {
              * @constant
              */
             type: "benefit_grant.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16894,6 +16989,11 @@ export interface components {
              * @constant
              */
             type: "benefit.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             /** Benefit */
             data: components["schemas"]["Benefit"];
         };
@@ -16909,6 +17009,11 @@ export interface components {
              * @constant
              */
             type: "checkout.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Checkout"];
         };
         /**
@@ -16923,6 +17028,11 @@ export interface components {
              * @constant
              */
             type: "checkout.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Checkout"];
         };
         /**
@@ -16942,6 +17052,11 @@ export interface components {
              * @constant
              */
             type: "customer.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Customer"];
         };
         /**
@@ -16956,6 +17071,11 @@ export interface components {
              * @constant
              */
             type: "customer.deleted";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Customer"];
         };
         /**
@@ -16976,6 +17096,11 @@ export interface components {
              * @constant
              */
             type: "customer.state_changed";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["CustomerState"];
         };
         /**
@@ -16994,6 +17119,11 @@ export interface components {
              * @constant
              */
             type: "customer.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Customer"];
         };
         /**
@@ -17205,6 +17335,11 @@ export interface components {
              * @constant
              */
             type: "order.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Order"];
         };
         /**
@@ -17221,6 +17356,11 @@ export interface components {
              * @constant
              */
             type: "order.paid";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Order"];
         };
         /**
@@ -17235,6 +17375,11 @@ export interface components {
              * @constant
              */
             type: "order.refunded";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Order"];
         };
         /**
@@ -17254,6 +17399,11 @@ export interface components {
              * @constant
              */
             type: "order.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Order"];
         };
         /**
@@ -17268,6 +17418,11 @@ export interface components {
              * @constant
              */
             type: "organization.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Organization"];
         };
         /**
@@ -17282,6 +17437,11 @@ export interface components {
              * @constant
              */
             type: "product.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Product"];
         };
         /**
@@ -17296,6 +17456,11 @@ export interface components {
              * @constant
              */
             type: "product.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Product"];
         };
         /**
@@ -17310,6 +17475,11 @@ export interface components {
              * @constant
              */
             type: "refund.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Refund"];
         };
         /**
@@ -17324,6 +17494,11 @@ export interface components {
              * @constant
              */
             type: "refund.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Refund"];
         };
         /**
@@ -17339,6 +17514,11 @@ export interface components {
              * @constant
              */
             type: "subscription.active";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /**
@@ -17354,6 +17534,11 @@ export interface components {
              * @constant
              */
             type: "subscription.canceled";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /**
@@ -17370,6 +17555,11 @@ export interface components {
              * @constant
              */
             type: "subscription.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /**
@@ -17385,6 +17575,11 @@ export interface components {
              * @constant
              */
             type: "subscription.revoked";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /**
@@ -17399,6 +17594,11 @@ export interface components {
              * @constant
              */
             type: "subscription.uncanceled";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /**
@@ -17417,6 +17617,11 @@ export interface components {
              * @constant
              */
             type: "subscription.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /** MetadataQuery */
@@ -18055,6 +18260,69 @@ export interface operations {
             };
             /** @description Notification recipient not found. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "personal_access_token:list_personal_access_tokens": {
+        parameters: {
+            query?: {
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResource_PersonalAccessToken_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "personal_access_token:delete_personal_access_token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

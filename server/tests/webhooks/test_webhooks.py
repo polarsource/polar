@@ -1,4 +1,5 @@
 from typing import Any, cast
+from unittest.mock import MagicMock
 
 import dramatiq
 import httpx
@@ -23,26 +24,19 @@ from polar.webhook.tasks import _webhook_event_send, webhook_event_send
 from tests.fixtures.database import SaveFixture
 
 
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.webhook.service.enqueue_job")
+
+
 @pytest.mark.asyncio
 async def test_webhook_send(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    mocker: MockerFixture,
+    enqueue_job_mock: MagicMock,
     organization: Organization,
     subscription: Subscription,
 ) -> None:
-    called = False
-
-    def in_process_enqueue_job(name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
-        nonlocal called
-        if name == "webhook_event.send":
-            called = True
-            assert kwargs["webhook_event_id"]
-            return
-        raise Exception(f"unexpected job: {name}")
-
-    mocker.patch("polar.webhook.service.enqueue_job", new=in_process_enqueue_job)
-
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
@@ -52,33 +46,27 @@ async def test_webhook_send(
     )
     await save_fixture(endpoint)
 
-    await webhook_service.send(
+    events = await webhook_service.send(
         session, organization, WebhookEventType.subscription_created, subscription
     )
+    assert len(events) == 1
 
-    assert called
+    event = events[0]
+    assert event.webhook_endpoint == endpoint
+
+    enqueue_job_mock.assert_called_once_with(
+        "webhook_event.send", webhook_event_id=event.id
+    )
 
 
 @pytest.mark.asyncio
 async def test_webhook_send_not_subscribed_to_event(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    mocker: MockerFixture,
+    enqueue_job_mock: MagicMock,
     organization: Organization,
     subscription: Subscription,
 ) -> None:
-    called = False
-
-    def in_process_enqueue_job(name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
-        nonlocal called
-        if name == "webhook_event.send":
-            called = True
-            assert kwargs["webhook_event_id"]
-            return
-        raise Exception(f"unexpected job: {name}")
-
-    mocker.patch("polar.webhook.service.enqueue_job", new=in_process_enqueue_job)
-
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
@@ -88,11 +76,12 @@ async def test_webhook_send_not_subscribed_to_event(
     )
     await save_fixture(endpoint)
 
-    await webhook_service.send(
+    events = await webhook_service.send(
         session, organization, WebhookEventType.subscription_created, subscription
     )
 
-    assert called is False
+    assert len(events) == 0
+    enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.asyncio

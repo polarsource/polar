@@ -54,6 +54,7 @@ export default function Resources() {
 				<div className="divide-y dark:divide-polar-700 flex flex-col divide-gray-300 border-y border-gray-300 dark:border-polar-700">
 					{resourceLinks.map((link) => (
 						<Link
+							key={link.title}
 							className="dark:hover:bg-polar-800 justify-between flex w-full cursor-pointer items-center gap-3 p-3 transition-colors duration-200 hover:bg-gray-100"
 							href={link.href}
 						>

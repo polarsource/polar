@@ -36,6 +36,20 @@ export function OrderConfirmation({
           Your order of <span className="font-bold">{product.name}</span> is now
           processed.
         </BodyText>
+        {product.purchase_email_note && (
+          <Section style={{
+            marginTop: '16px',
+            padding: '16px',
+            backgroundColor: '#f9fafb',
+            borderLeft: '4px solid #3b82f6',
+            fontStyle: 'italic',
+            color: '#374151'
+          }}>
+            <Text style={{ margin: 0, fontSize: '14px', lineHeight: '1.5' }}>
+              {product.purchase_email_note}
+            </Text>
+          </Section>
+        )}
       </Section>
       <Section className="my-8 text-center">
         <Button href={url}>Access my purchase</Button>
@@ -68,6 +82,7 @@ OrderConfirmation.PreviewProps = {
   product: {
     name: 'Premium Subscription',
     benefits: [],
+    purchase_email_note: 'Thank you for choosing our product! We truly appreciate your support and trust in our solution.',
   },
   url: 'https://polar.sh/acme-inc/portal/orders/12345',
 }

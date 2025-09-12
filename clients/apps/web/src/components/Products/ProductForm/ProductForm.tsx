@@ -1,6 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import React from 'react'
 import { ProductCustomFieldSection } from './ProductCustomFieldSection'
+import { ProductEmailSection } from './ProductEmailSection'
 import { ProductInfoSection } from './ProductInfoSection'
 import { ProductMediaSection } from './ProductMediaSection'
 import { ProductMetadataSection } from './ProductMetadataSection'
@@ -42,6 +43,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         organization={organization}
         compact={compact}
       />
+      <ProductEmailSection compact={compact} />
       <ProductMetadataSection compact={compact} />
     </div>
   )

@@ -4,6 +4,15 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-09-12">
+  ## Webhooks payload now includes timestamp
+
+We've updated our webhooks server implementation to [include a timestamp in each payload](https://github.com/polarsource/polar/pull/6770), in line with the Standard Webhooks specification.
+
+This change ensures that every webhook payload contains precise event timing, making it easier to trace and debug webhook deliveries, and to meet integration requirements for external platforms.
+
+</Update>
+
 <Update label="2025-09-05">
   ## Meter management improvements
 

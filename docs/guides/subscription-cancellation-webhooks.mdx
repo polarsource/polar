@@ -1,0 +1,303 @@
+---
+title: "Subscription Cancellation Webhook Guide"
+sidebarTitle: "Subscription Cancellation Webhooks"
+description: "Comprehensive guide to handling subscription cancellation webhook events, including timing, sequences, and edge cases."
+---
+
+<img
+  className="block dark:hidden"
+  src="/assets/integrate/webhooks/delivery.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/integrate/webhooks/delivery.dark.png"
+/>
+
+Understanding the webhook event flow for subscription cancellations is crucial for implementing proper billing logic and customer access management. This guide provides a comprehensive overview of the webhook events triggered during subscription cancellation, including timing considerations and edge cases.
+
+## Overview
+
+When a subscription is canceled in Polar, the webhook events triggered depend on whether the cancellation is immediate or scheduled for the end of the billing period. This guide covers both scenarios in detail.
+
+## Event Types
+
+Before diving into the sequences, let's understand the key webhook events related to subscription cancellation:
+
+- **`subscription.updated`** - A catch-all event fired for any subscription changes
+- **`subscription.canceled`** - Fired when a subscription is marked for cancellation
+- **`subscription.revoked`** - Fired when a subscription is definitively terminated and access is revoked
+- **`subscription.uncanceled`** - Fired when a pending cancellation is reversed
+
+## End-of-Period Cancellation (Default Behavior)
+
+This is the most common cancellation scenario, where the subscription remains active until the current billing period ends.
+
+### Initial Cancellation
+
+When a subscription is canceled (either by the customer through the portal or by the merchant via dashboard/API), the following events are sent **immediately**:
+
+1. **`subscription.updated`**
+2. **`subscription.canceled`**
+
+Both events contain identical subscription data with the following characteristics:
+- `status`: `"active"` (subscription is still active)
+- `cancel_at_period_end`: `true` (indicates pending cancellation)
+- `ends_at`: The timestamp when the subscription will end
+- `ended_at`: `null` (subscription hasn't ended yet)
+
+### Period End Revocation
+
+When the current billing period ends, the subscription is definitively revoked. The following events are sent:
+
+3. **`subscription.updated`**
+4. **`subscription.revoked`**
+
+Both events contain identical subscription data with:
+- `status`: `"canceled"` (subscription is now terminated)
+- `cancel_at_period_end`: `true`
+- `ends_at`: The timestamp when the subscription ended
+- `ended_at`: The actual timestamp of termination
+
+### Example Payload Structure
+
+```json
+{
+  "type": "subscription.canceled",
+  "data": {
+    "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+    "status": "active",
+    "cancel_at_period_end": true,
+    "current_period_start": "2024-01-01T00:00:00Z",
+    "current_period_end": "2024-02-01T00:00:00Z",
+    "ends_at": "2024-02-01T00:00:00Z",
+    "ended_at": null,
+    "customer_cancellation_reason": "too_expensive",
+    "customer_cancellation_comment": "Found a cheaper alternative",
+    "product": {
+      "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "name": "Pro Plan"
+    },
+    "customer": {
+      "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "email": "customer@example.com"
+    }
+  }
+}
+```
+
+## Immediate Revocation
+
+When a merchant cancels a subscription with **immediate revocation**, all events are sent **at once**:
+
+1. **`subscription.updated`**
+2. **`subscription.canceled`**
+3. **`subscription.revoked`**
+
+All three events contain identical subscription data with:
+- `status`: `"canceled"` (subscription is immediately terminated)
+- `cancel_at_period_end`: `false`
+- `ended_at`: The immediate termination timestamp
+- `ends_at`: Same as `ended_at`
+
+### Example Immediate Revocation Payload
+
+```json
+{
+  "type": "subscription.revoked",
+  "data": {
+    "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+    "status": "canceled",
+    "cancel_at_period_end": false,
+    "ends_at": "2024-01-15T10:30:00Z",
+    "ended_at": "2024-01-15T10:30:00Z",
+    "customer_cancellation_reason": null,
+    "product": {
+      "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "name": "Pro Plan"
+    },
+    "customer": {
+      "id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "email": "customer@example.com"
+    }
+  }
+}
+```
+
+## Timing Considerations
+
+### Event Delivery Timing
+
+- **End-of-period cancellation**: Initial events (`subscription.updated`, `subscription.canceled`) are delivered within seconds of the cancellation request
+- **Period-end events**: Final events (`subscription.updated`, `subscription.revoked`) are delivered based on your timezone settings, typically at midnight in your organization's timezone
+- **Immediate revocation**: All three events are delivered within seconds of the revocation request
+
+### Event Order
+
+Events are delivered in a specific sequence, but **you should not rely on strict ordering** due to potential network latency and retry mechanisms. Instead:
+
+- Use the `created_at` timestamp on webhook events to determine chronological order
+- Check the subscription `status` and other relevant fields to understand the current state
+- Implement idempotent webhook handlers to handle duplicate events gracefully
+
+## Edge Cases and Troubleshooting
+
+### Usage-Based Billing
+
+When a subscription with usage-based billing is canceled:
+
+- During the grace period (end-of-period cancellation), usage continues to be tracked
+- A final invoice will be generated at period end covering all accumulated usage charges
+- The final `subscription.revoked` event will include the complete usage data for the period
+
+<Warning>
+If a discount is applied to the subscription, it will affect the entire final invoice, including metered usage charges.
+</Warning>
+
+### Uncancellation
+
+If a subscription cancellation is reversed before the period ends:
+
+1. **`subscription.updated`** event is fired
+2. **`subscription.uncanceled`** event is fired
+
+Both events will show:
+- `status`: `"active"`
+- `cancel_at_period_end`: `false`
+- `ends_at`: `null` (no longer scheduled to end)
+
+### Multiple Rapid Changes
+
+If multiple cancellation/uncancellation actions occur rapidly:
+
+- Each action triggers its respective webhook events
+- Events may arrive out of order due to network conditions
+- Use webhook event timestamps and subscription state to determine the final status
+- Implement proper event deduplication logic
+
+### Failed Payment Scenarios
+
+When a subscription is revoked due to failed payments rather than explicit cancellation:
+
+- Only `subscription.updated` and `subscription.revoked` events are sent
+- No `subscription.canceled` event is triggered
+- The `customer_cancellation_reason` will be `null`
+
+## Implementation Best Practices
+
+### 1. Idempotent Event Handling
+
+```javascript
+// Example: Node.js webhook handler
+app.post('/webhooks/polar', (req, res) => {
+  const { type, data } = req.body;
+  const subscriptionId = data.id;
+  
+  // Use subscription ID + event type + timestamp for idempotency
+  const eventKey = `${subscriptionId}-${type}-${data.updated_at}`;
+  
+  if (processedEvents.has(eventKey)) {
+    return res.status(200).send('Already processed');
+  }
+  
+  processedEvents.add(eventKey);
+  // Process the event...
+});
+```
+
+### 2. Status-Based Logic
+
+Instead of relying on event types alone, check the subscription status:
+
+```javascript
+function handleSubscriptionEvent(subscription) {
+  if (subscription.status === 'active' && subscription.cancel_at_period_end) {
+    // Subscription is canceled but still active - show cancellation notice
+    showCancellationNotice(subscription);
+  } else if (subscription.status === 'canceled') {
+    // Subscription is terminated - revoke access
+    revokeAccess(subscription);
+  }
+}
+```
+
+### 3. Grace Period Management
+
+For end-of-period cancellations, maintain access during the grace period:
+
+```javascript
+function checkSubscriptionAccess(subscription) {
+  const now = new Date();
+  const periodEnd = new Date(subscription.current_period_end);
+  
+  if (subscription.cancel_at_period_end && now < periodEnd) {
+    // Still in grace period - maintain access
+    return { hasAccess: true, gracePeriod: true };
+  } else if (subscription.status === 'canceled') {
+    // Subscription terminated
+    return { hasAccess: false, gracePeriod: false };
+  }
+  
+  return { hasAccess: subscription.status === 'active', gracePeriod: false };
+}
+```
+
+## Testing Your Implementation
+
+### Test Scenarios
+
+1. **End-of-period cancellation**
+   - Cancel a test subscription
+   - Verify you receive `subscription.updated` and `subscription.canceled` events
+   - Confirm access is maintained during grace period
+   - Wait for period end and verify `subscription.updated` and `subscription.revoked` events
+
+2. **Immediate revocation**
+   - Revoke a test subscription immediately
+   - Verify you receive all three events in quick succession
+   - Confirm access is revoked immediately
+
+3. **Uncancellation**
+   - Cancel and then uncancel a subscription
+   - Verify proper event sequence and status updates
+
+### Sandbox Testing
+
+Use Polar's sandbox environment to test webhook flows without affecting production data:
+
+```bash
+# Example webhook endpoint for testing
+curl -X POST https://your-app.com/webhooks/polar-test \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "subscription.canceled",
+    "data": {
+      "id": "test-subscription-id",
+      "status": "active",
+      "cancel_at_period_end": true
+    }
+  }'
+```
+
+## Monitoring and Debugging
+
+### Webhook Delivery Monitoring
+
+- Monitor webhook delivery success rates in your Polar dashboard
+- Set up alerts for failed webhook deliveries
+- Implement proper logging for webhook event processing
+
+### Common Issues
+
+1. **Missing events**: Check webhook endpoint configuration and network connectivity
+2. **Duplicate processing**: Ensure idempotent event handling
+3. **Wrong access state**: Always check current subscription status rather than relying solely on event types
+4. **Timezone issues**: Period-end events are delivered based on organization timezone settings
+
+## Related Documentation
+
+- [Webhook Events Reference](/integrate/webhooks/events)
+- [Webhook Delivery & Handling](/integrate/webhooks/delivery)
+- [Subscription Management API](/api-reference/subscriptions)
+- [Usage-Based Billing](/features/usage-based-billing/billing)
+
+This guide provides a foundation for implementing robust subscription cancellation webhook handling. For additional support or questions about specific use cases, please refer to our [support resources](/support) or create an issue on our [GitHub repository](https://github.com/polarsource/polar/issues).

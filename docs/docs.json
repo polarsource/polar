@@ -525,7 +525,8 @@
           {
             "group": "Guides",
             "pages": [
-              "guides/introduction"
+              "guides/introduction",
+              "guides/subscription-cancellation-webhooks"
             ]
           }
         ]

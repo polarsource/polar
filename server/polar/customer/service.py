@@ -16,7 +16,7 @@ from polar.kit.sorting import Sorting
 from polar.models import BenefitGrant, Customer, Organization, User
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.organization.resolver import get_payload_organization
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
 from polar.webhook.service import webhook as webhook_service
@@ -31,7 +31,7 @@ from .sorting import CustomerSortProperty
 class CustomerService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -80,7 +80,7 @@ class CustomerService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Customer | None:
@@ -92,7 +92,7 @@ class CustomerService:
 
     async def get_external(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         external_id: str,
     ) -> Customer | None:
@@ -231,7 +231,7 @@ class CustomerService:
 
     async def get_state(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         redis: Redis,
         customer: Customer,
         cache: bool = True,

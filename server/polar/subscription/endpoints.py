@@ -14,7 +14,12 @@ from polar.locker import Locker, get_locker
 from polar.models import Subscription
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
@@ -67,7 +72,7 @@ async def list(
     active: bool | None = Query(
         None, description="Filter by active or inactive subscription."
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[SubscriptionSchema]:
     """List subscriptions."""
     results, count = await subscription_service.list(
@@ -97,7 +102,7 @@ async def export(
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Response:
     """Export subscriptions as a CSV file."""
 
@@ -153,7 +158,7 @@ async def export(
 async def get(
     id: SubscriptionID,
     auth_subject: auth.SubscriptionsRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Subscription:
     """Get a subscription by ID."""
     subscription = await subscription_service.get(session, auth_subject, id)

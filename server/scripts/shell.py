@@ -214,6 +214,39 @@ def shell_bpython(
     bpython.embed(imported_objects)
 
 
+def shell_ptpython(
+    loop: asyncio.AbstractEventLoop,
+    namespace: Namespace,
+    session: AsyncSession | None = None,
+    options: None = None,
+) -> None:
+    # https://github.com/prompt-toolkit/ptpython/blob/main/src/ptpython/entry_points/run_ptpython.py
+    from ptpython.repl import embed
+
+    is_asyncio = True
+
+    namespace = {
+        **namespace,
+        **get_namespace(),
+    }
+
+    embed_result = embed(  # type: ignore
+        # vi_mode=a.vi,
+        # history_filename=history_file,
+        # configure=configure,
+        globals=namespace,
+        locals=namespace,
+        # startup_paths=startup_paths,
+        # title="Python REPL (ptpython)",
+        return_asyncio_coroutine=True,
+    )
+
+    if is_asyncio:
+        # print("Starting ptpython asyncio REPL")
+        # print('Use "await" directly instead of "asyncio.run()".')
+        loop.run_until_complete(embed_result)
+
+
 def shell_asyncio(
     loop: asyncio.AbstractEventLoop,
     namespace: Namespace,
@@ -353,6 +386,7 @@ def shell_python(
 SHELLS = [
     shell_ipython,
     shell_bpython,
+    shell_ptpython,
     shell_asyncio,
     shell_python,
 ]

@@ -2,6 +2,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
@@ -115,9 +116,9 @@ async def get(
         options=(
             joinedload(CheckoutLink.organization),
             joinedload(CheckoutLink.discount),
-            selectinload(CheckoutLink.checkout_link_products).joinedload(
-                CheckoutLinkProduct.product
-            ).joinedload(Product.organization),
+            selectinload(CheckoutLink.checkout_link_products)
+            .joinedload(CheckoutLinkProduct.product)
+            .joinedload(Product.organization),
         ),
     )
 
@@ -225,9 +226,6 @@ async def get(
                                     text(f"Product ID: {product.id}")
                                 with tag.div(classes="font-medium"):
                                     text(product.name)
-
-
-from fastapi.responses import RedirectResponse
 
 
 @router.post("/{id}/restore", name="checkout_links:restore")

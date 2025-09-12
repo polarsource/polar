@@ -8,7 +8,7 @@ from polar.models import Payment
 from polar.models.payment import PaymentStatus
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 
 from . import auth, sorting
@@ -48,7 +48,7 @@ async def list(
     customer_email: MultipleQueryFilter[str] | None = Query(
         None, title="CustomerEmail Filter", description="Filter by customer email."
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[PaymentSchema]:
     """List payments."""
     results, count = await payment_service.list(
@@ -80,7 +80,7 @@ async def list(
 async def get(
     id: PaymentID,
     auth_subject: auth.PaymentRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Payment:
     """Get a payment by ID."""
     payment = await payment_service.get(session, auth_subject, id)

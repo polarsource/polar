@@ -129,6 +129,9 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     current_period_end: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
+    trial_ends_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+    )
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False)
     canceled_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None

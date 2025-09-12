@@ -215,6 +215,12 @@ class ProductCreate(MetadataInputMixin, Schema):
             "Note that the `day` and `week` values are for internal Polar staff use only."
         ),
     )
+    trial_days: int | None = Field(
+        default=None,
+        ge=0,
+        le=365,
+        description="Number of days for the free trial period. Only applicable to recurring products.",
+    )
     prices: ProductPriceCreateList = Field(
         ...,
         description="List of available prices for this product. "
@@ -270,6 +276,12 @@ class ProductUpdate(MetadataInputMixin, Schema):
             "**Can only be set on legacy recurring products. "
             "Once set, it can't be changed.**"
         ),
+    )
+    trial_days: int | None = Field(
+        default=None,
+        ge=0,
+        le=365,
+        description="Number of days for the free trial period. Only applicable to recurring products.",
     )
     is_archived: bool | None = Field(
         default=None,
@@ -504,6 +516,12 @@ class ProductBase(IDSchema, TimestampedSchema):
         "If `None`, the product is a one-time purchase."
         ""
         "Note that the `day` and `week` values are for internal Polar staff use only."
+    )
+    trial_days: int | None = Field(
+        default=None,
+        ge=0,
+        le=365,
+        description="Number of days for the free trial period. Only applicable to recurring products.",
     )
     is_recurring: bool = Field(description="Whether the product is a subscription.")
     is_archived: bool = Field(

@@ -1,14 +1,17 @@
 import uuid
+from datetime import UTC, datetime
 
 import structlog
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models import Subscription, SubscriptionMeter
+from polar.models.subscription import SubscriptionStatus
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
-from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .service import subscription as subscription_service
 
@@ -82,3 +85,36 @@ async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
 async def subscription_cancel_customer(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         await subscription_service.cancel_customer(session, customer_id)
+
+
+@actor(
+    actor_name="subscription.convert_trials_to_active",
+    cron_trigger=CronTrigger.from_crontab("0 * * * *"),  # Run every hour
+    priority=TaskPriority.MEDIUM,
+)
+async def convert_trials_to_active() -> None:
+    """Convert trial subscriptions to active once trial period ends."""
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+
+        # Find all trialing subscriptions where trial has ended
+        now = datetime.now(UTC)
+        statement = select(Subscription).where(
+            Subscription.status == SubscriptionStatus.trialing,
+            Subscription.trial_ends_at.is_not(None),
+            Subscription.trial_ends_at <= now,
+            # Only for subscriptions using our billing engine (no Stripe ID)
+            Subscription.stripe_subscription_id.is_(None),
+        )
+
+        subscriptions = await repository.get_all(statement)
+
+        for subscription in subscriptions:
+            # Update subscription status to active and set started_at
+            subscription.status = SubscriptionStatus.active
+            subscription.started_at = now
+
+            # The subscription service will handle billing when status changes
+            await subscription_service.activate_trial_subscription(
+                session, subscription
+            )

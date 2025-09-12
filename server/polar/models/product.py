@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
+    Integer,
     String,
     Text,
     Uuid,
@@ -58,6 +59,7 @@ class Product(MetadataMixin, RecordModel):
         index=True,
         default=None,
     )
+    trial_days: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     stripe_product_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True

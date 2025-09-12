@@ -137,3 +137,5 @@ playground.py
 server/tests/invoice/test_invoice*.pdf
 supervisord.pid
 server/.minio/
+
+.idea/

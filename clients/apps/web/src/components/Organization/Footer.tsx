@@ -13,7 +13,7 @@ const Footer = () => {
       >
         <div
           className={twMerge(
-            'grid w-full grid-cols-1 gap-12 md:grid-cols-2 md:justify-between md:gap-24 lg:grid-cols-6',
+            'grid w-full grid-cols-1 gap-12 md:grid-cols-2 md:justify-between md:gap-24 lg:grid-cols-7',
           )}
         >
           <div className="flex flex-1 flex-col gap-y-6 md:col-span-2">
@@ -76,6 +76,15 @@ const Footer = () => {
             <div className="flex flex-col gap-y-2">
               <FooterLink href="https://docs.polar.sh">Docs</FooterLink>
               <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
+            </div>
+          </div>
+          <div className="flex flex-col gap-y-4">
+            <h3 className="text-base dark:text-white">Compare</h3>
+            <div className="flex flex-col gap-y-2">
+              <FooterLink href="/resources/polar-vs-lemonsqueezy">
+                LemonSqueezy
+              </FooterLink>
+              <FooterLink href="/resources/polar-vs-paddle">Paddle</FooterLink>
             </div>
           </div>
         </div>

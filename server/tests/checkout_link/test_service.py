@@ -320,3 +320,32 @@ class TestDelete:
         )
 
         assert deleted_checkout_link.deleted_at is not None
+
+
+@pytest.mark.asyncio
+class TestRestore:
+    async def test_valid(
+        self, session: AsyncSession, checkout_link: CheckoutLink
+    ) -> None:
+        # First delete the checkout link
+        deleted_checkout_link = await checkout_link_service.delete(
+            session, checkout_link
+        )
+        assert deleted_checkout_link.deleted_at is not None
+
+        # Then restore it
+        restored_checkout_link = await checkout_link_service.restore(
+            session, deleted_checkout_link
+        )
+        assert restored_checkout_link.deleted_at is None
+        assert restored_checkout_link.id == checkout_link.id
+
+    async def test_already_active(
+        self, session: AsyncSession, checkout_link: CheckoutLink
+    ) -> None:
+        # Restoring an already active checkout link should work without issue
+        restored_checkout_link = await checkout_link_service.restore(
+            session, checkout_link
+        )
+        assert restored_checkout_link.deleted_at is None
+        assert restored_checkout_link.id == checkout_link.id

@@ -11,6 +11,7 @@ class CheckoutLinkSortProperty(StrEnum):
     label = "label"
     success_url = "success_url"
     allow_discount_codes = "allow_discount_codes"
+    organization = "organization"
 
 
 ListSorting = Annotated[

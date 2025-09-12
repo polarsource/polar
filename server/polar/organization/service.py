@@ -30,7 +30,7 @@ from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.ai_validation import validator as organization_validator
 from polar.organization_access_token.repository import OrganizationAccessTokenRepository
-from polar.postgres import AsyncSession, sql
+from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
 from polar.transaction.service.transaction import transaction as transaction_service
@@ -98,7 +98,7 @@ class AccountAlreadySet(OrganizationError):
 class OrganizationService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         slug: str | None = None,
@@ -121,7 +121,7 @@ class OrganizationService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
         *,
@@ -137,7 +137,7 @@ class OrganizationService:
 
     async def get_anonymous(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         id: uuid.UUID,
         *,
         options: Options = (),
@@ -514,7 +514,7 @@ class OrganizationService:
 
     async def get_payment_status(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         organization: Organization,
         account_verification_only: bool = False,
     ) -> PaymentStatusResponse:
@@ -594,7 +594,7 @@ class OrganizationService:
         )
 
     async def is_organization_ready_for_payment(
-        self, session: AsyncSession, organization: Organization
+        self, session: AsyncReadSession, organization: Organization
     ) -> bool:
         """
         Check if an organization is ready to accept payments.

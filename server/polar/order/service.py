@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
@@ -706,6 +706,12 @@ class OrderService:
             session, subscription.organization
         )
 
+        total_amount = subtotal_amount - discount_amount + tax_amount
+        customer_balance = await self.customer_balance(session, subscription.customer)
+        from_balance_amount = 0
+        if total_amount > 0 and customer_balance > 0:
+            from_balance_amount = min(customer_balance, total_amount)
+
         repository = OrderRepository.from_session(session)
         order = await repository.create(
             Order(
@@ -714,6 +720,7 @@ class OrderService:
                 subtotal_amount=subtotal_amount,
                 discount_amount=discount_amount,
                 tax_amount=tax_amount,
+                from_balance_amount=from_balance_amount,
                 currency=subscription.currency,
                 billing_reason=billing_reason,
                 billing_name=customer.billing_name,
@@ -741,6 +748,8 @@ class OrderService:
             OrderBillingReason.subscription_update,
         }:
             await subscription_service.reset_meters(session, subscription)
+
+        customer_balance = await self.customer_balance(session, subscription.customer)
 
         # If the order total amount is zero, mark it as paid immediately
         if order.total_amount <= 0:
@@ -771,8 +780,11 @@ class OrderService:
         async with self.acquire_payment_lock(session, order, release_on_success=False):
             if payment_method.processor == PaymentProcessor.stripe:
                 metadata: dict[str, Any] = {"order_id": str(order.id)}
+
+                to_be_paid_amount = order.total_amount - order.from_balance_amount
+
                 if order.tax_rate is not None:
-                    metadata["tax_amount"] = order.tax_amount
+                    metadata["tax_amount"] = order.tax_amount  # ???
                     metadata["tax_country"] = order.tax_rate["country"]
                     metadata["tax_state"] = order.tax_rate["state"]
 
@@ -781,7 +793,7 @@ class OrderService:
 
                 try:
                     await stripe_service.create_payment_intent(
-                        amount=order.total_amount,
+                        amount=to_be_paid_amount,
                         currency=order.currency,
                         payment_method=payment_method.processor_id,
                         customer=stripe_customer_id,
@@ -1684,6 +1696,9 @@ class OrderService:
         """
         Returns what the customer is "owed".
 
+        The returned integer is positive if the customer is owed, and negative
+        if the customer owes the selling organization.
+
         This can happen if the customer switches from e.g. a yearly plan at $100/yr to
         a monthly plan at $15/mo. In that case the customer has $85 in "credit" or balance
         on their account (depending on when they changed the plan).
@@ -1691,7 +1706,7 @@ class OrderService:
         order_repository = OrderRepository.from_session(session)
         paid_orders = await order_repository.get_all(
             order_repository.get_base_statement()
-            # .join(Customer, Order.customer_id == Customer.id)
+            .join(Customer, Order.customer_id == Customer.id)
             .where(
                 Customer.id == customer.id,
                 Order.deleted_at.is_(None),
@@ -1701,10 +1716,16 @@ class OrderService:
         payment_repository = PaymentRepository.from_session(session)
         payments = await payment_repository.get_all(
             payment_repository.get_base_statement()
-            .join(Order, Payment.order_id == Order.id)
+            .join(Order, Payment.order_id == Order.id, isouter=True)
+            .join(Checkout, Payment.checkout_id == Checkout.id, isouter=True)
             .where(
-                Order.customer_id == customer.id,
-                Order.deleted_at.is_(None),
+                or_(
+                    and_(Order.customer_id == customer.id, Order.deleted_at.is_(None)),
+                    and_(
+                        Checkout.customer_id == customer.id,
+                        Checkout.deleted_at.is_(None),
+                    ),
+                ),
                 Payment.status == PaymentStatus.succeeded,
             )
         )
@@ -1712,7 +1733,7 @@ class OrderService:
         total_orders = sum(order.total_amount for order in paid_orders)
         total_paid = sum(payment.amount for payment in payments)
 
-        return total_orders - total_paid
+        return total_paid - total_orders
 
 
 order = OrderService()

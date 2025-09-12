@@ -185,6 +185,20 @@ const ClientPage: React.FC<ClientPageProps> = ({
               label="Total"
               value={formatCurrencyAndAmount(order.total_amount)}
             />
+            {order.from_balance_amount > 0 && (
+              <DetailRow
+                label="From customer balance"
+                value={formatCurrencyAndAmount(-order.from_balance_amount)}
+              />
+            )}
+            {order.from_balance_amount > 0 && (
+              <DetailRow
+                label="To be paid"
+                value={formatCurrencyAndAmount(
+                  order.total_amount - order.from_balance_amount,
+                )}
+              />
+            )}
             {order.billing_address ? (
               <>
                 <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />

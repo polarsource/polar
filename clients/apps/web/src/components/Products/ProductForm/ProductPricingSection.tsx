@@ -319,7 +319,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
                     <MoneyInput
                       {...field}
                       name={field.name}
-                      value={field.value || undefined}
+                      value={field.value}
                       onChange={(v) => {
                         field.onChange(v)
                         setValue(`prices.${index}.id`, '')

@@ -210,7 +210,7 @@ class WebhookService:
         if event is None:
             raise ResourceNotFound()
 
-        enqueue_job("webhook_event.send", webhook_event_id=event.id)
+        enqueue_job("webhook_event.send", webhook_event_id=event.id, redeliver=True)
 
     async def on_event_success(self, session: AsyncSession, id: UUID) -> None:
         """

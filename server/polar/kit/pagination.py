@@ -12,7 +12,7 @@ from sqlalchemy.sql._typing import _ColumnsClauseArgument
 from polar.config import settings
 from polar.kit.db.models import RecordModel
 from polar.kit.db.models.base import Model
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession
 from polar.kit.schemas import ClassName, Schema
 
 
@@ -23,7 +23,7 @@ class PaginationParams(NamedTuple):
 
 @overload
 async def paginate[RM: RecordModel](
-    session: AsyncSession,
+    session: AsyncReadSession,
     statement: Select[tuple[RM]],
     *,
     pagination: PaginationParams,
@@ -33,7 +33,7 @@ async def paginate[RM: RecordModel](
 
 @overload
 async def paginate[M: Model](
-    session: AsyncSession,
+    session: AsyncReadSession,
     statement: Select[tuple[M]],
     *,
     pagination: PaginationParams,
@@ -43,7 +43,7 @@ async def paginate[M: Model](
 
 @overload
 async def paginate[T: Any](
-    session: AsyncSession,
+    session: AsyncReadSession,
     statement: Select[T],
     *,
     pagination: PaginationParams,
@@ -52,7 +52,7 @@ async def paginate[T: Any](
 
 
 async def paginate(
-    session: AsyncSession,
+    session: AsyncReadSession,
     statement: Select[Any],
     *,
     pagination: PaginationParams,

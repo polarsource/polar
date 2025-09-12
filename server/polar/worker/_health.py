@@ -15,10 +15,11 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
+from polar.config import settings
 from polar.kit.db.postgres import AsyncSessionMaker, create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.postgres import create_async_engine
+from polar.postgres import create_async_engine, create_async_read_engine
 from polar.redis import Redis, create_redis
 from polar.webhook.repository import WebhookEventRepository
 
@@ -69,7 +70,10 @@ async def webhooks(request: Request) -> JSONResponse:
 
 @contextlib.asynccontextmanager
 async def lifespan(app: Starlette) -> AsyncGenerator[Mapping[str, Any]]:
-    async_engine = create_async_engine("worker")
+    if settings.is_read_replica_configured():
+        async_engine = create_async_read_engine("worker")
+    else:
+        async_engine = create_async_engine("worker")
     async_sessionmaker = create_async_sessionmaker(async_engine)
     redis = await create_redis("worker")
     yield {

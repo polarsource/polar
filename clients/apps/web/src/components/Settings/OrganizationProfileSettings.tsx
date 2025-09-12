@@ -117,28 +117,24 @@ const OrganizationSocialLinks = () => {
   }
 
   const handleChange = (index: number, value: string) => {
-    if (!value) return
-
-    // Add protocol if missing
-    if (!value.startsWith('https://')) {
-      value = 'https://' + value
-    } else if (value.startsWith('http://')) {
-      value = value.replace('http://', 'https://')
+    const currentFieldValue = socials[index]?.url
+    console.log('currentFieldValue', currentFieldValue)
+    if (currentFieldValue === '') {
+      value = 'https://'+value
     }
 
-    try {
-      const url = new URL(value)
+    // Infer the platform from the URL
+    let newPlatform: schemas['OrganizationSocialPlatforms'] = 'other'
+    try { const url = new URL(value)
       const hostname = url.hostname as keyof typeof SOCIAL_PLATFORM_DOMAINS
-      const newPlatform = (SOCIAL_PLATFORM_DOMAINS[hostname] ??
-        'other') as schemas['OrganizationSocialPlatforms']
+      newPlatform = (SOCIAL_PLATFORM_DOMAINS[hostname] ?? 'other') as schemas['OrganizationSocialPlatforms']
+    }
+    catch {}
 
-      const updatedSocials = [...socials]
-      updatedSocials[index] = {
-        platform: newPlatform,
-        url: value,
-      }
-      setValue('socials', updatedSocials, { shouldDirty: true })
-    } catch {}
+    // Update the socials array
+    const updatedSocials = [...socials]
+    updatedSocials[index] = { platform: newPlatform, url: value, }
+    setValue('socials', updatedSocials, { shouldDirty: true })
   }
 
   return (

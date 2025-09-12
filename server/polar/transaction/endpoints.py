@@ -9,7 +9,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models.transaction import TransactionType
 from polar.openapi import APITag
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 from polar.transaction import (
     auth as transactions_auth,
@@ -39,7 +39,7 @@ async def search_transactions(
     payment_organization_id: UUID4 | None = Query(None),
     payment_user_id: UUID4 | None = Query(None),
     exclude_platform_fees: bool = Query(False),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[Transaction]:
     results, count = await transaction_service.search(
         session,
@@ -65,7 +65,7 @@ async def search_transactions(
 async def lookup_transaction(
     transaction_id: UUID4,
     auth_subject: transactions_auth.TransactionsRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> TransactionDetails:
     return TransactionDetails.model_validate(
         await transaction_service.lookup(session, transaction_id, auth_subject.subject)
@@ -76,7 +76,7 @@ async def lookup_transaction(
 async def get_summary(
     auth_subject: transactions_auth.TransactionsRead,
     account_id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> TransactionsSummary:
     account = await account_service.get(session, auth_subject, account_id)
     if account is None:

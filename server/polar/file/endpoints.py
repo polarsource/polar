@@ -10,7 +10,12 @@ from polar.models import File
 from polar.openapi import APITag
 from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
 from . import auth
@@ -40,7 +45,7 @@ async def list(
     ids: MultipleQueryFilter[UUID4] | None = Query(
         None, title="FileID Filter", description="Filter by file ID."
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[FileRead]:
     """List files."""
     results, count = await file_service.list(

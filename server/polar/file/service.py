@@ -8,7 +8,7 @@ from polar.integrations.aws.s3 import S3FileError
 from polar.kit.pagination import PaginationParams
 from polar.models import Organization, ProductMedia, User
 from polar.models.file import File, ProductMediaFile
-from polar.postgres import AsyncSession, sql
+from polar.postgres import AsyncReadSession, AsyncSession, sql
 
 from .repository import FileRepository
 from .s3 import S3_SERVICES
@@ -29,7 +29,7 @@ class FileError(S3FileError): ...
 class FileService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,

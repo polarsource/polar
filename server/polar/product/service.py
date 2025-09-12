@@ -21,9 +21,9 @@ from polar.exceptions import (
 from polar.file.service import file as file_service
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
-from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.meter.repository import MeterRepository
 from polar.models import (
@@ -63,7 +63,7 @@ class ProductError(PolarError): ...
 class ProductService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         id: Sequence[uuid.UUID] | None = None,
@@ -179,11 +179,13 @@ class ProductService:
             selectinload(Product.attached_custom_fields),
         )
 
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Product | None:
@@ -195,7 +197,9 @@ class ProductService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def get_embed(self, session: AsyncSession, id: uuid.UUID) -> Product | None:
+    async def get_embed(
+        self, session: AsyncReadSession, id: uuid.UUID
+    ) -> Product | None:
         repository = ProductRepository.from_session(session)
         statement = (
             repository.get_base_statement()

@@ -11,7 +11,12 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Product
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
 from . import auth
@@ -69,7 +74,7 @@ async def list(
         title="BenefitID Filter",
         description="Filter products granting specific benefit.",
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[ProductSchema]:
     """List products."""
     results, count = await product_service.list(
@@ -102,7 +107,7 @@ async def list(
 async def get(
     id: ProductID,
     auth_subject: auth.CreatorProductsRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Product:
     """Get a product by ID."""
     product = await product_service.get(session, auth_subject, id)

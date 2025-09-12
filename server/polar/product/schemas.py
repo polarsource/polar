@@ -26,6 +26,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.meter.filter import INT_MAX_VALUE
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceType,
@@ -166,6 +167,7 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
     cap_amount: int | None = Field(
         default=None,
         ge=0,
+        le=INT_MAX_VALUE,
         description=(
             "Optional maximum amount in cents that can be charged, "
             "regardless of the number of units consumed."

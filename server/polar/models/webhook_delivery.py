@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models.base import RecordModel
 
 if TYPE_CHECKING:
+    from .webhook_endpoint import WebhookEndpoint
     from .webhook_event import WebhookEvent
 
 
@@ -19,6 +20,10 @@ class WebhookDelivery(RecordModel):
         nullable=False,
         index=True,
     )
+
+    @declared_attr
+    def webhook_endpoint(cls) -> Mapped["WebhookEndpoint"]:
+        return relationship("WebhookEndpoint", lazy="raise")
 
     webhook_event_id: Mapped[UUID] = mapped_column(
         Uuid,

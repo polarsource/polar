@@ -250,14 +250,22 @@ class WebhookService:
         return res.scalars().unique().one_or_none()
 
     async def is_latest_event(self, session: AsyncSession, event: WebhookEvent) -> bool:
+        age_limit = utc_now() - datetime.timedelta(minutes=1)
         statement = (
             select(func.count(WebhookEvent.id))
+            .join(
+                WebhookDelivery,
+                WebhookDelivery.webhook_event_id == WebhookEvent.id,
+                isouter=True,
+            )
             .where(
                 WebhookEvent.deleted_at.is_(None),
                 WebhookEvent.webhook_endpoint_id == event.webhook_endpoint_id,
-                WebhookEvent.last_http_code.is_(None),
-                WebhookEvent.id != event.id,
-                WebhookEvent.created_at < event.created_at,
+                WebhookEvent.id != event.id,  # Not the current event
+                WebhookDelivery.id.is_(None),  # Not delivered yet
+                WebhookEvent.created_at
+                < event.created_at,  # Older than the current event
+                WebhookEvent.created_at >= age_limit,  # Not too old
             )
             .limit(1)
         )

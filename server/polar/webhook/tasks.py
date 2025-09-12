@@ -54,15 +54,14 @@ async def _webhook_event_send(
         bound_log.info("Event already succeeded, skipping")
         return
 
-    # TODO: Quick fix 2025-09-12
-    # if not await webhook_service.is_latest_event(session, event):
-    #     log.info(
-    #         "Earlier events need to be delivered first, retrying later",
-    #         id=event.id,
-    #         type=event.type,
-    #         webhook_endpoint_id=event.webhook_endpoint_id,
-    #     )
-    #     raise Retry()
+    if not await webhook_service.is_latest_event(session, event):
+        log.info(
+            "Earlier events need to be delivered first, retrying later",
+            id=event.id,
+            type=event.type,
+            webhook_endpoint_id=event.webhook_endpoint_id,
+        )
+        raise Retry()
 
     ts = utc_now()
 

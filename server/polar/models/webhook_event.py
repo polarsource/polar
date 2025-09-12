@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, ColumnElement, ForeignKey, Index, Integer, String, Uuid
@@ -6,7 +7,11 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
-from polar.models.webhook_endpoint import WebhookEndpoint, WebhookEventType
+
+from .webhook_endpoint import WebhookEventType
+
+if TYPE_CHECKING:
+    from .webhook_endpoint import WebhookEndpoint
 
 
 class WebhookEvent(RecordModel):
@@ -27,7 +32,7 @@ class WebhookEvent(RecordModel):
     )
 
     @declared_attr
-    def webhook_endpoint(cls) -> Mapped[WebhookEndpoint]:
+    def webhook_endpoint(cls) -> Mapped["WebhookEndpoint"]:
         return relationship("WebhookEndpoint", lazy="raise")
 
     last_http_code: Mapped[int | None] = mapped_column(Integer, nullable=True)

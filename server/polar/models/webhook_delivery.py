@@ -1,10 +1,13 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
-from polar.models.webhook_event import WebhookEvent
+
+if TYPE_CHECKING:
+    from .webhook_event import WebhookEvent
 
 
 class WebhookDelivery(RecordModel):
@@ -25,7 +28,7 @@ class WebhookDelivery(RecordModel):
     )
 
     @declared_attr
-    def webhook_event(cls) -> Mapped[WebhookEvent]:
+    def webhook_event(cls) -> Mapped["WebhookEvent"]:
         return relationship("WebhookEvent", lazy="raise")
 
     http_code: Mapped[int | None] = mapped_column(Integer, nullable=True)

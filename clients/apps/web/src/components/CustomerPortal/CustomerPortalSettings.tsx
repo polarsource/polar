@@ -11,6 +11,7 @@ import Button from "@polar-sh/ui/components/atoms/Button";
 import { Separator } from "@polar-sh/ui/components/ui/separator";
 import { useThemePreset } from "@polar-sh/ui/hooks/theming";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { twMerge } from "tailwind-merge";
 import { Modal } from "../Modal";
 import { useModal } from "../Modal/useModal";
@@ -29,6 +30,7 @@ export const CustomerPortalSettings = ({
 	customerSessionToken,
 }: CustomerPortalSettingsProps) => {
 	const api = createClientSideAPI(customerSessionToken);
+	const router = useRouter();
 
 	const {
 		isShown: isAddPaymentMethodModalOpen,
@@ -43,6 +45,15 @@ export const CustomerPortalSettings = ({
 		organization.slug === "midday" ? "midday" : "polar",
 		theme.resolvedTheme as "light" | "dark",
 	);
+
+	const handleSignOut = () => {
+		const url = new URL(window.location.href);
+
+		const parts = url.pathname.split("/");
+		const orgSlug = parts[1];
+
+		router.replace(`/${orgSlug}/portal/request`);
+	};
 
 	if (!customer) {
 		return null;
@@ -104,6 +115,15 @@ export const CustomerPortalSettings = ({
 					/>
 				</WellContent>
 			</Well>
+
+            <div className="flex">
+                <Button
+                    variant="destructive"
+                    onClick={handleSignOut}
+                >
+                    Sign Out
+                </Button>
+            </div>
 
 			<Modal
 				isShown={isAddPaymentMethodModalOpen}

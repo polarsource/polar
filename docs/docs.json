@@ -140,7 +140,8 @@
                 "group": "Framework Guides",
                 "pages": [
                   "guides/nextjs",
-                  "guides/laravel"
+                  "guides/laravel",
+                  "guides/variants"
                 ]
               },
               {

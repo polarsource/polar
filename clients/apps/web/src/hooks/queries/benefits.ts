@@ -203,3 +203,79 @@ export const useBenefitGrants = ({
 		},
 		retry: defaultRetry,
 	});
+
+export const useCustomerBenefitGrantsList = ({
+	customerId,
+	organizationId,
+	limit = 30,
+	page = 1,
+}: {
+	customerId: string;
+	organizationId: string;
+	limit?: number;
+	page?: number;
+}) =>
+	useQuery({
+		queryKey: [
+			"customer",
+			"benefit_grants",
+			customerId,
+			organizationId,
+			{ page, limit },
+		],
+		queryFn: async () => {
+			// We need to get all benefits for the organization first, then get grants for each benefit filtered by customer
+			const benefitsResponse = await unwrap(
+				api.GET("/v1/benefits/", {
+					params: {
+						query: {
+							organization_id: organizationId,
+							limit: 100, // Get all benefits
+						},
+					},
+				}),
+			);
+
+			// Collect all grants for this customer across all benefits
+			const allGrants: (schemas['BenefitGrant'] & { benefit: schemas['Benefit'] })[] = [];
+			
+			for (const benefit of benefitsResponse.items) {
+				const grantsResponse = await unwrap(
+					api.GET("/v1/benefits/{id}/grants", {
+						params: {
+							path: { id: benefit.id },
+							query: {
+								customer_id: customerId,
+								limit: 1000, // Get all grants for this customer
+							},
+						},
+					}),
+				);
+				// Add benefit information to each grant
+				const grantsWithBenefit = grantsResponse.items.map(grant => ({
+					...grant,
+					benefit,
+				}));
+				allGrants.push(...grantsWithBenefit);
+			}
+
+			// Sort by created_at descending by default
+			const sortedGrants = allGrants.sort((a, b) => 
+				new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+			);
+
+			// Apply pagination
+			const startIndex = (page - 1) * limit;
+			const endIndex = startIndex + limit;
+			const paginatedGrants = sortedGrants.slice(startIndex, endIndex);
+
+			return {
+				items: paginatedGrants,
+				pagination: {
+					total_count: sortedGrants.length,
+					max_page: Math.ceil(sortedGrants.length / limit),
+				},
+			};
+		},
+		retry: defaultRetry,
+	});

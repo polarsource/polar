@@ -1,5 +1,6 @@
 'use client'
 
+import { CustomerBenefit } from '@/components/Customer/CustomerBenefit'
 import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import AmountLabel from '@/components/Shared/AmountLabel'
@@ -68,6 +69,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="events">Events</TabsTrigger>
         <TabsTrigger value="usage">Usage</TabsTrigger>
+        <TabsTrigger value="benefits">Benefits</TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-12">
         <MetricChartBox
@@ -248,6 +250,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       <CustomerUsageView customer={customer} />
       <TabsContent value="events">
         <CustomerEventsView customer={customer} organization={organization} />
+      </TabsContent>
+      <TabsContent value="benefits">
+        <CustomerBenefit customer={customer} organization={organization} />
       </TabsContent>
     </Tabs>
   )

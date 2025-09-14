@@ -207,13 +207,9 @@ export const useBenefitGrants = ({
 export const useCustomerBenefitGrantsList = ({
 	customerId,
 	organizationId,
-	limit = 30,
-	page = 1,
 }: {
 	customerId: string;
 	organizationId: string;
-	limit?: number;
-	page?: number;
 }) =>
 	useQuery({
 		queryKey: [
@@ -221,24 +217,21 @@ export const useCustomerBenefitGrantsList = ({
 			"benefit_grants",
 			customerId,
 			organizationId,
-			{ page, limit },
 		],
 		queryFn: async () => {
-			// We need to get all benefits for the organization first, then get grants for each benefit filtered by customer
 			const benefitsResponse = await unwrap(
 				api.GET("/v1/benefits/", {
 					params: {
 						query: {
 							organization_id: organizationId,
-							limit: 100, // Get all benefits
+							limit: 100,
 						},
 					},
 				}),
 			);
 
-			// Collect all grants for this customer across all benefits
 			const allGrants: (schemas['BenefitGrant'] & { benefit: schemas['Benefit'] })[] = [];
-			
+
 			for (const benefit of benefitsResponse.items) {
 				const grantsResponse = await unwrap(
 					api.GET("/v1/benefits/{id}/grants", {
@@ -246,12 +239,11 @@ export const useCustomerBenefitGrantsList = ({
 							path: { id: benefit.id },
 							query: {
 								customer_id: customerId,
-								limit: 1000, // Get all grants for this customer
+								limit: 1000,
 							},
 						},
 					}),
 				);
-				// Add benefit information to each grant
 				const grantsWithBenefit = grantsResponse.items.map(grant => ({
 					...grant,
 					benefit,
@@ -259,23 +251,11 @@ export const useCustomerBenefitGrantsList = ({
 				allGrants.push(...grantsWithBenefit);
 			}
 
-			// Sort by created_at descending by default
-			const sortedGrants = allGrants.sort((a, b) => 
+			const sortedGrants = allGrants.sort((a, b) =>
 				new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
 			);
 
-			// Apply pagination
-			const startIndex = (page - 1) * limit;
-			const endIndex = startIndex + limit;
-			const paginatedGrants = sortedGrants.slice(startIndex, endIndex);
-
-			return {
-				items: paginatedGrants,
-				pagination: {
-					total_count: sortedGrants.length,
-					max_page: Math.ceil(sortedGrants.length / limit),
-				},
-			};
+			return sortedGrants;
 		},
 		retry: defaultRetry,
 	});

@@ -1,11 +1,7 @@
-// https://github.com/polarsource/polar/issues/6167
 'use client'
 
 import { useCustomerBenefitGrantsList } from '@/hooks/queries/benefits'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-} from '@/utils/datatable'
+import { DataTableSortingState } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -29,36 +25,32 @@ export const CustomerBenefit: React.FC<CustomerBenefitProps> = ({
   customer,
   organization,
 }) => {
-  const [pagination, setPagination] = React.useState<DataTablePaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  })
   const [sorting, setSorting] = React.useState<DataTableSortingState>([])
 
   const { data: benefitGrants, isLoading } = useCustomerBenefitGrantsList({
     customerId: customer.id,
     organizationId: organization.id,
-    page: pagination.pageIndex + 1,
-    limit: pagination.pageSize,
   })
 
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-xl">Customer Benefits</h2>
-      {benefitGrants?.items.length === 0 && !isLoading ? (
-        <div className="flex items-center justify-center p-8 text-gray-500 dark:text-gray-400">
-          <p>This customer has no benefit grants.</p>
+      {!isLoading && benefitGrants?.length === 0 && (
+        <div className="flex flex-col items-center gap-y-6">
+          <div className="flex flex-col items-center gap-y-2">
+            <h3 className="text-lg font-medium">No benefits granted</h3>
+            <p className="dark:text-polar-500 text-gray-500">
+              This customer has no benefit grants.
+            </p>
+          </div>
         </div>
-      ) : (
+      )}
+      {(isLoading || (benefitGrants && benefitGrants.length > 0)) && (
         <DataTable
-          data={benefitGrants?.items || []}
+          data={benefitGrants || []}
           isLoading={isLoading}
           sorting={sorting}
           onSortingChange={setSorting}
-          pagination={pagination}
-          rowCount={benefitGrants?.pagination.total_count ?? 0}
-          pageCount={benefitGrants?.pagination.max_page ?? 1}
-          onPaginationChange={setPagination}
           columns={[
             {
               accessorKey: 'benefit',

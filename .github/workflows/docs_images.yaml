@@ -19,6 +19,6 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Compress Images
-        uses: calibreapp/image-actions@1.4.0
+        uses: calibreapp/image-actions@1.4.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

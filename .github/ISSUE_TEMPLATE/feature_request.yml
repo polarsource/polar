@@ -1,7 +1,7 @@
 name: Feature request
 description: 'Suggest a feature for Polar'
 labels: ['stage/discussion']
-type: ['Feature Request']
+type: 'Feature Request'
 body:
     - type: textarea
       id: feature_request

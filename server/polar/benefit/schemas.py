@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import UUID4, Discriminator
 
@@ -121,40 +121,43 @@ class BenefitGrantWebhookBase(BenefitGrantBase):
     customer: Customer
 
 
+type PreviousProperties = dict[str, Any]
+
+
 class BenefitGrantDiscordWebhook(BenefitGrantWebhookBase):
     benefit: BenefitDiscord
     properties: BenefitGrantDiscordProperties
-    previous_properties: BenefitGrantDiscordProperties | None = None
+    previous_properties: PreviousProperties | None = None
 
 
 class BenefitGrantCustomWebhook(BenefitGrantWebhookBase):
     benefit: BenefitCustom
     properties: BenefitGrantCustomProperties
-    previous_properties: BenefitGrantCustomProperties | None = None
+    previous_properties: PreviousProperties | None = None
 
 
 class BenefitGrantGitHubRepositoryWebhook(BenefitGrantWebhookBase):
     benefit: BenefitGitHubRepository
     properties: BenefitGrantGitHubRepositoryProperties
-    previous_properties: BenefitGrantGitHubRepositoryProperties | None = None
+    previous_properties: PreviousProperties | None = None
 
 
 class BenefitGrantDownloadablesWebhook(BenefitGrantWebhookBase):
     benefit: BenefitDownloadables
     properties: BenefitGrantDownloadablesProperties
-    previous_properties: BenefitGrantDownloadablesProperties | None = None
+    previous_properties: PreviousProperties | None = None
 
 
 class BenefitGrantLicenseKeysWebhook(BenefitGrantWebhookBase):
     benefit: BenefitLicenseKeys
     properties: BenefitGrantLicenseKeysProperties
-    previous_properties: BenefitGrantLicenseKeysProperties | None = None
+    previous_properties: PreviousProperties | None = None
 
 
 class BenefitGrantMeterCreditWebhook(BenefitGrantWebhookBase):
     benefit: BenefitMeterCredit
     properties: BenefitGrantMeterCreditProperties
-    previous_properties: BenefitGrantMeterCreditProperties | None = None
+    previous_properties: PreviousProperties | None = None
 
 
 BenefitGrantWebhook = Annotated[

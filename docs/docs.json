@@ -575,7 +575,7 @@
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboar",
+      "label": "Dashboard",
       "href": "https://polar.sh"
     }
   },

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="polar_brand">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/clients/apps/web/public/assets/brand/polar_brand.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

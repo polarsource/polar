@@ -18,10 +18,21 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from '@polar-sh/ui/components/atoms/Select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
-import { Form, FormControl, FormField, FormMessage, } from '@polar-sh/ui/components/ui/form'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormMessage,
+} from '@polar-sh/ui/components/ui/form'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useForm, useFormContext } from 'react-hook-form'
@@ -29,7 +40,11 @@ import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
 import ConfirmationButton from '../ui/ConfirmationButton'
-import { SettingsGroup, SettingsGroupActions, SettingsGroupItem, } from './SettingsGroup'
+import {
+  SettingsGroup,
+  SettingsGroupActions,
+  SettingsGroupItem,
+} from './SettingsGroup'
 
 interface OrganizationDetailsFormProps {
   organization: schemas['Organization']

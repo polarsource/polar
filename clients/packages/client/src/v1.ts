@@ -5232,7 +5232,7 @@ export interface components {
             customer: components["schemas"]["Customer"];
             benefit: components["schemas"]["BenefitCustom"];
             properties: components["schemas"]["BenefitGrantCustomProperties"];
-            previous_properties?: components["schemas"]["PreviousProperties"] | null;
+            previous_properties?: components["schemas"]["BenefitGrantCustomProperties"] | null;
         };
         /** BenefitGrantDiscordProperties */
         BenefitGrantDiscordProperties: {
@@ -5311,7 +5311,7 @@ export interface components {
             customer: components["schemas"]["Customer"];
             benefit: components["schemas"]["BenefitDiscord"];
             properties: components["schemas"]["BenefitGrantDiscordProperties"];
-            previous_properties?: components["schemas"]["PreviousProperties"] | null;
+            previous_properties?: components["schemas"]["BenefitGrantDiscordProperties"] | null;
         };
         /** BenefitGrantDownloadablesProperties */
         BenefitGrantDownloadablesProperties: {
@@ -5384,7 +5384,7 @@ export interface components {
             customer: components["schemas"]["Customer"];
             benefit: components["schemas"]["BenefitDownloadables"];
             properties: components["schemas"]["BenefitGrantDownloadablesProperties"];
-            previous_properties?: components["schemas"]["PreviousProperties"] | null;
+            previous_properties?: components["schemas"]["BenefitGrantDownloadablesProperties"] | null;
         };
         /** BenefitGrantError */
         BenefitGrantError: {
@@ -5477,7 +5477,7 @@ export interface components {
             customer: components["schemas"]["Customer"];
             benefit: components["schemas"]["BenefitGitHubRepository"];
             properties: components["schemas"]["BenefitGrantGitHubRepositoryProperties"];
-            previous_properties?: components["schemas"]["PreviousProperties"] | null;
+            previous_properties?: components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | null;
         };
         /** BenefitGrantLicenseKeysProperties */
         BenefitGrantLicenseKeysProperties: {
@@ -5552,7 +5552,7 @@ export interface components {
             customer: components["schemas"]["Customer"];
             benefit: components["schemas"]["BenefitLicenseKeys"];
             properties: components["schemas"]["BenefitGrantLicenseKeysProperties"];
-            previous_properties?: components["schemas"]["PreviousProperties"] | null;
+            previous_properties?: components["schemas"]["BenefitGrantLicenseKeysProperties"] | null;
         };
         /** BenefitGrantMetadata */
         BenefitGrantMetadata: {
@@ -5565,11 +5565,11 @@ export interface components {
         /** BenefitGrantMeterCreditProperties */
         BenefitGrantMeterCreditProperties: {
             /** Last Credited Meter Id */
-            last_credited_meter_id: string;
+            last_credited_meter_id?: string;
             /** Last Credited Units */
-            last_credited_units: number;
+            last_credited_units?: number;
             /** Last Credited At */
-            last_credited_at: string;
+            last_credited_at?: string;
         };
         /** BenefitGrantMeterCreditWebhook */
         BenefitGrantMeterCreditWebhook: {
@@ -5637,7 +5637,7 @@ export interface components {
             customer: components["schemas"]["Customer"];
             benefit: components["schemas"]["BenefitMeterCredit"];
             properties: components["schemas"]["BenefitGrantMeterCreditProperties"];
-            previous_properties?: components["schemas"]["PreviousProperties"] | null;
+            previous_properties?: components["schemas"]["BenefitGrantMeterCreditProperties"] | null;
         };
         BenefitGrantWebhook: components["schemas"]["BenefitGrantDiscordWebhook"] | components["schemas"]["BenefitGrantCustomWebhook"] | components["schemas"]["BenefitGrantGitHubRepositoryWebhook"] | components["schemas"]["BenefitGrantDownloadablesWebhook"] | components["schemas"]["BenefitGrantLicenseKeysWebhook"] | components["schemas"]["BenefitGrantMeterCreditWebhook"];
         /**
@@ -15116,9 +15116,6 @@ export interface components {
          * @enum {string}
          */
         PledgeState: "initiated" | "created" | "pending" | "refunded" | "disputed" | "charge_disputed" | "cancelled";
-        PreviousProperties: {
-            [key: string]: unknown;
-        };
         /**
          * Processor
          * @description Supported payment or payout processors, i.e rails for transactions.

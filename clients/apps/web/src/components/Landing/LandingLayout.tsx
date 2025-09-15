@@ -68,7 +68,7 @@ const NavLink = ({
 			target={isExternal ? "_blank" : target}
 			prefetch
 			className={twMerge(
-				"dark:text-polar-500 flex items-center gap-x-2 text-gray-500 transition-colors hover:text-black dark:hover:text-white",
+				"dark:text-polar-500 -m-1 flex items-center gap-x-2 p-1 text-gray-500 transition-colors hover:text-black dark:hover:text-white",
 				isActive && "text-black dark:text-white",
 				className,
 			)}
@@ -210,7 +210,7 @@ const LandingPageDesktopNavigation = () => {
 						<Popover open={isResourcesOpen} onOpenChange={setIsResourcesOpen}>
 							<PopoverTrigger
 								className={twMerge(
-									"dark:text-polar-500 flex items-center gap-x-2 text-gray-500 transition-colors hover:text-black focus:outline-none dark:hover:text-white",
+									"dark:text-polar-500 -m-1 flex items-center gap-x-2 p-1 text-gray-500 transition-colors hover:text-black focus:outline-none dark:hover:text-white",
 									(isResourcesOpen || pathname.includes("/resources")) &&
 										"text-black dark:text-white",
 								)}
@@ -221,6 +221,7 @@ const LandingPageDesktopNavigation = () => {
 							</PopoverTrigger>
 							<PopoverContent
 								className="grid w-fit grid-cols-3 divide-x p-0"
+                sideOffset={0}
 								onMouseEnter={() => setIsResourcesOpen(true)}
 								onMouseLeave={() => setIsResourcesOpen(false)}
 							>

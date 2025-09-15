@@ -20512,6 +20512,10 @@ export interface operations {
             query?: {
                 /** @description Filter by webhook endpoint ID. */
                 endpoint_id?: string | string[] | null;
+                /** @description Filter deliveries after this timestamp. */
+                start_timestamp?: string | null;
+                /** @description Filter deliveries before this timestamp. */
+                end_timestamp?: string | null;
                 /** @description Page number, defaults to 1. */
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */

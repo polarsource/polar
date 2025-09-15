@@ -36,3 +36,19 @@ class WebhookEventRepository(
         if older_than is not None:
             statement = statement.where(WebhookEvent.created_at < older_than)
         return await self.get_all(statement)
+
+
+class WebhookDeliveryRepository(
+    RepositorySoftDeletionIDMixin[WebhookDelivery, UUID],
+    RepositorySoftDeletionMixin[WebhookDelivery],
+    RepositoryBase[WebhookDelivery],
+):
+    model = WebhookDelivery
+
+    async def get_all_by_event(self, event: UUID) -> Sequence[WebhookDelivery]:
+        statement = (
+            self.get_base_statement()
+            .where(WebhookDelivery.webhook_event_id == event)
+            .order_by(WebhookDelivery.created_at.asc())
+        )
+        return await self.get_all(statement)

@@ -130,12 +130,17 @@ class WebhookDelivery(IDSchema, TimestampedSchema):
     A webhook delivery for a webhook event.
     """
 
+    succeeded: bool = Field(description="Whether the delivery was successful.")
     http_code: int | None = Field(
-        None,
         description="The HTTP code returned by the URL."
         " `null` if the endpoint was unreachable.",
     )
-    succeeded: bool = Field(description="Whether the delivery was successful.")
+    response: str | None = Field(
+        description=(
+            "The response body returned by the URL, "
+            "or the error message if the endpoint was unreachable."
+        ),
+    )
     webhook_event: WebhookEvent = Field(
         description="The webhook event sent by this delivery."
     )

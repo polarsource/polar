@@ -103,6 +103,7 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
 
         user = email_update_record.user
         user.email = email_update_record.email
+        session.add(user)
 
         await session.delete(email_update_record)
 

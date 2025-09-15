@@ -1,9 +1,8 @@
 ---
-name: 🪲 Bug Report
-about: Report an issue to help us improve
-title: ""
+name: Bug Report
+about: Something not working as expected? Let us look into it.
 labels: "bug"
-assignees: ""
+type: "Backlog"
 ---
 
 ### Description
@@ -26,9 +25,3 @@ assignees: ""
 
 -   Operating System: [e.g., Windows, macOS, Linux]
 -   Browser (if applicable): [e.g., Chrome, Firefox, Safari]
-
----
-
-<!-- Thank you for contributing to Polar! We appreciate your help in improving it. -->
-
-<!-- Questions: [Discord Server](https://discord.com/invite/Pnhfz3UThd). -->

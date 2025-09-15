@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 from annotated_types import Ge
 from pydantic import Discriminator, Field, TypeAdapter
 
+from polar.kit.schemas import HttpUrlToStr
 from polar.organization.schemas import NameInput, SlugInput
 
 from .. import forms
@@ -55,8 +56,17 @@ class UpdateOrganizationForm(forms.BaseForm):
 
 
 class UpdateOrganizationDetailsForm(forms.BaseForm):
-    """Simplified form for editing only the three key organization detail fields."""
+    """Simplified form for editing organization detail fields and website."""
 
+    website: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://example.com"),
+        Field(
+            None,
+            title="Website",
+            description="Official website of the organization",
+        ),
+    ]
     about: Annotated[
         str,
         forms.TextAreaField(rows=4),

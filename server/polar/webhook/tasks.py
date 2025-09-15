@@ -94,12 +94,19 @@ async def _webhook_event_send(
                 timeout=20.0,
             )
             delivery.http_code = response.status_code
+            delivery.response = (
+                # Limit to first 2048 characters to avoid bloating the DB
+                response.text[:2048] if response.text else None
+            )
             event.last_http_code = response.status_code
             response.raise_for_status()
         # Error
         except (httpx.HTTPError, SSLError) as e:
-            bound_log.debug("An errror occurred while sending a webhook", error=e)
+            bound_log.info("An error occurred while sending a webhook", error=e)
             delivery.succeeded = False
+            if delivery.response is None:
+                delivery.response = str(e)
+
             # Permanent failure
             if not can_retry():
                 event.succeeded = False

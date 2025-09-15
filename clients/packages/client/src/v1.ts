@@ -17149,15 +17149,20 @@ export interface components {
              */
             id: string;
             /**
-             * Http Code
-             * @description The HTTP code returned by the URL. `null` if the endpoint was unreachable.
-             */
-            http_code?: number | null;
-            /**
              * Succeeded
              * @description Whether the delivery was successful.
              */
             succeeded: boolean;
+            /**
+             * Http Code
+             * @description The HTTP code returned by the URL. `null` if the endpoint was unreachable.
+             */
+            http_code: number | null;
+            /**
+             * Response
+             * @description The response body returned by the URL, or the error message if the endpoint was unreachable.
+             */
+            response: string | null;
             /** @description The webhook event sent by this delivery. */
             webhook_event: components["schemas"]["WebhookEvent"];
         };

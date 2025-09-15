@@ -3,10 +3,12 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from polar.meter.filter import INT_MAX_VALUE
 from polar.models.product_price import ProductPriceAmountType
 from polar.product.schemas import ProductPriceMeteredUnitCreate
 from tests.fixtures.random_objects import METER_ID
+
+# PostgreSQL int4 range limit
+INT_MAX_VALUE = 2_147_483_647
 
 
 class TestProductPriceMeteredUnitCreate:
@@ -66,7 +68,7 @@ class TestProductPriceMeteredUnitCreate:
                 meter_id=METER_ID,
                 cap_amount=-1,
             )
-        
+
         errors = exc_info.value.errors()
         assert len(errors) == 1
         assert errors[0]["type"] == "greater_than_equal"
@@ -82,7 +84,7 @@ class TestProductPriceMeteredUnitCreate:
                 meter_id=METER_ID,
                 cap_amount=INT_MAX_VALUE + 1,
             )
-        
+
         errors = exc_info.value.errors()
         assert len(errors) == 1
         assert errors[0]["type"] == "less_than_equal"
@@ -98,7 +100,7 @@ class TestProductPriceMeteredUnitCreate:
                 meter_id=METER_ID,
                 cap_amount=100_000_000_000,  # The value from the bug report
             )
-        
+
         errors = exc_info.value.errors()
         assert len(errors) == 1
         assert errors[0]["type"] == "less_than_equal"

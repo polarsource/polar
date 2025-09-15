@@ -26,7 +26,6 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.meter.filter import INT_MAX_VALUE
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceType,
@@ -46,6 +45,9 @@ from polar.models.product_price import (
 from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
+
+# PostgreSQL int4 range limit
+INT_MAX_VALUE = 2_147_483_647
 
 # Product
 

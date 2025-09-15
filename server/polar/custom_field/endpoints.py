@@ -10,7 +10,12 @@ from polar.models import CustomField
 from polar.models.custom_field import CustomFieldType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
 from . import auth, sorting
@@ -42,7 +47,7 @@ async def list(
     type: MultipleQueryFilter[CustomFieldType] | None = Query(
         None, title="CustomFieldType Filter", description="Filter by custom field type."
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CustomFieldSchema]:
     """List custom fields."""
     results, count = await custom_field_service.list(
@@ -71,7 +76,7 @@ async def list(
 async def get(
     id: CustomFieldID,
     auth_subject: auth.CustomFieldRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CustomField:
     """Get a custom field by ID."""
     custom_field = await custom_field_service.get_by_id(session, auth_subject, id)

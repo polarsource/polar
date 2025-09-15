@@ -1,30 +1,16 @@
 from collections.abc import AsyncIterator, Callable, Coroutine
-from pathlib import Path
-from uuid import UUID
 
 import pytest
 import pytest_asyncio
 from pydantic_core import Url
 from pytest_mock import MockerFixture
-from sqlalchemy import Integer, String, Uuid
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from polar.config import settings
-from polar.kit.db.postgres import AsyncSession, create_async_engine
-from polar.kit.utils import generate_uuid
+from polar.kit.db.postgres import create_async_engine
 from polar.models import Model
-
-
-class TestModel(Model):
-    __test__ = False  # This is a base class, not a test
-
-    __tablename__ = "test_model"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=None)
-    uuid: Mapped[UUID] = mapped_column(Uuid, default=generate_uuid)
-    int_column: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True)
-    str_column: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
 
 
 def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
@@ -65,10 +51,6 @@ async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
     yield
 
     drop_database(sync_database_url)
-
-
-polar_directory = Path(__file__).parent.parent.parent / "polar"
-tests_directory = Path(__file__).parent.parent.parent / "tests"
 
 
 @pytest_asyncio.fixture

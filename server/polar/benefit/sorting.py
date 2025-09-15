@@ -9,6 +9,7 @@ from polar.kit.sorting import Sorting, SortingGetter
 class BenefitSortProperty(StrEnum):
     created_at = "created_at"
     description = "description"
+    type = "type"
 
 
 ListSorting = Annotated[

@@ -11,8 +11,11 @@ services:
       - POSTGRES_PASSWORD=${POLAR_POSTGRES_PWD}
       - POSTGRES_DB=${POLAR_POSTGRES_DATABASE}
       - POSTGRES_PORT=${POLAR_POSTGRES_PORT}
+      - POLAR_READ_USER=${POLAR_POSTGRES_READ_USER:-polar_read}
+      - POLAR_READ_PASSWORD=${POLAR_POSTGRES_READ_PWD}
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+      - ./init-readonly-user.sql:/docker-entrypoint-initdb.d/init-readonly-user.sql
     ports:
       - "${POLAR_POSTGRES_PORT}:${POLAR_POSTGRES_PORT}"
     expose:

@@ -9,7 +9,12 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Account
 from polar.openapi import APITag
 from polar.organization.service import organization as organization_service
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
 from .schemas import Account as AccountSchema
@@ -23,7 +28,7 @@ router = APIRouter(tags=["accounts", APITag.private])
 async def search(
     auth_subject: WebUserRead,
     pagination: PaginationParamsQuery,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[AccountSchema]:
     results, count = await account_service.search(
         session, auth_subject, pagination=pagination
@@ -40,7 +45,7 @@ async def search(
 async def get(
     id: UUID,
     auth_subject: WebUserRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Account:
     account = await account_service.get(session, auth_subject, id)
     if account is None:

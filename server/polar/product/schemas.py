@@ -46,6 +46,9 @@ from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
 
+# PostgreSQL int4 range limit
+INT_MAX_VALUE = 2_147_483_647
+
 # Product
 
 ProductID = Annotated[
@@ -166,6 +169,7 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
     cap_amount: int | None = Field(
         default=None,
         ge=0,
+        le=INT_MAX_VALUE,
         description=(
             "Optional maximum amount in cents that can be charged, "
             "regardless of the number of units consumed."

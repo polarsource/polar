@@ -32,7 +32,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version-file: "server/pyproject.toml"
 
@@ -104,10 +104,10 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10.5.2
+          version: 10.13.1
 
       - name: 📬 Setup Node.js environment for server/emails
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version-file: server/emails/.node-version
           cache: "pnpm"
@@ -123,7 +123,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version-file: "server/pyproject.toml"
 

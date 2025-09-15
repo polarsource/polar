@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe_lib  # type: ignore[attr-defined]
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Account
 from polar.postgres import create_async_engine
 
@@ -42,24 +42,20 @@ def typer_async(f):  # type: ignore
 @typer_async
 async def account_payout_schedule() -> None:
     engine = create_async_engine("script")
-    async with engine.connect() as connection:
-        async with connection.begin():
-            session = AsyncSession(
-                bind=connection, join_transaction_mode="create_savepoint"
-            )
+    sessionmaker = create_async_sessionmaker(engine)
+    async with sessionmaker() as session:
+        accounts_statement = select(Account).where(
+            Account.account_type == AccountType.stripe
+        )
+        accounts = await session.stream_scalars(accounts_statement)
+        async for account in accounts:
+            typer.echo("\n---\n")
+            typer.echo(f"🔄 Handling {account.id}")
 
-            accounts_statement = select(Account).where(
-                Account.account_type == AccountType.stripe
+            await stripe_lib.Account.modify_async(
+                account.stripe_id,
+                settings={"payouts": {"schedule": {"interval": "manual"}}},
             )
-            accounts = await session.stream_scalars(accounts_statement)
-            async for account in accounts:
-                typer.echo("\n---\n")
-                typer.echo(f"🔄 Handling {account.id}")
-
-                await stripe_lib.Account.modify_async(
-                    account.stripe_id,
-                    settings={"payouts": {"schedule": {"interval": "manual"}}},
-                )
 
 
 if __name__ == "__main__":

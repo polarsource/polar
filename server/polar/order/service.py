@@ -33,9 +33,9 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.address import Address
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
-from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.tax import (
     TaxabilityReason,
@@ -332,7 +332,7 @@ class OrderService:
 
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -388,11 +388,13 @@ class OrderService:
 
         statement = repository.apply_sorting(statement, sorting)
 
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Order | None:
@@ -673,22 +675,32 @@ class OrderService:
         tax_calculation_processor_id: str | None = None
 
         if (
-            subtotal_amount > 0
-            and product.is_tax_applicable
+            product.is_tax_applicable
             and billing_address is not None
             and product.stripe_product_id is not None
         ):
+            taxable_amount = subtotal_amount - discount_amount
             tax_calculation = await calculate_tax(
                 order_id,
                 subscription.currency,
-                subtotal_amount - discount_amount,
+                # Stripe doesn't support calculating negative tax amounts
+                taxable_amount if taxable_amount >= 0 else -taxable_amount,
                 product.stripe_product_id,
                 billing_address,
                 [tax_id] if tax_id is not None else [],
                 subscription.tax_exempted,
             )
-            tax_calculation_processor_id = tax_calculation["processor_id"]
-            tax_amount = tax_calculation["amount"]
+            if taxable_amount >= 0:
+                tax_calculation_processor_id = tax_calculation["processor_id"]
+                tax_amount = tax_calculation["amount"]
+            else:
+                # When the taxable amount is negative it's usually due to a credit proration
+                # this means we "owe" the customer money -- but we don't pay it back at this
+                # point. This also means that there's no money transaction going on, and we
+                # don't have to record the tax transaction either.
+                tax_calculation_processor_id = None
+                tax_amount = -tax_calculation["amount"]
+
             taxability_reason = tax_calculation["taxability_reason"]
             tax_rate = tax_calculation["tax_rate"]
 

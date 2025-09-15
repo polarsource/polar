@@ -37,6 +37,7 @@ from polar.organization_access_token.endpoints import (
 )
 from polar.payment.endpoints import router as payment_router
 from polar.payout.endpoints import router as payout_router
+from polar.personal_access_token.endpoints import router as pat_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
 from polar.storefront.endpoints import router as storefront_router
@@ -61,6 +62,8 @@ router.include_router(discord_router)
 router.include_router(login_code_router)
 # /notifications
 router.include_router(notifications_router)
+# /personal_access_tokens
+router.include_router(pat_router)
 # /accounts
 router.include_router(accounts_router)
 # /stream

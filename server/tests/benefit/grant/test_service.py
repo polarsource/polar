@@ -126,6 +126,37 @@ class TestGrantBenefit:
         assert grant.error["type"] == "BenefitActionRequiredError"
         assert "timestamp" in grant.error
 
+    async def test_revoked_grant_action_required_error(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        grant = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=benefit_organization
+        )
+        grant.set_revoked()
+        await save_fixture(grant)
+
+        error_message = "Action required error message"
+        benefit_strategy_mock.grant.side_effect = BenefitActionRequiredError(
+            error_message
+        )
+
+        updated_grant = await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit_organization, subscription=subscription
+        )
+
+        assert grant.error is not None
+        assert grant.error["message"] == error_message
+        assert grant.error["type"] == "BenefitActionRequiredError"
+        assert grant.granted_at is None
+        assert grant.revoked_at is None
+
     async def test_default_properties_value(
         self,
         session: AsyncSession,

@@ -69,7 +69,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.guard import (
     is_currency_price,
     is_custom_price,
@@ -192,7 +192,7 @@ CHECKOUT_CLIENT_SECRET_PREFIX = "polar_c_"
 class CheckoutService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -233,7 +233,7 @@ class CheckoutService:
 
     async def get_by_id(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Checkout | None:
@@ -390,7 +390,11 @@ class CheckoutService:
         elif is_custom_price(price):
             currency = price.price_currency
             if amount is None:
-                amount = price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+                amount = (
+                    price.preset_amount
+                    or price.minimum_amount
+                    or settings.CUSTOM_PRICE_PRESET_FALLBACK
+                )
         else:
             amount = 0
             currency = price.price_currency if is_currency_price(price) else "usd"
@@ -553,7 +557,11 @@ class CheckoutService:
             currency = price.price_currency
         elif is_custom_price(price):
             currency = price.price_currency
-            amount = price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+            amount = (
+                price.preset_amount
+                or price.minimum_amount
+                or settings.CUSTOM_PRICE_PRESET_FALLBACK
+            )
         elif is_currency_price(price):
             currency = price.price_currency
 
@@ -639,7 +647,11 @@ class CheckoutService:
             currency = price.price_currency
         elif is_custom_price(price):
             currency = price.price_currency
-            amount = price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+            amount = (
+                price.preset_amount
+                or price.minimum_amount
+                or settings.CUSTOM_PRICE_PRESET_FALLBACK
+            )
         elif is_currency_price(price):
             currency = price.price_currency
 
@@ -1406,7 +1418,9 @@ class CheckoutService:
                 checkout.currency = price.price_currency
             elif is_custom_price(price):
                 checkout.amount = (
-                    price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+                    price.preset_amount
+                    or price.minimum_amount
+                    or settings.CUSTOM_PRICE_PRESET_FALLBACK
                 )
                 checkout.currency = price.price_currency
             elif is_currency_price(price):

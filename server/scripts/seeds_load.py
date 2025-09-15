@@ -1,10 +1,11 @@
 import asyncio
 import random
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any, Literal, NotRequired, TypedDict
 
 import dramatiq
 import typer
-from sqlalchemy.ext.asyncio import AsyncSession
 
 import polar.tasks  # noqa: F401
 from polar.auth.models import AuthSubject
@@ -16,12 +17,16 @@ from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesC
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
 from polar.checkout_link.schemas import CheckoutLinkCreateProducts
 from polar.checkout_link.service import checkout_link as checkout_link_service
-from polar.config import settings
 from polar.customer.schemas.customer import CustomerCreate
 from polar.customer.service import customer as customer_service
 from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
-from polar.kit.db.postgres import create_async_engine
+from polar.event.repository import EventRepository
+from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import utc_now
+from polar.meter.aggregation import CountAggregation
+from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
+from polar.meter.schemas import MeterCreate
+from polar.meter.service import meter as meter_service
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.file import File, FileServiceTypes
@@ -30,7 +35,12 @@ from polar.models.product_price import ProductPriceAmountType
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
-from polar.product.schemas import ProductCreate, ProductPriceFixedCreate
+from polar.postgres import AsyncSession, create_async_engine
+from polar.product.schemas import (
+    ProductCreate,
+    ProductPriceFixedCreate,
+    ProductPriceMeteredUnitCreate,
+)
 from polar.product.service import product as product_service
 from polar.redis import Redis, create_redis
 from polar.user.repository import UserRepository
@@ -57,9 +67,12 @@ class OrganizationDict(TypedDict):
 class ProductDict(TypedDict):
     name: str
     description: str
-    price: int
+    price: NotRequired[int]
     recurring: SubscriptionRecurringInterval | None
     benefits: NotRequired[list[str]]
+    metered: NotRequired[bool]
+    unit_amount: NotRequired[float]
+    cap_amount: NotRequired[int | None]
 
 
 class BenefitDictBase(TypedDict):
@@ -128,6 +141,17 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "contact@acme-corp.com",
             "website": "https://acme-corp.com",
             "bio": "Leading provider of innovative solutions for modern businesses.",
+            "status": Organization.Status.ACTIVE,
+            "details": {
+                "about": "We provide business intelligence dashboard",
+                "intended_use": "Well have a checkout on our website granting.",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "Our business intellignce dashboard are mostly monthly subscriptions, but our mobile app is accessible after a one-time payment.",
+                "customer_acquisition": ["website"],
+                "future_annual_revenue": 2000000,
+                "previous_annual_revenue": 0,
+            },
             "products": [
                 {
                     "name": "Premium Business Suite",
@@ -287,6 +311,17 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "hello@coldmail.com",
             "website": "https://coldmail.com",
             "bio": "Online mail services like it's 1999!",
+            "status": Organization.Status.ACTIVE,
+            "details": {
+                "about": "We're a hottest cloud provider since sliced bread",
+                "intended_use": "We'll be selling various plans allowing access to our cloud storage and cloud document services.",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "We sell ColdMail which provides an email inbox plus file storage. We also sell TemperateDocs which allows creating and editing documents online.",
+                "customer_acquisition": ["website"],
+                "future_annual_revenue": 2000000,
+                "previous_annual_revenue": 0,
+            },
             "products": [
                 {
                     "name": "ColdMail 10 GB",
@@ -348,6 +383,52 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     "price": 60000,
                     "recurring": SubscriptionRecurringInterval.year,
                 },
+                {
+                    "name": "Coldmail Pay-As-You-Go",
+                    "description": "Pay per email sent - perfect for low-volume or occasional use",
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "metered": True,
+                    "unit_amount": 0.01,  # $0.01 per email
+                    "cap_amount": 10000,  # $100 maximum per month
+                },
+            ],
+        },
+        {
+            "name": "Example News Inc.",
+            "slug": "example-news-inc",
+            "email": "hello@examplenewsinc.com",
+            "website": "https://examplenewsinc.com",
+            "bio": "Your source of news",
+            "status": Organization.Status.ACTIVE,
+            "details": {
+                "about": "We provide news in various formats",
+                "intended_use": "We'll have a checkout on our website where you buy subscriptions to our various news products.",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "We send out our news products as emails daily and weekly",
+                "customer_acquisition": ["website"],
+                "future_annual_revenue": 2000000,
+                "previous_annual_revenue": 0,
+            },
+            "products": [
+                {
+                    "name": "Daily newspaper",
+                    "description": "Your source of truthful, subjective daily news",
+                    "price": 800,
+                    "recurring": SubscriptionRecurringInterval.day,
+                },
+                {
+                    "name": "Daily tabloid",
+                    "description": "Slander like there's no tomorrow!",
+                    "price": 1000,
+                    "recurring": SubscriptionRecurringInterval.day,
+                },
+                {
+                    "name": "Weekly paper",
+                    "description": "In-depth journalism and the weekly crossword",
+                    "price": 2500,
+                    "recurring": SubscriptionRecurringInterval.week,
+                },
             ],
         },
         {
@@ -407,7 +488,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         await user_repository.update(
             user,
             update_dict={
-                "is_admin": org_data.get("is_admin", False),
+                # Start with the user being admin, so that we can create daily and weekly products
+                "is_admin": True,
                 "identity_verification_status": IdentityVerificationStatus.verified,
                 "identity_verification_id": f"vs_{org_data['slug']}_test",
             },
@@ -437,12 +519,12 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         )
         session.add(organization)
 
-        # Create an Account for MeltedSQL organization
-        if org_data["slug"] == "melted-sql":
+        # Create an Account for all organizations except Widget Industries
+        if org_data["slug"] != "widget-industries":
             account = Account(
                 account_type=AccountType.stripe,
                 admin_id=user.id,
-                stripe_id="acct_meltedsql_test",  # Test Stripe account ID
+                stripe_id=f"acct_{organization.slug}_test",  # Test Stripe account ID
                 country="US",
                 currency="USD",
                 is_details_submitted=True,
@@ -495,15 +577,50 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             )
             org_benefits[key] = benefit
 
+        # Create meter for ColdMail organization
+        coldmail_meter = None
+        if org_data["slug"] == "coldmail":
+            meter_create = MeterCreate(
+                name="Email Sends",
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="type",
+                            operator=FilterOperator.eq,
+                            value="email_sent",
+                        )
+                    ],
+                ),
+                aggregation=CountAggregation(),
+                organization_id=organization.id,
+            )
+            coldmail_meter = await meter_service.create(
+                session=session,
+                meter_create=meter_create,
+                auth_subject=auth_subject,
+            )
+
         # Create products for organization
         org_products = []
         for product_data in org_data.get("products", []):
-            # Create price for product
-            price_create = ProductPriceFixedCreate(
-                amount_type=ProductPriceAmountType.fixed,
-                price_amount=product_data["price"],
-                price_currency="usd",
-            )
+            # Handle metered products
+            price_create: ProductPriceMeteredUnitCreate | ProductPriceFixedCreate
+            if product_data.get("metered", False) and coldmail_meter:
+                price_create = ProductPriceMeteredUnitCreate(
+                    amount_type=ProductPriceAmountType.metered_unit,
+                    price_currency="usd",
+                    unit_amount=Decimal(str(product_data["unit_amount"])),
+                    meter_id=coldmail_meter.id,
+                    cap_amount=product_data.get("cap_amount"),
+                )
+            else:
+                # Create fixed price for product
+                price_create = ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=product_data["price"],
+                    price_currency="usd",
+                )
 
             product_create = ProductCreate(
                 name=product_data["name"],
@@ -558,9 +675,51 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 auth_subject=auth_subject,
             )
 
+            # Create meter events for ColdMail customers
+            if org_data["slug"] == "coldmail" and coldmail_meter and i == 0:
+                # Create events for the first customer showing usage over time
+                event_repository = EventRepository.from_session(session)
+                events_to_insert = []
+
+                # Create 150 email send events over the past 30 days
+                base_time = datetime.now(UTC) - timedelta(days=30)
+
+                for day in range(30):
+                    # Variable number of emails per day (between 1 and 10)
+                    num_emails = random.randint(1, 10)
+                    for _ in range(num_emails):
+                        event_time = base_time + timedelta(
+                            days=day,
+                            hours=random.randint(0, 23),
+                            minutes=random.randint(0, 59),
+                        )
+                        events_to_insert.append(
+                            {
+                                "name": "email_sent",
+                                "source": "user",
+                                "timestamp": event_time,
+                                "organization_id": organization.id,
+                                "customer_id": customer.id,
+                                "user_metadata": {
+                                    "type": "email_sent",
+                                    "recipient": f"user{random.randint(1, 100)}@example.com",
+                                    "subject": f"Email subject {random.randint(1, 1000)}",
+                                },
+                            }
+                        )
+
+                # Insert all events in batch
+                if events_to_insert:
+                    await event_repository.insert_batch(events_to_insert)
+
             # TODO: Create some checkouts for customers
             # This would require more complex checkout creation logic
             pass
+
+        # Downgrade user from admin (for non-admin users)
+        await user_repository.update(
+            user, update_dict={"is_admin": org_data.get("is_admin", False)}
+        )
 
     await session.commit()
     print("✅ Sample data created successfully!")
@@ -574,14 +733,10 @@ def seeds_load() -> None:
     async def run() -> None:
         redis = create_redis("app")
         async with JobQueueManager.open(dramatiq.get_broker(), redis):
-            engine = create_async_engine(
-                dsn=str(settings.get_postgres_dsn("asyncpg")),
-                pool_size=5,
-                pool_recycle=3600,
-            )
-            async with engine.begin() as conn:
-                async with AsyncSession(bind=conn, expire_on_commit=False) as session:
-                    await create_seed_data(session, redis)
+            engine = create_async_engine("script")
+            sessionmaker = create_async_sessionmaker(engine)
+            async with sessionmaker() as session:
+                await create_seed_data(session, redis)
 
     asyncio.run(run())
 

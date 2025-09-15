@@ -20,6 +20,7 @@ from polar.kit.schemas import (
     IDSchema,
     MergeJSONSchema,
     Schema,
+    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.kit.validators import validate_http_url
@@ -114,11 +115,12 @@ class CheckoutLinkCreateProducts(CheckoutLinkCreateBase):
     )
 
 
-CheckoutLinkCreate = (
+CheckoutLinkCreate = Annotated[
     CheckoutLinkCreateProductPrice
     | CheckoutLinkCreateProduct
-    | CheckoutLinkCreateProducts
-)
+    | CheckoutLinkCreateProducts,
+    SetSchemaReference("CheckoutLinkCreate"),
+]
 
 
 class CheckoutLinkUpdate(MetadataInputMixin):

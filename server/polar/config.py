@@ -55,7 +55,9 @@ class Settings(BaseSettings):
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
     WORKER_MAX_RETRIES: int = 20
     WORKER_MIN_BACKOFF_MILLISECONDS: int = 2_000
+
     WEBHOOK_MAX_RETRIES: int = 10
+    WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=30)
 
     SECRET: str = "super secret jwt secret"
     JWKS: JWKSFile = Field(default="./.jwks.json")
@@ -118,6 +120,12 @@ class Settings(BaseSettings):
     DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
     DATABASE_COMMAND_TIMEOUT_SECONDS: float = 30.0
+
+    POSTGRES_READ_USER: str | None = None
+    POSTGRES_READ_PWD: str | None = None
+    POSTGRES_READ_HOST: str | None = None
+    POSTGRES_READ_PORT: int | None = None
+    POSTGRES_READ_DATABASE: str | None = None
 
     # Redis
     REDIS_HOST: str = "127.0.0.1"
@@ -306,6 +314,34 @@ class Settings(BaseSettings):
                 host=self.POSTGRES_HOST,
                 port=self.POSTGRES_PORT,
                 path=self.POSTGRES_DATABASE,
+            )
+        )
+
+    def is_read_replica_configured(self) -> bool:
+        return all(
+            [
+                self.POSTGRES_READ_USER,
+                self.POSTGRES_READ_PWD,
+                self.POSTGRES_READ_HOST,
+                self.POSTGRES_READ_PORT,
+                self.POSTGRES_READ_DATABASE,
+            ]
+        )
+
+    def get_postgres_read_dsn(
+        self, driver: Literal["asyncpg", "psycopg2"]
+    ) -> str | None:
+        if not self.is_read_replica_configured():
+            return None
+
+        return str(
+            PostgresDsn.build(
+                scheme=f"postgresql+{driver}",
+                username=self.POSTGRES_READ_USER,
+                password=self.POSTGRES_READ_PWD,
+                host=self.POSTGRES_READ_HOST,
+                port=self.POSTGRES_READ_PORT,
+                path=self.POSTGRES_READ_DATABASE,
             )
         )
 

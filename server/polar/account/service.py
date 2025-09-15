@@ -17,7 +17,7 @@ from polar.integrations.stripe.service import stripe
 from polar.kit.pagination import PaginationParams
 from polar.models import Account, Organization, User
 from polar.models.user import IdentityVerificationStatus
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.user.repository import UserRepository
 
 from .schemas import (
@@ -58,7 +58,7 @@ class UserNotOrganizationMemberError(AccountServiceError):
 class AccountService:
     async def search(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User],
         *,
         pagination: PaginationParams,
@@ -74,7 +74,7 @@ class AccountService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Account | None:
@@ -91,7 +91,7 @@ class AccountService:
 
     async def _get_unrestricted(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         id: uuid.UUID,
     ) -> Account | None:
         repository = AccountRepository.from_session(session)
@@ -106,7 +106,7 @@ class AccountService:
         return await repository.get_one_or_none(statement)
 
     async def is_user_admin(
-        self, session: AsyncSession, account_id: uuid.UUID, user: User
+        self, session: AsyncReadSession, account_id: uuid.UUID, user: User
     ) -> bool:
         account = await self._get_unrestricted(session, account_id)
         if account is None:

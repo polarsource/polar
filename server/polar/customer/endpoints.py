@@ -7,7 +7,12 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Customer
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
@@ -51,7 +56,7 @@ async def list(
     ),
     email: str | None = Query(None, description="Filter by exact email."),
     query: str | None = Query(None, description="Filter by name or email."),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CustomerSchema]:
     """List customers."""
     results, count = await customer_service.list(
@@ -81,7 +86,7 @@ async def list(
 async def get(
     id: CustomerID,
     auth_subject: auth.CustomerRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Customer:
     """Get a customer by ID."""
     customer = await customer_service.get(session, auth_subject, id)
@@ -101,7 +106,7 @@ async def get(
 async def get_external(
     external_id: ExternalCustomerID,
     auth_subject: auth.CustomerRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Customer:
     """Get a customer by external ID."""
     customer = await customer_service.get_external(session, auth_subject, external_id)
@@ -121,7 +126,7 @@ async def get_external(
 async def get_state(
     id: CustomerID,
     auth_subject: auth.CustomerRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis = Depends(get_redis),
 ) -> CustomerState:
     """
@@ -150,7 +155,7 @@ async def get_state(
 async def get_state_external(
     external_id: ExternalCustomerID,
     auth_subject: auth.CustomerRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis = Depends(get_redis),
 ) -> CustomerState:
     """

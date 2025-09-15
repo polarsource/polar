@@ -34,7 +34,7 @@ from polar.exceptions import (
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -181,7 +181,7 @@ def _from_timestamp(t: int | None) -> datetime | None:
 class SubscriptionService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -246,7 +246,7 @@ class SubscriptionService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Subscription | None:
@@ -1031,6 +1031,8 @@ class SubscriptionService:
             elif proration_behavior == SubscriptionProrationBehavior.prorate:
                 # Add prorations to next invoice
                 pass
+
+            await self.enqueue_benefits_grants(session, subscription)
 
         # Send product change email notification
         await self.send_subscription_updated_email(

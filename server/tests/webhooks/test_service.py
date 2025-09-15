@@ -9,13 +9,15 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.checkout.eventstream import CheckoutEvent
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
+from polar.kit.utils import utc_now
 from polar.models import (
     Organization,
     Product,
+    WebhookDelivery,
     WebhookEndpoint,
     WebhookEvent,
 )
-from polar.models.webhook_endpoint import WebhookFormat
+from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.postgres import AsyncSession
 from polar.webhook.schemas import HttpsUrl, WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import EventDoesNotExist, EventNotSuccessul
@@ -168,6 +170,7 @@ class TestOnEventSuccess:
         event = WebhookEvent(
             webhook_endpoint=webhook_endpoint_organization,
             succeeded=False,
+            type=WebhookEventType.checkout_updated,
             payload="{}",
         )
         await save_fixture(event)
@@ -187,12 +190,15 @@ class TestOnEventSuccess:
             "polar.webhook.service.publish_checkout_event"
         )
         checkout = await create_checkout(save_fixture, products=[product])
+        timestamp = utc_now()
         event = WebhookEvent(
+            created_at=timestamp,
             webhook_endpoint=webhook_endpoint_organization,
             succeeded=True,
             last_http_code=200,
+            type=WebhookEventType.checkout_updated,
             payload=WebhookCheckoutUpdatedPayload.model_validate(
-                {"type": "checkout.updated", "data": checkout}
+                {"type": "checkout.updated", "timestamp": timestamp, "data": checkout}
             ).model_dump_json(),
         )
         await save_fixture(event)
@@ -204,3 +210,139 @@ class TestOnEventSuccess:
             CheckoutEvent.webhook_event_delivered,
             {"status": checkout.status},
         )
+
+
+@pytest.mark.asyncio
+class TestIsLatestEvent:
+    async def test_single_event(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+    ) -> None:
+        event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_organization,
+            succeeded=False,
+            type=WebhookEventType.checkout_updated,
+            payload="{}",
+        )
+        await save_fixture(event)
+
+        assert await webhook_service.is_latest_event(session, event) is True
+
+    async def test_delivered_previous_event(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+    ) -> None:
+        delivered_event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_organization,
+            succeeded=True,
+            last_http_code=200,
+            type=WebhookEventType.checkout_updated,
+            payload="{}",
+        )
+        await save_fixture(delivered_event)
+        await save_fixture(
+            WebhookDelivery(
+                webhook_event=delivered_event,
+                webhook_endpoint=webhook_endpoint_organization,
+                succeeded=True,
+                http_code=200,
+            )
+        )
+
+        event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_organization,
+            succeeded=False,
+            type=WebhookEventType.checkout_updated,
+            payload="{}",
+        )
+        await save_fixture(event)
+
+        assert await webhook_service.is_latest_event(session, event) is True
+
+    async def test_delivered_previous_event_no_http_code(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+    ) -> None:
+        delivered_event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_organization,
+            succeeded=False,
+            last_http_code=None,
+            type=WebhookEventType.checkout_updated,
+            payload="{}",
+        )
+        await save_fixture(delivered_event)
+        await save_fixture(
+            WebhookDelivery(
+                webhook_event=delivered_event,
+                webhook_endpoint=webhook_endpoint_organization,
+                succeeded=False,
+                http_code=None,
+            )
+        )
+
+        event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_organization,
+            succeeded=False,
+            type=WebhookEventType.checkout_updated,
+            payload="{}",
+        )
+        await save_fixture(event)
+
+        assert await webhook_service.is_latest_event(session, event) is True
+
+    async def test_undelivered_previous_event(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+    ) -> None:
+        previous_event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_organization,
+            succeeded=False,
+            last_http_code=None,
+            type=WebhookEventType.checkout_updated,
+            payload="{}",
+        )
+        await save_fixture(previous_event)
+
+        event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_organization,
+            succeeded=False,
+            type=WebhookEventType.checkout_updated,
+            payload="{}",
+        )
+        await save_fixture(event)
+
+        assert await webhook_service.is_latest_event(session, event) is False
+
+    async def test_undelivered_previous_event_old(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+    ) -> None:
+        previous_event = WebhookEvent(
+            created_at=utc_now().replace(year=2000),
+            webhook_endpoint=webhook_endpoint_organization,
+            succeeded=False,
+            last_http_code=None,
+            type=WebhookEventType.checkout_updated,
+            payload="{}",
+        )
+        await save_fixture(previous_event)
+
+        event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_organization,
+            succeeded=False,
+            type=WebhookEventType.checkout_updated,
+            payload="{}",
+        )
+        await save_fixture(event)
+
+        assert await webhook_service.is_latest_event(session, event) is True

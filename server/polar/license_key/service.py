@@ -21,7 +21,7 @@ from polar.models import (
     Organization,
     User,
 )
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import LicenseKeyRepository
 from .schemas import (
@@ -38,7 +38,7 @@ log = structlog.get_logger()
 class LicenseKeyService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         pagination: PaginationParams,
@@ -64,7 +64,7 @@ class LicenseKeyService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: UUID,
     ) -> LicenseKey | None:
@@ -113,7 +113,7 @@ class LicenseKeyService:
         return lk
 
     async def get_activation_or_raise(
-        self, session: AsyncSession, *, license_key: LicenseKey, activation_id: UUID
+        self, session: AsyncReadSession, *, license_key: LicenseKey, activation_id: UUID
     ) -> LicenseKeyActivation:
         query = select(LicenseKeyActivation).where(
             LicenseKeyActivation.id == activation_id,

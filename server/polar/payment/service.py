@@ -11,7 +11,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import generate_uuid
 from polar.models import Checkout, Order, Payment
 from polar.models.payment import PaymentStatus
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import PaymentRepository
 from .sorting import PaymentSortProperty
@@ -43,7 +43,7 @@ class UnhandledPaymentIntent(PaymentError):
 class PaymentService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -86,7 +86,7 @@ class PaymentService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Payment | None:

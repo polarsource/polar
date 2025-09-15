@@ -358,6 +358,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/personal_access_tokens/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Personal Access Tokens
+         * @description List personal access tokens.
+         */
+        get: operations["personal_access_token:list_personal_access_tokens"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/personal_access_tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Personal Access Token */
+        delete: operations["personal_access_token:delete_personal_access_token"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/accounts/search": {
         parameters: {
             query?: never;
@@ -5129,73 +5166,8 @@ export interface components {
         };
         /** BenefitGrantCustomProperties */
         BenefitGrantCustomProperties: Record<string, never>;
-        /** BenefitGrantDiscordProperties */
-        BenefitGrantDiscordProperties: {
-            /** Account Id */
-            account_id?: string | null;
-            /** Guild Id */
-            guild_id?: string;
-            /** Role Id */
-            role_id?: string;
-            /** Granted Account Id */
-            granted_account_id?: string;
-        };
-        /** BenefitGrantDownloadablesProperties */
-        BenefitGrantDownloadablesProperties: {
-            /** Files */
-            files?: string[];
-        };
-        /** BenefitGrantError */
-        BenefitGrantError: {
-            /** Message */
-            message: string;
-            /** Type */
-            type: string;
-            /** Timestamp */
-            timestamp: string;
-        };
-        /** BenefitGrantGitHubRepositoryProperties */
-        BenefitGrantGitHubRepositoryProperties: {
-            /** Account Id */
-            account_id?: string | null;
-            /** Repository Owner */
-            repository_owner?: string;
-            /** Repository Name */
-            repository_name?: string;
-            /**
-             * Permission
-             * @enum {string}
-             */
-            permission?: "pull" | "triage" | "push" | "maintain" | "admin";
-            /** Granted Account Id */
-            granted_account_id?: string;
-        };
-        /** BenefitGrantLicenseKeysProperties */
-        BenefitGrantLicenseKeysProperties: {
-            /** License Key Id */
-            license_key_id?: string;
-            /** Display Key */
-            display_key?: string;
-        };
-        /** BenefitGrantMetadata */
-        BenefitGrantMetadata: {
-            /** Benefit Id */
-            benefit_id: string;
-            /** Benefit Grant Id */
-            benefit_grant_id: string;
-            benefit_type: components["schemas"]["BenefitType"];
-        };
-        /** BenefitGrantMeterCreditProperties */
-        BenefitGrantMeterCreditProperties: {
-            /** Last Credited Meter Id */
-            last_credited_meter_id: string;
-            /** Last Credited Units */
-            last_credited_units: number;
-            /** Last Credited At */
-            last_credited_at: string;
-        };
-        /** BenefitGrantWebhook */
-        BenefitGrantWebhook: {
+        /** BenefitGrantCustomWebhook */
+        BenefitGrantCustomWebhook: {
             /**
              * Created At
              * Format: date-time
@@ -5258,13 +5230,416 @@ export interface components {
             /** @description The error information if the benefit grant failed with an unrecoverable error. */
             error?: components["schemas"]["BenefitGrantError"] | null;
             customer: components["schemas"]["Customer"];
-            /** Properties */
-            properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
-            /** Benefit */
-            benefit: components["schemas"]["Benefit"];
-            /** Previous Properties */
-            previous_properties?: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"] | null;
+            benefit: components["schemas"]["BenefitCustom"];
+            properties: components["schemas"]["BenefitGrantCustomProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantCustomProperties"] | null;
         };
+        /** BenefitGrantDiscordProperties */
+        BenefitGrantDiscordProperties: {
+            /** Account Id */
+            account_id?: string | null;
+            /** Guild Id */
+            guild_id?: string;
+            /** Role Id */
+            role_id?: string;
+            /** Granted Account Id */
+            granted_account_id?: string;
+        };
+        /** BenefitGrantDiscordWebhook */
+        BenefitGrantDiscordWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitDiscord"];
+            properties: components["schemas"]["BenefitGrantDiscordProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantDiscordProperties"] | null;
+        };
+        /** BenefitGrantDownloadablesProperties */
+        BenefitGrantDownloadablesProperties: {
+            /** Files */
+            files?: string[];
+        };
+        /** BenefitGrantDownloadablesWebhook */
+        BenefitGrantDownloadablesWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitDownloadables"];
+            properties: components["schemas"]["BenefitGrantDownloadablesProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantDownloadablesProperties"] | null;
+        };
+        /** BenefitGrantError */
+        BenefitGrantError: {
+            /** Message */
+            message: string;
+            /** Type */
+            type: string;
+            /** Timestamp */
+            timestamp: string;
+        };
+        /** BenefitGrantGitHubRepositoryProperties */
+        BenefitGrantGitHubRepositoryProperties: {
+            /** Account Id */
+            account_id?: string | null;
+            /** Repository Owner */
+            repository_owner?: string;
+            /** Repository Name */
+            repository_name?: string;
+            /**
+             * Permission
+             * @enum {string}
+             */
+            permission?: "pull" | "triage" | "push" | "maintain" | "admin";
+            /** Granted Account Id */
+            granted_account_id?: string;
+        };
+        /** BenefitGrantGitHubRepositoryWebhook */
+        BenefitGrantGitHubRepositoryWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitGitHubRepository"];
+            properties: components["schemas"]["BenefitGrantGitHubRepositoryProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | null;
+        };
+        /** BenefitGrantLicenseKeysProperties */
+        BenefitGrantLicenseKeysProperties: {
+            /** License Key Id */
+            license_key_id?: string;
+            /** Display Key */
+            display_key?: string;
+        };
+        /** BenefitGrantLicenseKeysWebhook */
+        BenefitGrantLicenseKeysWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitLicenseKeys"];
+            properties: components["schemas"]["BenefitGrantLicenseKeysProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantLicenseKeysProperties"] | null;
+        };
+        /** BenefitGrantMetadata */
+        BenefitGrantMetadata: {
+            /** Benefit Id */
+            benefit_id: string;
+            /** Benefit Grant Id */
+            benefit_grant_id: string;
+            benefit_type: components["schemas"]["BenefitType"];
+        };
+        /** BenefitGrantMeterCreditProperties */
+        BenefitGrantMeterCreditProperties: {
+            /** Last Credited Meter Id */
+            last_credited_meter_id?: string;
+            /** Last Credited Units */
+            last_credited_units?: number;
+            /** Last Credited At */
+            last_credited_at?: string;
+        };
+        /** BenefitGrantMeterCreditWebhook */
+        BenefitGrantMeterCreditWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitMeterCredit"];
+            properties: components["schemas"]["BenefitGrantMeterCreditProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantMeterCreditProperties"] | null;
+        };
+        BenefitGrantWebhook: components["schemas"]["BenefitGrantDiscordWebhook"] | components["schemas"]["BenefitGrantCustomWebhook"] | components["schemas"]["BenefitGrantGitHubRepositoryWebhook"] | components["schemas"]["BenefitGrantDownloadablesWebhook"] | components["schemas"]["BenefitGrantLicenseKeysWebhook"] | components["schemas"]["BenefitGrantMeterCreditWebhook"];
         /**
          * BenefitGrantedEvent
          * @description An event created by Polar when a benefit is granted to a customer.
@@ -5852,7 +6227,7 @@ export interface components {
          * BenefitSortProperty
          * @enum {string}
          */
-        BenefitSortProperty: "created_at" | "-created_at" | "description" | "-description";
+        BenefitSortProperty: "created_at" | "-created_at" | "description" | "-description" | "type" | "-type";
         /**
          * BenefitType
          * @enum {string}
@@ -6495,6 +6870,7 @@ export interface components {
             /** Url */
             readonly url: string;
         };
+        CheckoutLinkCreate: components["schemas"]["CheckoutLinkCreateProductPrice"] | components["schemas"]["CheckoutLinkCreateProduct"] | components["schemas"]["CheckoutLinkCreateProducts"];
         /**
          * CheckoutLinkCreateProduct
          * @description Schema to create a new checkout link from a a single product.
@@ -12565,6 +12941,12 @@ export interface components {
             items: components["schemas"]["Payout"][];
             pagination: components["schemas"]["Pagination"];
         };
+        /** ListResource[PersonalAccessToken] */
+        ListResource_PersonalAccessToken_: {
+            /** Items */
+            items: components["schemas"]["PersonalAccessToken"][];
+            pagination: components["schemas"]["Pagination"];
+        };
         /** ListResource[Product] */
         ListResource_Product_: {
             /** Items */
@@ -14697,6 +15079,33 @@ export interface components {
          * @enum {string}
          */
         PayoutStatus: "pending" | "in_transit" | "succeeded";
+        /** PersonalAccessToken */
+        PersonalAccessToken: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /** Scopes */
+            scopes: components["schemas"]["Scope"][];
+            /** Expires At */
+            expires_at: string | null;
+            /** Comment */
+            comment: string;
+            /** Last Used At */
+            last_used_at: string | null;
+        };
         /**
          * PlatformFeeType
          * @description Type of fees applied by Polar, and billed to the users.
@@ -16822,6 +17231,11 @@ export interface components {
              * @constant
              */
             type: "benefit.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             /** Benefit */
             data: components["schemas"]["Benefit"];
         };
@@ -16837,6 +17251,12 @@ export interface components {
              * @constant
              */
             type: "benefit_grant.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16852,6 +17272,12 @@ export interface components {
              * @constant
              */
             type: "benefit_grant.cycled";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16866,6 +17292,12 @@ export interface components {
              * @constant
              */
             type: "benefit_grant.revoked";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16880,6 +17312,12 @@ export interface components {
              * @constant
              */
             type: "benefit_grant.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16894,6 +17332,11 @@ export interface components {
              * @constant
              */
             type: "benefit.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             /** Benefit */
             data: components["schemas"]["Benefit"];
         };
@@ -16909,6 +17352,11 @@ export interface components {
              * @constant
              */
             type: "checkout.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Checkout"];
         };
         /**
@@ -16923,6 +17371,11 @@ export interface components {
              * @constant
              */
             type: "checkout.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Checkout"];
         };
         /**
@@ -16942,6 +17395,11 @@ export interface components {
              * @constant
              */
             type: "customer.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Customer"];
         };
         /**
@@ -16956,6 +17414,11 @@ export interface components {
              * @constant
              */
             type: "customer.deleted";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Customer"];
         };
         /**
@@ -16976,6 +17439,11 @@ export interface components {
              * @constant
              */
             type: "customer.state_changed";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["CustomerState"];
         };
         /**
@@ -16994,6 +17462,11 @@ export interface components {
              * @constant
              */
             type: "customer.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Customer"];
         };
         /**
@@ -17019,15 +17492,20 @@ export interface components {
              */
             id: string;
             /**
-             * Http Code
-             * @description The HTTP code returned by the URL. `null` if the endpoint was unreachable.
-             */
-            http_code?: number | null;
-            /**
              * Succeeded
              * @description Whether the delivery was successful.
              */
             succeeded: boolean;
+            /**
+             * Http Code
+             * @description The HTTP code returned by the URL. `null` if the endpoint was unreachable.
+             */
+            http_code: number | null;
+            /**
+             * Response
+             * @description The response body returned by the URL, or the error message if the endpoint was unreachable.
+             */
+            response: string | null;
             /** @description The webhook event sent by this delivery. */
             webhook_event: components["schemas"]["WebhookEvent"];
         };
@@ -17165,7 +17643,14 @@ export interface components {
              * Payload
              * @description The payload of the webhook event.
              */
-            payload: string;
+            payload: string | null;
+            /** @description The type of the webhook event. */
+            type: components["schemas"]["WebhookEventType"];
+            /**
+             * Is Archived
+             * @description Whether this event is archived. Archived events can't be redelivered, and the payload is not accessible anymore.
+             */
+            is_archived: boolean;
         };
         /**
          * WebhookEventType
@@ -17198,6 +17683,11 @@ export interface components {
              * @constant
              */
             type: "order.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Order"];
         };
         /**
@@ -17214,6 +17704,11 @@ export interface components {
              * @constant
              */
             type: "order.paid";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Order"];
         };
         /**
@@ -17228,6 +17723,11 @@ export interface components {
              * @constant
              */
             type: "order.refunded";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Order"];
         };
         /**
@@ -17247,6 +17747,11 @@ export interface components {
              * @constant
              */
             type: "order.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Order"];
         };
         /**
@@ -17261,6 +17766,11 @@ export interface components {
              * @constant
              */
             type: "organization.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Organization"];
         };
         /**
@@ -17275,6 +17785,11 @@ export interface components {
              * @constant
              */
             type: "product.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Product"];
         };
         /**
@@ -17289,6 +17804,11 @@ export interface components {
              * @constant
              */
             type: "product.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Product"];
         };
         /**
@@ -17303,6 +17823,11 @@ export interface components {
              * @constant
              */
             type: "refund.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Refund"];
         };
         /**
@@ -17317,6 +17842,11 @@ export interface components {
              * @constant
              */
             type: "refund.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Refund"];
         };
         /**
@@ -17332,6 +17862,11 @@ export interface components {
              * @constant
              */
             type: "subscription.active";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /**
@@ -17347,6 +17882,11 @@ export interface components {
              * @constant
              */
             type: "subscription.canceled";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /**
@@ -17363,6 +17903,11 @@ export interface components {
              * @constant
              */
             type: "subscription.created";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /**
@@ -17378,6 +17923,11 @@ export interface components {
              * @constant
              */
             type: "subscription.revoked";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /**
@@ -17392,6 +17942,11 @@ export interface components {
              * @constant
              */
             type: "subscription.uncanceled";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /**
@@ -17410,6 +17965,11 @@ export interface components {
              * @constant
              */
             type: "subscription.updated";
+            /**
+             * Timestamp
+             * Format: date-time
+             */
+            timestamp: string;
             data: components["schemas"]["Subscription"];
         };
         /** MetadataQuery */
@@ -18048,6 +18608,69 @@ export interface operations {
             };
             /** @description Notification recipient not found. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "personal_access_token:list_personal_access_tokens": {
+        parameters: {
+            query?: {
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResource_PersonalAccessToken_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "personal_access_token:delete_personal_access_token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -19889,6 +20512,10 @@ export interface operations {
             query?: {
                 /** @description Filter by webhook endpoint ID. */
                 endpoint_id?: string | string[] | null;
+                /** @description Filter deliveries after this timestamp. */
+                start_timestamp?: string | null;
+                /** @description Filter deliveries before this timestamp. */
+                end_timestamp?: string | null;
                 /** @description Page number, defaults to 1. */
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -21654,7 +22281,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CheckoutLinkCreateProductPrice"] | components["schemas"]["CheckoutLinkCreateProduct"] | components["schemas"]["CheckoutLinkCreateProducts"];
+                "application/json": components["schemas"]["CheckoutLinkCreate"];
             };
         };
         responses: {
@@ -26071,7 +26698,7 @@ export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeysCreate"]["type"]> = ["license_keys"];
 export const benefitMeterCreditCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitMeterCreditCreate"]["type"]> = ["meter_credit"];
 export const benefitRevokedEventNameValues: ReadonlyArray<components["schemas"]["BenefitRevokedEvent"]["name"]> = ["benefit.revoked"];
-export const benefitSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitSortProperty"]> = ["created_at", "-created_at", "description", "-description"];
+export const benefitSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitSortProperty"]> = ["created_at", "-created_at", "description", "-description", "type", "-type"];
 export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "discord", "github_repository", "downloadables", "license_keys", "meter_credit"];
 export const benefitUpdatedEventNameValues: ReadonlyArray<components["schemas"]["BenefitUpdatedEvent"]["name"]> = ["benefit.updated"];
 export const billingAddressFieldModeValues: ReadonlyArray<components["schemas"]["BillingAddressFieldMode"]> = ["required", "optional", "disabled"];

@@ -44,6 +44,22 @@ OrganizationID = Annotated[
     Field(examples=[ORGANIZATION_ID_EXAMPLE]),
 ]
 
+NameInput = Annotated[str, StringConstraints(min_length=3)]
+
+
+def validate_reserved_keywords(value: str) -> str:
+    if value in settings.ORGANIZATION_SLUG_RESERVED_KEYWORDS:
+        raise ValueError("This slug is reserved.")
+    return value
+
+
+SlugInput = Annotated[
+    str,
+    StringConstraints(to_lower=True, min_length=3),
+    SlugValidator,
+    AfterValidator(validate_reserved_keywords),
+]
+
 
 class OrganizationFeatureSettings(Schema):
     issue_funding_enabled: bool = Field(
@@ -227,20 +243,9 @@ class Organization(IDSchema, TimestampedSchema):
     )
 
 
-def validate_reserved_keywords(value: str) -> str:
-    if value in settings.ORGANIZATION_SLUG_RESERVED_KEYWORDS:
-        raise ValueError("This slug is reserved.")
-    return value
-
-
 class OrganizationCreate(Schema):
-    name: Annotated[str, StringConstraints(min_length=3)]
-    slug: Annotated[
-        str,
-        StringConstraints(to_lower=True, min_length=3),
-        SlugValidator,
-        AfterValidator(validate_reserved_keywords),
-    ]
+    name: NameInput
+    slug: SlugInput
     avatar_url: HttpUrlToStr | None = None
     email: EmailStr | None = Field(None, description="Public support email.")
     website: HttpUrlToStr | None = Field(
@@ -260,9 +265,7 @@ class OrganizationCreate(Schema):
 
 
 class OrganizationUpdate(Schema):
-    name: Annotated[
-        str | None, StringConstraints(min_length=3), EmptyStrToNoneValidator
-    ] = None
+    name: NameInput | None = None
     avatar_url: HttpUrlToStr | None = None
 
     email: EmailStrDNS | None = Field(None, description="Public support email.")

@@ -1,3 +1,4 @@
+import json
 from collections.abc import AsyncGenerator
 
 from fastapi import Depends, Query, Response
@@ -108,6 +109,7 @@ async def export(
                 "Billing Address State",
                 "Billing Address Zip",
                 "Billing Address Country",
+                "Metadata",
             )
         )
 
@@ -119,7 +121,7 @@ async def export(
         )
 
         for customer in customers:
-            billing = customer.billing_address
+            billing_address = customer.billing_address
 
             yield csv_writer.getrow(
                 (
@@ -129,12 +131,15 @@ async def export(
                     customer.email,
                     customer.name,
                     customer.tax_id,
-                    billing.line1 if billing else None,
-                    billing.line2 if billing else None,
-                    billing.city if billing else None,
-                    billing.state if billing else None,
-                    billing.postal_code if billing else None,
-                    billing.country if billing else None,
+                    billing_address.line1 if billing_address else None,
+                    billing_address.line2 if billing_address else None,
+                    billing_address.city if billing_address else None,
+                    billing_address.state if billing_address else None,
+                    billing_address.postal_code if billing_address else None,
+                    billing_address.country if billing_address else None,
+                    json.dumps(customer.user_metadata)
+                    if customer.user_metadata
+                    else None,
                 )
             )
 

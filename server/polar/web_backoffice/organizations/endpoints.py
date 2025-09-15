@@ -410,11 +410,14 @@ async def update_details(
         data = await request.form()
         try:
             # Get form values with proper type checking
+            website_value = data.get("website")
             about_value = data.get("about")
             product_description_value = data.get("product_description")
             intended_use_value = data.get("intended_use")
 
-            # Convert to string and strip if not None
+            website = str(website_value).strip() if website_value is not None else None
+            website = website if website else None
+
             about = str(about_value).strip() if about_value is not None else ""
             product_description = (
                 str(product_description_value).strip()
@@ -427,15 +430,14 @@ async def update_details(
                 else ""
             )
 
-            # Basic validation - use the form class to get proper validation
             form_data = {
+                "website": website,
                 "about": about,
                 "product_description": product_description,
                 "intended_use": intended_use,
             }
             form = UpdateOrganizationDetailsForm.model_validate(form_data)
 
-            # Preserve existing details and only update the three editable fields
             existing_details = organization.details.copy()
             existing_details.update(
                 {
@@ -445,9 +447,11 @@ async def update_details(
                 }
             )
 
-            organization = await org_repo.update(
-                organization, update_dict={"details": existing_details}
-            )
+            update_dict = {
+                "website": str(form.website) if form.website else None,
+                "details": existing_details,
+            }
+            organization = await org_repo.update(organization, update_dict=update_dict)
             return HXRedirectResponse(
                 request, str(request.url_for("organizations:get", id=id)), 303
             )
@@ -477,6 +481,21 @@ async def update_details(
                             )
 
                     with tag.div(classes="space-y-6"):
+                        # Website field
+                        with tag.div(classes="form-control w-full"):
+                            with tag.label(classes="label"):
+                                with tag.span(classes="label-text font-semibold"):
+                                    text("Website")
+                            with tag.input(
+                                id="website",
+                                name="website",
+                                type="url",
+                                classes="input input-bordered w-full",
+                                placeholder="https://example.com",
+                                value=organization.website or "",
+                            ):
+                                pass
+
                         # About field
                         with tag.div(classes="form-control w-full"):
                             with tag.label(classes="label"):

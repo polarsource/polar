@@ -565,25 +565,17 @@
   "navbar": {
     "links": [
       {
-        "label": "llms.txt",
-        "href": "https://docs.polar.sh/llms.txt"
-      },
-      {
         "label": "llms-full.txt",
         "href": "https://docs.polar.sh/llms-full.txt"
       },
       {
-        "label": "Discord",
-        "href": "https://dub.sh/polar-discord"
-      },
-      {
-        "label": "GitHub",
-        "href": "https://github.com/polarsource/polar"
+        "label": "Contact support",
+        "href": "https://docs.polar.sh/support"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Get Started",
+      "label": "Dashboar",
       "href": "https://polar.sh"
     }
   },

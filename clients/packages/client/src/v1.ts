@@ -5166,73 +5166,8 @@ export interface components {
         };
         /** BenefitGrantCustomProperties */
         BenefitGrantCustomProperties: Record<string, never>;
-        /** BenefitGrantDiscordProperties */
-        BenefitGrantDiscordProperties: {
-            /** Account Id */
-            account_id?: string | null;
-            /** Guild Id */
-            guild_id?: string;
-            /** Role Id */
-            role_id?: string;
-            /** Granted Account Id */
-            granted_account_id?: string;
-        };
-        /** BenefitGrantDownloadablesProperties */
-        BenefitGrantDownloadablesProperties: {
-            /** Files */
-            files?: string[];
-        };
-        /** BenefitGrantError */
-        BenefitGrantError: {
-            /** Message */
-            message: string;
-            /** Type */
-            type: string;
-            /** Timestamp */
-            timestamp: string;
-        };
-        /** BenefitGrantGitHubRepositoryProperties */
-        BenefitGrantGitHubRepositoryProperties: {
-            /** Account Id */
-            account_id?: string | null;
-            /** Repository Owner */
-            repository_owner?: string;
-            /** Repository Name */
-            repository_name?: string;
-            /**
-             * Permission
-             * @enum {string}
-             */
-            permission?: "pull" | "triage" | "push" | "maintain" | "admin";
-            /** Granted Account Id */
-            granted_account_id?: string;
-        };
-        /** BenefitGrantLicenseKeysProperties */
-        BenefitGrantLicenseKeysProperties: {
-            /** License Key Id */
-            license_key_id?: string;
-            /** Display Key */
-            display_key?: string;
-        };
-        /** BenefitGrantMetadata */
-        BenefitGrantMetadata: {
-            /** Benefit Id */
-            benefit_id: string;
-            /** Benefit Grant Id */
-            benefit_grant_id: string;
-            benefit_type: components["schemas"]["BenefitType"];
-        };
-        /** BenefitGrantMeterCreditProperties */
-        BenefitGrantMeterCreditProperties: {
-            /** Last Credited Meter Id */
-            last_credited_meter_id: string;
-            /** Last Credited Units */
-            last_credited_units: number;
-            /** Last Credited At */
-            last_credited_at: string;
-        };
-        /** BenefitGrantWebhook */
-        BenefitGrantWebhook: {
+        /** BenefitGrantCustomWebhook */
+        BenefitGrantCustomWebhook: {
             /**
              * Created At
              * Format: date-time
@@ -5295,13 +5230,416 @@ export interface components {
             /** @description The error information if the benefit grant failed with an unrecoverable error. */
             error?: components["schemas"]["BenefitGrantError"] | null;
             customer: components["schemas"]["Customer"];
-            /** Properties */
-            properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
-            /** Benefit */
-            benefit: components["schemas"]["Benefit"];
-            /** Previous Properties */
-            previous_properties?: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"] | null;
+            benefit: components["schemas"]["BenefitCustom"];
+            properties: components["schemas"]["BenefitGrantCustomProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantCustomProperties"] | null;
         };
+        /** BenefitGrantDiscordProperties */
+        BenefitGrantDiscordProperties: {
+            /** Account Id */
+            account_id?: string | null;
+            /** Guild Id */
+            guild_id?: string;
+            /** Role Id */
+            role_id?: string;
+            /** Granted Account Id */
+            granted_account_id?: string;
+        };
+        /** BenefitGrantDiscordWebhook */
+        BenefitGrantDiscordWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitDiscord"];
+            properties: components["schemas"]["BenefitGrantDiscordProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantDiscordProperties"] | null;
+        };
+        /** BenefitGrantDownloadablesProperties */
+        BenefitGrantDownloadablesProperties: {
+            /** Files */
+            files?: string[];
+        };
+        /** BenefitGrantDownloadablesWebhook */
+        BenefitGrantDownloadablesWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitDownloadables"];
+            properties: components["schemas"]["BenefitGrantDownloadablesProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantDownloadablesProperties"] | null;
+        };
+        /** BenefitGrantError */
+        BenefitGrantError: {
+            /** Message */
+            message: string;
+            /** Type */
+            type: string;
+            /** Timestamp */
+            timestamp: string;
+        };
+        /** BenefitGrantGitHubRepositoryProperties */
+        BenefitGrantGitHubRepositoryProperties: {
+            /** Account Id */
+            account_id?: string | null;
+            /** Repository Owner */
+            repository_owner?: string;
+            /** Repository Name */
+            repository_name?: string;
+            /**
+             * Permission
+             * @enum {string}
+             */
+            permission?: "pull" | "triage" | "push" | "maintain" | "admin";
+            /** Granted Account Id */
+            granted_account_id?: string;
+        };
+        /** BenefitGrantGitHubRepositoryWebhook */
+        BenefitGrantGitHubRepositoryWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitGitHubRepository"];
+            properties: components["schemas"]["BenefitGrantGitHubRepositoryProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | null;
+        };
+        /** BenefitGrantLicenseKeysProperties */
+        BenefitGrantLicenseKeysProperties: {
+            /** License Key Id */
+            license_key_id?: string;
+            /** Display Key */
+            display_key?: string;
+        };
+        /** BenefitGrantLicenseKeysWebhook */
+        BenefitGrantLicenseKeysWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitLicenseKeys"];
+            properties: components["schemas"]["BenefitGrantLicenseKeysProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantLicenseKeysProperties"] | null;
+        };
+        /** BenefitGrantMetadata */
+        BenefitGrantMetadata: {
+            /** Benefit Id */
+            benefit_id: string;
+            /** Benefit Grant Id */
+            benefit_grant_id: string;
+            benefit_type: components["schemas"]["BenefitType"];
+        };
+        /** BenefitGrantMeterCreditProperties */
+        BenefitGrantMeterCreditProperties: {
+            /** Last Credited Meter Id */
+            last_credited_meter_id: string;
+            /** Last Credited Units */
+            last_credited_units: number;
+            /** Last Credited At */
+            last_credited_at: string;
+        };
+        /** BenefitGrantMeterCreditWebhook */
+        BenefitGrantMeterCreditWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitMeterCredit"];
+            properties: components["schemas"]["BenefitGrantMeterCreditProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantMeterCreditProperties"] | null;
+        };
+        BenefitGrantWebhook: components["schemas"]["BenefitGrantDiscordWebhook"] | components["schemas"]["BenefitGrantCustomWebhook"] | components["schemas"]["BenefitGrantGitHubRepositoryWebhook"] | components["schemas"]["BenefitGrantDownloadablesWebhook"] | components["schemas"]["BenefitGrantLicenseKeysWebhook"] | components["schemas"]["BenefitGrantMeterCreditWebhook"];
         /**
          * BenefitGrantedEvent
          * @description An event created by Polar when a benefit is granted to a customer.
@@ -16917,6 +17255,7 @@ export interface components {
              * Format: date-time
              */
             timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16937,6 +17276,7 @@ export interface components {
              * Format: date-time
              */
             timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16956,6 +17296,7 @@ export interface components {
              * Format: date-time
              */
             timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16975,6 +17316,7 @@ export interface components {
              * Format: date-time
              */
             timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**

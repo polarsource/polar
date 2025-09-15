@@ -20,7 +20,6 @@ import {
   AddOutlined,
   ArrowDownward,
   ArrowUpward,
-  FileDownloadOutlined,
   MoreVert,
   Search,
 } from '@mui/icons-material'
@@ -280,6 +279,20 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   <ArrowDownward fontSize="small" />
                 )}
               </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-6 w-6">
+                    <MoreVert fontSize="small" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={onExport}>
+                    Export Customers
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Button
                 size="icon"
                 className="h-6 w-6"
@@ -304,16 +317,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            {!query && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={onExport}
-              >
-                <FileDownloadOutlined fontSize="small" />
-              </Button>
-            )}
           </div>
           <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-50 overflow-y-auto">
             {customers.map((customer) => (

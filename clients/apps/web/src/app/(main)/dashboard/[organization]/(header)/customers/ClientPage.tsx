@@ -268,15 +268,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6"
-                onClick={onExport}
-              >
-                <FileDownloadOutlined fontSize="small" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
                 onClick={() =>
                   setSorting(
                     sorting === '-created_at' ? 'created_at' : '-created_at',
@@ -299,18 +290,30 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             </div>
           </div>
           <div className="flex flex-row items-center gap-3 px-4 py-2">
-            <div className="dark:bg-polar-800 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-              <Search
-                fontSize="inherit"
-                className="dark:text-polar-500 text-gray-500"
+            <div className="flex flex-1 flex-row items-center gap-3">
+              <div className="dark:bg-polar-800 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                <Search
+                  fontSize="inherit"
+                  className="dark:text-polar-500 text-gray-500"
+                />
+              </div>
+              <Input
+                className="w-full rounded-none border-none bg-transparent p-0 !shadow-none ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
+                placeholder="Search Customers"
+                value={query ?? undefined}
+                onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            <Input
-              className="w-full rounded-none border-none bg-transparent p-0 !shadow-none ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
-              placeholder="Search Customers"
-              value={query ?? undefined}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+            {!query && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={onExport}
+              >
+                <FileDownloadOutlined fontSize="small" />
+              </Button>
+            )}
           </div>
           <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-50 overflow-y-auto">
             {customers.map((customer) => (

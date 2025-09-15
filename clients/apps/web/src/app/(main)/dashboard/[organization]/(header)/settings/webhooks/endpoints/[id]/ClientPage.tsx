@@ -1,11 +1,12 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import WebhookContextView from '@/components/Settings/Webhook/WebhookContextView'
 import DeliveriesTable from '@/components/Settings/Webhook/WebhookDeliveriesTable'
-import { WebhookFilter, WebhookFilterState } from '@/components/Settings/Webhook/WebhookFilter'
+import { WebhookFilter } from '@/components/Settings/Webhook/WebhookFilter'
 import { toast } from '@/components/Toast/use-toast'
 import { getStatusRedirect } from '@/components/Toast/utils'
 import {
@@ -34,7 +35,7 @@ export default function ClientPage({
 }) {
   const { id }: { id: string } = useParams()
   const router = useRouter()
-  const [filters, setFilters] = useState<WebhookFilterState>({})
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const { data: endpoint } = useWebhookEndpoint(id)
 
@@ -128,8 +129,8 @@ export default function ClientPage({
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl font-medium">Deliveries</h2>
           <WebhookFilter
-            onFilterChange={setFilters}
-            initialFilters={filters}
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
           />
         </div>
         <DeliveriesTable
@@ -137,7 +138,7 @@ export default function ClientPage({
           pagination={pagination}
           sorting={sorting}
           organization={organization}
-          filters={filters}
+          dateRange={dateRange}
         />
       </div>
 

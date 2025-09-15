@@ -1,5 +1,6 @@
 'use client'
 
+import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useListWebhooksDeliveries,
@@ -27,14 +28,13 @@ import { CellContext } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { WebhookFilterState } from './WebhookFilter'
 
 interface DeliveriesTableProps {
   organization: schemas['Organization']
   endpoint: schemas['WebhookEndpoint']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
-  filters?: WebhookFilterState
+  dateRange?: DateRange
 }
 
 type DeliveryRow = schemas['WebhookDelivery'] & {
@@ -46,7 +46,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   endpoint,
   pagination,
   sorting,
-  filters = {},
+  dateRange,
 }) => {
   const getSearchParams = (
     pagination: DataTablePaginationState,
@@ -94,19 +94,11 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
     )
   }
 
-  const filterParams = {
-    ...(filters.dateRange?.from && {
-      startDate: filters.dateRange.from.toISOString()
-    }),
-    ...(filters.dateRange?.to && {
-      endDate: filters.dateRange.to.toISOString()
-    }),
-  }
-
   const deliveriesHook = useListWebhooksDeliveries({
     webhookEndpointId: endpoint.id,
     ...getAPIParams(pagination, sorting),
-    ...filterParams,
+    ...(dateRange?.from ? { start_timestamp: dateRange.from } : {}),
+    ...(dateRange?.to ? { end_timestamp: dateRange.to } : {}),
   })
 
   const deliveries: DeliveryRow[] = deliveriesHook.data?.items || []

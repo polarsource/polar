@@ -8,9 +8,8 @@ export const useListWebhooksDeliveries = (variables: {
   webhookEndpointId: string
   limit: number
   page: number
-  startDate?: string
-  endDate?: string
-  eventType?: string
+  start_timestamp?: Date
+  end_timestamp?: Date
 }) =>
   useQuery({
     queryKey: ['webhookDeliveries', 'list', { ...variables }],
@@ -22,9 +21,12 @@ export const useListWebhooksDeliveries = (variables: {
               endpoint_id: variables.webhookEndpointId,
               limit: variables.limit,
               page: variables.page,
-              ...(variables.startDate && { start_date: variables.startDate }),
-              ...(variables.endDate && { end_date: variables.endDate }),
-              ...(variables.eventType && { event_type: variables.eventType }),
+              ...(variables.start_timestamp && {
+                start_timestamp: variables.start_timestamp.toISOString(),
+              }),
+              ...(variables.end_timestamp && {
+                end_timestamp: variables.end_timestamp.toISOString(),
+              }),
             },
           },
         }),

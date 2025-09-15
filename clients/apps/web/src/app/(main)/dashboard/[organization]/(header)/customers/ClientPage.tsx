@@ -12,6 +12,7 @@ import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
 import { useCustomers, useDeleteCustomer } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
+import { getServerURL } from '@/utils/api'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 
@@ -19,6 +20,7 @@ import {
   AddOutlined,
   ArrowDownward,
   ArrowUpward,
+  FileDownloadOutlined,
   MoreVert,
   Search,
 } from '@mui/icons-material'
@@ -216,6 +218,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     }
   }, [inViewport, hasNextPage, fetchNextPage])
 
+  const onExport = () => {
+    const url = new URL(
+      `${getServerURL()}/v1/customers/export?organization_id=${organization.id}`,
+    )
+
+    window.open(url, '_blank')
+  }
+
   return (
     <DashboardBody
       title={
@@ -254,6 +264,15 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
             <div>Customers</div>
             <div className="flex flex-row items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={onExport}
+              >
+                <FileDownloadOutlined fontSize="small" />
+              </Button>
+
               <Button
                 variant="ghost"
                 size="icon"

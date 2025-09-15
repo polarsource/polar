@@ -1,8 +1,12 @@
-from fastapi import Depends, Query
+from collections.abc import AsyncGenerator
+
+from fastapi import Depends, Query, Response
+from fastapi.responses import StreamingResponse
 
 from polar.exceptions import ResourceNotFound
+from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
-from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Customer
 from polar.openapi import APITag
@@ -74,6 +78,71 @@ async def list(
         [CustomerSchema.model_validate(result) for result in results],
         count,
         pagination,
+    )
+
+
+@router.get("/export", summary="Export Customers")
+async def export(
+    auth_subject: auth.CustomerRead,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, description="Filter by organization ID."
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Response:
+    """Export customers as a CSV file."""
+
+    async def create_csv() -> AsyncGenerator[str, None]:
+        csv_writer = IterableCSVWriter(dialect="excel")
+        # CSV header
+        yield csv_writer.getrow(
+            (
+                "ID",
+                "External ID",
+                "Created At",
+                "Email",
+                "Name",
+                "Tax ID",
+                "Billing Address Line 1",
+                "Billing Address Line 2",
+                "Billing Address City",
+                "Billing Address State",
+                "Billing Address Zip",
+                "Billing Address Country",
+            )
+        )
+
+        (customers, _) = await customer_service.list(
+            session,
+            auth_subject,
+            organization_id=organization_id,
+            pagination=PaginationParams(limit=1000000, page=1),
+        )
+
+        for customer in customers:
+            billing = customer.billing_address
+
+            yield csv_writer.getrow(
+                (
+                    customer.id,
+                    customer.external_id,
+                    customer.created_at.isoformat(),
+                    customer.email,
+                    customer.name,
+                    customer.tax_id,
+                    billing.line1 if billing else None,
+                    billing.line2 if billing else None,
+                    billing.city if billing else None,
+                    billing.state if billing else None,
+                    billing.postal_code if billing else None,
+                    billing.country if billing else None,
+                )
+            )
+
+    filename = "polar-customers.csv"
+    return StreamingResponse(
+        create_csv(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 

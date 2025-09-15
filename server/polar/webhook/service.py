@@ -157,6 +157,8 @@ class WebhookService:
         auth_subject: AuthSubject[User | Organization],
         *,
         endpoint_id: Sequence[UUID] | None = None,
+        start_timestamp: datetime.datetime | None = None,
+        end_timestamp: datetime.datetime | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookDelivery], int]:
         readable_endpoints_statement = self._get_readable_endpoints_statement(
@@ -179,6 +181,12 @@ class WebhookService:
             statement = statement.where(
                 WebhookDelivery.webhook_endpoint_id.in_(endpoint_id)
             )
+
+        if start_timestamp is not None:
+            statement = statement.where(WebhookDelivery.created_at > start_timestamp)
+
+        if end_timestamp is not None:
+            statement = statement.where(WebhookDelivery.created_at < end_timestamp)
 
         return await paginate(session, statement, pagination=pagination)
 

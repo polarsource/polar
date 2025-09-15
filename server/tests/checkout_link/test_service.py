@@ -2,7 +2,6 @@ import uuid
 
 import pytest
 import pytest_asyncio
-from pydantic import HttpUrl
 
 from polar.auth.models import AuthSubject
 from polar.checkout_link.schemas import (

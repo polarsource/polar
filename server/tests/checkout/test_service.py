@@ -7,7 +7,7 @@ from unittest.mock import ANY, AsyncMock, MagicMock
 import pytest
 import pytest_asyncio
 import stripe as stripe_lib
-from pydantic import HttpUrl, ValidationError
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 

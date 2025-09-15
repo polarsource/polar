@@ -80,12 +80,16 @@ export const ProductPageContextView = ({
         return
       }
 
-      await updateBenefits.mutateAsync({
-        id: product.id,
-        body: {
-          benefits: enabledBenefitIds,
-        },
-      })
+      const newBenefitSet = new Set(enabledBenefitIds)
+      const oldBenefitSet = new Set(product.benefits.map((b) => b.id))
+      if (newBenefitSet.symmetricDifference(oldBenefitSet).size > 0) {
+        await updateBenefits.mutateAsync({
+          id: product.id,
+          body: {
+            benefits: enabledBenefitIds,
+          },
+        })
+      }
 
       router.push(
         getStatusRedirect(

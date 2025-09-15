@@ -7,10 +7,10 @@ from pydantic import (
     AliasChoices,
     Discriminator,
     Field,
-    HttpUrl,
     IPvAnyAddress,
     Tag,
     computed_field,
+    field_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -41,6 +41,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.validators import validate_http_url
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
     CheckoutCustomerBillingAddressFields,
@@ -90,7 +91,7 @@ CustomerBillingAddress = Annotated[
     Field(description="Billing address of the customer."),
 ]
 SuccessURL = Annotated[
-    HttpUrl | None,
+    str | None,
     Field(
         description=(
             "URL where the customer will be redirected after a successful payment."
@@ -194,6 +195,11 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     )
     success_url: SuccessURL = None
     embed_origin: EmbedOrigin = None
+
+    @field_validator("success_url")
+    @classmethod
+    def validate_is_http_url(cls, url: str | None) -> str | None:
+        return validate_http_url(url)
 
 
 class CheckoutPriceCreate(CheckoutCreateBase):
@@ -313,6 +319,11 @@ class CheckoutUpdate(MetadataInputMixin, CheckoutUpdateBase):
     )
     success_url: SuccessURL = None
     embed_origin: EmbedOrigin = None
+
+    @field_validator("success_url")
+    @classmethod
+    def validate_is_http_url(cls, url: str | None) -> str | None:
+        return validate_http_url(url)
 
 
 class CheckoutUpdatePublic(CheckoutUpdateBase):

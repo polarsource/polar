@@ -159,9 +159,7 @@ class TestCreate:
             CheckoutLinkCreateProducts(
                 payment_processor=PaymentProcessor.stripe,
                 products=[product_one_time.id],
-                success_url=HttpUrl(
-                    "https://example.com/success?checkout_id={CHECKOUT_ID}"
-                ),
+                success_url="https://example.com/success?checkout_id={CHECKOUT_ID}",
                 metadata={"key": "value"},
             ),
             auth_subject,
@@ -192,9 +190,7 @@ class TestCreate:
                 payment_processor=PaymentProcessor.stripe,
                 products=[product_one_time.id],
                 discount_id=discount_fixed_once.id,
-                success_url=HttpUrl(
-                    "https://example.com/success?checkout_id={CHECKOUT_ID}"
-                ),
+                success_url="https://example.com/success?checkout_id={CHECKOUT_ID}",
                 metadata={"key": "value"},
             ),
             auth_subject,

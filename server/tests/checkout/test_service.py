@@ -694,9 +694,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                success_url=HttpUrl(
-                    "https://example.com/success?checkout_id={CHECKOUT_ID}"
-                ),
+                success_url="https://example.com/success?checkout_id={CHECKOUT_ID}",
             ),
             auth_subject,
         )
@@ -720,9 +718,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                success_url=HttpUrl(
-                    "https://example.com/success?checkout_id={CHECKOUT_SESSION_ID}"
-                ),
+                success_url="https://example.com/success?checkout_id={CHECKOUT_SESSION_ID}",
             ),
             auth_subject,
         )

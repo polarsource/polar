@@ -29,6 +29,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Discount,
+    OrderItem,
     Product,
     ProductPriceFixed,
     Subscription,
@@ -3120,3 +3121,257 @@ class TestProcessRetryPayment:
             await order_service.process_retry_payment(
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
+
+
+@pytest.mark.asyncio
+class TestCustomerBalance:
+    class BalanceOrderFixture(TypedDict):
+        items: list[
+            tuple[
+                str,
+                int,  # amount
+                bool,  # proration
+            ]
+        ]
+        status: OrderStatus
+        subtotal_amount: int
+        discount_amount: int
+        tax_amount: int
+        refunded_amount: int
+        refunded_tax_amount: int
+
+    class BalanceFixture(TypedDict):
+        products: dict[str, tuple[SubscriptionRecurringInterval, int]]
+        orders: list["TestCustomerBalance.BalanceOrderFixture"]
+        payments: list[
+            tuple[
+                int,  # Order index
+                int,  # amount
+                PaymentStatus,
+            ]
+        ]
+        expected_balance: int
+
+    @pytest.mark.parametrize(
+        "setup",
+        [
+            pytest.param(
+                {
+                    "products": {
+                        "p-basic": (SubscriptionRecurringInterval.month, 3000),
+                        "p-pro": (SubscriptionRecurringInterval.month, 9000),
+                    },
+                    "orders": [
+                        # Emulate a plan switch middle of month
+                        {
+                            "items": [("p-basic", -1500, True), ("p-pro", 4500, True)],
+                            "status": OrderStatus.paid,
+                            "subtotal_amount": 3000,
+                            "discount_amount": 0,
+                            "tax_amount": 0,
+                            "refunded_amount": 0,
+                            "refunded_tax_amount": 0,
+                        },
+                    ],
+                    "payments": [],
+                    "expected_balance": -3000,
+                },
+                id="no-payments-positive-balance",
+            ),
+            pytest.param(
+                {
+                    "products": {
+                        "p-basic": (SubscriptionRecurringInterval.month, 3000),
+                        "p-pro": (SubscriptionRecurringInterval.month, 9000),
+                    },
+                    "orders": [
+                        # Emulate a plan switch middle of month
+                        {
+                            "items": [("p-pro", -4500, True), ("p-pro", 1500, True)],
+                            "status": OrderStatus.paid,
+                            "subtotal_amount": -3000,
+                            "discount_amount": 0,
+                            "tax_amount": 0,
+                            "refunded_amount": 0,
+                            "refunded_tax_amount": 0,
+                        },
+                    ],
+                    "payments": [],
+                    "expected_balance": 3000,
+                },
+                id="no-payments-negative-balance",
+            ),
+            pytest.param(
+                {
+                    "products": {
+                        "p-basic": (SubscriptionRecurringInterval.month, 3000),
+                    },
+                    "orders": [
+                        {
+                            "items": [("p-basic", 3000, False)],
+                            "status": OrderStatus.partially_refunded,
+                            "subtotal_amount": 3000,
+                            "discount_amount": 0,
+                            "tax_amount": 750,
+                            "refunded_amount": 1000,
+                            "refunded_tax_amount": 250,
+                        },
+                    ],
+                    "payments": [(0, 3750, PaymentStatus.succeeded)],
+                    "expected_balance": 3750 - (3750 - 1250),  # Customer owed $12.50
+                },
+                id="partial-refund",
+            ),
+            pytest.param(
+                {
+                    "products": {
+                        "p-basic": (SubscriptionRecurringInterval.month, 5000),
+                    },
+                    "orders": [
+                        {
+                            "items": [("p-basic", 5000, False)],
+                            "status": OrderStatus.refunded,
+                            "subtotal_amount": 5000,
+                            "discount_amount": 0,
+                            "tax_amount": 0,
+                            "refunded_amount": 5000,
+                            "refunded_tax_amount": 0,
+                        },
+                    ],
+                    "payments": [(0, 5000, PaymentStatus.succeeded)],
+                    "expected_balance": 0,  # Fully refunded orders should not affect balance
+                },
+                id="full-refund-excluded",
+            ),
+            pytest.param(
+                {
+                    "products": {
+                        "p-basic": (SubscriptionRecurringInterval.month, 3000),
+                        "p-pro": (SubscriptionRecurringInterval.month, 9000),
+                    },
+                    "orders": [
+                        {
+                            "items": [("p-basic", 3000, False)],
+                            "status": OrderStatus.paid,
+                            "subtotal_amount": 3000,
+                            "discount_amount": 0,
+                            "tax_amount": 0,
+                            "refunded_amount": 0,
+                            "refunded_tax_amount": 0,
+                        },
+                        {
+                            "items": [("p-pro", 9000, False)],
+                            "status": OrderStatus.partially_refunded,
+                            "subtotal_amount": 9000,
+                            "discount_amount": 0,
+                            "tax_amount": 2250,
+                            "refunded_amount": 4000,
+                            "refunded_tax_amount": 1000,
+                        },
+                    ],
+                    "payments": [
+                        (0, 3000, PaymentStatus.succeeded),
+                        (1, 11250, PaymentStatus.succeeded),
+                    ],
+                    "expected_balance": 14250
+                    - (3000 + 11250 - 5000),  # Customer owed $50
+                },
+                id="mixed-paid-and-partial-refund",
+            ),
+            pytest.param(
+                {
+                    "products": {
+                        "p-basic": (SubscriptionRecurringInterval.month, 2000),
+                    },
+                    "orders": [
+                        {
+                            "items": [("p-basic", 2000, False)],
+                            "status": OrderStatus.partially_refunded,
+                            "subtotal_amount": 2000,
+                            "discount_amount": 500,
+                            "tax_amount": 375,  # 25% tax on discounted amount
+                            "refunded_amount": 500,
+                            "refunded_tax_amount": 125,
+                        },
+                    ],
+                    "payments": [(0, 1875, PaymentStatus.succeeded)],
+                    "expected_balance": 1875 - (1875 - 625),  # Customer owed $6.25
+                },
+                id="partial-refund-with-discount-and-tax",
+            ),
+        ],
+    )
+    async def test_customer_balance(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        subscription: Subscription,
+        setup: BalanceFixture,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.order.service.enqueue_job")
+        customer = subscription.customer
+
+        # Create products
+        products = {}
+        prices = {}
+        for key, (recurring_interval, price_amount) in setup["products"].items():
+            product = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=recurring_interval,
+                prices=[(price_amount,)],
+            )
+            products[key] = product
+
+            price = cast(ProductPriceFixed, product.prices[0])
+            prices[key] = price
+
+        # Create orders
+        orders = []
+        for dict_order in setup["orders"]:
+            order_items = []
+            for t_order_item in dict_order["items"]:
+                product_key, amount, proration = t_order_item
+                product = products[product_key]
+                order_item = OrderItem(
+                    label="",
+                    product_price=prices[product_key],
+                    amount=amount,
+                    tax_amount=0,
+                    proration=proration,
+                )
+                order_items.append(order_item)
+            order = await create_order(
+                save_fixture,
+                product=products[product_key],
+                status=dict_order["status"],
+                customer=customer,
+                order_items=order_items,
+                subtotal_amount=dict_order["subtotal_amount"],
+                discount_amount=dict_order["discount_amount"],
+                tax_amount=dict_order["tax_amount"],
+                refunded_amount=dict_order.get("refunded_amount", 0),
+                refunded_tax_amount=dict_order.get("refunded_tax_amount", 0),
+                stripe_invoice_id=None,  # Let it generate unique IDs
+            )
+            orders.append(order)
+
+        # Create payments
+        payments = []
+        for order_idx, amount, status in setup["payments"]:
+            order = orders[order_idx]
+            payment = await create_payment(
+                save_fixture,
+                order.organization,
+                status=status,
+                order=order,
+                amount=amount,
+            )
+            payments.append(payment)
+
+        assert (
+            await order_service.customer_balance(session, customer)
+            == setup["expected_balance"]
+        )

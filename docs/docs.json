@@ -532,11 +532,11 @@
     "links": [
       {
         "label": "llms-full.txt",
-        "href": "https://docs.polar.sh/llms-full.txt"
+        "href": "https://polar.sh/docs/llms-full.txt"
       },
       {
         "label": "Contact support",
-        "href": "https://docs.polar.sh/support"
+        "href": "https://polar.sh/docs/support"
       }
     ],
     "primary": {

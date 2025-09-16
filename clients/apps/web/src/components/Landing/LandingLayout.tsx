@@ -94,7 +94,7 @@ const mobileNavigationItems: NavigationItem[] = [
 	},
 	{
 		title: "Documentation",
-		href: "https://docs.polar.sh",
+		href: "https://polar.sh/docs",
 		target: "_blank",
 	},
 	{
@@ -270,7 +270,7 @@ const LandingPageDesktopNavigation = () => {
 									<div className="grid grid-cols-2">
 										{[
 											{
-												href: "https://docs.polar.sh",
+												href: "https://polar.sh/docs",
 												label: "Documentation",
 												target: "_blank",
 												subtitle: "Get up to speed",

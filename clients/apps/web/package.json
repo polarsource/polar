@@ -46,7 +46,6 @@
     "@tanstack/react-query": "^5.83.0",
     "@tanstack/react-query-next-experimental": "^5.83.0",
     "@tanstack/react-table": "^8.21.3",
-    "@vercel/blob": "^0.14.1",
     "big.js": "^7.0.1",
     "class-variance-authority": "^0.7.1",
     "crawler-user-agents": "^1.15.0",

@@ -1,13 +1,9 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { schemas, unwrap } from '@polar-sh/client'
+import { unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { FileRead } from '@/types/file'
 import { defaultRetry } from './retry'
-
-type FileRead =
-  | schemas['DownloadableFileRead']
-  | schemas['ProductMediaFileRead']
-  | schemas['OrganizationAvatarFileRead']
 
 export const useFiles = (organizationId: string, fileIds: string[]) =>
   useQuery({

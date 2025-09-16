@@ -11956,7 +11956,7 @@ export interface components {
             /** Detail */
             detail: string;
         };
-        FileCreate: components["schemas"]["DownloadableFileCreate"] | components["schemas"]["ProductMediaFileCreate"] | components["schemas"]["OrganizationAvatarFileCreate"];
+        FileCreate: components["schemas"]["DownloadableFileCreate"] | components["schemas"]["ProductMediaFileCreate"] | components["schemas"]["OrganizationAvatarFileCreate"] | components["schemas"]["OAuth2ClientLogoFileCreate"];
         /** FileDownload */
         FileDownload: {
             /**
@@ -12008,7 +12008,7 @@ export interface components {
          * FileServiceTypes
          * @enum {string}
          */
-        FileServiceTypes: "downloadable" | "product_media" | "organization_avatar";
+        FileServiceTypes: "downloadable" | "product_media" | "organization_avatar" | "oauth_client_logo";
         /** FileUpload */
         FileUpload: {
             /**
@@ -12884,7 +12884,7 @@ export interface components {
         /** ListResource[FileRead] */
         ListResource_FileRead_: {
             /** Items */
-            items: (components["schemas"]["DownloadableFileRead"] | components["schemas"]["ProductMediaFileRead"] | components["schemas"]["OrganizationAvatarFileRead"])[];
+            items: (components["schemas"]["DownloadableFileRead"] | components["schemas"]["ProductMediaFileRead"] | components["schemas"]["OrganizationAvatarFileRead"] | components["schemas"]["OAuth2ClientLogoFileRead"])[];
             pagination: components["schemas"]["Pagination"];
         };
         /** ListResource[LicenseKeyRead] */
@@ -13849,6 +13849,89 @@ export interface components {
             policy_uri?: string | null;
             /** Client Id */
             client_id: string;
+        };
+        /**
+         * OAuth2ClientLogoFileCreate
+         * @description Schema to create a file to be used as an OAuth2 client logo.
+         */
+        OAuth2ClientLogoFileCreate: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Mime Type
+             * @description MIME type of the file. Only images are supported for this type of file.
+             */
+            mime_type: string;
+            /**
+             * Size
+             * @description Size of the file. A maximum of 1 MB is allowed for this type of file.
+             */
+            size: number;
+            /** Checksum Sha256 Base64 */
+            checksum_sha256_base64?: string | null;
+            upload: components["schemas"]["S3FileCreateMultipart"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            service: "oauth_client_logo";
+            /** Version */
+            version?: string | null;
+        };
+        /**
+         * OAuth2ClientLogoFileRead
+         * @description File to be used as an OAuth2 client logo.
+         */
+        OAuth2ClientLogoFileRead: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Size */
+            size: number;
+            /** Storage Version */
+            storage_version: string | null;
+            /** Checksum Etag */
+            checksum_etag: string | null;
+            /** Checksum Sha256 Base64 */
+            checksum_sha256_base64: string | null;
+            /** Checksum Sha256 Hex */
+            checksum_sha256_hex: string | null;
+            /** Last Modified At */
+            last_modified_at: string | null;
+            /** Version */
+            version: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            service: "oauth_client_logo";
+            /** Is Uploaded */
+            is_uploaded: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Size Readable */
+            readonly size_readable: string;
+            /** Public Url */
+            readonly public_url: string;
         };
         /** OAuth2ClientPublic */
         OAuth2ClientPublic: {
@@ -21626,7 +21709,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DownloadableFileRead"] | components["schemas"]["ProductMediaFileRead"] | components["schemas"]["OrganizationAvatarFileRead"];
+                    "application/json": components["schemas"]["DownloadableFileRead"] | components["schemas"]["ProductMediaFileRead"] | components["schemas"]["OrganizationAvatarFileRead"] | components["schemas"]["OAuth2ClientLogoFileRead"];
                 };
             };
             /** @description You don't have the permission to update this file. */
@@ -21727,7 +21810,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DownloadableFileRead"] | components["schemas"]["ProductMediaFileRead"] | components["schemas"]["OrganizationAvatarFileRead"];
+                    "application/json": components["schemas"]["DownloadableFileRead"] | components["schemas"]["ProductMediaFileRead"] | components["schemas"]["OrganizationAvatarFileRead"] | components["schemas"]["OAuth2ClientLogoFileRead"];
                 };
             };
             /** @description You don't have the permission to update this file. */
@@ -26746,7 +26829,7 @@ export const downloadableFileReadServiceValues: ReadonlyArray<components["schema
 export const eventNamesSortPropertyValues: ReadonlyArray<components["schemas"]["EventNamesSortProperty"]> = ["name", "-name", "occurrences", "-occurrences", "first_seen", "-first_seen", "last_seen", "-last_seen"];
 export const eventSortPropertyValues: ReadonlyArray<components["schemas"]["EventSortProperty"]> = ["timestamp", "-timestamp"];
 export const eventSourceValues: ReadonlyArray<components["schemas"]["EventSource"]> = ["system", "user"];
-export const fileServiceTypesValues: ReadonlyArray<components["schemas"]["FileServiceTypes"]> = ["downloadable", "product_media", "organization_avatar"];
+export const fileServiceTypesValues: ReadonlyArray<components["schemas"]["FileServiceTypes"]> = ["downloadable", "product_media", "organization_avatar", "oauth_client_logo"];
 export const filterConjunctionValues: ReadonlyArray<components["schemas"]["FilterConjunction"]> = ["and", "or"];
 export const filterOperatorValues: ReadonlyArray<components["schemas"]["FilterOperator"]> = ["eq", "ne", "gt", "gte", "lt", "lte", "like", "not_like"];
 export const identityVerificationStatusValues: ReadonlyArray<components["schemas"]["IdentityVerificationStatus"]> = ["unverified", "pending", "verified", "failed"];
@@ -26771,6 +26854,8 @@ export const oAuth2ClientConfigurationToken_endpoint_auth_methodValues: Readonly
 export const oAuth2ClientConfigurationGrant_typesValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfiguration"]["grant_types"]> = ["authorization_code", "refresh_token"];
 export const oAuth2ClientConfigurationUpdateToken_endpoint_auth_methodValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfigurationUpdate"]["token_endpoint_auth_method"]> = ["client_secret_basic", "client_secret_post", "none"];
 export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfigurationUpdate"]["grant_types"]> = ["authorization_code", "refresh_token"];
+export const oAuth2ClientLogoFileCreateServiceValues: ReadonlyArray<components["schemas"]["OAuth2ClientLogoFileCreate"]["service"]> = ["oauth_client_logo"];
+export const oAuth2ClientLogoFileReadServiceValues: ReadonlyArray<components["schemas"]["OAuth2ClientLogoFileRead"]["service"]> = ["oauth_client_logo"];
 export const oAuthPlatformValues: ReadonlyArray<components["schemas"]["OAuthPlatform"]> = ["github", "github_repository_benefit", "google"];
 export const orderBillingReasonValues: ReadonlyArray<components["schemas"]["OrderBillingReason"]> = ["purchase", "subscription_create", "subscription_cycle", "subscription_update"];
 export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "status", "-status", "invoice_number", "-invoice_number", "amount", "-amount", "net_amount", "-net_amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];

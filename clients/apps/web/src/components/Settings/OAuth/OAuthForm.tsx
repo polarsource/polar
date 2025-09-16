@@ -17,12 +17,14 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { type MouseEvent } from 'react'
 
-import ImageUpload from '@/components/Form/ImageUpload'
-import { AddOutlined, ClearOutlined } from '@mui/icons-material'
+import { useFileUpload } from '@/components/FileUpload'
+import { useAuth } from '@/hooks/auth'
+import { AddOutlined, AddPhotoAlternateOutlined, ClearOutlined } from '@mui/icons-material'
 import { enums } from '@polar-sh/client'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import Link from 'next/link'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { EnhancedOAuth2ClientConfiguration } from './NewOAuthClientModal'
 
@@ -144,33 +146,113 @@ export const FieldClientSecret = ({
 }
 
 export const FieldLogo = () => {
-  const { control } = useFormContext<EnhancedOAuth2ClientConfiguration>()
+  const { control, setValue } = useFormContext<EnhancedOAuth2ClientConfiguration>()
+  const { userOrganizations } = useAuth()
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+
+  // Use the first organization for file upload context
+  const organization = userOrganizations[0]
+
+  const onFilesUpdated = useCallback(
+    (files: any[]) => {
+      if (files.length > 0 && files[0].public_url) {
+        const logoUrl = files[0].public_url
+        setValue('logo_uri', logoUrl)
+        setLogoPreview(logoUrl)
+      }
+    },
+    [setValue],
+  )
+
+  const onFilesRejected = useCallback((rejections: any[]) => {
+    console.warn('File upload rejected:', rejections)
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useFileUpload({
+    organization: organization,
+    service: 'oauth_client_logo',
+    accept: {
+      'image/jpeg': [],
+      'image/png': [],
+      'image/gif': [],
+      'image/webp': [],
+      'image/svg+xml': [],
+    },
+    maxSize: 1 * 1024 * 1024, // 1MB
+    onFilesUpdated,
+    onFilesRejected,
+    initialFiles: [],
+  })
+
+  if (!organization) {
+    return (
+      <FormItem className="flex flex-col gap-4">
+        <div className="flex flex-col gap-y-2">
+          <FormLabel>Logotype</FormLabel>
+        </div>
+        <div className="text-sm text-red-500">
+          You need to be part of an organization to upload logos.
+        </div>
+      </FormItem>
+    )
+  }
 
   return (
     <FormField
       control={control}
       name="logo_uri"
-      render={({ field }) => (
-        <FormItem className="flex flex-col gap-4">
-          <div className="flex flex-col gap-y-2">
-            <FormLabel>Logotype</FormLabel>
-          </div>
-          <FormControl>
-            <ImageUpload
-              height={200}
-              width={200}
-              onUploaded={field.onChange}
-              defaultValue={field.value || undefined}
-              validate={(img) => {
-                return img.width / img.height !== 1
-                  ? 'Image should have a ratio of 1:1'
-                  : undefined
-              }}
-            />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field }) => {
+        const currentLogo = logoPreview || field.value
+
+        return (
+          <FormItem className="flex flex-col gap-4">
+            <div className="flex flex-col gap-y-2">
+              <FormLabel>Logotype</FormLabel>
+            </div>
+            <FormControl>
+              <div className="flex flex-col gap-4">
+                {currentLogo ? (
+                  <div className="flex flex-col gap-2">
+                    <img
+                      src={currentLogo}
+                      alt="Logo preview"
+                      className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setValue('logo_uri', '')
+                        setLogoPreview(null)
+                      }}
+                      className="text-sm text-red-500 hover:text-red-600 self-start"
+                    >
+                      Remove logo
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    {...getRootProps()}
+                    className={twMerge(
+                      'w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors',
+                      isDragActive ? 'border-blue-400 bg-blue-50' : '',
+                    )}
+                  >
+                    <input {...getInputProps()} />
+                    <AddPhotoAlternateOutlined className="text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-500 text-center px-2">
+                      Click to upload or drag and drop
+                    </span>
+                    <span className="text-xs text-gray-400 text-center px-2 mt-1">
+                      1:1 ratio recommended
+                    </span>
+                  </div>
+                )}
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
     />
   )
 }

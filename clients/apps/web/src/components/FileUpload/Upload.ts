@@ -1,12 +1,10 @@
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
+import { FileRead } from '@/types/file'
 
 const CHUNK_SIZE = 10000000 // 10MB
 
-export type FileRead =
-  | schemas['DownloadableFileRead']
-  | schemas['ProductMediaFileRead']
-  | schemas['OrganizationAvatarFileRead']
+export type { FileRead }
 
 interface UploadProperties {
   organization: schemas['Organization']

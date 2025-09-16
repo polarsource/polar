@@ -30,6 +30,7 @@ class FileServiceTypes(StrEnum):
     downloadable = "downloadable"
     product_media = "product_media"
     organization_avatar = "organization_avatar"
+    oauth_client_logo = "oauth_client_logo"
 
 
 class File(RecordModel):
@@ -89,4 +90,10 @@ class ProductMediaFile(File):
 class OrganizationAvatarFile(File):
     __mapper_args__ = {
         "polymorphic_identity": FileServiceTypes.organization_avatar,
+    }
+
+
+class OAuth2ClientLogoFile(File):
+    __mapper_args__ = {
+        "polymorphic_identity": FileServiceTypes.oauth_client_logo,
     }

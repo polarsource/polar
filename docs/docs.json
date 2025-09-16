@@ -526,7 +526,8 @@
             "group": "Guides",
             "pages": [
               "guides/introduction",
-              "guides/variants"
+              "guides/variants",
+              "guides/downgrades"
             ]
           }
         ]

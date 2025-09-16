@@ -1710,7 +1710,12 @@ class OrderService:
             .where(
                 Customer.id == customer.id,
                 Order.deleted_at.is_(None),
-                Order.status == OrderStatus.paid,
+                Order.status.in_(
+                    [
+                        OrderStatus.paid,
+                        OrderStatus.partially_refunded,
+                    ]
+                ),
             )
         )
         payment_repository = PaymentRepository.from_session(session)
@@ -1720,7 +1725,16 @@ class OrderService:
             .join(Checkout, Payment.checkout_id == Checkout.id, isouter=True)
             .where(
                 or_(
-                    and_(Order.customer_id == customer.id, Order.deleted_at.is_(None)),
+                    and_(
+                        Order.customer_id == customer.id,
+                        Order.deleted_at.is_(None),
+                        Order.status.in_(
+                            [
+                                OrderStatus.paid,
+                                OrderStatus.partially_refunded,
+                            ]
+                        ),
+                    ),
                     and_(
                         Checkout.customer_id == customer.id,
                         Checkout.deleted_at.is_(None),
@@ -1730,7 +1744,10 @@ class OrderService:
             )
         )
 
-        total_orders = sum(order.total_amount for order in paid_orders)
+        total_orders = sum(
+            order.total_amount - order.refunded_amount - order.refunded_tax_amount
+            for order in paid_orders
+        )
         total_paid = sum(payment.amount for payment in payments)
 
         return total_paid - total_orders

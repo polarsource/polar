@@ -22,7 +22,6 @@ from polar.account.service import (
     account as account_service,
 )
 from polar.enums import AccountType
-from polar.integrations.plain.service import plain as plain_service
 from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import empty_str_to_none
 from polar.models import (
@@ -1650,9 +1649,6 @@ async def get(
                             pass
 
 
-
-
-
 @router.get("/{id}/plain_search_url", name="organizations:plain_search_url")
 async def get_plain_search_url(
     request: Request,
@@ -1672,5 +1668,3 @@ async def get_plain_search_url(
     search_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={admin_user.email}"
 
     return RedirectResponse(url=search_url, status_code=302)
-
-

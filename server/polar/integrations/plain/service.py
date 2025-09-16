@@ -1073,5 +1073,147 @@ class PlainService:
             ) as plain:
                 yield plain
 
+    async def create_manual_organization_thread(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        admin: User,
+    ) -> str:
+        """Create a manual thread for an organization with the admin user."""
+        if not self.enabled:
+            return ""
+
+        async with self._get_plain_client() as plain:
+            customer_result = await plain.upsert_customer(
+                UpsertCustomerInput(
+                    identifier=UpsertCustomerIdentifierInput(email_address=admin.email),
+                    on_create=UpsertCustomerOnCreateInput(
+                        external_id=str(admin.id),
+                        full_name=admin.email,
+                        email=EmailAddressInput(email=admin.email, is_verified=admin.email_verified),
+                    ),
+                    on_update=UpsertCustomerOnUpdateInput(
+                        external_id=OptionalStringInput(value=str(admin.id)),
+                        email=EmailAddressInput(email=admin.email, is_verified=admin.email_verified),
+                    ),
+                )
+            )
+            if customer_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    organization.id, customer_result.error.message
+                )
+
+            thread_result = await plain.create_thread(
+                CreateThreadInput(
+                    customer_identifier=CustomerIdentifierInput(
+                        external_id=str(admin.id)
+                    ),
+                    title=f"Manual Review - {organization.slug}",
+                    components=[
+                        ComponentInput(
+                            component_text=ComponentTextInput(
+                                text=f"Manual review thread created for organization `{organization.slug}` (Status: {organization.status.value})"
+                            )
+                        ),
+                        ComponentInput(
+                            component_spacer=ComponentSpacerInput(
+                                spacer_size=ComponentSpacerSize.M
+                            )
+                        ),
+                        ComponentInput(
+                            component_container=ComponentContainerInput(
+                                container_content=[
+                                    ComponentContainerContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=organization.name or organization.slug
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_divider=ComponentDividerInput(
+                                            divider_spacing_size=ComponentDividerSpacingSize.M
+                                        )
+                                    ),
+                                    # Organization ID
+                                    ComponentContainerContentInput(
+                                        component_row=ComponentRowInput(
+                                            row_main_content=[
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text="Organization ID",
+                                                        text_size=ComponentTextSize.S,
+                                                        text_color=ComponentTextColor.MUTED,
+                                                    )
+                                                ),
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text=str(organization.id)
+                                                    )
+                                                ),
+                                            ],
+                                            row_aside_content=[
+                                                ComponentRowContentInput(
+                                                    component_copy_button=ComponentCopyButtonInput(
+                                                        copy_button_value=str(
+                                                            organization.id
+                                                        ),
+                                                        copy_button_tooltip_label="Copy Organization ID",
+                                                    )
+                                                )
+                                            ],
+                                        )
+                                    ),
+                                    # Next Review Threshold
+                                    ComponentContainerContentInput(
+                                        component_row=ComponentRowInput(
+                                            row_main_content=[
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text="Next Review Threshold",
+                                                        text_size=ComponentTextSize.S,
+                                                        text_color=ComponentTextColor.MUTED,
+                                                    )
+                                                ),
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text=format_currency(
+                                                            organization.next_review_threshold
+                                                            / 100,
+                                                            "USD",
+                                                            locale="en_US",
+                                                        )
+                                                    )
+                                                ),
+                                            ],
+                                            row_aside_content=[],
+                                        )
+                                    ),
+                                    # Backoffice Link
+                                    ComponentContainerContentInput(
+                                        component_link_button=ComponentLinkButtonInput(
+                                            link_button_url=settings.generate_external_url(
+                                                f"/backoffice/organizations/{organization.id}"
+                                            ),
+                                            link_button_label="View in Backoffice",
+                                        )
+                                    ),
+                                ]
+                            )
+                        ),
+                    ],
+                )
+            )
+
+            if thread_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    organization.id, thread_result.error.message
+                )
+
+            if thread_result.thread is None:
+                raise AccountReviewThreadCreationError(
+                    organization.id, "Failed to create thread: no thread returned"
+                )
+
+            return thread_result.thread.id
+
 
 plain = PlainService()

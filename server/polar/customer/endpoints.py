@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
-from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Customer
 from polar.openapi import APITag
@@ -22,6 +22,7 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import auth, sorting
+from .repository import CustomerRepository
 from .schemas.customer import Customer as CustomerSchema
 from .schemas.customer import (
     CustomerCreate,
@@ -94,7 +95,7 @@ async def export(
 
     async def create_csv() -> AsyncGenerator[str, None]:
         csv_writer = IterableCSVWriter(dialect="excel")
-        # CSV header
+
         yield csv_writer.getrow(
             (
                 "ID",
@@ -113,14 +114,10 @@ async def export(
             )
         )
 
-        (customers, _) = await customer_service.list(
-            session,
-            auth_subject,
-            organization_id=organization_id,
-            pagination=PaginationParams(limit=1000000, page=1),
-        )
+        repository = CustomerRepository.from_session(session)
+        stream = repository.stream_by_organization(auth_subject, organization_id)
 
-        for customer in customers:
+        async for customer in stream:
             billing_address = customer.billing_address
 
             yield csv_writer.getrow(

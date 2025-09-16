@@ -1,5 +1,5 @@
 import contextlib
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 from uuid import UUID
 
@@ -100,6 +100,18 @@ class CustomerRepository(
             Customer.organization_id == organization_id,
         )
         return await self.get_one_or_none(statement)
+
+    async def stream_by_organization(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: Sequence[UUID],
+    ) -> AsyncGenerator[Customer]:
+        statement = self.get_readable_statement(auth_subject).where(
+            Customer.organization_id.in_(organization_id),
+        )
+
+        async for customer in self.stream(statement):
+            yield customer
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

@@ -1,10 +1,13 @@
 import contextlib
 import uuid
 from collections.abc import Generator
+from datetime import UTC
 from typing import Annotated, Any
 
+import structlog
 from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 from pydantic import UUID4, BeforeValidator, ValidationError
 from pydantic_core import PydanticCustomError
 from sqlalchemy import or_, select
@@ -19,7 +22,7 @@ from polar.account.service import (
     account as account_service,
 )
 from polar.enums import AccountType
-from polar.kit.pagination import PaginationParamsQuery
+from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import empty_str_to_none
 from polar.models import (
     Account,
@@ -27,6 +30,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.organization import sorting
@@ -74,6 +78,27 @@ from .forms import (
 
 router = APIRouter()
 
+logger = structlog.getLogger(__name__)
+
+
+def empty_str_to_none_before_enum(value: Any) -> Any:
+    """Convert empty strings to None before enum parsing."""
+    if isinstance(value, str) and value.strip() == "":
+        return None
+    return value
+
+
+def empty_str_to_none_before_bool(value: Any) -> Any:
+    """Convert empty strings to None before boolean parsing."""
+    if isinstance(value, str) and value.strip() == "":
+        return None
+    if isinstance(value, str):
+        if value.lower() in ("true", "1", "yes", "on"):
+            return True
+        elif value.lower() in ("false", "0", "no", "off"):
+            return False
+    return value
+
 
 @contextlib.contextmanager
 def organization_badge(organization: Organization) -> Generator[None]:
@@ -97,6 +122,36 @@ class OrganizationStatusColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
         with organization_badge(item):
             pass
+        return None
+
+
+class NextReviewThresholdColumn(
+    datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
+):
+    def render(self, request: Request, item: Organization) -> Generator[None] | None:
+        from babel.numbers import format_currency
+
+        text(format_currency(item.next_review_threshold / 100, "USD", locale="en_US"))
+        return None
+
+
+class DaysInStatusColumn(
+    datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
+):
+    def render(self, request: Request, item: Organization) -> Generator[None] | None:
+        from datetime import datetime
+
+        if item.status_updated_at:
+            delta = datetime.now(UTC) - item.status_updated_at
+            days = delta.days
+        else:
+            delta = datetime.now(UTC) - item.created_at
+            days = delta.days
+
+        if item.status == Organization.Status.UNDER_REVIEW:
+            text(f"{days} days in review")
+        else:
+            text(f"{days} days since review")
         return None
 
 
@@ -241,14 +296,25 @@ async def get_setup_verdict_data(
 @router.get("/", name="organizations:list")
 async def list(
     request: Request,
-    pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
+    session: AsyncSession = Depends(get_db_session),
+    page: int = Query(1, description="Page number, defaults to 1.", gt=0),
+    limit: int = Query(100, description="Size of a page, defaults to 100.", gt=0),
     query: str | None = Query(None),
     organization_status: Annotated[
-        Organization.Status | None, BeforeValidator(empty_str_to_none), Query()
+        Organization.Status | None,
+        BeforeValidator(empty_str_to_none_before_enum),
+        Query(),
     ] = None,
-    session: AsyncSession = Depends(get_db_session),
+    has_appealed: Annotated[
+        bool | None, BeforeValidator(empty_str_to_none_before_bool), Query()
+    ] = None,
+    review_cycle: Annotated[
+        str | None, BeforeValidator(empty_str_to_none), Query()
+    ] = None,  # "first" or "subsequent"
 ) -> None:
+    # Create custom pagination with default limit of 100
+    pagination = PaginationParams(page, min(100, limit))
     repository = OrganizationRepository.from_session(session)
     statement = (
         repository.get_base_statement()
@@ -270,6 +336,37 @@ async def list(
     if organization_status:
         statement = statement.where(Organization.status == organization_status)
 
+    # Add appeal filter
+    if has_appealed is not None:
+        if has_appealed:
+            statement = statement.join(
+                OrganizationReview,
+                Organization.id == OrganizationReview.organization_id,
+            ).where(OrganizationReview.appeal_submitted_at.is_not(None))
+        else:
+            statement = statement.outerjoin(
+                OrganizationReview,
+                Organization.id == OrganizationReview.organization_id,
+            ).where(
+                or_(
+                    OrganizationReview.id.is_(None),
+                    OrganizationReview.appeal_submitted_at.is_(None),
+                )
+            )
+
+    # Add review cycle filter
+    if review_cycle:
+        if review_cycle == "first":
+            statement = statement.where(
+                Organization.status == Organization.Status.UNDER_REVIEW,
+                Organization.next_review_threshold == 0,
+            )
+        elif review_cycle == "subsequent":
+            statement = statement.where(
+                Organization.status == Organization.Status.UNDER_REVIEW,
+                Organization.next_review_threshold > 0,
+            )
+
     statement = repository.apply_sorting(statement, sorting)
     items, count = await repository.paginate(
         statement, limit=pagination.limit, page=pagination.page
@@ -285,23 +382,57 @@ async def list(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text("Organizations")
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
-                with input.search("query", query):
-                    pass
-                with input.select(
-                    [
-                        ("All Organization Statuses", ""),
-                        *[
-                            (status.get_display_name(), status.value)
-                            for status in Organization.Status
+            with tag.form(method="GET", classes="w-full flex flex-col gap-4"):
+                with tag.div(classes="flex flex-row gap-2"):
+                    with input.search("query", query):
+                        pass
+                    with input.select(
+                        [
+                            ("All Organization Statuses", ""),
+                            *[
+                                (status.get_display_name(), status.value)
+                                for status in Organization.Status
+                            ],
                         ],
-                    ],
-                    organization_status.value if organization_status else "",
-                    name="organization_status",
-                ):
-                    pass
-                with button(type="submit"):
-                    text("Filter")
+                        organization_status.value if organization_status else "",
+                        name="organization_status",
+                    ):
+                        pass
+                    with input.select(
+                        [
+                            ("All Appeal Statuses", ""),
+                            ("Has Appealed", "true"),
+                            ("Has Not Appealed", "false"),
+                        ],
+                        "true"
+                        if has_appealed is True
+                        else ("false" if has_appealed is False else ""),
+                        name="has_appealed",
+                    ):
+                        pass
+                    with input.select(
+                        [
+                            ("All Review Cycles", ""),
+                            ("First Review", "first"),
+                            ("Subsequent Review", "subsequent"),
+                        ],
+                        review_cycle or "",
+                        name="review_cycle",
+                    ):
+                        pass
+                with tag.div(classes="flex flex-row gap-2"):
+                    with input.select(
+                        [
+                            ("25 per page", "25"),
+                            ("50 per page", "50"),
+                            ("100 per page", "100"),
+                        ],
+                        str(limit),
+                        name="limit",
+                    ):
+                        pass
+                    with button(type="submit"):
+                        text("Filter")
             with datatable.Datatable[Organization, OrganizationSortProperty](
                 datatable.DatatableAttrColumn(
                     "id", "ID", href_route_name="organizations:get", clipboard=True
@@ -322,6 +453,16 @@ async def list(
                     "Slug",
                     sorting=OrganizationSortProperty.slug,
                     clipboard=True,
+                ),
+                NextReviewThresholdColumn(
+                    "next_review_threshold",
+                    "Next Review Threshold",
+                    sorting=OrganizationSortProperty.next_review_threshold,
+                ),
+                DaysInStatusColumn(
+                    "status_updated_at",
+                    "Days in Status",
+                    sorting=OrganizationSortProperty.days_in_status,
                 ),
             ).render(request, items, sorting=sorting):
                 pass
@@ -1162,6 +1303,18 @@ async def get(
                 with tag.h1(classes="text-4xl"):
                     text(organization.name)
                 with tag.div(classes="flex gap-2"):
+                    # Plain Actions
+                    with tag.a(
+                        classes="btn btn-outline",
+                        href=str(
+                            request.url_for(
+                                "organizations:plain_search_url", id=organization.id
+                            )
+                        ),
+                        title="Search in Plain",
+                        target="_blank",
+                    ):
+                        text("🔍 Search in Plain")
                     with button(
                         hx_get=str(
                             request.url_for("organizations:update", id=organization.id)
@@ -1494,3 +1647,24 @@ async def get(
                     with tag.div(classes="card card-border w-full shadow-sm"):
                         with payment_verdict.render():
                             pass
+
+
+@router.get("/{id}/plain_search_url", name="organizations:plain_search_url")
+async def get_plain_search_url(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    """Get the Plain search URL for this organization's admin."""
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(id)
+    if not organization:
+        raise HTTPException(status_code=404)
+
+    admin_user = await org_repo.get_admin_user(session, organization)
+    if not admin_user:
+        raise HTTPException(status_code=404, detail="No admin user found")
+
+    search_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={admin_user.email}"
+
+    return RedirectResponse(url=search_url, status_code=302)

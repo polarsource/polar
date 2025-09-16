@@ -15,5 +15,6 @@
       "source": "/docs/:match*",
       "destination": "https://polar.mintlify.dev/docs/:match*"
     }
-  ]
+  ],
+  "trailingSlash": false
 }

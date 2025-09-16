@@ -104,11 +104,14 @@ class CustomerRepository(
     async def stream_by_organization(
         self,
         auth_subject: AuthSubject[User | Organization],
-        organization_id: Sequence[UUID],
+        organization_id: Sequence[UUID] | None,
     ) -> AsyncGenerator[Customer]:
-        statement = self.get_readable_statement(auth_subject).where(
-            Customer.organization_id.in_(organization_id),
-        )
+        statement = self.get_readable_statement(auth_subject)
+
+        if organization_id is not None:
+            statement = statement.where(
+                Customer.organization_id.in_(organization_id),
+            )
 
         async for customer in self.stream(statement):
             yield customer

@@ -53,6 +53,18 @@ const oauth2CSP = `
   frame-ancestors 'none';
 `
 
+// We rewrite Mintlify docs to polar.sh/docs, so we need a specific CSP for them
+// Ref: https://www.mintlify.com/docs/guides/csp-configuration#content-security-policy-csp-configuration
+const docsCSP = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval';
+  style-src 'self' 'unsafe-inline' d4tuoctqmanu0.cloudfront.net;
+  font-src 'self' d4tuoctqmanu0.cloudfront.net;
+  img-src 'self' data: blob: d3gk2c5xim1je2.cloudfront.net;
+  connect-src 'self' *.mintlify.dev;
+  frame-src 'self' *.mintlify.dev;
+`
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -331,7 +343,7 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/((?!checkout|oauth2).*)',
+        source: '/((?!checkout|oauth2|docs).*)',
         headers: [
           {
             key: 'Content-Security-Policy',
@@ -376,6 +388,24 @@ const nextConfig = {
           {
             key: 'Permissions-Policy',
             value: `payment=*, publickey-credentials-get=*, camera=(), microphone=(), geolocation=()`,
+          },
+        ],
+      },
+      {
+        source: '/docs/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: docsCSP.replace(/\n/g, ''),
+          },
+          {
+            key: 'Permissions-Policy',
+            value:
+              'payment=(), publickey-credentials-get=(), camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
           },
         ],
       },

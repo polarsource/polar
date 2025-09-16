@@ -19,13 +19,17 @@ import { type MouseEvent } from 'react'
 
 import { useFileUpload } from '@/components/FileUpload'
 import { useAuth } from '@/hooks/auth'
-import { AddOutlined, AddPhotoAlternateOutlined, ClearOutlined } from '@mui/icons-material'
+import {
+  AddOutlined,
+  AddPhotoAlternateOutlined,
+  ClearOutlined,
+} from '@mui/icons-material'
 import { enums } from '@polar-sh/client'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import Link from 'next/link'
 import { useCallback, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { useFieldArray, useFormContext } from 'react-hook-form'
+import { twMerge } from 'tailwind-merge'
 import { EnhancedOAuth2ClientConfiguration } from './NewOAuthClientModal'
 
 export const FieldName = () => {
@@ -146,7 +150,8 @@ export const FieldClientSecret = ({
 }
 
 export const FieldLogo = () => {
-  const { control, setValue } = useFormContext<EnhancedOAuth2ClientConfiguration>()
+  const { control, setValue } =
+    useFormContext<EnhancedOAuth2ClientConfiguration>()
   const { userOrganizations } = useAuth()
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
 
@@ -216,7 +221,7 @@ export const FieldLogo = () => {
                     <img
                       src={currentLogo}
                       alt="Logo preview"
-                      className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                      className="h-[200px] w-[200px] rounded-lg border border-gray-200 object-cover"
                     />
                     <button
                       type="button"
@@ -224,7 +229,7 @@ export const FieldLogo = () => {
                         setValue('logo_uri', '')
                         setLogoPreview(null)
                       }}
-                      className="text-sm text-red-500 hover:text-red-600 self-start"
+                      className="self-start text-sm text-red-500 hover:text-red-600"
                     >
                       Remove logo
                     </button>
@@ -233,16 +238,13 @@ export const FieldLogo = () => {
                   <div
                     {...getRootProps()}
                     className={twMerge(
-                      'w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors',
-                      isDragActive ? 'border-blue-400 bg-blue-50' : '',
+                      'dark:bg-polar-700 dark:border-polar-600 flex aspect-square max-h-[200px] max-w-[200px] cursor-pointer flex-col items-center justify-center gap-y-2 rounded-xl border border-gray-200 bg-gray-50 hover:border-solid hover:bg-gray-100',
+                      isDragActive ? 'border-solid' : 'border-dashed',
                     )}
                   >
                     <input {...getInputProps()} />
-                    <AddPhotoAlternateOutlined className="text-gray-400 mb-2" />
-                    <span className="text-sm text-gray-500 text-center px-2">
-                      Click to upload or drag and drop
-                    </span>
-                    <span className="text-xs text-gray-400 text-center px-2 mt-1">
+                    <AddPhotoAlternateOutlined className="text-gray-600" />
+                    <span className="mt-1 px-2 text-center text-sm text-gray-600">
                       1:1 ratio recommended
                     </span>
                   </div>

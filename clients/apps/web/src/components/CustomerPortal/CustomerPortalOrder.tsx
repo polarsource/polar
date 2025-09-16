@@ -39,7 +39,9 @@ const CustomerPortalOrder = ({
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
-    checkout_id: order.checkout_id,
+    ...(order.subscription_id
+      ? { subscription_id: order.subscription_id }
+      : { order_id: order.id }),
     limit: 100,
     sorting: ['type'],
   })

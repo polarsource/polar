@@ -111,7 +111,9 @@ const CheckoutPricing = ({
 
         {meteredPrices.length > 0 && (
           <div className="text-sm">
-            <h2 className="mb-2 font-semibold">+ Additional Metered Usage</h2>
+            <h2 className="mb-2 text-base font-medium">
+              + Additional metered usage
+            </h2>
             {meteredPrices.map((price) => (
               <div
                 key={price.id}

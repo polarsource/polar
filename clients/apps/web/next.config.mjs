@@ -59,10 +59,10 @@ const docsCSP = `
   default-src 'self';
   script-src 'self' 'unsafe-inline' 'unsafe-eval';
   style-src 'self' 'unsafe-inline' d4tuoctqmanu0.cloudfront.net;
-  font-src 'self' d4tuoctqmanu0.cloudfront.net;
-  img-src 'self' data: blob: d3gk2c5xim1je2.cloudfront.net;
-  connect-src 'self' *.mintlify.dev;
-  frame-src 'self' *.mintlify.dev;
+  font-src 'self' d4tuoctqmanu0.cloudfront.net cdn.jsdelivr.net fonts.cdnfonts.com;
+  img-src 'self' data: blob: d3gk2c5xim1je2.cloudfront.net mintcdn.com mintlify.s3.us-west-1.amazonaws.com;
+  connect-src 'self' *.mintlify.dev *.mintlify.com;
+  frame-src 'self' *.mintlify.dev *.mintlify.com;
 `
 
 /** @type {import('next').NextConfig} */

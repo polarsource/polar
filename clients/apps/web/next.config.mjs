@@ -1,6 +1,5 @@
 import bundleAnalyzer from '@next/bundle-analyzer'
 import createMDX from '@next/mdx'
-import mdxMetadata from '@polar-sh/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
 import rehypeShikiFromHighlighter from '@shikijs/rehype/core'
 import rehypeMdxImportMedia from 'rehype-mdx-import-media'
@@ -20,27 +19,6 @@ const CODESPACES = process.env.CODESPACES === 'true'
 const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
   : 'polar.sh'
-
-const redirectDocs = (source, destination, permanent = false) => {
-  return [
-    {
-      source: `/docs${source}`,
-      destination: `/docs${destination}`,
-      permanent,
-    },
-    {
-      source: '/tools/:path*',
-      destination: '/developers/sdk/:path*',
-      has: [
-        {
-          type: 'host',
-          value: 'docs.polar.sh',
-        },
-      ],
-      permanent,
-    },
-  ]
-}
 
 const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env
   .S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
@@ -145,20 +123,6 @@ const nextConfig = {
           source: '/ingest/:path*',
           destination: 'https://us.i.posthog.com/:path*',
         },
-
-        // docs.polar.sh rewrite
-        {
-          // The rewrite happens before everything else, so we need to make sure
-          // it doesn't match the _next and assets directories
-          source: '/:path((?!_next|assets).*)',
-          has: [
-            {
-              type: 'host',
-              value: 'docs.polar.sh',
-            },
-          ],
-          destination: '/docs/:path',
-        },
       ],
     }
   },
@@ -215,32 +179,9 @@ const nextConfig = {
         permanent: false,
       },
 
-      // Feature pages
-      {
-        source: '/products',
-        destination: 'https://docs.polar.sh/products',
-        has: [
-          {
-            type: 'host',
-            value: 'polar.sh',
-          },
-        ],
-        permanent: true,
-      },
-      {
-        source: '/issue-funding',
-        destination: 'https://docs.polar.sh/issue-funding',
-        has: [
-          {
-            type: 'host',
-            value: 'polar.sh',
-          },
-        ],
-        permanent: true,
-      },
       {
         source: '/llms.txt',
-        destination: 'https://docs.polar.sh/llms.txt',
+        destination: 'https://polar.sh/docs/llms.txt',
         permanent: true,
         has: [
           {
@@ -251,7 +192,7 @@ const nextConfig = {
       },
       {
         source: '/llms-full.txt',
-        destination: 'https://docs.polar.sh/llms-full.txt',
+        destination: 'https://polar.sh/docs/llms-full.txt',
         permanent: true,
         has: [
           {
@@ -260,62 +201,6 @@ const nextConfig = {
           },
         ],
       },
-      {
-        source: '/donations',
-        destination: 'https://docs.polar.sh/donations',
-        has: [
-          {
-            type: 'host',
-            value: 'polar.sh',
-          },
-        ],
-        permanent: true,
-      },
-
-      ...redirectDocs('/issue-funding/overview', '/issue-funding', true),
-      ...redirectDocs('/guides/:path*', '/developers/guides/:path*', true),
-      ...redirectDocs('/tools/:path*', '/developers/sdk/:path*', true),
-      ...redirectDocs('/contribute', '/developers/open-source', true),
-      ...redirectDocs('/sandbox', '/developers/sandbox', true),
-      ...redirectDocs(
-        '/api/webhooks/:path*',
-        '/developers/webhooks/:path*',
-        true,
-      ),
-      ...redirectDocs('/api/sdk/:path*', '/developers/sdk/:path*', true),
-
-      // Redirect /docs/overview/:path to /docs/:path
-      ...redirectDocs('/overview/:path*', '/:path*', true),
-      ...redirectDocs('/subscriptions', '/products', true),
-      ...redirectDocs('/support/faq', '/', true),
-
-      // Redirect old FAQ to docs.polar.sh
-      ...(ENVIRONMENT === 'production'
-        ? [
-            {
-              source: '/faq',
-              destination: 'https://docs.polar.sh/faq/overview',
-              has: [
-                {
-                  type: 'host',
-                  value: 'polar.sh',
-                },
-              ],
-              permanent: true,
-            },
-            {
-              source: '/faq/:path*',
-              destination: 'https://docs.polar.sh/faq/:path*',
-              has: [
-                {
-                  type: 'host',
-                  value: 'polar.sh',
-                },
-              ],
-              permanent: true,
-            },
-          ]
-        : []),
 
       // Logged-in user redirections
       {
@@ -351,17 +236,6 @@ const nextConfig = {
         ],
         permanent: false,
       },
-
-      // Redirect /docs to docs.polar.sh
-      ...(ENVIRONMENT === 'production'
-        ? [
-            {
-              source: '/docs/:path*',
-              destination: 'https://docs.polar.sh/:path*',
-              permanent: false,
-            },
-          ]
-        : []),
 
       {
         source: '/maintainer',
@@ -518,9 +392,6 @@ const createConfig = async () => {
     options: {
       remarkPlugins: [
         remarkFrontmatter,
-        // Automatically turns frontmatter into NextJS Metadata
-        // Also automatically generates an OpenGraph image URL
-        mdxMetadata(`${process.env.NEXT_PUBLIC_FRONTEND_BASE_URL}/docs/og`),
         remarkGfm,
         remarkFlexibleToc,
         () => (tree, file) => ({

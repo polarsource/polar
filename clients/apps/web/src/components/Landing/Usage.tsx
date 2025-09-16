@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 
   return Response.json({ text });
 }`,
-    link: 'https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/llm-strategy',
+    link: 'https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/llm-strategy',
   },
   {
     name: 'Delta Time',
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
 
   return Response.json({ delta });
 }`,
-    link: 'https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/delta-time-strategy',
+    link: 'https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/delta-time-strategy',
   },
   {
     name: 'Manual',
@@ -151,7 +151,7 @@ export const Usage = () => {
                 </TabsTrigger>
               ))}
               <Link
-                href="https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
+                href="https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
                 target="_blank"
               >
                 <Button className="rounded-full" variant="ghost">

@@ -1316,23 +1316,6 @@ async def get(
                         target="_blank",
                     ):
                         text("🔍 Search in Plain")
-                    with tag.form(
-                        method="post",
-                        action=str(
-                            request.url_for(
-                                "organizations:create_plain_thread", id=organization.id
-                            )
-                        ),
-                        target="_blank",
-                        style="display: inline;",
-                        onsubmit="return confirm('Create a new thread in Plain for this organization?')",
-                    ):
-                        with tag.button(
-                            type="submit",
-                            classes="btn btn-outline",
-                            title="Create Thread in Plain",
-                        ):
-                            text("💬 Create Thread")
                     with button(
                         hx_get=str(
                             request.url_for("organizations:update", id=organization.id)
@@ -1667,6 +1650,9 @@ async def get(
                             pass
 
 
+
+
+
 @router.get("/{id}/plain_search_url", name="organizations:plain_search_url")
 async def get_plain_search_url(
     request: Request,
@@ -1688,51 +1674,3 @@ async def get_plain_search_url(
     return RedirectResponse(url=search_url, status_code=302)
 
 
-@router.api_route(
-    "/{id}/create_plain_thread",
-    name="organizations:create_plain_thread",
-    methods=["POST"],
-)
-async def create_plain_thread(
-    request: Request,
-    id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    """Create a Plain thread for this organization."""
-    org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(id)
-    if not organization:
-        raise HTTPException(status_code=404)
-
-    admin_user = await org_repo.get_admin_user(session, organization)
-    if not admin_user:
-        raise HTTPException(status_code=404, detail="No admin user found")
-
-    try:
-        thread_id = await plain_service.create_manual_organization_thread(
-            session, organization, admin_user
-        )
-        logger.info(
-            f"Created Plain thread {thread_id} for organization {organization.id}"
-        )
-
-        if thread_id:
-            # Redirect to the created thread in Plain in a new tab
-            thread_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/thread/{thread_id}"
-            return RedirectResponse(url=thread_url, status_code=302)
-        else:
-            await add_toast(
-                request,
-                "Plain integration is disabled",
-                "warning",
-            )
-    except Exception as e:
-        await add_toast(
-            request,
-            f"Failed to create Plain thread: {str(e)}",
-            "error",
-        )
-
-    return HXRedirectResponse(
-        request, str(request.url_for("organizations:get", id=id)), 303
-    )

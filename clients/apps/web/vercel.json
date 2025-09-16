@@ -5,5 +5,15 @@
     "deploymentEnabled": {
       "main": false
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/docs",
+      "destination": "https://polar.mintlify.dev/docs"
+    },
+    {
+      "source": "/docs/:match*",
+      "destination": "https://polar.mintlify.dev/docs/:match*"
+    }
+  ]
 }

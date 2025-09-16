@@ -1594,7 +1594,10 @@ class SubscriptionService:
         statement = select(Subscription).where(
             Subscription.product_id == product.id, Subscription.deleted_at.is_(None)
         )
-        subscriptions = await session.stream_scalars(statement)
+        subscriptions = await session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         async for subscription in subscriptions:
             await self.enqueue_benefits_grants(session, subscription)
 

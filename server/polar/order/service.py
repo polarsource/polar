@@ -1389,7 +1389,10 @@ class OrderService:
             Order.deleted_at.is_(None),
             Order.subscription_id.is_(None),
         )
-        orders = await session.stream_scalars(statement)
+        orders = await session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         async for order in orders:
             enqueue_job(
                 "benefit.enqueue_benefits_grants",

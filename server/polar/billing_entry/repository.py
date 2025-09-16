@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import Select, func, update
 from sqlalchemy.orm.strategy_options import contains_eager
 
+from polar.config import settings
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -69,9 +70,12 @@ class BillingEntryRepository(
             .where(ProductPrice.is_metered.is_(True))
             .group_by(BillingEntry.product_price_id)
         )
-        results = await self.session.stream(statement)
+        results = await self.session.stream(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         try:
-            async for result in results.unique():
+            async for result in results:
                 yield result._tuple()
         finally:
             await results.close()

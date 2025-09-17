@@ -16323,8 +16323,12 @@ export interface components {
         SubscriptionChargePreviewResponse: {
             /** Base Amount */
             base_amount: number;
+            /** Metered Amount */
+            metered_amount: number;
             /** Subtotal Amount */
             subtotal_amount: number;
+            /** Discount Amount */
+            discount_amount: number;
             /** Tax Amount */
             tax_amount: number;
             /** Total Amount */

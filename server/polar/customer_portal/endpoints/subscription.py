@@ -107,7 +107,9 @@ async def get(
 
 class SubscriptionChargePreviewResponse(TypedDict):
     base_amount: int
+    metered_amount: int
     subtotal_amount: int
+    discount_amount: int
     tax_amount: int
     total_amount: int
 
@@ -138,7 +140,24 @@ async def get_charge_preview(
 
     base_price = sum(p.amount for p in subscription.subscription_product_prices)
 
-    subtotal = base_price + sum(meter.amount for meter in subscription.meters)
+    metered_amount = sum(meter.amount for meter in subscription.meters)
+
+    subtotal_amount = base_price + metered_amount
+
+    discount_amount = 0
+
+    # Ensure the discount has not expired yet
+    if subscription.discount is not None:
+        assert subscription.started_at is not None
+        if subscription.discount.is_repetition_expired(
+            subscription.started_at, subscription.current_period_start
+        ):
+            subscription.discount = None
+
+    if subscription.discount is not None:
+        discount_amount = subscription.discount.get_discount_amount(subtotal_amount)
+
+    taxable_amount = subtotal_amount - discount_amount
 
     tax_amount = 0
 
@@ -149,7 +168,7 @@ async def get_charge_preview(
         tax = await calculate_tax(
             subscription.id,
             subscription.currency,
-            subtotal,
+            taxable_amount,
             subscription.product.stripe_product_id,
             subscription.customer.billing_address,
             [subscription.customer.tax_id]
@@ -160,11 +179,13 @@ async def get_charge_preview(
 
         tax_amount = tax["amount"]
 
-    total = subtotal + tax_amount
+    total = taxable_amount + tax_amount
 
     return {
         "base_amount": base_price,
-        "subtotal_amount": subtotal,
+        "metered_amount": metered_amount,
+        "subtotal_amount": subtotal_amount,
+        "discount_amount": discount_amount,
         "tax_amount": tax_amount,
         "total_amount": total,
     }

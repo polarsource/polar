@@ -29,6 +29,8 @@ export const CurrentPeriodOverview = ({
 
   const hasMeters = subscription.meters.length > 0
   const hasTaxes = subscriptionPreview && subscriptionPreview.tax_amount > 0
+  const hasDiscount =
+    subscriptionPreview && subscriptionPreview.discount_amount > 0
 
   return (
     <div
@@ -84,34 +86,49 @@ export const CurrentPeriodOverview = ({
         )}
 
         <div className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-2">
-          {hasTaxes && (
-            <>
-              <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
-                <span>Subtotal</span>
-                <span>
-                  <AmountLabel
-                    amount={subscriptionPreview.subtotal_amount}
-                    currency={subscription.currency}
-                    minimumFractionDigits={
-                      subscriptionPreview.subtotal_amount % 100 === 0 ? 0 : 2
-                    }
-                  />
-                </span>
-              </div>
+          {(hasTaxes || hasDiscount) && (
+            <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
+              <span>Subtotal</span>
+              <span>
+                <AmountLabel
+                  amount={subscriptionPreview.subtotal_amount}
+                  currency={subscription.currency}
+                  minimumFractionDigits={
+                    subscriptionPreview.subtotal_amount % 100 === 0 ? 0 : 2
+                  }
+                />
+              </span>
+            </div>
+          )}
 
-              <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
-                <span>Taxes</span>
-                <span>
-                  <AmountLabel
-                    amount={subscriptionPreview.tax_amount}
-                    currency={subscription.currency}
-                    minimumFractionDigits={
-                      subscriptionPreview.tax_amount % 100 === 0 ? 0 : 2
-                    }
-                  />
-                </span>
-              </div>
-            </>
+          {hasDiscount && (
+            <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
+              <span>Discount</span>
+              <span>
+                <AmountLabel
+                  amount={subscriptionPreview.discount_amount}
+                  currency={subscription.currency}
+                  minimumFractionDigits={
+                    subscriptionPreview.discount_amount % 100 === 0 ? 0 : 2
+                  }
+                />
+              </span>
+            </div>
+          )}
+
+          {hasTaxes && (
+            <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
+              <span>Taxes</span>
+              <span>
+                <AmountLabel
+                  amount={subscriptionPreview.tax_amount}
+                  currency={subscription.currency}
+                  minimumFractionDigits={
+                    subscriptionPreview.tax_amount % 100 === 0 ? 0 : 2
+                  }
+                />
+              </span>
+            </div>
           )}
 
           <div className="flex items-center justify-between">

@@ -1223,6 +1223,109 @@ async def setup_manual_payout(
                     text("Create Manual Account")
 
 
+@router.post(
+    "/{id}/create_plain_thread",
+    name="organizations:create_plain_thread",
+)
+async def create_plain_thread(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    """Create a Plain thread for this organization."""
+    try:
+        form = await request.form()
+        logger.info(f"Form data received: {dict(form)}")
+        title_field = form.get("title", "")
+        title = title_field.strip() if isinstance(title_field, str) else ""
+        logger.info(f"Extracted title: '{title}'")
+        if not title:
+            await add_toast(
+                request,
+                "Thread title is required",
+                "error",
+            )
+            return RedirectResponse(
+                url=request.url_for("organizations:get_organization", id=id),
+                status_code=302,
+            )
+
+        org_repo = OrganizationRepository.from_session(session)
+        organization = await org_repo.get_by_id(id)
+        if not organization:
+            raise HTTPException(status_code=404)
+
+        admin_user = await org_repo.get_admin_user(session, organization)
+        if not admin_user:
+            raise HTTPException(status_code=404, detail="No admin user found")
+
+        thread_id = await plain_service.create_manual_organization_thread(
+            session, organization, admin_user, title
+        )
+        logger.info(
+            f"Created Plain thread {thread_id} for organization {organization.id}"
+        )
+
+        thread_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/thread/{thread_id}"
+
+        with document() as doc:
+            with tag.div(id="modal"):
+                with tag.dialog(classes="modal modal-open"):
+                    with tag.div(classes="modal-box"):
+                        with tag.h3(classes="font-bold text-lg text-success"):
+                            text("✅ Thread Created Successfully!")
+
+                        with tag.p(classes="py-4"):
+                            text(
+                                "Your Plain thread has been created. Click the link below to open it:"
+                            )
+
+                        with tag.div(classes="modal-action"):
+                            with tag.a(
+                                href=thread_url,
+                                target="_blank",
+                                classes="btn btn-primary",
+                            ):
+                                text("🔗 Open Plain Thread")
+                            with tag.button(
+                                type="button",
+                                classes="btn",
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:clear_modal",
+                                        id=organization.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Close")
+
+                    with tag.div(
+                        classes="modal-backdrop",
+                        hx_get=str(
+                            request.url_for(
+                                "organizations:clear_modal", id=organization.id
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        pass
+
+        return HTMLResponse(str(doc))
+
+    except Exception as e:
+        logger.error(f"Error in create_plain_thread: {str(e)}", exc_info=True)
+        await add_toast(
+            request,
+            f"Failed to create Plain thread: {str(e)}",
+            "error",
+        )
+
+        return HXRedirectResponse(
+            request, str(request.url_for("organizations:get", id=id)), 303
+        )
+
+
 @router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])
 async def get(
     request: Request,
@@ -1708,14 +1811,13 @@ async def get_create_thread_modal(
                         text("Create Plain Thread")
 
                     with tag.form(
-                        method="post",
-                        action=str(
+                        id="create-thread-form",
+                        hx_post=str(
                             request.url_for(
                                 "organizations:create_plain_thread", id=organization.id
                             )
                         ),
-                        target="_blank",
-                        id="create-thread-form",
+                        hx_target="#modal",
                     ):
                         with tag.div(classes="form-control w-full mt-4"):
                             with tag.label(classes="label"):
@@ -1746,13 +1848,6 @@ async def get_create_thread_modal(
                             with tag.button(
                                 type="submit",
                                 classes="btn btn-primary",
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations:clear_modal", id=organization.id
-                                    )
-                                ),
-                                hx_target="#modal",
-                                **{"hx-trigger": "submit from:form delay:100ms"},
                             ):
                                 text("Create Thread")
 
@@ -1772,68 +1867,3 @@ async def get_create_thread_modal(
 async def clear_modal(id: UUID4) -> Any:
     """Clear the modal content."""
     return HTMLResponse('<div id="modal"></div>')
-
-
-@router.api_route(
-    "/{id}/create_plain_thread",
-    name="organizations:create_plain_thread",
-    methods=["POST"],
-)
-async def create_plain_thread(
-    request: Request,
-    id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    """Create a Plain thread for this organization."""
-    # Get title from form data
-    form = await request.form()
-    title_field = form.get("title", "")
-    title = title_field.strip() if isinstance(title_field, str) else ""
-    if not title:
-        await add_toast(
-            request,
-            "Thread title is required",
-            "error",
-        )
-        return RedirectResponse(
-            url=request.url_for("organizations:get_organization", id=id),
-            status_code=302,
-        )
-
-    org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(id)
-    if not organization:
-        raise HTTPException(status_code=404)
-
-    admin_user = await org_repo.get_admin_user(session, organization)
-    if not admin_user:
-        raise HTTPException(status_code=404, detail="No admin user found")
-
-    try:
-        thread_id = await plain_service.create_manual_organization_thread(
-            session, organization, admin_user, title
-        )
-        logger.info(
-            f"Created Plain thread {thread_id} for organization {organization.id}"
-        )
-
-        if thread_id:
-            # Redirect to the created thread in Plain in a new tab
-            thread_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/thread/{thread_id}"
-            return RedirectResponse(url=thread_url, status_code=302)
-        else:
-            await add_toast(
-                request,
-                "Plain integration is disabled",
-                "warning",
-            )
-    except Exception as e:
-        await add_toast(
-            request,
-            f"Failed to create Plain thread: {str(e)}",
-            "error",
-        )
-
-    return HXRedirectResponse(
-        request, str(request.url_for("organizations:get", id=id)), 303
-    )

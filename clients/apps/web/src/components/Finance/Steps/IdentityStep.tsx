@@ -55,7 +55,7 @@ export default function IdentityStep({
                     takes a few minutes but can take up to 24 hours.
                   </p>
                   <div className="text-xs text-gray-500">
-                    We'll notify you once verification is complete.
+                    We&apos;ll notify you once verification is complete.
                   </div>
                 </>
               ) : identityVerificationStatus === 'verified' ? (

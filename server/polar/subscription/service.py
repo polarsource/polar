@@ -330,6 +330,13 @@ class SubscriptionService:
         if created:
             subscription = await repository.create(subscription, flush=True)
             await self._after_subscription_created(session, subscription)
+            # ⚠️ Some users are relying on `subscription.updated` for everything
+            # It was working before with Stripe since it always triggered an update
+            # after creation.
+            # But that's not the case with our new engine.
+            # So we manually trigger it here to keep the same behavior.
+            await self._on_subscription_updated(session, subscription)
+
         else:
             subscription = await repository.update(subscription, flush=True)
             assert previous_status is not None

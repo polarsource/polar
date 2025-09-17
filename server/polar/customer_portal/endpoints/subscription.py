@@ -117,6 +117,7 @@ class SubscriptionChargePreviewResponse(TypedDict):
     summary="Preview Next Charge For Active Subscription",
     response_model=SubscriptionChargePreviewResponse,
     responses={404: SubscriptionNotFound},
+    tags=[APITag.private],
 )
 async def get_charge_preview(
     id: SubscriptionID,

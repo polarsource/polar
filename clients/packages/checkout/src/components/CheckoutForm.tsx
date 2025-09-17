@@ -254,6 +254,10 @@ const BaseCheckoutForm = ({
       return ''
     }
 
+    if (!interval) {
+      return ''
+    }
+
     if (checkout.discount.duration === 'forever') {
       return ''
     }

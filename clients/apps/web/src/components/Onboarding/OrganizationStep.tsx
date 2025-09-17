@@ -238,7 +238,7 @@ export const OrganizationStep = ({
                           <li>
                             • Anything in our list of{' '}
                             <a
-                              href="https://docs.polar.sh/merchant-of-record/acceptable-use"
+                              href="https://polar.sh/docs/merchant-of-record/acceptable-use"
                               className="text-blue-500 underline dark:text-blue-400"
                               target="_blank"
                             >
@@ -287,7 +287,7 @@ export const OrganizationStep = ({
                               <ul className="dark:text-polar-500 flex flex-col gap-y-1 text-sm text-gray-500">
                                 <li>
                                   <a
-                                    href="https://docs.polar.sh/merchant-of-record/account-reviews"
+                                    href="https://polar.sh/docs/merchant-of-record/account-reviews"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
                                   >

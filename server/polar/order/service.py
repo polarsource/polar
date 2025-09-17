@@ -1389,7 +1389,10 @@ class OrderService:
             Order.deleted_at.is_(None),
             Order.subscription_id.is_(None),
         )
-        orders = await session.stream_scalars(statement)
+        orders = await session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         async for order in orders:
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
@@ -1691,24 +1694,13 @@ class OrderService:
         on their account (depending on when they changed the plan).
         """
         order_repository = OrderRepository.from_session(session)
-        paid_orders = await order_repository.get_all(
-            order_repository.get_base_statement()
-            # .join(Customer, Order.customer_id == Customer.id)
-            .where(
-                Customer.id == customer.id,
-                Order.deleted_at.is_(None),
-                Order.status == OrderStatus.paid,
-            )
+        paid_orders = await order_repository.get_all_by_customer(
+            customer.id, status=OrderStatus.paid
         )
+
         payment_repository = PaymentRepository.from_session(session)
-        payments = await payment_repository.get_all(
-            payment_repository.get_base_statement()
-            .join(Order, Payment.order_id == Order.id)
-            .where(
-                Order.customer_id == customer.id,
-                Order.deleted_at.is_(None),
-                Payment.status == PaymentStatus.succeeded,
-            )
+        payments = await payment_repository.get_all_by_customer(
+            customer.id, status=PaymentStatus.succeeded
         )
 
         total_orders = sum(order.total_amount for order in paid_orders)

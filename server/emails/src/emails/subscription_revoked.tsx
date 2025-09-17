@@ -26,7 +26,7 @@ export function SubscriptionRevoked({
           Your subscription has now ended
         </Heading>
         <BodyText>
-          Thank you being a subscriber of{' '}
+          Thank you for being a subscriber of{' '}
           <span className="font-bold">{product.name}</span>.
         </BodyText>
         <BodyText>

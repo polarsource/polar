@@ -509,7 +509,7 @@
       {
         "tab": "Guides",
         "icon": "book-open",
-        "pages": ["guides/introduction", "guides/variants", "guides/disable-subscription-changes-in-customer-portal"]
+        "pages": ["guides/introduction", "guides/variants", "guides/disable-subscription-changes-in-customer-portal", "guides/allow-multiple-subscriptions-per-customer"]
       },
       {
         "tab": "Changelog",

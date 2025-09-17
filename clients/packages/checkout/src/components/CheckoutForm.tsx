@@ -254,6 +254,10 @@ const BaseCheckoutForm = ({
       return ''
     }
 
+    if (!interval) {
+      return ''
+    }
+
     if (checkout.discount.duration === 'forever') {
       return ''
     }
@@ -735,6 +739,7 @@ const BaseCheckoutForm = ({
                         {formatCurrencyNumber(
                           -checkout.discountAmount,
                           checkout.currency,
+                          checkout.discountAmount % 100 === 0 ? 0 : 2,
                         )}
                       </DetailRow>
                     )}
@@ -743,6 +748,7 @@ const BaseCheckoutForm = ({
                         {formatCurrencyNumber(
                           checkout.taxAmount,
                           checkout.currency,
+                          checkout.discountAmount % 100 === 0 ? 0 : 2,
                         )}
                       </DetailRow>
                     )}

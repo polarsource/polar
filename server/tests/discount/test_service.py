@@ -175,7 +175,14 @@ class TestUpdate:
             await discount_service.update(
                 session,
                 discount,
-                discount_update=DiscountUpdate.model_validate({field: value}),
+                discount_update=DiscountUpdate.model_validate(
+                    {
+                        field: value,
+                        # Make sure passing "currency"
+                        # doesn't cause AttributeError on percentage discounts
+                        "currency": "usd",
+                    }
+                ),
             )
 
     async def test_update_sensitive_fields(

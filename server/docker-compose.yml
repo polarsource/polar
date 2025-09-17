@@ -36,7 +36,7 @@ services:
       retries: 20
 
   minio:
-    image: bitnami/minio:2024.5.28
+    image: bitnamilegacy/minio:2024.5.28
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -47,7 +47,7 @@ services:
       - MINIO_ROOT_PASSWORD=${POLAR_MINIO_PWD}
 
   minio-setup:
-    image: bitnami/minio-client:2024.5.24
+    image: bitnamilegacy/minio-client:2024.5.24
     depends_on:
       - minio
     volumes:

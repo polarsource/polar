@@ -388,7 +388,7 @@ export default function StreamlinedAccountReview({
         'account',
         isAccountCompleted,
         currentStep,
-        isValidationCompleted || isAppealSubmitted,
+        isValidationCompleted || !!isAppealSubmitted,
       ),
     },
     {

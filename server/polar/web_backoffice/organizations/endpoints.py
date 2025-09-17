@@ -1735,14 +1735,22 @@ async def get_create_thread_modal(
                             with tag.button(
                                 type="button",
                                 classes="btn",
-                                hx_get=str(request.url_for("organizations:clear_modal", id=organization.id)),
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:clear_modal", id=organization.id
+                                    )
+                                ),
                                 hx_target="#modal",
                             ):
                                 text("Cancel")
                             with tag.button(
                                 type="submit",
                                 classes="btn btn-primary",
-                                hx_get=str(request.url_for("organizations:clear_modal", id=organization.id)),
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:clear_modal", id=organization.id
+                                    )
+                                ),
                                 hx_target="#modal",
                                 **{"hx-trigger": "submit from:form delay:100ms"},
                             ):
@@ -1750,7 +1758,9 @@ async def get_create_thread_modal(
 
                 with tag.div(
                     classes="modal-backdrop",
-                    hx_get=str(request.url_for("organizations:clear_modal", id=organization.id)),
+                    hx_get=str(
+                        request.url_for("organizations:clear_modal", id=organization.id)
+                    ),
                     hx_target="#modal",
                 ):
                     pass

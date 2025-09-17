@@ -21,7 +21,7 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/docs">Docs</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<a href="https://docs.polar.sh/api-reference">API Reference</a>
+<a href="https://polar.sh/docs/api-reference">API Reference</a>
 
 <p align="center">
   <a href="https://discord.gg/Pnhfz3UThd">
@@ -50,7 +50,7 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 - 4% + 40¢
 - No fixed monthly costs
-- Additional fees may apply. [Read more](https://docs.polar.sh/documentation/polar-as-merchant-of-record/fees)
+- Additional fees may apply. [Read more](https://polar.sh/docs/documentation/polar-as-merchant-of-record/fees)
 
 ## Roadmap, Issues & Feature Requests
 
@@ -64,7 +64,7 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 ### Polar API & SDK
 
-You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api-reference) and [Webhook API](https://docs.polar.sh/developers/webhooks).
+You can integrate Polar on your docs, sites or services using our [Public API](https://polar.sh/docs/api-reference) and [Webhook API](https://polar.sh/docs/integrate/webhooks/endpointsendpoints).
 
 We also maintain SDKs for the following languages:
 

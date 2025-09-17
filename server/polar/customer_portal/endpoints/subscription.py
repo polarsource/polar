@@ -136,11 +136,9 @@ async def get_charge_preview(
         ## FIXME Is a 404 the correct behavior?
         raise ResourceNotFound()
 
-    base_price = next(p for p in subscription.prices if p.amount_type == "fixed")
+    base_price = sum(p.amount for p in subscription.subscription_product_prices)
 
-    subtotal = base_price.price_amount + sum(
-        meter.amount for meter in subscription.meters
-    )
+    subtotal = base_price + sum(meter.amount for meter in subscription.meters)
 
     tax_amount = 0
 
@@ -165,7 +163,7 @@ async def get_charge_preview(
     total = subtotal + tax_amount
 
     return {
-        "base_amount": base_price.price_amount,
+        "base_amount": base_price,
         "subtotal_amount": subtotal,
         "tax_amount": tax_amount,
         "total_amount": total,

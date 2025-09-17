@@ -165,6 +165,7 @@ async def get_charge_preview(
         subscription.product.is_tax_applicable
         and subscription.customer.billing_address is not None
     ):
+        assert subscription.product.stripe_product_id is not None
         tax = await calculate_tax(
             subscription.id,
             subscription.currency,

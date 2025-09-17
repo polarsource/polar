@@ -241,6 +241,18 @@ export const useCustomerSubscriptions = (
     retry: defaultRetry,
   })
 
+export const useCustomerSubscriptionChargePreview = (api: Client, id: string) =>
+  useQuery({
+    queryKey: ['customer_subscription_charge_preview', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/subscriptions/{id}/charge-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
 export const useCustomerUpdateSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: {

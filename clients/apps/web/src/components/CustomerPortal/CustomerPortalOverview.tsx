@@ -40,7 +40,7 @@ export const CustomerPortalOverview = ({
 				<>
 					<div className="flex flex-col gap-y-4">
 						{activeSubscriptions.map((s) => (
-							<CurrentPeriodOverview key={s.id} subscription={s} />
+							<CurrentPeriodOverview key={s.id} subscription={s} api={api} />
 						))}
 					</div>
 					<ActiveSubscriptionsOverview

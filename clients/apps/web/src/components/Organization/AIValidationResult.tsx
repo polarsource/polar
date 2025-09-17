@@ -19,6 +19,8 @@ interface AIValidationResultProps {
   autoValidate?: boolean
   onValidationCompleted?: () => void
   onAppealApproved?: () => void
+  onAppealSubmitted?: () => void
+  existingReviewStatus?: schemas['OrganizationReviewStatus']
 }
 
 interface ValidationResult {
@@ -32,6 +34,8 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
   autoValidate = false,
   onValidationCompleted,
   onAppealApproved,
+  onAppealSubmitted,
+  existingReviewStatus,
 }) => {
   const [validationResult, setValidationResult] =
     useState<ValidationResult | null>(null)
@@ -80,7 +84,8 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
     // Check for actual data first, regardless of pending state
     const result =
       validationResult ||
-      (aiValidation.isSuccess ? aiValidation.data?.data : null)
+      (aiValidation.isSuccess ? aiValidation.data?.data : null) ||
+      existingReviewStatus
 
     // Only show loading if we don't have results and the request is pending
     if (aiValidation.isPending && !result) {
@@ -156,7 +161,8 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
 
         {/* Appeal Form for FAIL/UNCERTAIN or Continue Button */}
         {(validationResult ||
-          (aiValidation.isSuccess && aiValidation.data?.data)) && (
+          (aiValidation.isSuccess && aiValidation.data?.data) ||
+          existingReviewStatus) && (
           <>
             {status.type === 'review_required' ? (
               <div className="pt-6">
@@ -164,6 +170,8 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
                   organization={organization}
                   disabled={false} // Set to true to disable appeals
                   onAppealApproved={onAppealApproved}
+                  onContinueAfterSubmission={onAppealSubmitted}
+                  existingReviewStatus={existingReviewStatus}
                 />
               </div>
             ) : (

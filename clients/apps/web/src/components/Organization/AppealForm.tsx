@@ -17,6 +17,8 @@ interface AppealFormProps {
   disabled?: boolean
   onAppealSubmitted?: () => void
   onAppealApproved?: () => void
+  onContinueAfterSubmission?: () => void
+  existingReviewStatus?: schemas['OrganizationReviewStatus']
 }
 
 const AppealForm: React.FC<AppealFormProps> = ({
@@ -24,6 +26,8 @@ const AppealForm: React.FC<AppealFormProps> = ({
   disabled = false,
   onAppealSubmitted,
   onAppealApproved,
+  onContinueAfterSubmission,
+  existingReviewStatus,
 }) => {
   const [appealReason, setAppealReason] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
@@ -32,15 +36,18 @@ const AppealForm: React.FC<AppealFormProps> = ({
   const appealMutation = useOrganizationAppeal(organization.id)
   const reviewStatus = useOrganizationReviewStatus(organization.id)
 
+  // Use existing review status if provided, otherwise use fetched data
+  const currentReviewStatus = existingReviewStatus || reviewStatus.data
+
   // Update state based on existing review status
   useEffect(() => {
-    if (reviewStatus.data?.appeal_submitted_at) {
+    if (currentReviewStatus?.appeal_submitted_at) {
       setIsSubmitted(true)
-      if (reviewStatus.data.appeal_reason) {
-        setAppealReason(reviewStatus.data.appeal_reason)
+      if (currentReviewStatus.appeal_reason) {
+        setAppealReason(currentReviewStatus.appeal_reason)
       }
     }
-  }, [reviewStatus.data])
+  }, [currentReviewStatus])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,9 +77,9 @@ const AppealForm: React.FC<AppealFormProps> = ({
   const isValid = characterCount >= 50 && characterCount <= 5000
 
   if (isSubmitted) {
-    const submissionDate = reviewStatus.data?.appeal_submitted_at
-    const decision = reviewStatus.data?.appeal_decision
-    const reviewedAt = reviewStatus.data?.appeal_reviewed_at
+    const submissionDate = currentReviewStatus?.appeal_submitted_at
+    const decision = currentReviewStatus?.appeal_decision
+    const reviewedAt = currentReviewStatus?.appeal_reviewed_at
 
     return (
       <Card className="p-6">
@@ -103,15 +110,22 @@ const AppealForm: React.FC<AppealFormProps> = ({
             </div>
           </div>
 
-          {/* Next button for approved appeals */}
-          {decision === 'approved' && onAppealApproved && (
+          {/* Next button for approved appeals or continue after submission */}
+          {decision === 'approved' && onAppealApproved ? (
             <div className="flex justify-center pt-4">
               <Button onClick={onAppealApproved} className="w-auto">
                 Continue to Account Setup
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
-          )}
+          ) : decision !== 'rejected' && onContinueAfterSubmission ? (
+            <div className="flex justify-center pt-4">
+              <Button onClick={onContinueAfterSubmission} className="w-auto">
+                Continue Setup While Appeal is Reviewed
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          ) : null}
 
           {/* Show the appeal reason */}
           {appealReason && (

@@ -28,7 +28,12 @@ from polar.models import (
     Product,
     UserOrganization,
 )
-from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.discount import (
+    DiscountDuration,
+    DiscountFixed,
+    DiscountPercentage,
+    DiscountType,
+)
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout, create_discount
@@ -185,8 +190,34 @@ class TestUpdate:
                 ),
             )
 
+    @pytest.mark.parametrize(
+        "type,payload",
+        [
+            (
+                DiscountType.percentage,
+                DiscountUpdate(
+                    basis_points=2000,
+                    # Make sure passing "currency" doesn't cause AttributeError
+                    # on percentage discounts
+                    currency="usd",
+                ),
+            ),
+            (
+                DiscountType.fixed,
+                DiscountUpdate(
+                    amount=2000,
+                    currency="usd",
+                    # Make sure passing "basis_points" doesn't cause AttributeError
+                    # on percentage discounts
+                    basis_points=2000,
+                ),
+            ),
+        ],
+    )
     async def test_update_sensitive_fields(
         self,
+        type: DiscountType,
+        payload: DiscountUpdate,
         stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -196,23 +227,37 @@ class TestUpdate:
             id="NEW_STRIPE_COUPON_ID"
         )
 
-        discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=1000,
-            duration=DiscountDuration.once,
-            organization=organization,
-            starts_at=utc_now() - timedelta(days=1),
-            ends_at=utc_now() + timedelta(days=1),
-        )
+        discount: Discount
+        if type == DiscountType.percentage:
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.percentage,
+                basis_points=1000,
+                duration=DiscountDuration.once,
+                organization=organization,
+            )
+        else:
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.fixed,
+                amount=1000,
+                currency="usd",
+                duration=DiscountDuration.once,
+                organization=organization,
+            )
         old_stripe_coupon_id = discount.stripe_coupon_id
 
         updated_ends_at = utc_now() + timedelta(days=2)
+        payload.ends_at = updated_ends_at
         updated_discount = await discount_service.update(
-            session,
-            discount,
-            discount_update=DiscountUpdate(ends_at=updated_ends_at),
+            session, discount, discount_update=payload
         )
+
+        if isinstance(updated_discount, DiscountPercentage):
+            assert updated_discount.basis_points == 2000
+        elif isinstance(updated_discount, DiscountFixed):
+            assert updated_discount.amount == 2000
+            assert updated_discount.currency == "usd"
 
         assert updated_discount.ends_at == updated_ends_at
         assert updated_discount.stripe_coupon_id == "NEW_STRIPE_COUPON_ID"

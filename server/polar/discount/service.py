@@ -247,8 +247,14 @@ class DiscountService(ResourceServiceReader[Discount]):
                 discount.discount_products.append(DiscountProduct(product=product))
 
         updated_fields = set()
+        exclude = {"products"}
+        if isinstance(discount, DiscountFixed):
+            exclude.add("basis_points")
+        else:
+            exclude.add("amount")
+            exclude.add("currency")
         for attr, value in discount_update.model_dump(
-            exclude_unset=True, exclude={"products"}, by_alias=True
+            exclude_unset=True, exclude=exclude, by_alias=True
         ).items():
             if value != getattr(discount, attr):
                 setattr(discount, attr, value)

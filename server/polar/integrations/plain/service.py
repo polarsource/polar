@@ -125,6 +125,12 @@ class PlainService:
                         _card_getter_task(self._get_order_card(session, request))
                     )
                 )
+            if CustomerCardKey.snippets in request.cardKeys:
+                tasks.append(
+                    tg.create_task(
+                        _card_getter_task(self._get_snippets_card(session, request))
+                    )
+                )
 
         cards = [card for task in tasks if (card := task.result()) is not None]
         return CustomerCardsResponse(cards=cards)
@@ -1049,6 +1055,136 @@ class PlainService:
 
         return CustomerCard(
             key=CustomerCardKey.order,
+            timeToLiveSeconds=86400,
+            components=[
+                component.model_dump(by_alias=True, exclude_none=True)
+                for component in components
+            ],
+        )
+
+    async def _get_snippets_card(
+        self, session: AsyncSession, request: CustomerCardsRequest
+    ) -> CustomerCard | None:
+        email = request.customer.email
+
+        statement = (
+            select(Organization)
+            .join(Customer, Customer.organization_id == Organization.id)
+            .where(func.lower(Customer.email) == email.lower())
+        )
+        result = await session.execute(statement)
+        organizations = result.unique().scalars().all()
+
+        if len(organizations) == 0:
+            return None
+
+        snippets: list[tuple[str, str]] = [
+            (
+                "Looping In",
+                (
+                    "Hi 👋🏻\n"
+                    "I'm looping in the {organization_name} team to the conversation so that they can help you. "
+                    "Please allow them up to 48 hours to get back to you ([guidelines for merchants on Polar](https://polar.sh/docs/merchant-of-record/account-reviews#operational-guidelines))."
+                ),
+            ),
+            (
+                "Cancellation Portal",
+                (
+                    "Hi 👋🏻\n"
+                    "You can perform the cancellation on the following URL: https://polar.sh/{organization_slug}/portal\n"
+                ),
+            ),
+            (
+                "Follow-up 48 hours",
+                (
+                    "Hi 👋🏻\n"
+                    "I'm looping in the {organization_name} team again to the conversation. "
+                    "Please allow them another 48 hours to get back to you before we [proceed with the documented resolution](https://polar.sh/docs/merchant-of-record/account-reviews#expected-responsiveness)."
+                ),
+            ),
+            (
+                "Follow-up Reply All",
+                (
+                    "Hi 👋🏻\n"
+                    "I'm looping in the {organization_name} team again to the conversation. "
+                    'Please use "Reply All" so as to keep everyone involved in the conversation.'
+                ),
+            ),
+        ]
+
+        def _get_snippet_container(
+            organization: Organization,
+        ) -> ComponentContainerInput:
+            snippets_rows: list[ComponentContainerContentInput] = [
+                ComponentContainerContentInput(
+                    component_text=ComponentTextInput(
+                        text=f"Snippets for {organization.name}",
+                    )
+                ),
+                ComponentContainerContentInput(
+                    component_divider=ComponentDividerInput(
+                        divider_spacing_size=ComponentDividerSpacingSize.M
+                    )
+                ),
+            ]
+            for i, (snippet_name, snippet_text) in enumerate(snippets):
+                text = snippet_text.format(
+                    organization_name=organization.name,
+                    organization_slug=organization.slug,
+                )
+                snippets_rows.append(
+                    ComponentContainerContentInput(
+                        component_row=ComponentRowInput(
+                            row_main_content=[
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text_size=ComponentTextSize.S,
+                                        text_color=ComponentTextColor.MUTED,
+                                        text=snippet_name,
+                                    ),
+                                ),
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(text=text)
+                                ),
+                            ],
+                            row_aside_content=[
+                                ComponentRowContentInput(
+                                    component_copy_button=ComponentCopyButtonInput(
+                                        copy_button_value=text,
+                                        copy_button_tooltip_label="Copy Snippet",
+                                    )
+                                )
+                            ],
+                        )
+                    )
+                )
+                if i < len(snippets) - 1:
+                    snippets_rows.append(
+                        ComponentContainerContentInput(
+                            component_spacer=ComponentSpacerInput(
+                                spacer_size=ComponentSpacerSize.M
+                            )
+                        )
+                    )
+
+            return ComponentContainerInput(container_content=snippets_rows)
+
+        components: list[ComponentInput] = []
+        for i, organization in enumerate(organizations):
+            components.append(
+                ComponentInput(component_container=_get_snippet_container(organization))
+            )
+            if i < len(organizations) - 1:
+                components.append(
+                    ComponentInput(
+                        component_divider=ComponentDividerInput(
+                            divider_spacing_size=ComponentDividerSpacingSize.M
+                        )
+                    )
+                )
+
+        return CustomerCard(
+            key=CustomerCardKey.snippets,
             timeToLiveSeconds=86400,
             components=[
                 component.model_dump(by_alias=True, exclude_none=True)

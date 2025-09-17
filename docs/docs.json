@@ -509,7 +509,7 @@
       {
         "tab": "Guides",
         "icon": "book-open",
-        "pages": ["guides/introduction", "guides/variants"]
+        "pages": ["guides/introduction", "guides/variants", "guides/disable-subscription-changes-in-customer-portal"]
       },
       {
         "tab": "Changelog",

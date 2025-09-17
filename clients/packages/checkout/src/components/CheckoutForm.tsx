@@ -49,7 +49,7 @@ const DetailRow = ({
 }: PropsWithChildren<{ title: string; emphasis?: boolean }>) => {
   return (
     <div
-      className={`flex flex-row items-center justify-between gap-x-8 ${emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500'}`}
+      className={`flex flex-row items-start justify-between gap-x-8 ${emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500'}`}
     >
       <span>{title}</span>
       {children}
@@ -248,6 +248,39 @@ const BaseCheckoutForm = ({
       resetField('discountCode')
     }
   }, [checkout, resetField])
+
+  const formattedDiscountDuration = useMemo(() => {
+    if (!checkout.discount) {
+      return ''
+    }
+
+    if (checkout.discount.duration === 'forever') {
+      return ''
+    }
+
+    if (checkout.discount.duration === 'once') {
+      return `for the first ${interval}`
+    }
+
+    const durationInMonths =
+      'durationInMonths' in checkout.discount && checkout.discount
+        ? checkout.discount.durationInMonths
+        : -1
+
+    // Discount duration is always in months, so a 13 month discount on a yearly billing schedule
+    // will apply on the first two years.
+    // For clarity, we convert that here.
+    // When we ship other intervals like daily or weekly, "for the first xyz months" is probably
+    // better language than "for the first xyz days" anyway.
+    const calculatedDuration =
+      interval === 'year' ? Math.ceil(durationInMonths / 12) : durationInMonths
+
+    if (calculatedDuration <= 1) {
+      return `for the first ${interval}`
+    }
+
+    return `for the first ${calculatedDuration} ${interval === 'year' ? 'years' : 'months'}`
+  }, [checkout.discount, interval])
 
   return (
     <div className="flex flex-col justify-between gap-y-24">
@@ -714,11 +747,18 @@ const BaseCheckoutForm = ({
                       </DetailRow>
                     )}
                     <DetailRow title="Total" emphasis>
-                      <AmountLabel
-                        amount={checkout.totalAmount}
-                        currency={checkout.currency}
-                        interval={interval}
-                      />
+                      <div className="flex flex-col items-end gap-y-1">
+                        <AmountLabel
+                          amount={checkout.totalAmount}
+                          currency={checkout.currency}
+                          interval={interval}
+                        />
+                        {formattedDiscountDuration && (
+                          <span className="text-xs font-normal text-gray-500">
+                            {formattedDiscountDuration}
+                          </span>
+                        )}
+                      </div>
                     </DetailRow>
                     {meteredPrices.length > 0 && (
                       <DetailRow title="Additional metered usage" emphasis />

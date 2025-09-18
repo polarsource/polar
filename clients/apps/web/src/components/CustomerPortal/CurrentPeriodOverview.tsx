@@ -106,7 +106,7 @@ export const CurrentPeriodOverview = ({
               <span>Discount</span>
               <span>
                 <AmountLabel
-                  amount={subscriptionPreview.discount_amount}
+                  amount={-1 * subscriptionPreview.discount_amount}
                   currency={subscription.currency}
                   minimumFractionDigits={
                     subscriptionPreview.discount_amount % 100 === 0 ? 0 : 2

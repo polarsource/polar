@@ -226,7 +226,7 @@ const MetricGroup = ({
               className={twMerge(
                 '!rounded-none bg-transparent dark:bg-transparent',
                 index === 0 && 'lg:col-span-2',
-                'dark:border-polar-700 border-b border-r border-gray-200',
+                'dark:border-polar-700 border-b border-l-0 border-r border-t-0 border-gray-200 shadow-none',
               )}
             />
           ))}

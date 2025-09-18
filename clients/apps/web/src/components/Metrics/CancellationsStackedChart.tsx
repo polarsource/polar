@@ -111,7 +111,9 @@ export default function CancellationsStackedChart({
           <ChartTooltip
             content={<StackedChartTooltip tickFormatter={timestampFormatter} />}
           />
-          <ChartLegend content={<ChartLegendContent />} />
+          <ChartLegend
+            content={<ChartLegendContent className="justify-start" />}
+          />
           {CANCELLATION_REASONS.map((reason) => (
             <Bar
               key={reason}

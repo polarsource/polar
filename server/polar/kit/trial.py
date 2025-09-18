@@ -46,3 +46,12 @@ class TrialConfigurationInputMixin(BaseModel):
         ge=1,
         le=1000,
     )
+
+
+class TrialConfigurationOutputMixin(BaseModel):
+    trial_interval: TrialInterval | None = Field(
+        description="The interval unit for the trial period."
+    )
+    trial_interval_count: int | None = Field(
+        description="The number of interval units for the trial period."
+    )

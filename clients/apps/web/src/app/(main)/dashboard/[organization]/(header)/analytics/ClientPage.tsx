@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import CancellationsDistributionChart from '@/components/Metrics/CancellationsDistributionChart'
 import CancellationsStackedChart from '@/components/Metrics/CancellationsStackedChart'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
@@ -189,12 +190,21 @@ export default function ClientPage({
             <div className="flex flex-col gap-y-6">
               <h3 className="text-2xl">Cancellations</h3>
               <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
-                <div className="dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white p-4">
-                  <CancellationsStackedChart
-                    data={data}
-                    interval={interval}
-                    height={400}
-                  />
+                <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-3">
+                  <div className="dark:border-polar-700 col-span-2 border-b border-l-0 border-r border-t-0 border-gray-200 p-4">
+                    <CancellationsStackedChart
+                      data={data}
+                      interval={interval}
+                      height={400}
+                    />
+                  </div>
+                  <div className="dark:border-polar-700 border-b border-l-0 border-r border-t-0 border-gray-200 p-4">
+                    <CancellationsDistributionChart
+                      data={data}
+                      interval={interval}
+                      height={20}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,14 +1,51 @@
 from decimal import Decimal
+from typing import Any
 
 import pytest
 from pydantic import ValidationError
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.models.product_price import ProductPriceAmountType
-from polar.product.schemas import ProductPriceMeteredUnitCreate
+from polar.product.schemas import (
+    ProductCreateRecurring,
+    ProductPriceFixedCreate,
+    ProductPriceMeteredUnitCreate,
+)
 from tests.fixtures.random_objects import METER_ID
 
 # PostgreSQL int4 range limit
 INT_MAX_VALUE = 2_147_483_647
+
+
+@pytest.mark.parametrize(
+    "payload",
+    (
+        {"trial_interval_count": 1},
+        {"trial_interval": SubscriptionRecurringInterval.month},
+    ),
+)
+def test_incomplete_trial_configuration(payload: dict[str, Any]) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        ProductCreateRecurring(
+            name="Product",
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
+            **payload,
+        )
+
+    errors = exc_info.value.errors()
+    assert len(errors) == 1
+    assert errors[0]["type"] == "missing"
+    assert (
+        errors[0]["msg"]
+        == "Both trial_interval and trial_interval_count must be set together."
+    )
 
 
 class TestProductPriceMeteredUnitCreate:

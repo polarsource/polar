@@ -644,6 +644,10 @@ class SubscriptionService:
                         ),
                     )
 
+        previous_status = subscription.status
+        if previous_status == SubscriptionStatus.trialing:
+            subscription.status = SubscriptionStatus.active
+
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(
             subscription, update_dict={"scheduler_locked_at": None}
@@ -659,7 +663,7 @@ class SubscriptionService:
         await self._after_subscription_updated(
             session,
             subscription,
-            previous_status=subscription.status,
+            previous_status=previous_status,
             previous_is_canceled=subscription.canceled,
         )
 

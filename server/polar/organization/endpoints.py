@@ -366,7 +366,6 @@ async def validate_with_ai(
     return OrganizationReviewStatus(
         verdict=result.verdict,  # type: ignore[arg-type]
         reason=result.reason,
-        timed_out=result.timed_out,
     )
 
 

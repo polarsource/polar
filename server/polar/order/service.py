@@ -301,6 +301,13 @@ class PaymentRetryValidationError(OrderError):
         super().__init__(message, 422)
 
 
+class SubscriptionNotTrialing(OrderError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = f"Subscription {subscription.id} is not in trialing status."
+        super().__init__(message)
+
+
 def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
     return customer_address is None or customer_address["country"] is None
 
@@ -527,6 +534,11 @@ class OrderService:
         product = checkout.product
         if not product.is_recurring:
             raise NotRecurringProduct(checkout, product)
+
+        if subscription.trialing:
+            return await self.create_trial_order(
+                session, subscription, billing_reason, checkout
+            )
 
         return await self._create_order_from_checkout(
             session, checkout, billing_reason, payment, subscription
@@ -768,6 +780,66 @@ class OrderService:
                 order_id=order.id,
                 payment_method_id=subscription.payment_method_id,
             )
+
+        await self._on_order_created(session, order)
+
+        return order
+
+    async def create_trial_order(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        billing_reason: Literal[
+            OrderBillingReason.subscription_create,
+            OrderBillingReason.subscription_update,
+        ],
+        checkout: Checkout | None = None,
+    ) -> Order:
+        if not subscription.trialing:
+            raise SubscriptionNotTrialing(subscription)
+        assert subscription.trial_start is not None
+        assert subscription.trial_end is not None
+
+        product = subscription.product
+        customer = subscription.customer
+
+        items: list[OrderItem] = [
+            OrderItem.from_trial(
+                product, subscription.trial_start, subscription.trial_end
+            )
+        ]
+
+        organization = subscription.organization
+        invoice_number = await organization_service.get_next_invoice_number(
+            session, organization
+        )
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.create(
+            Order(
+                status=OrderStatus.paid,
+                subtotal_amount=sum(item.amount for item in items),
+                discount_amount=0,
+                tax_amount=0,
+                currency=subscription.currency,
+                billing_reason=billing_reason,
+                billing_name=customer.billing_name,
+                billing_address=customer.billing_address,
+                taxability_reason=None,
+                tax_id=customer.tax_id,
+                tax_rate=None,
+                invoice_number=invoice_number,
+                customer=customer,
+                product=product,
+                discount=None,
+                subscription=subscription,
+                checkout=checkout,
+                user_metadata=subscription.user_metadata,
+                custom_field_data=subscription.custom_field_data,
+                items=items,
+            ),
+            flush=True,
+        )
 
         await self._on_order_created(session, order)
 

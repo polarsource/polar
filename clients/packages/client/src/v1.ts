@@ -2142,6 +2142,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/customers/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Customers
+         * @description Export customers as a CSV file.
+         *
+         *     **Scopes**: `customers:read` `customers:write`
+         */
+        get: operations["customers:export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/customers/{id}": {
         parameters: {
             query?: never;
@@ -14793,7 +14815,7 @@ export interface components {
          * OrganizationSortProperty
          * @enum {string}
          */
-        OrganizationSortProperty: "created_at" | "-created_at" | "slug" | "-slug" | "name" | "-name";
+        OrganizationSortProperty: "created_at" | "-created_at" | "slug" | "-slug" | "name" | "-name" | "next_review_threshold" | "-next_review_threshold" | "days_in_status" | "-days_in_status";
         /** OrganizationSubscriptionSettings */
         OrganizationSubscriptionSettings: {
             /** Allow Multiple Subscriptions */
@@ -23058,6 +23080,38 @@ export interface operations {
             };
         };
     };
+    "customers:export": {
+        parameters: {
+            query?: {
+                /** @description Filter by organization ID. */
+                organization_id?: string | string[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "customers:get": {
         parameters: {
             query?: never;
@@ -26781,7 +26835,7 @@ export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["
 export const organizationDetailsSwitching_fromValues: ReadonlyArray<components["schemas"]["OrganizationDetails"]["switching_from"]> = ["paddle", "lemon_squeezy", "gumroad", "stripe", "other"];
 export const organizationReviewStatusVerdictValues: ReadonlyArray<components["schemas"]["OrganizationReviewStatus"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];
 export const organizationSocialPlatformsValues: ReadonlyArray<components["schemas"]["OrganizationSocialPlatforms"]> = ["x", "github", "facebook", "instagram", "youtube", "tiktok", "linkedin", "other"];
-export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name"];
+export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name", "next_review_threshold", "-next_review_threshold", "days_in_status", "-days_in_status"];
 export const organizationValidationResultVerdictValues: ReadonlyArray<components["schemas"]["OrganizationValidationResult"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
 export const paymentSortPropertyValues: ReadonlyArray<components["schemas"]["PaymentSortProperty"]> = ["created_at", "-created_at", "status", "-status", "amount", "-amount", "method", "-method"];

@@ -11,84 +11,39 @@ import {
   Info,
   Loader2,
 } from 'lucide-react'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import AppealForm from './AppealForm'
 
 interface AIValidationResultProps {
   organization: schemas['Organization']
-  autoValidate?: boolean
   onValidationCompleted?: () => void
   onAppealApproved?: () => void
   onAppealSubmitted?: () => void
   existingReviewStatus?: schemas['OrganizationReviewStatus']
 }
 
-interface ValidationResult {
-  verdict: 'PASS' | 'FAIL' | 'UNCERTAIN'
-  reason: string
-  timed_out: boolean
-}
-
 const AIValidationResult: React.FC<AIValidationResultProps> = ({
   organization,
-  autoValidate = false,
   onValidationCompleted,
   onAppealApproved,
   onAppealSubmitted,
   existingReviewStatus,
 }) => {
-  const [validationResult, setValidationResult] =
-    useState<ValidationResult | null>(null)
   const hasAutoValidatedRef = useRef(false)
 
   const aiValidation = useOrganizationAIValidation(organization.id)
 
-  const runValidation = useCallback(async () => {
-    // Prevent multiple concurrent calls
-    if (aiValidation.isPending) {
-      return
-    }
-
-    try {
-      const response = await aiValidation.mutateAsync()
-      const { data, error } = response
-
-      if (error) {
-        throw new Error(`AI validation failed: ${error}`)
-      }
-
-      setValidationResult(data)
-    } catch (error) {
-      console.error('AI validation failed:', error)
-      // Set a fallback result for error cases
-      const errorResult: ValidationResult = {
-        verdict: 'UNCERTAIN',
-        reason:
-          'Technical error during validation. Manual review will be conducted.',
-        timed_out: false,
-      }
-      setValidationResult(errorResult)
-      // Don't auto-progress - let user click continue button
+  // Auto-validate when component mounts
+  useEffect(() => {
+    if (!hasAutoValidatedRef.current && !aiValidation.isPending) {
+      hasAutoValidatedRef.current = true
+      aiValidation.mutateAsync()
     }
   }, [aiValidation])
 
-  // Auto-validate when component mounts if autoValidate is true
-  useEffect(() => {
-    if (autoValidate && !hasAutoValidatedRef.current) {
-      hasAutoValidatedRef.current = true
-      runValidation()
-    }
-  }, [autoValidate, runValidation])
-
   const getValidationStatus = () => {
-    // Check for actual data first, regardless of pending state
-    const result =
-      validationResult ||
-      (aiValidation.isSuccess ? aiValidation.data?.data : null) ||
-      existingReviewStatus
-
-    // Only show loading if we don't have results and the request is pending
-    if (aiValidation.isPending && !result) {
+    // Show loading if request is pending
+    if (aiValidation.isPending) {
       return {
         type: 'loading',
         title: 'Validating Organization Details...',
@@ -98,6 +53,19 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
       }
     }
 
+    // Handle error state with fallback result
+    if (aiValidation.isError) {
+      return {
+        type: 'review_required',
+        title: 'Payment Access Denied',
+        message:
+          'Technical error during validation. Manual review will be conducted.',
+        icon: <AlertTriangle className="h-8 w-8 text-gray-600" />,
+        severity: 'error',
+      }
+    }
+
+    const result = aiValidation.data?.data
     if (!result) {
       return null
     }
@@ -160,9 +128,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
         </Card>
 
         {/* Appeal Form for FAIL/UNCERTAIN or Continue Button */}
-        {(validationResult ||
-          (aiValidation.isSuccess && aiValidation.data?.data) ||
-          existingReviewStatus) && (
+        {(aiValidation.isSuccess || aiValidation.isError) && (
           <>
             {status.type === 'review_required' ? (
               <div className="pt-6">

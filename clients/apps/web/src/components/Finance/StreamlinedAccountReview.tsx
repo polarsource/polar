@@ -491,7 +491,6 @@ export default function StreamlinedAccountReview({
             {/* AI Validation Results */}
             <AIValidationResult
               organization={organization}
-              autoValidate={!organizationReviewStatus?.verdict}
               onValidationCompleted={handleValidationCompleted}
               onAppealApproved={onAppealApproved}
               onAppealSubmitted={onAppealSubmitted}

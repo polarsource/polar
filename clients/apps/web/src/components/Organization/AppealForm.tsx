@@ -15,7 +15,6 @@ import React, { useEffect, useState } from 'react'
 interface AppealFormProps {
   organization: schemas['Organization']
   disabled?: boolean
-  onAppealSubmitted?: () => void
   onAppealApproved?: () => void
   onContinueAfterSubmission?: () => void
   existingReviewStatus?: schemas['OrganizationReviewStatus']
@@ -24,7 +23,6 @@ interface AppealFormProps {
 const AppealForm: React.FC<AppealFormProps> = ({
   organization,
   disabled = false,
-  onAppealSubmitted,
   onAppealApproved,
   onContinueAfterSubmission,
   existingReviewStatus,
@@ -64,10 +62,6 @@ const AppealForm: React.FC<AppealFormProps> = ({
       queryClient.invalidateQueries({
         queryKey: ['organizationReviewStatus', organization.id],
       })
-
-      if (onAppealSubmitted) {
-        onAppealSubmitted()
-      }
     } catch (error) {
       console.error('Failed to submit appeal:', error)
     }

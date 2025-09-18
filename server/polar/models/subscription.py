@@ -129,6 +129,12 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     current_period_end: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
+    trial_start: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    trial_end: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False)
     canceled_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
@@ -239,6 +245,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     def is_incomplete(self) -> bool:
         return SubscriptionStatus.is_incomplete(self.status)
+
+    @hybrid_property
+    def trialing(self) -> bool:
+        return self.status == SubscriptionStatus.trialing
+
+    @trialing.inplace.expression
+    @classmethod
+    def _trialing_expression(cls) -> ColumnElement[bool]:
+        return cls.status == SubscriptionStatus.trialing
 
     @hybrid_property
     def active(self) -> bool:

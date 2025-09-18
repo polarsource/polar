@@ -41,6 +41,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.trial import TrialConfigurationInputMixin
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
     CheckoutCustomerBillingAddressFields,
@@ -143,7 +144,9 @@ _customer_metadata_description = METADATA_DESCRIPTION.format(
 )
 
 
-class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
+class CheckoutCreateBase(
+    TrialConfigurationInputMixin, CustomFieldDataInputMixin, MetadataInputMixin, Schema
+):
     """
     Create a new checkout session.
 

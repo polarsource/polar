@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
+from polar.kit.trial import TrialConfigurationMixin
 
 from .discount import Discount
 from .product import Product
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
     from .organization import Organization
 
 
-class CheckoutLink(MetadataMixin, RecordModel):
+class CheckoutLink(TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "checkout_links"
 
     payment_processor: Mapped[PaymentProcessor] = mapped_column(

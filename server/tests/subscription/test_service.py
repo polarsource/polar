@@ -30,6 +30,7 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
+from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
@@ -464,6 +465,52 @@ class TestCreateOrUpdateFromCheckout:
         enqueue_benefits_grants_mock.assert_called_once_with(
             session, updated_subscription
         )
+
+    async def test_trial(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+        )
+
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
+        )
+
+        assert created is True
+
+        assert subscription.status == SubscriptionStatus.trialing
+        assert subscription.prices == product.prices
+        assert subscription.amount == checkout.total_amount
+        assert subscription.payment_method == payment_method
+
+        assert subscription.started_at is not None
+        assert subscription.current_period_start is not None
+        assert subscription.current_period_end is not None
+        assert subscription.started_at == subscription.current_period_start
+        assert subscription.current_period_end > subscription.current_period_start
+        assert subscription.current_period_end == checkout.trial_end
+        assert subscription.trial_start == subscription.current_period_start
+
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
 
 @pytest.mark.asyncio

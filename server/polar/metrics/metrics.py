@@ -20,6 +20,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
 from polar.models import Checkout, Order, Subscription
 from polar.models.checkout import CheckoutStatus
+from polar.models.subscription import CustomerCancellationReason
 
 from .queries import MetricQuery
 
@@ -513,6 +514,183 @@ class CheckoutsConversionMetric(Metric):
         return statistics.fmean
 
 
+class CanceledSubscriptionsMetric(Metric):
+    slug = "canceled_subscriptions"
+    display_name = "Canceled Subscriptions"
+    type = MetricType.scalar
+    query = MetricQuery.canceled_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id)
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class CanceledSubscriptionsCustomerServiceMetric(Metric):
+    slug = "canceled_subscriptions_customer_service"
+    display_name = "Canceled Subscriptions - Customer Service"
+    type = MetricType.scalar
+    query = MetricQuery.canceled_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id).filter(
+            Subscription.customer_cancellation_reason
+            == CustomerCancellationReason.customer_service
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class CanceledSubscriptionsLowQualityMetric(Metric):
+    slug = "canceled_subscriptions_low_quality"
+    display_name = "Canceled Subscriptions - Low Quality"
+    type = MetricType.scalar
+    query = MetricQuery.canceled_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id).filter(
+            Subscription.customer_cancellation_reason
+            == CustomerCancellationReason.low_quality
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class CanceledSubscriptionsMissingFeaturesMetric(Metric):
+    slug = "canceled_subscriptions_missing_features"
+    display_name = "Canceled Subscriptions - Missing Features"
+    type = MetricType.scalar
+    query = MetricQuery.canceled_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id).filter(
+            Subscription.customer_cancellation_reason
+            == CustomerCancellationReason.missing_features
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class CanceledSubscriptionsSwitchedServiceMetric(Metric):
+    slug = "canceled_subscriptions_switched_service"
+    display_name = "Canceled Subscriptions - Switched Service"
+    type = MetricType.scalar
+    query = MetricQuery.canceled_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id).filter(
+            Subscription.customer_cancellation_reason
+            == CustomerCancellationReason.switched_service
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class CanceledSubscriptionsTooComplexMetric(Metric):
+    slug = "canceled_subscriptions_too_complex"
+    display_name = "Canceled Subscriptions - Too Complex"
+    type = MetricType.scalar
+    query = MetricQuery.canceled_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id).filter(
+            Subscription.customer_cancellation_reason
+            == CustomerCancellationReason.too_complex
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class CanceledSubscriptionsTooExpensiveMetric(Metric):
+    slug = "canceled_subscriptions_too_expensive"
+    display_name = "Canceled Subscriptions - Too Expensive"
+    type = MetricType.scalar
+    query = MetricQuery.canceled_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id).filter(
+            Subscription.customer_cancellation_reason
+            == CustomerCancellationReason.too_expensive
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class CanceledSubscriptionsUnusedMetric(Metric):
+    slug = "canceled_subscriptions_unused"
+    display_name = "Canceled Subscriptions - Unused"
+    type = MetricType.scalar
+    query = MetricQuery.canceled_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id).filter(
+            Subscription.customer_cancellation_reason
+            == CustomerCancellationReason.unused
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class CanceledSubscriptionsOtherMetric(Metric):
+    slug = "canceled_subscriptions_other"
+    display_name = "Canceled Subscriptions - Other"
+    type = MetricType.scalar
+    query = MetricQuery.canceled_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id).filter(
+            Subscription.customer_cancellation_reason
+            == CustomerCancellationReason.other
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
 METRICS: list[type[Metric]] = [
     OrdersMetric,
     RevenueMetric,
@@ -536,6 +714,15 @@ METRICS: list[type[Metric]] = [
     CheckoutsMetric,
     SucceededCheckoutsMetric,
     CheckoutsConversionMetric,
+    CanceledSubscriptionsMetric,
+    CanceledSubscriptionsCustomerServiceMetric,
+    CanceledSubscriptionsLowQualityMetric,
+    CanceledSubscriptionsMissingFeaturesMetric,
+    CanceledSubscriptionsSwitchedServiceMetric,
+    CanceledSubscriptionsTooComplexMetric,
+    CanceledSubscriptionsTooExpensiveMetric,
+    CanceledSubscriptionsUnusedMetric,
+    CanceledSubscriptionsOtherMetric,
 ]
 
 __all__ = ["MetricType", "Metric", "METRICS"]

@@ -229,43 +229,13 @@ def get_active_subscriptions_cte(
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-    readable_subscriptions_statement = select(Subscription.id).join(
-        Product, onclause=Subscription.product_id == Product.id
+    readable_subscriptions_statement = _get_readable_subscriptions_statement(
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        billing_type=billing_type,
+        customer_id=customer_id,
     )
-    if is_user(auth_subject):
-        readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Product.organization_id.in_(
-                select(UserOrganization.organization_id).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
-                )
-            )
-        )
-    elif is_organization(auth_subject):
-        readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Product.organization_id == auth_subject.subject.id
-        )
-
-    if organization_id is not None:
-        readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Product.organization_id.in_(organization_id)
-        )
-
-    if product_id is not None:
-        readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Subscription.product_id.in_(product_id)
-        )
-
-    if billing_type is not None:
-        readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Product.billing_type.in_(billing_type)
-        )
-
-    if customer_id is not None:
-        readable_subscriptions_statement = readable_subscriptions_statement.join(
-            Customer,
-            onclause=Subscription.customer_id == Customer.id,
-        ).where(Customer.id.in_(customer_id))
 
     return cte(
         select(

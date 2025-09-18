@@ -145,7 +145,7 @@ _customer_metadata_description = METADATA_DESCRIPTION.format(
 
 
 class CheckoutCreateBase(
-    TrialConfigurationInputMixin, CustomFieldDataInputMixin, MetadataInputMixin, Schema
+    CustomFieldDataInputMixin, MetadataInputMixin, TrialConfigurationInputMixin, Schema
 ):
     """
     Create a new checkout session.
@@ -300,7 +300,9 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
 
-class CheckoutUpdate(MetadataInputMixin, CheckoutUpdateBase):
+class CheckoutUpdate(
+    MetadataInputMixin, TrialConfigurationInputMixin, CheckoutUpdateBase
+):
     """Update an existing checkout session using an access token."""
 
     discount_id: UUID4 | None = Field(
@@ -346,7 +348,7 @@ class CheckoutConfirmStripe(CheckoutConfirmBase):
 CheckoutConfirm = CheckoutConfirmStripe
 
 
-class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
+class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     payment_processor: PaymentProcessor = Field(description="Payment processor used.")
     status: CheckoutStatus = Field(
         description="""

@@ -80,6 +80,7 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_product,
     create_subscription,
+    create_trialing_subscription,
     set_product_benefits,
 )
 from tests.fixtures.stripe import (
@@ -723,6 +724,42 @@ class TestCycle:
             product_id=product.id,
             subscription_id=subscription.id,
         )
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReason.subscription_cycle,
+        )
+
+    async def test_trial_end(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        previous_trial_start = subscription.trial_start
+        previous_trial_end = subscription.trial_end
+        previous_current_period_end = subscription.current_period_end
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.current_period_end is not None
+        assert previous_current_period_end is not None
+        assert updated_subscription.current_period_end > previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.trial_start == previous_trial_start
+        assert updated_subscription.trial_end == previous_trial_end
+
         enqueue_job_mock.assert_any_call(
             "order.create_subscription_order",
             subscription.id,

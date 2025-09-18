@@ -137,10 +137,12 @@ const LandingPageMobileNavigation = () => {
 
 	const onLoginClick = () => {
 		posthog.capture("global:user:login:click");
+    sidebar.toggleSidebar();
 		showModal();
 	};
 
 	return (
+    <>
 		<Sidebar className="md:hidden">
 			<SidebarHeader className="p-4">
 				<BrandingMenu logoVariant="icon" />
@@ -170,13 +172,14 @@ const LandingPageMobileNavigation = () => {
 					Login
 				</NavLink>
 			</SidebarContent>
+		</Sidebar>
 			<Modal
 				isShown={isModalShown}
 				hide={hideModal}
 				modalContent={<AuthModal />}
 				className="lg:w-full lg:max-w-[480px]"
 			/>
-		</Sidebar>
+    </>
 	);
 };
 

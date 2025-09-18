@@ -10,14 +10,14 @@ export const CANCELLATION_REASONS = [
 ] as const
 
 export const REASON_COLORS = {
-  too_expensive: '#ef4444',
-  missing_features: '#f97316',
-  switched_service: '#eab308',
-  unused: '#22c55e',
-  customer_service: '#06b6d4',
-  low_quality: '#8b5cf6',
-  too_complex: '#ec4899',
-  other: '#6b7280',
+  too_expensive: '#EF765F',
+  missing_features: '#F3AB71',
+  switched_service: '#F0C289',
+  unused: '#8ED6B9',
+  customer_service: '#618BE6',
+  low_quality: '#2A459D',
+  too_complex: '#EF8EB0',
+  other: '#CEC7C7',
 } as const
 
 export const REASON_LABELS = {

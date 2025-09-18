@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import CancellationsStackedChart from '@/components/Metrics/CancellationsStackedChart'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
@@ -185,6 +186,18 @@ export default function ClientPage({
               data={data}
               interval={interval}
             />
+            <div className="flex flex-col gap-y-6">
+              <h3 className="text-2xl">Cancellations</h3>
+              <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
+                <div className="dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white p-4">
+                  <CancellationsStackedChart
+                    data={data}
+                    interval={interval}
+                    height={400}
+                  />
+                </div>
+              </div>
+            </div>
             <MetricGroup
               title="Net Revenue"
               metricKeys={netRevenueEvents}

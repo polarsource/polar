@@ -1,8 +1,10 @@
 from datetime import datetime
 from enum import StrEnum
+from typing import Self
 
 from dateutil.relativedelta import relativedelta
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+from pydantic_core import PydanticCustomError
 from sqlalchemy import Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -46,6 +48,19 @@ class TrialConfigurationInputMixin(BaseModel):
         ge=1,
         le=1000,
     )
+
+    @model_validator(mode="after")
+    def is_complete_configuration(self) -> Self:
+        if self.trial_interval is None and self.trial_interval_count is None:
+            return self
+
+        if self.trial_interval is not None and self.trial_interval_count is not None:
+            return self
+
+        raise PydanticCustomError(
+            "missing",
+            "Both trial_interval and trial_interval_count must be set together.",
+        )
 
 
 class TrialConfigurationOutputMixin(BaseModel):

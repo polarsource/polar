@@ -1,6 +1,9 @@
 'use client'
 
-import { useOrganizationAIValidation } from '@/hooks/queries/org'
+import {
+  useOrganizationAIValidation,
+  useOrganizationReviewStatus,
+} from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Card } from '@polar-sh/ui/components/ui/card'
@@ -11,7 +14,7 @@ import {
   Info,
   Loader2,
 } from 'lucide-react'
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import AppealForm from './AppealForm'
 
 interface AIValidationResultProps {
@@ -19,7 +22,6 @@ interface AIValidationResultProps {
   onValidationCompleted?: () => void
   onAppealApproved?: () => void
   onAppealSubmitted?: () => void
-  existingReviewStatus?: schemas['OrganizationReviewStatus']
 }
 
 const AIValidationResult: React.FC<AIValidationResultProps> = ({
@@ -27,23 +29,57 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
   onValidationCompleted,
   onAppealApproved,
   onAppealSubmitted,
-  existingReviewStatus,
 }) => {
   const hasAutoValidatedRef = useRef(false)
+  const startedAtRef = useRef<number | null>(null)
+  const [timedOut, setTimedOut] = useState(false)
+  const [stopPolling, setStopPolling] = useState(false)
 
   const aiValidation = useOrganizationAIValidation(organization.id)
+  const shouldPoll = useMemo(
+    () => !timedOut && !stopPolling,
+    [timedOut, stopPolling],
+  )
+  const reviewStatus = useOrganizationReviewStatus(
+    organization.id,
+    true,
+    shouldPoll ? 2000 : undefined,
+  )
 
   // Auto-validate when component mounts
   useEffect(() => {
     if (!hasAutoValidatedRef.current && !aiValidation.isPending) {
       hasAutoValidatedRef.current = true
-      aiValidation.mutateAsync()
+      startedAtRef.current = Date.now()
+      aiValidation.mutate()
     }
   }, [aiValidation])
 
+  // Timeout after ~25s and stop polling
+  useEffect(() => {
+    if (timedOut) return
+    const started = startedAtRef.current
+    if (started == null) return
+    const timeout = setTimeout(() => setTimedOut(true), 25_000)
+    return () => clearTimeout(timeout)
+  }, [timedOut])
+
+  // Stop polling once a verdict is present
+  useEffect(() => {
+    if (reviewStatus.data?.verdict) {
+      setStopPolling(true)
+    }
+  }, [reviewStatus.data?.verdict])
+
   const getValidationStatus = () => {
-    // Show loading if request is pending
-    if (aiValidation.isPending) {
+    // If we don't have a verdict yet, show loading while polling
+    const verdict = reviewStatus.data?.verdict
+    if (
+      !verdict &&
+      !timedOut &&
+      !aiValidation.isError &&
+      !reviewStatus.isError
+    ) {
       return {
         type: 'loading',
         title: 'Validating Organization Details...',
@@ -54,7 +90,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
     }
 
     // Handle error state with fallback result
-    if (aiValidation.isError) {
+    if (aiValidation.isError || reviewStatus.isError || timedOut) {
       return {
         type: 'review_required',
         title: 'Payment Access Denied',
@@ -65,7 +101,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
       }
     }
 
-    const result = aiValidation.data?.data
+    const result = reviewStatus.data
     if (!result) {
       return null
     }
@@ -128,7 +164,9 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
         </Card>
 
         {/* Appeal Form for FAIL/UNCERTAIN or Continue Button */}
-        {(aiValidation.isSuccess || aiValidation.isError) && (
+        {((reviewStatus.data && reviewStatus.data.verdict) ||
+          aiValidation.isError ||
+          timedOut) && (
           <>
             {status.type === 'review_required' ? (
               <div className="pt-6">
@@ -137,7 +175,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
                   disabled={false} // Set to true to disable appeals
                   onAppealApproved={onAppealApproved}
                   onContinueAfterSubmission={onAppealSubmitted}
-                  existingReviewStatus={existingReviewStatus}
+                  existingReviewStatus={reviewStatus.data}
                 />
               </div>
             ) : (

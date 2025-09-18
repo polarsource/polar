@@ -351,19 +351,6 @@ class OrganizationBadgeSettingsRead(Schema):
     repositories: Sequence[RepositoryBadgeSettingsRead]
 
 
-class OrganizationValidationResult(Schema):
-    reason: str = Field(
-        ...,
-        description="A 1 or 3 line explanation of the verdict and the reasoning behind it. The reason will be shown to our customer.",
-    )
-    verdict: Literal["PASS", "FAIL", "UNCERTAIN"] = Field(
-        ..., description="PASS | FAIL | UNCERTAIN - indicates compliance status."
-    )
-    timed_out: bool = Field(
-        default=False, description="Whether the validation timed out"
-    )
-
-
 class OrganizationAppealRequest(Schema):
     reason: Annotated[
         str,

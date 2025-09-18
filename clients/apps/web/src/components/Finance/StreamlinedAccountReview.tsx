@@ -277,7 +277,6 @@ export default function StreamlinedAccountReview({
 
   // Determine completion status for each step
   const isReviewCompleted = organization.details_submitted_at !== null
-  console.log('isReviewCompleted', isReviewCompleted)
 
   // Check if validation is completed through AI result PASS or approved appeal
   const isAIValidationPassed = organizationReviewStatus?.verdict === 'PASS'
@@ -494,7 +493,6 @@ export default function StreamlinedAccountReview({
               onValidationCompleted={handleValidationCompleted}
               onAppealApproved={onAppealApproved}
               onAppealSubmitted={onAppealSubmitted}
-              existingReviewStatus={organizationReviewStatus}
             />
           </div>
         )}

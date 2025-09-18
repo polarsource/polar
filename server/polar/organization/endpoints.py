@@ -39,7 +39,6 @@ from .schemas import (
     OrganizationPaymentStep,
     OrganizationReviewStatus,
     OrganizationUpdate,
-    OrganizationValidationResult,
 )
 from .service import organization as organization_service
 
@@ -342,7 +341,7 @@ async def invite_member(
 
 @router.post(
     "/{id}/ai-validation",
-    response_model=OrganizationValidationResult,
+    response_model=OrganizationReviewStatus,
     summary="Validate Organization Details with AI",
     responses={
         200: {"description": "Organization validated with AI."},
@@ -354,7 +353,7 @@ async def validate_with_ai(
     id: OrganizationID,
     auth_subject: auth.OrganizationsWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> OrganizationValidationResult:
+) -> OrganizationReviewStatus:
     """Validate organization details using AI compliance check."""
     organization = await organization_service.get(session, auth_subject, id)
 
@@ -364,7 +363,7 @@ async def validate_with_ai(
     # Run AI validation and store results
     result = await organization_service.validate_with_ai(session, organization)
 
-    return OrganizationValidationResult(
+    return OrganizationReviewStatus(
         verdict=result.verdict,  # type: ignore[arg-type]
         reason=result.reason,
         timed_out=result.timed_out,

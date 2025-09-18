@@ -151,6 +151,7 @@ async def get_charge_preview(
     # Ensure the discount has not expired yet for the next charge (so at current_period_end)
     if subscription.discount is not None:
         assert subscription.started_at is not None
+        assert subscription.current_period_end is not None
         if not subscription.discount.is_repetition_expired(
             subscription.started_at, subscription.current_period_end
         ):

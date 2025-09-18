@@ -1,8 +1,8 @@
 """Add Order.from_balance_amount
 
-Revision ID: c944b775e448
-Revises: c26960e60bda
-Create Date: 2025-09-08 15:46:55.404856
+Revision ID: 58d4a7f5f6bb
+Revises: 90ceeb8168c2
+Create Date: 2025-09-18 15:41:16.869941
 
 """
 
@@ -12,8 +12,8 @@ from alembic import op
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.
-revision = "c944b775e448"
-down_revision = "c26960e60bda"
+revision = "58d4a7f5f6bb"
+down_revision = "90ceeb8168c2"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

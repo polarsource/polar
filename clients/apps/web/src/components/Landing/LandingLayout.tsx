@@ -137,49 +137,49 @@ const LandingPageMobileNavigation = () => {
 
 	const onLoginClick = () => {
 		posthog.capture("global:user:login:click");
-    sidebar.toggleSidebar();
+		sidebar.toggleSidebar();
 		showModal();
 	};
 
 	return (
-    <>
-		<Sidebar className="md:hidden">
-			<SidebarHeader className="p-4">
-				<BrandingMenu logoVariant="icon" />
-			</SidebarHeader>
-			<SidebarContent className="px-6 py-2 flex flex-col gap-y-6">
-				<div className="flex flex-col gap-y-1">
-					{mobileNavigationItems.map((item) => {
-						return (
-							<NavLink
-								key={item.title}
-								className="text-xl tracking-tight"
-								isActive={item.isActive}
-								target={item.target}
-								href={item.href}
-								onClick={sidebar.toggleSidebar}
-							>
-								{item.title}
-							</NavLink>
-						);
-					})}
-				</div>
-				<NavLink
-					href="#"
-					onClick={onLoginClick}
-					className="text-xl tracking-tight"
-				>
-					Login
-				</NavLink>
-			</SidebarContent>
-		</Sidebar>
+		<>
+			<Sidebar className="md:hidden">
+				<SidebarHeader className="p-4">
+					<BrandingMenu logoVariant="icon" />
+				</SidebarHeader>
+				<SidebarContent className="px-6 py-2 flex flex-col gap-y-6">
+					<div className="flex flex-col gap-y-1">
+						{mobileNavigationItems.map((item) => {
+							return (
+								<NavLink
+									key={item.title}
+									className="text-xl tracking-tight"
+									isActive={item.isActive}
+									target={item.target}
+									href={item.href}
+									onClick={sidebar.toggleSidebar}
+								>
+									{item.title}
+								</NavLink>
+							);
+						})}
+					</div>
+					<NavLink
+						href="#"
+						onClick={onLoginClick}
+						className="text-xl tracking-tight"
+					>
+						Login
+					</NavLink>
+				</SidebarContent>
+			</Sidebar>
 			<Modal
 				isShown={isModalShown}
 				hide={hideModal}
 				modalContent={<AuthModal />}
 				className="lg:w-full lg:max-w-[480px]"
 			/>
-    </>
+		</>
 	);
 };
 

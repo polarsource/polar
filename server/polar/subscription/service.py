@@ -299,8 +299,18 @@ class SubscriptionService:
         previous_is_canceled = subscription.canceled if subscription else False
         previous_status = subscription.status if subscription else None
 
+        status = SubscriptionStatus.active
         current_period_start = utc_now()
-        current_period_end = recurring_interval.get_next_period(current_period_start)
+        trial_start: datetime | None = None
+        trial_end = checkout.trial_end
+        if trial_end is not None:
+            status = SubscriptionStatus.trialing
+            trial_start = current_period_start
+            current_period_end = trial_end
+        else:
+            current_period_end = recurring_interval.get_next_period(
+                current_period_start
+            )
 
         # New subscription
         if subscription is None:
@@ -315,9 +325,11 @@ class SubscriptionService:
         # we start a billing cycle from the checkout date.
         subscription.current_period_start = current_period_start
         subscription.current_period_end = current_period_end
+        subscription.trial_start = trial_start
+        subscription.trial_end = trial_end
 
         subscription.recurring_interval = recurring_interval
-        subscription.status = SubscriptionStatus.active
+        subscription.status = status
         subscription.payment_method = payment_method
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices

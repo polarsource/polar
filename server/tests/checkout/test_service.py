@@ -43,6 +43,7 @@ from polar.kit.tax import (
     TaxIDFormat,
     calculate_tax,
 )
+from polar.kit.trial import TrialInterval
 from polar.locker import Locker
 from polar.models import (
     Account,
@@ -1395,6 +1396,90 @@ class TestCreate:
 
         assert checkout.amount == expected_amount
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_products_trial(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(products=[product_recurring_trial.id]),
+            auth_subject,
+        )
+
+        assert checkout.products == [product_recurring_trial]
+        assert checkout.product == product_recurring_trial
+        assert checkout.product_price == product_recurring_trial.prices[0]
+        assert checkout.trial_interval is None
+        assert checkout.trial_interval_count is None
+        assert checkout.trial_end is not None
+        assert checkout.is_payment_required is False
+        assert checkout.is_payment_setup_required is True
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_set_trial(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product_recurring_trial.id],
+                trial_interval=TrialInterval.day,
+                trial_interval_count=7,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.products == [product_recurring_trial]
+        assert checkout.product == product_recurring_trial
+        assert checkout.trial_interval == TrialInterval.day
+        assert checkout.trial_interval_count == 7
+        assert checkout.trial_end is not None
+        assert checkout.is_payment_required is False
+        assert checkout.is_payment_setup_required is True
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_set_trial_non_recurring_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product_one_time.id],
+                trial_interval=TrialInterval.day,
+                trial_interval_count=7,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.products == [product_one_time]
+        assert checkout.product == product_one_time
+        assert checkout.trial_interval == TrialInterval.day
+        assert checkout.trial_interval_count == 7
+        assert checkout.trial_end is None
+        assert checkout.is_payment_required is True
+        assert checkout.is_payment_setup_required is False
+
 
 @pytest.mark.asyncio
 class TestClientCreate:
@@ -1505,6 +1590,23 @@ class TestClientCreate:
         )
 
         assert checkout.amount == expected_amount
+
+    async def test_valid_product_trial(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout = await checkout_service.client_create(
+            session,
+            CheckoutCreatePublic(product_id=product_recurring_trial.id),
+            auth_subject,
+        )
+
+        assert checkout.product == product_recurring_trial
+        assert checkout.trial_interval is None
+        assert checkout.trial_interval_count is None
+        assert checkout.trial_end is not None
 
 
 @pytest.mark.asyncio
@@ -1632,6 +1734,48 @@ class TestCheckoutLinkCreate:
         checkout = await checkout_service.checkout_link_create(session, checkout_link)
 
         assert checkout.amount == expected_amount
+
+    async def test_valid_product_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_recurring_trial],
+            success_url="https://example.com/success",
+            user_metadata={"key": "value"},
+        )
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.product == product_recurring_trial
+        assert checkout.products == [product_recurring_trial]
+        assert checkout.trial_interval is None
+        assert checkout.trial_interval_count is None
+        assert checkout.trial_end is not None
+
+    async def test_valid_set_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_recurring_trial],
+            success_url="https://example.com/success",
+            user_metadata={"key": "value"},
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.product == product_recurring_trial
+        assert checkout.products == [product_recurring_trial]
+        assert checkout.trial_interval == TrialInterval.day
+        assert checkout.trial_interval_count == 7
+        assert checkout.trial_end is not None
 
 
 @pytest.mark.asyncio

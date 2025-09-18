@@ -67,7 +67,7 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
 		return (
 			<ChartContainer
 				ref={ref}
-				style={{ height: _height, width: _width }}
+				style={{ height: _height, width: _width || '100%' }}
 				config={{
 					current: {
 						label: "Current Period",

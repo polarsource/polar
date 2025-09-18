@@ -8,6 +8,8 @@ export const useListWebhooksDeliveries = (variables: {
   webhookEndpointId: string
   limit: number
   page: number
+  start_timestamp?: Date
+  end_timestamp?: Date
 }) =>
   useQuery({
     queryKey: ['webhookDeliveries', 'list', { ...variables }],
@@ -19,6 +21,12 @@ export const useListWebhooksDeliveries = (variables: {
               endpoint_id: variables.webhookEndpointId,
               limit: variables.limit,
               page: variables.page,
+              ...(variables.start_timestamp && {
+                start_timestamp: variables.start_timestamp.toISOString(),
+              }),
+              ...(variables.end_timestamp && {
+                end_timestamp: variables.end_timestamp.toISOString(),
+              }),
             },
           },
         }),

@@ -114,7 +114,15 @@ class WebhookEvent(IDSchema, TimestampedSchema):
             " `null` if no delivery has been attempted."
         ),
     )
-    payload: str = Field(description="The payload of the webhook event.")
+    payload: str | None = Field(description="The payload of the webhook event.")
+    type: WebhookEventType = Field(description="The type of the webhook event.")
+    is_archived: bool = Field(
+        description=(
+            "Whether this event is archived. "
+            "Archived events can't be redelivered, "
+            "and the payload is not accessible anymore."
+        ),
+    )
 
 
 class WebhookDelivery(IDSchema, TimestampedSchema):
@@ -122,12 +130,17 @@ class WebhookDelivery(IDSchema, TimestampedSchema):
     A webhook delivery for a webhook event.
     """
 
+    succeeded: bool = Field(description="Whether the delivery was successful.")
     http_code: int | None = Field(
-        None,
         description="The HTTP code returned by the URL."
         " `null` if the endpoint was unreachable.",
     )
-    succeeded: bool = Field(description="Whether the delivery was successful.")
+    response: str | None = Field(
+        description=(
+            "The response body returned by the URL, "
+            "or the error message if the endpoint was unreachable."
+        ),
+    )
     webhook_event: WebhookEvent = Field(
         description="The webhook event sent by this delivery."
     )

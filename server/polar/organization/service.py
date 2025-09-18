@@ -18,7 +18,6 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import Environment, settings
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
-from polar.integrations.plain.service import plain as plain_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
@@ -30,7 +29,7 @@ from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.ai_validation import validator as organization_validator
 from polar.organization_access_token.repository import OrganizationAccessTokenRepository
-from polar.postgres import AsyncSession, sql
+from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
 from polar.transaction.service.transaction import transaction as transaction_service
@@ -98,7 +97,7 @@ class AccountAlreadySet(OrganizationError):
 class OrganizationService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         slug: str | None = None,
@@ -121,7 +120,7 @@ class OrganizationService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
         *,
@@ -137,7 +136,7 @@ class OrganizationService:
 
     async def get_anonymous(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         id: uuid.UUID,
         *,
         options: Options = (),
@@ -396,6 +395,7 @@ class OrganizationService:
             and transfers_sum >= organization.next_review_threshold
         ):
             organization.status = Organization.Status.UNDER_REVIEW
+            organization.status_updated_at = datetime.now(UTC)
             await self._sync_account_status(session, organization)
             session.add(organization)
 
@@ -410,6 +410,7 @@ class OrganizationService:
         next_review_threshold: int,
     ) -> Organization:
         organization.status = Organization.Status.ACTIVE
+        organization.status_updated_at = datetime.now(UTC)
         organization.next_review_threshold = next_review_threshold
         await self._sync_account_status(session, organization)
         session.add(organization)
@@ -429,6 +430,7 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
         organization.status = Organization.Status.DENIED
+        organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
 
@@ -446,6 +448,7 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
         organization.status = Organization.Status.UNDER_REVIEW
+        organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
         enqueue_job("organization.under_review", organization_id=organization.id)
@@ -475,6 +478,7 @@ class OrganizationService:
                 )
             ):
                 organization.status = Organization.Status.ACTIVE
+                organization.status_updated_at = datetime.now(UTC)
 
             # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
             if any(
@@ -485,6 +489,7 @@ class OrganizationService:
                 )
             ):
                 organization.status = Organization.Status.ONBOARDING_STARTED
+                organization.status_updated_at = datetime.now(UTC)
 
             await self._sync_account_status(session, organization)
             session.add(organization)
@@ -514,7 +519,7 @@ class OrganizationService:
 
     async def get_payment_status(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         organization: Organization,
         account_verification_only: bool = False,
     ) -> PaymentStatusResponse:
@@ -594,7 +599,7 @@ class OrganizationService:
         )
 
     async def is_organization_ready_for_payment(
-        self, session: AsyncSession, organization: Organization
+        self, session: AsyncReadSession, organization: Organization
     ) -> bool:
         """
         Check if an organization is ready to accept payments.
@@ -708,18 +713,6 @@ class OrganizationService:
         review.appeal_reason = appeal_reason
 
         session.add(review)
-
-        try:
-            await plain_service.create_appeal_review_thread(
-                session, organization, review
-            )
-        except Exception as e:
-            log.error(
-                "Failed to create Plain ticket for appeal",
-                organization_id=str(organization.id),
-                error=str(e),
-            )
-
         await session.commit()
 
         return review
@@ -742,6 +735,7 @@ class OrganizationService:
             raise ValueError("Appeal has already been reviewed")
 
         organization.status = Organization.Status.ACTIVE
+        organization.status_updated_at = datetime.now(UTC)
         review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
         review.appeal_reviewed_at = datetime.now(UTC)
 

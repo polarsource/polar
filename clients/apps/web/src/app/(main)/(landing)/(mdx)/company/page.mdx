@@ -6,12 +6,8 @@ keywords: careers, join, team, polar, open source, jobs, company, about, polar, 
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowOutwardOutlined } from '@mui/icons-material'
-
-<InnerHeaderWrapper className="flex h-96 flex-col items-center justify-center !pt-0 md:h-[640px]">
-  <div className="flex flex-col items-center text-center">
-    <h2 className="!font-medium">Monetizing software is a mess.</h2>
-  </div>
-</InnerHeaderWrapper>
+import { investors } from './investors'
+import { Accel } from './Accel'
 
 <Image
   src="/assets/landing/company/polar.jpg"
@@ -42,42 +38,58 @@ This is a bottleneck for the future.
 
 - **Open Source.** Built for transparency and designed for contributions to shape the future with our community.
 
-## Principles
+</InnerWrapper>
 
-#### Momentum is Culture
-
-From experience, we&apos;re not big on cultural values. Why?
-People and their actions define culture, not words.
-People show up excited and at their best when there is momentum.
-So we&apos;ve seen at earlier startups that cultural values are a snapshot of
-when teams hit their strides.
-
-So we focus on keeping, celebrating and accelerating momentum. Allowing culture
-to be continuously improved and fluid vs. fixed.
-
-#### Ship → Refactor → Scale
-
-Our #1 focus and drive is shipping and growing great product experiences that solves real problems for developers and their users. We celebrate pragmatic duct taping behind the scenes and consider scalability, performance and optimization efforts a reward, not our initial focus.
-
-#### Reduce complexity, not quality
-
-We seek to constantly move faster, but not at the cost of poor product
-experiences. Simplicity and opinionated iterations vs. perfection are key to enable this and we prioritize it across everything we do. Autonomy and accountability vs. processes. Opinionated design vs. 10 A/B tests. Render vs. K8s etc.
-
-#### Do your life&apos;s work
-
-We&apos;re not a 9-5 nor 24/7. We don&apos;t track time nor search for people
-who count it down. We love to work and pour our heart into what we build to continuously push the envelope of our creativity and productivity.
-
-## Join Us
-
-We're hiring across engineering, product, and operations roles to help build the future of software monetization.
-
+<div className="flex flex-col not-prose divide-y divide-gray-300 dark:divide-polar-700 border-t border-gray-300 dark:border-polar-700 mt-12 lg:mt-24">
+<div className="grid lg:grid-cols-2 grid-cols-1 gap-12 py-12 lg:py-24">
+<h2 className="text-5xl !leading-tight">Join Us</h2>
+<div className='flex flex-col gap-4'>
+<p>We're hiring across engineering, product, and operations roles to help build the future of software monetization.</p>
 <Link
   href="/careers"
-  className="pb-0.5 border-b border-black dark:border-white dark:!text-white !text-black w-fit"
+  className="w-fit border-b border-black pb-0.5 !text-black dark:border-white dark:!text-white"
+  prefetch
 >
   <span>View Open Positions</span>
   <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
 </Link>
-</InnerWrapper>
+</div>
+</div>
+
+<div className="grid grid-cols-1 gap-12 py-12 lg:grid-cols-4 lg:py-24">
+  <div className="flex flex-col gap-8 lg:col-span-2">
+    <h1 className="text-5xl !leading-tight">
+      Backed by industry-leading investors
+    </h1>
+    <p className="text-lg">
+      In 2025, we raised a $10m Seed Round, with the help from the most
+      prominent profiles in the industry.
+    </p>
+    <Link
+      href="/blog/polar-seed-announcement"
+      className="flex w-fit flex-row items-center border-b border-black pb-0.5 !text-black dark:border-white dark:!text-white"
+      target="_blank"
+      prefetch
+    >
+      <span>Read the announcement</span>
+      <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
+    </Link>
+  </div>
+  <Link
+    href="https://accel.com"
+    className="flex min-h-96 flex-col items-center justify-center gap-4 bg-white lg:col-span-2 dark:bg-black"
+    target="_blank"
+  >
+    <Accel width={200} />
+  </Link>
+</div>
+
+<div className="grid grid-cols-2 gap-6 lg:gap-12 py-12 lg:grid-cols-4 lg:py-24">
+  {investors.map((investor) => (
+    <div key={investor.name} className="flex flex-col">
+      <h3>{investor.name}</h3>
+      <p className='text-gray-500 dark:text-polar-500'>{investor.company}</p>
+    </div>
+  ))}
+</div>
+</div>

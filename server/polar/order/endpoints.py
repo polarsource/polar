@@ -10,7 +10,12 @@ from polar.models import Order
 from polar.models.product import ProductBillingType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
@@ -59,7 +64,7 @@ async def list(
     checkout_id: MultipleQueryFilter[UUID4] | None = Query(
         None, title="CheckoutID Filter", description="Filter by checkout ID."
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrderSchema]:
     """List orders."""
     results, count = await order_service.list(
@@ -92,7 +97,7 @@ async def list(
 async def get(
     id: OrderID,
     auth_subject: auth.OrdersRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Order:
     """Get an order by ID."""
     order = await order_service.get(session, auth_subject, id)
@@ -162,7 +167,7 @@ async def generate_invoice(
 async def invoice(
     id: OrderID,
     auth_subject: auth.OrdersRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrderInvoice:
     """Get an order's invoice data."""
     order = await order_service.get(session, auth_subject, id)

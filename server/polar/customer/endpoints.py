@@ -1,17 +1,28 @@
-from fastapi import Depends, Query
+import json
+from collections.abc import AsyncGenerator
+
+from fastapi import Depends, Query, Response
+from fastapi.responses import StreamingResponse
 
 from polar.exceptions import ResourceNotFound
+from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Customer
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import auth, sorting
+from .repository import CustomerRepository
 from .schemas.customer import Customer as CustomerSchema
 from .schemas.customer import (
     CustomerCreate,
@@ -51,7 +62,7 @@ async def list(
     ),
     email: str | None = Query(None, description="Filter by exact email."),
     query: str | None = Query(None, description="Filter by name or email."),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CustomerSchema]:
     """List customers."""
     results, count = await customer_service.list(
@@ -72,6 +83,71 @@ async def list(
     )
 
 
+@router.get("/export", summary="Export Customers")
+async def export(
+    auth_subject: auth.CustomerRead,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, description="Filter by organization ID."
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Response:
+    """Export customers as a CSV file."""
+
+    async def create_csv() -> AsyncGenerator[str, None]:
+        csv_writer = IterableCSVWriter(dialect="excel")
+
+        yield csv_writer.getrow(
+            (
+                "ID",
+                "External ID",
+                "Created At",
+                "Email",
+                "Name",
+                "Tax ID",
+                "Billing Address Line 1",
+                "Billing Address Line 2",
+                "Billing Address City",
+                "Billing Address State",
+                "Billing Address Zip",
+                "Billing Address Country",
+                "Metadata",
+            )
+        )
+
+        repository = CustomerRepository.from_session(session)
+        stream = repository.stream_by_organization(auth_subject, organization_id)
+
+        async for customer in stream:
+            billing_address = customer.billing_address
+
+            yield csv_writer.getrow(
+                (
+                    customer.id,
+                    customer.external_id,
+                    customer.created_at.isoformat(),
+                    customer.email,
+                    customer.name,
+                    customer.tax_id,
+                    billing_address.line1 if billing_address else None,
+                    billing_address.line2 if billing_address else None,
+                    billing_address.city if billing_address else None,
+                    billing_address.state if billing_address else None,
+                    billing_address.postal_code if billing_address else None,
+                    billing_address.country if billing_address else None,
+                    json.dumps(customer.user_metadata)
+                    if customer.user_metadata
+                    else None,
+                )
+            )
+
+    filename = "polar-customers.csv"
+    return StreamingResponse(
+        create_csv(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get(
     "/{id}",
     summary="Get Customer",
@@ -81,7 +157,7 @@ async def list(
 async def get(
     id: CustomerID,
     auth_subject: auth.CustomerRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Customer:
     """Get a customer by ID."""
     customer = await customer_service.get(session, auth_subject, id)
@@ -101,7 +177,7 @@ async def get(
 async def get_external(
     external_id: ExternalCustomerID,
     auth_subject: auth.CustomerRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Customer:
     """Get a customer by external ID."""
     customer = await customer_service.get_external(session, auth_subject, external_id)
@@ -121,7 +197,7 @@ async def get_external(
 async def get_state(
     id: CustomerID,
     auth_subject: auth.CustomerRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis = Depends(get_redis),
 ) -> CustomerState:
     """
@@ -150,7 +226,7 @@ async def get_state(
 async def get_state_external(
     external_id: ExternalCustomerID,
     auth_subject: auth.CustomerRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis = Depends(get_redis),
 ) -> CustomerState:
     """

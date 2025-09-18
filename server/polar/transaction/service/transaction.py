@@ -20,7 +20,7 @@ from polar.models import (
 from polar.models.organization import Organization
 from polar.models.transaction import TransactionType
 from polar.models.user_organization import UserOrganization
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 
 from ..schemas import (
     TransactionsBalance,
@@ -37,7 +37,7 @@ class TransactionSortProperty(StrEnum):
 class TransactionService(BaseTransactionService):
     async def search(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         user: User,
         *,
         type: TransactionType | None = None,
@@ -97,7 +97,7 @@ class TransactionService(BaseTransactionService):
         return results, count
 
     async def lookup(
-        self, session: AsyncSession, id: uuid.UUID, user: User
+        self, session: AsyncReadSession, id: uuid.UUID, user: User
     ) -> Transaction:
         statement = (
             self._get_readable_transactions_statement(user)
@@ -142,7 +142,7 @@ class TransactionService(BaseTransactionService):
         return transaction
 
     async def get_summary(
-        self, session: AsyncSession, account: Account
+        self, session: AsyncReadSession, account: Account
     ) -> TransactionsSummary:
         statement = select(
             cast(type[int], func.coalesce(func.sum(Transaction.amount), 0)),

@@ -69,7 +69,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.guard import (
     is_currency_price,
     is_custom_price,
@@ -192,7 +192,7 @@ CHECKOUT_CLIENT_SECRET_PREFIX = "polar_c_"
 class CheckoutService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -233,7 +233,7 @@ class CheckoutService:
 
     async def get_by_id(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Checkout | None:

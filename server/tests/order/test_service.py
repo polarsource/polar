@@ -1420,7 +1420,9 @@ class TestCreateSubscriptionOrder:
             [oi.id for oi in order.items],
         )
 
-        customer_balance = await order_service.customer_balance(session, customer)
+        customer_balance = await order_service.customer_balance(
+            session, subscription.customer
+        )
         if order.subtotal_amount >= 0:
             enqueue_job_mock.assert_any_call(
                 "order.trigger_payment",

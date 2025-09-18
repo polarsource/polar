@@ -13,10 +13,10 @@ interface Props {
   name: string
   placeholder: number
   id?: string
-  onChange?: (value: number) => void
+  onChange?: (value: number | null) => void
   onBlur?: (e: ChangeEvent<HTMLInputElement>) => void
   onFocus?: (e: FocusEvent<HTMLInputElement>) => void
-  value?: number
+  value?: number | null
   className?: string
   disabled?: boolean
   preSlot?: React.ReactNode
@@ -33,8 +33,12 @@ const getCents = (value: string): number => {
   return Math.round(newAmount * 100)
 }
 
-const getInternalValue = (value: number | undefined): string | undefined => {
-  return value ? (value / 100).toFixed(2) : undefined
+const getInternalValue = (
+  value: number | null | undefined,
+): string | undefined => {
+  return value !== undefined && value !== null
+    ? (value / 100).toFixed(2)
+    : undefined
 }
 
 const MoneyInput = (props: Props) => {
@@ -51,7 +55,9 @@ const MoneyInput = (props: Props) => {
     disabled,
     step = 0.1,
   } = props
-  const [previousValue, setPreviousValue] = useState<number | undefined>(value)
+  const [previousValue, setPreviousValue] = useState<number | null | undefined>(
+    value,
+  )
   const [internalValue, setInternalValue] = useState<string | undefined>(
     getInternalValue(value),
   )
@@ -65,10 +71,16 @@ const MoneyInput = (props: Props) => {
 
   const updateValue = useCallback(
     (newValue: string) => {
+      console.log('Updating value to:', newValue)
       if (_onChange) {
-        const centsValue = getCents(newValue)
-        setPreviousValue(centsValue)
-        _onChange(centsValue)
+        if (!newValue || newValue.trim() === '') {
+          setPreviousValue(null)
+          _onChange(null)
+        } else {
+          const centsValue = getCents(newValue)
+          setPreviousValue(centsValue)
+          _onChange(centsValue)
+        }
       }
 
       setInternalValue(newValue)
@@ -79,6 +91,12 @@ const MoneyInput = (props: Props) => {
   const onChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       const input = e.target.value
+
+      // If input is completely empty, allow clearing the field
+      if (input === '') {
+        updateValue('')
+        return
+      }
 
       // Strip everything except numbers, commas, and periods
       // (people can paste in anything, so the keydown handler is not enough)

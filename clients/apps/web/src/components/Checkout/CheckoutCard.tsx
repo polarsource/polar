@@ -36,10 +36,8 @@ export const CheckoutCard = ({
       />
 
       {product.benefits.length > 0 ? (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <h1 className="font-medium dark:text-white">Included</h1>
-          </div>
+        <div className="flex flex-col gap-2">
+          <h1 className="font-medium dark:text-white">Included</h1>
           <div className="flex flex-col gap-y-2">
             {/* @ts-ignore */}
             <BenefitList benefits={product.benefits} toggle={true} />

@@ -6,10 +6,11 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import ColumnElement, FromClause, select, text
 
 from polar.auth.models import AuthSubject
+from polar.config import settings
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.models import Organization, User
 from polar.models.product import ProductBillingType
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 
 from .metrics import METRICS
 from .queries import QUERIES
@@ -19,7 +20,7 @@ from .schemas import MetricsPeriod, MetricsResponse
 class MetricsService:
     async def get_metrics(
         self,
-        session: AsyncSession,
+        session: AsyncSession | AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         start_date: date,
@@ -76,7 +77,10 @@ class MetricsService:
             .order_by(timestamp_column.asc())
         )
 
-        result = await session.stream(statement)
+        result = await session.stream(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         periods: list[MetricsPeriod] = []
         async for row in result:
             periods.append(MetricsPeriod(**row._asdict()))

@@ -8,7 +8,8 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 
-from polar.kit.db.postgres import AsyncSession
+from polar.config import settings
+from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 
@@ -56,7 +57,7 @@ class RepositoryProtocol[M](Protocol):
 class RepositoryBase[M]:
     model: type[M]
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession | AsyncReadSession) -> None:
         self.session = session
 
     async def get_one_or_none(self, statement: Select[tuple[M]]) -> M | None:
@@ -68,9 +69,28 @@ class RepositoryBase[M]:
         return result.scalars().unique().all()
 
     async def stream(self, statement: Select[tuple[M]]) -> AsyncGenerator[M, None]:
-        results = await self.session.stream_scalars(statement)
+        """
+        Stream results from the database using the given statement.
+
+        This is useful for processing large datasets without loading everything
+        into memory at once.
+
+        The caveat is that your statement shouldn't join many-to-one or
+        many-to-many relationships, as we can't apply ORM's `unique()` method
+        to the results, which may lead to duplicates.
+
+        Args:
+            statement: The SQLAlchemy select statement to execute.
+
+        Yields:
+            Instances of the model `M` as they are fetched from the database.
+        """
+        results = await self.session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         try:
-            async for result in results.unique():
+            async for result in results:
                 yield result
         finally:
             await results.close()
@@ -82,11 +102,12 @@ class RepositoryBase[M]:
         paginated_statement: Select[tuple[M, int]] = (
             statement.add_columns(over(func.count())).limit(limit).offset(offset)
         )
-        results = await self.session.stream(paginated_statement)
+        # Streaming can't be applied here, since we need to call ORM's unique()
+        results = await self.session.execute(paginated_statement)
 
         items: list[M] = []
         count = 0
-        async for result in results.unique():
+        for result in results.unique().all():
             item, count = result._tuple()
             items.append(item)
 
@@ -127,7 +148,7 @@ class RepositoryBase[M]:
         return result.scalar_one()
 
     @classmethod
-    def from_session(cls, session: AsyncSession) -> Self:
+    def from_session(cls, session: AsyncSession | AsyncReadSession) -> Self:
         return cls(session)
 
 

@@ -29,6 +29,7 @@ from sqlalchemy.orm import (
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StrEnumType
 from polar.kit.math import polar_round
 
 if TYPE_CHECKING:
@@ -76,7 +77,10 @@ class ProductPrice(RecordModel):
     # Legacy: recurring is now set on product
     type: Mapped[Any] = mapped_column(String, nullable=True, index=True, default=None)
     recurring_interval: Mapped[Any] = mapped_column(
-        String, nullable=True, index=True, default=None
+        StrEnumType(SubscriptionRecurringInterval),
+        nullable=True,
+        index=True,
+        default=None,
     )
 
     amount_type: Mapped[ProductPriceAmountType] = mapped_column(

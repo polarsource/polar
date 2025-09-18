@@ -33,9 +33,9 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.address import Address
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
-from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.tax import (
     TaxabilityReason,
@@ -332,7 +332,7 @@ class OrderService:
 
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -388,11 +388,13 @@ class OrderService:
 
         statement = repository.apply_sorting(statement, sorting)
 
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Order | None:
@@ -1399,7 +1401,10 @@ class OrderService:
             Order.deleted_at.is_(None),
             Order.subscription_id.is_(None),
         )
-        orders = await session.stream_scalars(statement)
+        orders = await session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         async for order in orders:
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
@@ -1718,6 +1723,7 @@ class OrderService:
                 ),
             )
         )
+
         payment_repository = PaymentRepository.from_session(session)
         payments = await payment_repository.get_all(
             payment_repository.get_base_statement()

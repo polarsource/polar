@@ -5,12 +5,11 @@ from typing import Any
 
 from fastapi import APIRouter as _APIRouter
 from fastapi.routing import APIRoute
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.config import settings
 from polar.kit.pagination import ListResource
 from polar.openapi import APITag
-
-from .db.postgres import AsyncSession
 
 
 class AutoCommitAPIRoute(APIRoute):

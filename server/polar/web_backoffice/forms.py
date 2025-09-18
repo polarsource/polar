@@ -13,16 +13,21 @@ from tagflow.tagflow import AttrValue
 Data: TypeAlias = dict[str, Any] | object
 
 
-def _get_data_value(data: Data | None, key: str) -> Any | None:
+def _get_field_errors(errors: list[ErrorDetails], key: str) -> list[ErrorDetails]:
+    return [error for error in errors if error["loc"][0] == key]
+
+
+def _get_data_value(
+    data: Data | None, errors: list[ErrorDetails], key: str
+) -> Any | None:
+    field_errors = _get_field_errors(errors, key)
+    if field_errors:
+        return errors[0]["input"]
     if data is None:
         return None
     if isinstance(data, dict):
         return data.get(key)
     return getattr(data, key, None)
-
-
-def _get_field_errors(errors: list[ErrorDetails], key: str) -> list[ErrorDetails]:
-    return [error for error in errors if error["loc"][0] == key]
 
 
 class FormField:
@@ -496,7 +501,7 @@ class BaseForm(BaseModel):
                     key,
                     field.title or key,
                     required=field.is_required(),
-                    value=_get_data_value(data, key),
+                    value=_get_data_value(data, errors, key),
                     errors=_get_field_errors(errors, key),
                 ):
                     pass

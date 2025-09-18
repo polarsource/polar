@@ -39,7 +39,7 @@ jobs:
           - 5432:5432
 
       minio:
-        image: bitnami/minio:2024.5.28
+        image: bitnamilegacy/minio:2024.5.28
         ports:
           - 9000:9000
           - 9001:9001
@@ -81,7 +81,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10.5.2
+          version: 10.13.1
 
       - name: 📬 Setup Node.js environment for server/emails
         uses: actions/setup-node@v5
@@ -109,3 +109,9 @@ jobs:
         run: |
           uv sync --dev
           uv run task generate_dev_jwks
+
+      - name: 📚 Setup documentation
+        working-directory: ./docs
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec mintlify update

@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Transaction
 from polar.models.transaction import TransactionType
 from polar.pledge.service import pledge as pledge_service
@@ -51,102 +51,94 @@ async def pledge_invoice_payment_fix(
 ) -> None:
     stripe_lib.api_key = stripe_api_key
     engine = create_async_engine("script")
-    async with engine.connect() as connection:
-        async with connection.begin() as transaction:
-            session = AsyncSession(
-                bind=connection,
-                expire_on_commit=False,
-                join_transaction_mode="create_savepoint",
+    sessionmaker = create_async_sessionmaker(engine)
+    async with sessionmaker() as session:
+        payment_transactions_statement = (
+            select(Transaction)
+            .where(
+                Transaction.type == TransactionType.payment,
+                Transaction.pledge_id.is_(None),
+                Transaction.order_id.is_(None),
             )
+            .order_by(Transaction.created_at.asc())
+        )
 
-            payment_transactions_statement = (
-                select(Transaction)
-                .where(
-                    Transaction.type == TransactionType.payment,
-                    Transaction.pledge_id.is_(None),
-                    Transaction.order_id.is_(None),
-                )
-                .order_by(Transaction.created_at.asc())
-            )
-
-            payment_transactions = await session.stream_scalars(
-                payment_transactions_statement
-            )
-            async for payment in payment_transactions:
-                typer.echo("\n---\n")
-                typer.echo(f"🔄 Handling Payment {payment.id}")
-
-                if payment.charge_id is None:
-                    typer.echo(
-                        typer.style(
-                            f"Payment {payment.id} does not have a charge_id",
-                            fg="yellow",
-                        )
-                    )
-                    continue
-
-                charge = stripe_lib.Charge.retrieve(payment.charge_id)
-
-                if charge.invoice is None:
-                    typer.echo(
-                        typer.style(
-                            f"Charge {charge.id} does not have an invoice",
-                            fg="yellow",
-                        )
-                    )
-                    continue
-
-                invoice = stripe_lib.Invoice.retrieve(get_expandable_id(charge.invoice))
-                metadata = invoice.metadata
-
-                if metadata is None:
-                    typer.echo(
-                        typer.style(
-                            f"Invoice {invoice.id} does not have metadata", fg="yellow"
-                        )
-                    )
-                    continue
-
-                if metadata.get("type") != ProductType.pledge:
-                    typer.echo(
-                        typer.style(
-                            f"Invoice {invoice.id} is not a pledge invoice", fg="yellow"
-                        )
-                    )
-                    continue
-
-                assert charge.payment_intent is not None
-                payment_intent = get_expandable_id(charge.payment_intent)
-                pledge = await pledge_service.get_by_payment_id(session, payment_intent)
-
-                if pledge is None:
-                    typer.echo(
-                        typer.style(
-                            f"Pledge does not exist for payment {payment.id}",
-                            fg="yellow",
-                        )
-                    )
-                    continue
-
-                payment.pledge_id = pledge.id
-                session.add(payment)
-                typer.echo(
-                    typer.style(
-                        f"Pledge {pledge.id} linked to payment {payment.id}", fg="green"
-                    )
-                )
-
-            await session.commit()
-
+        payment_transactions = await session.stream_scalars(
+            payment_transactions_statement
+        )
+        async for payment in payment_transactions:
             typer.echo("\n---\n")
+            typer.echo(f"🔄 Handling Payment {payment.id}")
 
-            if dry_run:
-                await transaction.rollback()
+            if payment.charge_id is None:
                 typer.echo(
                     typer.style(
-                        "Dry run, changes were not saved to the DB", fg="yellow"
+                        f"Payment {payment.id} does not have a charge_id",
+                        fg="yellow",
                     )
                 )
+                continue
+
+            charge = stripe_lib.Charge.retrieve(payment.charge_id)
+
+            if charge.invoice is None:
+                typer.echo(
+                    typer.style(
+                        f"Charge {charge.id} does not have an invoice",
+                        fg="yellow",
+                    )
+                )
+                continue
+
+            invoice = stripe_lib.Invoice.retrieve(get_expandable_id(charge.invoice))
+            metadata = invoice.metadata
+
+            if metadata is None:
+                typer.echo(
+                    typer.style(
+                        f"Invoice {invoice.id} does not have metadata", fg="yellow"
+                    )
+                )
+                continue
+
+            if metadata.get("type") != ProductType.pledge:
+                typer.echo(
+                    typer.style(
+                        f"Invoice {invoice.id} is not a pledge invoice", fg="yellow"
+                    )
+                )
+                continue
+
+            assert charge.payment_intent is not None
+            payment_intent = get_expandable_id(charge.payment_intent)
+            pledge = await pledge_service.get_by_payment_id(session, payment_intent)
+
+            if pledge is None:
+                typer.echo(
+                    typer.style(
+                        f"Pledge does not exist for payment {payment.id}",
+                        fg="yellow",
+                    )
+                )
+                continue
+
+            payment.pledge_id = pledge.id
+            session.add(payment)
+            typer.echo(
+                typer.style(
+                    f"Pledge {pledge.id} linked to payment {payment.id}", fg="green"
+                )
+            )
+
+        typer.echo("\n---\n")
+
+        if dry_run:
+            await session.rollback()
+            typer.echo(
+                typer.style("Dry run, changes were not saved to the DB", fg="yellow")
+            )
+        else:
+            await session.commit()
 
 
 if __name__ == "__main__":

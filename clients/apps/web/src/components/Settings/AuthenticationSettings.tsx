@@ -155,6 +155,7 @@ const AuthenticationSettings = () => {
         onEmailUpdateExists={() => setUpdateEmailStage('exists')}
         onEmailUpdateForm={() => setUpdateEmailStage('form')}
         setErr={setErrMsg}
+        returnTo={`${pathname}?update_email=verified`}
       />
     ),
     request: (

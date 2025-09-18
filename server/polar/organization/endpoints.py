@@ -20,7 +20,12 @@ from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationReviewRepository
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 from polar.user.service import user as user_service
 from polar.user_organization.schemas import OrganizationMember, OrganizationMemberInvite
@@ -39,7 +44,6 @@ from .schemas import (
     OrganizationPaymentStep,
     OrganizationReviewStatus,
     OrganizationUpdate,
-    OrganizationValidationResult,
 )
 from .service import organization as organization_service
 
@@ -62,7 +66,7 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     slug: str | None = Query(None, description="Filter by slug."),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationSchema]:
     """List organizations."""
     results, count = await organization_service.list(
@@ -90,7 +94,7 @@ async def list(
 async def get(
     id: OrganizationID,
     auth_subject: auth.OrganizationsRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Organization:
     """Get an organization by ID."""
     organization = await organization_service.get(session, auth_subject, id)
@@ -166,7 +170,7 @@ async def update(
 async def get_account(
     id: OrganizationID,
     auth_subject: auth.OrganizationsRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Account:
     """Get the account for an organization."""
     organization = await organization_service.get(session, auth_subject, id)
@@ -201,7 +205,7 @@ async def get_account(
 async def get_payment_status(
     id: OrganizationID,
     auth_subject: auth.OrganizationsReadOrAnonymous,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
     account_verification_only: bool = Query(
         False,
         description="Only perform account verification checks, skip product and integration checks",
@@ -259,7 +263,7 @@ async def get_payment_status(
 async def members(
     id: OrganizationID,
     auth_subject: auth.OrganizationsRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationMember]:
     """List members in an organization."""
     organization = await organization_service.get(session, auth_subject, id)
@@ -342,7 +346,7 @@ async def invite_member(
 
 @router.post(
     "/{id}/ai-validation",
-    response_model=OrganizationValidationResult,
+    response_model=OrganizationReviewStatus,
     summary="Validate Organization Details with AI",
     responses={
         200: {"description": "Organization validated with AI."},
@@ -354,7 +358,7 @@ async def validate_with_ai(
     id: OrganizationID,
     auth_subject: auth.OrganizationsWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> OrganizationValidationResult:
+) -> OrganizationReviewStatus:
     """Validate organization details using AI compliance check."""
     organization = await organization_service.get(session, auth_subject, id)
 
@@ -364,10 +368,9 @@ async def validate_with_ai(
     # Run AI validation and store results
     result = await organization_service.validate_with_ai(session, organization)
 
-    return OrganizationValidationResult(
+    return OrganizationReviewStatus(
         verdict=result.verdict,  # type: ignore[arg-type]
         reason=result.reason,
-        timed_out=result.timed_out,
     )
 
 
@@ -430,7 +433,7 @@ async def submit_appeal(
 async def get_review_status(
     id: OrganizationID,
     auth_subject: auth.OrganizationsRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationReviewStatus:
     """Get the current review status and appeal information for an organization."""
     organization = await organization_service.get(session, auth_subject, id)

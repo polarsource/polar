@@ -1,4 +1,5 @@
 from typing import Any, cast
+from unittest.mock import MagicMock
 
 import dramatiq
 import httpx
@@ -18,31 +19,25 @@ from polar.models.webhook_endpoint import (
     WebhookFormat,
 )
 from polar.models.webhook_event import WebhookEvent
+from polar.webhook.repository import WebhookDeliveryRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import _webhook_event_send, webhook_event_send
 from tests.fixtures.database import SaveFixture
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.webhook.service.enqueue_job")
 
 
 @pytest.mark.asyncio
 async def test_webhook_send(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    mocker: MockerFixture,
+    enqueue_job_mock: MagicMock,
     organization: Organization,
     subscription: Subscription,
 ) -> None:
-    called = False
-
-    def in_process_enqueue_job(name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
-        nonlocal called
-        if name == "webhook_event.send":
-            called = True
-            assert kwargs["webhook_event_id"]
-            return
-        raise Exception(f"unexpected job: {name}")
-
-    mocker.patch("polar.webhook.service.enqueue_job", new=in_process_enqueue_job)
-
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
@@ -52,33 +47,27 @@ async def test_webhook_send(
     )
     await save_fixture(endpoint)
 
-    await webhook_service.send(
+    events = await webhook_service.send(
         session, organization, WebhookEventType.subscription_created, subscription
     )
+    assert len(events) == 1
 
-    assert called
+    event = events[0]
+    assert event.webhook_endpoint == endpoint
+
+    enqueue_job_mock.assert_called_once_with(
+        "webhook_event.send", webhook_event_id=event.id
+    )
 
 
 @pytest.mark.asyncio
 async def test_webhook_send_not_subscribed_to_event(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    mocker: MockerFixture,
+    enqueue_job_mock: MagicMock,
     organization: Organization,
     subscription: Subscription,
 ) -> None:
-    called = False
-
-    def in_process_enqueue_job(name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
-        nonlocal called
-        if name == "webhook_event.send":
-            called = True
-            assert kwargs["webhook_event_id"]
-            return
-        raise Exception(f"unexpected job: {name}")
-
-    mocker.patch("polar.webhook.service.enqueue_job", new=in_process_enqueue_job)
-
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
@@ -88,21 +77,36 @@ async def test_webhook_send_not_subscribed_to_event(
     )
     await save_fixture(endpoint)
 
-    await webhook_service.send(
+    events = await webhook_service.send(
         session, organization, WebhookEventType.subscription_created, subscription
     )
 
-    assert called is False
+    assert len(events) == 0
+    enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_webhook_delivery(
+@pytest.mark.parametrize(
+    "response,expected",
+    [
+        (httpx.Response(200, json={"status": "ok"}), '{"status":"ok"}'),
+        (httpx.Response(200), None),
+        pytest.param(
+            httpx.Response(200, text="a" * 8192),
+            "a" * 2048,
+            id="long response that is truncated",
+        ),
+    ],
+)
+async def test_webhook_delivery_success(
+    response: httpx.Response,
+    expected: str,
     session: AsyncSession,
     save_fixture: SaveFixture,
     respx_mock: respx.MockRouter,
     organization: Organization,
 ) -> None:
-    respx_mock.post("https://example.com/hook").mock(return_value=httpx.Response(200))
+    respx_mock.post("https://example.com/hook").mock(return_value=response)
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
@@ -112,10 +116,21 @@ async def test_webhook_delivery(
     )
     await save_fixture(endpoint)
 
-    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        payload='{"foo":"bar"}',
+    )
     await save_fixture(event)
 
     await webhook_event_send(webhook_event_id=event.id)
+
+    delivery_repository = WebhookDeliveryRepository.from_session(session)
+    deliveries = await delivery_repository.get_all_by_event(event.id)
+    assert len(deliveries) == 1
+    delivery = deliveries[0]
+    assert delivery.succeeded is True
+    assert delivery.response == expected
 
 
 @pytest.mark.asyncio
@@ -126,7 +141,9 @@ async def test_webhook_delivery_500(
     organization: Organization,
     current_message: dramatiq.Message[Any],
 ) -> None:
-    respx_mock.post("https://example.com/hook").mock(return_value=httpx.Response(500))
+    respx_mock.post("https://example.com/hook").mock(
+        return_value=httpx.Response(500, text="Internal Error")
+    )
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
@@ -136,7 +153,11 @@ async def test_webhook_delivery_500(
     )
     await save_fixture(endpoint)
 
-    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        payload='{"foo":"bar"}',
+    )
     await save_fixture(event)
 
     # failures
@@ -147,6 +168,14 @@ async def test_webhook_delivery_500(
     current_message.options["max_retries"] = settings.WEBHOOK_MAX_RETRIES
     current_message.options["retries"] = settings.WEBHOOK_MAX_RETRIES
     await _webhook_event_send(session=session, webhook_event_id=event.id)
+
+    delivery_repository = WebhookDeliveryRepository.from_session(session)
+    deliveries = await delivery_repository.get_all_by_event(event.id)
+
+    assert len(deliveries) == 2
+    for delivery in deliveries:
+        assert delivery.succeeded is False
+        assert delivery.response == "Internal Error"
 
 
 @pytest.mark.asyncio
@@ -169,18 +198,28 @@ async def test_webhook_delivery_http_error(
     )
     await save_fixture(endpoint)
 
-    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        payload='{"foo":"bar"}',
+    )
     await save_fixture(event)
 
     # failures
-    for job_try in range(settings.WORKER_MAX_RETRIES):
-        with pytest.raises(Retry):
-            await _webhook_event_send(session=session, webhook_event_id=event.id)
+    with pytest.raises(Retry):
+        await _webhook_event_send(session=session, webhook_event_id=event.id)
 
     # does not raise on last attempt
     current_message.options["max_retries"] = settings.WEBHOOK_MAX_RETRIES
     current_message.options["retries"] = settings.WEBHOOK_MAX_RETRIES
     await _webhook_event_send(session=session, webhook_event_id=event.id)
+
+    delivery_repository = WebhookDeliveryRepository.from_session(session)
+    deliveries = await delivery_repository.get_all_by_event(event.id)
+    assert len(deliveries) == 2
+    for delivery in deliveries:
+        assert delivery.succeeded is False
+        assert delivery.response == "ERROR"
 
 
 @pytest.mark.asyncio
@@ -203,7 +242,11 @@ async def test_webhook_standard_webhooks_compatible(
     )
     await save_fixture(endpoint)
 
-    event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
+    event = WebhookEvent(
+        webhook_endpoint_id=endpoint.id,
+        type=WebhookEventType.customer_created,
+        payload='{"foo":"bar"}',
+    )
     await save_fixture(event)
 
     await _webhook_event_send(session=session, webhook_event_id=event.id)

@@ -4,6 +4,15 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-09-12">
+  ## Webhooks payload now includes timestamp
+
+We've updated our webhooks server implementation to [include a timestamp in each payload](https://github.com/polarsource/polar/pull/6770), in line with the Standard Webhooks specification.
+
+This change ensures that every webhook payload contains precise event timing, making it easier to trace and debug webhook deliveries, and to meet integration requirements for external platforms.
+
+</Update>
+
 <Update label="2025-09-05">
   ## Meter management improvements
 
@@ -176,8 +185,4 @@ This is available right now using the [Checkout Session API](/features/checkout/
 - The `product_id` and `product_price_id` fields are deprecated in the [Checkout Session API](/api-reference/checkouts/create-session). You should now use the `products` field to specify the products you want to include in the checkout.
 - The `type` and `recurring_interval` fields on `ProductPrice` are deprecated. `recurring_interval` is now set directly on `Product`.
 
-</Update>
-
-<Update label="2025-02-14">
-  New documentation platform. More improvements incoming.
 </Update>

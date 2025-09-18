@@ -32,9 +32,9 @@ services:
       - key: FORWARDED_ALLOW_IPS
         value: "*"
       - key: POLAR_ALLOWED_HOSTS
-        value: '["polar.sh","docs.polar.sh"]'
+        value: '["polar.sh"]'
       - key: POLAR_CORS_ORIGINS
-        value: '["https://dashboard.polar.sh", "https://github.com" , "https://polar.sh", "https://docs.polar.sh", "https://polar-polar-sh.vercel.app"]'
+        value: '["https://dashboard.polar.sh", "https://github.com", "https://polar.sh", "https://polar-polar-sh.vercel.app"]'
       - key: POLAR_POSTGRES_DATABASE
         fromDatabase:
           name: db
@@ -54,6 +54,26 @@ services:
       - key: POLAR_POSTGRES_USER
         fromDatabase:
           name: db
+          property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        fromDatabase:
+          name: polar-read
+          property: database
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
           property: user
       - key: POLAR_REDIS_HOST
         fromService:
@@ -112,6 +132,26 @@ services:
       - key: POLAR_POSTGRES_USER
         fromDatabase:
           name: db
+          property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        fromDatabase:
+          name: polar-read
+          property: database
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
           property: user
       - key: POLAR_REDIS_HOST
         fromService:
@@ -188,6 +228,24 @@ services:
         fromDatabase:
           name: db
           property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        value: polar_sandbox
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
+          property: user
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
@@ -243,6 +301,24 @@ services:
         fromDatabase:
           name: db
           property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        value: polar_sandbox
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
+          property: user
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
@@ -266,11 +342,14 @@ databases:
   - name: db
     databaseName: polar_cpit
     user: polar_cpit_user
-    plan: pro-4gb
-    diskSizeGB: 16
+    plan: pro-16gb
+    diskSizeGB: 100
     region: ohio
     postgresMajorVersion: "15"
+    highAvailability:
+      enabled: true
     readReplicas:
+      - name: polar-read
       - name: polar-replica
 
 envVarGroups:

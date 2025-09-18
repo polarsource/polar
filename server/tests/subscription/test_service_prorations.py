@@ -62,6 +62,11 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.subscription.service.enqueue_job")
 
 
+@pytest.fixture
+def enqueue_benefits_grants_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch.object(subscription_service, "enqueue_benefits_grants")
+
+
 async def assert_system_events(
     session: AsyncSession,
     subscription: Subscription,
@@ -280,6 +285,7 @@ class TestUpdateProductProrations:
         session: AsyncSession,
         save_fixture: SaveFixture,
         enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
         organization: Organization,
         customer: Customer,
         old_product_param: tuple[SubscriptionRecurringInterval, int],
@@ -406,6 +412,8 @@ class TestUpdateProductProrations:
             assert billing_entries[1].amount == entry_1_amount
             assert billing_entries[1].currency == new_price.price_currency
             # fmt: on
+
+            enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
             # `enqueue_job` gets called a couple of times, only one of which
             # we care about. We do the following to extract only that "one" and

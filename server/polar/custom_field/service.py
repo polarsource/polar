@@ -24,7 +24,7 @@ from polar.kit.sorting import Sorting
 from polar.models import CustomField, Organization, User, UserOrganization
 from polar.models.custom_field import CustomFieldType
 from polar.organization.resolver import get_payload_organization
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 
 from .attachment import attached_custom_fields_models
 from .data import custom_field_data_models
@@ -37,7 +37,7 @@ class CustomFieldError(PolarError): ...
 class CustomFieldService(ResourceServiceReader[CustomField]):
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -87,7 +87,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
 
     async def get_by_id(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> CustomField | None:

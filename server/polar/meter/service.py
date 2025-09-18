@@ -19,6 +19,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.billing_entry.repository import BillingEntryRepository
+from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadata_clause
@@ -35,7 +36,7 @@ from polar.models import (
     SubscriptionProductPrice,
 )
 from polar.organization.resolver import get_payload_organization
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.subscription.repository import SubscriptionProductPriceRepository
 from polar.worker import enqueue_job
 
@@ -50,7 +51,7 @@ class MeterError(PolarError): ...
 class MeterService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -95,7 +96,7 @@ class MeterService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Meter | None:
@@ -261,7 +262,7 @@ class MeterService:
 
     async def get_quantities(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         meter: Meter,
         *,
         start_timestamp: datetime,
@@ -321,7 +322,10 @@ class MeterService:
 
         total = 0.0
         quantities: list[MeterQuantity] = []
-        result = await session.stream(statement)
+        result = await session.stream(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         async for row in result:
             quantities.append(MeterQuantity(timestamp=row.timestamp, quantity=row[1]))
             total = row[2]

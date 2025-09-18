@@ -34,7 +34,7 @@ from polar.exceptions import (
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -181,7 +181,7 @@ def _from_timestamp(t: int | None) -> datetime | None:
 class SubscriptionService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -246,7 +246,7 @@ class SubscriptionService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Subscription | None:
@@ -330,6 +330,13 @@ class SubscriptionService:
         if created:
             subscription = await repository.create(subscription, flush=True)
             await self._after_subscription_created(session, subscription)
+            # ⚠️ Some users are relying on `subscription.updated` for everything
+            # It was working before with Stripe since it always triggered an update
+            # after creation.
+            # But that's not the case with our new engine.
+            # So we manually trigger it here to keep the same behavior.
+            await self._on_subscription_updated(session, subscription)
+
         else:
             subscription = await repository.update(subscription, flush=True)
             assert previous_status is not None
@@ -1032,6 +1039,8 @@ class SubscriptionService:
                 # Add prorations to next invoice
                 pass
 
+            await self.enqueue_benefits_grants(session, subscription)
+
         # Send product change email notification
         await self.send_subscription_updated_email(
             session, subscription, previous_product, product, proration_behavior
@@ -1592,7 +1601,10 @@ class SubscriptionService:
         statement = select(Subscription).where(
             Subscription.product_id == product.id, Subscription.deleted_at.is_(None)
         )
-        subscriptions = await session.stream_scalars(statement)
+        subscriptions = await session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         async for subscription in subscriptions:
             await self.enqueue_benefits_grants(session, subscription)
 

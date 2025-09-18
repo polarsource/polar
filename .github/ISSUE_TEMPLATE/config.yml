@@ -1,8 +1,1 @@
 blank_issues_enabled: true
-contact_links:
-  - name: 💡 Feature Request
-    url: https://github.com/orgs/polarsource/discussions/new?category=feature-requests
-    about: Please submit feature requests here.
-  - name: 🛟 Support
-    url: https://discord.com/invite/Pnhfz3UThd
-    about: Join us on Discord to ask support questions.

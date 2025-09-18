@@ -60,17 +60,17 @@ const PlatformPopover = () => {
               <PopoverLinkItem
                 title="Products & Subscriptions"
                 description="Offer digital products or subscriptions"
-                link="https://docs.polar.sh/documentation/features/products"
+                link="https://polar.sh/docs/documentation/features/products"
               />
               <PopoverLinkItem
                 title="Checkouts"
                 description="Integrate with our Checkout API"
-                link="https://docs.polar.sh/documentation/features/checkouts/checkout-links"
+                link="https://polar.sh/docs/documentation/features/checkouts/checkout-links"
               />
               <PopoverLinkItem
                 title="Customer Portal"
                 description="Let your customers manage their subscriptions and orders"
-                link="https://docs.polar.sh/documentation/features/customer-portal"
+                link="https://polar.sh/docs/documentation/features/customer-portal"
               />
             </div>
           </div>
@@ -80,27 +80,27 @@ const PlatformPopover = () => {
               <PopoverLinkItem
                 title="License Keys"
                 description="Sell access to your custom software with License Keys"
-                link="https://docs.polar.sh/documentation/features/benefits/license-keys"
+                link="https://polar.sh/docs/documentation/features/benefits/license-keys"
               />
               <PopoverLinkItem
                 title="GitHub Repository Access"
                 description="Grant access to private repositories"
-                link="https://docs.polar.sh/documentation/features/benefits/github-repository-access"
+                link="https://polar.sh/docs/documentation/features/benefits/github-repository-access"
               />
               <PopoverLinkItem
                 title="Discord Server Access"
                 description="Automatic Discord role assignment"
-                link="https://docs.polar.sh/documentation/features/benefits/discord-server-roles"
+                link="https://polar.sh/docs/documentation/features/benefits/discord-server-roles"
               />
               <PopoverLinkItem
                 title="File Downloads"
                 description="Access to exclusive file downloads"
-                link="https://docs.polar.sh/documentation/features/benefits/file-downloads"
+                link="https://polar.sh/docs/documentation/features/benefits/file-downloads"
               />
               <PopoverLinkItem
                 title="Custom"
                 description="Offer custom benefits for your special usecase"
-                link="https://docs.polar.sh/documentation/features/benefits/custom-benefit"
+                link="https://polar.sh/docs/documentation/features/benefits/custom-benefit"
               />
             </div>
           </div>
@@ -144,12 +144,12 @@ const DocumentationPopover = () => {
               <PopoverLinkItem
                 title="Integration Guides"
                 description="How-to guides for common frameworks and use cases"
-                link="https://docs.polar.sh/documentation/integration-guides/nextjs"
+                link="https://polar.sh/docs/documentation/integration-guides/nextjs"
               />
               <PopoverLinkItem
                 title="Support"
                 description="Get help from the Polar team"
-                link="https://docs.polar.sh/documentation/support"
+                link="https://polar.sh/docs/documentation/support"
               />
             </div>
           </div>
@@ -159,22 +159,22 @@ const DocumentationPopover = () => {
               <PopoverLinkItem
                 title="API Reference"
                 description="Integrate Polar with your application"
-                link="https://docs.polar.sh/api-reference"
+                link="https://polar.sh/docs/api-reference"
               />
               <PopoverLinkItem
                 title="OAuth"
                 description="Streamline authentication and unlocking user benefits"
-                link="https://docs.polar.sh/documentation/integration-guides/authenticating-with-polar"
+                link="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar"
               />
               <PopoverLinkItem
                 title="Webhooks"
                 description="Integrate Polar with your application"
-                link="https://docs.polar.sh/documentation/integration-guides/webhooks"
+                link="https://polar.sh/docs/documentation/integration-guides/webhooks"
               />
               <PopoverLinkItem
                 title="Polar SDKs"
                 description="Build with our JavaScript & Python SDKs"
-                link="https://docs.polar.sh/documentation/sdks/typescript-sdk"
+                link="https://polar.sh/docs/documentation/sdks/typescript-sdk"
               />
             </div>
           </div>

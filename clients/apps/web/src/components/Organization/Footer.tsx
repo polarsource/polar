@@ -34,13 +34,13 @@ const Footer = () => {
             <div className="flex flex-col gap-y-2">
               <FooterLink href="https://status.polar.sh">Status</FooterLink>
               <FooterLink href="/login">Get Started</FooterLink>
-              <FooterLink href="https://docs.polar.sh/documentation/features/products">
+              <FooterLink href="https://polar.sh/docs/documentation/features/products">
                 Products & Subscriptions
               </FooterLink>
-              <FooterLink href="https://docs.polar.sh/documentation/features/checkouts/checkout-links">
+              <FooterLink href="https://polar.sh/docs/documentation/features/checkouts/checkout-links">
                 Checkouts
               </FooterLink>
-              <FooterLink href="https://docs.polar.sh/documentation/features/customer-portal">
+              <FooterLink href="https://polar.sh/docs/documentation/features/customer-portal">
                 Customer Portal
               </FooterLink>
             </div>
@@ -74,7 +74,7 @@ const Footer = () => {
           <div className="flex flex-col gap-y-4">
             <h3 className="text-base dark:text-white">Support</h3>
             <div className="flex flex-col gap-y-2">
-              <FooterLink href="https://docs.polar.sh">Docs</FooterLink>
+              <FooterLink href="https://polar.sh/docs">Docs</FooterLink>
               <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
             </div>
           </div>

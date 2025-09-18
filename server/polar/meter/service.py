@@ -19,6 +19,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.billing_entry.repository import BillingEntryRepository
+from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadata_clause
@@ -321,7 +322,10 @@ class MeterService:
 
         total = 0.0
         quantities: list[MeterQuantity] = []
-        result = await session.stream(statement)
+        result = await session.stream(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         async for row in result:
             quantities.append(MeterQuantity(timestamp=row.timestamp, quantity=row[1]))
             total = row[2]

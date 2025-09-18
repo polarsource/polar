@@ -3,7 +3,7 @@ import contextlib
 import contextvars
 import uuid
 from collections.abc import AsyncIterator, Mapping, Sequence
-from typing import Any, TypeAlias
+from typing import Any, Self, TypeAlias
 
 import dramatiq
 import structlog
@@ -99,18 +99,26 @@ class JobQueueManager:
         self._ingested_events = []
 
     @classmethod
-    @contextlib.asynccontextmanager
-    async def open(
-        cls, broker: dramatiq.Broker, redis: Redis
-    ) -> AsyncIterator["JobQueueManager"]:
-        job_queue_manager = JobQueueManager()
+    def set(cls) -> "Self":
+        job_queue_manager = cls()
         _job_queue_manager.set(job_queue_manager)
+        return job_queue_manager
+
+    @classmethod
+    def close(cls) -> None:
+        job_queue_manager = cls.get()
+        job_queue_manager.reset()
+        _job_queue_manager.set(None)
+
+    @classmethod
+    @contextlib.asynccontextmanager
+    async def open(cls, broker: dramatiq.Broker, redis: Redis) -> AsyncIterator["Self"]:
+        job_queue_manager = cls.set()
         try:
             yield job_queue_manager
             await job_queue_manager.flush(broker, redis)
         finally:
-            job_queue_manager.reset()
-            _job_queue_manager.set(None)
+            cls.close()
 
     @classmethod
     def get(cls) -> "JobQueueManager":

@@ -129,6 +129,9 @@ class Organization(RateLimitGroupMixin, RecordModel):
     next_review_threshold: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0
     )
+    status_updated_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
 
     @declared_attr
     def account(cls) -> Mapped[Account | None]:

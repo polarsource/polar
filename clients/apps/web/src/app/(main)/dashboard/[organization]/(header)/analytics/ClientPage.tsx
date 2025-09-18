@@ -175,18 +175,6 @@ export default function ClientPage({
               data={data}
               interval={interval}
             />
-            <MetricGroup
-              title="One-time Purchases"
-              metricKeys={oneTimeEvents}
-              data={data}
-              interval={interval}
-            />
-            <MetricGroup
-              title="Checkouts"
-              metricKeys={checkoutEvents}
-              data={data}
-              interval={interval}
-            />
             <div className="flex flex-col gap-y-6">
               <h3 className="text-2xl">Cancellations</h3>
               <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
@@ -208,6 +196,18 @@ export default function ClientPage({
                 </div>
               </div>
             </div>
+            <MetricGroup
+              title="One-time Purchases"
+              metricKeys={oneTimeEvents}
+              data={data}
+              interval={interval}
+            />
+            <MetricGroup
+              title="Checkouts"
+              metricKeys={checkoutEvents}
+              data={data}
+              interval={interval}
+            />
             <MetricGroup
               title="Net Revenue"
               metricKeys={netRevenueEvents}

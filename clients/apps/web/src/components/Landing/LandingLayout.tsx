@@ -365,7 +365,7 @@ const LandingPageFooter = () => {
 	return (
 		<motion.div
 			initial="initial"
-			className="flex w-full flex-col items-center"
+			className="flex w-full flex-col items-center relative"
 			variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
 			transition={{ duration: 0.5, ease: "easeInOut" }}
 			whileInView="animate"

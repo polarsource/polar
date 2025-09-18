@@ -17,6 +17,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.trial import TrialConfigurationInputMixin
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import (
     BenefitPublicList,
@@ -55,7 +56,7 @@ _discount_id_description = (
 )
 
 
-class CheckoutLinkCreateBase(MetadataInputMixin, Schema):
+class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
     payment_processor: Literal[PaymentProcessor.stripe] = Field(
         description="Payment processor to use. Currently only Stripe is supported."
     )

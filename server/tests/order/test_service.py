@@ -58,6 +58,7 @@ from polar.order.service import (
     PaymentAlreadyInProgress,
     RecurringProduct,
     SubscriptionDoesNotExist,
+    SubscriptionNotTrialing,
 )
 from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_static_price
@@ -84,6 +85,7 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_product,
     create_subscription,
+    create_trialing_subscription,
 )
 from tests.fixtures.stripe import construct_stripe_invoice
 from tests.transaction.conftest import create_transaction
@@ -1691,6 +1693,48 @@ class TestCreateSubscriptionOrder:
             order_id=order.id,
             payment_method_id=subscription.payment_method_id,
         )
+
+
+@pytest.mark.asyncio
+class TestCreateTrialOrder:
+    async def test_not_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        with pytest.raises(SubscriptionNotTrialing):
+            await order_service.create_trial_order(
+                session, subscription, OrderBillingReason.subscription_create
+            )
+
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        order = await order_service.create_trial_order(
+            session, subscription, OrderBillingReason.subscription_create
+        )
+
+        assert order.total_amount == 0
+        assert order.net_amount == 0
+        assert order.status == OrderStatus.paid
+        assert order.billing_reason == OrderBillingReason.subscription_create
+        assert order.customer == subscription.customer
+        assert order.product == product
+        assert order.subscription == subscription
+        assert len(order.items) == 1
 
 
 @pytest.mark.asyncio

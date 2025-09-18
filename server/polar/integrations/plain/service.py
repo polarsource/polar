@@ -1114,7 +1114,12 @@ class PlainService:
             (
                 "Looping In",
                 (
-                    "Hi 👋🏻\n"
+                    "I'm looping in the {organization_name} team to the conversation so that they can help you."
+                ),
+            ),
+            (
+                "Looping In with guidelines",
+                (
                     "I'm looping in the {organization_name} team to the conversation so that they can help you. "
                     "Please allow them up to 48 hours to get back to you ([guidelines for merchants on Polar](https://polar.sh/docs/merchant-of-record/account-reviews#operational-guidelines))."
                 ),
@@ -1122,14 +1127,18 @@ class PlainService:
             (
                 "Cancellation Portal",
                 (
-                    "Hi 👋🏻\n"
                     "You can perform the cancellation on the following URL: https://polar.sh/{organization_slug}/portal\n"
+                ),
+            ),
+            (
+                "Invoice Generation",
+                (
+                    "You can generate the invoice on the following URL: https://polar.sh/{organization_slug}/portal\n"
                 ),
             ),
             (
                 "Follow-up 48 hours",
                 (
-                    "Hi 👋🏻\n"
                     "I'm looping in the {organization_name} team again to the conversation. "
                     "Please allow them another 48 hours to get back to you before we [proceed with the documented resolution](https://polar.sh/docs/merchant-of-record/account-reviews#expected-responsiveness)."
                 ),
@@ -1137,11 +1146,16 @@ class PlainService:
             (
                 "Follow-up Reply All",
                 (
-                    "Hi 👋🏻\n"
                     "I'm looping in the {organization_name} team again to the conversation. "
                     'Please use "Reply All" so as to keep everyone involved in the conversation.'
                 ),
             ),
+            (
+                "Subscription Cancellation",
+                (
+                    "I have cancelled the subscription immediately."
+                )
+            )
         ]
 
         def _get_snippet_container(

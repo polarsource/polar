@@ -146,16 +146,18 @@ async def get_charge_preview(
 
     discount_amount = 0
 
+    applicable_discount = None
+
     # Ensure the discount has not expired yet for the next charge (so at current_period_end)
     if subscription.discount is not None:
         assert subscription.started_at is not None
-        if subscription.discount.is_repetition_expired(
+        if not subscription.discount.is_repetition_expired(
             subscription.started_at, subscription.current_period_end
         ):
-            subscription.discount = None
+            applicable_discount = subscription.discount
 
-    if subscription.discount is not None:
-        discount_amount = subscription.discount.get_discount_amount(subtotal_amount)
+    if applicable_discount is not None:
+        discount_amount = applicable_discount.get_discount_amount(subtotal_amount)
 
     taxable_amount = subtotal_amount - discount_amount
 

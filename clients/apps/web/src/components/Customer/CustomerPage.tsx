@@ -8,6 +8,7 @@ import {
   ParsedMetricsResponse,
   useMetrics,
   useSubscriptions,
+  useBenefitGrants,
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { getChartRangeParams } from '@/utils/metrics'
@@ -51,6 +52,13 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       limit: 999,
       sorting: ['-started_at'],
     })
+
+  const { data: benefitGrants } = useBenefitGrants(customer.organization_id, {
+    customer_id: [customer.id],
+    limit: 999,
+  })
+
+  console.log('Benefit grants data:', benefitGrants)
 
   const [selectedMetric, setSelectedMetric] =
     React.useState<keyof schemas['Metrics']>('revenue')

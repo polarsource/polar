@@ -203,3 +203,27 @@ export const useGrantsForBenefit = ({
 		},
 		retry: defaultRetry,
 	});
+
+export const useBenefitGrants = (
+	organizationId?: string,
+	parameters?: Omit<
+		NonNullable<operations['benefit-grants:list']['parameters']['query']>,
+		'organization_id'
+	>,
+) =>
+	useQuery({
+		queryKey: ['benefit-grants', { organizationId, ...(parameters || {}) }],
+		queryFn: () =>
+			unwrap(
+				api.GET('/v1/benefit-grants/', {
+					params: {
+						query: {
+							organization_id: organizationId,
+							...parameters,
+						},
+					},
+				}),
+			),
+		retry: defaultRetry,
+		enabled: !!organizationId,
+	});

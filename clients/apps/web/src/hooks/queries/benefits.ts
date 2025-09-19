@@ -168,7 +168,7 @@ export const useDeleteBenefit = (orgId?: string) =>
 		},
 	});
 
-export const useBenefitGrants = ({
+export const useGrantsForBenefit = ({
 	benefitId,
 	organizationId,
 	limit = 30,

@@ -5,6 +5,7 @@ import { ProductInfoSection } from './ProductInfoSection'
 import { ProductMediaSection } from './ProductMediaSection'
 import { ProductMetadataSection } from './ProductMetadataSection'
 import { ProductPricingSection } from './ProductPricingSection'
+import { ProductTrialSection } from './ProductTrialSection'
 
 export interface ProductFullMediasMixin {
   full_medias: schemas['ProductMediaFileRead'][]
@@ -37,6 +38,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         update={update}
         compact={compact}
       />
+      <ProductTrialSection compact={compact} />
       <ProductMediaSection organization={organization} compact={compact} />
       <ProductCustomFieldSection
         organization={organization}

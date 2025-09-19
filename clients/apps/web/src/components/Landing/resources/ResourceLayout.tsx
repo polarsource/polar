@@ -74,16 +74,26 @@ export const ResourceSection = ({
 	id,
 	title,
 	children,
+	className,
 }: PropsWithChildren<{
 	id: string;
 	title: string;
+	className?: string;
 }>) => {
 	return (
-		<section id={id} className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8">
+		<section
+			id={id}
+			className={twMerge("grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8")}
+		>
 			<div className="sticky top-0 col-span-1 flex h-fit flex-col border-gray-200 pt-4 text-lg md:border-t md:text-base dark:border-gray-700">
 				<h2>{title}</h2>
 			</div>
-			<div className="col-span-2 flex flex-col gap-y-4 border-t border-gray-200 pt-4 dark:border-gray-700">
+			<div
+				className={twMerge(
+					"col-span-2 flex flex-col gap-y-4 border-t border-gray-200 pt-4 dark:border-gray-700",
+					className,
+				)}
+			>
 				{children}
 			</div>
 		</section>

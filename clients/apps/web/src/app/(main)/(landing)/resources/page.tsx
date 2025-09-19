@@ -39,7 +39,7 @@ const resourceLinks = [
 	},
 	{
 		title: "Merchant of Record",
-		href: "/resources/mor",
+		href: "/resources/merchant-of-record",
 	},
 	{
 		title: "Pricing",

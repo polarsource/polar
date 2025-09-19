@@ -4,7 +4,11 @@ import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
-import { useListSubscriptions, useMetrics } from '@/hooks/queries'
+import {
+  ParsedMetricsResponse,
+  useListSubscriptions,
+  useMetrics,
+} from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { getChartRangeParams } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
@@ -19,7 +23,7 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import Link from 'next/link'
-import React from 'react'
+import React, { useMemo } from 'react'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
 
@@ -62,6 +66,49 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     customer_id: [customer.id],
   })
 
+  const relevantMetricsData = useMemo(() => {
+    if (!metricsData) {
+      return metricsData
+    }
+
+    const allowedKeys: (keyof schemas['Metrics'])[] = [
+      'active_subscriptions',
+      'average_order_value',
+      'canceled_subscriptions',
+      'checkouts',
+      'checkouts_conversion',
+      'committed_monthly_recurring_revenue',
+      'cumulative_revenue',
+      'monthly_recurring_revenue',
+      'net_average_order_value',
+      'net_cumulative_revenue',
+      'net_revenue',
+      'new_subscriptions',
+      'new_subscriptions_net_revenue',
+      'new_subscriptions_revenue',
+      'one_time_products',
+      'one_time_products_net_revenue',
+      'one_time_products_revenue',
+      'orders',
+      'renewed_subscriptions',
+      'renewed_subscriptions_net_revenue',
+      'renewed_subscriptions_revenue',
+      'revenue',
+      'succeeded_checkouts',
+    ]
+
+    const metrics = Object.fromEntries(
+      Object.entries(metricsData.metrics).filter(([key]) =>
+        allowedKeys.includes(key as keyof schemas['Metrics']),
+      ),
+    ) as ParsedMetricsResponse['metrics']
+
+    return {
+      ...metricsData,
+      metrics,
+    }
+  }, [metricsData])
+
   return (
     <Tabs defaultValue="overview" className="flex flex-col">
       <TabsList className="mb-8">
@@ -74,7 +121,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           metric={selectedMetric}
           onMetricChange={setSelectedMetric}
           interval={interval}
-          data={metricsData}
+          data={relevantMetricsData}
           loading={metricsLoading}
         />
         <div className="flex flex-col gap-4">

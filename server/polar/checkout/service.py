@@ -1654,10 +1654,8 @@ class CheckoutService:
             checkout.trial_end = None
             return checkout
 
-        trial_interval = checkout.trial_interval or checkout.product.trial_interval
-        trial_interval_count = (
-            checkout.trial_interval_count or checkout.product.trial_interval_count
-        )
+        trial_interval = checkout.active_trial_interval
+        trial_interval_count = checkout.active_trial_interval_count
 
         if trial_interval is not None and trial_interval_count is not None:
             checkout.trial_end = trial_interval.get_end(utc_now(), trial_interval_count)

@@ -28,7 +28,7 @@ from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataColumn, MetadataMixin
 from polar.kit.tax import TaxID, TaxIDType
-from polar.kit.trial import TrialConfigurationMixin
+from polar.kit.trial import TrialConfigurationMixin, TrialInterval
 from polar.kit.utils import utc_now
 from polar.product.guard import is_discount_applicable, is_free_price, is_metered_price
 
@@ -343,6 +343,14 @@ class Checkout(
             if require_billing_address
             else BillingAddressFieldMode.disabled,
         }
+
+    @property
+    def active_trial_interval(self) -> TrialInterval | None:
+        return self.trial_interval or self.product.trial_interval
+
+    @property
+    def active_trial_interval_count(self) -> int | None:
+        return self.trial_interval_count or self.product.trial_interval_count
 
 
 @event.listens_for(Checkout, "before_update")

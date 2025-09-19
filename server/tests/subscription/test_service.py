@@ -1,7 +1,7 @@
 import uuid
 from collections import namedtuple
 from collections.abc import Generator
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, call
 
@@ -1855,6 +1855,138 @@ class TestUpdateDiscount:
             discount_percentage_50.stripe_coupon_id,
             discount_percentage_100.stripe_coupon_id,
         )
+
+
+@pytest.mark.asyncio
+class TestUpdateTrial:
+    async def test_trialing_subscription_ending_now(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        assert subscription.trial_end is not None
+        original_trial_end = subscription.trial_end
+
+        updated_subscription = await subscription_service.update_trial(
+            session, subscription, trial_end="now"
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.trial_end is not None
+        assert updated_subscription.trial_end == updated_subscription.current_period_end
+        assert updated_subscription.trial_end < original_trial_end
+
+    async def test_trialing_subscription_extending(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        assert subscription.trial_end is not None
+        original_trial_end = subscription.trial_end
+
+        new_trial_end = original_trial_end + timedelta(days=30)
+
+        updated_subscription = await subscription_service.update_trial(
+            session, subscription, trial_end=new_trial_end
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.trialing
+        assert updated_subscription.current_period_end == new_trial_end
+        assert updated_subscription.trial_end == new_trial_end
+        assert updated_subscription.trial_end is not None
+        assert updated_subscription.trial_end > original_trial_end
+
+    async def test_active_subscription_ending_now_validation_error(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.update_trial(
+                session, subscription, trial_end="now"
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == "value_error"
+        assert errors[0]["loc"] == ("body", "trial_end")
+        assert "not currently trialing" in errors[0]["msg"]
+
+    async def test_active_subscription_adding_trial(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        assert subscription.current_period_end is not None
+
+        trial_end = subscription.current_period_end + timedelta(days=14)
+
+        updated_subscription = await subscription_service.update_trial(
+            session, subscription, trial_end=trial_end
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.trialing
+        assert updated_subscription.trial_end == trial_end
+        assert updated_subscription.current_period_end == trial_end
+        assert updated_subscription.trialing
+
+    async def test_active_subscription_adding_trial_before_current_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        assert subscription.current_period_end is not None
+        trial_end_before_period = subscription.current_period_end - timedelta(days=1)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.update_trial(
+                session, subscription, trial_end=trial_end_before_period
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == "value_error"
+        assert errors[0]["loc"] == ("body", "trial_end")
+        assert "Trial end must be after the current period end" in errors[0]["msg"]
 
 
 @pytest.mark.asyncio

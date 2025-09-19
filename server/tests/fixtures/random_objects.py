@@ -978,6 +978,7 @@ async def create_trialing_subscription(
         trial_end=trial_end,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
+        stripe_subscription_id=None,
     )
 
 

@@ -7,7 +7,7 @@ from typing import Any, Literal
 import stripe as stripe_lib
 import structlog
 from sqlalchemy import select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
@@ -15,6 +15,7 @@ from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
+from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
 from polar.customer_portal.schemas.order import (
     CustomerOrderPaymentConfirmation,
@@ -404,8 +405,9 @@ class OrderService:
             .options(
                 *repository.get_eager_options(
                     customer_load=contains_eager(Order.customer),
-                    product_load=joinedload(Order.product).joinedload(
-                        Product.organization
+                    product_load=joinedload(Order.product).options(
+                        joinedload(Product.organization),
+                        selectinload(Product.attached_custom_fields),
                     ),
                 )
             )
@@ -438,10 +440,19 @@ class OrderService:
         if errors:
             raise PolarRequestValidationError(errors)
 
+        update_dict = order_update.model_dump(exclude_unset=True)
+
+        if "custom_field_data" in update_dict:
+            # Validate custom field data against the product's attached custom fields
+            custom_field_data = validate_custom_field_data(
+                order.product.attached_custom_fields,
+                order_update.custom_field_data,
+                validate_required=False,  # Allow merchants to update even if required fields are missing
+            )
+            update_dict["custom_field_data"] = custom_field_data
+
         repository = OrderRepository.from_session(session)
-        order = await repository.update(
-            order, update_dict=order_update.model_dump(exclude_unset=True)
-        )
+        order = await repository.update(order, update_dict=update_dict)
 
         await self.send_webhook(session, order, WebhookEventType.order_updated)
 

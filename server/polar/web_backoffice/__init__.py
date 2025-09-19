@@ -5,6 +5,7 @@ from tagflow import tag, text
 
 from .accounts.endpoints import router as accounts_router
 from .benefits.endpoints import router as benefits_router
+from .checkout_links.endpoints import router as checkout_links_router
 from .dependencies import get_admin
 from .external_events.endpoints import router as external_events_router
 from .impersonation.endpoints import router as impersonation_router
@@ -44,6 +45,7 @@ app.include_router(tasks_router, prefix="/tasks")
 app.include_router(pledges_router, prefix="/pledges")
 app.include_router(subscriptions_router, prefix="/subscriptions")
 app.include_router(orders_router, prefix="/orders")
+app.include_router(checkout_links_router, prefix="/checkout-links")
 app.include_router(impersonation_router, prefix="/impersonation")
 
 

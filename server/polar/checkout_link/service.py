@@ -217,6 +217,13 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         repository = CheckoutLinkRepository.from_session(session)
         return await repository.soft_delete(checkout_link)
 
+    async def restore(
+        self, session: AsyncSession, checkout_link: CheckoutLink
+    ) -> CheckoutLink:
+        """Restore a soft-deleted checkout link."""
+        repository = CheckoutLinkRepository.from_session(session)
+        return await repository.restore(checkout_link)
+
     async def _get_validated_products(
         self,
         session: AsyncSession,

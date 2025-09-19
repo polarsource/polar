@@ -41,7 +41,11 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.trial import TrialConfigurationInputMixin
+from polar.kit.trial import (
+    TrialConfigurationInputMixin,
+    TrialConfigurationOutputMixin,
+    TrialInterval,
+)
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
     CheckoutCustomerBillingAddressFields,
@@ -396,6 +400,25 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     )
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
     currency: str = Field(description="Currency code of the checkout session.")
+
+    active_trial_interval: TrialInterval | None = Field(
+        description=(
+            "Interval unit of the trial period, if any. "
+            "This value is either set from the checkout, if `trial_interval` is set, "
+            "or from the selected product."
+        )
+    )
+    active_trial_interval_count: int | None = Field(
+        description=(
+            "Number of interval units of the trial period, if any. "
+            "This value is either set from the checkout, if `trial_interval_count` "
+            "is set, or from the selected product."
+        )
+    )
+    trial_end: datetime | None = Field(
+        description="End date and time of the trial period, if any."
+    )
+
     product_id: UUID4 = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
     discount_id: UUID4 | None = Field(
@@ -534,7 +557,7 @@ CheckoutDiscount = Annotated[
 ]
 
 
-class Checkout(MetadataOutputMixin, CheckoutBase):
+class Checkout(MetadataOutputMixin, TrialConfigurationOutputMixin, CheckoutBase):
     """Checkout session data retrieved using an access token."""
 
     external_customer_id: str | None = Field(

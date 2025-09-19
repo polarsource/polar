@@ -203,3 +203,59 @@ export const useBenefitGrants = ({
 		},
 		retry: defaultRetry,
 	});
+
+export const useCustomerBenefitGrantsList = ({
+	customerId,
+	organizationId,
+}: {
+	customerId: string;
+	organizationId: string;
+}) =>
+	useQuery({
+		queryKey: [
+			"customer",
+			"benefit_grants",
+			customerId,
+			organizationId,
+		],
+		queryFn: async () => {
+			const benefitsResponse = await unwrap(
+				api.GET("/v1/benefits/", {
+					params: {
+						query: {
+							organization_id: organizationId,
+							limit: 100,
+						},
+					},
+				}),
+			);
+
+			const allGrants: (schemas['BenefitGrant'] & { benefit: schemas['Benefit'] })[] = [];
+
+			for (const benefit of benefitsResponse.items) {
+				const grantsResponse = await unwrap(
+					api.GET("/v1/benefits/{id}/grants", {
+						params: {
+							path: { id: benefit.id },
+							query: {
+								customer_id: customerId,
+								limit: 1000,
+							},
+						},
+					}),
+				);
+				const grantsWithBenefit = grantsResponse.items.map(grant => ({
+					...grant,
+					benefit,
+				}));
+				allGrants.push(...grantsWithBenefit);
+			}
+
+			const sortedGrants = allGrants.sort((a, b) =>
+				new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+			);
+
+			return sortedGrants;
+		},
+		retry: defaultRetry,
+	});

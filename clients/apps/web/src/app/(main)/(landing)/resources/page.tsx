@@ -58,12 +58,12 @@ export default function Resources() {
         {resourceLinks.map((link) => (
           <Link
             key={link.title}
-            className="dark:hover:bg-polar-800 dark:border-polar-700 flex w-full cursor-pointer flex-col gap-6 border border-gray-300 p-6 font-mono transition-colors duration-200 hover:bg-gray-100"
+            className="dark:hover:bg-polar-800 dark:border-polar-700 flex w-full cursor-pointer flex-col gap-6 border border-gray-300 p-6 transition-colors duration-200 hover:bg-gray-100"
             href={link.href}
           >
             <ArrowOutwardOutlined fontSize="inherit" />
             <div className="flex flex-col gap-2">
-              <h3 className="text-xl">{link.title}</h3>
+              <h3 className="font-mono text-xl">{link.title}</h3>
               <p className="dark:text-polar-500 font-sm text-gray-500">
                 {link.description}
               </p>

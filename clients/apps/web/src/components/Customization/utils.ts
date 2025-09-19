@@ -246,6 +246,9 @@ export const createCheckoutPreview = (
       line1: 'disabled',
       line2: 'disabled',
     },
+    active_trial_interval: null,
+    active_trial_interval_count: null,
+    trial_end: null,
   })
 
   return {

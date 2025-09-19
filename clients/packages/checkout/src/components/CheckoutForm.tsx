@@ -8,6 +8,7 @@ import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/check
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
@@ -727,6 +728,23 @@ const BaseCheckoutForm = ({
             </div>
             {!checkout.isFreeProductPrice && (
               <div className="flex flex-col gap-y-2">
+                {checkout.activeTrialInterval &&
+                  checkout.activeTrialIntervalCount && (
+                    <DetailRow
+                      title={`${checkout.activeTrialIntervalCount} ${checkout.activeTrialInterval}${checkout.activeTrialIntervalCount > 1 ? 's' : ''} trial`}
+                    >
+                      <span>Free</span>
+                    </DetailRow>
+                  )}
+                {checkout.trialEnd && (
+                  <div className="font-medium">
+                    Starting{' '}
+                    <FormattedDateTime
+                      datetime={checkout.trialEnd}
+                      resolution="day"
+                    />
+                  </div>
+                )}
                 {checkout.currency ? (
                   <>
                     <DetailRow title="Subtotal">

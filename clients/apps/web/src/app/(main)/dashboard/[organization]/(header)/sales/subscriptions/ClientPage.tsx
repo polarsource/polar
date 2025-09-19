@@ -4,7 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
 import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
-import { useListSubscriptions, useProducts } from '@/hooks/queries'
+import { useSubscriptions, useProducts } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import {
   DataTablePaginationState,
@@ -137,7 +137,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     )
   }
 
-  const subscriptionsHook = useListSubscriptions(organization.id, {
+  const subscriptionsHook = useSubscriptions(organization.id, {
     ...getAPIParams(pagination, sorting),
     ...(productId ? { product_id: productId } : {}),
     ...(status !== 'any'

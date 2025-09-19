@@ -6,8 +6,8 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   ParsedMetricsResponse,
-  useListSubscriptions,
   useMetrics,
+  useSubscriptions,
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { getChartRangeParams } from '@/utils/metrics'
@@ -46,7 +46,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
   )
 
   const { data: subscriptions, isLoading: subscriptionsLoading } =
-    useListSubscriptions(customer.organization_id, {
+    useSubscriptions(customer.organization_id, {
       customer_id: customer.id,
       limit: 999,
       sorting: ['-started_at'],

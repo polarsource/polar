@@ -6,9 +6,9 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   ParsedMetricsResponse,
+  useBenefitGrants,
   useMetrics,
   useSubscriptions,
-  useBenefitGrants,
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { getChartRangeParams } from '@/utils/metrics'
@@ -17,14 +17,22 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
 
@@ -53,12 +61,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       sorting: ['-started_at'],
     })
 
-  const { data: benefitGrants } = useBenefitGrants(customer.organization_id, {
-    customer_id: [customer.id],
-    limit: 999,
-  })
-
-  console.log('Benefit grants data:', benefitGrants)
+  const { data: benefitGrants, isLoading: benefitGrantsLoading } =
+    useBenefitGrants(customer.organization_id, {
+      customer_id: [customer.id],
+      limit: 999,
+    })
 
   const [selectedMetric, setSelectedMetric] =
     React.useState<keyof schemas['Metrics']>('revenue')
@@ -242,6 +249,116 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               },
             ]}
             isLoading={ordersLoading}
+            className="text-sm"
+          />
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <h3 className="text-lg">Benefit Grants</h3>
+          <DataTable
+            data={benefitGrants?.items ?? []}
+            columns={[
+              {
+                header: 'Benefit Name',
+                accessorKey: 'benefit.description',
+                cell: ({ row: { original } }) => (
+                  <div className="flex flex-col gap-0.5">
+                    <span>{original.benefit.description}</span>
+
+                    <span className="dark:text-polar-500 text-xs text-gray-500">
+                      {benefitsDisplayNames[original.benefit.type]}
+                    </span>
+                  </div>
+                ),
+              },
+              {
+                header: 'Status',
+                accessorKey: 'status',
+                cell: ({ row: { original: grant } }) => {
+                  const isRevoked = grant.revoked_at !== null
+                  const isGranted = grant.is_granted
+                  const hasError = grant.error !== null
+
+                  const status = hasError
+                    ? 'Error'
+                    : isRevoked
+                      ? 'Revoked'
+                      : isGranted
+                        ? 'Granted'
+                        : 'Pending'
+
+                  const statusDescription = {
+                    Revoked:
+                      'The customer does not have access to this benefit',
+                    Granted: 'The customer has access to this benefit',
+                    Pending: 'The benefit grant is currently being processed',
+                    Error: grant.error?.message ?? 'An unknown error occurred',
+                  }
+
+                  const statusClassNames = {
+                    Revoked: 'bg-red-100 text-red-500 dark:bg-red-950',
+                    Granted:
+                      'bg-emerald-200 text-emerald-500 dark:bg-emerald-950',
+                    Pending: 'bg-yellow-100 text-yellow-500 dark:bg-yellow-950',
+                    Error: 'bg-red-100 text-red-500 dark:bg-red-950',
+                  }
+
+                  return (
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Status
+                          className={twMerge('w-fit', statusClassNames[status])}
+                          status={status}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {statusDescription[status]}
+                      </TooltipContent>
+                    </Tooltip>
+                  )
+                },
+              },
+              {
+                header: 'Granted At',
+                accessorKey: 'granted_at',
+                cell: ({ row: { original } }) =>
+                  original.granted_at ? (
+                    <span className="dark:text-polar-500 text-sm text-gray-500">
+                      <FormattedDateTime datetime={original.granted_at} />
+                    </span>
+                  ) : (
+                    <span>—</span>
+                  ),
+              },
+              {
+                header: 'Revoked At',
+                accessorKey: 'revoked_at',
+                cell: ({ row: { original } }) =>
+                  original.revoked_at ? (
+                    <span className="dark:text-polar-500 text-sm text-gray-500">
+                      <FormattedDateTime datetime={original.revoked_at} />
+                    </span>
+                  ) : (
+                    <span className="dark:text-polar-800 text-gray-400">—</span>
+                  ),
+              },
+              {
+                header: '',
+                accessorKey: 'benefit_action',
+                cell: ({ row: { original } }) => (
+                  <div className="flex justify-end">
+                    <Link
+                      href={`/dashboard/${organization.slug}/benefits?benefitId=${original.benefit.id}`}
+                    >
+                      <Button variant="secondary" size="sm">
+                        View Benefit
+                      </Button>
+                    </Link>
+                  </div>
+                ),
+              },
+            ]}
+            isLoading={benefitGrantsLoading}
             className="text-sm"
           />
         </div>

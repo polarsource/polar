@@ -117,6 +117,38 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             .order_by(BenefitGrant.created_at.desc())
             .options(
                 joinedload(BenefitGrant.customer),
+                joinedload(BenefitGrant.benefit),
+            )
+        )
+
+        if is_granted is not None:
+            statement = statement.where(BenefitGrant.is_granted.is_(is_granted))
+
+        if customer_id is not None:
+            statement = statement.where(BenefitGrant.customer_id.in_(customer_id))
+
+        return await paginate(session, statement, pagination=pagination)
+
+    async def list_by_organization(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        *,
+        is_granted: bool | None = None,
+        customer_id: Sequence[UUID] | None = None,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[BenefitGrant], int]:
+        statement = (
+            select(BenefitGrant)
+            .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
+            .where(
+                Benefit.organization_id == organization_id,
+                BenefitGrant.deleted_at.is_(None),
+            )
+            .order_by(BenefitGrant.created_at.desc())
+            .options(
+                joinedload(BenefitGrant.customer),
+                joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
             )
         )
 

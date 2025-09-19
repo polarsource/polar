@@ -1116,6 +1116,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/benefit-grants/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Benefit Grants
+         * @description List benefit grants across all benefits for the authenticated organization.
+         *
+         *     **Scopes**: `benefits:read` `benefits:write`
+         */
+        get: operations["benefit-grants:list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/webhooks/endpoints": {
         parameters: {
             query?: never;
@@ -5205,6 +5227,8 @@ export interface components {
             /** @description The error information if the benefit grant failed with an unrecoverable error. */
             error?: components["schemas"]["BenefitGrantError"] | null;
             customer: components["schemas"]["Customer"];
+            /** Benefit */
+            benefit: components["schemas"]["Benefit"];
             /** Properties */
             properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
         };
@@ -20353,6 +20377,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "benefit-grants:list": {
+        parameters: {
+            query?: {
+                /** @description Filter by organization ID. */
+                organization_id?: string | string[] | null;
+                /** @description Filter by customer ID. */
+                customer_id?: string | string[] | null;
+                /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.  */
+                is_granted?: boolean | null;
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResource_BenefitGrant_"];
                 };
             };
             /** @description Validation Error */

@@ -33,6 +33,12 @@ export const metadata: Metadata = {
 
 const resourceLinks = [
   {
+    title: 'Documentation',
+    description: 'Learn the ins and outs of the Polar platform',
+    href: '/docs',
+    target: '_blank',
+  },
+  {
     title: 'Why Polar',
     description:
       'Learn why Polar is the best choice for monetizing your business',
@@ -48,7 +54,7 @@ const resourceLinks = [
     href: '/resources/merchant-of-record',
     description: 'Learn the differences between PSPs and Merchant of Records',
   },
-] as const
+]
 
 export default function Resources() {
   return (
@@ -67,6 +73,7 @@ export default function Resources() {
               key={link.title}
               className="dark:hover:bg-polar-900 dark:border-polar-700 flex w-full cursor-pointer flex-col gap-6 border border-gray-300 p-6 transition-colors duration-200 hover:bg-gray-100"
               href={link.href}
+              target={link.target}
             >
               <ArrowOutwardOutlined fontSize="inherit" />
               <div className="flex flex-col gap-2">

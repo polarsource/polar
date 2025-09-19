@@ -59,10 +59,6 @@
     "5432": {
       "label": "db"
     },
-		"6006": {
-			"label": "storybook",
-			"onAutoForward": "ignore"
-		},
     "6379": {
       "label": "redis"
     },

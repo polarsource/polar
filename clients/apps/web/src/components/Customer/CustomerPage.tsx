@@ -65,6 +65,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     useBenefitGrants(customer.organization_id, {
       customer_id: [customer.id],
       limit: 999,
+      sorting: ['-granted_at'],
     })
 
   const [selectedMetric, setSelectedMetric] =

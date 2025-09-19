@@ -11,6 +11,7 @@ from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
+from polar.kit.trial import TrialInterval
 from polar.models import (
     Benefit,
     File,
@@ -31,6 +32,8 @@ from polar.product.guard import is_static_price
 from polar.product.schemas import (
     ExistingProductPrice,
     ProductCreate,
+    ProductCreateOneTime,
+    ProductCreateRecurring,
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
     ProductPriceFreeCreate,
@@ -328,7 +331,7 @@ class TestCreate:
     async def test_user_not_existing_organization(
         self, auth_subject: AuthSubject[User], session: AsyncSession
     ) -> None:
-        create_schema = ProductCreate(
+        create_schema = ProductCreateRecurring(
             name="Product",
             organization_id=uuid.uuid4(),
             recurring_interval=SubscriptionRecurringInterval.month,
@@ -351,7 +354,7 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        create_schema = ProductCreate(
+        create_schema = ProductCreateRecurring(
             name="Product",
             organization_id=organization.id,
             recurring_interval=SubscriptionRecurringInterval.month,
@@ -384,7 +387,7 @@ class TestCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductCreate(
+        create_schema = ProductCreateRecurring(
             name="Product",
             organization_id=organization.id,
             recurring_interval=SubscriptionRecurringInterval.month,
@@ -425,7 +428,7 @@ class TestCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductCreate(
+        create_schema = ProductCreateRecurring(
             name="Product",
             description="",
             organization_id=organization.id,
@@ -449,7 +452,7 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        create_schema = ProductCreate(
+        create_schema = ProductCreateRecurring(
             name="Product",
             organization_id=organization.id,
             recurring_interval=SubscriptionRecurringInterval.month,
@@ -481,7 +484,7 @@ class TestCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductCreate(
+        create_schema = ProductCreateRecurring(
             name="Product",
             recurring_interval=SubscriptionRecurringInterval.month,
             prices=[
@@ -510,7 +513,7 @@ class TestCreate:
             stripe_service_mock.create_price_for_product
         )
 
-        create_schema = ProductCreate(
+        create_schema = ProductCreateRecurring(
             name="Product",
             organization_id=organization.id,
             recurring_interval=SubscriptionRecurringInterval.month,
@@ -569,7 +572,7 @@ class TestCreate:
             stripe_service_mock.create_price_for_product
         )
 
-        create_schema = ProductCreate(
+        create_schema = ProductCreateRecurring(
             name="Product",
             organization_id=organization.id,
             recurring_interval=SubscriptionRecurringInterval.month,
@@ -621,7 +624,7 @@ class TestCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductCreate(
+        create_schema = ProductCreateRecurring(
             name="Product",
             organization_id=organization.id,
             recurring_interval=SubscriptionRecurringInterval.month,
@@ -642,9 +645,8 @@ class TestCreate:
     @pytest.mark.parametrize(
         "create_schema",
         (
-            ProductCreate(
+            ProductCreateOneTime(
                 name="One-time fixed",
-                recurring_interval=None,
                 prices=[
                     ProductPriceFixedCreate(
                         amount_type=ProductPriceAmountType.fixed,
@@ -653,9 +655,8 @@ class TestCreate:
                     )
                 ],
             ),
-            ProductCreate(
+            ProductCreateOneTime(
                 name="One-time custom",
-                recurring_interval=None,
                 prices=[
                     ProductPriceCustomCreate(
                         amount_type=ProductPriceAmountType.custom,
@@ -666,16 +667,15 @@ class TestCreate:
                     ),
                 ],
             ),
-            ProductCreate(
+            ProductCreateOneTime(
                 name="One-time free",
-                recurring_interval=None,
                 prices=[
                     ProductPriceFreeCreate(
                         amount_type=ProductPriceAmountType.free,
                     ),
                 ],
             ),
-            ProductCreate(
+            ProductCreateRecurring(
                 name="Recurring free",
                 recurring_interval=SubscriptionRecurringInterval.month,
                 prices=[
@@ -684,7 +684,7 @@ class TestCreate:
                     )
                 ],
             ),
-            ProductCreate(
+            ProductCreateRecurring(
                 name="Recurring metered unit",
                 recurring_interval=SubscriptionRecurringInterval.month,
                 prices=[
@@ -742,9 +742,8 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(
                 session,
-                ProductCreate(
+                ProductCreateOneTime(
                     name="Product",
-                    recurring_interval=None,
                     prices=[
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
@@ -774,7 +773,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(
                 session,
-                ProductCreate(
+                ProductCreateRecurring(
                     name="Product",
                     recurring_interval=SubscriptionRecurringInterval.month,
                     prices=[
@@ -800,12 +799,11 @@ class TestCreate:
         stripe_service_mock: MagicMock,
         meter: Meter,
     ) -> None:
-        with pytest.raises(PolarRequestValidationError) as e:
+        with pytest.raises(PolarRequestValidationError):
             await product_service.create(
                 session,
-                ProductCreate(
+                ProductCreateOneTime(
                     name="Product",
-                    recurring_interval=None,
                     prices=[
                         ProductPriceMeteredUnitCreate(
                             amount_type=ProductPriceAmountType.metered_unit,
@@ -829,10 +827,10 @@ class TestCreate:
         stripe_service_mock: MagicMock,
         meter: Meter,
     ) -> None:
-        with pytest.raises(PolarRequestValidationError) as e:
+        with pytest.raises(PolarRequestValidationError):
             await product_service.create(
                 session,
-                ProductCreate(
+                ProductCreateRecurring(
                     name="Product",
                     recurring_interval=SubscriptionRecurringInterval.month,
                     prices=[
@@ -1432,6 +1430,52 @@ class TestUpdate:
                 update_schema,
                 auth_subject,
             )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_trial_configuration_on_non_recurring(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_one_time: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        update_schema = ProductUpdate(
+            trial_interval=TrialInterval.month, trial_interval_count=1
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.update(
+                session,
+                product_one_time,
+                update_schema,
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_unset_trial_configuration(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_recurring_trial: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        update_schema = ProductUpdate(trial_interval=None, trial_interval_count=None)
+
+        product = await product_service.update(
+            session,
+            product_recurring_trial,
+            update_schema,
+            auth_subject,
+        )
+
+        assert product.trial_interval is None
+        assert product.trial_interval_count is None
 
 
 @pytest.mark.asyncio

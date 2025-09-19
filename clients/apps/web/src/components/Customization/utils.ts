@@ -73,6 +73,8 @@ const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
     },
   ],
   created_at: new Date().toISOString(),
+  trial_interval: null,
+  trial_interval_count: null,
 }
 
 const SUBSCRIPTION_PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
@@ -133,6 +135,8 @@ const SUBSCRIPTION_PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
     },
   ],
   created_at: new Date().toISOString(),
+  trial_interval: null,
+  trial_interval_count: null,
 }
 
 const ORGANIZATION: schemas['Organization'] = {

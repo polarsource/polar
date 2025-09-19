@@ -1,6 +1,6 @@
-import { AccessTimeOutlined, CancelOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
+import { CircleX, Clock } from 'lucide-react'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { subscriptionStatusDisplayNames } from './utils'
@@ -60,6 +60,9 @@ export const SubscriptionStatus = ({
     if (status === 'active') {
       return isEnding ? 'border-yellow-500' : 'border-emerald-500'
     }
+    if (status === 'trialing') {
+      return 'border-cyan-500'
+    }
     return 'border-red-500'
   }, [status, isEnding])
 
@@ -68,9 +71,9 @@ export const SubscriptionStatus = ({
       return null
     }
     if (status === 'canceled') {
-      return <CancelOutlined fontSize="inherit" />
+      return <CircleX className="size-3" />
     }
-    return <AccessTimeOutlined fontSize="inherit" />
+    return <Clock className="size-3" />
   }, [isEnding, status])
 
   return (

@@ -1,7 +1,7 @@
 import builtins
 import uuid
 from collections.abc import Sequence
-from typing import Any, List, Literal  # noqa: UP035
+from typing import Any, Literal
 
 import stripe
 from sqlalchemy import UnaryExpression, asc, case, desc, func, select
@@ -74,7 +74,7 @@ class ProductService:
         benefit_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[ProductSortProperty]] = [
+        sorting: Sequence[Sorting[ProductSortProperty]] = [
             (ProductSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Product], int]:
@@ -366,6 +366,28 @@ class ProductService:
                 }
             )
 
+        # Prevent trying to add trial configuration to non-recurring products
+        if (
+            update_schema.trial_interval is not None
+            or update_schema.trial_interval_count is not None
+        ) and product.recurring_interval is None:
+            errors.extend(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "trial_interval"),
+                        "msg": "Trial configuration is only supported on recurring products.",
+                        "input": update_schema.trial_interval,
+                    },
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "trial_interval_count"),
+                        "msg": "Trial configuration is only supported on recurring products.",
+                        "input": update_schema.trial_interval_count,
+                    },
+                ]
+            )
+
         if update_schema.medias is not None:
             medias_errors: list[ValidationError] = []
             nested = await session.begin_nested()
@@ -428,12 +450,11 @@ class ProductService:
                 await nested.rollback()
                 errors.extend(attached_custom_fields_errors)
 
-        prices = product.prices
         existing_prices = set(product.prices)
         added_prices: list[ProductPrice] = []
         if update_schema.prices is not None:
             (
-                prices,
+                _,
                 existing_prices,
                 added_prices,
                 prices_errors,
@@ -495,7 +516,6 @@ class ProductService:
 
         for attr, value in update_schema.model_dump(
             exclude_unset=True,
-            exclude_none=True,
             exclude={"prices", "medias", "attached_custom_fields"},
             by_alias=True,
         ).items():
@@ -514,7 +534,7 @@ class ProductService:
         self,
         session: AsyncSession,
         product: Product,
-        benefits: List[uuid.UUID],  # noqa: UP006
+        benefits: Sequence[uuid.UUID],
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
         previous_benefits = set(product.benefits)

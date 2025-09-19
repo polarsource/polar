@@ -86,6 +86,7 @@ from .schemas import (
     SubscriptionUpdate,
     SubscriptionUpdateDiscount,
     SubscriptionUpdateProduct,
+    SubscriptionUpdateTrial,
 )
 from .sorting import SubscriptionSortProperty
 
@@ -162,6 +163,13 @@ class MissingStripeCustomerID(SubscriptionError):
             "is missing a Stripe customer ID."
         )
         super().__init__(message)
+
+
+class SubscriptionManagedByStripe(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This feature is not available for this subscription."
+        super().__init__(message, 403)
 
 
 @overload
@@ -299,8 +307,18 @@ class SubscriptionService:
         previous_is_canceled = subscription.canceled if subscription else False
         previous_status = subscription.status if subscription else None
 
+        status = SubscriptionStatus.active
         current_period_start = utc_now()
-        current_period_end = recurring_interval.get_next_period(current_period_start)
+        trial_start: datetime | None = None
+        trial_end = checkout.trial_end
+        if trial_end is not None:
+            status = SubscriptionStatus.trialing
+            trial_start = current_period_start
+            current_period_end = trial_end
+        else:
+            current_period_end = recurring_interval.get_next_period(
+                current_period_start
+            )
 
         # New subscription
         if subscription is None:
@@ -315,9 +333,11 @@ class SubscriptionService:
         # we start a billing cycle from the checkout date.
         subscription.current_period_start = current_period_start
         subscription.current_period_end = current_period_end
+        subscription.trial_start = trial_start
+        subscription.trial_end = trial_end
 
         subscription.recurring_interval = recurring_interval
-        subscription.status = SubscriptionStatus.active
+        subscription.status = status
         subscription.payment_method = payment_method
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
@@ -632,6 +652,10 @@ class SubscriptionService:
                         ),
                     )
 
+        previous_status = subscription.status
+        if previous_status == SubscriptionStatus.trialing:
+            subscription.status = SubscriptionStatus.active
+
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(
             subscription, update_dict={"scheduler_locked_at": None}
@@ -647,7 +671,7 @@ class SubscriptionService:
         await self._after_subscription_updated(
             session,
             subscription,
-            previous_status=subscription.status,
+            previous_status=previous_status,
             previous_is_canceled=subscription.canceled,
         )
 
@@ -749,8 +773,12 @@ class SubscriptionService:
                 discount_id=update.discount_id,
             )
 
+        if isinstance(update, SubscriptionUpdateTrial):
+            return await self.update_trial(
+                session, subscription, trial_end=update.trial_end
+            )
+
         if isinstance(update, SubscriptionCancel):
-            cancel = update.cancel_at_period_end is True
             uncancel = update.cancel_at_period_end is False
 
             if uncancel:
@@ -1130,6 +1158,70 @@ class SubscriptionService:
         ) as discount_redemption:
             discount_redemption.subscription = subscription
             return await _update_discount(session, subscription, discount)
+
+    async def update_trial(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        trial_end: datetime | Literal["now"],
+    ) -> Subscription:
+        if subscription.stripe_subscription_id is not None:
+            raise SubscriptionManagedByStripe(subscription)
+
+        if not subscription.active:
+            raise InactiveSubscription(subscription)
+
+        # Already trialing
+        if subscription.trialing:
+            # End trial immediately
+            if trial_end == "now":
+                subscription.trial_end = subscription.current_period_end = utc_now()
+                subscription.status = SubscriptionStatus.active
+            # Set new trial end date
+            else:
+                subscription.trial_end = subscription.current_period_end = cast(
+                    datetime, trial_end
+                )
+        # Active subscription
+        else:
+            # Can't end trial if not trialing
+            if trial_end == "now":
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "trial_end"),
+                            "msg": "The subscription is not currently trialing.",
+                            "input": trial_end,
+                        }
+                    ]
+                )
+            # Set a new trial
+            else:
+                trial_end_datetime = cast(datetime, trial_end)
+                # Ensure trial_end is after current_period_end to prevent customer loss
+                if (
+                    subscription.current_period_end is not None
+                    and trial_end_datetime <= subscription.current_period_end
+                ):
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "trial_end"),
+                                "msg": "Trial end must be after the current period end.",
+                                "input": trial_end_datetime,
+                            }
+                        ]
+                    )
+                subscription.status = SubscriptionStatus.trialing
+                subscription.trial_end = subscription.current_period_end = (
+                    trial_end_datetime
+                )
+
+        repository = SubscriptionRepository.from_session(session)
+        return await repository.update(subscription)
 
     async def uncancel(
         self, session: AsyncSession, subscription: Subscription

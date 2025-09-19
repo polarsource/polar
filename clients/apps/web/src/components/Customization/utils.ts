@@ -73,6 +73,8 @@ const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
     },
   ],
   created_at: new Date().toISOString(),
+  trial_interval: null,
+  trial_interval_count: null,
 }
 
 const SUBSCRIPTION_PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
@@ -133,6 +135,8 @@ const SUBSCRIPTION_PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
     },
   ],
   created_at: new Date().toISOString(),
+  trial_interval: null,
+  trial_interval_count: null,
 }
 
 const ORGANIZATION: schemas['Organization'] = {
@@ -312,6 +316,8 @@ export const SUBSCRIPTION_ORDER_PREVIEW: schemas['CustomerSubscription'] = {
   current_period_end: new Date(
     new Date().setMonth(new Date().getMonth() + 1),
   ).toISOString(),
+  trial_start: null,
+  trial_end: null,
   cancel_at_period_end: false,
   canceled_at: null,
   started_at: new Date().toISOString(),

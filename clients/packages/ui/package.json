@@ -60,7 +60,7 @@
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
-    "@storybook/react": "^8.6.12",
+    "@storybook/react": "^8.6.14",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "eslint": "^8.57.1",

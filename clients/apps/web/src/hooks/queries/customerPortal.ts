@@ -270,6 +270,9 @@ export const useCustomerUpdateSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
+      })
     },
   })
 
@@ -290,6 +293,9 @@ export const useCustomerCancelSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
+      })
     },
   })
 
@@ -307,6 +313,9 @@ export const useCustomerUncancelSubscription = (api: Client) =>
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
       })
     },
   })

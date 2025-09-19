@@ -1,6 +1,12 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, AliasPath, Field, HttpUrl, computed_field
+from pydantic import (
+    UUID4,
+    AliasPath,
+    Field,
+    computed_field,
+    field_validator,
+)
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.config import settings
@@ -17,6 +23,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.validators import validate_http_url
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import (
     BenefitPublicList,
@@ -27,7 +34,7 @@ from polar.product.schemas import (
 )
 
 SuccessURL = Annotated[
-    HttpUrl | None,
+    str | None,
     Field(
         description=(
             "URL where the customer will be redirected after a successful payment."
@@ -72,6 +79,11 @@ class CheckoutLinkCreateBase(MetadataInputMixin, Schema):
         default=None, description=_discount_id_description
     )
     success_url: SuccessURL = None
+
+    @field_validator("success_url")
+    @classmethod
+    def validate_is_http_url(cls, url: str | None) -> str | None:
+        return validate_http_url(url)
 
 
 class CheckoutLinkCreateProductPrice(CheckoutLinkCreateBase):
@@ -130,6 +142,11 @@ class CheckoutLinkUpdate(MetadataInputMixin):
         default=None, description=_discount_id_description
     )
     success_url: SuccessURL = None
+
+    @field_validator("success_url")
+    @classmethod
+    def validate_is_http_url(cls, url: str | None) -> str | None:
+        return validate_http_url(url)
 
 
 class CheckoutLinkBase(MetadataOutputMixin, IDSchema, TimestampedSchema):

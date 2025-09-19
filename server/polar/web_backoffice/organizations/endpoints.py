@@ -1457,6 +1457,7 @@ async def get(
                     description_list.DescriptionListAttrItem(
                         "email", "Support email", clipboard=True
                     ),
+                    description_list.DescriptionListSocialsItem("Social Links"),
                 ).render(request, organization):
                     pass
                 # Simple users table

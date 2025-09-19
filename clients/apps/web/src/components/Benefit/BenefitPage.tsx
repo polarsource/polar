@@ -1,4 +1,4 @@
-import { useBenefitGrants } from '@/hooks/queries/benefits'
+import { useGrantsForBenefit } from '@/hooks/queries/benefits'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -41,7 +41,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
 
   const router = useRouter()
 
-  const { data: benefitGrants, isLoading } = useBenefitGrants({
+  const { data: benefitGrants, isLoading } = useGrantsForBenefit({
     benefitId: benefit.id,
     organizationId: organization.id,
     ...getAPIParams(pagination, sorting),

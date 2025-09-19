@@ -5707,6 +5707,11 @@ export interface components {
             properties: components["schemas"]["BenefitGrantMeterCreditProperties"];
             previous_properties?: components["schemas"]["BenefitGrantMeterCreditProperties"] | null;
         };
+        /**
+         * BenefitGrantSortProperty
+         * @enum {string}
+         */
+        BenefitGrantSortProperty: "created_at" | "-created_at" | "granted_at" | "-granted_at" | "revoked_at" | "-revoked_at";
         BenefitGrantWebhook: components["schemas"]["BenefitGrantDiscordWebhook"] | components["schemas"]["BenefitGrantCustomWebhook"] | components["schemas"]["BenefitGrantGitHubRepositoryWebhook"] | components["schemas"]["BenefitGrantDownloadablesWebhook"] | components["schemas"]["BenefitGrantLicenseKeysWebhook"] | components["schemas"]["BenefitGrantMeterCreditWebhook"];
         /**
          * BenefitGrantedEvent
@@ -20403,6 +20408,8 @@ export interface operations {
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */
                 limit?: number;
+                /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+                sorting?: components["schemas"]["BenefitGrantSortProperty"][] | null;
             };
             header?: never;
             path?: never;
@@ -26924,6 +26931,7 @@ export const benefitGitHubRepositoryCreateTypeValues: ReadonlyArray<components["
 export const benefitGitHubRepositoryCreatePropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryCreateProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
 export const benefitGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
 export const benefitGrantGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGrantGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
+export const benefitGrantSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitGrantSortProperty"]> = ["created_at", "-created_at", "granted_at", "-granted_at", "revoked_at", "-revoked_at"];
 export const benefitGrantedEventNameValues: ReadonlyArray<components["schemas"]["BenefitGrantedEvent"]["name"]> = ["benefit.granted"];
 export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeyExpirationProperties"]["timeframe"]> = ["year", "month", "day"];
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeysCreate"]["type"]> = ["license_keys"];

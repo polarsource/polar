@@ -11,6 +11,7 @@ from polar.routing import APIRouter
 from ..auth import BenefitsRead
 from ..schemas import BenefitGrant
 from .service import benefit_grant as benefit_grant_service
+from .sorting import ListSorting
 
 router = APIRouter(prefix="/benefit-grants", tags=["benefit-grants", APITag.public])
 
@@ -23,6 +24,7 @@ router = APIRouter(prefix="/benefit-grants", tags=["benefit-grants", APITag.publ
 async def list(
     auth_subject: BenefitsRead,
     pagination: PaginationParamsQuery,
+    sorting: ListSorting,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
@@ -61,6 +63,7 @@ async def list(
         is_granted=is_granted,
         customer_id=customer_id,
         pagination=pagination,
+        sorting=sorting,
     )
 
     return ListResource.from_paginated_results(

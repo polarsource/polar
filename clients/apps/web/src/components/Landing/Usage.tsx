@@ -85,7 +85,7 @@ export async function GET(request: Request) {
     link: 'https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/delta-time-strategy',
   },
   {
-    name: 'Manual',
+    name: 'Custom Ingestion',
     description:
       'Manually ingest data from your application to bill your customers',
     bullets: [

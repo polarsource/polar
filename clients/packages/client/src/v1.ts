@@ -2900,6 +2900,28 @@ export interface paths {
         patch: operations["customer_portal:subscriptions:update"];
         trace?: never;
     };
+    "/v1/customer-portal/subscriptions/{id}/charge-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Next Charge For Active Subscription
+         * @description Get current period usage and cost breakdown for a subscription.
+         *
+         *     **Scopes**: `customer_portal:read` `customer_portal:write`
+         */
+        get: operations["customer_portal:subscriptions:get_charge_preview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/email-update/request": {
         parameters: {
             query?: never;
@@ -16297,6 +16319,21 @@ export interface components {
              */
             cancel_at_period_end: boolean;
         };
+        /** SubscriptionChargePreviewResponse */
+        SubscriptionChargePreviewResponse: {
+            /** Base Amount */
+            base_amount: number;
+            /** Metered Amount */
+            metered_amount: number;
+            /** Subtotal Amount */
+            subtotal_amount: number;
+            /** Discount Amount */
+            discount_amount: number;
+            /** Tax Amount */
+            tax_amount: number;
+            /** Total Amount */
+            total_amount: number;
+        };
         /** SubscriptionCustomer */
         SubscriptionCustomer: {
             /**
@@ -24810,6 +24847,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AlreadyCanceledSubscription"];
+                };
+            };
+            /** @description Customer subscription was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "customer_portal:subscriptions:get_charge_preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionChargePreviewResponse"];
                 };
             };
             /** @description Customer subscription was not found. */

@@ -34,7 +34,7 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
   }, [interval])
 
   return (
-    <div className="flex flex-row items-baseline">
+    <div className="flex flex-row items-baseline gap-x-1">
       {formatCurrencyAndAmount(amount, currency, minimumFractionDigits)}
       <span className="text-[max(12px,_0.5em)]">{intervalDisplay}</span>
     </div>

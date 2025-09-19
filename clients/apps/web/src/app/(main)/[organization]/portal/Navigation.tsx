@@ -55,7 +55,7 @@ export const Navigation = ({
 
   return (
     <>
-      <nav className="sticky top-0 hidden h-fit w-64 flex-col gap-y-1 py-12 md:flex">
+      <nav className="sticky top-0 hidden h-fit w-40 flex-none flex-col gap-y-1 py-12 md:flex lg:w-64">
         {filteredLinks.map((link) => (
           <Link
             key={link.href}

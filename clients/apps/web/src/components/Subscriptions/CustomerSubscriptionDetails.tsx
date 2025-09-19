@@ -93,6 +93,23 @@ const CustomerSubscriptionDetails = ({
     return null
   }, [subscription, isCanceled, organization, uncancelSubscription])
 
+  const subscriptionBaseAmount = useMemo(() => {
+    const price = subscription.product.prices.find(
+      ({ amount_type }) => amount_type === 'fixed' || amount_type === 'custom',
+    )
+
+    if (!price) {
+      return null
+    }
+
+    // This should be obsolete but I don't think we have proper type guards for the generated schema
+    if ('price_amount' in price) {
+      return price.price_amount
+    }
+
+    return null
+  }, [subscription])
+
   if (!organization) {
     return null
   }
@@ -113,11 +130,24 @@ const CustomerSubscriptionDetails = ({
         <div className="flex flex-row items-center justify-between">
           <span className="dark:text-polar-500 text-gray-500">Amount</span>
           {subscription.amount && subscription.currency ? (
-            <AmountLabel
-              amount={subscription.amount}
-              currency={subscription.currency}
-              interval={subscription.recurring_interval}
-            />
+            <span className="flex flex-row items-center justify-end gap-x-1">
+              {subscriptionBaseAmount &&
+                subscription.amount !== subscriptionBaseAmount && (
+                  <span className="text-gray-500 line-through">
+                    {formatCurrencyAndAmount(
+                      subscriptionBaseAmount,
+                      subscription.currency,
+                      subscriptionBaseAmount % 100 === 0 ? 0 : 2,
+                    )}
+                  </span>
+                )}
+              <AmountLabel
+                amount={subscription.amount}
+                currency={subscription.currency}
+                interval={subscription.recurring_interval}
+                minimumFractionDigits={subscription.amount % 100 === 0 ? 0 : 2}
+              />
+            </span>
           ) : (
             'Free'
           )}

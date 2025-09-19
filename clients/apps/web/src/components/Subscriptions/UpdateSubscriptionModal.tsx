@@ -7,6 +7,7 @@ import { getDiscountDisplay } from '@/utils/discount'
 import { hasLegacyRecurringPrices } from '@/utils/product'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import DatePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
 import {
   Select,
   SelectContent,
@@ -35,6 +36,12 @@ import { useForm } from 'react-hook-form'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { ProrationBehavior } from '../Settings/ProrationBehavior'
 import { toast } from '../Toast/use-toast'
+
+const validationDiscriminators = [
+  'SubscriptionUpdateProduct',
+  'SubscriptionUpdateDiscount',
+  'SubscriptionUpdateTrial',
+]
 
 const UpdateProduct = ({
   subscription,
@@ -83,7 +90,12 @@ const UpdateProduct = ({
         if (error) {
           if (error.detail)
             if (isValidationError(error.detail)) {
-              setValidationErrors(error.detail, setError)
+              setValidationErrors(
+                error.detail,
+                setError,
+                undefined,
+                validationDiscriminators,
+              )
             } else {
               toast({
                 title: 'Subscription update failed',
@@ -225,7 +237,12 @@ const UpdateDiscount = ({
         if (error) {
           if (error.detail)
             if (isValidationError(error.detail)) {
-              setValidationErrors(error.detail, setError)
+              setValidationErrors(
+                error.detail,
+                setError,
+                undefined,
+                validationDiscriminators,
+              )
             } else {
               toast({
                 title: 'Subscription update failed',
@@ -316,6 +333,119 @@ const UpdateDiscount = ({
   )
 }
 
+const UpdateTrial = ({
+  subscription,
+  onUpdate,
+}: {
+  subscription: schemas['Subscription']
+  onUpdate?: () => void
+}) => {
+  const updateSubscription = useUpdateSubscription(subscription.id)
+  const minDate = useMemo<Date | undefined>(() => {
+    if (subscription.status === 'trialing' && subscription.trial_start) {
+      return new Date(subscription.trial_start)
+    }
+    if (subscription.current_period_end) {
+      return new Date(subscription.current_period_end)
+    }
+    return undefined
+  }, [subscription])
+
+  const form = useForm<schemas['SubscriptionUpdateTrial']>({
+    defaultValues: {
+      trial_end: subscription.trial_end || undefined,
+    },
+  })
+  const { control, handleSubmit, setError } = form
+
+  const onSubmit = useCallback(
+    async (body: schemas['SubscriptionUpdateTrial']) => {
+      await updateSubscription.mutateAsync(body).then(({ error }) => {
+        if (error) {
+          if (error.detail)
+            if (isValidationError(error.detail)) {
+              setValidationErrors(
+                error.detail,
+                setError,
+                undefined,
+                validationDiscriminators,
+              )
+            } else {
+              toast({
+                title: 'Subscription update failed',
+                description: `Error while updating subscription ${subscription.product.name}: ${error.detail}`,
+              })
+            }
+          return
+        }
+
+        toast({
+          title: 'Subscription updated',
+          description: `Subscription ${subscription.product.name} successfully updated`,
+        })
+        onUpdate?.()
+      })
+    },
+    [updateSubscription, subscription, setError, onUpdate],
+  )
+
+  return (
+    <Form {...form}>
+      <form
+        className="flex flex-grow flex-col justify-between gap-y-6"
+        onSubmit={handleSubmit(onSubmit)}
+      >
+        <div className="flex flex-col gap-y-6">
+          <FormField
+            control={control}
+            name="trial_end"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel>End of trial</FormLabel>
+                  <div className="flex flex-row items-center gap-2">
+                    <DatePicker
+                      value={field.value === 'now' ? undefined : field.value}
+                      onChange={field.onChange}
+                      disabled={minDate ? { before: minDate } : undefined}
+                    />
+                    {subscription.status === 'trialing' && (
+                      <Button
+                        variant="destructive"
+                        type="button"
+                        onClick={() => field.onChange('now')}
+                      >
+                        End trial
+                      </Button>
+                    )}
+                  </div>
+                  <FormMessage />
+                  {field.value === 'now' && (
+                    <FormDescription className="text-destructive">
+                      The trial will end immediately and the customer will be
+                      charged immediately for a new period.
+                    </FormDescription>
+                  )}
+                </FormItem>
+              )
+            }}
+          />
+        </div>
+        <div className="flex flex-col gap-4">
+          <Button
+            type="submit"
+            size="lg"
+            loading={updateSubscription.isPending}
+            disabled={updateSubscription.isPending}
+          >
+            Update Subscription
+          </Button>
+        </div>
+      </form>
+    </Form>
+  )
+}
+
 interface UpdateSubscriptionModalProps {
   subscription: schemas['Subscription']
   onUpdate?: () => void
@@ -325,6 +455,11 @@ const UpdateSubscriptionModal = ({
   subscription,
   onUpdate,
 }: UpdateSubscriptionModalProps) => {
+  const isActive = useMemo(
+    () =>
+      subscription.status === 'active' || subscription.status === 'trialing',
+    [subscription],
+  )
   return (
     <div className="flex h-full flex-col gap-8 overflow-y-auto px-8 py-12">
       <div className="flex flex-row items-center gap-x-4">
@@ -334,6 +469,7 @@ const UpdateSubscriptionModal = ({
         <TabsList className="mb-8">
           <TabsTrigger value="product">Product</TabsTrigger>
           <TabsTrigger value="discount">Discount</TabsTrigger>
+          {isActive && <TabsTrigger value="trial">Trial</TabsTrigger>}
         </TabsList>
         <TabsContent value="product">
           <div className="flex h-full flex-col gap-4">
@@ -343,6 +479,11 @@ const UpdateSubscriptionModal = ({
         <TabsContent value="discount">
           <div className="flex h-full flex-col gap-4">
             <UpdateDiscount subscription={subscription} onUpdate={onUpdate} />
+          </div>
+        </TabsContent>
+        <TabsContent value="trial">
+          <div className="flex h-full flex-col gap-4">
+            <UpdateTrial subscription={subscription} onUpdate={onUpdate} />
           </div>
         </TabsContent>
       </Tabs>

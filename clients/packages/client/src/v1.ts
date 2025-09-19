@@ -6477,6 +6477,12 @@ export interface components {
          */
         Checkout: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -6487,12 +6493,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
             /**
              * Custom Field Data
              * @description Key-value object storing custom field values.
@@ -6568,6 +6568,18 @@ export interface components {
              * @description Currency code of the checkout session.
              */
             currency: string;
+            /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
+            active_trial_interval: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Active Trial Interval Count
+             * @description Number of interval units of the trial period, if any. This value is either set from the checkout, if `trial_interval_count` is set, or from the selected product.
+             */
+            active_trial_interval_count: number | null;
+            /**
+             * Trial End
+             * @description End date and time of the trial period, if any.
+             */
+            trial_end: string | null;
             /**
              * Product Id
              * Format: uuid4
@@ -6650,6 +6662,13 @@ export interface components {
             };
             /** @description Determine which billing address fields should be disabled, optional or required in the checkout form. */
             billing_address_fields: components["schemas"]["CheckoutBillingAddressFields"];
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count: number | null;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -6878,6 +6897,12 @@ export interface components {
          */
         CheckoutLink: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -6888,12 +6913,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -6968,6 +6994,13 @@ export interface components {
             metadata?: {
                 [key: string]: string | number | boolean;
             };
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Payment Processor
              * @description Payment processor to use. Currently only Stripe is supported.
@@ -7031,6 +7064,13 @@ export interface components {
             metadata?: {
                 [key: string]: string | number | boolean;
             };
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Payment Processor
              * @description Payment processor to use. Currently only Stripe is supported.
@@ -7092,6 +7132,13 @@ export interface components {
             metadata?: {
                 [key: string]: string | number | boolean;
             };
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Payment Processor
              * @description Payment processor to use. Currently only Stripe is supported.
@@ -7141,6 +7188,12 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -7151,12 +7204,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -7211,6 +7265,13 @@ export interface components {
          * @description Schema to update an existing checkout link.
          */
         CheckoutLinkUpdate: {
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -7266,6 +7327,13 @@ export interface components {
          *     to the resulting order and/or subscription.
          */
         CheckoutPriceCreate: {
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -7381,6 +7449,12 @@ export interface components {
          */
         CheckoutProduct: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -7391,12 +7465,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -7451,6 +7526,13 @@ export interface components {
          *     to the resulting order and/or subscription.
          */
         CheckoutProductCreate: {
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -7569,6 +7651,13 @@ export interface components {
          *     to the resulting order and/or subscription.
          */
         CheckoutProductsCreate: {
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -7683,6 +7772,12 @@ export interface components {
          */
         CheckoutPublic: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -7693,12 +7788,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
             /**
              * Custom Field Data
              * @description Key-value object storing custom field values.
@@ -7774,6 +7863,18 @@ export interface components {
              * @description Currency code of the checkout session.
              */
             currency: string;
+            /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
+            active_trial_interval: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Active Trial Interval Count
+             * @description Number of interval units of the trial period, if any. This value is either set from the checkout, if `trial_interval_count` is set, or from the selected product.
+             */
+            active_trial_interval_count: number | null;
+            /**
+             * Trial End
+             * @description End date and time of the trial period, if any.
+             */
+            trial_end: string | null;
             /**
              * Product Id
              * Format: uuid4
@@ -7883,6 +7984,12 @@ export interface components {
          */
         CheckoutPublicConfirmed: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -7893,12 +8000,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
             /**
              * Custom Field Data
              * @description Key-value object storing custom field values.
@@ -7969,6 +8070,18 @@ export interface components {
              * @description Currency code of the checkout session.
              */
             currency: string;
+            /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
+            active_trial_interval: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Active Trial Interval Count
+             * @description Number of interval units of the trial period, if any. This value is either set from the checkout, if `trial_interval_count` is set, or from the selected product.
+             */
+            active_trial_interval_count: number | null;
+            /**
+             * Trial End
+             * @description End date and time of the trial period, if any.
+             */
+            trial_end: string | null;
             /**
              * Product Id
              * Format: uuid4
@@ -8117,6 +8230,13 @@ export interface components {
             customer_billing_address?: components["schemas"]["Address"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -9723,6 +9843,12 @@ export interface components {
         /** CustomerOrderProduct */
         CustomerOrderProduct: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -9733,12 +9859,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -9833,6 +9960,16 @@ export interface components {
              * @description The end timestamp of the current billing period.
              */
             current_period_end: string | null;
+            /**
+             * Trial Start
+             * @description The start timestamp of the trial period, if any.
+             */
+            trial_start: string | null;
+            /**
+             * Trial End
+             * @description The end timestamp of the trial period, if any.
+             */
+            trial_end: string | null;
             /**
              * Cancel At Period End
              * @description Whether the subscription will be canceled at the end of the current period.
@@ -9974,6 +10111,12 @@ export interface components {
          */
         CustomerProduct: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -9984,12 +10127,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -10485,6 +10629,16 @@ export interface components {
              */
             current_period_end: string | null;
             /**
+             * Trial Start
+             * @description The start timestamp of the trial period, if any.
+             */
+            trial_start: string | null;
+            /**
+             * Trial End
+             * @description The end timestamp of the trial period, if any.
+             */
+            trial_end: string | null;
+            /**
              * Cancel At Period End
              * @description Whether the subscription will be canceled at the end of the current period.
              */
@@ -10639,6 +10793,12 @@ export interface components {
         /** CustomerSubscriptionProduct */
         CustomerSubscriptionProduct: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -10649,12 +10809,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -11670,6 +11831,12 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -11680,12 +11847,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -14292,6 +14460,12 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -14302,12 +14476,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -14395,6 +14570,16 @@ export interface components {
              * @description The end timestamp of the current billing period.
              */
             current_period_end: string | null;
+            /**
+             * Trial Start
+             * @description The start timestamp of the trial period, if any.
+             */
+            trial_start: string | null;
+            /**
+             * Trial End
+             * @description The end timestamp of the trial period, if any.
+             */
+            trial_end: string | null;
             /**
              * Cancel At Period End
              * @description Whether the subscription will be canceled at the end of the current period.
@@ -15237,6 +15422,12 @@ export interface components {
          */
         Product: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -15247,12 +15438,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -15322,11 +15514,9 @@ export interface components {
          * @enum {string}
          */
         ProductBillingType: "one_time" | "recurring";
-        /**
-         * ProductCreate
-         * @description Schema to create a product.
-         */
-        ProductCreate: {
+        ProductCreate: components["schemas"]["ProductCreateRecurring"] | components["schemas"]["ProductCreateOneTime"];
+        /** ProductCreateOneTime */
+        ProductCreateOneTime: {
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -15354,8 +15544,6 @@ export interface components {
              * @description The description of the product.
              */
             description?: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
-            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * ProductPriceCreateList
              * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
@@ -15376,6 +15564,70 @@ export interface components {
              * @description The ID of the organization owning the product. **Required unless you use an organization token.**
              */
             organization_id?: string | null;
+            /**
+             * Recurring Interval
+             * @description States that the product is a one-time purchase.
+             */
+            recurring_interval?: null;
+        };
+        /** ProductCreateRecurring */
+        ProductCreateRecurring: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Name
+             * @description The name of the product.
+             */
+            name: string;
+            /**
+             * Description
+             * @description The description of the product.
+             */
+            description?: string | null;
+            /**
+             * ProductPriceCreateList
+             * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
+             */
+            prices: (components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"] | components["schemas"]["ProductPriceMeteredUnitCreate"])[];
+            /**
+             * Medias
+             * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
+             */
+            medias?: string[] | null;
+            /**
+             * Attached Custom Fields
+             * @description List of custom fields to attach.
+             */
+            attached_custom_fields?: components["schemas"]["AttachedCustomFieldCreate"][];
+            /**
+             * Organization Id
+             * @description The ID of the organization owning the product. **Required unless you use an organization token.**
+             */
+            organization_id?: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
+            /** @description The recurring interval of the product. Note that the `day` and `week` values are for internal Polar staff use only. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
         };
         /** ProductEmbed */
         ProductEmbed: {
@@ -15847,6 +16099,12 @@ export interface components {
          */
         ProductStorefront: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -15857,12 +16115,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -15929,6 +16188,13 @@ export interface components {
             metadata?: {
                 [key: string]: string | number | boolean;
             };
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /** Name */
             name?: string | null;
             /**
@@ -16269,6 +16535,16 @@ export interface components {
              * @description The end timestamp of the current billing period.
              */
             current_period_end: string | null;
+            /**
+             * Trial Start
+             * @description The start timestamp of the trial period, if any.
+             */
+            trial_start: string | null;
+            /**
+             * Trial End
+             * @description The end timestamp of the trial period, if any.
+             */
+            trial_end: string | null;
             /**
              * Cancel At Period End
              * @description Whether the subscription will be canceled at the end of the current period.
@@ -16740,7 +17016,7 @@ export interface components {
          * @enum {string}
          */
         SubscriptionStatus: "incomplete" | "incomplete_expired" | "trialing" | "active" | "past_due" | "canceled" | "unpaid";
-        SubscriptionUpdate: components["schemas"]["SubscriptionUpdateProduct"] | components["schemas"]["SubscriptionUpdateDiscount"] | components["schemas"]["SubscriptionCancel"] | components["schemas"]["SubscriptionRevoke"];
+        SubscriptionUpdate: components["schemas"]["SubscriptionUpdateProduct"] | components["schemas"]["SubscriptionUpdateDiscount"] | components["schemas"]["SubscriptionUpdateTrial"] | components["schemas"]["SubscriptionCancel"] | components["schemas"]["SubscriptionRevoke"];
         /** SubscriptionUpdateDiscount */
         SubscriptionUpdateDiscount: {
             /**
@@ -16759,6 +17035,14 @@ export interface components {
             product_id: string;
             /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
             proration_behavior?: components["schemas"]["SubscriptionProrationBehavior"] | null;
+        };
+        /** SubscriptionUpdateTrial */
+        SubscriptionUpdateTrial: {
+            /**
+             * Trial End
+             * @description Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately.
+             */
+            trial_end: string | "now";
         };
         /** SubscriptionUser */
         SubscriptionUser: {
@@ -17104,6 +17388,11 @@ export interface components {
             balance: components["schemas"]["TransactionsBalance"];
             payout: components["schemas"]["TransactionsBalance"];
         };
+        /**
+         * TrialInterval
+         * @enum {string}
+         */
+        TrialInterval: "day" | "week" | "month" | "year";
         /** Unauthorized */
         Unauthorized: {
             /**
@@ -27056,6 +27345,7 @@ export const taxIDFormatValues: ReadonlyArray<components["schemas"]["TaxIDFormat
 export const timeIntervalValues: ReadonlyArray<components["schemas"]["TimeInterval"]> = ["year", "month", "week", "day", "hour"];
 export const transactionSortPropertyValues: ReadonlyArray<components["schemas"]["TransactionSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const transactionTypeValues: ReadonlyArray<components["schemas"]["TransactionType"]> = ["payment", "processor_fee", "refund", "refund_reversal", "dispute", "dispute_reversal", "balance", "payout"];
+export const trialIntervalValues: ReadonlyArray<components["schemas"]["TrialInterval"]> = ["day", "week", "month", "year"];
 export const uniqueAggregationFuncValues: ReadonlyArray<components["schemas"]["UniqueAggregation"]["func"]> = ["unique"];
 export const userEventSourceValues: ReadonlyArray<components["schemas"]["UserEvent"]["source"]> = ["user"];
 export const userSignupAttributionIntentValues: ReadonlyArray<components["schemas"]["UserSignupAttribution"]["intent"]> = ["creator", "pledge", "purchase", "subscription", "newsletter_subscription"];

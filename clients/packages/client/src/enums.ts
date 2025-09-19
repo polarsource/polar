@@ -9,6 +9,7 @@ export {
   propertyAggregationFuncValues,
   refundReasonValues,
   timeIntervalValues,
+  trialIntervalValues,
   uniqueAggregationFuncValues,
   webhookEventTypeValues,
 } from './v1'

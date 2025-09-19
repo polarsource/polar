@@ -993,6 +993,304 @@ class TestCreateSubscriptionOrderWithStripe:
             False,
         )
 
+    async def test_customer_balance_payment_less_than_50_cents_no_balance_used(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """Test that when total payment < 50 cents, no customer balance is used."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Create a previous paid order and payment to establish customer balance
+        previous_order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=10000,  # $100.00
+            status=OrderStatus.paid,
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            amount=10000,  # Customer paid $100.00
+            status=PaymentStatus.succeeded,
+            order=previous_order,
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        # Create billing entry for a very small amount (30 cents)
+        billing_entry = await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=30,  # 30 cents
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        # Mock tax calculation to return 0 for simplicity
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.not_subject_to_tax,
+            "tax_rate": {},
+        }
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        # Customer has $90 credit (paid $100, got $10 product), but since total is only 30 cents
+        # and using balance would leave less than 50 cents to pay, no balance should be used
+        assert order.from_balance_amount == 0
+        assert order.total_amount == 30  # 30 cents - no balance used
+        assert order.status == OrderStatus.pending
+
+        # Should still trigger payment for the full 30 cents
+        enqueue_job_mock.assert_any_call(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=subscription.payment_method_id,
+        )
+
+    async def test_customer_balance_payment_exactly_50_cents_no_balance_used(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """Test that when total payment = 50 cents, no customer balance is used."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Create a previous paid order and payment to establish customer balance
+        previous_order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,  # $10.00
+            status=OrderStatus.paid,
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            amount=5000,  # Customer paid $50.00
+            status=PaymentStatus.succeeded,
+            order=previous_order,
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        # Create billing entry for exactly 50 cents
+        billing_entry = await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=50,  # 50 cents
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        # Mock tax calculation to return 0 for simplicity
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.not_subject_to_tax,
+            "tax_rate": {},
+        }
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        # Customer balance = $40 (paid $50, got $10 product)
+        # Since total is exactly 50 cents, no balance should be used
+        assert order.from_balance_amount == 0
+        assert order.total_amount == 50  # 50 cents - no balance used
+        assert order.status == OrderStatus.pending
+
+        enqueue_job_mock.assert_any_call(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=subscription.payment_method_id,
+        )
+
+    async def test_customer_balance_payment_51_cents_balance_used_partially(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """Test that when total payment = 51 cents, 1 cent of balance is used, leaving 50 cents to pay."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Create a previous paid order and payment to establish customer balance
+        previous_order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,  # $10.00
+            status=OrderStatus.paid,
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            amount=5000,  # Customer paid $50.00
+            status=PaymentStatus.succeeded,
+            order=previous_order,
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        # Create billing entry for 51 cents
+        billing_entry = await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=51,  # 51 cents
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        # Mock tax calculation to return 0 for simplicity
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.not_subject_to_tax,
+            "tax_rate": {},
+        }
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        # Should use 1 cent from balance, leaving exactly 50 cents to pay
+        # Customer balance = $40 (paid $50, got $10 product), max usage = 51 - 50 = 1 cent
+        assert order.from_balance_amount == 1
+        assert order.total_amount == 51
+        assert (
+            order.total_amount - order.from_balance_amount == 50
+        )  # Exactly 50 cents to pay
+        assert order.status == OrderStatus.pending
+
+        enqueue_job_mock.assert_any_call(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=subscription.payment_method_id,
+        )
+
+    async def test_customer_balance_payment_large_amount_balance_used_normally(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """Test that when total payment is large, customer balance is used normally."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Create a previous paid order and payment to establish customer balance
+        previous_order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,  # $10.00
+            status=OrderStatus.paid,
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            amount=2000,  # Customer paid $20.00
+            status=PaymentStatus.succeeded,
+            order=previous_order,
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        # Create billing entry for $15.00
+        billing_entry = await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=1500,  # $15.00
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        # Mock tax calculation to return 0 for simplicity
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.not_subject_to_tax,
+            "tax_rate": {},
+        }
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        # Customer balance = $10 (paid $20, got $10 product)
+        # Max balance usage = $15.00 - $0.50 = $14.50, but customer only has $10
+        # So should use all $10 of balance
+        assert order.from_balance_amount == 1000  # $10.00
+        assert order.total_amount == 1500  # $15.00
+        assert order.total_amount - order.from_balance_amount == 500  # $5.00 to pay
+        assert order.status == OrderStatus.pending
+
+        enqueue_job_mock.assert_any_call(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=subscription.payment_method_id,
+        )
+
 
 class DiscountFixture(TypedDict):
     type: DiscountType

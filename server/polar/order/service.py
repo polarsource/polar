@@ -712,7 +712,12 @@ class OrderService:
         customer_balance = await self.customer_balance(session, subscription.customer)
         from_balance_amount = 0
         if total_amount > 0 and customer_balance > 0:
-            from_balance_amount = min(customer_balance, total_amount)
+            # Ensure that the remaining amount to be paid is at least 0.5 (50 cents)
+            # If using all customer balance would leave less than 0.5 to pay, limit the balance usage
+            max_balance_usage = total_amount - 50  # 50 cents minimum
+            if max_balance_usage > 0:
+                from_balance_amount = min(customer_balance, max_balance_usage)
+            # If total_amount <= 50 cents, don't use any balance to ensure minimum payment amount
 
         repository = OrderRepository.from_session(session)
         order = await repository.create(
@@ -751,8 +756,6 @@ class OrderService:
         }:
             await subscription_service.reset_meters(session, subscription)
 
-        customer_balance = await self.customer_balance(session, subscription.customer)
-
         # If the order total amount is zero, mark it as paid immediately
         if order.total_amount <= 0:
             order = await repository.update(
@@ -784,9 +787,10 @@ class OrderService:
                 metadata: dict[str, Any] = {"order_id": str(order.id)}
 
                 to_be_paid_amount = order.total_amount - order.from_balance_amount
+                assert to_be_paid_amount > 0
 
                 if order.tax_rate is not None:
-                    metadata["tax_amount"] = order.tax_amount  # ???
+                    metadata["tax_amount"] = order.tax_amount
                     metadata["tax_country"] = order.tax_rate["country"]
                     metadata["tax_state"] = order.tax_rate["state"]
 

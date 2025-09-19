@@ -212,11 +212,17 @@ const ClientPage: React.FC<ClientPageProps> = ({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Renewal Date" />
       ),
-      cell: (props) => {
-        const datetime = props.getValue() as string | null
-        return datetime &&
-          props.row.original.status === 'active' &&
-          !props.row.original.cancel_at_period_end ? (
+      cell: ({
+        getValue,
+        row: {
+          original: { status, cancel_at_period_end },
+        },
+      }) => {
+        const datetime = getValue() as string | null
+        const willRenew =
+          (status === 'active' || status === 'trialing') &&
+          !cancel_at_period_end
+        return datetime && willRenew ? (
           <FormattedDateTime datetime={datetime} />
         ) : (
           '—'

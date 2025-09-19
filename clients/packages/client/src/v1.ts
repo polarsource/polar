@@ -9559,6 +9559,11 @@ export interface components {
              */
             total_amount: number;
             /**
+             * From Balance Amount
+             * @description How much of this invoice was paid using the customer's balance. Amount in cents.
+             */
+            from_balance_amount: number;
+            /**
              * Refunded Amount
              * @description Amount refunded in cents.
              */
@@ -14041,6 +14046,11 @@ export interface components {
              * @description Amount in cents, after discounts and taxes.
              */
             total_amount: number;
+            /**
+             * From Balance Amount
+             * @description How much of this invoice was paid using the customer's balance. Amount in cents.
+             */
+            from_balance_amount: number;
             /**
              * Refunded Amount
              * @description Amount refunded in cents.

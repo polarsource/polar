@@ -14928,26 +14928,6 @@ export interface components {
             subscription_settings?: components["schemas"]["OrganizationSubscriptionSettings"] | null;
             notification_settings?: components["schemas"]["OrganizationNotificationSettings"] | null;
         };
-        /** OrganizationValidationResult */
-        OrganizationValidationResult: {
-            /**
-             * Reason
-             * @description A 1 or 3 line explanation of the verdict and the reasoning behind it. The reason will be shown to our customer.
-             */
-            reason: string;
-            /**
-             * Verdict
-             * @description PASS | FAIL | UNCERTAIN - indicates compliance status.
-             * @enum {string}
-             */
-            verdict: "PASS" | "FAIL" | "UNCERTAIN";
-            /**
-             * Timed Out
-             * @description Whether the validation timed out
-             * @default false
-             */
-            timed_out: boolean;
-        };
         /** Pagination */
         Pagination: {
             /** Total Count */
@@ -19337,7 +19317,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OrganizationValidationResult"];
+                    "application/json": components["schemas"]["OrganizationReviewStatus"];
                 };
             };
             /** @description Organization not found. */
@@ -26969,7 +26949,6 @@ export const organizationDetailsSwitching_fromValues: ReadonlyArray<components["
 export const organizationReviewStatusVerdictValues: ReadonlyArray<components["schemas"]["OrganizationReviewStatus"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];
 export const organizationSocialPlatformsValues: ReadonlyArray<components["schemas"]["OrganizationSocialPlatforms"]> = ["x", "github", "facebook", "instagram", "youtube", "tiktok", "linkedin", "other"];
 export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name", "next_review_threshold", "-next_review_threshold", "days_in_status", "-days_in_status"];
-export const organizationValidationResultVerdictValues: ReadonlyArray<components["schemas"]["OrganizationValidationResult"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
 export const paymentSortPropertyValues: ReadonlyArray<components["schemas"]["PaymentSortProperty"]> = ["created_at", "-created_at", "status", "-status", "amount", "-amount", "method", "-method"];
 export const paymentStatusValues: ReadonlyArray<components["schemas"]["PaymentStatus"]> = ["pending", "succeeded", "failed"];

@@ -41,7 +41,7 @@ const FeatureCard = ({
         href={linkHref}
         target="_blank"
         className={twMerge(
-          'dark:border-polar-700 dark:bg-polar-900 flex h-full flex-col justify-between gap-x-6 gap-y-6 rounded-3xl border border-transparent bg-white p-8 transition-transform hover:translate-y-[-4px] md:p-10 xl:gap-y-0',
+          'dark:border-polar-700 dark:bg-polar-900 flex h-full flex-col justify-between gap-x-6 gap-y-6 rounded-2xl border border-transparent bg-white !p-6 transition-transform hover:translate-y-[-4px] md:p-10 xl:gap-y-0',
         )}
       >
         <div className="flex h-full flex-col gap-y-6">

@@ -1116,6 +1116,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/benefit-grants/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Benefit Grants
+         * @description List benefit grants across all benefits for the authenticated organization.
+         *
+         *     **Scopes**: `benefits:read` `benefits:write`
+         */
+        get: operations["benefit-grants:list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/webhooks/endpoints": {
         parameters: {
             query?: never;
@@ -5205,6 +5227,8 @@ export interface components {
             /** @description The error information if the benefit grant failed with an unrecoverable error. */
             error?: components["schemas"]["BenefitGrantError"] | null;
             customer: components["schemas"]["Customer"];
+            /** Benefit */
+            benefit: components["schemas"]["Benefit"];
             /** Properties */
             properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
         };
@@ -5683,6 +5707,11 @@ export interface components {
             properties: components["schemas"]["BenefitGrantMeterCreditProperties"];
             previous_properties?: components["schemas"]["BenefitGrantMeterCreditProperties"] | null;
         };
+        /**
+         * BenefitGrantSortProperty
+         * @enum {string}
+         */
+        BenefitGrantSortProperty: "created_at" | "-created_at" | "granted_at" | "-granted_at" | "revoked_at" | "-revoked_at";
         BenefitGrantWebhook: components["schemas"]["BenefitGrantDiscordWebhook"] | components["schemas"]["BenefitGrantCustomWebhook"] | components["schemas"]["BenefitGrantGitHubRepositoryWebhook"] | components["schemas"]["BenefitGrantDownloadablesWebhook"] | components["schemas"]["BenefitGrantLicenseKeysWebhook"] | components["schemas"]["BenefitGrantMeterCreditWebhook"];
         /**
          * BenefitGrantedEvent
@@ -20366,6 +20395,48 @@ export interface operations {
             };
         };
     };
+    "benefit-grants:list": {
+        parameters: {
+            query?: {
+                /** @description Filter by organization ID. */
+                organization_id?: string | string[] | null;
+                /** @description Filter by customer ID. */
+                customer_id?: string | string[] | null;
+                /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.  */
+                is_granted?: boolean | null;
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+                /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+                sorting?: components["schemas"]["BenefitGrantSortProperty"][] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResource_BenefitGrant_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "webhooks:list_webhook_endpoints": {
         parameters: {
             query?: {
@@ -26860,6 +26931,7 @@ export const benefitGitHubRepositoryCreateTypeValues: ReadonlyArray<components["
 export const benefitGitHubRepositoryCreatePropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryCreateProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
 export const benefitGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
 export const benefitGrantGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGrantGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
+export const benefitGrantSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitGrantSortProperty"]> = ["created_at", "-created_at", "granted_at", "-granted_at", "revoked_at", "-revoked_at"];
 export const benefitGrantedEventNameValues: ReadonlyArray<components["schemas"]["BenefitGrantedEvent"]["name"]> = ["benefit.granted"];
 export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeyExpirationProperties"]["timeframe"]> = ["year", "month", "day"];
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeysCreate"]["type"]> = ["license_keys"];

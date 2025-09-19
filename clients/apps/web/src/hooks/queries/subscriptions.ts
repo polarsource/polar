@@ -4,7 +4,7 @@ import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useListSubscriptions = (
+export const useSubscriptions = (
   organizationId?: string,
   parameters?: Omit<
     NonNullable<operations['subscriptions:list']['parameters']['query']>,

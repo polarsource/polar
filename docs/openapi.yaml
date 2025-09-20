@@ -3,7 +3,7 @@
   "info": {
     "title": "Polar API",
     "summary": "Polar HTTP and Webhooks API",
-    "description": "Read the docs at https://polar.sh/docs/api-reference",
+    "description": "Read the docs at https://docs.polar.sh/api-reference",
     "version": "0.1.0"
   },
   "servers": [

@@ -4,7 +4,9 @@ import CopyToClipboardButton from '@/components/CopyToClipboardButton/CopyToClip
 import CreateDiscountModalContent from '@/components/Discounts/CreateDiscountModalContent'
 import UpdateDiscountModalContent from '@/components/Discounts/UpdateDiscountModalContent'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
+import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useDeleteDiscount, useDiscounts } from '@/hooks/queries'
 import { useDebouncedCallback } from '@/hooks/utils'
@@ -134,19 +136,30 @@ const ClientPage: React.FC<ClientPageProps> = ({
     [],
   )
 
-  const handleDeleteDiscount = useCallback(
-    (discount: schemas['Discount']) => async () => {
-      const { error } = await deleteDiscount.mutateAsync(discount)
-      if (error) {
-        return
-      }
-      toast({
-        title: 'Discount Deleted',
-        description: `Discount ${discount.name} successfully deleted`,
-      })
-    },
-    [toast],
-  )
+  const {
+    isShown: isDiscountModalShown,
+    hide: hideDiscountModal,
+    toggle: toggleDiscountModal,
+  } = useModal()
+
+  const deleteDiscount = useDeleteDiscount()
+
+  const [discountToDelete, setDiscountToDelete] =
+    useState<schemas['Discount']>()
+
+  const handleDeleteDiscount = useCallback(async () => {
+    if (!discountToDelete) return
+
+    const { error } = await deleteDiscount.mutateAsync(discountToDelete)
+    if (error) {
+      return
+    }
+    toast({
+      title: 'Discount Deleted',
+      description: `Discount ${discountToDelete.name} successfully deleted`,
+    })
+    hideDiscountModal()
+  }, [discountToDelete, deleteDiscount, hideDiscountModal])
 
   const discountsHook = useDiscounts(organization.id, {
     ...getAPIParams(pagination, sorting),
@@ -249,7 +262,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
               <DropdownMenuItem onClick={handleCopyDiscountId(discount)}>
                 Copy Discount ID
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDeleteDiscount(discount)}>
+              <DropdownMenuItem
+                onClick={() => {
+                  setDiscountToDelete(discount)
+                  toggleDiscountModal()
+                }}
+              >
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -267,7 +285,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     setSelectedDiscount(discount)
     setShowUpdateModal(true)
   }, [])
-  const deleteDiscount = useDeleteDiscount()
 
   return (
     <DashboardBody wide>
@@ -329,6 +346,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <></>
           )
         }
+      />
+      <ConfirmModal
+        title="Delete Discount"
+        description={`Are you sure you want to delete the discount "${discountToDelete?.name}"? This action cannot be undone.`}
+        onConfirm={handleDeleteDiscount}
+        isShown={isDiscountModalShown}
+        hide={hideDiscountModal}
+        destructiveText="Delete"
+        destructive
       />
     </DashboardBody>
   )

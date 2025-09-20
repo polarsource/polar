@@ -1,10 +1,13 @@
 from fastapi import Depends
+from sqlalchemy import delete
 
 from polar.kit.db.postgres import AsyncSession
+from polar.models import CustomerSession
 from polar.openapi import APITag
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
+from .. import auth
 from ..schemas.customer_session import (
     CustomerSessionCodeAuthenticateRequest,
     CustomerSessionCodeAuthenticateResponse,
@@ -51,3 +54,17 @@ async def authenticate(
         session, authenticated_request.code
     )
     return CustomerSessionCodeAuthenticateResponse(token=token)
+
+
+@router.delete("/sign-out", name="customer_portal.customer_session.sign_out", status_code=204)
+async def sign_out(
+    auth_subject: auth.CustomerPortalWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    customer = auth_subject.subject
+
+    statement = delete(CustomerSession).where(
+        CustomerSession.customer_id == customer.id,
+        CustomerSession.deleted_at.is_(None)
+    )
+    await session.execute(statement)

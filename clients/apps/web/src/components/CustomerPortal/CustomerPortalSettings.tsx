@@ -4,6 +4,7 @@ import revalidate from "@/app/actions";
 import {
 	useAuthenticatedCustomer,
 	useCustomerPaymentMethods,
+	useCustomerPortalSignOut,
 } from "@/hooks/queries";
 import { createClientSideAPI } from "@/utils/client";
 import { schemas } from "@polar-sh/client";
@@ -39,6 +40,7 @@ export const CustomerPortalSettings = ({
 	} = useModal();
 	const { data: customer } = useAuthenticatedCustomer(api);
 	const { data: paymentMethods } = useCustomerPaymentMethods(api);
+	const customerPortalSignOut = useCustomerPortalSignOut(api);
 
 	const theme = useTheme();
 	const themingPreset = useThemePreset(
@@ -46,13 +48,18 @@ export const CustomerPortalSettings = ({
 		theme.resolvedTheme as "light" | "dark",
 	);
 
-	const handleSignOut = () => {
-		const url = new URL(window.location.href);
+	const handleSignOut = async () => {
+		try {
+			await customerPortalSignOut.mutateAsync();
 
-		const parts = url.pathname.split("/");
-		const orgSlug = parts[1];
+			const url = new URL(window.location.href);
+			const parts = url.pathname.split("/");
+			const orgSlug = parts[1];
 
-		router.replace(`/${orgSlug}/portal/request`);
+			router.replace(`/${orgSlug}/portal/request`);
+		} catch (error) {
+			console.error("Failed to sign out:", error);
+		}
 	};
 
 	if (!customer) {
@@ -120,8 +127,9 @@ export const CustomerPortalSettings = ({
                 <Button
                     variant="destructive"
                     onClick={handleSignOut}
+                    disabled={customerPortalSignOut.isPending}
                 >
-                    Sign Out
+                    {customerPortalSignOut.isPending ? "Signing Out..." : "Sign Out"}
                 </Button>
             </div>
 

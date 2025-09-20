@@ -94,3 +94,21 @@ export const useDeleteCustomer = (customerId: string, organizationId: string) =>
       })
     },
   })
+
+export const useCustomerState = (id: string | null) =>
+  useQuery({
+    queryKey: ['customers', 'state', id],
+    queryFn: () => {
+      return unwrap(
+        api.GET('/v1/customers/{id}/state', {
+          params: {
+            path: {
+              id: id ?? '',
+            },
+          },
+        }),
+      )
+    },
+    retry: defaultRetry,
+    enabled: !!id,
+  })

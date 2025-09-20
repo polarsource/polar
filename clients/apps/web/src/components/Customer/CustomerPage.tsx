@@ -6,6 +6,7 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   ParsedMetricsResponse,
+  useCustomerState,
   useListSubscriptions,
   useMetrics,
 } from '@/hooks/queries'
@@ -51,6 +52,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       limit: 999,
       sorting: ['-started_at'],
     })
+
+  const { data: customerState, isLoading: customerStateLoading } = useCustomerState(customer.id)
 
   const [selectedMetric, setSelectedMetric] =
     React.useState<keyof schemas['Metrics']>('revenue')
@@ -177,6 +180,66 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               },
             ]}
             isLoading={subscriptionsLoading}
+            className="text-sm"
+          />
+        </div>
+        <div className="flex flex-col gap-4">
+          <h3 className="text-lg">Benefits</h3>
+          <DataTable
+            data={customerState?.granted_benefits ?? []}
+            columns={[
+              {
+                header: 'Benefit Type',
+                accessorKey: 'benefit_type',
+                cell: ({ row: { original } }) => (
+                  <span className="capitalize">{original.benefit_type.replace('_', ' ')}</span>
+                ),
+              },
+              {
+                header: 'Granted At',
+                accessorKey: 'granted_at',
+                cell: ({ row: { original } }) => (
+                  <span className="dark:text-polar-500 text-sm text-gray-500">
+                    <FormattedDateTime datetime={original.granted_at} />
+                  </span>
+                ),
+              },
+              {
+                header: 'Properties',
+                accessorKey: 'properties',
+                cell: ({ row: { original } }) => {
+                  const properties = original.properties
+                  if (!properties || Object.keys(properties).length === 0) {
+                    return <span className="text-gray-400">—</span>
+                  }
+                  return (
+                    <div className="max-w-xs truncate text-sm">
+                      {Object.entries(properties).map(([key, value]) => (
+                        <div key={key} className="truncate">
+                          <span className="font-medium">{key}:</span> {String(value)}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                },
+              },
+              {
+                header: '',
+                accessorKey: 'action',
+                cell: ({ row: { original } }) => (
+                  <div className="flex justify-end">
+                    <Link
+                      href={`/dashboard/${organization.slug}/benefits`}
+                    >
+                      <Button variant="secondary" size="sm">
+                        View All Benefits
+                      </Button>
+                    </Link>
+                  </div>
+                ),
+              },
+            ]}
+            isLoading={customerStateLoading}
             className="text-sm"
           />
         </div>

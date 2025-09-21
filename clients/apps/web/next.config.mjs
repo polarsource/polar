@@ -75,6 +75,16 @@ const nextConfig = {
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
 
+  webpack: (config, { dev }) => {
+    if (config.cache && !dev) {
+      config.cache = Object.freeze({
+        type: 'memory',
+      })
+    }
+
+    return config
+  },
+
   // Since Codespaces run behind a proxy, we need to allow it for Server-Side Actions, like cache revalidation
   // See: https://github.com/vercel/next.js/issues/58019
   ...(CODESPACES

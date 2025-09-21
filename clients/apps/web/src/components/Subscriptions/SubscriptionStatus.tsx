@@ -1,4 +1,5 @@
-import { AccessTimeOutlined, CancelOutlined } from '@mui/icons-material'
+import AccessTimeOutlined from '@mui/icons-material/AccessTimeOutlined'
+import CancelOutlined from '@mui/icons-material/CancelOutlined'
 import { schemas } from '@polar-sh/client'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import { useMemo } from 'react'

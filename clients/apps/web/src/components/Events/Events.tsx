@@ -1,4 +1,4 @@
-import { MoreHorizOutlined } from '@mui/icons-material'
+import MoreHorizOutlined from '@mui/icons-material/MoreHorizOutlined'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { List } from '@polar-sh/ui/components/atoms/List'

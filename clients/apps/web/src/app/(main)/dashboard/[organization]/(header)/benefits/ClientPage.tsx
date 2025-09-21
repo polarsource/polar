@@ -16,13 +16,11 @@ import Spinner from "@/components/Shared/Spinner";
 import { useToast } from "@/components/Toast/use-toast";
 import { useDeleteBenefit, useInfiniteBenefits } from "@/hooks/queries";
 import { useInViewport } from "@/hooks/utils";
-import {
-	AddOutlined,
-	ArrowDownward,
-	ArrowUpward,
-	MoreVertOutlined,
-	Search,
-} from "@mui/icons-material";
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import ArrowDownward from '@mui/icons-material/ArrowDownward'
+import ArrowUpward from '@mui/icons-material/ArrowUpward'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import Search from '@mui/icons-material/Search'
 import { schemas } from "@polar-sh/client";
 import Button from "@polar-sh/ui/components/atoms/Button";
 import Input from "@polar-sh/ui/components/atoms/Input";

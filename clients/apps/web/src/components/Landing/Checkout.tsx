@@ -1,5 +1,5 @@
 import { CHECKOUT_PREVIEW } from '@/components/Customization/utils'
-import { ArrowOutwardOutlined } from '@mui/icons-material'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'

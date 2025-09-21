@@ -1,6 +1,6 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries'
-import { CloseOutlined } from '@mui/icons-material'
+import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'

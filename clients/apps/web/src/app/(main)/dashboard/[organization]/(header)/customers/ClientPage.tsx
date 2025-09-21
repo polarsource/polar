@@ -16,13 +16,11 @@ import { getServerURL } from '@/utils/api'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 
-import {
-  AddOutlined,
-  ArrowDownward,
-  ArrowUpward,
-  MoreVert,
-  Search,
-} from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import ArrowDownward from '@mui/icons-material/ArrowDownward'
+import ArrowUpward from '@mui/icons-material/ArrowUpward'
+import MoreVert from '@mui/icons-material/MoreVert'
+import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'

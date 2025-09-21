@@ -1,6 +1,7 @@
 'use client'
 
-import { ArrowForward, KeyboardArrowRight } from '@mui/icons-material'
+import ArrowForward from '@mui/icons-material/ArrowForward'
+import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 

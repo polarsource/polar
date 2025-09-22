@@ -36,7 +36,7 @@ from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInte
 from polar.exceptions import PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
-from polar.kit.address import Address
+from polar.kit.address import AddressInput
 from polar.kit.tax import (
     IncompleteTaxLocation,
     TaxabilityReason,
@@ -715,7 +715,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
                 customer_tax_id="FR61954506077",
             ),
             auth_subject,
@@ -795,7 +795,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                customer_billing_address=Address.model_validate({"country": "US"}),
+                customer_billing_address=AddressInput.model_validate({"country": "US"}),
             ),
             auth_subject,
         )
@@ -826,7 +826,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
             auth_subject,
         )
@@ -989,7 +989,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
             auth_subject,
         )
@@ -1336,11 +1336,11 @@ class TestCreate:
         "address,require_billing_address",
         [
             (None, False),
-            (Address.model_validate({"country": "FR"}), False),
-            (Address.model_validate({"country": "FR", "city": "Lyon"}), True),
-            (Address.model_validate({"country": "CA", "state": "CA-QC"}), False),
+            (AddressInput.model_validate({"country": "FR"}), False),
+            (AddressInput.model_validate({"country": "FR", "city": "Lyon"}), True),
+            (AddressInput.model_validate({"country": "CA", "state": "CA-QC"}), False),
             (
-                Address.model_validate(
+                AddressInput.model_validate(
                     {"country": "CA", "state": "CA-QC", "city": "Quebec"}
                 ),
                 True,
@@ -1353,7 +1353,7 @@ class TestCreate:
     )
     async def test_implicit_require_billing_address(
         self,
-        address: Address | None,
+        address: AddressInput | None,
         require_billing_address: bool,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
@@ -2055,7 +2055,7 @@ class TestUpdate:
             locker,
             checkout_one_time_custom,
             CheckoutUpdate(
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
                 customer_tax_id="FR61954506077",
             ),
         )
@@ -2078,7 +2078,7 @@ class TestUpdate:
             locker,
             checkout_one_time_custom,
             CheckoutUpdate(
-                customer_billing_address=Address.model_validate({"country": "US"}),
+                customer_billing_address=AddressInput.model_validate({"country": "US"}),
                 customer_tax_id=None,
             ),
         )
@@ -2104,7 +2104,7 @@ class TestUpdate:
             locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
-                customer_billing_address=Address.model_validate({"country": "US"}),
+                customer_billing_address=AddressInput.model_validate({"country": "US"}),
             ),
         )
 
@@ -2132,7 +2132,7 @@ class TestUpdate:
             locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
         )
 
@@ -2305,7 +2305,7 @@ class TestUpdate:
             locker,
             checkout_tax_not_applicable,
             CheckoutUpdate(
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
         )
 

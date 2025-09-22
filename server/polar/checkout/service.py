@@ -36,7 +36,7 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.kit.address import Address
+from polar.kit.address import AddressInput
 from polar.kit.crypto import generate_token
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
@@ -1634,7 +1634,7 @@ class CheckoutService:
             return checkout
 
         try:
-            address = Address.model_validate({"country": country})
+            address = AddressInput.model_validate({"country": country})
         except PydanticValidationError:
             return checkout
 

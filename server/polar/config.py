@@ -236,7 +236,7 @@ class Settings(BaseSettings):
         line2="PMB 61301",
         postal_code="94104",
         city="San Francisco",
-        state="CA",
+        state="US-CA",
         country=CountryAlpha2("US"),
     )
     INVOICES_ADDITIONAL_INFO: str | None = "[support@polar.sh](mailto:support@polar.sh)"

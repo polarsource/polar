@@ -76,7 +76,6 @@
     "remark-flexible-toc": "^1.2.1",
     "remark-frontmatter": "^5.0.0",
     "remark-gfm": "^4.0.1",
-    "sass": "^1.92.1",
     "satori": "^0.18.3",
     "shiki": "^3.12.2",
     "slugify": "^1.6.6",

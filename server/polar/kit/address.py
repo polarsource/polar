@@ -1,41 +1,14 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Annotated, Any, NotRequired, Self, TypedDict, cast
+from typing import Any, NotRequired, Self, TypedDict, cast
 
 import pycountry
-from pydantic import BaseModel, BeforeValidator, Field, model_validator
+from pydantic import BaseModel, Field, model_validator
+from pydantic_extra_types.country import CountryAlpha2
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
 
 from polar.kit.schemas import EmptyStrToNone
-
-
-class CountryData:
-    alpha_2: str
-
-
-ALL_COUNTRIES: set[str] = {
-    cast(CountryData, country).alpha_2 for country in pycountry.countries
-}
-SUPPORTED_COUNTRIES: set[str] = ALL_COUNTRIES - {
-    # US Trade Embargos
-    "CU",
-    "IR",
-    "KP",
-    "SY",
-    "RU",
-}
-
-if TYPE_CHECKING:
-
-    class CountryAlpha2(StrEnum):
-        pass
-else:
-    CountryAlpha2 = StrEnum(
-        "CountryAlpha2", [(country, country) for country in SUPPORTED_COUNTRIES]
-    )
-
-CountryAlpha2Field = Annotated[CountryAlpha2, BeforeValidator(str.upper)]
 
 
 class USState(StrEnum):
@@ -120,7 +93,7 @@ class Address(BaseModel):
     postal_code: EmptyStrToNone | None = None
     city: EmptyStrToNone | None = None
     state: EmptyStrToNone | None = None
-    country: CountryAlpha2Field = Field(examples=["US", "SE", "FR"])
+    country: CountryAlpha2 = Field(examples=["US", "SE", "FR"])
 
     @model_validator(mode="after")
     def validate_state(self) -> Self:

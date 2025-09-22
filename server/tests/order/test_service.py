@@ -8,6 +8,7 @@ import pytest
 import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
+from pydantic_extra_types.country import CountryAlpha2
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
@@ -17,7 +18,7 @@ from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
-from polar.kit.address import Address, CountryAlpha2
+from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams

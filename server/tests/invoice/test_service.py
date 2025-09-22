@@ -1,7 +1,8 @@
 import pytest
+from pydantic_extra_types.country import CountryAlpha2
 
 from polar.invoice.service import invoice as invoice_service
-from polar.kit.address import Address, CountryAlpha2
+from polar.kit.address import Address
 from polar.models import Customer, Product
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order

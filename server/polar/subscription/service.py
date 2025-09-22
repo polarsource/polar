@@ -140,6 +140,15 @@ class AlreadyCanceledSubscription(SubscriptionError):
         super().__init__(message, 403)
 
 
+class TrialingSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = (
+            "This subscription is currently in a trial period and cannot be updated."
+        )
+        super().__init__(message, 403)
+
+
 class SubscriptionNotActiveOnStripe(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
@@ -756,8 +765,6 @@ class SubscriptionService:
         update: SubscriptionUpdate,
     ) -> Subscription:
         if isinstance(update, SubscriptionUpdateProduct):
-            if subscription.revoked or subscription.cancel_at_period_end:
-                raise AlreadyCanceledSubscription(subscription)
             return await self.update_product(
                 session,
                 subscription,
@@ -808,6 +815,12 @@ class SubscriptionService:
         product_id: uuid.UUID,
         proration_behavior: SubscriptionProrationBehavior | None = None,
     ) -> Subscription:
+        if subscription.revoked or subscription.cancel_at_period_end:
+            raise AlreadyCanceledSubscription(subscription)
+
+        if subscription.trialing:
+            raise TrialingSubscription(subscription)
+
         previous_product = subscription.product
         previous_status = subscription.status
         previous_is_canceled = subscription.canceled

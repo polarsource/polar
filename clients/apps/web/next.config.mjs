@@ -7,8 +7,19 @@ import rehypeSlug from 'rehype-slug'
 import remarkFlexibleToc from 'remark-flexible-toc'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkGfm from 'remark-gfm'
-import { bundledLanguages, createHighlighter } from 'shiki'
-import { themeConfig, themesList, transformers } from './shiki.config.mjs'
+import { createHighlighterCore } from 'shiki/core'
+import { createOnigurumaEngine } from 'shiki/engine/oniguruma'
+
+import langBash from 'shiki/langs/bash.mjs'
+import langJavascript from 'shiki/langs/javascript.mjs'
+import themeCatppuccinLatte from 'shiki/themes/catppuccin-latte.mjs'
+import themePoimandres from 'shiki/themes/poimandres.mjs'
+import {
+  themeConfig,
+  themesList,
+  transformers,
+  USED_LANGUAGES,
+} from './shiki.config.mjs'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
@@ -424,9 +435,21 @@ const nextConfig = {
 }
 
 const createConfig = async () => {
-  const highlighter = await createHighlighter({
-    langs: Object.keys(bundledLanguages),
-    themes: themesList,
+  // Map configuration to actual imports for tree-shaking
+  const LANGUAGE_MAP = {
+    javascript: langJavascript,
+    bash: langBash,
+  }
+
+  const THEME_MAP = {
+    'catppuccin-latte': themeCatppuccinLatte,
+    poimandres: themePoimandres,
+  }
+
+  const highlighter = await createHighlighterCore({
+    langs: USED_LANGUAGES.map((lang) => LANGUAGE_MAP[lang]).filter(Boolean),
+    themes: themesList.map((theme) => THEME_MAP[theme]).filter(Boolean),
+    engine: createOnigurumaEngine(() => import('shiki/wasm')),
   })
   const withMDX = createMDX({
     options: {

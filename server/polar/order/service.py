@@ -32,7 +32,7 @@ from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
-from polar.kit.address import Address
+from polar.kit.address import Address, AddressInput
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -1113,7 +1113,7 @@ class OrderService:
         if customer.billing_address is not None:
             billing_address = customer.billing_address
         elif not _is_empty_customer_address(invoice.customer_address):
-            billing_address = Address.model_validate(invoice.customer_address)
+            billing_address = AddressInput.model_validate(invoice.customer_address)
         # Try to retrieve the country from the payment method
         elif invoice.charge is not None:
             charge = await stripe_service.get_charge(get_expandable_id(invoice.charge))

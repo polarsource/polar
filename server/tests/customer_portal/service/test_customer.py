@@ -7,7 +7,7 @@ from polar.customer_portal.schemas.customer import CustomerPortalCustomerUpdate
 from polar.customer_portal.service.customer import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
-from polar.kit.address import Address, CountryAlpha2
+from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
 from polar.kit.tax import TaxIDFormat
 from polar.models import Organization
 from polar.postgres import AsyncSession
@@ -83,7 +83,7 @@ class TestUpdate:
                 session,
                 customer,
                 CustomerPortalCustomerUpdate(
-                    billing_address=Address(country=CountryAlpha2("GB")),
+                    billing_address=AddressInput(country=CountryAlpha2Input("GB")),
                 ),
             )
 
@@ -122,7 +122,7 @@ class TestUpdate:
             customer,
             CustomerPortalCustomerUpdate(
                 billing_name="Polar Software Inc.",
-                billing_address=Address(country=CountryAlpha2("FR")),
+                billing_address=AddressInput(country=CountryAlpha2Input("FR")),
                 tax_id="FR61954506077",
             ),
         )

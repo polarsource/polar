@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import BeforeValidator, Field
 
 from polar.enums import AccountType
-from polar.kit.address import Address
+from polar.kit.address import Address, AddressInput
 from polar.kit.schemas import Schema
 from polar.models.account import Account as AccountModel
 from polar.organization.schemas import Organization
@@ -168,7 +168,7 @@ class AccountUpdate(Schema):
         default=None,
         description="Billing name that should appear on the reverse invoice.",
     )
-    billing_address: Address | None = Field(
+    billing_address: AddressInput | None = Field(
         default=None,
         description="Billing address that should appear on the reverse invoice.",
     )

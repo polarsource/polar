@@ -26,7 +26,7 @@ from polar.discount.schemas import (
     DiscountRepeatDurationBase,
 )
 from polar.enums import PaymentProcessor
-from polar.kit.address import Address
+from polar.kit.address import Address, AddressInput
 from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
     METADATA_DESCRIPTION,
@@ -85,9 +85,11 @@ CustomerIPAddress = Annotated[
         description="IP address of the customer. Used to detect tax location.",
     ),
 ]
+CustomerBillingAddressInput = Annotated[
+    AddressInput, Field(description="Billing address of the customer.")
+]
 CustomerBillingAddress = Annotated[
-    Address,
-    Field(description="Billing address of the customer."),
+    Address, Field(description="Billing address of the customer.")
 ]
 SuccessURL = Annotated[
     HttpUrl | None,
@@ -179,7 +181,7 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
-    customer_billing_address: CustomerBillingAddress | None = None
+    customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_metadata: MetadataField = Field(
         default_factory=dict, description=_customer_metadata_description
@@ -291,7 +293,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
-    customer_billing_address: CustomerBillingAddress | None = None
+    customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
 

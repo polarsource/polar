@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import UUID4, Field, computed_field
 
-from polar.kit.address import Address
+from polar.kit.address import Address, AddressInput
 from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -50,7 +50,7 @@ class CustomerCreate(MetadataInputMixin, Schema):
     name: str | None = Field(
         default=None, description=_name_description, examples=[_name_example]
     )
-    billing_address: Address | None = None
+    billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
     organization_id: OrganizationID | None = Field(
         default=None,
@@ -68,7 +68,7 @@ class CustomerUpdateBase(MetadataInputMixin, Schema):
     name: str | None = Field(
         default=None, description=_name_description, examples=[_name_example]
     )
-    billing_address: Address | None = None
+    billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
 
 

@@ -9,7 +9,7 @@ from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
-from polar.kit.address import Address
+from polar.kit.address import Address, AddressInput
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
 from polar.models.order import OrderBillingReason, OrderStatus
@@ -187,7 +187,7 @@ class OrderUpdateBase(Schema):
             "Can't be updated after the invoice is generated."
         )
     )
-    billing_address: Address | None = Field(
+    billing_address: AddressInput | None = Field(
         description=(
             "The address of the customer that should appear on the invoice. "
             "Can't be updated after the invoice is generated."

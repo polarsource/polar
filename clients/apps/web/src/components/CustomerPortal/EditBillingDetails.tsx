@@ -32,7 +32,7 @@ const EditBillingDetails = ({
   const form = useForm<schemas['CustomerPortalCustomerUpdate']>({
     defaultValues: {
       billing_name: customer.billing_name || customer.name,
-      billing_address: customer.billing_address,
+      billing_address: customer.billing_address as schemas['AddressInput'],
       tax_id: customer.tax_id ? customer.tax_id[0] : null,
     },
   })
@@ -68,13 +68,15 @@ const EditBillingDetails = ({
 
       reset({
         billing_name: updatedCustomer.billing_name || updatedCustomer.name,
-        billing_address: updatedCustomer.billing_address,
+        billing_address: updatedCustomer.billing_address as
+          | schemas['AddressInput']
+          | null,
         tax_id: updatedCustomer.tax_id ? updatedCustomer.tax_id[0] : null,
       })
 
       onSuccess()
     },
-    [updateCustomer, onSuccess, setError],
+    [updateCustomer, onSuccess, setError, reset],
   )
 
   return (

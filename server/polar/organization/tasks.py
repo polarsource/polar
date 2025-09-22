@@ -5,6 +5,7 @@ from sqlalchemy.orm import joinedload
 from polar.account.repository import AccountRepository
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
+from polar.integrations.plain.service import plain as plain_service
 from polar.models import Organization
 from polar.notifications.notification import (
     MaintainerAccountReviewedNotificationPayload,
@@ -81,6 +82,8 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
         )
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
+
+        await plain_service.create_account_review_thread(session, organization)
 
         # Get organization admin
         admin_user = await repository.get_admin_user(session, organization)

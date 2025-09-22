@@ -1,4 +1,5 @@
 import datetime
+import json
 from collections.abc import Sequence
 from typing import Literal, overload
 from uuid import UUID
@@ -9,6 +10,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
+from polar.checkout.repository import CheckoutRepository
 from polar.customer.schemas.state import CustomerState
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.crypto import generate_token
@@ -236,14 +238,18 @@ class WebhookService:
         if event.webhook_endpoint.format != WebhookFormat.raw:
             return
 
-        assert event.payload is not None
-        payload = WebhookPayloadTypeAdapter.validate_json(event.payload)
+        if event.payload is None:
+            return
 
-        if payload.type == WebhookEventType.checkout_updated:
+        if event.type == WebhookEventType.checkout_updated:
+            checkout_repository = CheckoutRepository.from_session(session)
+            payload = json.loads(event.payload)
+            checkout = await checkout_repository.get_by_id(UUID(payload["data"]["id"]))
+            assert checkout is not None
             await publish_checkout_event(
-                payload.data.client_secret,
+                checkout.client_secret,
                 CheckoutEvent.webhook_event_delivered,
-                {"status": payload.data.status},
+                {"status": checkout.status},
             )
 
     async def get_event_by_id(

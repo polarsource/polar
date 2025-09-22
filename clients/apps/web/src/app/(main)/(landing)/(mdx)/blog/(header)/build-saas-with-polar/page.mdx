@@ -58,7 +58,7 @@ Just redirect users to the generated OAuth `authorize` URL and they'll be able t
 
 You then exchange it for an access token `polar_at_XXX` and you're ready to make API requests.
 
-```curl
+```bash
 curl -X GET https://api.polar.sh/api/v1/oauth2/userinfo \
   -H 'Authorization: Bearer polar_at_XXX'
 ```

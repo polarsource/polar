@@ -26,42 +26,25 @@ const getCountryList = (codes: TCountryCode[]) => {
 }
 
 const countryCodes = Object.keys(countries) as TCountryCode[]
-const allCountries = getCountryList(
-  countryCodes.filter((countryCode) => {
-    switch (countryCode.toUpperCase()) {
-      // US Trade Embargos (Stripe can check regions)
-      case 'CU':
-      case 'IR':
-      case 'KP':
-      case 'SY':
-      case 'RU':
-        return false
-      default:
-        return true
-    }
-  }),
-)
 
 const CountryPicker = ({
+  allowedCountries,
   value,
   onChange,
   autoComplete,
-  allowedCountries,
   className,
   itemClassName,
   contentClassName,
 }: {
+  allowedCountries: readonly string[]
   value?: string
   onChange: (value: string) => void
   autoComplete?: string
-  allowedCountries?: string[]
   className?: string
   itemClassName?: string
   contentClassName?: string
 }) => {
-  const countryMap = allowedCountries
-    ? getCountryList(allowedCountries as TCountryCode[])
-    : allCountries
+  const countryMap = getCountryList(allowedCountries as TCountryCode[])
   return (
     <Select onValueChange={onChange} value={value} autoComplete={autoComplete}>
       <SelectTrigger className={className}>

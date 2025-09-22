@@ -1,5 +1,6 @@
 'use client'
 
+import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
@@ -563,6 +564,9 @@ const BaseCheckoutForm = ({
                           render={({ field }) => (
                             <>
                               <CountryPicker
+                                allowedCountries={Object.values(
+                                  CountryAlpha2Input,
+                                )}
                                 autoComplete="billing country"
                                 value={field.value || undefined}
                                 onChange={field.onChange}

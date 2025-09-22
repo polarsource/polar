@@ -3,7 +3,12 @@ import { useModal } from '@/components/Modal/useModal'
 import { useCustomerSSE, useOrganizationSSE } from '@/hooks/sse'
 import { setValidationErrors } from '@/utils/api/errors'
 import { api, createClientSideAPI } from '@/utils/client'
-import { isValidationError, type Client, type schemas } from '@polar-sh/client'
+import {
+  enums,
+  isValidationError,
+  type Client,
+  type schemas,
+} from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
@@ -297,6 +302,7 @@ const DownloadInvoice = ({
                           autoComplete="billing country"
                           value={field.value || undefined}
                           onChange={field.onChange}
+                          allowedCountries={enums.addressInputCountryValues}
                         />
                         <FormMessage />
                       </>

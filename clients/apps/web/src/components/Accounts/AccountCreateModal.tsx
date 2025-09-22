@@ -1,7 +1,6 @@
 import { setValidationErrors } from '@/utils/api/errors'
 import { api } from '@/utils/client'
-import { CONFIG } from '@/utils/config'
-import { isValidationError, schemas } from '@polar-sh/client'
+import { enums, isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import {
@@ -15,8 +14,6 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
-
-const stripeConnectWhitelist = CONFIG.STRIPE_COUNTRIES_WHITELIST_CSV.split(',')
 
 interface AccountForm {
   country: string
@@ -139,7 +136,7 @@ export const AccountCountry = () => {
                 <CountryPicker
                   value={field.value || undefined}
                   onChange={field.onChange}
-                  allowedCountries={stripeConnectWhitelist}
+                  allowedCountries={enums.stripeAccountCountryValues}
                 />
               </FormControl>
               <FormMessage />

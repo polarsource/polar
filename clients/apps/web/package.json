@@ -38,7 +38,7 @@
     "@radix-ui/react-toast": "^1.2.15",
     "@sentry/nextjs": "^9.40.0",
     "@shikijs/rehype": "^3.12.2",
-    "@stripe/react-stripe-js": "^3.7.0",
+    "@stripe/react-stripe-js": "^4.0.2",
     "@stripe/stripe-js": "^7.9.0",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.17",

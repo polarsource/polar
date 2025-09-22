@@ -6,10 +6,9 @@ from typing import Annotated, Literal
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
-from pydantic_extra_types.country import CountryAlpha2
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from polar.kit.address import Address
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.jwk import JWKSFile
 
 

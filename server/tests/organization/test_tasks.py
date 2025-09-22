@@ -144,9 +144,6 @@ class TestOrganizationReviewed:
             "send_to_user",
             spec=NotificationsService.send_to_user,
         )
-        create_account_review_thread_mock = mocker.patch(
-            "polar.organization.tasks.plain_service.create_account_review_thread"
-        )
         get_admin_user_mock = mocker.patch(
             "polar.organization.tasks.OrganizationRepository.get_admin_user",
             return_value=mocker.MagicMock(id=uuid.uuid4()),
@@ -158,7 +155,6 @@ class TestOrganizationReviewed:
         await organization_reviewed(organization.id)
 
         send_to_user_mock.assert_called_once()
-        create_account_review_thread_mock.assert_called_once()
         get_admin_user_mock.assert_called_once()
 
     async def test_existing_organization_with_account(
@@ -184,9 +180,6 @@ class TestOrganizationReviewed:
             "send_to_user",
             spec=NotificationsService.send_to_user,
         )
-        create_account_review_thread_mock = mocker.patch(
-            "polar.organization.tasks.plain_service.create_account_review_thread"
-        )
         get_admin_user_mock = mocker.patch(
             "polar.organization.tasks.OrganizationRepository.get_admin_user",
             return_value=mocker.MagicMock(id=uuid.uuid4()),
@@ -199,5 +192,4 @@ class TestOrganizationReviewed:
 
         release_account_mock.assert_called_once()
         send_to_user_mock.assert_called_once()
-        create_account_review_thread_mock.assert_called_once()
         get_admin_user_mock.assert_called_once()

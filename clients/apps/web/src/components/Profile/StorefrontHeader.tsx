@@ -1,6 +1,6 @@
 'use client'
 
-import { MailOutline } from '@mui/icons-material'
+import MailOutline from '@mui/icons-material/MailOutline'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'

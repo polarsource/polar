@@ -1,17 +1,15 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  AddOutlined,
-  AddPhotoAlternateOutlined,
-  CloseOutlined,
-  Facebook,
-  GitHub,
-  Instagram,
-  LinkedIn,
-  Public,
-  X,
-  YouTube,
-} from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
+import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import Facebook from '@mui/icons-material/Facebook'
+import GitHub from '@mui/icons-material/GitHub'
+import Instagram from '@mui/icons-material/Instagram'
+import LinkedIn from '@mui/icons-material/LinkedIn'
+import Public from '@mui/icons-material/Public'
+import X from '@mui/icons-material/X'
+import YouTube from '@mui/icons-material/YouTube'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'

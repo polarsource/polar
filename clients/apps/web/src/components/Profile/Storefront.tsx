@@ -5,7 +5,7 @@ import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCar
 import { useRecurringInterval } from '@/hooks/products'
 import { organizationPageLink } from '@/utils/nav'
 import { isLegacyRecurringPrice } from '@/utils/product'
-import { HiveOutlined } from '@mui/icons-material'
+import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import { schemas } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'

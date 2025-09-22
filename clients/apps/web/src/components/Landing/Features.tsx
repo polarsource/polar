@@ -1,13 +1,11 @@
 'use client'
 
-import {
-  AllInclusiveOutlined,
-  DiamondOutlined,
-  DonutLargeOutlined,
-  HiveOutlined,
-  LinkOutlined,
-  TrendingUpOutlined,
-} from '@mui/icons-material'
+import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
+import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
+import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
+import HiveOutlined from '@mui/icons-material/HiveOutlined'
+import LinkOutlined from '@mui/icons-material/LinkOutlined'
+import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'

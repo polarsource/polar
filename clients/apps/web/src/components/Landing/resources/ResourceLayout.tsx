@@ -1,8 +1,8 @@
 'use client'
 
-import { ArrowDownwardOutlined } from '@mui/icons-material'
-import { PropsWithChildren, useCallback } from 'react'
-import { twMerge } from 'tailwind-merge'
+import ArrowDownwardOutlined from "@mui/icons-material/ArrowDownwardOutlined";
+import { PropsWithChildren, useCallback } from "react";
+import { twMerge } from "tailwind-merge";
 
 export const ResourceLayout = ({
   title,

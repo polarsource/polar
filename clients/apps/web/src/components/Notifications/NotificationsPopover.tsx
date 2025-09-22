@@ -1,11 +1,9 @@
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import {
-  BoltOutlined,
-  FaceOutlined,
-  InfoOutlined,
-  ShoppingBagOutlined,
-} from '@mui/icons-material'
+import BoltOutlined from '@mui/icons-material/BoltOutlined'
+import FaceOutlined from '@mui/icons-material/FaceOutlined'
+import InfoOutlined from '@mui/icons-material/InfoOutlined'
+import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'

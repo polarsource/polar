@@ -8,7 +8,7 @@ import {
   useInviteOrganizationMember,
   useListOrganizationMembers,
 } from '@/hooks/queries/org'
-import { Add } from '@mui/icons-material'
+import Add from '@mui/icons-material/Add'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'

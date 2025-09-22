@@ -3,12 +3,10 @@ import Spinner from '@/components/Shared/Spinner'
 import { useCheckoutLinks } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import {
-  AddOutlined,
-  ArrowDownward,
-  ArrowUpward,
-  LinkOutlined,
-} from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import ArrowDownward from '@mui/icons-material/ArrowDownward'
+import ArrowUpward from '@mui/icons-material/ArrowUpward'
+import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useContext, useEffect, useMemo } from 'react'

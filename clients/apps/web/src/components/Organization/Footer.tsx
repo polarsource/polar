@@ -74,7 +74,7 @@ const Footer = () => {
           <div className="flex flex-col gap-y-4">
             <h3 className="text-base dark:text-white">Support</h3>
             <div className="flex flex-col gap-y-2">
-              <FooterLink href="https://polar.sh/docs">Docs</FooterLink>
+              <FooterLink href="https://polar.sh/docs/introduction">Docs</FooterLink>
               <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
             </div>
           </div>

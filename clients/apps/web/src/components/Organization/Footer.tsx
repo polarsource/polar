@@ -1,4 +1,4 @@
-import Link, { LinkProps } from 'next/link'
+import Link from 'next/link'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { BrandingMenu } from '../Layout/Public/BrandingMenu'
@@ -86,12 +86,22 @@ const Footer = () => {
 
 export default Footer
 
-const FooterLink = (props: PropsWithChildren<LinkProps>) => {
+const FooterLinkClassnames =
+  'dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-500'
+
+const FooterLink = (props: PropsWithChildren<{ href: string }>) => {
+  const isExternal = props.href.toString().startsWith('http')
+
+  if (isExternal) {
+    return (
+      <a className={FooterLinkClassnames} {...props}>
+        {props.children}
+      </a>
+    )
+  }
+
   return (
-    <Link
-      className="dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-500"
-      {...props}
-    >
+    <Link className={FooterLinkClassnames} {...props}>
       {props.children}
     </Link>
   )

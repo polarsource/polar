@@ -1,6 +1,6 @@
-import ArrowOutwardOutlined from "@mui/icons-material/ArrowOutwardOutlined";
-import { Metadata } from "next";
-import Link from "next/link";
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Resources',
@@ -35,7 +35,7 @@ const resourceLinks = [
   {
     title: 'Documentation',
     description: 'Learn the ins and outs of the Polar platform',
-    href: '/docs',
+    href: 'https://polar.sh/docs',
     target: '_blank',
   },
   {

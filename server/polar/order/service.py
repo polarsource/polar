@@ -668,6 +668,7 @@ class OrderService:
             discount_amount = discount.get_discount_amount(discountable_amount)
 
         # Calculate tax
+        taxable_amount = subtotal_amount - discount_amount
         tax_amount = 0
         taxability_reason: TaxabilityReason | None = None
         tax_rate: TaxRate | None = None
@@ -675,11 +676,11 @@ class OrderService:
         tax_calculation_processor_id: str | None = None
 
         if (
-            product.is_tax_applicable
+            taxable_amount != 0
+            and product.is_tax_applicable
             and billing_address is not None
             and product.stripe_product_id is not None
         ):
-            taxable_amount = subtotal_amount - discount_amount
             tax_calculation = await calculate_tax(
                 order_id,
                 subscription.currency,

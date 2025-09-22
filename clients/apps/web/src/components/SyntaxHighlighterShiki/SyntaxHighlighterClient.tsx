@@ -7,10 +7,10 @@ import {
   ShikiError,
   createHighlighter,
 } from 'shiki/bundle/web'
-import { themeConfig, themesList, transformers } from '../../../shiki.config'
+import { themeConfig, themesList, transformers, USED_LANGUAGES } from '../../../shiki.config'
 
 const highlighterPromise = createHighlighter({
-  langs: ['bash', 'js'],
+  langs: USED_LANGUAGES,
   themes: themesList,
 })
 

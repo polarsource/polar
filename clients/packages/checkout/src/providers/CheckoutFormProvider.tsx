@@ -1,5 +1,6 @@
 'use client'
 
+import type { AddressInput } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
@@ -79,6 +80,8 @@ export const CheckoutFormProvider = ({
   const form = useForm<CheckoutUpdatePublic>({
     defaultValues: {
       ...checkout,
+      customerBillingAddress:
+        checkout.customerBillingAddress as AddressInput | null,
       discountCode: checkout.discount ? checkout.discount.code : undefined,
       ...(prefilledParameters ? unflatten(prefilledParameters) : {}),
     },

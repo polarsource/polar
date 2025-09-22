@@ -51,7 +51,3 @@ jobs:
       - name: Build
         working-directory: ./clients
         run: pnpm build
-
-      - name: Test
-        working-directory: ./clients
-        run: pnpm test

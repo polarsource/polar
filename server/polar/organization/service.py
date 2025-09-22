@@ -715,9 +715,7 @@ class OrganizationService:
 
         session.add(review)
 
-        await plain_service.create_appeal_review_thread(
-            session, organization, review
-        )
+        await plain_service.create_appeal_review_thread(session, organization, review)
 
         await session.commit()
 

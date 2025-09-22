@@ -4,12 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000 --turbo",
-    "build": "NODE_OPTIONS=--max-old-space-size=8192 next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "exit 0",
     "typecheck": "tsc --noEmit",
-    "analyze": "NODE_OPTIONS=--max-old-space-size=8192 ANALYZE=true next build"
+    "analyze": "ANALYZE=true next build"
   },
   "engines": {
     "node": "=22"

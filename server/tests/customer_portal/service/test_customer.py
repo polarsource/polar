@@ -1,14 +1,13 @@
 from unittest.mock import MagicMock
 
 import pytest
-from pydantic_extra_types.country import CountryAlpha2
 from pytest_mock import MockerFixture
 
 from polar.customer_portal.schemas.customer import CustomerPortalCustomerUpdate
 from polar.customer_portal.service.customer import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
-from polar.kit.address import Address
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.tax import TaxIDFormat
 from polar.models import Organization
 from polar.postgres import AsyncSession

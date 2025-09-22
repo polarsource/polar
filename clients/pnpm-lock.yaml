@@ -200,9 +200,6 @@ importers:
       react-hook-form:
         specifier: ^7.62.0
         version: 7.62.0(react@18.3.1)
-      react-is:
-        specifier: ^18.3.1
-        version: 18.3.1
       react-timeago:
         specifier: ^8.3.0
         version: 8.3.0(react@18.3.1)
@@ -279,9 +276,6 @@ importers:
       '@types/react-dom':
         specifier: ^18.3.7
         version: 18.3.7(@types/react@18.3.24)
-      '@types/react-is':
-        specifier: ^18.3.1
-        version: 18.3.1
       '@types/tinycolor2':
         specifier: ^1.4.6
         version: 1.4.6
@@ -2781,9 +2775,6 @@ packages:
     resolution: {integrity: sha512-MEe3UeoENYVFXzoXEWsvcpg6ZvlrFNlOQ7EOsvhI3CfAXwzPfO8Qwuxd40nepsYKqyyVQnTdEfv68q91yLcKrQ==}
     peerDependencies:
       '@types/react': ^18.0.0
-
-  '@types/react-is@18.3.1':
-    resolution: {integrity: sha512-zts4lhQn5ia0cF/y2+3V6Riu0MAfez9/LJYavdM8TvcVl+S91A/7VWxyBT8hbRuWspmuCaiGI0F41OJYGrKhRA==}
 
   '@types/react-transition-group@4.4.12':
     resolution: {integrity: sha512-8TV6R3h2j7a91c+1DXdJi3Syo69zzIZbz7Lg5tORM5LEJG7X/E6a1V3drRyBRZq7/utz7A+c4OgYLiLcYGHG6w==}
@@ -9161,10 +9152,6 @@ snapshots:
       '@types/node': 22.18.6
 
   '@types/react-dom@18.3.7(@types/react@18.3.24)':
-    dependencies:
-      '@types/react': 18.3.24
-
-  '@types/react-is@18.3.1':
     dependencies:
       '@types/react': 18.3.24
 

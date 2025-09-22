@@ -9,6 +9,7 @@ import {
 } from '@/hooks/queries'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -162,32 +163,42 @@ const CustomerSubscriptionDetails = ({
               Start Date
             </span>
             <span>
-              {new Date(subscription.started_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
+              <FormattedDateTime
+                datetime={subscription.started_at}
+                dateStyle="long"
+              />
             </span>
           </div>
         )}
-        {!subscription.ended_at && subscription.current_period_end && (
+        {subscription.trial_end && subscription.status === 'trialing' ? (
           <div className="flex flex-row items-center justify-between">
             <span className="dark:text-polar-500 text-gray-500">
-              {subscription.cancel_at_period_end
-                ? 'Expiry Date'
-                : 'Renewal Date'}
+              Trial Ends
             </span>
             <span>
-              {new Date(subscription.current_period_end).toLocaleDateString(
-                'en-US',
-                {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                },
-              )}
+              <FormattedDateTime
+                datetime={subscription.trial_end}
+                dateStyle="long"
+              />
             </span>
           </div>
+        ) : (
+          !subscription.ended_at &&
+          subscription.current_period_end && (
+            <div className="flex flex-row items-center justify-between">
+              <span className="dark:text-polar-500 text-gray-500">
+                {subscription.cancel_at_period_end
+                  ? 'Expiry Date'
+                  : 'Renewal Date'}
+              </span>
+              <span>
+                <FormattedDateTime
+                  datetime={subscription.current_period_end}
+                  dateStyle="long"
+                />
+              </span>
+            </div>
+          )
         )}
         {subscription.meters.length > 0 && (
           <div className="flex flex-col gap-y-4 py-2">
@@ -216,11 +227,10 @@ const CustomerSubscriptionDetails = ({
           <div className="flex flex-row items-center justify-between">
             <span className="dark:text-polar-500 text-gray-500">Expired</span>
             <span>
-              {new Date(subscription.ended_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
+              <FormattedDateTime
+                datetime={subscription.ended_at}
+                dateStyle="long"
+              />
             </span>
           </div>
         )}

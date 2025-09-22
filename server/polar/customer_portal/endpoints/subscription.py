@@ -165,7 +165,8 @@ async def get_charge_preview(
     tax_amount = 0
 
     if (
-        subscription.product.is_tax_applicable
+        taxable_amount > 0
+        and subscription.product.is_tax_applicable
         and subscription.customer.billing_address is not None
     ):
         assert subscription.product.stripe_product_id is not None

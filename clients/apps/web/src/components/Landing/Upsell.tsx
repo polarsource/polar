@@ -1,11 +1,9 @@
 'use client'
 
-import {
-  AccountBalance,
-  ArrowOutwardOutlined,
-  GitHub,
-  ShoppingBagOutlined,
-} from '@mui/icons-material'
+import AccountBalance from '@mui/icons-material/AccountBalance'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import GitHub from '@mui/icons-material/GitHub'
+import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import { Box, Check, LucideIcon } from 'lucide-react'

@@ -9,7 +9,8 @@ import {
 	InactiveSubscriptionsOverview,
 } from "./CustomerPortalSubscriptions";
 import { EmptyState } from "./EmptyState";
-import { AllInclusiveOutlined, DiamondOutlined } from "@mui/icons-material";
+import AllInclusiveOutlined from "@mui/icons-material/AllInclusiveOutlined";
+import DiamondOutlined from "@mui/icons-material/DiamondOutlined";
 export interface CustomerPortalProps {
 	organization: schemas["Organization"];
 	products: schemas["CustomerProduct"][];

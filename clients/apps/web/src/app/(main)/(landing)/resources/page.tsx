@@ -1,5 +1,5 @@
 import { ResourceLayout } from "@/components/Landing/resources/ResourceLayout";
-import { ArrowForwardOutlined } from "@mui/icons-material";
+import ArrowForwardOutlined from "@mui/icons-material/ArrowForwardOutlined";
 import { Metadata } from "next";
 import Link from "next/link";
 

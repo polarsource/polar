@@ -1,7 +1,7 @@
 'use client'
 
 import { CommandLineIcon } from '@heroicons/react/24/outline'
-import { ArrowOutwardOutlined } from '@mui/icons-material'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 

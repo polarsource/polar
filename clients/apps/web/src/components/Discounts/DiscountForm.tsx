@@ -1,4 +1,4 @@
-import { AutorenewOutlined } from '@mui/icons-material'
+import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
 import {
   Accordion,
   AccordionContent,

@@ -3,11 +3,9 @@
 import { useListOrganizations } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import {
-  Face,
-  LogoutOutlined,
-  SpaceDashboardOutlined,
-} from '@mui/icons-material'
+import Face from '@mui/icons-material/Face'
+import LogoutOutlined from '@mui/icons-material/LogoutOutlined'
+import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { Separator } from '@polar-sh/ui/components/ui/separator'

@@ -1,8 +1,6 @@
-import {
-  AllInclusiveOutlined,
-  ArrowOutward,
-  FavoriteBorderOutlined,
-} from '@mui/icons-material'
+import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
+import ArrowOutward from '@mui/icons-material/ArrowOutward'
+import FavoriteBorderOutlined from '@mui/icons-material/FavoriteBorderOutlined'
 import { Metadata } from 'next'
 import { JobSection } from './JobSection'
 

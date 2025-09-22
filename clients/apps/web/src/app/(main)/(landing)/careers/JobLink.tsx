@@ -1,4 +1,4 @@
-import { ArrowForwardOutlined } from '@mui/icons-material'
+import ArrowForwardOutlined from '@mui/icons-material/ArrowForwardOutlined'
 import Link from 'next/link'
 
 export interface JobLinkProps {

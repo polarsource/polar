@@ -908,6 +908,8 @@ class TestCreateSubscriptionOrder:
         enqueued_jobs = [call[0][0] for call in enqueue_job_mock.call_args_list]
         assert "order.trigger_payment" not in enqueued_jobs
 
+        calculate_tax_mock.assert_not_called()
+
     async def test_cycle_tax_exempted(
         self,
         calculate_tax_mock: MagicMock,

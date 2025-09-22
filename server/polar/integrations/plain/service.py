@@ -1152,10 +1152,8 @@ class PlainService:
             ),
             (
                 "Subscription Cancellation",
-                (
-                    "I have cancelled the subscription immediately."
-                )
-            )
+                ("I have cancelled the subscription immediately."),
+            ),
         ]
 
         def _get_snippet_container(

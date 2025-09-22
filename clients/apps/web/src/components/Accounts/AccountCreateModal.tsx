@@ -15,10 +15,6 @@ import {
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 
-interface AccountForm {
-  country: string
-}
-
 const AccountCreateModal = ({
   forOrganizationId,
   returnPath,
@@ -26,7 +22,7 @@ const AccountCreateModal = ({
   forOrganizationId: string
   returnPath: string
 }) => {
-  const form = useForm<AccountForm>({
+  const form = useForm<schemas['AccountCreateForOrganization']>({
     defaultValues: {
       country: 'US',
     },
@@ -40,29 +36,32 @@ const AccountCreateModal = ({
 
   const [loading, setLoading] = useState(false)
 
-  const goToOnboarding = async (account: schemas['Account']) => {
-    setLoading(true)
-    const { data, error } = await api.POST(
-      '/v1/accounts/{id}/onboarding_link',
-      {
-        params: {
-          path: { id: account.id },
-          query: { return_path: returnPath },
+  const goToOnboarding = useCallback(
+    async (account: schemas['Account']) => {
+      setLoading(true)
+      const { data, error } = await api.POST(
+        '/v1/accounts/{id}/onboarding_link',
+        {
+          params: {
+            path: { id: account.id },
+            query: { return_path: returnPath },
+          },
         },
-      },
-    )
-    setLoading(false)
+      )
+      setLoading(false)
 
-    if (error) {
-      window.location.reload()
-      return
-    }
+      if (error) {
+        window.location.reload()
+        return
+      }
 
-    window.location.href = data.url
-  }
+      window.location.href = data.url
+    },
+    [returnPath],
+  )
 
   const onSubmit = useCallback(
-    async (data: AccountForm) => {
+    async (data: schemas['AccountCreateForOrganization']) => {
       setLoading(true)
 
       const { data: account, error } = await api.POST('/v1/accounts', {
@@ -121,7 +120,7 @@ const AccountCreateModal = ({
 }
 
 export const AccountCountry = () => {
-  const { control } = useFormContext<AccountForm>()
+  const { control } = useFormContext<schemas['AccountCreateForOrganization']>()
 
   return (
     <>

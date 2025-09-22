@@ -56,7 +56,12 @@ const DownloadInvoice = ({
   const { isShown, hide, show } = useModal()
   const form = useForm<schemas['OrderUpdate'] | schemas['CustomerOrderUpdate']>(
     {
-      defaultValues: order,
+      defaultValues: {
+        ...order,
+        billing_address: order.billing_address as
+          | schemas['AddressInput']
+          | null,
+      },
     },
   )
   const {

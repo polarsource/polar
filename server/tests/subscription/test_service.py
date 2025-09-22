@@ -67,6 +67,7 @@ from polar.subscription.service import (
     MissingCheckoutCustomer,
     NotARecurringProduct,
     SubscriptionDoesNotExist,
+    TrialingSubscription,
 )
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.auth import AuthSubjectFixture
@@ -1630,6 +1631,22 @@ class TestList:
 
 @pytest.mark.asyncio
 class TestUpdateProduct:
+    async def test_trialing_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(TrialingSubscription):
+            await subscription_service.update_product(
+                session, subscription, product_id=uuid.uuid4()
+            )
+
     async def test_meters(
         self,
         session: AsyncSession,

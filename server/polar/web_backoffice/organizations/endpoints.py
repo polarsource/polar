@@ -332,6 +332,7 @@ async def list(
                 or_(
                     Organization.name.ilike(f"%{query}%"),
                     Organization.slug.ilike(f"%{query}%"),
+                    Organization.website.ilike(f"%{query}%"),
                 )
             )
     if organization_status:

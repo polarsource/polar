@@ -1,5 +1,6 @@
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import { CheckOutlined, CloseOutlined } from '@mui/icons-material'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ResourceLayout, ResourceSection } from './ResourceLayout'

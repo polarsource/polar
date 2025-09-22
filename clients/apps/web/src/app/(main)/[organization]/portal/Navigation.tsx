@@ -31,7 +31,7 @@ const links = (organization: schemas['Organization']) => [
   },
   {
     href: `/${organization.slug}/portal/settings`,
-    label: 'Settings',
+    label: 'Billing',
     isActive: (path: string) => path.includes('/settings'),
   },
 ]

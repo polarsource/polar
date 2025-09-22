@@ -18,6 +18,7 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import Environment, settings
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
+from polar.integrations.plain.service import plain as plain_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
@@ -713,6 +714,11 @@ class OrganizationService:
         review.appeal_reason = appeal_reason
 
         session.add(review)
+
+        await plain_service.create_appeal_review_thread(
+            session, organization, review
+        )
+
         await session.commit()
 
         return review

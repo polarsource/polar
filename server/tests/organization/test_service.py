@@ -962,6 +962,10 @@ class TestSubmitAppeal:
         )
         await save_fixture(review)
 
+        mock_plain_service = mocker.patch(
+            "polar.organization.service.plain_service.create_appeal_review_thread"
+        )
+
         appeal_reason = "We selling templates and not consultancy services"
         result = await organization_service.submit_appeal(
             session, organization, appeal_reason
@@ -969,6 +973,7 @@ class TestSubmitAppeal:
 
         assert result.appeal_submitted_at is not None
         assert result.appeal_reason == appeal_reason
+        mock_plain_service.assert_called_once_with(session, organization, result)
 
     async def test_submit_appeal_no_review_exists(
         self, session: AsyncSession, organization: Organization
@@ -1027,6 +1032,34 @@ class TestSubmitAppeal:
             await organization_service.submit_appeal(
                 session, organization, "New appeal reason"
             )
+
+    async def test_submit_appeal_plain_service_called(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.UNCERTAIN,
+            risk_score=50.0,
+            violated_sections=[],
+            reason="Manual review required",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+        )
+        await save_fixture(review)
+
+        mock_plain_service = mocker.patch(
+            "polar.organization.service.plain_service.create_appeal_review_thread"
+        )
+
+        result = await organization_service.submit_appeal(
+            session, organization, "Please review again"
+        )
+
+        mock_plain_service.assert_called_once_with(session, organization, result)
 
 
 @pytest.mark.asyncio

@@ -3,9 +3,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic_extra_types.country import CountryAlpha2
 
 from polar.invoice.generator import Invoice, InvoiceGenerator, InvoiceItem
-from polar.kit.address import Address, CountryAlpha2
+from polar.kit.address import Address
 from polar.kit.tax import TaxabilityReason
 
 

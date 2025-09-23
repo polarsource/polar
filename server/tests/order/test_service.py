@@ -3474,7 +3474,7 @@ class TestCustomerBalance:
                         ),
                     ],
                     payments=[(0, 3750, PaymentStatus.succeeded)],
-                    expected_balance=3750 - (3750 - 1250),  # Customer owed $12.50
+                    expected_balance=0,  # Refund already paid back to customer
                 ),
                 id="partial-refund",
             ),
@@ -3529,7 +3529,7 @@ class TestCustomerBalance:
                         (0, 3000, PaymentStatus.succeeded),
                         (1, 11250, PaymentStatus.succeeded),
                     ],
-                    expected_balance=14250 - (3000 + 11250 - 5000),  # Customer owed $50
+                    expected_balance=0,  # Refunds already paid back to customer
                 ),
                 id="mixed-paid-and-partial-refund",
             ),
@@ -3550,7 +3550,7 @@ class TestCustomerBalance:
                         ),
                     ],
                     payments=[(0, 1875, PaymentStatus.succeeded)],
-                    expected_balance=1875 - (1875 - 625),  # Customer owed $6.25
+                    expected_balance=0,  # Refund already paid back to customer
                 ),
                 id="partial-refund-with-discount-and-tax",
             ),

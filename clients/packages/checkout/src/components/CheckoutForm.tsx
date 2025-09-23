@@ -87,6 +87,7 @@ interface BaseCheckoutFormProps {
   loading: boolean
   loadingLabel: string | undefined
   disabled?: boolean
+  updateIsPending?: boolean
   themePreset: ThemingPresetProps
 }
 
@@ -98,6 +99,7 @@ const BaseCheckoutForm = ({
   loading,
   loadingLabel,
   disabled,
+  updateIsPending,
   children,
   themePreset: themePresetProps,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
@@ -748,26 +750,6 @@ const BaseCheckoutForm = ({
             </div>
             {!checkout.isFreeProductPrice && (
               <div className="flex flex-col gap-y-2">
-                <div className="mb-3 border-b border-gray-300 pb-4 dark:border-gray-700">
-                  {checkout.activeTrialInterval &&
-                    checkout.activeTrialIntervalCount && (
-                      <DetailRow
-                        emphasis
-                        title={`${checkout.activeTrialIntervalCount} ${checkout.activeTrialInterval}${checkout.activeTrialIntervalCount > 1 ? 's' : ''} trial`}
-                      >
-                        <span>Free</span>
-                      </DetailRow>
-                    )}
-                  {checkout.trialEnd && (
-                    <span className="dark:text-polar-500 text-gray-500:w text-sm">
-                      Trial ends{' '}
-                      <FormattedDateTime
-                        datetime={checkout.trialEnd}
-                        resolution="day"
-                      />
-                    </span>
-                  )}
-                </div>
                 {checkout.currency ? (
                   <>
                     <DetailRow title="Subtotal">
@@ -788,15 +770,17 @@ const BaseCheckoutForm = ({
                         )}
                       </DetailRow>
                     )}
-                    {checkout.taxAmount !== null && (
-                      <DetailRow title="Taxes">
-                        {formatCurrencyNumber(
-                          checkout.taxAmount,
-                          checkout.currency,
-                          checkout.discountAmount % 100 === 0 ? 0 : 2,
-                        )}
-                      </DetailRow>
-                    )}
+
+                    <DetailRow title="Taxes">
+                      {checkout.taxAmount !== null
+                        ? formatCurrencyNumber(
+                            checkout.taxAmount,
+                            checkout.currency,
+                            checkout.discountAmount % 100 === 0 ? 0 : 2,
+                          )
+                        : '—'}
+                    </DetailRow>
+
                     <DetailRow title={totalLabel} emphasis>
                       <div className="flex flex-col items-end gap-y-1">
                         <AmountLabel
@@ -826,6 +810,30 @@ const BaseCheckoutForm = ({
                 ) : (
                   <span>Free</span>
                 )}
+                {(checkout.trialEnd ||
+                  (checkout.activeTrialInterval &&
+                    checkout.activeTrialIntervalCount)) && (
+                  <div className="mt-3 border-t border-gray-300 pt-4 dark:border-gray-700">
+                    {checkout.activeTrialInterval &&
+                      checkout.activeTrialIntervalCount && (
+                        <DetailRow
+                          emphasis
+                          title={`${checkout.activeTrialIntervalCount} ${checkout.activeTrialInterval}${checkout.activeTrialIntervalCount > 1 ? 's' : ''} trial`}
+                        >
+                          <span>Free</span>
+                        </DetailRow>
+                      )}
+                    {checkout.trialEnd && (
+                      <span className="dark:text-polar-500 text-gray-500:w text-sm">
+                        Trial ends{' '}
+                        <FormattedDateTime
+                          datetime={checkout.trialEnd}
+                          resolution="day"
+                        />
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             <div className="flex w-full flex-col items-center justify-center gap-y-2">
@@ -834,7 +842,7 @@ const BaseCheckoutForm = ({
                 size="lg"
                 wrapperClassNames="text-base"
                 className={cn(themePresetProps.polar.button, 'w-full')}
-                disabled={disabled}
+                disabled={disabled || updateIsPending}
                 loading={loading}
               >
                 {checkoutLabel}
@@ -886,6 +894,7 @@ interface CheckoutFormProps {
   loading: boolean
   loadingLabel: string | undefined
   disabled?: boolean
+  updateIsPending?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
 }
@@ -898,6 +907,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     loading,
     loadingLabel,
     disabled,
+    updateIsPending,
     themePreset: themePresetProps,
   } = props
   const {
@@ -960,6 +970,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             update={update}
             loading={loading}
             loadingLabel={loadingLabel}
+            updateIsPending={updateIsPending}
           >
             {checkout.isPaymentFormRequired && (
               <PaymentElement

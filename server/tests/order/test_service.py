@@ -2421,6 +2421,7 @@ class TestHandlePaymentFailure:
             status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = None
+        assert order.subscription is not None
         order.subscription.stripe_subscription_id = "sub_stripe_123"
         await save_fixture(order)
 

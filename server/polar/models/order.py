@@ -163,7 +163,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     @declared_attr
-    def subscription(cls) -> Mapped["Subscription"]:
+    def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise")
 
     checkout_id: Mapped[UUID | None] = mapped_column(

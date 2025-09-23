@@ -1692,6 +1692,7 @@ class OrderService:
             order, update_dict={"next_payment_attempt_at": first_retry_date}
         )
 
+        assert order.subscription is not None
         await subscription_service.mark_past_due(session, order.subscription)
 
         return order
@@ -1746,10 +1747,9 @@ class OrderService:
             )
 
             repository = OrderRepository.from_session(session)
-            order = await repository.update(
+            return await repository.update(
                 order, update_dict={"next_payment_attempt_at": None}
             )
-            return order
 
         if order.subscription.payment_method_id is None:
             log.warning(

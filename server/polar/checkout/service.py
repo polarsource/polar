@@ -27,6 +27,7 @@ from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.exceptions import (
+    BadRequest,
     NotPermitted,
     PaymentNotReady,
     PolarError,
@@ -861,6 +862,14 @@ class CheckoutService:
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
+
+        if (
+            checkout.trial_end is not None
+            and not checkout.organization.subscriptions_billing_engine
+        ):
+            raise BadRequest(
+                "Trials are not supported on susbcriptions managed by Stripe."
+            )
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(

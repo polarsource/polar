@@ -1,6 +1,6 @@
 import Input from '@polar-sh/ui/components/atoms/Input'
 import Big from 'big.js'
-import { DollarSign } from 'lucide-react'
+import { DollarSign } from '@polar-sh/icons'
 import React, { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 

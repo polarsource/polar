@@ -14,7 +14,7 @@ import {
   AddOutlined,
   LinkOutlined,
   MoreVertOutlined,
-} from '@mui/icons-material'
+} from '@polar-sh/icons'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DropdownMenu,

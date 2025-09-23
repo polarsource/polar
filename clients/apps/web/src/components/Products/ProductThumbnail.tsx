@@ -1,4 +1,4 @@
-import { TextureOutlined } from '@mui/icons-material'
+import { TextureOutlined } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import { twMerge } from 'tailwind-merge'
 

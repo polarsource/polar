@@ -1,7 +1,7 @@
 'use client'
 
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
-import { PhotoIcon } from '@heroicons/react/24/outline'
+import { PhotoIcon } from '@polar-sh/icons'
 import { upload } from '@vercel/blob/client'
 import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

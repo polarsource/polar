@@ -3,7 +3,7 @@
 import Spinner from '@/components/Shared/Spinner'
 import { ParsedMetricsResponse } from '@/hooks/queries'
 import { getFormattedMetricValue } from '@/utils/metrics'
-import { ArrowOutwardOutlined } from '@mui/icons-material'
+import { ArrowOutwardOutlined } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'

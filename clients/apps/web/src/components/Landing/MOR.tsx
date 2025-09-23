@@ -1,4 +1,4 @@
-import { ArrowOutward } from '@mui/icons-material'
+import { ArrowOutward } from '@polar-sh/icons'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { SplitPromo } from './molecules/SplitPromo'

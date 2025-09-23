@@ -1,4 +1,4 @@
-import { ClearOutlined } from '@mui/icons-material'
+import { ClearOutlined } from '@polar-sh/icons'
 import { enums, schemas } from '@polar-sh/client'
 import {
   Accordion,

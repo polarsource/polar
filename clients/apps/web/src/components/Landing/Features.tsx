@@ -7,7 +7,7 @@ import {
   HiveOutlined,
   LinkOutlined,
   TrendingUpOutlined,
-} from '@mui/icons-material'
+} from '@polar-sh/icons'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'

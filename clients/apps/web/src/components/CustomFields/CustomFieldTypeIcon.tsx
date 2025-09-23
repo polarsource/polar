@@ -4,7 +4,7 @@ import {
   List,
   Numbers,
   TextSnippet,
-} from '@mui/icons-material'
+} from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 
 const getIcon = (type: schemas['CustomFieldType']) => {

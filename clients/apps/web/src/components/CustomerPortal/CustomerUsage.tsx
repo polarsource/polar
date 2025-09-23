@@ -1,7 +1,7 @@
 'use client'
 
 import { useCustomerCustomerMeters } from '@/hooks/queries'
-import { Search } from '@mui/icons-material'
+import { MaterialSearch } from '@polar-sh/icons'
 import { Client, schemas } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -40,7 +40,7 @@ export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {
               <div className="w-full lg:w-1/3">
                 <Input
                   className={twMerge('w-full', themingPreset.polar.input)}
-                  preSlot={<Search fontSize="inherit" />}
+                  preSlot={<MaterialSearch fontSize="inherit" />}
                   placeholder="Search Usage Meter"
                   value={query || ''}
                   onChange={(e) => setQuery(e.target.value)}

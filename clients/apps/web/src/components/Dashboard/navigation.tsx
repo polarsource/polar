@@ -15,9 +15,9 @@ import {
   StreamOutlined,
   TrendingUp,
   TuneOutlined,
-} from '@mui/icons-material'
+} from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
-import { ShoppingCart } from 'lucide-react'
+import { ShoppingCart } from '@polar-sh/icons'
 import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'
 

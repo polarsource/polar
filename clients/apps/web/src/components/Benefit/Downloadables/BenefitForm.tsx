@@ -3,7 +3,7 @@
 import { FileObject, useFileUpload } from '@/components/FileUpload'
 import { FileRead } from '@/components/FileUpload/Upload'
 import { useFiles } from '@/hooks/queries'
-import { FileUploadOutlined as FileUploadIcon } from '@mui/icons-material'
+import { FileUploadOutlined } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import { ReactElement, useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -29,7 +29,7 @@ const DropzoneView = ({
       >
         <div className="flex flex-col items-center gap-y-4 text-center">
           <div className={isDragActive ? 'text-blue-500' : ''}>
-            <FileUploadIcon fontSize="large" />
+            <FileUploadOutlined fontSize="large" />
           </div>
           <h3 className="font-medium">
             {!isDragActive && 'Feed me some bytes'}

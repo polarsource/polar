@@ -13,7 +13,7 @@ import {
   CheckCircle,
   Info,
   Loader2,
-} from 'lucide-react'
+} from '@polar-sh/icons'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import AppealForm from './AppealForm'
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowOutwardOutlined, Check } from '@mui/icons-material'
+import { ArrowOutwardOutlined, Check } from '@polar-sh/icons'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Tabs,

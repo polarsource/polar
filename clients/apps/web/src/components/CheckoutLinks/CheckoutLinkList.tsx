@@ -8,7 +8,7 @@ import {
   ArrowDownward,
   ArrowUpward,
   LinkOutlined,
-} from '@mui/icons-material'
+} from '@polar-sh/icons'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useContext, useEffect, useMemo } from 'react'

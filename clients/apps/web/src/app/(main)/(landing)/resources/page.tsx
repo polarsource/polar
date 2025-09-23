@@ -1,4 +1,4 @@
-import { ArrowOutwardOutlined } from '@mui/icons-material'
+import { ArrowOutwardOutlined } from '@polar-sh/icons'
 import { Metadata } from 'next'
 import Link from 'next/link'
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { PlusIcon } from '@heroicons/react/20/solid'
+import { PlusIcon } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {

@@ -17,7 +17,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { Plus, X } from 'lucide-react'
+import { Plus, X } from '@polar-sh/icons'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 

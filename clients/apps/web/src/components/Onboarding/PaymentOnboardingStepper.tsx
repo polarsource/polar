@@ -10,7 +10,7 @@ import {
   Clock,
   Code2,
   Package,
-} from 'lucide-react'
+} from '@polar-sh/icons'
 import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'

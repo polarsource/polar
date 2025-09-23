@@ -11,7 +11,7 @@ import {
   Public,
   X,
   YouTube,
-} from '@mui/icons-material'
+} from '@polar-sh/icons'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'

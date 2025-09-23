@@ -1,5 +1,5 @@
 import { MeterDetails } from '@/components/Meter/MeterDetails'
-import { AddOutlined } from '@mui/icons-material'
+import { AddOutlined } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'

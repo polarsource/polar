@@ -1,6 +1,6 @@
 import { useOrders } from '@/hooks/queries/orders'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { ShoppingCartOutlined } from '@mui/icons-material'
+import { ShoppingCartOutlined } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {

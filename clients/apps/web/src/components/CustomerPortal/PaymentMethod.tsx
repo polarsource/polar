@@ -3,7 +3,7 @@ import { useDeleteCustomerPaymentMethod } from '@/hooks/queries'
 import type { Client, operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { X } from 'lucide-react'
+import { X } from '@polar-sh/icons'
 import CreditCardBrandIcon from '../CreditCardBrandIcon'
 
 type PaymentMethodType =

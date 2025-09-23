@@ -2,7 +2,7 @@ import LogoIcon from '@/components/Brand/LogoIcon'
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
-import { ArrowOutwardOutlined } from '@mui/icons-material'
+import { ArrowOutwardOutlined } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -24,7 +24,7 @@ import {
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown } from '@polar-sh/icons'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'

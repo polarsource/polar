@@ -7,7 +7,7 @@ import {
   Face,
   LogoutOutlined,
   SpaceDashboardOutlined,
-} from '@mui/icons-material'
+} from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { Separator } from '@polar-sh/ui/components/ui/separator'

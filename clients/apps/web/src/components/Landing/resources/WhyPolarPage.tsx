@@ -1,7 +1,7 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import { ArrowOutwardOutlined, CheckOutlined } from '@mui/icons-material'
+import { ArrowOutwardOutlined, CheckOutlined } from '@polar-sh/icons'
 import Link from 'next/link'
 import { Midday, StillaAI, Tailwind } from '../Logos'
 import { ResourceLayout, ResourceSection } from './ResourceLayout'

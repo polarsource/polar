@@ -15,7 +15,7 @@ import {
   startOfMonth,
   subMonths,
 } from 'date-fns'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight } from '@polar-sh/icons'
 import { useCallback, useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Spinner from '../Shared/Spinner'

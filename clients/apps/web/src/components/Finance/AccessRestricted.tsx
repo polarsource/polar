@@ -1,4 +1,4 @@
-import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
+import { ExclamationCircleIcon } from '@polar-sh/icons'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 
 export interface AccessRestrictedProps {

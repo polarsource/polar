@@ -32,6 +32,7 @@
     "@next/mdx": "^14.2.25",
     "@polar-sh/checkout": "workspace:^",
     "@polar-sh/client": "workspace:*",
+    "@polar-sh/icons": "workspace:*",
     "@polar-sh/mdx": "workspace:*",
     "@polar-sh/sdk": "^0.34.15",
     "@polar-sh/ui": "workspace:*",

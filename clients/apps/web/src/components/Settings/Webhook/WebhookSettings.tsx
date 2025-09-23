@@ -1,7 +1,7 @@
 'use client'
 
 import { useListWebhooksEndpoints } from '@/hooks/queries'
-import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
+import { ArrowUpRightIcon } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'

@@ -1,4 +1,4 @@
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import AccountBalanceIcon from '@polar-sh/icons/AccountBalance';
 
 const ManualPayout = () => {
   return (

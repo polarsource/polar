@@ -13,7 +13,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
+import { AddOutlined, MoreVertOutlined } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {

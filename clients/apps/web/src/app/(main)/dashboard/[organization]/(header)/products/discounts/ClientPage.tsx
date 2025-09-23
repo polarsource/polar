@@ -15,7 +15,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { getDiscountDisplay } from '@/utils/discount'
-import { AddOutlined, MoreVertOutlined, Search } from '@mui/icons-material'
+import { AddOutlined, MoreVertOutlined, MaterialSearch } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -273,7 +273,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <Input
             className="w-full md:max-w-64"
-            preSlot={<Search fontSize="small" />}
+            preSlot={<MaterialSearch fontSize="small" />}
             placeholder="Search Discounts"
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}

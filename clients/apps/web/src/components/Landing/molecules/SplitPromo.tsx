@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Check } from 'lucide-react'
+import { LucideCheck } from '@polar-sh/icons'
 import Image from 'next/image'
 import React from 'react'
 
@@ -69,7 +69,7 @@ export const SplitPromo: React.FC<SplitPromoProps> = ({
                 className="flex flex-row items-center gap-x-2"
                 variants={itemVariants}
               >
-                <Check className="h-4 w-4 text-emerald-500" />
+                <LucideCheck className="h-4 w-4 text-emerald-500" />
                 <p className="text-pretty leading-relaxed">{bullet}</p>
               </motion.li>
             ))}

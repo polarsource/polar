@@ -1,5 +1,5 @@
 import { useInViewport } from '@/hooks/utils'
-import { AddOutlined, Search } from '@mui/icons-material'
+import { AddOutlined, MaterialSearch } from '@polar-sh/icons'
 import Button, { ButtonProps } from '@polar-sh/ui/components/atoms/Button'
 import Input, { InputProps } from '@polar-sh/ui/components/atoms/Input'
 import { twMerge } from 'tailwind-merge'
@@ -45,7 +45,7 @@ export const ContextList = ({
       {search && (
         <div className="flex flex-row items-center gap-3 px-4 py-2">
           <div className="dark:bg-polar-800 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-            <Search
+            <MaterialSearch
               fontSize="inherit"
               className="dark:text-polar-500 text-gray-500"
             />

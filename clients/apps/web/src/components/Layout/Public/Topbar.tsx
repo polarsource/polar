@@ -2,7 +2,7 @@
 
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { useAuth } from '@/hooks'
-import { ArrowForwardOutlined } from '@mui/icons-material'
+import { ArrowForwardOutlined } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'

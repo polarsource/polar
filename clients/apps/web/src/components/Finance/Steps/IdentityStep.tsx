@@ -2,7 +2,7 @@
 
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Card } from '@polar-sh/ui/components/ui/card'
-import { ArrowRight, CheckCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle } from '@polar-sh/icons'
 import React from 'react'
 
 interface IdentityStepProps {

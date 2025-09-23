@@ -2,7 +2,7 @@
 
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import { X } from 'lucide-react'
+import { X } from '@polar-sh/icons'
 import { useCallback, useEffect } from 'react'
 
 interface CheckoutEmbedCloseProps {

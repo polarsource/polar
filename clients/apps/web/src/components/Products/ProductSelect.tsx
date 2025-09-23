@@ -1,5 +1,5 @@
 import { useProducts, useSelectedProducts } from '@/hooks/queries'
-import { CheckOutlined, ExpandMoreOutlined } from '@mui/icons-material'
+import { CheckOutlined, ExpandMoreOutlined } from '@polar-sh/icons'
 import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {

@@ -16,8 +16,8 @@ import {
   CheckOutlined,
   FilterList,
   MoreVertOutlined,
-  Search,
-} from '@mui/icons-material'
+  MaterialSearch,
+} from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -266,7 +266,7 @@ const ClientPage = ({
           </div>
           <div className="flex flex-row items-center gap-3 px-4 py-2">
             <div className="dark:bg-polar-800 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-              <Search
+              <MaterialSearch
                 fontSize="inherit"
                 className="dark:text-polar-500 text-gray-500"
               />

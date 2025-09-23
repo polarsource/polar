@@ -1,4 +1,4 @@
-import { XMarkIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon } from '@polar-sh/icons'
 import * as ToastPrimitives from '@radix-ui/react-toast'
 import { VariantProps, cva } from 'class-variance-authority'
 import * as React from 'react'

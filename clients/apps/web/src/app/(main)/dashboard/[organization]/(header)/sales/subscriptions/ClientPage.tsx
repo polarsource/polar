@@ -12,7 +12,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { FileDownloadOutlined } from '@mui/icons-material'
+import { FileDownloadOutlined } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'

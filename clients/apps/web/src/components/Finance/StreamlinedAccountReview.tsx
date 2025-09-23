@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   UserCheck,
   XCircle,
-} from 'lucide-react'
+} from '@polar-sh/icons'
 import React, { useState } from 'react'
 import AccountStep from './Steps/AccountStep'
 import IdentityStep from './Steps/IdentityStep'

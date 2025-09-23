@@ -11,7 +11,7 @@ import {
   serializeSearchParams,
   sortingStateToQueryParam,
 } from '@/utils/datatable'
-import { AddOutlined, HiveOutlined, Search } from '@mui/icons-material'
+import { AddOutlined, HiveOutlined, MaterialSearch } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -100,7 +100,7 @@ export default function ClientPage({
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <Input
               className="w-full md:max-w-64"
-              preSlot={<Search fontSize="small" />}
+              preSlot={<MaterialSearch fontSize="small" />}
               placeholder="Search Products"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}

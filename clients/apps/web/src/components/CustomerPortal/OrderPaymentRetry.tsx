@@ -13,7 +13,7 @@ import {
   StripeElements,
   StripeError,
 } from '@stripe/stripe-js'
-import { WalletCards } from 'lucide-react'
+import { WalletCards } from '@polar-sh/icons'
 import { useEffect, useRef, useState } from 'react'
 
 interface OrderPaymentRetryProps {

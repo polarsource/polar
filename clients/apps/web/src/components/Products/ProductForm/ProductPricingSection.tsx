@@ -11,9 +11,9 @@ import {
   isMeteredPrice,
   isStaticPrice,
 } from '@/utils/product'
-import { PlusIcon } from '@heroicons/react/20/solid'
+import { PlusIcon } from '@polar-sh/icons'
 import { ErrorMessage } from '@hookform/error-message'
-import { CloseOutlined } from '@mui/icons-material'
+import { CloseOutlined } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'

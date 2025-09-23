@@ -1,7 +1,7 @@
 'use client'
 
 import Button, { ButtonProps } from '@polar-sh/ui/components/atoms/Button'
-import { Clipboard, ClipboardCheck } from 'lucide-react'
+import { Clipboard, ClipboardCheck } from '@polar-sh/icons'
 import { PropsWithChildren, useState } from 'react'
 
 const CopyToClipboardButton = (

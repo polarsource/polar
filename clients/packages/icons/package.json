@@ -1,0 +1,52 @@
+{
+  "name": "@polar-sh/icons",
+  "version": "0.1.0",
+  "description": "Icons used in the Polar client",
+  "author": "Polar",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/polarsource/polar.git",
+    "directory": "clients/packages/icons"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./AccountBalance": {
+      "types": "./dist/AccountBalance.d.ts",
+      "import": "./dist/AccountBalance.mjs",
+      "require": "./dist/AccountBalance.js"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsup"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@mui/icons-material": "^7.2.0",
+    "lucide-react": "^0.525.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "eslint": "^8.57.1",
+    "eslint-config-custom": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsconfig": "workspace:*",
+    "tsup": "^8.5.0",
+    "typescript": "5.8.3"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

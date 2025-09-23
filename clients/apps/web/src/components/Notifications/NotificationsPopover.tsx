@@ -5,7 +5,7 @@ import {
   FaceOutlined,
   InfoOutlined,
   ShoppingBagOutlined,
-} from '@mui/icons-material'
+} from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'

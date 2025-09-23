@@ -18,7 +18,7 @@ import {
 import { type MouseEvent } from 'react'
 
 import ImageUpload from '@/components/Form/ImageUpload'
-import { AddOutlined, ClearOutlined } from '@mui/icons-material'
+import { AddOutlined, ClearOutlined } from '@polar-sh/icons'
 import { enums } from '@polar-sh/client'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import Link from 'next/link'

@@ -1,4 +1,4 @@
-import { InformationCircleIcon } from '@heroicons/react/24/outline'
+import { InformationCircleIcon } from '@polar-sh/icons'
 import { ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 

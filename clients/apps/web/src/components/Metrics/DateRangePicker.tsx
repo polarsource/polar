@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarIcon } from '@heroicons/react/24/outline'
+import { CalendarIcon } from '@polar-sh/icons'
 import {
   endOfMonth,
   endOfToday,

@@ -29,7 +29,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { XIcon } from 'lucide-react'
+import { XIcon } from '@polar-sh/icons'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import ProductPriceLabel from '../Products/ProductPriceLabel'

@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowOutwardOutlined } from '@mui/icons-material'
+import { ArrowOutwardOutlined } from '@polar-sh/icons'
 import Link from 'next/link'
 import { ResourceLayout, ResourceSection } from './ResourceLayout'
 

@@ -33,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { EllipsisVertical } from 'lucide-react'
+import { EllipsisVertical } from '@polar-sh/icons'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 

@@ -2,7 +2,7 @@ import {
   AllInclusiveOutlined,
   ArrowOutward,
   FavoriteBorderOutlined,
-} from '@mui/icons-material'
+} from '@polar-sh/icons'
 import { Metadata } from 'next'
 import { JobSection } from './JobSection'
 

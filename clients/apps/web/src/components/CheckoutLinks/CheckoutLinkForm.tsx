@@ -5,7 +5,7 @@ import {
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
-import { ClearOutlined } from '@mui/icons-material'
+import { ClearOutlined } from '@polar-sh/icons'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -26,7 +26,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { XIcon } from 'lucide-react'
+import { XIcon } from '@polar-sh/icons'
 import { useCallback, useEffect, useMemo } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'

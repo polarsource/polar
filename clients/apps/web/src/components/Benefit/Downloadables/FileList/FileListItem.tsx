@@ -9,7 +9,7 @@ import {
   InsertDriveFileOutlined,
   MoreVertOutlined,
   VideoFileOutlined,
-} from '@mui/icons-material'
+} from '@polar-sh/icons'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   FocusEvent,

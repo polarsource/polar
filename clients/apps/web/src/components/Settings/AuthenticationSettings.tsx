@@ -2,7 +2,7 @@
 
 import { useAuth, useGitHubAccount, useGoogleAccount } from '@/hooks'
 import { getGitHubAuthorizeURL, getGoogleAuthorizeURL } from '@/utils/auth'
-import { AlternateEmailOutlined, GitHub, Google } from '@mui/icons-material'
+import { AlternateEmailOutlined, GitHub, Google } from '@polar-sh/icons'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'

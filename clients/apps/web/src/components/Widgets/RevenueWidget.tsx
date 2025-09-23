@@ -1,6 +1,6 @@
 import { useMetrics } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
+import { KeyboardArrowDown, KeyboardArrowUp } from '@polar-sh/icons'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
 import {
   Tooltip,

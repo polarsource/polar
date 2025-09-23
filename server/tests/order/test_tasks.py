@@ -106,7 +106,6 @@ class TestProcessDunning:
             product=product,
             customer=customer,
             status=OrderStatus.pending,
-            stripe_invoice_id="inv_1",
         )
         order1.next_payment_attempt_at = past_time
         await save_fixture(order1)
@@ -116,7 +115,6 @@ class TestProcessDunning:
             product=product,
             customer=customer,
             status=OrderStatus.pending,
-            stripe_invoice_id="inv_2",
         )
         order2.next_payment_attempt_at = past_time
         await save_fixture(order2)

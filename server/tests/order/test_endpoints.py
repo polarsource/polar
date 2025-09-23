@@ -64,21 +64,18 @@ class TestListOrders:
     ) -> None:
         await create_order(
             save_fixture,
-            stripe_invoice_id="INVOICE_ID_1",
             product=product,
             customer=customer,
             user_metadata={"reference_id": "ABC"},
         )
         await create_order(
             save_fixture,
-            stripe_invoice_id="INVOICE_ID_2",
             product=product,
             customer=customer,
             user_metadata={"reference_id": "DEF"},
         )
         await create_order(
             save_fixture,
-            stripe_invoice_id="INVOICE_ID_3",
             product=product,
             customer=customer,
             user_metadata={"reference_id": "GHI"},

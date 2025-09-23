@@ -71,6 +71,7 @@
                   "features/checkout/session"
                 ]
               },
+              "features/trials",
               "features/custom-fields",
               "features/discounts",
               "features/orders",
@@ -509,7 +510,13 @@
       {
         "tab": "Guides",
         "icon": "book-open",
-        "pages": ["guides/introduction", "guides/create-variants", "guides/disable-subscription-changes-in-customer-portal", "guides/allow-multiple-subscriptions-per-customer", "guides/subscription-downgrades"]
+        "pages": [
+          "guides/introduction",
+          "guides/create-variants",
+          "guides/disable-subscription-changes-in-customer-portal",
+          "guides/allow-multiple-subscriptions-per-customer",
+          "guides/subscription-downgrades"
+        ]
       },
       {
         "tab": "Changelog",

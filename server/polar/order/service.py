@@ -1832,8 +1832,11 @@ class OrderService:
             for order in paid_orders
         )
         total_paid = sum(payment.amount for payment in payments)
+        total_refunded = sum(
+            order.refunded_amount + order.refunded_tax_amount for order in paid_orders
+        )
 
-        return total_paid - total_orders
+        return total_paid - total_orders - total_refunded
 
 
 order = OrderService()

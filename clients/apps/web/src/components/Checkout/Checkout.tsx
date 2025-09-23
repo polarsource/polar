@@ -41,7 +41,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     confirm: _confirm,
     loading: confirmLoading,
     loadingLabel,
-    updateIsPending,
+    isUpdatePending,
   } = useCheckoutForm()
   const embed = _embed === true
   const { resolvedTheme } = useTheme()
@@ -209,7 +209,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           theme={theme}
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
-          updateIsPending={updateIsPending}
+          isUpdatePending={isUpdatePending}
         />
       </ShadowBox>
     )
@@ -263,7 +263,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           theme={theme}
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
-          updateIsPending={updateIsPending}
+          isUpdatePending={isUpdatePending}
         />
       </div>
     </ShadowBoxOnMd>

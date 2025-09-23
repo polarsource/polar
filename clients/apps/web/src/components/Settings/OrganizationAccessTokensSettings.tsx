@@ -117,7 +117,7 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
                   <SelectContent>
                     {[1, 7, 30, 90, 180, 365].map((days) => (
                       <SelectItem key={days} value={`P${days}D`}>
-                        {days} days
+                        {days} day{days > 1 ? 's' : ''}
                       </SelectItem>
                     ))}
                     <SelectItem value="no-expiration">

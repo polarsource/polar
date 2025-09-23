@@ -45,11 +45,11 @@ function Calendar({
           buttonVariants({ variant: "ghost" }),
           "h-9 w-9 p-0 font-normal"
         ),
-        range_start: "rounded-l-md",
-        range_end: "rounded-r-md",
+        range_start: "!rounded-l-md", // !important has to override rounded-none from `today[data-selected]` that in its turn overrides the default rounded-md for today
+        range_end: "!rounded-r-md", // !important has to override rounded-none from `today[data-selected]` that in its turn overrides the default rounded-md for today
         selected:
           "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        today: "bg-foreground text-accent-foreground rounded-md",
+        today: "bg-foreground text-accent-foreground rounded-md data-[selected]:rounded-none",
         outside:
           "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-foreground",
         disabled: "text-muted-foreground opacity-50",

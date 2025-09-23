@@ -87,7 +87,7 @@ interface BaseCheckoutFormProps {
   loading: boolean
   loadingLabel: string | undefined
   disabled?: boolean
-  updateIsPending?: boolean
+  isUpdatePending?: boolean
   themePreset: ThemingPresetProps
 }
 
@@ -99,7 +99,7 @@ const BaseCheckoutForm = ({
   loading,
   loadingLabel,
   disabled,
-  updateIsPending,
+  isUpdatePending,
   children,
   themePreset: themePresetProps,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
@@ -842,7 +842,7 @@ const BaseCheckoutForm = ({
                 size="lg"
                 wrapperClassNames="text-base"
                 className={cn(themePresetProps.polar.button, 'w-full')}
-                disabled={disabled || updateIsPending}
+                disabled={disabled || isUpdatePending}
                 loading={loading}
               >
                 {checkoutLabel}
@@ -894,7 +894,7 @@ interface CheckoutFormProps {
   loading: boolean
   loadingLabel: string | undefined
   disabled?: boolean
-  updateIsPending?: boolean
+  isUpdatePending?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
 }
@@ -907,7 +907,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     loading,
     loadingLabel,
     disabled,
-    updateIsPending,
+    isUpdatePending,
     themePreset: themePresetProps,
   } = props
   const {
@@ -970,7 +970,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             update={update}
             loading={loading}
             loadingLabel={loadingLabel}
-            updateIsPending={updateIsPending}
+            isUpdatePending={isUpdatePending}
           >
             {checkout.isPaymentFormRequired && (
               <PaymentElement

@@ -359,6 +359,10 @@ export const OrganizationDetailsForm: React.FC<
                     value: 50,
                     message: 'Please provide at least 50 characters',
                   },
+                  maxLength: {
+                    value: 3000,
+                    message: 'Please keep under 3000 characters',
+                  },
                 }}
                 render={({ field }) => (
                   <div>
@@ -369,7 +373,7 @@ export const OrganizationDetailsForm: React.FC<
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
                       <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/50+ characters
+                        {field.value?.length || 0}/3000 characters (min 50)
                       </span>
                     </div>
                   </div>
@@ -394,6 +398,10 @@ export const OrganizationDetailsForm: React.FC<
                     value: 50,
                     message: 'Please provide at least 50 characters',
                   },
+                  maxLength: {
+                    value: 3000,
+                    message: 'Please keep under 3000 characters',
+                  },
                 }}
                 render={({ field }) => (
                   <div>
@@ -404,7 +412,7 @@ export const OrganizationDetailsForm: React.FC<
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
                       <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/50+ characters
+                        {field.value?.length || 0}/3000 characters (min 50)
                       </span>
                     </div>
                   </div>
@@ -429,6 +437,10 @@ export const OrganizationDetailsForm: React.FC<
                     value: 30,
                     message: 'Please provide at least 30 characters',
                   },
+                  maxLength: {
+                    value: 3000,
+                    message: 'Please keep under 3000 characters',
+                  },
                 }}
                 render={({ field }) => (
                   <div>
@@ -439,7 +451,7 @@ export const OrganizationDetailsForm: React.FC<
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
                       <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/30+ characters
+                        {field.value?.length || 0}/3000 characters (min 30)
                       </span>
                     </div>
                   </div>

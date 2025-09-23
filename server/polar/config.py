@@ -283,7 +283,7 @@ class Settings(BaseSettings):
         ".well-known",
     ]
 
-    ORGANIZATIONS_BILLING_ENGINE_DEFAULT: bool = False
+    ORGANIZATIONS_BILLING_ENGINE_DEFAULT: bool = True
 
     # Dunning Configuration
     DUNNING_RETRY_INTERVALS: list[timedelta] = [

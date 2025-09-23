@@ -60,6 +60,7 @@ export interface CheckoutFormContextProps {
   ) => Promise<CheckoutPublicConfirmed>
   loading: boolean
   loadingLabel: string | undefined
+  updateIsPending: boolean
 }
 
 // @ts-ignore
@@ -76,6 +77,7 @@ export const CheckoutFormProvider = ({
   const { checkout, update: updateOuter, confirm: confirmOuter } = useCheckout()
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState<string | undefined>()
+  const [updateIsPending, setUpdateIsPending] = useState(false)
 
   const form = useForm<CheckoutUpdatePublic>({
     defaultValues: {
@@ -93,7 +95,12 @@ export const CheckoutFormProvider = ({
     async (
       checkoutUpdatePublic: CheckoutUpdatePublic,
     ): Promise<CheckoutPublic> => {
-      const { ok, value, error } = await updateOuter(checkoutUpdatePublic)
+      setUpdateIsPending(true)
+      const { ok, value, error } = await updateOuter(
+        checkoutUpdatePublic,
+      ).finally(() => {
+        setUpdateIsPending(false)
+      })
       if (ok) {
         return value
       } else {
@@ -258,6 +265,7 @@ export const CheckoutFormProvider = ({
         confirm,
         loading,
         loadingLabel,
+        updateIsPending,
       }}
     >
       {children}

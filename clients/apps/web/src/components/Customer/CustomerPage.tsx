@@ -373,9 +373,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         </ShadowBox>
       </TabsContent>
       <CustomerUsageView customer={customer} />
-      <TabsContent value="events">
-        <CustomerEventsView customer={customer} organization={organization} />
-      </TabsContent>
+      <CustomerEventsView customer={customer} organization={organization} />
     </Tabs>
   )
 }

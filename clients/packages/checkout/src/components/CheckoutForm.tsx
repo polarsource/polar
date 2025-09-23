@@ -288,6 +288,26 @@ const BaseCheckoutForm = ({
     return `for the first ${calculatedDuration} ${interval === 'year' ? 'years' : 'months'}`
   }, [checkout.discount, interval])
 
+  const totalLabel = useMemo(() => {
+    if (interval) {
+      return `Every ${interval}`
+    }
+
+    return 'Total'
+  }, [interval])
+
+  const checkoutLabel = useMemo(() => {
+    if (checkout.activeTrialInterval) {
+      return `Start Trial`
+    }
+
+    if (checkout.isPaymentFormRequired) {
+      return interval ? 'Subscribe' : 'Pay'
+    }
+
+    return 'Submit'
+  }, [checkout, interval])
+
   return (
     <div className="flex flex-col justify-between gap-y-24">
       <div className="flex flex-col gap-y-12">
@@ -728,23 +748,26 @@ const BaseCheckoutForm = ({
             </div>
             {!checkout.isFreeProductPrice && (
               <div className="flex flex-col gap-y-2">
-                {checkout.activeTrialInterval &&
-                  checkout.activeTrialIntervalCount && (
-                    <DetailRow
-                      title={`${checkout.activeTrialIntervalCount} ${checkout.activeTrialInterval}${checkout.activeTrialIntervalCount > 1 ? 's' : ''} trial`}
-                    >
-                      <span>Free</span>
-                    </DetailRow>
+                <div className="mb-3 border-b border-gray-300 pb-4 dark:border-gray-700">
+                  {checkout.activeTrialInterval &&
+                    checkout.activeTrialIntervalCount && (
+                      <DetailRow
+                        emphasis
+                        title={`${checkout.activeTrialIntervalCount} ${checkout.activeTrialInterval}${checkout.activeTrialIntervalCount > 1 ? 's' : ''} trial`}
+                      >
+                        <span>Free</span>
+                      </DetailRow>
+                    )}
+                  {checkout.trialEnd && (
+                    <span className="dark:text-polar-500 text-gray-500:w text-sm">
+                      Trial ends{' '}
+                      <FormattedDateTime
+                        datetime={checkout.trialEnd}
+                        resolution="day"
+                      />
+                    </span>
                   )}
-                {checkout.trialEnd && (
-                  <div className="font-medium">
-                    Starting{' '}
-                    <FormattedDateTime
-                      datetime={checkout.trialEnd}
-                      resolution="day"
-                    />
-                  </div>
-                )}
+                </div>
                 {checkout.currency ? (
                   <>
                     <DetailRow title="Subtotal">
@@ -774,7 +797,7 @@ const BaseCheckoutForm = ({
                         )}
                       </DetailRow>
                     )}
-                    <DetailRow title="Total" emphasis>
+                    <DetailRow title={totalLabel} emphasis>
                       <div className="flex flex-col items-end gap-y-1">
                         <AmountLabel
                           amount={checkout.totalAmount}
@@ -814,11 +837,7 @@ const BaseCheckoutForm = ({
                 disabled={disabled}
                 loading={loading}
               >
-                {!checkout.isPaymentFormRequired
-                  ? 'Submit'
-                  : interval
-                    ? 'Subscribe'
-                    : 'Pay'}
+                {checkoutLabel}
               </Button>
               {loading && loadingLabel && (
                 <p className="dark:text-polar-500 text-sm text-gray-500">

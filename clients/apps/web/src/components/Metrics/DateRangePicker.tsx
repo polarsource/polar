@@ -64,7 +64,8 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         to: internalDate.to,
       })
     }
-  }, [internalDate, onDateChange])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [internalDate])
 
   return (
     <div className={twMerge('grid gap-2', className)}>

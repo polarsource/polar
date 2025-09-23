@@ -8,6 +8,7 @@ import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   ParsedMetricsResponse,
   useBenefitGrants,
+  useCustomerBalance,
   useMetrics,
   useSubscriptions,
 } from '@/hooks/queries'
@@ -61,6 +62,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       limit: 999,
       sorting: ['-granted_at'],
     })
+
+  const { data: customerBalance, isLoading: balanceLoading } =
+    useCustomerBalance(customer.id)
 
   const [selectedMetric, setSelectedMetric] =
     React.useState<keyof schemas['Metrics']>('revenue')
@@ -134,6 +138,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           data={relevantMetricsData}
           loading={metricsLoading}
         />
+
         <div className="flex flex-col gap-4">
           <h3 className="text-lg">Subscriptions</h3>
           <DataTable
@@ -316,6 +321,48 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             isLoading={benefitGrantsLoading}
             className="text-sm"
           />
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <h3 className="text-lg">Customer Balance</h3>
+          <ShadowBox className="flex flex-col gap-4">
+            {balanceLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-sm text-gray-500">Loading balance...</div>
+              </div>
+            ) : customerBalance ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Current Balance
+                  </span>
+                  <div
+                    className={
+                      customerBalance.balance < 0
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-gray-600 dark:text-gray-400'
+                    }
+                  >
+                    <AmountLabel
+                      amount={customerBalance.balance}
+                      currency={customerBalance.currency}
+                    />
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {customerBalance.balance > 0
+                    ? 'Customer has credit on their account'
+                    : customerBalance.balance < 0
+                      ? 'Customer owes money'
+                      : 'No outstanding balance'}
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500">
+                Balance information unavailable
+              </div>
+            )}
+          </ShadowBox>
         </div>
 
         <ShadowBox className="flex flex-col gap-8">

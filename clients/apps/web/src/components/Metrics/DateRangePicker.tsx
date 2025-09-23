@@ -2,12 +2,14 @@
 
 import { CalendarIcon } from '@heroicons/react/24/outline'
 import {
+  endOfDay,
   endOfMonth,
   endOfToday,
   endOfWeek,
   endOfYear,
   endOfYesterday,
   format,
+  startOfDay,
   startOfMonth,
   startOfToday,
   startOfWeek,
@@ -60,8 +62,8 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   useEffect(() => {
     if (internalDate && internalDate.from && internalDate.to) {
       onDateChange({
-        from: internalDate.from,
-        to: internalDate.to,
+        from: startOfDay(internalDate.from),
+        to: endOfDay(internalDate.to),
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

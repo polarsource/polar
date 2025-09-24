@@ -1992,10 +1992,10 @@ class SubscriptionService:
 
         subscription.legacy_stripe_subscription_id = stripe_subscription_id
         subscription.stripe_subscription_id = None
-        session.add(subscription)
 
         # Subscription is already canceled, nothing to do
         if subscription.status == SubscriptionStatus.canceled:
+            session.add(subscription)
             return subscription
 
         # Ensure the latest invoice is paid
@@ -2023,6 +2023,7 @@ class SubscriptionService:
             else:
                 raise
 
+        session.add(subscription)
         await session.commit()  # Commit now so we stop handling Stripe webhooks
 
         try:

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, case, select
+from sqlalchemy import Select, case, or_, select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.strategy_options import joinedload, selectinload
 
@@ -79,7 +79,13 @@ class SubscriptionRepository(
     ) -> Subscription | None:
         statement = (
             self.get_base_statement()
-            .where(Subscription.stripe_subscription_id == stripe_subscription_id)
+            .where(
+                or_(
+                    Subscription.stripe_subscription_id == stripe_subscription_id,
+                    Subscription.legacy_stripe_subscription_id
+                    == stripe_subscription_id,
+                )
+            )
             .options(*options)
         )
         return await self.get_one_or_none(statement)

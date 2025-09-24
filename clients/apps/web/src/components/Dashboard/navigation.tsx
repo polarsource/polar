@@ -197,6 +197,11 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         icon: <DiamondOutlined fontSize="inherit" />,
       },
       {
+        title: 'Vibe Coding',
+        link: `/dashboard/${org?.slug}/products/vibe-coding`,
+        icon: <CodeOutlined fontSize="inherit" />,
+      },
+      {
         title: 'Meters',
         link: `/dashboard/${org?.slug}/products/meters`,
         icon: <DonutLargeOutlined fontSize="inherit" />,

@@ -1986,12 +1986,24 @@ class SubscriptionService:
         if stripe_subscription_id is None:
             raise SubscriptionNotActiveOnStripe(subscription)
 
-        upcoming_invoice = await stripe_lib.Invoice.create_preview_async(
-            subscription=stripe_subscription_id
-        )
-        async for item in upcoming_invoice.lines.auto_paging_iter():
-            if item.proration:
-                raise SubscriptionHasPendingProrations(subscription)
+        try:
+            upcoming_invoice = await stripe_lib.Invoice.create_preview_async(
+                subscription=stripe_subscription_id
+            )
+            async for item in upcoming_invoice.lines.auto_paging_iter():
+                if item.proration:
+                    raise SubscriptionHasPendingProrations(subscription)
+        except stripe_lib.InvalidRequestError as e:
+            # Case where the subscription does not exist anymore on Stripe
+            # Usually, the case of subscriptions in test mode that Stripe deletes
+            # automatically after a while.
+            if "No such subscription" in str(e):
+                # Just remove the Stripe subscription ID and consider it migrated
+                subscription.legacy_stripe_subscription_id = stripe_subscription_id
+                subscription.stripe_subscription_id = None
+                session.add(subscription)
+                return subscription
+            raise
 
         subscription.legacy_stripe_subscription_id = stripe_subscription_id
         subscription.stripe_subscription_id = None

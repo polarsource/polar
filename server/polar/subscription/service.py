@@ -1982,6 +1982,10 @@ class SubscriptionService:
     async def migrate_stripe_subscription(
         self, session: AsyncSession, subscription: Subscription
     ) -> Subscription:
+        # Subscription is already migrated, do nothing
+        if subscription.legacy_stripe_subscription_id is not None:
+            return subscription
+
         stripe_subscription_id = subscription.stripe_subscription_id
         if stripe_subscription_id is None:
             raise SubscriptionNotActiveOnStripe(subscription)

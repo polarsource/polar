@@ -182,10 +182,10 @@ class SubscriptionManagedByStripe(SubscriptionError):
         super().__init__(message, 403)
 
 
-class SubscriptionHasPendingProrations(SubscriptionError):
+class SubscriptionNotReadyForMigration(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
-        message = "This subscription has pending prorations and can't be migrated now."
+        message = "This subscription is not ready for migration."
         super().__init__(message)
 
 
@@ -1986,58 +1986,61 @@ class SubscriptionService:
         if stripe_subscription_id is None:
             raise SubscriptionNotActiveOnStripe(subscription)
 
-        try:
-            upcoming_invoice = await stripe_lib.Invoice.create_preview_async(
-                subscription=stripe_subscription_id
-            )
-            async for item in upcoming_invoice.lines.auto_paging_iter():
-                if item.proration:
-                    raise SubscriptionHasPendingProrations(subscription)
-        except stripe_lib.InvalidRequestError as e:
-            # Case where the subscription does not exist anymore on Stripe
-            # Usually, the case of subscriptions in test mode that Stripe deletes
-            # automatically after a while.
-            if "No such subscription" in str(e):
-                # Just remove the Stripe subscription ID and consider it migrated
-                subscription.legacy_stripe_subscription_id = stripe_subscription_id
-                subscription.stripe_subscription_id = None
-                session.add(subscription)
-                return subscription
-            raise
-
         subscription.legacy_stripe_subscription_id = stripe_subscription_id
         subscription.stripe_subscription_id = None
         session.add(subscription)
+
+        # Subscription is already canceled, nothing to do
+        if subscription.status == SubscriptionStatus.canceled:
+            return subscription
+
+        # Ensure the latest invoice is paid
+        stripe_subscription = await stripe_lib.Subscription.retrieve_async(
+            stripe_subscription_id, expand=["latest_invoice"]
+        )
+        latest_invoice = cast(
+            stripe_lib.Invoice | None, stripe_subscription.latest_invoice
+        )
+        if latest_invoice is not None and not latest_invoice.paid:
+            raise SubscriptionNotReadyForMigration(subscription)
+
+        # Ensure there are no pending prorations
+        upcoming_invoice = await stripe_lib.Invoice.create_preview_async(
+            subscription=stripe_subscription_id
+        )
+        async for item in upcoming_invoice.lines.auto_paging_iter():
+            if item.proration:
+                raise SubscriptionNotReadyForMigration(subscription)
+
         await session.commit()  # Commit now so we stop handling Stripe webhooks
 
         try:
-            if subscription.status != SubscriptionStatus.canceled:
-                await stripe_lib.Subscription.cancel_async(
-                    stripe_subscription_id,
-                    cancellation_details={
-                        "feedback": "other",
-                        "comment": "Migrated to Polar",
-                    },
-                    invoice_now=False,
-                    prorate=False,
-                )
+            await stripe_lib.Subscription.cancel_async(
+                stripe_subscription_id,
+                cancellation_details={
+                    "feedback": "other",
+                    "comment": "Migrated to Polar",
+                },
+                invoice_now=False,
+                prorate=False,
+            )
 
-                # Handle cases where the payment method is NULL
-                if subscription.payment_method_id is None:
-                    payment_method_repository = PaymentMethodRepository.from_session(
-                        session
+            # Handle cases where the payment method is NULL
+            if subscription.payment_method_id is None:
+                payment_method_repository = PaymentMethodRepository.from_session(
+                    session
+                )
+                payment_method = await payment_method_repository.get_one_or_none(
+                    payment_method_repository.get_base_statement()
+                    .where(
+                        PaymentMethod.customer_id == subscription.customer_id,
+                        PaymentMethod.deleted_at.is_(None),
                     )
-                    payment_method = await payment_method_repository.get_one_or_none(
-                        payment_method_repository.get_base_statement()
-                        .where(
-                            PaymentMethod.customer_id == subscription.customer_id,
-                            PaymentMethod.deleted_at.is_(None),
-                        )
-                        .order_by(PaymentMethod.created_at.desc())
-                        .limit(1)
-                    )
-                    subscription.payment_method = payment_method
-                    session.add(subscription)
+                    .order_by(PaymentMethod.created_at.desc())
+                    .limit(1)
+                )
+                subscription.payment_method = payment_method
+                session.add(subscription)
         except Exception:
             # Revert changes
             subscription.stripe_subscription_id = stripe_subscription_id

@@ -174,9 +174,14 @@ async def fix_stripe_migration(subscription_id: uuid.UUID) -> None:
         if subscription.legacy_stripe_subscription_id is None:
             return
 
-        stripe_subscription = await stripe_lib.Subscription.retrieve_async(
-            subscription.legacy_stripe_subscription_id
-        )
+        try:
+            stripe_subscription = await stripe_lib.Subscription.retrieve_async(
+                subscription.legacy_stripe_subscription_id
+            )
+        except stripe_lib.InvalidRequestError as e:
+            if "No such subscription" in str(e):
+                return
+            raise
 
         if stripe_subscription.ended_at is None:
             subscription.stripe_subscription_id = (

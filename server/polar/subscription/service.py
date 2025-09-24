@@ -1990,11 +1990,10 @@ class SubscriptionService:
         if stripe_subscription_id is None:
             raise SubscriptionNotActiveOnStripe(subscription)
 
-        subscription.legacy_stripe_subscription_id = stripe_subscription_id
-        subscription.stripe_subscription_id = None
-
         # Subscription is already canceled, nothing to do
         if subscription.status == SubscriptionStatus.canceled:
+            subscription.legacy_stripe_subscription_id = stripe_subscription_id
+            subscription.stripe_subscription_id = None
             session.add(subscription)
             return subscription
 
@@ -2023,6 +2022,8 @@ class SubscriptionService:
             else:
                 raise
 
+        subscription.legacy_stripe_subscription_id = stripe_subscription_id
+        subscription.stripe_subscription_id = None
         session.add(subscription)
         await session.commit()  # Commit now so we stop handling Stripe webhooks
 

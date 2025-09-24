@@ -115,6 +115,7 @@ async def enqueue_stripe_subscription_migrate(
             )
             .group_by(Organization.id)
             .having(func.count(Subscription.id) < max_subscriptions_count)
+            .order_by(func.count(Subscription.id).asc())
             .limit(limit)
         )
 

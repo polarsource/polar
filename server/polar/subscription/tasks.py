@@ -17,7 +17,7 @@ from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
 
-from .service import SubscriptionHasPendingProrations
+from .service import SubscriptionNotReadyForMigration
 from .service import subscription as subscription_service
 
 log: Logger = structlog.get_logger()
@@ -142,6 +142,6 @@ async def migrate_stripe_subscription(subscription_id: uuid.UUID) -> None:
             await subscription_service.migrate_stripe_subscription(
                 session, subscription
             )
-        except SubscriptionHasPendingProrations:
+        except SubscriptionNotReadyForMigration:
             # Retry another time
             pass

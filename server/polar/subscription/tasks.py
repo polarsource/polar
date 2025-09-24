@@ -10,6 +10,7 @@ from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
+from .service import SubscriptionHasPendingProrations
 from .service import subscription as subscription_service
 
 log: Logger = structlog.get_logger()
@@ -82,3 +83,19 @@ async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
 async def subscription_cancel_customer(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         await subscription_service.cancel_customer(session, customer_id)
+
+
+@actor(actor_name="subscription.migrate_stripe_subscription", priority=TaskPriority.LOW)
+async def migrate_stripe_subscription(subscription_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_id(subscription_id)
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+        try:
+            await subscription_service.migrate_stripe_subscription(
+                session, subscription
+            )
+        except SubscriptionHasPendingProrations:
+            # Retry another time
+            pass

@@ -69,6 +69,7 @@ from polar.notifications.notification import (
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
     is_custom_price,
@@ -179,6 +180,13 @@ class SubscriptionManagedByStripe(SubscriptionError):
         self.subscription = subscription
         message = "This feature is not available for this subscription."
         super().__init__(message, 403)
+
+
+class SubscriptionHasPendingProrations(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription has pending prorations and can't be migrated now."
+        super().__init__(message)
 
 
 @overload
@@ -1332,6 +1340,14 @@ class SubscriptionService:
         if subscription is None:
             raise SubscriptionDoesNotExist(stripe_subscription.id)
 
+        # Subscription that has been migrated to Polar, ignore the update
+        if subscription.stripe_subscription_id is None:
+            log.info(
+                "Received Stripe update for a subscription that has been migrated to Polar, ignoring.",
+                id=subscription.id,
+            )
+            return subscription
+
         async with self.lock(locker, subscription):
             previous_status = subscription.status
             previous_is_canceled = subscription.canceled
@@ -1962,6 +1978,63 @@ class SubscriptionService:
         subscription.payment_method = payment_method
         repository = SubscriptionRepository.from_session(session)
         return await repository.update(subscription)
+
+    async def migrate_stripe_subscription(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Subscription:
+        stripe_subscription_id = subscription.stripe_subscription_id
+        if stripe_subscription_id is None:
+            raise SubscriptionNotActiveOnStripe(subscription)
+
+        upcoming_invoice = await stripe_lib.Invoice.create_preview_async(
+            subscription=stripe_subscription_id
+        )
+        async for item in upcoming_invoice.lines.auto_paging_iter():
+            if item.proration:
+                raise SubscriptionHasPendingProrations(subscription)
+
+        subscription.legacy_stripe_subscription_id = stripe_subscription_id
+        subscription.stripe_subscription_id = None
+        session.add(subscription)
+        await session.commit()  # Commit now so we stop handling Stripe webhooks
+
+        try:
+            if subscription.status != SubscriptionStatus.canceled:
+                await stripe_lib.Subscription.cancel_async(
+                    stripe_subscription_id,
+                    cancellation_details={
+                        "feedback": "other",
+                        "comment": "Migrated to Polar",
+                    },
+                    invoice_now=False,
+                    prorate=False,
+                )
+
+                # Handle cases where the payment method is NULL
+                if subscription.payment_method_id is None:
+                    payment_method_repository = PaymentMethodRepository.from_session(
+                        session
+                    )
+                    payment_method = await payment_method_repository.get_one_or_none(
+                        payment_method_repository.get_base_statement()
+                        .where(
+                            PaymentMethod.customer_id == subscription.customer_id,
+                            PaymentMethod.deleted_at.is_(None),
+                        )
+                        .order_by(PaymentMethod.created_at.desc())
+                        .limit(1)
+                    )
+                    subscription.payment_method = payment_method
+                    session.add(subscription)
+        except Exception:
+            # Revert changes
+            subscription.stripe_subscription_id = stripe_subscription_id
+            subscription.legacy_stripe_subscription_id = None
+            session.add(subscription)
+            await session.commit()
+            raise
+
+        return subscription
 
 
 subscription = SubscriptionService()

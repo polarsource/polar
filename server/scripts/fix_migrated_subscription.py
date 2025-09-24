@@ -69,39 +69,38 @@ async def payments_import(stripe_api_key: str) -> None:
     stripe_lib.api_key = stripe_api_key
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
-    async with sessionmaker() as session:
-        statement = select(Subscription).where(
-            Subscription.legacy_stripe_subscription_id.is_not(None),
-        )
-        count_statement = statement.with_only_columns(func.count())
-        count = (await session.execute(count_statement)).scalar_one()
-        with Progress() as progress:
+
+    with Progress() as progress:
+        async with sessionmaker() as session:
+            statement = select(
+                Subscription.id, Subscription.legacy_stripe_subscription_id
+            ).where(
+                Subscription.legacy_stripe_subscription_id.is_not(None),
+            )
+            count_statement = statement.with_only_columns(func.count())
+            count = (await session.execute(count_statement)).scalar_one()
             subscriptions_progress = progress.add_task(
                 "[red]Processing subscriptions...", total=count
             )
-            subscriptions = await session.stream_scalars(
+            subscriptions = await session.stream(
                 statement,
                 execution_options={"yield_per": 100},
             )
             tasks: list[asyncio.Task[tuple[UUID, str, bool]]] = []
             async with asyncio.TaskGroup() as tg:
                 async for subscription in subscriptions:
-                    assert subscription.legacy_stripe_subscription_id is not None
-                    task = tg.create_task(
-                        process_subscription(
-                            (
-                                subscription.id,
-                                subscription.legacy_stripe_subscription_id,
-                            )
-                        )
-                    )
+                    id, stripe_id = subscription._tuple()
+                    assert stripe_id is not None
+                    task = tg.create_task(process_subscription((id, stripe_id)))
                     task.add_done_callback(
                         lambda _: progress.update(subscriptions_progress, advance=1)
                     )
                     tasks.append(task)
 
-            progress.stop_task(subscriptions_progress)
-            commit_task = progress.add_task("[green]Committing...", total=len(tasks))
+        progress.stop_task(subscriptions_progress)
+        commit_task = progress.add_task("[green]Committing...", total=len(tasks))
+
+        async with sessionmaker() as session:
             connection = await session.connection()
             for batch in itertools.batched(tasks, 1000):
                 batch_update: list[dict[str, Any]] = []

@@ -2005,12 +2005,19 @@ class SubscriptionService:
             raise SubscriptionNotReadyForMigration(subscription)
 
         # Ensure there are no pending prorations
-        upcoming_invoice = await stripe_lib.Invoice.create_preview_async(
-            subscription=stripe_subscription_id
-        )
-        async for item in upcoming_invoice.lines.auto_paging_iter():
-            if item.proration:
-                raise SubscriptionNotReadyForMigration(subscription)
+        try:
+            upcoming_invoice = await stripe_lib.Invoice.create_preview_async(
+                subscription=stripe_subscription_id
+            )
+            async for item in upcoming_invoice.lines.auto_paging_iter():
+                if item.proration:
+                    raise SubscriptionNotReadyForMigration(subscription)
+        except stripe_lib.InvalidRequestError as e:
+            if "no upcoming invoices" in str(e).lower():
+                # No upcoming invoice, so no prorations
+                pass
+            else:
+                raise
 
         await session.commit()  # Commit now so we stop handling Stripe webhooks
 

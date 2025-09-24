@@ -1,14 +1,21 @@
 import uuid
 
 import structlog
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
-from polar.models import Subscription, SubscriptionMeter
+from polar.models import (
+    Customer,
+    Organization,
+    Product,
+    Subscription,
+    SubscriptionMeter,
+)
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
-from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
 
 from .service import SubscriptionHasPendingProrations
 from .service import subscription as subscription_service
@@ -83,6 +90,44 @@ async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
 async def subscription_cancel_customer(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         await subscription_service.cancel_customer(session, customer_id)
+
+
+@actor(
+    actor_name="subscription.enqueue_stripe_subscription_migrate",
+    priority=TaskPriority.LOW,
+)
+async def enqueue_stripe_subscription_migrate(
+    max_subscriptions_count: int, limit: int
+) -> None:
+    async with AsyncSessionMaker() as session:
+        subscription_repository = SubscriptionRepository.from_session(session)
+
+        organizations_statement = (
+            select(Organization.id)
+            .join(Product, Product.organization_id == Organization.id, isouter=True)
+            .join(
+                Subscription,
+                Subscription.product_id == Product.id,
+                isouter=True,
+            )
+            .where(
+                Subscription.stripe_subscription_id.is_not(None),
+            )
+            .group_by(Organization.id)
+            .having(func.count(Subscription.id) < max_subscriptions_count)
+            .limit(limit)
+        )
+
+        subscriptions = subscription_repository.stream(
+            subscription_repository.get_base_statement()
+            .join(Customer, Customer.id == Subscription.customer_id)
+            .where(
+                Subscription.stripe_subscription_id.is_not(None),
+                Customer.organization_id.in_(organizations_statement),
+            )
+        )
+        async for subscription in subscriptions:
+            enqueue_job("subscription.migrate_stripe_subscription", subscription.id)
 
 
 @actor(actor_name="subscription.migrate_stripe_subscription", priority=TaskPriority.LOW)

@@ -88,6 +88,7 @@ interface BaseCheckoutFormProps {
   loadingLabel: string | undefined
   disabled?: boolean
   isUpdatePending?: boolean
+  shouldShowPaymentForm?: boolean
   themePreset: ThemingPresetProps
 }
 
@@ -100,6 +101,7 @@ const BaseCheckoutForm = ({
   loadingLabel,
   disabled,
   isUpdatePending,
+  shouldShowPaymentForm = checkout.isPaymentFormRequired,
   children,
   themePreset: themePresetProps,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
@@ -303,12 +305,12 @@ const BaseCheckoutForm = ({
       return `Start Trial`
     }
 
-    if (checkout.isPaymentFormRequired) {
+    if (shouldShowPaymentForm) {
       return interval ? 'Subscribe' : 'Pay'
     }
 
     return 'Submit'
-  }, [checkout, interval])
+  }, [checkout.activeTrialInterval, shouldShowPaymentForm, interval])
 
   return (
     <div className="flex flex-col justify-between gap-y-24">
@@ -345,7 +347,7 @@ const BaseCheckoutForm = ({
 
               {children}
 
-              {checkout.isPaymentFormRequired && (
+              {shouldShowPaymentForm && (
                 <FormField
                   control={control}
                   name="customerName"
@@ -370,7 +372,7 @@ const BaseCheckoutForm = ({
                 />
               )}
 
-              {(checkout.isPaymentFormRequired ||
+              {(shouldShowPaymentForm ||
                 checkout.requireBillingAddress) && (
                 <>
                   <FormField
@@ -918,6 +920,21 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     [publishable_key],
   )
 
+  const shouldShowPaymentForm = useMemo(() => {
+
+    if (!checkout.isPaymentFormRequired) return false
+
+    if (checkout.discount?.duration === 'forever' && checkout.totalAmount === 0) {
+      return false
+    }
+
+    return checkout.isPaymentFormRequired
+  }, [
+    checkout.isPaymentFormRequired,
+    checkout.discount,
+    checkout.totalAmount
+  ])
+
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (
       checkout.isPaymentSetupRequired &&
@@ -971,8 +988,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             loading={loading}
             loadingLabel={loadingLabel}
             isUpdatePending={isUpdatePending}
+            shouldShowPaymentForm={shouldShowPaymentForm}
           >
-            {checkout.isPaymentFormRequired && (
+            {shouldShowPaymentForm && (
               <PaymentElement
                 options={{
                   layout: 'tabs',

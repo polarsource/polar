@@ -158,12 +158,6 @@ const BaseCheckoutForm = ({
           }
           clearErrors('customerBillingAddress')
         }
-      } else if (name === 'isBusinessCustomer') {
-        const { isBusinessCustomer } = value
-        payload = {
-          ...payload,
-          isBusinessCustomer,
-        }
       }
 
       if (Object.keys(payload).length === 0) {
@@ -195,6 +189,15 @@ const BaseCheckoutForm = ({
       resetField('discountCode')
     } catch {}
   }, [update, clearErrors, resetField])
+
+  const updateBusinessCustomer = useCallback(
+    async (isBusinessCustomer: boolean) => {
+      try {
+        await update({ isBusinessCustomer })
+      } catch {}
+    },
+    [update],
+  )
 
   useEffect(() => {
     const subscription = watch(debouncedWatcher)
@@ -382,7 +385,14 @@ const BaseCheckoutForm = ({
                           <FormControl>
                             <Checkbox
                               checked={field.value ? field.value : false}
-                              onCheckedChange={field.onChange}
+                              onCheckedChange={(checked) => {
+                                if (isUpdatePending) {
+                                  return
+                                }
+
+                                field.onChange(checked)
+                                updateBusinessCustomer(!!checked)
+                              }}
                             />
                           </FormControl>
                           <FormLabel>

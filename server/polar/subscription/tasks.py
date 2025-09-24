@@ -1,6 +1,5 @@
 import uuid
 
-import stripe as stripe_lib
 import structlog
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
@@ -146,46 +145,3 @@ async def migrate_stripe_subscription(subscription_id: uuid.UUID) -> None:
         except SubscriptionNotReadyForMigration:
             # Retry another time
             pass
-
-
-@actor(
-    actor_name="subscription.enqueue_fix_stripe_migration", priority=TaskPriority.LOW
-)
-async def enqueue_fix_stripe_migration() -> None:
-    async with AsyncSessionMaker() as session:
-        statement = select(Subscription.id).where(
-            Subscription.legacy_stripe_subscription_id.is_not(None)
-        )
-        subscriptions = await session.stream_scalars(
-            statement, execution_options={"yield_per": 100}
-        )
-        async for subscription_id in subscriptions:
-            enqueue_job("subscription.fix_stripe_migration", subscription_id)
-
-
-@actor(actor_name="subscription.fix_stripe_migration", priority=TaskPriority.LOW)
-async def fix_stripe_migration(subscription_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        repository = SubscriptionRepository.from_session(session)
-        subscription = await repository.get_by_id(subscription_id)
-        if subscription is None:
-            raise SubscriptionDoesNotExist(subscription_id)
-
-        if subscription.legacy_stripe_subscription_id is None:
-            return
-
-        try:
-            stripe_subscription = await stripe_lib.Subscription.retrieve_async(
-                subscription.legacy_stripe_subscription_id
-            )
-        except stripe_lib.InvalidRequestError as e:
-            if "No such subscription" in str(e):
-                return
-            raise
-
-        if stripe_subscription.ended_at is None:
-            subscription.stripe_subscription_id = (
-                subscription.legacy_stripe_subscription_id
-            )
-            subscription.legacy_stripe_subscription_id = None
-            session.add(subscription)

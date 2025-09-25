@@ -15,10 +15,10 @@ class CountryData:
     alpha_2: str
 
 
-ALL_COUNTRIES: set[str] = {
+_ALL_COUNTRIES: set[str] = {
     cast(CountryData, country).alpha_2 for country in pycountry.countries
 }
-SUPPORTED_COUNTRIES: set[str] = ALL_COUNTRIES - {
+_SUPPORTED_COUNTRIES: set[str] = _ALL_COUNTRIES - {
     # US Trade Embargos
     "CU",
     "IR",
@@ -26,6 +26,8 @@ SUPPORTED_COUNTRIES: set[str] = ALL_COUNTRIES - {
     "SY",
     "RU",
 }
+ALL_COUNTRIES = sorted(_ALL_COUNTRIES)
+SUPPORTED_COUNTRIES = sorted(_SUPPORTED_COUNTRIES)
 
 if TYPE_CHECKING:
 
@@ -41,8 +43,8 @@ else:
             {
                 "type": "string",
                 "title": "CountryAlpha2",
-                "enum": list(ALL_COUNTRIES),
-                "x-speakeasy-enums": list(ALL_COUNTRIES),
+                "enum": ALL_COUNTRIES,
+                "x-speakeasy-enums": ALL_COUNTRIES,
             }
         ),
     ]
@@ -55,8 +57,8 @@ else:
             {
                 "type": "string",
                 "title": "CountryAlpha2Input",
-                "enum": list(SUPPORTED_COUNTRIES),
-                "x-speakeasy-enums": list(SUPPORTED_COUNTRIES),
+                "enum": SUPPORTED_COUNTRIES,
+                "x-speakeasy-enums": SUPPORTED_COUNTRIES,
             }
         ),
     ]

@@ -23,6 +23,8 @@ from polar.kit.tax import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         ("234567899RT0001", "CA", ("234567899RT0001", TaxIDFormat.ca_gst_hst)),
         ("234567899 RT0001", "CA", ("234567899RT0001", TaxIDFormat.ca_gst_hst)),
         ("234567899", "CA", ("234567899", TaxIDFormat.ca_bn)),
+        ("12.531.909-2", "CL", ("125319092", TaxIDFormat.cl_tin)),
+        ("12531909-2", "CL", ("125319092", TaxIDFormat.cl_tin)),
     ],
 )
 def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> None:

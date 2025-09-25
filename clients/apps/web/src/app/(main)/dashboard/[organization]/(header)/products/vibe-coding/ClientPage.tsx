@@ -19,32 +19,50 @@ interface ClientPageProps {
   organization: schemas['Organization']
 }
 
-export default function ClientPage({ organization }: ClientPageProps) {
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([])
-  const [successPath, setSuccessPath] = useState('/success')
-  const [accessToken, setAccessToken] = useState('')
-  const [showToken, setShowToken] = useState(false)
-  const [promptText, setPromptText] = useState('')
+interface PricingPageConfig {
+  selectedProducts: string[]
+  successPath: string
+}
 
-  const { data: products } = useSelectedProducts(selectedProducts)
-  const safeCopy = useSafeCopy(toast)
-  const createToken = useCreateOrganizationAccessToken(organization.id)
+interface CustomerPortalConfig {
+  // No configuration needed for customer portal
+}
 
-  const generatedPrompt = useMemo(() => {
-    if (!products || products.length === 0) {
-      return 'Select products above to generate a prompt for your vibe-coding platform.'
-    }
+interface Template<T = any> {
+  id: string
+  name: string
+  description: string
+  defaultConfig: T
+  generatePrompt: (config: T, accessToken: string, products?: schemas['Product'][]) => string
+}
 
-    const productList = products
-      .map((product) => {
-        return `- **${product.name}**
+type TemplateId = 'pricing-page' | 'customer-portal'
+type TemplateConfig = PricingPageConfig | CustomerPortalConfig
+
+const TEMPLATES: Record<TemplateId, Template> = {
+  'pricing-page': {
+    id: 'pricing-page',
+    name: 'Pricing Page',
+    description: 'Generate a modern, responsive pricing page with Polar checkout integration',
+    defaultConfig: {
+      selectedProducts: [],
+      successPath: '/success'
+    } as PricingPageConfig,
+    generatePrompt: (config: PricingPageConfig, accessToken: string, products?: schemas['Product'][]) => {
+      if (!products || products.length === 0) {
+        return 'Select products above to generate a prompt for your pricing page.'
+      }
+
+      const productList = products
+        .map((product) => {
+          return `- **${product.name}**
   - ID: ${product.id}
   - Type: ${product.is_recurring ? 'Subscription' : 'One-time purchase'}
   - Description: ${product.description || 'No description'}${
     product.prices?.length
       ? `
   - Pricing: ${product.prices
-    .map((price) => {
+    .map((price: any) => {
       if (price.amount_type === 'free') return 'Free'
       if (price.amount_type === 'custom') return 'Pay what you want'
       if (
@@ -80,10 +98,10 @@ export default function ClientPage({ organization }: ClientPageProps) {
     .join(', ')}`
       : ''
   }`
-      })
-      .join('\n\n')
+        })
+        .join('\n\n')
 
-    return `Create a modern, responsive pricing page that integrates with Polar's payment infrastructure. The page should display the following products:
+      return `Create a modern, responsive pricing page that integrates with Polar's payment infrastructure. The page should display the following products:
 
 ${productList}
 
@@ -107,7 +125,7 @@ const response = await fetch('https://api.polar.sh/v1/checkouts/', {
   },
   body: JSON.stringify({
     products: [SELECTED_PRODUCT_ID], // Single product ID from the clicked product
-    success_url: '\${DOMAIN}/success?checkout_id={CHECKOUT_ID}' // Prefix this with the domain of this app
+    success_url: '\${DOMAIN}${config.successPath}?checkout_id={CHECKOUT_ID}' // Prefix this with the domain of this app
   })
 })
 
@@ -115,7 +133,7 @@ const checkout = await response.json()
 // Redirect user to: checkout.url
 \`\`\`
 
-You'll also need to create a success page at \`${successPath}?checkout_id={CHECKOUT_ID}\` that validates the checkout session when users return after payment.
+You'll also need to create a success page at \`${config.successPath}?checkout_id={CHECKOUT_ID}\` that validates the checkout session when users return after payment.
 The success page should extract the checkout_id from the URL query parameters and validate the session using Polar's checkout retrieval endpoint documented at https://polar.sh/docs/api-reference/checkouts/get-session.md:
 
 \`\`\`javascript
@@ -143,7 +161,77 @@ if (checkout.status === 'succeeded') {
 The checkout status can be "succeeded" (payment completed), "failed" (payment failed), "expired" (session expired), or "open" (still awaiting payment).
 
 This implementation creates a complete checkout flow using Polar's infrastructure for payment processing and subscription management.`
-  }, [products, accessToken, successPath])
+    }
+  },
+  'customer-portal': {
+    id: 'customer-portal',
+    name: 'Customer Portal',
+    description: 'Generate a customer self-service portal with account management and billing features',
+    defaultConfig: {} as CustomerPortalConfig,
+    generatePrompt: (config: CustomerPortalConfig, accessToken: string) => {
+      return `Create a customer portal button that generates a secure customer portal session and redirects the customer to Polar's hosted customer portal.
+
+**Customer Portal Session Creation:**
+
+Use the customer ID from your authentication system, if known, or use a dummy customer ID for now. Here's how to implement it:
+
+\`\`\`javascript
+// Server action or API route to create customer portal session
+async function createCustomerPortalSession(externalCustomerId) {
+  try {
+    const response = await fetch('https://api.polar.sh/v1/customer-sessions/', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ${accessToken}',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        customer_id: externalCustomerId  // Use customer ID from authentication system or dummy ID
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error('Customer not found')
+    }
+
+    const session = await response.json()
+
+    // Redirect customer to Polar's hosted customer portal
+    window.location.href = session.customer_portal_url
+
+  } catch (error) {
+    console.error('Failed to create customer portal session:', error)
+    throw error
+  }
+}
+\`\`\`
+
+For more details, see: https://polar.sh/docs/features/customer-portal.md`
+    }
+  }
+}
+
+export default function ClientPage({ organization }: ClientPageProps) {
+  const [selectedTemplateId, setSelectedTemplateId] = useState<TemplateId>('pricing-page')
+  const [templateConfigs, setTemplateConfigs] = useState<Record<TemplateId, TemplateConfig>>({
+    'pricing-page': TEMPLATES['pricing-page'].defaultConfig,
+    'customer-portal': TEMPLATES['customer-portal'].defaultConfig
+  })
+  const [accessToken, setAccessToken] = useState('')
+  const [showToken, setShowToken] = useState(false)
+  const [promptText, setPromptText] = useState('')
+
+  const currentTemplate = TEMPLATES[selectedTemplateId]
+  const currentConfig = templateConfigs[selectedTemplateId]
+
+  const selectedProducts = selectedTemplateId === 'pricing-page' ? (currentConfig as PricingPageConfig).selectedProducts : []
+  const { data: products } = useSelectedProducts(selectedProducts)
+  const safeCopy = useSafeCopy(toast)
+  const createToken = useCreateOrganizationAccessToken(organization.id)
+
+  const generatedPrompt = useMemo(() => {
+    return currentTemplate.generatePrompt(currentConfig, accessToken, products)
+  }, [currentTemplate, currentConfig, accessToken, products])
 
   const handleCopyPrompt = useCallback(async () => {
     await safeCopy(promptText)
@@ -189,7 +277,7 @@ This implementation creates a complete checkout flow using Polar's infrastructur
       toast({
         title: 'Failed to Generate Token',
         description: 'Unable to generate access token. Please try again.',
-        variant: 'destructive',
+        variant: 'error',
       })
     }
   }, [createToken])
@@ -198,7 +286,20 @@ This implementation creates a complete checkout flow using Polar's infrastructur
     setShowToken(!showToken)
   }, [showToken])
 
-  const isDisabled = !products || products.length === 0 || !accessToken.trim()
+  const updateTemplateConfig = useCallback((templateId: TemplateId, updates: Partial<TemplateConfig>) => {
+    setTemplateConfigs(prev => ({
+      ...prev,
+      [templateId]: { ...prev[templateId], ...updates }
+    }))
+  }, [])
+
+  const isDisabled = useMemo(() => {
+    if (!accessToken.trim()) return true
+    if (selectedTemplateId === 'pricing-page') {
+      return !products || products.length === 0
+    }
+    return false
+  }, [selectedTemplateId, products, accessToken])
 
   useEffect(() => {
     setPromptText(generatedPrompt)
@@ -207,6 +308,28 @@ This implementation creates a complete checkout flow using Polar's infrastructur
   return (
     <DashboardBody title="Prompt Generator">
       <div className="flex flex-col gap-y-8">
+        {/* Template Selection */}
+        <ShadowBoxOnMd className="flex flex-col gap-y-4 p-6">
+          <h2 className="text-lg font-medium">Templates</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {Object.values(TEMPLATES).map((template) => (
+              <div
+                key={template.id}
+                className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
+                  selectedTemplateId === template.id
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
+                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                }`}
+                onClick={() => setSelectedTemplateId(template.id as TemplateId)}
+              >
+                <h3 className="font-medium">{template.name}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {template.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </ShadowBoxOnMd>
         {/* Configuration and Authentication Grid */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Configuration Section - 2/3 width */}
@@ -214,36 +337,47 @@ This implementation creates a complete checkout flow using Polar's infrastructur
             <ShadowBoxOnMd className="flex flex-col gap-y-6 p-6">
               <h2 className="text-lg font-medium">Configuration</h2>
 
-              {/* Product Selection */}
-              <div className="flex flex-col gap-y-2">
-                <label className="text-sm font-medium">Select Products</label>
-                <ProductSelect
-                  organization={organization}
-                  value={selectedProducts}
-                  onChange={setSelectedProducts}
-                  emptyLabel="Select products to include"
-                  className="w-full"
-                />
-                <p className="dark:text-polar-500 text-xs text-gray-500">
-                  Choose which products to include in the generated pricing
-                  page.
-                </p>
-              </div>
+              {/* Template-specific configuration */}
+              {selectedTemplateId === 'pricing-page' && (
+                <>
+                  {/* Product Selection */}
+                  <div className="flex flex-col gap-y-2">
+                    <label className="text-sm font-medium">Select Products</label>
+                    <ProductSelect
+                      organization={organization}
+                      value={(currentConfig as PricingPageConfig).selectedProducts}
+                      onChange={(products) => updateTemplateConfig('pricing-page', { selectedProducts: products })}
+                      emptyLabel="Select products to include"
+                      className="w-full"
+                    />
+                    <p className="dark:text-polar-500 text-xs text-gray-500">
+                      Choose which products to include in the generated pricing page.
+                    </p>
+                  </div>
 
-              {/* Success Page Path */}
-              <div className="flex flex-col gap-y-2">
-                <label className="text-sm font-medium">Success Page Path</label>
-                <Input
-                  value={successPath}
-                  onChange={(e) => setSuccessPath(e.target.value)}
-                  placeholder="/success"
-                  className="w-full"
-                />
-                <p className="dark:text-polar-500 text-xs text-gray-500">
-                  The path users will be redirected to after successful
-                  checkout.
-                </p>
-              </div>
+                  {/* Success Page Path */}
+                  <div className="flex flex-col gap-y-2">
+                    <label className="text-sm font-medium">Success Page Path</label>
+                    <Input
+                      value={(currentConfig as PricingPageConfig).successPath}
+                      onChange={(e) => updateTemplateConfig('pricing-page', { successPath: e.target.value })}
+                      placeholder="/success"
+                      className="w-full"
+                    />
+                    <p className="dark:text-polar-500 text-xs text-gray-500">
+                      The path users will be redirected to after successful checkout.
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {selectedTemplateId === 'customer-portal' && (
+                <div className="flex flex-col gap-y-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    No additional configuration needed for customer portal. The prompt will include instructions for using customer IDs from your authentication system.
+                  </p>
+                </div>
+              )}
             </ShadowBoxOnMd>
           </div>
 

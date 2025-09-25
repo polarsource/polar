@@ -169,7 +169,7 @@ export const InactiveSubscriptionsOverview = ({
             header: '',
             cell: ({ row }) => (
               <span className="flex justify-end gap-2">
-                {row.original.status === 'past_due' && (
+                {row.original.status === 'past_due' && row.original.is_polar_managed && (
                   <Button
                     variant="default"
                     size="sm"

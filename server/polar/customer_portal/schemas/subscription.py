@@ -67,7 +67,6 @@ class CustomerSubscription(SubscriptionBase):
     )
 
     @computed_field
-    @property
     def is_polar_managed(self) -> bool:
         """Whether the subscription is managed by Polar."""
         return self.stripe_subscription_id is None

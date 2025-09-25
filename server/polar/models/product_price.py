@@ -49,6 +49,7 @@ class ProductPriceAmountType(StrEnum):
     custom = "custom"
     free = "free"
     metered_unit = "metered_unit"
+    seat_based = "seat_based"
 
 
 class HasPriceCurrency:
@@ -111,6 +112,7 @@ class ProductPrice(RecordModel):
             ProductPriceAmountType.fixed,
             ProductPriceAmountType.free,
             ProductPriceAmountType.custom,
+            ProductPriceAmountType.seat_based,
         }
 
     @is_static.inplace.expression
@@ -121,6 +123,7 @@ class ProductPrice(RecordModel):
                 ProductPriceAmountType.fixed,
                 ProductPriceAmountType.free,
                 ProductPriceAmountType.custom,
+                ProductPriceAmountType.seat_based,
             )
         )
 
@@ -360,6 +363,18 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.metered_unit,
+        "polymorphic_load": "inline",
+    }
+
+
+class ProductPriceSeatUnit(NewProductPrice, HasPriceCurrency, ProductPrice):
+    amount_type: Mapped[Literal[ProductPriceAmountType.seat_based]] = mapped_column(
+        use_existing_column=True, default=ProductPriceAmountType.seat_based
+    )
+    price_per_seat: Mapped[int] = mapped_column(Integer, nullable=True)
+
+    __mapper_args__ = {
+        "polymorphic_identity": ProductPriceAmountType.seat_based,
         "polymorphic_load": "inline",
     }
 

@@ -36,6 +36,7 @@ if TYPE_CHECKING:
         BenefitGrant,
         Checkout,
         Customer,
+        CustomerSeat,
         Discount,
         Meter,
         Organization,
@@ -241,6 +242,8 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         Text, nullable=True
     )
 
+    seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+
     @declared_attr
     def checkout(cls) -> Mapped["Checkout | None"]:
         return relationship(
@@ -256,6 +259,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             lazy="raise",
             order_by="BenefitGrant.benefit_id",
             back_populates="subscription",
+        )
+
+    @declared_attr
+    def customer_seats(cls) -> Mapped[list["CustomerSeat"]]:
+        return relationship(
+            "CustomerSeat",
+            lazy="raise",
+            back_populates="subscription",
+            cascade="all, delete-orphan",
         )
 
     def is_incomplete(self) -> bool:

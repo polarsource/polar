@@ -1,13 +1,11 @@
 'use client'
 
-import {
-  AllInclusiveOutlined,
-  DiamondOutlined,
-  DonutLargeOutlined,
-  HiveOutlined,
-  LinkOutlined,
-  TrendingUpOutlined,
-} from '@mui/icons-material'
+import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
+import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
+import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
+import HiveOutlined from '@mui/icons-material/HiveOutlined'
+import LinkOutlined from '@mui/icons-material/LinkOutlined'
+import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -41,7 +39,7 @@ const FeatureCard = ({
         href={linkHref}
         target="_blank"
         className={twMerge(
-          'dark:border-polar-700 dark:bg-polar-900 flex h-full flex-col justify-between gap-x-6 gap-y-6 rounded-3xl border border-transparent bg-white p-8 transition-transform hover:translate-y-[-4px] md:p-10 xl:gap-y-0',
+          'dark:border-polar-700 dark:bg-polar-900 flex h-full flex-col justify-between gap-x-6 gap-y-6 rounded-2xl border border-transparent bg-white !p-6 transition-transform hover:translate-y-[-4px] md:p-10 xl:gap-y-0',
         )}
       >
         <div className="flex h-full flex-col gap-y-6">
@@ -99,7 +97,7 @@ const Features = ({ className }: FeaturesProps) => {
       title: 'Payments, Usage & Billing',
       description:
         'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
-      linkHref: 'https://docs.polar.sh/features/products',
+      linkHref: 'https://polar.sh/docs/features/products',
       children: (
         <div className="grid grid-cols-2 gap-2">
           {[
@@ -152,7 +150,7 @@ const Features = ({ className }: FeaturesProps) => {
       title: 'Customer Management',
       description:
         'Streamlined customer lifecycle management with detailed profiles and analytics.',
-      linkHref: 'https://docs.polar.sh/features/customer-management',
+      linkHref: 'https://polar.sh/docs/features/customer-management',
       children: (
         <div className="relative h-[120px] md:h-[200px]">
           <div className="absolute bottom-8 left-0 right-0 scale-90 transition-transform hover:-translate-y-1">
@@ -171,7 +169,7 @@ const Features = ({ className }: FeaturesProps) => {
       title: 'Global Merchant of Record',
       description:
         'Focus on your passion while we handle all headaches & tax compliance.',
-      linkHref: 'https://docs.polar.sh/merchant-of-record/introduction',
+      linkHref: 'https://polar.sh/docs/merchant-of-record/introduction',
       children: (
         <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-2 rounded-lg border border-gray-200 bg-gray-100 p-4">
           <div className="flex items-center justify-between">

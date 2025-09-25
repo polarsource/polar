@@ -48,6 +48,7 @@ class TestHandleFailure:
         )
 
         order.next_payment_attempt_at = None
+        assert order.subscription is not None
         order.subscription.stripe_subscription_id = None
         await save_fixture(order)
 

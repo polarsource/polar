@@ -63,6 +63,13 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
           value={<FormattedDateTime datetime={subscription.created_at} />}
         />
 
+        {subscription.status === 'trialing' && subscription.trial_end && (
+          <DetailRow
+            label="Trial End Date"
+            value={<FormattedDateTime datetime={subscription.trial_end} />}
+          />
+        )}
+
         {nextEventDatetime && (
           <DetailRow
             label={subscription.ends_at ? 'Ending Date' : 'Renewal Date'}

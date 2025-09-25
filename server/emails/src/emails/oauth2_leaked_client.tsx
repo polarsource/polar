@@ -75,7 +75,7 @@ export function OAuth2LeakedClient({
         <Text className="text-sm text-gray-600">
           You can read more about why you received this alert in our{' '}
           <Link
-            href="https://docs.polar.sh/documentation/integration-guides/authenticating-with-polar#security"
+            href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar#security"
             className="text-blue-600 underline"
           >
             FAQ

@@ -1,5 +1,6 @@
 'use client'
 
+import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
@@ -7,6 +8,7 @@ import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/check
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
@@ -49,7 +51,7 @@ const DetailRow = ({
 }: PropsWithChildren<{ title: string; emphasis?: boolean }>) => {
   return (
     <div
-      className={`flex flex-row items-center justify-between gap-x-8 ${emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500'}`}
+      className={`flex flex-row items-start justify-between gap-x-8 ${emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500'}`}
     >
       <span>{title}</span>
       {children}
@@ -85,6 +87,7 @@ interface BaseCheckoutFormProps {
   loading: boolean
   loadingLabel: string | undefined
   disabled?: boolean
+  isUpdatePending?: boolean
   themePreset: ThemingPresetProps
 }
 
@@ -96,6 +99,7 @@ const BaseCheckoutForm = ({
   loading,
   loadingLabel,
   disabled,
+  isUpdatePending,
   children,
   themePreset: themePresetProps,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
@@ -154,12 +158,6 @@ const BaseCheckoutForm = ({
           }
           clearErrors('customerBillingAddress')
         }
-      } else if (name === 'isBusinessCustomer') {
-        const { isBusinessCustomer } = value
-        payload = {
-          ...payload,
-          isBusinessCustomer,
-        }
       }
 
       if (Object.keys(payload).length === 0) {
@@ -191,6 +189,15 @@ const BaseCheckoutForm = ({
       resetField('discountCode')
     } catch {}
   }, [update, clearErrors, resetField])
+
+  const updateBusinessCustomer = useCallback(
+    async (isBusinessCustomer: boolean) => {
+      try {
+        await update({ isBusinessCustomer })
+      } catch {}
+    },
+    [update],
+  )
 
   useEffect(() => {
     const subscription = watch(debouncedWatcher)
@@ -248,6 +255,63 @@ const BaseCheckoutForm = ({
       resetField('discountCode')
     }
   }, [checkout, resetField])
+
+  const formattedDiscountDuration = useMemo(() => {
+    if (!checkout.discount) {
+      return ''
+    }
+
+    if (!interval) {
+      return ''
+    }
+
+    if (checkout.discount.duration === 'forever') {
+      return ''
+    }
+
+    if (checkout.discount.duration === 'once') {
+      return `for the first ${interval}`
+    }
+
+    const durationInMonths =
+      'durationInMonths' in checkout.discount && checkout.discount
+        ? checkout.discount.durationInMonths
+        : -1
+
+    // Discount duration is always in months, so a 13 month discount on a yearly billing schedule
+    // will apply on the first two years.
+    // For clarity, we convert that here.
+    // When we ship other intervals like daily or weekly, "for the first xyz months" is probably
+    // better language than "for the first xyz days" anyway.
+    const calculatedDuration =
+      interval === 'year' ? Math.ceil(durationInMonths / 12) : durationInMonths
+
+    if (calculatedDuration <= 1) {
+      return `for the first ${interval}`
+    }
+
+    return `for the first ${calculatedDuration} ${interval === 'year' ? 'years' : 'months'}`
+  }, [checkout.discount, interval])
+
+  const totalLabel = useMemo(() => {
+    if (interval) {
+      return `Every ${interval}`
+    }
+
+    return 'Total'
+  }, [interval])
+
+  const checkoutLabel = useMemo(() => {
+    if (checkout.activeTrialInterval) {
+      return `Start Trial`
+    }
+
+    if (checkout.isPaymentFormRequired) {
+      return interval ? 'Subscribe' : 'Pay'
+    }
+
+    return 'Submit'
+  }, [checkout, interval])
 
   return (
     <div className="flex flex-col justify-between gap-y-24">
@@ -321,7 +385,14 @@ const BaseCheckoutForm = ({
                           <FormControl>
                             <Checkbox
                               checked={field.value ? field.value : false}
-                              onCheckedChange={field.onChange}
+                              onCheckedChange={(checked) => {
+                                if (isUpdatePending) {
+                                  return
+                                }
+
+                                field.onChange(checked)
+                                updateBusinessCustomer(!!checked)
+                              }}
                             />
                           </FormControl>
                           <FormLabel>
@@ -526,6 +597,9 @@ const BaseCheckoutForm = ({
                           render={({ field }) => (
                             <>
                               <CountryPicker
+                                allowedCountries={Object.values(
+                                  CountryAlpha2Input,
+                                )}
                                 autoComplete="billing country"
                                 value={field.value || undefined}
                                 onChange={field.onChange}
@@ -612,8 +686,8 @@ const BaseCheckoutForm = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex flex-row items-center justify-between">
-                        <div>Discount Code</div>
-                        <div className="dark:text-polar-500 text-xs text-gray-500">
+                        <div>Discount code</div>
+                        <div className="dark:text-polar-500 text-xs font-normal text-gray-500">
                           Optional
                         </div>
                       </FormLabel>
@@ -702,23 +776,34 @@ const BaseCheckoutForm = ({
                         {formatCurrencyNumber(
                           -checkout.discountAmount,
                           checkout.currency,
+                          checkout.discountAmount % 100 === 0 ? 0 : 2,
                         )}
                       </DetailRow>
                     )}
-                    {checkout.taxAmount !== null && (
-                      <DetailRow title="Taxes">
-                        {formatCurrencyNumber(
-                          checkout.taxAmount,
-                          checkout.currency,
+
+                    <DetailRow title="Taxes">
+                      {checkout.taxAmount !== null
+                        ? formatCurrencyNumber(
+                            checkout.taxAmount,
+                            checkout.currency,
+                            checkout.discountAmount % 100 === 0 ? 0 : 2,
+                          )
+                        : '—'}
+                    </DetailRow>
+
+                    <DetailRow title={totalLabel} emphasis>
+                      <div className="flex flex-col items-end gap-y-1">
+                        <AmountLabel
+                          amount={checkout.totalAmount}
+                          currency={checkout.currency}
+                          interval={interval}
+                        />
+                        {formattedDiscountDuration && (
+                          <span className="text-xs font-normal text-gray-500">
+                            {formattedDiscountDuration}
+                          </span>
                         )}
-                      </DetailRow>
-                    )}
-                    <DetailRow title="Total" emphasis>
-                      <AmountLabel
-                        amount={checkout.totalAmount}
-                        currency={checkout.currency}
-                        interval={interval}
-                      />
+                      </div>
                     </DetailRow>
                     {meteredPrices.length > 0 && (
                       <DetailRow title="Additional metered usage" emphasis />
@@ -735,6 +820,30 @@ const BaseCheckoutForm = ({
                 ) : (
                   <span>Free</span>
                 )}
+                {(checkout.trialEnd ||
+                  (checkout.activeTrialInterval &&
+                    checkout.activeTrialIntervalCount)) && (
+                  <div className="mt-3 border-t border-gray-300 pt-4 dark:border-gray-700">
+                    {checkout.activeTrialInterval &&
+                      checkout.activeTrialIntervalCount && (
+                        <DetailRow
+                          emphasis
+                          title={`${checkout.activeTrialIntervalCount} ${checkout.activeTrialInterval}${checkout.activeTrialIntervalCount > 1 ? 's' : ''} trial`}
+                        >
+                          <span>Free</span>
+                        </DetailRow>
+                      )}
+                    {checkout.trialEnd && (
+                      <span className="dark:text-polar-500 text-gray-500:w text-sm">
+                        Trial ends{' '}
+                        <FormattedDateTime
+                          datetime={checkout.trialEnd}
+                          resolution="day"
+                        />
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             <div className="flex w-full flex-col items-center justify-center gap-y-2">
@@ -743,14 +852,10 @@ const BaseCheckoutForm = ({
                 size="lg"
                 wrapperClassNames="text-base"
                 className={cn(themePresetProps.polar.button, 'w-full')}
-                disabled={disabled}
+                disabled={disabled || isUpdatePending}
                 loading={loading}
               >
-                {!checkout.isPaymentFormRequired
-                  ? 'Submit'
-                  : interval
-                    ? 'Subscribe'
-                    : 'Pay'}
+                {checkoutLabel}
               </Button>
               {loading && loadingLabel && (
                 <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -799,6 +904,7 @@ interface CheckoutFormProps {
   loading: boolean
   loadingLabel: string | undefined
   disabled?: boolean
+  isUpdatePending?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
 }
@@ -811,6 +917,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     loading,
     loadingLabel,
     disabled,
+    isUpdatePending,
     themePreset: themePresetProps,
   } = props
   const {
@@ -856,6 +963,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       stripe={stripePromise}
       options={{
         ...elementsOptions,
+        locale: 'en',
         customerSessionClientSecret: (
           checkout.paymentProcessorMetadata as {
             customer_session_client_secret?: string
@@ -873,6 +981,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             update={update}
             loading={loading}
             loadingLabel={loadingLabel}
+            isUpdatePending={isUpdatePending}
           >
             {checkout.isPaymentFormRequired && (
               <PaymentElement

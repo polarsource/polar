@@ -50,7 +50,11 @@ export default async function Page({
   searchParams,
 }: {
   params: { organization: string }
-  searchParams: { customer_session_token?: string }
+  searchParams: {
+    customer_session_token?: string
+    setup_intent_client_secret?: string
+    setup_intent?: string
+  }
 }) {
   const api = getServerSideAPI(searchParams.customer_session_token)
   const { organization } = await getOrganizationOrNotFound(
@@ -62,6 +66,15 @@ export default async function Page({
     <CustomerPortalSettings
       organization={organization}
       customerSessionToken={searchParams.customer_session_token}
+      setupIntentParams={
+        searchParams.setup_intent_client_secret && searchParams.setup_intent
+          ? {
+              setup_intent_client_secret:
+                searchParams.setup_intent_client_secret,
+              setup_intent: searchParams.setup_intent,
+            }
+          : undefined
+      }
     />
   )
 }

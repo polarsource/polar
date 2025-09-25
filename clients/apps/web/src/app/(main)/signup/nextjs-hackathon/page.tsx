@@ -153,10 +153,10 @@ const RightColumn = () => {
               <code className="text-polar-500">
                 &gt;{` `}
                 <a
-                  href="https://docs.polar.sh/guides/nextjs"
+                  href="https://polar.sh/docs/guides/nextjs"
                   className="underline"
                 >
-                  https://docs.polar.sh/guides/nextjs
+                  https://polar.sh/docs/guides/nextjs
                 </a>
               </code>
             </pre>
@@ -221,11 +221,11 @@ export const POST = Webhooks({
       </div>
       <ul className="mt-12">
         <ResourceLinkItem
-          href="https://docs.polar.sh/introduction"
+          href="https://polar.sh/docs/introduction"
           title="00. Docs"
         />
         <ResourceLinkItem
-          href="https://docs.polar.sh/api-reference"
+          href="https://polar.sh/docs/api-reference"
           title="01. API Reference"
         />
         <ResourceLinkItem
@@ -289,7 +289,7 @@ export default async function Page() {
                 <p>
                   -{' '}
                   <a
-                    href="https://docs.polar.sh/integrate/customer-state"
+                    href="https://polar.sh/docs/integrate/customer-state"
                     className="text-blue-300"
                   >
                     One webhook
@@ -313,7 +313,7 @@ export default async function Page() {
                   <p className="mb-4 mt-2 text-xs">
                     + International-, billing- and payout{` `}
                     <a
-                      href="https://docs.polar.sh/merchant-of-record/fees"
+                      href="https://polar.sh/docs/merchant-of-record/fees"
                       className="text-blue-300"
                     >
                       fees

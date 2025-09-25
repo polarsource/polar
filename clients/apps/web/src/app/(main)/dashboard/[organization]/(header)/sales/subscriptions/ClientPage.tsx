@@ -4,7 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
 import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
-import { useListSubscriptions, useProducts } from '@/hooks/queries'
+import { useSubscriptions, useProducts } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import {
   DataTablePaginationState,
@@ -12,7 +12,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { FileDownloadOutlined } from '@mui/icons-material'
+import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -137,7 +137,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     )
   }
 
-  const subscriptionsHook = useListSubscriptions(organization.id, {
+  const subscriptionsHook = useSubscriptions(organization.id, {
     ...getAPIParams(pagination, sorting),
     ...(productId ? { product_id: productId } : {}),
     ...(status !== 'any'
@@ -212,11 +212,17 @@ const ClientPage: React.FC<ClientPageProps> = ({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Renewal Date" />
       ),
-      cell: (props) => {
-        const datetime = props.getValue() as string | null
-        return datetime &&
-          props.row.original.status === 'active' &&
-          !props.row.original.cancel_at_period_end ? (
+      cell: ({
+        getValue,
+        row: {
+          original: { status, cancel_at_period_end },
+        },
+      }) => {
+        const datetime = getValue() as string | null
+        const willRenew =
+          (status === 'active' || status === 'trialing') &&
+          !cancel_at_period_end
+        return datetime && willRenew ? (
           <FormattedDateTime datetime={datetime} />
         ) : (
           '—'

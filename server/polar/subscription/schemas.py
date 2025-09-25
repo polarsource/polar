@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from babel.numbers import format_currency
 from fastapi import Path
-from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic import UUID4, AliasChoices, AliasPath, Field, FutureDatetime
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
@@ -65,6 +65,12 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     )
     current_period_end: datetime | None = Field(
         description="The end timestamp of the current billing period."
+    )
+    trial_start: datetime | None = Field(
+        description="The start timestamp of the trial period, if any."
+    )
+    trial_end: datetime | None = Field(
+        description="The end timestamp of the trial period, if any."
     )
     cancel_at_period_end: bool = Field(
         description=(
@@ -222,6 +228,15 @@ class SubscriptionUpdateDiscount(Schema):
     )
 
 
+class SubscriptionUpdateTrial(Schema):
+    trial_end: FutureDatetime | Literal["now"] = Field(
+        description=(
+            "Set or extend the trial period of the subscription. "
+            "If set to `now`, the trial will end immediately."
+        ),
+    )
+
+
 class SubscriptionCancelBase(Schema):
     customer_cancellation_reason: CustomerCancellationReason | None = Field(
         None,
@@ -286,6 +301,7 @@ class SubscriptionRevoke(SubscriptionCancelBase):
 SubscriptionUpdate = Annotated[
     SubscriptionUpdateProduct
     | SubscriptionUpdateDiscount
+    | SubscriptionUpdateTrial
     | SubscriptionCancel
     | SubscriptionRevoke,
     SetSchemaReference("SubscriptionUpdate"),

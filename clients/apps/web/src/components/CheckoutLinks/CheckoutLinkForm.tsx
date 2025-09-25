@@ -5,7 +5,7 @@ import {
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
-import { ClearOutlined } from '@mui/icons-material'
+import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -31,6 +31,7 @@ import { useCallback, useEffect, useMemo } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'
 import { toast } from '../Toast/use-toast'
+import { TrialConfigurationForm } from '../TrialConfiguration/TrialConfigurationForm'
 
 type CheckoutLinkCreateForm = Omit<
   schemas['CheckoutLinkCreateProducts'],
@@ -60,6 +61,7 @@ export const CheckoutLinkForm = ({
   const defaultValues = useMemo<CheckoutLinkCreateForm>(() => {
     if (checkoutLink) {
       return {
+        ...checkoutLink,
         label: checkoutLink.label ?? null,
         metadata: Object.entries(checkoutLink.metadata ?? {}).map(
           ([key, value]) => ({ key, value }),
@@ -376,6 +378,8 @@ export const CheckoutLinkForm = ({
               )
             }}
           />
+
+          <TrialConfigurationForm bottomText="This will override the trial configuration set on products." />
 
           <FormItem>
             <div className="flex flex-row items-center justify-between gap-2 py-2">

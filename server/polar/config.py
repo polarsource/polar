@@ -6,10 +6,9 @@ from typing import Annotated, Literal
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
-from pydantic_extra_types.country import CountryAlpha2
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from polar.kit.address import Address
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.jwk import JWKSFile
 
 
@@ -120,6 +119,7 @@ class Settings(BaseSettings):
     DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
     DATABASE_COMMAND_TIMEOUT_SECONDS: float = 30.0
+    DATABASE_STREAM_YIELD_PER: int = 100
 
     POSTGRES_READ_USER: str | None = None
     POSTGRES_READ_PWD: str | None = None
@@ -236,7 +236,7 @@ class Settings(BaseSettings):
         line2="PMB 61301",
         postal_code="94104",
         city="San Francisco",
-        state="CA",
+        state="US-CA",
         country=CountryAlpha2("US"),
     )
     INVOICES_ADDITIONAL_INFO: str | None = "[support@polar.sh](mailto:support@polar.sh)"
@@ -283,7 +283,7 @@ class Settings(BaseSettings):
         ".well-known",
     ]
 
-    ORGANIZATIONS_BILLING_ENGINE_DEFAULT: bool = False
+    ORGANIZATIONS_BILLING_ENGINE_DEFAULT: bool = True
 
     # Dunning Configuration
     DUNNING_RETRY_INTERVALS: list[timedelta] = [

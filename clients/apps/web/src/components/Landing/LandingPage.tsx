@@ -13,8 +13,6 @@ import Features from './Features'
 import { Pricing } from './Pricing'
 import SDKs from './SDKs'
 import { Section } from './Section'
-import { Tools } from './Tools'
-import { Upsell } from './Upsell'
 import { Usage } from './Usage'
 
 export default function Page() {
@@ -65,15 +63,13 @@ export const PageContent = () => {
           </div>
         </Link>
       </Section>
-      <Testimonials />
       <Section className="flex flex-col gap-y-24">
         <Checkout />
         <MerchantOfRecord />
         <Benefits />
-        <Upsell />
+        <Testimonials />
       </Section>
       <Section className="flex flex-col gap-y-24">
-        <Tools />
         <Pricing />
       </Section>
     </>

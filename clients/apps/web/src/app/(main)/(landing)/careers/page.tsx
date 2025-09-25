@@ -1,8 +1,6 @@
-import {
-  AllInclusiveOutlined,
-  ArrowOutward,
-  FavoriteBorderOutlined,
-} from '@mui/icons-material'
+import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
+import ArrowOutward from '@mui/icons-material/ArrowOutward'
+import FavoriteBorderOutlined from '@mui/icons-material/FavoriteBorderOutlined'
 import { Metadata } from 'next'
 import { JobSection } from './JobSection'
 
@@ -90,7 +88,7 @@ export default function CareersPage() {
           </p>
         </ValueBox>
       </div>
-      <div className="flex flex-col gap-24 tracking-tight">
+      <div className="group flex flex-col gap-24 tracking-tight">
         <div className="flex flex-col gap-12 lg:gap-24">
           <JobSection
             title="Product & Engineering"

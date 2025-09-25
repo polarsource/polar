@@ -9,7 +9,7 @@ from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
-from polar.kit.address import Address
+from polar.kit.address import Address, AddressInput
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
 from polar.models.order import OrderBillingReason, OrderStatus
@@ -39,6 +39,9 @@ class OrderBase(TimestampedSchema, IDSchema):
 
     tax_amount: int = Field(description="Sales tax amount in cents.")
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
+    from_balance_amount: int = Field(
+        description="How much of this invoice was paid using the customer's balance. Amount in cents."
+    )
     refunded_amount: int = Field(description="Amount refunded in cents.")
     refunded_tax_amount: int = Field(description="Sales tax refunded in cents.")
     currency: str
@@ -47,6 +50,10 @@ class OrderBase(TimestampedSchema, IDSchema):
         description="The name of the customer that should appear on the invoice. "
     )
     billing_address: Address | None
+
+    invoice_number: str = Field(
+        description="The invoice number associated with this order."
+    )
     is_invoice_generated: bool = Field(
         description="Whether an invoice has been generated for this order."
     )
@@ -184,7 +191,7 @@ class OrderUpdateBase(Schema):
             "Can't be updated after the invoice is generated."
         )
     )
-    billing_address: Address | None = Field(
+    billing_address: AddressInput | None = Field(
         description=(
             "The address of the customer that should appear on the invoice. "
             "Can't be updated after the invoice is generated."

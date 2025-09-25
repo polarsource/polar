@@ -39,7 +39,9 @@ const CustomerPortalOrder = ({
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
-    order_id: order.id,
+    ...(order.subscription_id
+      ? { subscription_id: order.subscription_id }
+      : { order_id: order.id }),
     limit: 100,
     sorting: ['type'],
   })
@@ -73,23 +75,15 @@ const CustomerPortalOrder = ({
 
         <div className="flex flex-col gap-8">
           <div className="flex flex-col">
-            <DetailRow label="Order ID" value={<span>{order.id}</span>} />
             <DetailRow
               label="Product"
               value={<span>{order.product.name}</span>}
             />
+            <DetailRow label="Invoice number" value={order.invoice_number} />
             <DetailRow
-              label="Order Date"
+              label="Date"
               value={
                 <span>{new Date(order.created_at).toLocaleDateString()}</span>
-              }
-            />
-            <DetailRow
-              label="Status"
-              value={
-                <span className="capitalize">
-                  {order.status.split('_').join(' ')}
-                </span>
               }
             />
           </div>
@@ -103,6 +97,7 @@ const CustomerPortalOrder = ({
                     key={item.id}
                     label={item.label}
                     value={<span>{formatCurrencyAndAmount(item.amount)}</span>}
+                    valueClassName="justify-end"
                   />
                 ))}
               </div>
@@ -115,6 +110,7 @@ const CustomerPortalOrder = ({
               value={
                 <span>{formatCurrencyAndAmount(order.subtotal_amount)}</span>
               }
+              valueClassName="justify-end"
             />
             <DetailRow
               label="Discount"
@@ -125,19 +121,47 @@ const CustomerPortalOrder = ({
                     : '—'}
                 </span>
               }
+              valueClassName="justify-end"
             />
             <DetailRow
               label="Net amount"
               value={<span>{formatCurrencyAndAmount(order.net_amount)}</span>}
+              valueClassName="justify-end"
             />
             <DetailRow
               label="Tax"
               value={<span>{formatCurrencyAndAmount(order.tax_amount)}</span>}
+              valueClassName="justify-end"
             />
             <DetailRow
               label="Total"
               value={<span>{formatCurrencyAndAmount(order.total_amount)}</span>}
+              valueClassName="justify-end"
             />
+            {order.from_balance_amount > 0 && (
+              <DetailRow
+                label="From customer balance"
+                value={
+                  <span>
+                    {formatCurrencyAndAmount(-order.from_balance_amount)}
+                  </span>
+                }
+                valueClassName="justify-end"
+              />
+            )}
+            {order.from_balance_amount > 0 && (
+              <DetailRow
+                label="To be paid"
+                value={
+                  <span>
+                    {formatCurrencyAndAmount(
+                      order.total_amount - order.from_balance_amount,
+                    )}
+                  </span>
+                }
+                valueClassName="justify-end"
+              />
+            )}
 
             {isPartiallyOrFullyRefunded && (
               <DetailRow
@@ -145,6 +169,7 @@ const CustomerPortalOrder = ({
                 value={
                   <span>{formatCurrencyAndAmount(order.refunded_amount)}</span>
                 }
+                valueClassName="justify-end"
               />
             )}
           </div>

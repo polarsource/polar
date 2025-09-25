@@ -27,6 +27,9 @@ export const useInvoiceDownload = ({
     defaultValues: {
       ...account,
       invoice_number: payout?.invoice_number || '',
+      billing_address: account.billing_address as
+        | schemas['AddressInput']
+        | null,
     },
   })
 
@@ -39,6 +42,9 @@ export const useInvoiceDownload = ({
       form.reset({
         ...account,
         invoice_number: payout.invoice_number || '',
+        billing_address: account.billing_address as
+          | schemas['AddressInput']
+          | null,
       })
     }
   }, [payout, account, form])

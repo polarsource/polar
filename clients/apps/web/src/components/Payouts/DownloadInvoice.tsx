@@ -1,5 +1,5 @@
 import { InlineModal } from '@/components/Modal/InlineModal'
-import { type schemas } from '@polar-sh/client'
+import { enums, type schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
@@ -195,6 +195,7 @@ export const InvoiceModal = ({
                         autoComplete="billing country"
                         value={field.value || undefined}
                         onChange={field.onChange}
+                        allowedCountries={enums.addressInputCountryValues}
                       />
                       <FormMessage />
                     </>

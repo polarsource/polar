@@ -107,9 +107,24 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
         StringEnum(SubscriptionRecurringInterval), nullable=False, index=True
     )
+
     stripe_subscription_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True, default=None
     )
+    """
+    The ID of the subscription in Stripe.
+
+    If set, indicates that the subscription is managed by Stripe Billing.
+    """
+    legacy_stripe_subscription_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True, default=None
+    )
+    """
+    Original ID of the subscription in Stripe.
+
+    If set, indicates that the subscription was originally managed by Stripe Billing,
+    but has been migrated to be managed by Polar.
+    """
 
     tax_exempted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     """
@@ -127,6 +142,12 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=False
     )
     current_period_end: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    trial_start: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    trial_end: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False)
@@ -239,6 +260,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     def is_incomplete(self) -> bool:
         return SubscriptionStatus.is_incomplete(self.status)
+
+    @hybrid_property
+    def trialing(self) -> bool:
+        return self.status == SubscriptionStatus.trialing
+
+    @trialing.inplace.expression
+    @classmethod
+    def _trialing_expression(cls) -> ColumnElement[bool]:
+        return cls.status == SubscriptionStatus.trialing
 
     @hybrid_property
     def active(self) -> bool:

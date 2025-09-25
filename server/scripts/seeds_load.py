@@ -38,6 +38,8 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, create_async_engine
 from polar.product.schemas import (
     ProductCreate,
+    ProductCreateOneTime,
+    ProductCreateRecurring,
     ProductPriceFixedCreate,
     ProductPriceMeteredUnitCreate,
 )
@@ -622,13 +624,23 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     price_currency="usd",
                 )
 
-            product_create = ProductCreate(
-                name=product_data["name"],
-                description=product_data["description"],
-                organization_id=organization.id,
-                recurring_interval=product_data.get("recurring", None),
-                prices=[price_create],
-            )
+            product_create: ProductCreate
+            recurring_interval = product_data.get("recurring", None)
+            if recurring_interval is None:
+                product_create = ProductCreateOneTime(
+                    name=product_data["name"],
+                    description=product_data["description"],
+                    organization_id=organization.id,
+                    prices=[price_create],
+                )
+            else:
+                product_create = ProductCreateRecurring(
+                    name=product_data["name"],
+                    description=product_data["description"],
+                    organization_id=organization.id,
+                    recurring_interval=recurring_interval,
+                    prices=[price_create],
+                )
 
             product = await product_service.create(
                 session=session,

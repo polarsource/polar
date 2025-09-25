@@ -7,7 +7,7 @@ export default async function BlogPage() {
   const posts = await getBlogPosts()
 
   return (
-    <div className="not-prose flex w-full flex-col gap-y-8 md:gap-y-16 md:px-8">
+    <div className="not-prose flex w-full flex-col gap-y-8 md:gap-y-16">
       <h1 className="text-3xl md:text-5xl">Blog</h1>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
         {posts.map(async (post) => {

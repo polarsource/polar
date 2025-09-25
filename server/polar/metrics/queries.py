@@ -40,6 +40,7 @@ class MetricQuery(StrEnum):
     cumulative_orders = "cumulative_orders"
     active_subscriptions = "active_subscriptions"
     checkouts = "checkouts"
+    canceled_subscriptions = "canceled_subscriptions"
 
 
 def _get_metrics_columns(
@@ -228,43 +229,13 @@ def get_active_subscriptions_cte(
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-    readable_subscriptions_statement = select(Subscription.id).join(
-        Product, onclause=Subscription.product_id == Product.id
+    readable_subscriptions_statement = _get_readable_subscriptions_statement(
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        billing_type=billing_type,
+        customer_id=customer_id,
     )
-    if is_user(auth_subject):
-        readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Product.organization_id.in_(
-                select(UserOrganization.organization_id).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
-                )
-            )
-        )
-    elif is_organization(auth_subject):
-        readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Product.organization_id == auth_subject.subject.id
-        )
-
-    if organization_id is not None:
-        readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Product.organization_id.in_(organization_id)
-        )
-
-    if product_id is not None:
-        readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Subscription.product_id.in_(product_id)
-        )
-
-    if billing_type is not None:
-        readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Product.billing_type.in_(billing_type)
-        )
-
-    if customer_id is not None:
-        readable_subscriptions_statement = readable_subscriptions_statement.join(
-            Customer,
-            onclause=Subscription.customer_id == Customer.id,
-        ).where(Customer.id.in_(customer_id))
 
     return cte(
         select(
@@ -310,6 +281,48 @@ def get_active_subscriptions_cte(
         .group_by(timestamp_column)
         .order_by(timestamp_column.asc())
     )
+
+
+def _get_readable_subscriptions_statement(
+    auth_subject: AuthSubject[User | Organization],
+    *,
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> Select[tuple[uuid.UUID]]:
+    statement = select(Subscription.id).join(
+        Product, onclause=Subscription.product_id == Product.id
+    )
+
+    if is_user(auth_subject):
+        statement = statement.where(
+            Product.organization_id.in_(
+                select(UserOrganization.organization_id).where(
+                    UserOrganization.user_id == auth_subject.subject.id,
+                    UserOrganization.deleted_at.is_(None),
+                )
+            )
+        )
+    elif is_organization(auth_subject):
+        statement = statement.where(Product.organization_id == auth_subject.subject.id)
+
+    if organization_id is not None:
+        statement = statement.where(Product.organization_id.in_(organization_id))
+
+    if product_id is not None:
+        statement = statement.where(Subscription.product_id.in_(product_id))
+
+    if billing_type is not None:
+        statement = statement.where(Product.billing_type.in_(billing_type))
+
+    if customer_id is not None:
+        statement = statement.join(
+            Customer,
+            onclause=Subscription.customer_id == Customer.id,
+        ).where(Customer.id.in_(customer_id))
+
+    return statement
 
 
 def get_checkouts_cte(
@@ -389,9 +402,62 @@ def get_checkouts_cte(
     )
 
 
+def get_canceled_subscriptions_cte(
+    timestamp_series: CTE,
+    interval: TimeInterval,
+    auth_subject: AuthSubject[User | Organization],
+    metrics: list["type[Metric]"],
+    now: datetime,
+    *,
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> CTE:
+    timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    readable_subscriptions_statement = _get_readable_subscriptions_statement(
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        billing_type=billing_type,
+        customer_id=customer_id,
+    )
+
+    return cte(
+        select(
+            timestamp_column.label("timestamp"),
+            *_get_metrics_columns(
+                MetricQuery.canceled_subscriptions,
+                timestamp_column,
+                interval,
+                metrics,
+                now,
+            ),
+        )
+        .select_from(
+            timestamp_series.join(
+                Subscription,
+                isouter=True,
+                onclause=and_(
+                    Subscription.canceled_at.is_not(None),
+                    interval.sql_date_trunc(
+                        cast(SQLColumnExpression[datetime], Subscription.canceled_at)
+                    )
+                    == interval.sql_date_trunc(timestamp_column),
+                    Subscription.id.in_(readable_subscriptions_statement),
+                ),
+            )
+        )
+        .group_by(timestamp_column)
+        .order_by(timestamp_column.asc())
+    )
+
+
 QUERIES: list[QueryCallable] = [
     get_orders_cte,
     get_cumulative_orders_cte,
     get_active_subscriptions_cte,
     get_checkouts_cte,
+    get_canceled_subscriptions_cte,
 ]

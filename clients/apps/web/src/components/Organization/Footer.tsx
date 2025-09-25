@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { BrandingMenu } from '../Layout/Public/BrandingMenu'
+import { PolarLogotype } from '../Layout/Public/PolarLogotype'
 
 const Footer = () => {
   return (
@@ -18,7 +18,7 @@ const Footer = () => {
         >
           <div className="flex flex-1 flex-col gap-y-6 md:col-span-2">
             <span className="text-black md:ml-0 dark:text-white">
-              <BrandingMenu
+              <PolarLogotype
                 className="ml-2 md:ml-0"
                 logoVariant="logotype"
                 size={120}

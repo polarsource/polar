@@ -29,7 +29,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { BrandingMenu } from '../Public/BrandingMenu'
+import { PolarLogotype } from '../Public/PolarLogotype'
 import {
   AccountNavigation,
   OrganizationNavigation,
@@ -71,7 +71,7 @@ export const DashboardSidebar = ({
             : 'flex-row items-center justify-between',
         )}
       >
-        <BrandingMenu size={32} />
+        <PolarLogotype size={32} />
         <motion.div
           key={isCollapsed ? 'header-collapsed' : 'header-expanded'}
           className={`flex ${isCollapsed ? 'flex-row md:flex-col-reverse' : 'flex-row'} items-center gap-2`}

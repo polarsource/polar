@@ -7,7 +7,7 @@ from unittest.mock import ANY, AsyncMock, MagicMock
 import pytest
 import pytest_asyncio
 import stripe as stripe_lib
-from pydantic import HttpUrl, ValidationError
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
@@ -739,9 +739,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                success_url=HttpUrl(
-                    "https://example.com/success?checkout_id={CHECKOUT_ID}"
-                ),
+                success_url="https://example.com/success?checkout_id={CHECKOUT_ID}",
             ),
             auth_subject,
         )
@@ -765,9 +763,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                success_url=HttpUrl(
-                    "https://example.com/success?checkout_id={CHECKOUT_SESSION_ID}"
-                ),
+                success_url="https://example.com/success?checkout_id={CHECKOUT_SESSION_ID}",
             ),
             auth_subject,
         )

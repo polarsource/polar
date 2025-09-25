@@ -1,6 +1,6 @@
 import { useUpdateCustomerPortal } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import type { Client, schemas } from '@polar-sh/client'
+import { enums, type Client, type schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
@@ -31,7 +31,8 @@ const EditBillingDetails = ({
 }) => {
   const form = useForm<schemas['CustomerPortalCustomerUpdate']>({
     defaultValues: {
-      ...customer,
+      billing_name: customer.billing_name || customer.name,
+      billing_address: customer.billing_address as schemas['AddressInput'],
       tax_id: customer.tax_id ? customer.tax_id[0] : null,
     },
   })
@@ -66,53 +67,44 @@ const EditBillingDetails = ({
       }
 
       reset({
-        ...updatedCustomer,
+        billing_name: updatedCustomer.billing_name || updatedCustomer.name,
+        billing_address: updatedCustomer.billing_address as
+          | schemas['AddressInput']
+          | null,
         tax_id: updatedCustomer.tax_id ? updatedCustomer.tax_id[0] : null,
       })
 
       onSuccess()
     },
-    [updateCustomer, onSuccess, setError],
+    [updateCustomer, onSuccess, setError, reset],
   )
 
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-6">
+        <FormItem>
+          <FormLabel>Email</FormLabel>
+          <FormControl>
+            <Input
+              type="email"
+              value={customer.email}
+              disabled
+              readOnly
+              className={themingPreset.polar.input}
+            />
+          </FormControl>
+        </FormItem>
         <FormField
           control={control}
-          name="email"
-          rules={{
-            required: 'This field is required',
-          }}
+          name="billing_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Billing Name</FormLabel>
               <FormControl>
                 <Input
-                  type="email"
-                  autoComplete="email"
-                  {...field}
-                  value={field.value || ''}
-                  className={themingPreset.polar.input}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name="name"
-          rules={{
-            required: 'This field is required',
-          }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input
-                  type="name"
-                  autoComplete="name"
+                  type="text"
+                  autoComplete="organization"
+                  placeholder="Company or legal name for invoices (optional)"
                   {...field}
                   value={field.value || ''}
                   className={themingPreset.polar.input}
@@ -227,6 +219,7 @@ const EditBillingDetails = ({
                     onChange={field.onChange}
                     className={themingPreset.polar.dropdown}
                     itemClassName={themingPreset.polar.dropdownItem}
+                    allowedCountries={enums.addressInputCountryValues}
                   />
                   <FormMessage />
                 </div>

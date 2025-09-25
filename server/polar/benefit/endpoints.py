@@ -25,7 +25,7 @@ from .schemas import (
 )
 from .service import benefit as benefit_service
 
-router = APIRouter(prefix="/benefits", tags=["benefits", APITag.documented])
+router = APIRouter(prefix="/benefits", tags=["benefits", APITag.public])
 
 BenefitNotFound = {
     "description": "Benefit not found.",

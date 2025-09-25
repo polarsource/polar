@@ -1,8 +1,9 @@
+import asyncio
 import contextlib
 import contextvars
 import uuid
 from collections.abc import AsyncIterator, Mapping, Sequence
-from typing import Any, TypeAlias
+from typing import Any, Self, TypeAlias
 
 import dramatiq
 import structlog
@@ -31,13 +32,14 @@ _job_queue_manager: contextvars.ContextVar["JobQueueManager | None"] = (
 
 
 class JobQueueManager:
-    __slots__ = ("_enqueued_jobs", "_ingested_events")
+    __slots__ = ("_enqueued_jobs", "_ingested_events", "_semaphore")
 
     def __init__(self) -> None:
         self._enqueued_jobs: list[
             tuple[str, tuple[JSONSerializable, ...], dict[str, JSONSerializable]]
         ] = []
         self._ingested_events: list[uuid.UUID] = []
+        self._semaphore = asyncio.Semaphore(8)
 
     def enqueue_job(
         self, actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
@@ -52,7 +54,26 @@ class JobQueueManager:
         if len(self._ingested_events) > 0:
             self.enqueue_job("event.ingested", self._ingested_events)
 
-        for actor_name, args, kwargs in self._enqueued_jobs:
+        async with asyncio.TaskGroup() as tg:
+            for actor_name, args, kwargs in self._enqueued_jobs:
+                tg.create_task(
+                    self._flush_job(broker, redis, (actor_name, args, kwargs))
+                )
+
+        self.reset()
+
+    async def _flush_job(
+        self,
+        broker: dramatiq.Broker,
+        redis: Redis,
+        enqueued_job: tuple[
+            str,
+            tuple[JSONSerializable, ...],
+            dict[str, JSONSerializable],
+        ],
+    ) -> None:
+        async with self._semaphore:
+            actor_name, args, kwargs = enqueued_job
             fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
             redis_message_id = str(uuid.uuid4())
             message = fn.message_with_options(
@@ -63,32 +84,41 @@ class JobQueueManager:
                 redis_message_id,
                 message.encode(),
             )
-            await redis.rpush(f"dramatiq:{message.queue_name}", redis_message_id)
+            await redis.rpush(
+                f"dramatiq:{message.queue_name}",
+                redis_message_id,
+            )
             log.debug(
                 "polar.worker.job_flushed",
                 actor=fn.actor_name,
                 message=message.encode(),
             )
 
-        self.reset()
-
     def reset(self) -> None:
         self._enqueued_jobs = []
         self._ingested_events = []
 
     @classmethod
-    @contextlib.asynccontextmanager
-    async def open(
-        cls, broker: dramatiq.Broker, redis: Redis
-    ) -> AsyncIterator["JobQueueManager"]:
-        job_queue_manager = JobQueueManager()
+    def set(cls) -> "Self":
+        job_queue_manager = cls()
         _job_queue_manager.set(job_queue_manager)
+        return job_queue_manager
+
+    @classmethod
+    def close(cls) -> None:
+        job_queue_manager = cls.get()
+        job_queue_manager.reset()
+        _job_queue_manager.set(None)
+
+    @classmethod
+    @contextlib.asynccontextmanager
+    async def open(cls, broker: dramatiq.Broker, redis: Redis) -> AsyncIterator["Self"]:
+        job_queue_manager = cls.set()
         try:
             yield job_queue_manager
             await job_queue_manager.flush(broker, redis)
         finally:
-            job_queue_manager.reset()
-            _job_queue_manager.set(None)
+            cls.close()
 
     @classmethod
     def get(cls) -> "JobQueueManager":

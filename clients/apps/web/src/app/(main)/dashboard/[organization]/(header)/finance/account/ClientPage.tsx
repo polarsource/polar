@@ -13,7 +13,9 @@ import {
   useListAccounts,
   useOrganizationAccount,
 } from '@/hooks/queries'
-import { schemas } from '@polar-sh/client'
+import { useOrganizationReviewStatus } from '@/hooks/queries/org'
+import { api } from '@/utils/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { loadStripe } from '@stripe/stripe-js'
@@ -38,19 +40,51 @@ export default function ClientPage({
   const identityVerificationStatus = currentUser?.identity_verification_status
   const identityVerified = identityVerificationStatus === 'verified'
 
-  const { data: organizationAccount } = useOrganizationAccount(organization.id)
+  const { data: organizationAccount, error: accountError } =
+    useOrganizationAccount(organization.id)
+  const { data: reviewStatus } = useOrganizationReviewStatus(organization.id)
 
-  const [step, setStep] = useState<
-    'review' | 'account' | 'identity' | 'complete'
-  >(
-    !organization.details_submitted_at
-      ? 'review'
-      : !organizationAccount
-        ? 'account'
-        : !identityVerified
-          ? 'identity'
-          : 'complete',
-  )
+  const [validationCompleted, setValidationCompleted] = useState(false)
+
+  const isNotAdmin =
+    accountError && (accountError as any)?.response?.status === 403
+
+  type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
+
+  const getInitialStep = (): Step => {
+    if (!organization.details_submitted_at) {
+      return 'review'
+    }
+
+    // Skip validation if AI validation passed, appeal is approved, or appeal is submitted
+    const aiValidationPassed = reviewStatus?.verdict === 'PASS'
+    const appealApproved = reviewStatus?.appeal_decision === 'approved'
+    const appealSubmitted = reviewStatus?.appeal_submitted_at
+    const skipValidation =
+      aiValidationPassed ||
+      appealApproved ||
+      appealSubmitted ||
+      validationCompleted
+
+    if (!skipValidation) {
+      return 'validation'
+    }
+
+    if (
+      organizationAccount === undefined ||
+      !organizationAccount.stripe_id ||
+      !organizationAccount.is_details_submitted ||
+      !organizationAccount.is_payouts_enabled
+    ) {
+      return 'account'
+    }
+    if (!identityVerified) {
+      return 'identity'
+    }
+    return 'complete'
+  }
+
+  const [step, setStep] = useState<Step>(getInitialStep())
 
   const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
   const createIdentityVerification = useCreateIdentityVerification()
@@ -103,10 +137,26 @@ export default function ClientPage({
     await reloadUser()
   }, [createIdentityVerification, stripePromise, reloadUser])
 
-  // Auto-advance to next step when details are submitted
+  // Auto-advance to next step when details are submitted, appeal is approved, or appeal is submitted
   React.useEffect(() => {
     if (organization.details_submitted_at) {
-      if (!organizationAccount) {
+      const aiValidationPassed = reviewStatus?.verdict === 'PASS'
+      const appealApproved = reviewStatus?.appeal_decision === 'approved'
+      const appealSubmitted = reviewStatus?.appeal_submitted_at
+      const skipValidation =
+        aiValidationPassed ||
+        appealApproved ||
+        appealSubmitted ||
+        validationCompleted
+
+      if (!skipValidation) {
+        setStep('validation')
+      } else if (
+        organizationAccount === undefined ||
+        !organizationAccount.stripe_id ||
+        !organizationAccount.is_details_submitted ||
+        !organizationAccount.is_payouts_enabled
+      ) {
         setStep('account')
       } else if (!identityVerified) {
         setStep('identity')
@@ -114,20 +164,113 @@ export default function ClientPage({
         setStep('complete')
       }
     }
-  }, [organization.details_submitted_at, organizationAccount, identityVerified])
+  }, [
+    organization.details_submitted_at,
+    validationCompleted,
+    organizationAccount,
+    identityVerified,
+    reviewStatus?.appeal_decision,
+    reviewStatus?.appeal_submitted_at,
+    reviewStatus?.verdict,
+    isNotAdmin,
+  ])
 
   const handleDetailsSubmitted = useCallback(() => {
     setRequireDetails(false)
-    // Stay on review step to show validation UI
+    setStep('validation')
   }, [])
 
-  const handleStartAccountSetup = useCallback(() => {
-    showSetupModal()
-  }, [showSetupModal])
+  const handleValidationCompleted = useCallback(() => {
+    setValidationCompleted(true)
+    setStep('account')
+  }, [])
+
+  const handleStartAccountSetup = useCallback(async () => {
+    // Check if account exists but has no stripe_id (deleted account)
+    if (!organizationAccount || !organizationAccount.stripe_id) {
+      showSetupModal()
+    } else {
+      const link = await unwrap(
+        api.POST('/v1/accounts/{id}/onboarding_link', {
+          params: {
+            path: {
+              id: organizationAccount.id,
+            },
+            query: {
+              return_path: `/dashboard/${organization.slug}/finance/account`,
+            },
+          },
+        }),
+      )
+      window.location.href = link.url
+    }
+  }, [organizationAccount, showSetupModal])
 
   const handleStartIdentityVerification = useCallback(async () => {
     await startIdentityVerification()
   }, [startIdentityVerification])
+
+  const handleAppealApproved = useCallback(() => {
+    if (
+      !organizationAccount ||
+      !organizationAccount.stripe_id ||
+      !organizationAccount.is_details_submitted ||
+      !organizationAccount.is_payouts_enabled
+    ) {
+      setValidationCompleted(true)
+      setStep('account')
+      return
+    }
+
+    if (!identityVerified) {
+      setValidationCompleted(true)
+      setStep('identity')
+      return
+    }
+
+    setValidationCompleted(true)
+    setStep('complete')
+  }, [organizationAccount, identityVerified])
+
+  const handleSkipAccountSetup = useCallback(() => {
+    if (!identityVerified) {
+      setStep('identity')
+    } else {
+      setStep('complete')
+    }
+  }, [identityVerified])
+
+  const handleAppealSubmitted = useCallback(() => {
+    setStep('account')
+    return
+  }, [organizationAccount, identityVerified])
+
+  const handleNavigateToStep = useCallback(
+    (targetStep: Step) => {
+      // Allow navigation to any step that has been completed or is accessible
+      const canNavigate =
+        (targetStep === 'review' && organization.details_submitted_at) ||
+        (targetStep === 'validation' && reviewStatus) ||
+        (targetStep === 'account' &&
+          (validationCompleted ||
+            reviewStatus?.verdict === 'PASS' ||
+            reviewStatus?.appeal_decision === 'approved' ||
+            reviewStatus?.appeal_submitted_at)) ||
+        (targetStep === 'identity' &&
+          (organizationAccount?.is_details_submitted || isNotAdmin))
+
+      if (canNavigate) {
+        setStep(targetStep)
+      }
+    },
+    [
+      organization.details_submitted_at,
+      reviewStatus,
+      validationCompleted,
+      organizationAccount,
+      isNotAdmin,
+    ],
+  )
 
   return (
     <DashboardBody>
@@ -139,9 +282,16 @@ export default function ClientPage({
           organizationAccount={organizationAccount}
           identityVerified={identityVerified}
           identityVerificationStatus={identityVerificationStatus}
+          organizationReviewStatus={reviewStatus}
+          isNotAdmin={isNotAdmin}
           onDetailsSubmitted={handleDetailsSubmitted}
+          onValidationCompleted={handleValidationCompleted}
           onStartAccountSetup={handleStartAccountSetup}
           onStartIdentityVerification={handleStartIdentityVerification}
+          onSkipAccountSetup={handleSkipAccountSetup}
+          onAppealApproved={handleAppealApproved}
+          onAppealSubmitted={handleAppealSubmitted}
+          onNavigateToStep={handleNavigateToStep}
         />
 
         {accounts?.items && accounts.items.length > 0 ? (
@@ -159,7 +309,6 @@ export default function ClientPage({
               <AccountsList
                 accounts={accounts?.items}
                 pauseActions={requireDetails}
-                returnPath={`/dashboard/${organization.slug}/finance/account`}
               />
             )}
           </ShadowBoxOnMd>

@@ -42,6 +42,22 @@ class OrderRepository(
 ):
     model = Order
 
+    async def get_all_by_customer(
+        self,
+        customer_id: UUID,
+        *,
+        status: OrderStatus | None = None,
+        options: Options = (),
+    ) -> Sequence[Order]:
+        statement = (
+            self.get_base_statement()
+            .where(Order.customer_id == customer_id)
+            .options(*options)
+        )
+        if status is not None:
+            statement = statement.where(Order.status == status)
+        return await self.get_all(statement)
+
     async def get_by_stripe_invoice_id(
         self, stripe_invoice_id: str, *, options: Options = ()
     ) -> Order | None:
@@ -78,14 +94,14 @@ class OrderRepository(
         )
         return await self.get_all(statement)
 
-    async def acquire_payment_lock(self, order_id: UUID) -> bool:
+    async def acquire_payment_lock_by_id(self, order_id: UUID) -> bool:
         """
-        Attempt to acquire a payment lock for an order atomically.
+        Internal method to acquire a payment lock by order ID.
+        This is the original acquire_payment_lock logic.
 
         Returns:
             True if lock was acquired, False if already locked
         """
-
         result = await self.session.execute(
             update(Order)
             .where(Order.id == order_id, Order.payment_lock_acquired_at.is_(None))

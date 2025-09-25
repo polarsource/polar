@@ -1,6 +1,6 @@
 import math
 from collections.abc import Sequence
-from typing import Annotated, Any, Generic, NamedTuple, Self, TypeVar, overload
+from typing import Annotated, Any, NamedTuple, Self, overload
 
 from fastapi import Depends, Query
 from pydantic import BaseModel, GetCoreSchemaHandler
@@ -12,12 +12,8 @@ from sqlalchemy.sql._typing import _ColumnsClauseArgument
 from polar.config import settings
 from polar.kit.db.models import RecordModel
 from polar.kit.db.models.base import Model
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession
 from polar.kit.schemas import ClassName, Schema
-
-T = TypeVar("T", bound=Any)
-RM = TypeVar("RM", bound=RecordModel)
-M = TypeVar("M", bound=Model)
 
 
 class PaginationParams(NamedTuple):
@@ -26,8 +22,8 @@ class PaginationParams(NamedTuple):
 
 
 @overload
-async def paginate(
-    session: AsyncSession,
+async def paginate[RM: RecordModel](
+    session: AsyncReadSession,
     statement: Select[tuple[RM]],
     *,
     pagination: PaginationParams,
@@ -36,8 +32,8 @@ async def paginate(
 
 
 @overload
-async def paginate(
-    session: AsyncSession,
+async def paginate[M: Model](
+    session: AsyncReadSession,
     statement: Select[tuple[M]],
     *,
     pagination: PaginationParams,
@@ -46,8 +42,8 @@ async def paginate(
 
 
 @overload
-async def paginate(
-    session: AsyncSession,
+async def paginate[T: Any](
+    session: AsyncReadSession,
     statement: Select[T],
     *,
     pagination: PaginationParams,
@@ -56,7 +52,7 @@ async def paginate(
 
 
 async def paginate(
-    session: AsyncSession,
+    session: AsyncReadSession,
     statement: Select[Any],
     *,
     pagination: PaginationParams,
@@ -108,7 +104,7 @@ class Pagination(Schema):
     max_page: int
 
 
-class ListResource(BaseModel, Generic[T]):
+class ListResource[T: Any](BaseModel):
     items: list[T]
     pagination: Pagination
 
@@ -150,6 +146,6 @@ class ListResource(BaseModel, Generic[T]):
         """
         Override the schema to set the `ref` field to the overridden class name.
         """
-        result = super().__get_pydantic_core_schema__(source, handler)
+        result = handler(source)
         result["ref"] = cls.__name__  # type: ignore
         return result

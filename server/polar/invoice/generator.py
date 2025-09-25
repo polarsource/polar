@@ -5,7 +5,7 @@ from typing import Self
 import pycountry
 from babel.dates import format_date as _format_date
 from babel.numbers import format_currency as _format_currency
-from babel.numbers import format_number as _format_number
+from babel.numbers import format_decimal as _format_decimal
 from babel.numbers import format_percent as _format_percent
 from fontTools.misc.configTools import ClassVar
 from fpdf import FPDF
@@ -25,7 +25,7 @@ def format_currency(amount: int, currency: str) -> str:
 
 
 def format_number(n: int) -> str:
-    return _format_number(n, locale="en_US")
+    return _format_decimal(n, locale="en_US")
 
 
 def format_percent(basis_points: int) -> str:
@@ -64,6 +64,7 @@ class Invoice(BaseModel):
     customer_address: Address
     customer_additional_info: str | None = None
     subtotal_amount: int
+    from_balance_amount: int | None = None
     discount_amount: int
     taxability_reason: TaxabilityReason | None
     tax_amount: int
@@ -89,6 +90,21 @@ class Invoice(BaseModel):
     def formatted_total_amount(self) -> str:
         total = self.subtotal_amount - self.discount_amount + self.tax_amount
         return format_currency(total, self.currency)
+
+    @property
+    def formatted_from_balance_amount(self) -> str | None:
+        if self.from_balance_amount:
+            return format_currency(self.from_balance_amount, self.currency)
+        else:
+            return None
+
+    @property
+    def formatted_to_be_paid_amount(self) -> str | None:
+        total = self.subtotal_amount - self.discount_amount + self.tax_amount
+        if self.from_balance_amount:
+            return format_currency(total - self.from_balance_amount, self.currency)
+        else:
+            return None
 
     @property
     def tax_displayed(self) -> bool:
@@ -141,6 +157,7 @@ class Invoice(BaseModel):
             customer_additional_info=order.tax_id[0] if order.tax_id else None,
             customer_address=order.billing_address,
             subtotal_amount=order.subtotal_amount,
+            from_balance_amount=order.from_balance_amount,
             discount_amount=order.discount_amount,
             taxability_reason=order.taxability_reason,
             tax_amount=order.tax_amount,
@@ -301,6 +318,7 @@ class InvoiceGenerator(FPDF):
                 text=self.data.seller_additional_info,
                 markdown=True,
             )
+        left_seller_end_y = self.get_y()
 
         # Customer on right column
         self.set_xy(110, addresses_y_start)
@@ -331,9 +349,11 @@ class InvoiceGenerator(FPDF):
                 text=self.data.customer_additional_info,
                 markdown=True,
             )
+        right_seller_end_y = self.get_y()
+        bottom = max(left_seller_end_y, right_seller_end_y)
 
         # Add spacing before table
-        self.set_y(self.get_y() + self.elements_y_margin)
+        self.set_y(bottom + self.elements_y_margin)
 
         # Invoice items table
         self.set_draw_color(*self.table_borders_color)  # Light grey color for borders
@@ -398,6 +418,22 @@ class InvoiceGenerator(FPDF):
             total_row = totals_table.row()
             total_row.cell("Total")
             total_row.cell(self.data.formatted_total_amount)
+
+            if (
+                self.data.formatted_from_balance_amount
+                and self.data.formatted_to_be_paid_amount
+            ):
+                # Applied balance row
+                self.set_font(style="B")
+                total_row = totals_table.row()
+                total_row.cell("Applied balance")
+                total_row.cell(self.data.formatted_from_balance_amount)
+
+                # To be paid row
+                self.set_font(style="B")
+                total_row = totals_table.row()
+                total_row.cell("To be paid")
+                total_row.cell(self.data.formatted_to_be_paid_amount)
 
         # Add notes section
         self.set_font(style="")

@@ -1,7 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import {
-  type CheckoutPublic,
   CheckoutPublic$inboundSchema,
+  type CheckoutPublic,
 } from '@polar-sh/sdk/models/components/checkoutpublic'
 
 const PRODUCT_DESCRIPTION = `# Et Tritonia pectora partus praebentem
@@ -73,6 +73,8 @@ const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
     },
   ],
   created_at: new Date().toISOString(),
+  trial_interval: null,
+  trial_interval_count: null,
 }
 
 const SUBSCRIPTION_PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
@@ -133,6 +135,8 @@ const SUBSCRIPTION_PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
     },
   ],
   created_at: new Date().toISOString(),
+  trial_interval: null,
+  trial_interval_count: null,
 }
 
 const ORGANIZATION: schemas['Organization'] = {
@@ -144,6 +148,7 @@ const ORGANIZATION: schemas['Organization'] = {
   avatar_url: '/assets/acme.jpg',
   website: null,
   socials: [],
+  status: 'active',
   details_submitted_at: null,
   email: null,
   feature_settings: null,
@@ -241,6 +246,9 @@ export const createCheckoutPreview = (
       line1: 'disabled',
       line2: 'disabled',
     },
+    active_trial_interval: null,
+    active_trial_interval_count: null,
+    trial_end: null,
   })
 
   return {
@@ -264,13 +272,14 @@ export const ORDER_PREVIEW: schemas['CustomerOrder'] = {
   billing_address: null,
   is_invoice_generated: false,
   status: 'paid',
+  invoice_number: 'INV-0001',
   paid: true,
-  amount: 10000,
   subtotal_amount: 10000,
   discount_amount: 0,
   net_amount: 10000,
   tax_amount: 1200,
   total_amount: 11200,
+  from_balance_amount: 0,
   refunded_amount: 0,
   refunded_tax_amount: 0,
   currency: 'usd',
@@ -311,6 +320,8 @@ export const SUBSCRIPTION_ORDER_PREVIEW: schemas['CustomerSubscription'] = {
   current_period_end: new Date(
     new Date().setMonth(new Date().getMonth() + 1),
   ).toISOString(),
+  trial_start: null,
+  trial_end: null,
   cancel_at_period_end: false,
   canceled_at: null,
   started_at: new Date().toISOString(),
@@ -328,4 +339,5 @@ export const SUBSCRIPTION_ORDER_PREVIEW: schemas['CustomerSubscription'] = {
   customer_cancellation_comment: null,
   customer_cancellation_reason: null,
   meters: [],
+  is_polar_managed: true,
 }

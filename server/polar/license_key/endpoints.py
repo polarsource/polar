@@ -3,33 +3,33 @@ from pydantic import UUID4
 
 from polar.benefit.schemas import BenefitID
 from polar.exceptions import ResourceNotFound
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import LicenseKey, LicenseKeyActivation
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import get_db_session
+from polar.postgres import get_db_read_session, get_db_session
 from polar.routing import APIRouter
 
 from . import auth
+from .repository import LicenseKeyRepository
 from .schemas import (
+    ActivationNotPermitted,
+    LicenseKeyActivate,
     LicenseKeyActivationRead,
+    LicenseKeyDeactivate,
     LicenseKeyRead,
     LicenseKeyUpdate,
+    LicenseKeyValidate,
     LicenseKeyWithActivations,
     NotFoundResponse,
     UnauthorizedResponse,
+    ValidatedLicenseKey,
 )
 from .service import license_key as license_key_service
 
-router = APIRouter(
-    prefix="/license-keys", tags=["license_keys", APITag.documented, APITag.featured]
-)
-
-###############################################################################
-# LICENSE KEYS
-###############################################################################
+router = APIRouter(prefix="/license-keys", tags=["license_keys", APITag.public])
 
 
 @router.get(
@@ -50,7 +50,7 @@ async def list(
     benefit_id: MultipleQueryFilter[BenefitID] | None = Query(
         None, title="BenefitID Filter", description="Filter by benefit ID."
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[LicenseKeyRead]:
     """Get license keys connected to the given organization & filters."""
     results, count = await license_key_service.list(
@@ -80,7 +80,7 @@ async def list(
 async def get(
     auth_subject: auth.LicenseKeysRead,
     id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> LicenseKey:
     """Get a license key."""
     lk = await license_key_service.get(session, auth_subject, id)
@@ -114,11 +114,6 @@ async def update(
     return updated
 
 
-###############################################################################
-# LICENSE KEY ACTIVATIONS
-###############################################################################
-
-
 @router.get(
     "/{id}/activations/{activation_id}",
     summary="Get Activation",
@@ -132,7 +127,7 @@ async def get_activation(
     auth_subject: auth.LicenseKeysRead,
     id: UUID4,
     activation_id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> LicenseKeyActivation:
     """Get a license key activation."""
     lk = await license_key_service.get(session, auth_subject, id)
@@ -145,3 +140,95 @@ async def get_activation(
         activation_id=activation_id,
     )
     return activation
+
+
+@router.post(
+    "/validate",
+    summary="Validate License Key",
+    response_model=ValidatedLicenseKey,
+    responses={
+        404: NotFoundResponse,
+    },
+)
+async def validate(
+    auth_subject: auth.LicenseKeysWrite,
+    validate: LicenseKeyValidate,
+    session: AsyncSession = Depends(get_db_session),
+) -> LicenseKey:
+    """Validate a license key."""
+    repository = LicenseKeyRepository.from_session(session)
+    license_key = await repository.get_readable_by_key(
+        validate.key,
+        validate.organization_id,
+        auth_subject,
+        options=repository.get_eager_options(),
+    )
+
+    if license_key is None:
+        raise ResourceNotFound()
+
+    return await license_key_service.validate(
+        session, license_key=license_key, validate=validate
+    )
+
+
+@router.post(
+    "/activate",
+    summary="Activate License Key",
+    response_model=LicenseKeyActivationRead,
+    responses={
+        403: ActivationNotPermitted,
+        404: NotFoundResponse,
+    },
+)
+async def activate(
+    auth_subject: auth.LicenseKeysWrite,
+    activate: LicenseKeyActivate,
+    session: AsyncSession = Depends(get_db_session),
+) -> LicenseKeyActivation:
+    """Activate a license key instance."""
+    repository = LicenseKeyRepository.from_session(session)
+    license_key = await repository.get_readable_by_key(
+        activate.key,
+        activate.organization_id,
+        auth_subject,
+        options=repository.get_eager_options(),
+    )
+
+    if license_key is None:
+        raise ResourceNotFound()
+
+    return await license_key_service.activate(
+        session, license_key=license_key, activate=activate
+    )
+
+
+@router.post(
+    "/deactivate",
+    summary="Deactivate License Key",
+    status_code=204,
+    responses={
+        204: {"description": "License key activation deactivated."},
+        404: NotFoundResponse,
+    },
+)
+async def deactivate(
+    auth_subject: auth.LicenseKeysWrite,
+    deactivate: LicenseKeyDeactivate,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Deactivate a license key instance."""
+    repository = LicenseKeyRepository.from_session(session)
+    license_key = await repository.get_readable_by_key(
+        deactivate.key,
+        deactivate.organization_id,
+        auth_subject,
+        options=repository.get_eager_options(),
+    )
+
+    if license_key is None:
+        raise ResourceNotFound()
+
+    await license_key_service.deactivate(
+        session, license_key=license_key, deactivate=deactivate
+    )

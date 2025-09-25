@@ -2,7 +2,9 @@
 
 import { useAuth, useGitHubAccount, useGoogleAccount } from '@/hooks'
 import { getGitHubAuthorizeURL, getGoogleAuthorizeURL } from '@/utils/auth'
-import { AlternateEmailOutlined, GitHub, Google } from '@mui/icons-material'
+import AlternateEmailOutlined from '@mui/icons-material/AlternateEmailOutlined'
+import GitHub from '@mui/icons-material/GitHub'
+import Google from '@mui/icons-material/Google'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
@@ -155,6 +157,7 @@ const AuthenticationSettings = () => {
         onEmailUpdateExists={() => setUpdateEmailStage('exists')}
         onEmailUpdateForm={() => setUpdateEmailStage('form')}
         setErr={setErrMsg}
+        returnTo={`${pathname}?update_email=verified`}
       />
     ),
     request: (
@@ -194,7 +197,7 @@ const AuthenticationSettings = () => {
         <AuthenticationMethod
           icon={<AlternateEmailOutlined />}
           title={currentUser?.email}
-          subtitle="You can sign in with magic links sent to your email"
+          subtitle="You can sign in with OTP codes sent to your email"
           action={updateEmailContent[updateEmailStage]}
         />
       </ShadowListGroup.Item>

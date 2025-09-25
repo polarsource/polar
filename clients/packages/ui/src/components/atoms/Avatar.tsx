@@ -1,7 +1,14 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { ComponentProps, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  ComponentProps,
+  ComponentType,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 
 const Avatar = ({
   name,
@@ -9,12 +16,16 @@ const Avatar = ({
   className,
   height,
   width,
+  loading = 'eager',
+  CustomImageComponent,
 }: {
   name: string
   avatar_url: string | null
   className?: string
   height?: number | undefined
   width?: number | undefined
+  loading?: React.ImgHTMLAttributes<HTMLImageElement>['loading']
+  CustomImageComponent?: ComponentType<any> // Used mainly to pass next/image
 }) => {
   const initials = getInitials(name)
 
@@ -45,6 +56,8 @@ const Avatar = ({
     }
   }, [imgRef.current])
 
+  const ImageElement = CustomImageComponent || 'img'
+
   return (
     <div
       className={cn(
@@ -59,12 +72,13 @@ const Avatar = ({
       ) : (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <ImageElement
             ref={imgRef}
             alt={name}
             src={avatar_url}
             height={height}
             width={width}
+            loading={loading}
             onLoad={onLoad}
             onError={onError}
             className={cn(

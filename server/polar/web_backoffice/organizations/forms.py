@@ -3,10 +3,13 @@ from typing import Annotated, Literal
 from annotated_types import Ge
 from pydantic import Discriminator, Field, TypeAdapter
 
+from polar.kit.schemas import HttpUrlToStr
+from polar.organization.schemas import NameInput, SlugInput
+
 from .. import forms
 
 
-class ApproveAccountForm(forms.BaseForm):
+class ApproveOrganizationForm(forms.BaseForm):
     action: Annotated[Literal["approve"], forms.SkipField]
     next_review_threshold: Annotated[
         int,
@@ -17,32 +20,53 @@ class ApproveAccountForm(forms.BaseForm):
     ]
 
 
-class DenyAccountForm(forms.BaseForm):
+class DenyOrganizationForm(forms.BaseForm):
     action: Annotated[Literal["deny"], forms.SkipField]
 
 
-class UnderReviewAccountForm(forms.BaseForm):
+class UnderReviewOrganizationForm(forms.BaseForm):
     action: Annotated[Literal["under_review"], forms.SkipField]
 
 
-AccountStatusForm = Annotated[
-    ApproveAccountForm | DenyAccountForm | UnderReviewAccountForm,
+class ApproveOrganizationAppealForm(forms.BaseForm):
+    action: Annotated[Literal["approve_appeal"], forms.SkipField]
+
+
+class DenyOrganizationAppealForm(forms.BaseForm):
+    action: Annotated[Literal["deny_appeal"], forms.SkipField]
+
+
+OrganizationStatusForm = Annotated[
+    ApproveOrganizationForm
+    | DenyOrganizationForm
+    | UnderReviewOrganizationForm
+    | ApproveOrganizationAppealForm
+    | DenyOrganizationAppealForm,
     Discriminator("action"),
 ]
 
-AccountStatusFormAdapter: TypeAdapter[AccountStatusForm] = TypeAdapter(
-    AccountStatusForm
+OrganizationStatusFormAdapter: TypeAdapter[OrganizationStatusForm] = TypeAdapter(
+    OrganizationStatusForm
 )
 
 
 class UpdateOrganizationForm(forms.BaseForm):
-    name: str
-    slug: str
+    name: NameInput
+    slug: SlugInput
 
 
 class UpdateOrganizationDetailsForm(forms.BaseForm):
-    """Simplified form for editing only the three key organization detail fields."""
+    """Simplified form for editing organization detail fields and website."""
 
+    website: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://example.com"),
+        Field(
+            None,
+            title="Website",
+            description="Official website of the organization",
+        ),
+    ]
     about: Annotated[
         str,
         forms.TextAreaField(rows=4),

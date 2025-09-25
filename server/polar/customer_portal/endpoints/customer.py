@@ -6,8 +6,9 @@ from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.models import Customer, PaymentMethod
+from polar.models import Customer
 from polar.openapi import APITag
+from polar.payment_method.service import PaymentMethodInUseByActiveSubscription
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
@@ -15,14 +16,17 @@ from polar.routing import APIRouter
 from .. import auth
 from ..schemas.customer import (
     CustomerPaymentMethod,
+    CustomerPaymentMethodConfirm,
     CustomerPaymentMethodCreate,
+    CustomerPaymentMethodCreateResponse,
     CustomerPaymentMethodTypeAdapter,
     CustomerPortalCustomer,
     CustomerPortalCustomerUpdate,
 )
+from ..service.customer import CustomerNotReady
 from ..service.customer import customer as customer_service
 
-router = APIRouter(prefix="/customers", tags=["customers", APITag.documented])
+router = APIRouter(prefix="/customers", tags=["customers", APITag.public])
 
 
 @router.get("/stream", include_in_schema=False)
@@ -89,18 +93,42 @@ async def list_payment_methods(
     summary="Add Customer Payment Method",
     status_code=201,
     responses={
-        201: {"description": "Payment method created."},
+        201: {"description": "Payment method created or setup initiated."},
     },
-    response_model=CustomerPaymentMethod,
+    response_model=CustomerPaymentMethodCreateResponse,
 )
 async def add_payment_method(
     auth_subject: auth.CustomerPortalRead,
     payment_method_create: CustomerPaymentMethodCreate,
     session: AsyncSession = Depends(get_db_session),
-) -> PaymentMethod:
+) -> CustomerPaymentMethodCreateResponse:
     """Add a payment method to the authenticated customer."""
     return await customer_service.add_payment_method(
         session, auth_subject.subject, payment_method_create
+    )
+
+
+@router.post(
+    "/me/payment-methods/confirm",
+    summary="Confirm Customer Payment Method",
+    status_code=201,
+    responses={
+        201: {"description": "Payment method created or setup initiated."},
+        400: {
+            "description": "Customer is not ready to confirm a payment method.",
+            "model": CustomerNotReady.schema(),
+        },
+    },
+    response_model=CustomerPaymentMethodCreateResponse,
+)
+async def confirm_payment_method(
+    auth_subject: auth.CustomerPortalRead,
+    payment_method_confirm: CustomerPaymentMethodConfirm,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerPaymentMethodCreateResponse:
+    """Confirm a payment method for the authenticated customer."""
+    return await customer_service.confirm_payment_method(
+        session, auth_subject.subject, payment_method_confirm
     )
 
 
@@ -110,6 +138,10 @@ async def add_payment_method(
     status_code=204,
     responses={
         204: {"description": "Payment method deleted."},
+        400: {
+            "description": "Payment method is used by active subscription(s).",
+            "model": PaymentMethodInUseByActiveSubscription.schema(),
+        },
         404: {
             "description": "Payment method not found.",
             "model": ResourceNotFound.schema(),

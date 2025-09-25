@@ -1,3 +1,4 @@
+import AccessTokensSettings from '@/components/Settings/AccessTokenSettings'
 import OAuthSettings from '@/components/Settings/OAuth/OAuthSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { Metadata } from 'next'
@@ -17,6 +18,10 @@ export default function Page() {
         />
 
         <OAuthSettings />
+      </Section>
+      <Section id="personal-access-tokens">
+        <SectionDescription title="Personal Access Tokens" />
+        <AccessTokensSettings />
       </Section>
     </>
   )

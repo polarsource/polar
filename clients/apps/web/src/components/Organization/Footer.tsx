@@ -1,4 +1,4 @@
-import Link, { LinkProps } from 'next/link'
+import Link from 'next/link'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { BrandingMenu } from '../Layout/Public/BrandingMenu'
@@ -32,14 +32,15 @@ const Footer = () => {
           <div className="flex flex-col gap-y-4">
             <h3 className="text-base dark:text-white">Platform</h3>
             <div className="flex flex-col gap-y-2">
+              <FooterLink href="https://status.polar.sh">Status</FooterLink>
               <FooterLink href="/login">Get Started</FooterLink>
-              <FooterLink href="https://docs.polar.sh/documentation/features/products">
+              <FooterLink href="https://polar.sh/docs/documentation/features/products">
                 Products & Subscriptions
               </FooterLink>
-              <FooterLink href="https://docs.polar.sh/documentation/features/checkouts/checkout-links">
+              <FooterLink href="https://polar.sh/docs/documentation/features/checkouts/checkout-links">
                 Checkouts
               </FooterLink>
-              <FooterLink href="https://docs.polar.sh/documentation/features/customer-portal">
+              <FooterLink href="https://polar.sh/docs/documentation/features/customer-portal">
                 Customer Portal
               </FooterLink>
             </div>
@@ -47,7 +48,6 @@ const Footer = () => {
           <div className="flex flex-col gap-y-4">
             <h3 className="text-base dark:text-white">Company</h3>
             <div className="flex flex-col gap-y-2">
-              <FooterLink href="https://polar.sh/vision">Vision</FooterLink>
               <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
                 Brand Assets
               </FooterLink>
@@ -60,7 +60,7 @@ const Footer = () => {
             </div>
           </div>
           <div className="flex flex-col gap-y-4">
-            <h3 className="text-lg dark:text-white">Community</h3>
+            <h3 className="text-base dark:text-white">Community</h3>
             <div className="flex flex-col gap-y-2">
               <FooterLink href="https://discord.gg/Pnhfz3UThd">
                 Join our Discord
@@ -74,7 +74,7 @@ const Footer = () => {
           <div className="flex flex-col gap-y-4">
             <h3 className="text-base dark:text-white">Support</h3>
             <div className="flex flex-col gap-y-2">
-              <FooterLink href="https://docs.polar.sh">Docs</FooterLink>
+              <FooterLink href="https://polar.sh/docs">Docs</FooterLink>
               <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
             </div>
           </div>
@@ -86,12 +86,22 @@ const Footer = () => {
 
 export default Footer
 
-const FooterLink = (props: PropsWithChildren<LinkProps>) => {
+const FooterLinkClassnames =
+  'dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-500'
+
+const FooterLink = (props: PropsWithChildren<{ href: string }>) => {
+  const isExternal = props.href.toString().startsWith('http')
+
+  if (isExternal) {
+    return (
+      <a className={FooterLinkClassnames} {...props}>
+        {props.children}
+      </a>
+    )
+  }
+
   return (
-    <Link
-      className="dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-500"
-      {...props}
-    >
+    <Link className={FooterLinkClassnames} {...props}>
       {props.children}
     </Link>
   )

@@ -1,6 +1,5 @@
 import uuid
 from collections.abc import Sequence
-from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -174,7 +173,6 @@ class OrganizationAccessTokenService:
                 "organization_access_token": organization_access_token.comment,
                 "notifier": notifier,
                 "url": url or "",
-                "current_year": datetime.now().year,
             },
         )
 

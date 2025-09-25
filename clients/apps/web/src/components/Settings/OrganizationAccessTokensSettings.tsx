@@ -117,7 +117,7 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
                   <SelectContent>
                     {[1, 7, 30, 90, 180, 365].map((days) => (
                       <SelectItem key={days} value={`P${days}D`}>
-                        {days} days
+                        {days} day{days > 1 ? 's' : ''}
                       </SelectItem>
                     ))}
                     <SelectItem value="no-expiration">
@@ -223,7 +223,7 @@ const CreateAccessTokenModal = ({
   )
 
   return (
-    <div className="flex flex-col overflow-y-auto">
+    <div className="flex flex-col">
       <InlineModalHeader hide={onHide}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl">Create Organization Access Token</h2>

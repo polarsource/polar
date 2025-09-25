@@ -1,6 +1,5 @@
 import bundleAnalyzer from '@next/bundle-analyzer'
 import createMDX from '@next/mdx'
-import mdxMetadata from '@polar-sh/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
 import rehypeShikiFromHighlighter from '@shikijs/rehype/core'
 import rehypeMdxImportMedia from 'rehype-mdx-import-media'
@@ -8,8 +7,19 @@ import rehypeSlug from 'rehype-slug'
 import remarkFlexibleToc from 'remark-flexible-toc'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkGfm from 'remark-gfm'
-import { bundledLanguages, createHighlighter } from 'shiki'
-import { themeConfig, themesList, transformers } from './shiki.config.mjs'
+import { createHighlighterCore } from 'shiki/core'
+import { createOnigurumaEngine } from 'shiki/engine/oniguruma'
+
+import langBash from 'shiki/langs/bash.mjs'
+import langJavascript from 'shiki/langs/javascript.mjs'
+import themeCatppuccinLatte from 'shiki/themes/catppuccin-latte.mjs'
+import themePoimandres from 'shiki/themes/poimandres.mjs'
+import {
+  themeConfig,
+  themesList,
+  transformers,
+  USED_LANGUAGES,
+} from './shiki.config.mjs'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
@@ -20,27 +30,6 @@ const CODESPACES = process.env.CODESPACES === 'true'
 const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
   : 'polar.sh'
-
-const redirectDocs = (source, destination, permanent = false) => {
-  return [
-    {
-      source: `/docs${source}`,
-      destination: `/docs${destination}`,
-      permanent,
-    },
-    {
-      source: '/tools/:path*',
-      destination: '/developers/sdk/:path*',
-      has: [
-        {
-          type: 'host',
-          value: 'docs.polar.sh',
-        },
-      ],
-      permanent,
-    },
-  ]
-}
 
 const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env
   .S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
@@ -75,6 +64,18 @@ const oauth2CSP = `
   frame-ancestors 'none';
 `
 
+// We rewrite Mintlify docs to polar.sh/docs, so we need a specific CSP for them
+// Ref: https://www.mintlify.com/docs/guides/csp-configuration#content-security-policy-csp-configuration
+const docsCSP = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval';
+  style-src 'self' 'unsafe-inline' d4tuoctqmanu0.cloudfront.net;
+  font-src 'self' d4tuoctqmanu0.cloudfront.net cdn.jsdelivr.net fonts.cdnfonts.com;
+  img-src 'self' data: blob: d3gk2c5xim1je2.cloudfront.net mintcdn.com mintlify.s3.us-west-1.amazonaws.com;
+  connect-src 'self' *.mintlify.dev *.mintlify.com;
+  frame-src 'self' *.mintlify.dev *.mintlify.com;
+`
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -84,6 +85,16 @@ const nextConfig = {
 
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
+
+  webpack: (config, { dev }) => {
+    if (config.cache && !dev) {
+      config.cache = Object.freeze({
+        type: 'memory',
+      })
+    }
+
+    return config
+  },
 
   // Since Codespaces run behind a proxy, we need to allow it for Server-Side Actions, like cache revalidation
   // See: https://github.com/vercel/next.js/issues/58019
@@ -145,20 +156,6 @@ const nextConfig = {
           source: '/ingest/:path*',
           destination: 'https://us.i.posthog.com/:path*',
         },
-
-        // docs.polar.sh rewrite
-        {
-          // The rewrite happens before everything else, so we need to make sure
-          // it doesn't match the _next and assets directories
-          source: '/:path((?!_next|assets).*)',
-          has: [
-            {
-              type: 'host',
-              value: 'docs.polar.sh',
-            },
-          ],
-          destination: '/docs/:path',
-        },
       ],
     }
   },
@@ -215,32 +212,9 @@ const nextConfig = {
         permanent: false,
       },
 
-      // Feature pages
-      {
-        source: '/products',
-        destination: 'https://docs.polar.sh/products',
-        has: [
-          {
-            type: 'host',
-            value: 'polar.sh',
-          },
-        ],
-        permanent: true,
-      },
-      {
-        source: '/issue-funding',
-        destination: 'https://docs.polar.sh/issue-funding',
-        has: [
-          {
-            type: 'host',
-            value: 'polar.sh',
-          },
-        ],
-        permanent: true,
-      },
       {
         source: '/llms.txt',
-        destination: 'https://docs.polar.sh/llms.txt',
+        destination: 'https://polar.sh/docs/llms.txt',
         permanent: true,
         has: [
           {
@@ -251,7 +225,7 @@ const nextConfig = {
       },
       {
         source: '/llms-full.txt',
-        destination: 'https://docs.polar.sh/llms-full.txt',
+        destination: 'https://polar.sh/docs/llms-full.txt',
         permanent: true,
         has: [
           {
@@ -260,62 +234,6 @@ const nextConfig = {
           },
         ],
       },
-      {
-        source: '/donations',
-        destination: 'https://docs.polar.sh/donations',
-        has: [
-          {
-            type: 'host',
-            value: 'polar.sh',
-          },
-        ],
-        permanent: true,
-      },
-
-      ...redirectDocs('/issue-funding/overview', '/issue-funding', true),
-      ...redirectDocs('/guides/:path*', '/developers/guides/:path*', true),
-      ...redirectDocs('/tools/:path*', '/developers/sdk/:path*', true),
-      ...redirectDocs('/contribute', '/developers/open-source', true),
-      ...redirectDocs('/sandbox', '/developers/sandbox', true),
-      ...redirectDocs(
-        '/api/webhooks/:path*',
-        '/developers/webhooks/:path*',
-        true,
-      ),
-      ...redirectDocs('/api/sdk/:path*', '/developers/sdk/:path*', true),
-
-      // Redirect /docs/overview/:path to /docs/:path
-      ...redirectDocs('/overview/:path*', '/:path*', true),
-      ...redirectDocs('/subscriptions', '/products', true),
-      ...redirectDocs('/support/faq', '/', true),
-
-      // Redirect old FAQ to docs.polar.sh
-      ...(ENVIRONMENT === 'production'
-        ? [
-            {
-              source: '/faq',
-              destination: 'https://docs.polar.sh/faq/overview',
-              has: [
-                {
-                  type: 'host',
-                  value: 'polar.sh',
-                },
-              ],
-              permanent: true,
-            },
-            {
-              source: '/faq/:path*',
-              destination: 'https://docs.polar.sh/faq/:path*',
-              has: [
-                {
-                  type: 'host',
-                  value: 'polar.sh',
-                },
-              ],
-              permanent: true,
-            },
-          ]
-        : []),
 
       // Logged-in user redirections
       {
@@ -351,17 +269,6 @@ const nextConfig = {
         ],
         permanent: false,
       },
-
-      // Redirect /docs to docs.polar.sh
-      ...(ENVIRONMENT === 'production'
-        ? [
-            {
-              source: '/docs/:path*',
-              destination: 'https://docs.polar.sh/:path*',
-              permanent: false,
-            },
-          ]
-        : []),
 
       {
         source: '/maintainer',
@@ -457,7 +364,7 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/((?!checkout|oauth2).*)',
+        source: '/((?!checkout|oauth2|docs).*)',
         headers: [
           {
             key: 'Content-Security-Policy',
@@ -505,22 +412,49 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: '/docs/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: docsCSP.replace(/\n/g, ''),
+          },
+          {
+            key: 'Permissions-Policy',
+            value:
+              'payment=(), publickey-credentials-get=(), camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+        ],
+      },
     ]
   },
 }
 
 const createConfig = async () => {
-  const highlighter = await createHighlighter({
-    langs: Object.keys(bundledLanguages),
-    themes: themesList,
+  // Map configuration to actual imports for tree-shaking
+  const LANGUAGE_MAP = {
+    javascript: langJavascript,
+    bash: langBash,
+  }
+
+  const THEME_MAP = {
+    'catppuccin-latte': themeCatppuccinLatte,
+    poimandres: themePoimandres,
+  }
+
+  const highlighter = await createHighlighterCore({
+    langs: USED_LANGUAGES.map((lang) => LANGUAGE_MAP[lang]).filter(Boolean),
+    themes: themesList.map((theme) => THEME_MAP[theme]).filter(Boolean),
+    engine: createOnigurumaEngine(() => import('shiki/wasm')),
   })
   const withMDX = createMDX({
     options: {
       remarkPlugins: [
         remarkFrontmatter,
-        // Automatically turns frontmatter into NextJS Metadata
-        // Also automatically generates an OpenGraph image URL
-        mdxMetadata(`${process.env.NEXT_PUBLIC_FRONTEND_BASE_URL}/docs/og`),
         remarkGfm,
         remarkFlexibleToc,
         () => (tree, file) => ({

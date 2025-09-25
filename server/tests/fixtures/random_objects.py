@@ -4,26 +4,20 @@ import string
 import typing
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any, Literal, TypeAlias, Unpack
 
 import pytest_asyncio
 from typing_extensions import TypeIs
 
-from polar.enums import (
-    AccountType,
-    PaymentProcessor,
-    SubscriptionRecurringInterval,
-)
+from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.kit.address import Address
 from polar.kit.tax import TaxID
+from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
-from polar.meter.aggregation import (
-    Aggregation,
-    CountAggregation,
-)
-from polar.meter.filter import Filter, FilterConjunction
+from polar.meter.aggregation import Aggregation, CountAggregation
+from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
     Account,
     Benefit,
@@ -68,7 +62,7 @@ from polar.models.benefit_grant import (
     BenefitGrant,
     BenefitGrantScope,
 )
-from polar.models.billing_entry import BillingEntryDirection
+from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus, get_expires_at
 from polar.models.custom_field import (
     CustomFieldCheckbox,
@@ -94,10 +88,7 @@ from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.models.payout import PayoutStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
-from polar.models.product_price import (
-    ProductPriceAmountType,
-    ProductPriceType,
-)
+from polar.models.product_price import ProductPriceAmountType, ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.models.user import OAuthAccount, OAuthPlatform
@@ -147,11 +138,6 @@ async def organization_second(save_fixture: SaveFixture) -> Organization:
 @pytest_asyncio.fixture
 async def second_organization(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture)
-
-
-@pytest_asyncio.fixture
-async def organization_blocked(save_fixture: SaveFixture) -> Organization:
-    return await create_organization(save_fixture, blocked_at=utc_now())
 
 
 @pytest_asyncio.fixture
@@ -227,18 +213,6 @@ async def user_second(save_fixture: SaveFixture) -> User:
     return await create_user(save_fixture)
 
 
-@pytest_asyncio.fixture
-async def user_blocked(save_fixture: SaveFixture) -> User:
-    user = User(
-        id=uuid.uuid4(),
-        email=rstr("test") + "@example.com",
-        avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
-        blocked_at=utc_now(),
-    )
-    await save_fixture(user)
-    return user
-
-
 async def create_pledge(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -298,17 +272,6 @@ async def user_organization_second(
     user_second: User,
 ) -> UserOrganization:
     user_organization = UserOrganization(user=user_second, organization=organization)
-    await save_fixture(user_organization)
-    return user_organization
-
-
-@pytest_asyncio.fixture
-async def user_organization_blocked(
-    save_fixture: SaveFixture,
-    organization_blocked: Organization,
-    user: User,
-) -> UserOrganization:
-    user_organization = UserOrganization(user=user, organization=organization_blocked)
     await save_fixture(user_organization)
     return user_organization
 
@@ -397,6 +360,8 @@ async def create_product(
     is_archived: bool = False,
     prices: Sequence[PriceFixtureType] = [(1000,)],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
+    trial_interval: TrialInterval | None = None,
+    trial_interval_count: int | None = None,
     is_tax_applicable: bool = True,
 ) -> Product:
     product = Product(
@@ -407,6 +372,8 @@ async def create_product(
         is_archived=is_archived,
         organization=organization,
         stripe_product_id=rstr("PRODUCT_ID"),
+        trial_interval=trial_interval,
+        trial_interval_count=trial_interval_count,
         all_prices=[],
         prices=[],
         product_benefits=[],
@@ -790,6 +757,7 @@ async def create_order(
     discount_amount: int = 0,
     refunded_amount: int = 0,
     refunded_tax_amount: int = 0,
+    order_items: list[OrderItem] | None = None,
     subscription: Subscription | None = None,
     stripe_invoice_id: str | None = "INVOICE_ID",
     billing_reason: OrderBillingReason = OrderBillingReason.purchase,
@@ -801,7 +769,19 @@ async def create_order(
     invoice_number: str | None = None,
     checkout: Checkout | None = None,
     discount: Discount | None = None,
+    next_payment_attempt_at: datetime | None = None,
+    payment_lock_acquired_at: datetime | None = None,
 ) -> Order:
+    if order_items is None:
+        order_items = [
+            OrderItem(
+                label="",
+                amount=subtotal_amount,
+                tax_amount=tax_amount,
+                proration=False,
+            )
+        ]
+
     order = Order(
         created_at=created_at or utc_now(),
         status=status,
@@ -810,14 +790,7 @@ async def create_order(
         discount_amount=discount_amount,
         refunded_amount=refunded_amount,
         refunded_tax_amount=refunded_tax_amount,
-        items=[
-            OrderItem(
-                label="",
-                amount=subtotal_amount,
-                tax_amount=tax_amount,
-                proration=False,
-            )
-        ],
+        items=order_items,
         currency="usd",
         billing_reason=billing_reason,
         stripe_invoice_id=stripe_invoice_id,
@@ -831,6 +804,8 @@ async def create_order(
         discount=discount,
         custom_field_data=custom_field_data or {},
         user_metadata=user_metadata or {},
+        next_payment_attempt_at=next_payment_attempt_at,
+        payment_lock_acquired_at=payment_lock_acquired_at,
     )
     await save_fixture(order)
     return order
@@ -902,25 +877,34 @@ async def create_subscription(
     prices: Sequence[ProductPrice] | None = None,
     customer: Customer,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
+    tax_exempted: bool = False,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
     ends_at: datetime | None = None,
     current_period_start: datetime | None = None,
     current_period_end: datetime | None = None,
+    trial_start: datetime | None = None,
+    trial_end: datetime | None = None,
     discount: Discount | None = None,
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
     cancel_at_period_end: bool = False,
     revoke: bool = False,
     user_metadata: dict[str, Any] | None = None,
+    scheduler_locked_at: datetime | None = None,
 ) -> Subscription:
     prices = prices or product.prices
-    now = datetime.now(UTC)
-    if not current_period_end:
-        current_period_end = now + timedelta(days=30)
 
     recurring_interval = product.recurring_interval
     if product.is_legacy_recurring_price:
         recurring_interval = product.prices[0].recurring_interval
+    if not recurring_interval:
+        recurring_interval = SubscriptionRecurringInterval.month
+
+    now = datetime.now(UTC)
+    if not current_period_start:
+        current_period_start = now
+    if not current_period_end:
+        current_period_end = recurring_interval.get_next_period(current_period_start)
 
     canceled_at = None
     if ends_at is None:
@@ -937,10 +921,11 @@ async def create_subscription(
         stripe_subscription_id=stripe_subscription_id,
         recurring_interval=recurring_interval,
         status=status,
-        current_period_start=(
-            now if current_period_start is None else current_period_start
-        ),
+        tax_exempted=tax_exempted,
+        current_period_start=current_period_start,
         current_period_end=current_period_end,
+        trial_start=trial_start,
+        trial_end=trial_end,
         cancel_at_period_end=cancel_at_period_end,
         canceled_at=canceled_at,
         started_at=started_at,
@@ -953,10 +938,48 @@ async def create_subscription(
         ],
         discount=discount,
         user_metadata=user_metadata or {},
+        scheduler_locked_at=scheduler_locked_at,
     )
     await save_fixture(subscription)
 
     return subscription
+
+
+async def create_trialing_subscription(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    trial_interval: TrialInterval = TrialInterval.month,
+    trial_interval_count: int = 1,
+    prices: Sequence[ProductPrice] | None = None,
+    customer: Customer,
+    tax_exempted: bool = False,
+    discount: Discount | None = None,
+    user_metadata: dict[str, Any] | None = None,
+    scheduler_locked_at: datetime | None = None,
+) -> Subscription:
+    now = utc_now()
+    trial_start = now
+    trial_end = trial_interval.get_end(now, trial_interval_count)
+
+    return await create_subscription(
+        save_fixture,
+        product=product,
+        prices=prices,
+        customer=customer,
+        tax_exempted=tax_exempted,
+        discount=discount,
+        status=SubscriptionStatus.trialing,
+        started_at=now,
+        ended_at=None,
+        current_period_start=trial_start,
+        current_period_end=trial_end,
+        trial_start=trial_start,
+        trial_end=trial_end,
+        user_metadata=user_metadata or {},
+        scheduler_locked_at=scheduler_locked_at,
+        stripe_subscription_id=None,
+    )
 
 
 async def create_active_subscription(
@@ -965,19 +988,21 @@ async def create_active_subscription(
     product: Product,
     prices: Sequence[ProductPrice] | None = None,
     customer: Customer,
-    organization: Organization | None = None,
+    tax_exempted: bool = False,
     discount: Discount | None = None,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
     cancel_at_period_end: bool = False,
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
     user_metadata: dict[str, Any] | None = None,
+    scheduler_locked_at: datetime | None = None,
 ) -> Subscription:
     return await create_subscription(
         save_fixture,
         product=product,
         prices=prices,
         customer=customer,
+        tax_exempted=tax_exempted,
         discount=discount,
         status=SubscriptionStatus.active,
         started_at=started_at or utc_now(),
@@ -985,6 +1010,7 @@ async def create_active_subscription(
         cancel_at_period_end=cancel_at_period_end,
         stripe_subscription_id=stripe_subscription_id,
         user_metadata=user_metadata or {},
+        scheduler_locked_at=scheduler_locked_at,
     )
 
 
@@ -1137,6 +1163,19 @@ async def product_recurring_fixed_and_metered(
 
 
 @pytest_asyncio.fixture
+async def product_recurring_trial(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        trial_interval=TrialInterval.month,
+        trial_interval_count=1,
+    )
+
+
+@pytest_asyncio.fixture
 async def product_second(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1188,6 +1227,8 @@ async def create_checkout(
     customer: Customer | None = None,
     subscription: Subscription | None = None,
     discount: Discount | None = None,
+    trial_interval: TrialInterval | None = None,
+    trial_interval_count: int | None = None,
 ) -> Checkout:
     product = product or products[0]
     price = price or product.prices[0]
@@ -1201,6 +1242,10 @@ async def create_checkout(
     else:
         amount = 0
         currency = "usd"
+
+    trial_end: datetime | None = None
+    if trial_interval is not None and trial_interval_count is not None:
+        trial_end = trial_interval.get_end(utc_now(), trial_interval_count)
 
     checkout = Checkout(
         payment_processor=payment_processor,
@@ -1225,6 +1270,9 @@ async def create_checkout(
         customer=customer,
         subscription=subscription,
         discount=discount,
+        trial_interval=trial_interval,
+        trial_interval_count=trial_interval_count,
+        trial_end=trial_end,
     )
     await save_fixture(checkout)
     return checkout
@@ -1238,6 +1286,8 @@ async def create_checkout_link(
     discount: Discount | None = None,
     client_secret: str | None = None,
     success_url: str | None = None,
+    trial_interval: TrialInterval | None = None,
+    trial_interval_count: int | None = None,
     user_metadata: dict[str, Any] = {},
 ) -> CheckoutLink:
     checkout_link = CheckoutLink(
@@ -1252,6 +1302,8 @@ async def create_checkout_link(
             CheckoutLinkProduct(product=p, order=i) for i, p in enumerate(products)
         ],
         discount=discount,
+        trial_interval=trial_interval,
+        trial_interval_count=trial_interval_count,
         user_metadata=user_metadata,
     )
     await save_fixture(checkout_link)
@@ -1555,12 +1607,16 @@ async def create_balance_transaction(
     return transaction
 
 
+METER_ID = uuid.uuid4()
+METER_TEST_EVENT = "TEST_EVENT"
+
+
 async def create_event(
     save_fixture: SaveFixture,
     *,
     organization: Organization,
     source: EventSource = EventSource.user,
-    name: str = "test",
+    name: str = METER_TEST_EVENT,
     timestamp: datetime | None = None,
     customer: Customer | None = None,
     external_customer_id: str | None = None,
@@ -1579,16 +1635,20 @@ async def create_event(
     return event
 
 
-METER_ID = uuid.uuid4()
-
-
 async def create_meter(
     save_fixture: SaveFixture,
     *,
     organization: Organization,
     id: uuid.UUID = METER_ID,
     name: str = "My Meter",
-    filter: Filter = Filter(conjunction=FilterConjunction.and_, clauses=[]),
+    filter: Filter = Filter(
+        conjunction=FilterConjunction.and_,
+        clauses=[
+            FilterClause(
+                property="name", operator=FilterOperator.eq, value=METER_TEST_EVENT
+            )
+        ],
+    ),
     aggregation: Aggregation = CountAggregation(),
     last_billed_event: Event | None = None,
 ) -> Meter:
@@ -1777,6 +1837,7 @@ async def payment_method(
 async def create_billing_entry(
     save_fixture: SaveFixture,
     *,
+    type: BillingEntryType,
     customer: Customer,
     product_price: ProductPrice,
     event: Event | None = None,
@@ -1784,6 +1845,7 @@ async def create_billing_entry(
     end_timestamp: datetime | None = None,
     direction: BillingEntryDirection = BillingEntryDirection.debit,
     amount: int | None = None,
+    discount_amount: int | None = None,
     currency: str | None = None,
     subscription: Subscription | None = None,
     order_item: OrderItem | None = None,
@@ -1805,8 +1867,10 @@ async def create_billing_entry(
     billing_entry = BillingEntry(
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
+        type=type,
         direction=direction,
         amount=amount,
+        discount_amount=discount_amount,
         currency=currency,
         customer=customer,
         product_price=product_price,

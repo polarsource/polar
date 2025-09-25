@@ -7,13 +7,13 @@ from polar.benefit.schemas import BenefitID
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.license_key.schemas import (
+    ActivationNotPermitted,
     LicenseKeyActivate,
-    LicenseKeyActivationBase,
     LicenseKeyActivationRead,
     LicenseKeyDeactivate,
     LicenseKeyRead,
@@ -24,7 +24,7 @@ from polar.license_key.schemas import (
     ValidatedLicenseKey,
 )
 from polar.license_key.service import license_key as license_key_service
-from polar.models import LicenseKeyActivation
+from polar.models import LicenseKey, LicenseKeyActivation
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
@@ -32,15 +32,7 @@ from polar.routing import APIRouter
 
 from .. import auth
 
-router = APIRouter(
-    prefix="/license-keys", tags=["license_keys", APITag.documented, APITag.featured]
-)
-
-
-ActivationNotPermitted = {
-    "description": "License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.",
-    "model": NotPermitted.schema(),
-}
+router = APIRouter(prefix="/license-keys", tags=["license_keys", APITag.public])
 
 
 @router.get(
@@ -114,25 +106,23 @@ async def get(
 async def validate(
     validate: LicenseKeyValidate,
     session: AsyncSession = Depends(get_db_session),
-) -> ValidatedLicenseKey:
-    """Validate a license key."""
-    lk = await license_key_service.get_or_raise_by_key(
+) -> LicenseKey:
+    """
+     Validate a license key.
+
+    > This endpoint doesn't require authentication and can be safely used on a public
+    > client, like a desktop application or a mobile app.
+    > If you plan to validate a license key on a server, use the `/v1/license-keys/validate`
+    > endpoint instead.
+    """
+    license_key = await license_key_service.get_or_raise_by_key(
         session,
         organization_id=validate.organization_id,
         key=validate.key,
     )
-    license_key, activation = await license_key_service.validate(
-        session,
-        license_key=lk,
-        validate=validate,
+    return await license_key_service.validate(
+        session, license_key=license_key, validate=validate
     )
-    activation_schema = None
-    if activation:
-        activation_schema = LicenseKeyActivationBase.model_validate(activation)
-
-    ret = ValidatedLicenseKey.model_validate(license_key)
-    ret.activation = activation_schema
-    return ret
 
 
 @router.post(
@@ -148,7 +138,14 @@ async def activate(
     activate: LicenseKeyActivate,
     session: AsyncSession = Depends(get_db_session),
 ) -> LicenseKeyActivation:
-    """Activate a license key instance."""
+    """
+    Activate a license key instance.
+
+    > This endpoint doesn't require authentication and can be safely used on a public
+    > client, like a desktop application or a mobile app.
+    > If you plan to validate a license key on a server, use the `/v1/license-keys/activate`
+    > endpoint instead.
+    """
     lk = await license_key_service.get_or_raise_by_key(
         session,
         organization_id=activate.organization_id,
@@ -172,7 +169,14 @@ async def deactivate(
     deactivate: LicenseKeyDeactivate,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    """Deactivate a license key instance."""
+    """
+    Deactivate a license key instance.
+
+    > This endpoint doesn't require authentication and can be safely used on a public
+    > client, like a desktop application or a mobile app.
+    > If you plan to validate a license key on a server, use the `/v1/license-keys/deactivate`
+    > endpoint instead.
+    """
     lk = await license_key_service.get_or_raise_by_key(
         session,
         organization_id=deactivate.organization_id,

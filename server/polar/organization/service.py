@@ -18,27 +18,33 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import Environment, settings
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
+from polar.integrations.plain.service import plain as plain_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.models import Account, Organization, User, UserOrganization
+from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization.ai_validation import validator as organization_validator
 from polar.organization_access_token.repository import OrganizationAccessTokenRepository
-from polar.postgres import AsyncSession, sql
+from polar.postgres import AsyncReadSession, AsyncSession, sql
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from .repository import OrganizationRepository
-from .schemas import OrganizationCreate, OrganizationUpdate
+from .repository import OrganizationRepository, OrganizationReviewRepository
+from .schemas import (
+    OrganizationCreate,
+    OrganizationUpdate,
+)
 from .sorting import OrganizationSortProperty
 
-log = structlog.get_logger(__name__)
+log = structlog.get_logger()
 
 
 class PaymentStepID(StrEnum):
@@ -70,9 +76,6 @@ class PaymentStatusResponse(BaseModel):
     )
 
 
-log = structlog.get_logger()
-
-
 class OrganizationError(PolarError): ...
 
 
@@ -85,20 +88,17 @@ class InvalidAccount(OrganizationError):
         super().__init__(message)
 
 
-class AccountAlreadySetByOwner(OrganizationError):
-    def __init__(self, organization_name: str) -> None:
-        self.organization_name = organization_name
-        message = (
-            f"The account for organization '{organization_name}' has already been set up by the owner. "
-            "Only the original member who set up the account can make changes to prevent unintended consequences."
-        )
+class AccountAlreadySet(OrganizationError):
+    def __init__(self, organization_slug: str) -> None:
+        self.organization_slug = organization_slug
+        message = f"The account for organization '{organization_slug}' has already been set up by the owner. Contact support to change the owner of the account."
         super().__init__(message, 403)
 
 
 class OrganizationService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         slug: str | None = None,
@@ -121,7 +121,7 @@ class OrganizationService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
         *,
@@ -137,7 +137,7 @@ class OrganizationService:
 
     async def get_anonymous(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         id: uuid.UUID,
         *,
         options: Options = (),
@@ -339,32 +339,19 @@ class OrganizationService:
         organization: Organization,
         account_id: UUID,
     ) -> Organization:
+        if organization.account_id is not None:
+            raise AccountAlreadySet(organization.slug)
+
         account = await account_service.get(session, auth_subject, account_id)
         if account is None:
             raise InvalidAccount(account_id)
-
-        first_account_set = organization.account_id is None
-
-        # If an account is already set, only the organization admin (account owner) can change it
-        if not first_account_set:
-            repository = OrganizationRepository.from_session(session)
-            admin_user = await repository.get_admin_user(session, organization)
-
-            # Check if current user is the admin
-            current_user_id = None
-            if hasattr(auth_subject.subject, "id"):
-                current_user_id = auth_subject.subject.id
-
-            if not admin_user or current_user_id != admin_user.id:
-                raise AccountAlreadySetByOwner(organization.name)
 
         repository = OrganizationRepository.from_session(session)
         organization = await repository.update(
             organization, update_dict={"account": account}
         )
 
-        if first_account_set:
-            enqueue_job("organization.account_set", organization.id)
+        enqueue_job("organization.account_set", organization.id)
 
         await self._after_update(session, organization)
 
@@ -409,6 +396,7 @@ class OrganizationService:
             and transfers_sum >= organization.next_review_threshold
         ):
             organization.status = Organization.Status.UNDER_REVIEW
+            organization.status_updated_at = datetime.now(UTC)
             await self._sync_account_status(session, organization)
             session.add(organization)
 
@@ -423,9 +411,19 @@ class OrganizationService:
         next_review_threshold: int,
     ) -> Organization:
         organization.status = Organization.Status.ACTIVE
+        organization.status_updated_at = datetime.now(UTC)
         organization.next_review_threshold = next_review_threshold
         await self._sync_account_status(session, organization)
         session.add(organization)
+
+        # If there's a pending appeal, mark it as approved
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+        if review and review.appeal_submitted_at and review.appeal_decision is None:
+            review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
+            review.appeal_reviewed_at = datetime.now(UTC)
+            session.add(review)
+
         enqueue_job("organization.reviewed", organization_id=organization.id)
         return organization
 
@@ -433,14 +431,25 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
         organization.status = Organization.Status.DENIED
+        organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
+
+        # If there's a pending appeal, mark it as rejected
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+        if review and review.appeal_submitted_at and review.appeal_decision is None:
+            review.appeal_decision = OrganizationReview.AppealDecision.REJECTED
+            review.appeal_reviewed_at = datetime.now(UTC)
+            session.add(review)
+
         return organization
 
     async def set_organization_under_review(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
         organization.status = Organization.Status.UNDER_REVIEW
+        organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
         enqueue_job("organization.under_review", organization_id=organization.id)
@@ -470,6 +479,7 @@ class OrganizationService:
                 )
             ):
                 organization.status = Organization.Status.ACTIVE
+                organization.status_updated_at = datetime.now(UTC)
 
             # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
             if any(
@@ -480,6 +490,7 @@ class OrganizationService:
                 )
             ):
                 organization.status = Organization.Status.ONBOARDING_STARTED
+                organization.status_updated_at = datetime.now(UTC)
 
             await self._sync_account_status(session, organization)
             session.add(organization)
@@ -509,7 +520,7 @@ class OrganizationService:
 
     async def get_payment_status(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         organization: Organization,
         account_verification_only: bool = False,
     ) -> PaymentStatusResponse:
@@ -589,7 +600,7 @@ class OrganizationService:
         )
 
     async def is_organization_ready_for_payment(
-        self, session: AsyncSession, organization: Organization
+        self, session: AsyncReadSession, organization: Organization
     ) -> bool:
         """
         Check if an organization is ready to accept payments.
@@ -634,10 +645,6 @@ class OrganizationService:
         if not account:
             return False
 
-        # Check account readiness
-        if not account.is_account_ready():
-            return False
-
         # Check admin identity verification status
         admin = account.admin
         if not admin or admin.identity_verification_status not in [
@@ -647,6 +654,127 @@ class OrganizationService:
             return False
 
         return True
+
+    async def validate_with_ai(
+        self, session: AsyncSession, organization: Organization
+    ) -> OrganizationReview:
+        """Validate organization details using AI and store the result."""
+        repository = OrganizationReviewRepository.from_session(session)
+        previous_validation = await repository.get_by_organization(organization.id)
+
+        if previous_validation is not None:
+            return previous_validation
+
+        result = await organization_validator.validate_organization_details(
+            organization
+        )
+
+        ai_validation = OrganizationReview(
+            organization_id=organization.id,
+            verdict=result.verdict.verdict,
+            risk_score=result.verdict.risk_score,
+            violated_sections=result.verdict.violated_sections,
+            reason=result.verdict.reason,
+            timed_out=result.timed_out,
+            organization_details_snapshot={
+                "name": organization.name,
+                "website": organization.website,
+                "details": organization.details,
+                "socials": organization.socials,
+            },
+            model_used=organization_validator.model.model_name,
+        )
+
+        if result.verdict.verdict in ["FAIL", "UNCERTAIN"]:
+            await self.deny_organization(session, organization)
+
+        session.add(ai_validation)
+        await session.commit()
+
+        return ai_validation
+
+    async def submit_appeal(
+        self, session: AsyncSession, organization: Organization, appeal_reason: str
+    ) -> OrganizationReview:
+        """Submit an appeal for organization review and create a Plain ticket."""
+
+        repository = OrganizationReviewRepository.from_session(session)
+        review = await repository.get_by_organization(organization.id)
+
+        if review is None:
+            raise ValueError("Organization must have a review before submitting appeal")
+
+        if review.verdict == OrganizationReview.Verdict.PASS:
+            raise ValueError("Cannot submit appeal for a passed review")
+
+        if review.appeal_submitted_at is not None:
+            raise ValueError("Appeal has already been submitted for this organization")
+
+        review.appeal_submitted_at = datetime.now(UTC)
+        review.appeal_reason = appeal_reason
+
+        session.add(review)
+
+        await plain_service.create_appeal_review_thread(session, organization, review)
+
+        await session.commit()
+
+        return review
+
+    async def approve_appeal(
+        self, session: AsyncSession, organization: Organization
+    ) -> OrganizationReview:
+        """Approve an organization's appeal and restore payment access."""
+
+        repository = OrganizationReviewRepository.from_session(session)
+        review = await repository.get_by_organization(organization.id)
+
+        if review is None:
+            raise ValueError("Organization must have a review before approving appeal")
+
+        if review.appeal_submitted_at is None:
+            raise ValueError("No appeal has been submitted for this organization")
+
+        if review.appeal_decision is not None:
+            raise ValueError("Appeal has already been reviewed")
+
+        organization.status = Organization.Status.ACTIVE
+        organization.status_updated_at = datetime.now(UTC)
+        review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
+        review.appeal_reviewed_at = datetime.now(UTC)
+
+        await self._sync_account_status(session, organization)
+
+        session.add(organization)
+        session.add(review)
+        await session.commit()
+
+        return review
+
+    async def deny_appeal(
+        self, session: AsyncSession, organization: Organization
+    ) -> OrganizationReview:
+        """Deny an organization's appeal and keep payment access blocked."""
+
+        repository = OrganizationReviewRepository.from_session(session)
+        review = await repository.get_by_organization(organization.id)
+
+        if review is None:
+            raise ValueError("Organization must have a review before denying appeal")
+
+        if review.appeal_submitted_at is None:
+            raise ValueError("No appeal has been submitted for this organization")
+
+        if review.appeal_decision is not None:
+            raise ValueError("Appeal has already been reviewed")
+
+        review.appeal_decision = OrganizationReview.AppealDecision.REJECTED
+        review.appeal_reviewed_at = datetime.now(UTC)
+
+        session.add(review)
+        await session.commit()
+
+        return review
 
 
 organization = OrganizationService()

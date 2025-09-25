@@ -1,9 +1,8 @@
 import uuid
 from collections.abc import Sequence
-from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import UnaryExpression, asc, delete, desc
+from sqlalchemy import delete
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
@@ -59,14 +58,7 @@ class BenefitService:
         if metadata is not None:
             statement = apply_metadata_clause(Benefit, statement, metadata)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == BenefitSortProperty.created_at:
-                order_by_clauses.append(clause_function(Benefit.created_at))
-            elif criterion == BenefitSortProperty.description:
-                order_by_clauses.append(clause_function(Benefit.description))
-        statement = statement.order_by(*order_by_clauses)
+        statement = repository.apply_sorting(statement, sorting)
 
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page

@@ -1,6 +1,7 @@
 import { FormField } from '@polar-sh/ui/components/ui/form'
 
-import { ClearOutlined } from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -29,15 +30,14 @@ export const CustomerMetadataForm = () => {
       <div className="flex flex-row items-center justify-between gap-2 py-2">
         <FormLabel>Metadata</FormLabel>
         <Button
-          size="sm"
-          variant="secondary"
-          className="self-start"
+          className="h-8 w-8 rounded-full"
+          size="icon"
           type="button"
           onClick={() => {
             append({ key: '', value: '' })
           }}
         >
-          Add Metadata
+          <AddOutlined />
         </Button>
       </div>
       <div className="flex flex-col gap-2">

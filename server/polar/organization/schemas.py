@@ -35,12 +35,29 @@ from polar.models.organization import (
     OrganizationNotificationSettings,
     OrganizationSubscriptionSettings,
 )
+from polar.models.organization_review import OrganizationReview
 
 OrganizationID = Annotated[
     UUID4,
     MergeJSONSchema({"description": "The organization ID."}),
     SelectorWidget("/v1/organizations", "Organization", "name"),
     Field(examples=[ORGANIZATION_ID_EXAMPLE]),
+]
+
+NameInput = Annotated[str, StringConstraints(min_length=3)]
+
+
+def validate_reserved_keywords(value: str) -> str:
+    if value in settings.ORGANIZATION_SLUG_RESERVED_KEYWORDS:
+        raise ValueError("This slug is reserved.")
+    return value
+
+
+SlugInput = Annotated[
+    str,
+    StringConstraints(to_lower=True, min_length=3),
+    SlugValidator,
+    AfterValidator(validate_reserved_keywords),
 ]
 
 
@@ -182,6 +199,7 @@ class Organization(IDSchema, TimestampedSchema):
     socials: list[OrganizationSocialLink] = Field(
         description="Links to social profiles.",
     )
+    status: OrganizationModel.Status = Field(description="Current organization status")
     details_submitted_at: datetime | None = Field(
         description="When the business details were submitted.",
     )
@@ -225,20 +243,9 @@ class Organization(IDSchema, TimestampedSchema):
     )
 
 
-def validate_reserved_keywords(value: str) -> str:
-    if value in settings.ORGANIZATION_SLUG_RESERVED_KEYWORDS:
-        raise ValueError("This slug is reserved.")
-    return value
-
-
 class OrganizationCreate(Schema):
-    name: Annotated[str, StringConstraints(min_length=3)]
-    slug: Annotated[
-        str,
-        StringConstraints(to_lower=True, min_length=3),
-        SlugValidator,
-        AfterValidator(validate_reserved_keywords),
-    ]
+    name: NameInput
+    slug: SlugInput
     avatar_url: HttpUrlToStr | None = None
     email: EmailStr | None = Field(None, description="Public support email.")
     website: HttpUrlToStr | None = Field(
@@ -258,9 +265,7 @@ class OrganizationCreate(Schema):
 
 
 class OrganizationUpdate(Schema):
-    name: Annotated[
-        str | None, StringConstraints(min_length=3), EmptyStrToNoneValidator
-    ] = None
+    name: NameInput | None = None
     avatar_url: HttpUrlToStr | None = None
 
     email: EmailStrDNS | None = Field(None, description="Public support email.")
@@ -347,3 +352,36 @@ class OrganizationBadgeSettingsRead(Schema):
     minimum_amount: int
     message: str | None
     repositories: Sequence[RepositoryBadgeSettingsRead]
+
+
+class OrganizationAppealRequest(Schema):
+    reason: Annotated[
+        str,
+        StringConstraints(min_length=50, max_length=5000),
+        Field(
+            description="Detailed explanation of why this organization should be approved. Minimum 50 characters."
+        ),
+    ]
+
+
+class OrganizationAppealResponse(Schema):
+    success: bool = Field(description="Whether the appeal was successfully submitted")
+    message: str = Field(description="Success or error message")
+    appeal_submitted_at: datetime = Field(description="When the appeal was submitted")
+
+
+class OrganizationReviewStatus(Schema):
+    verdict: Literal["PASS", "FAIL", "UNCERTAIN"] | None = Field(
+        default=None, description="AI validation verdict"
+    )
+    reason: str | None = Field(default=None, description="Reason for the verdict")
+    appeal_submitted_at: datetime | None = Field(
+        default=None, description="When appeal was submitted"
+    )
+    appeal_reason: str | None = Field(default=None, description="Reason for the appeal")
+    appeal_decision: OrganizationReview.AppealDecision | None = Field(
+        default=None, description="Decision on the appeal (approved/rejected)"
+    )
+    appeal_reviewed_at: datetime | None = Field(
+        default=None, description="When appeal was reviewed"
+    )

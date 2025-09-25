@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowBack } from '@mui/icons-material'
+import ArrowBack from '@mui/icons-material/ArrowBack'
 import { schemas } from '@polar-sh/client'
 import {
   SidebarMenu,
@@ -37,7 +37,7 @@ export const OrganizationNavigation = ({
     <SidebarMenu>
       {dashboardRoutes.map((route) => (
         <SidebarMenuItem key={route.link}>
-          <SidebarMenuButton tooltip={route.title} asChild>
+          <SidebarMenuButton tooltip={route.title} asChild isActive={route.isActive}>
             <Link
               key={route.link}
               prefetch={true}
@@ -113,7 +113,7 @@ export const AccountNavigation = () => {
       </SidebarMenuItem>
       {accountRoutes.map((route) => (
         <SidebarMenuItem key={route.link}>
-          <SidebarMenuButton tooltip={route.title} asChild>
+          <SidebarMenuButton tooltip={route.title} asChild isActive={route.isActive}>
             <Link
               key={route.link}
               prefetch={true}

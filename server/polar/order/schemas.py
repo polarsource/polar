@@ -2,14 +2,14 @@ from typing import Annotated
 
 from babel.numbers import format_currency
 from fastapi import Path
-from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic import UUID4, AliasChoices, AliasPath, Field, computed_field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
-from polar.kit.address import Address
+from polar.kit.address import Address, AddressInput
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
 from polar.models.order import OrderBillingReason, OrderStatus
@@ -36,16 +36,12 @@ class OrderBase(TimestampedSchema, IDSchema):
     net_amount: int = Field(
         description="Amount in cents, after discounts but before taxes."
     )
-    amount: int = Field(
-        description="Amount in cents, after discounts but before taxes.",
-        deprecated=(
-            "Use `net_amount`. "
-            "It has the same value and meaning, but the name is more descriptive."
-        ),
-        validation_alias="net_amount",
-    )
+
     tax_amount: int = Field(description="Sales tax amount in cents.")
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
+    from_balance_amount: int = Field(
+        description="How much of this invoice was paid using the customer's balance. Amount in cents."
+    )
     refunded_amount: int = Field(description="Amount refunded in cents.")
     refunded_tax_amount: int = Field(description="Sales tax refunded in cents.")
     currency: str
@@ -54,6 +50,10 @@ class OrderBase(TimestampedSchema, IDSchema):
         description="The name of the customer that should appear on the invoice. "
     )
     billing_address: Address | None
+
+    invoice_number: str = Field(
+        description="The invoice number associated with this order."
+    )
     is_invoice_generated: bool = Field(
         description="Whether an invoice has been generated for this order."
     )
@@ -73,23 +73,25 @@ class OrderBase(TimestampedSchema, IDSchema):
     subscription_id: UUID4 | None
     checkout_id: UUID4 | None
 
+    @computed_field(
+        description="Amount in cents, after discounts but before taxes.",
+        deprecated=(
+            "Use `net_amount`. "
+            "It has the same value and meaning, but the name is more descriptive."
+        ),
+    )
+    def amount(self) -> SkipJsonSchema[int]:
+        return self.net_amount
+
     def get_amount_display(self) -> str:
-        return f"{
-            format_currency(
-                self.amount / 100,
-                self.currency.upper(),
-                locale='en_US',
-            )
-        }"
+        return format_currency(
+            self.net_amount / 100, self.currency.upper(), locale="en_US"
+        )
 
     def get_refunded_amount_display(self) -> str:
-        return f"{
-            format_currency(
-                self.refunded_amount / 100,
-                self.currency.upper(),
-                locale='en_US',
-            )
-        }"
+        return format_currency(
+            self.refunded_amount / 100, self.currency.upper(), locale="en_US"
+        )
 
 
 class OrderCustomer(CustomerBase): ...
@@ -189,7 +191,7 @@ class OrderUpdateBase(Schema):
             "Can't be updated after the invoice is generated."
         )
     )
-    billing_address: Address | None = Field(
+    billing_address: AddressInput | None = Field(
         description=(
             "The address of the customer that should appear on the invoice. "
             "Can't be updated after the invoice is generated."

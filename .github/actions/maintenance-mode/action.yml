@@ -1,0 +1,87 @@
+name: "Maintenance Mode Rule Toggle"
+description: "Enable or disable a single Cloudflare Custom Error Rule for maintenance mode"
+inputs:
+  enable:
+    description: "Enable maintenance mode (true) or disable (false)"
+    required: true
+  cloudflare_api_token:
+    description: "Cloudflare API token"
+    required: true
+  cloudflare_zone_id:
+    description: "Cloudflare Zone ID"
+    required: true
+  cloudflare_ruleset_id:
+    description: "Cloudflare Ruleset ID"
+    required: true
+  rule_id:
+    description: "Maintenance rule ID to toggle"
+    required: true
+  rule_name:
+    description: "Human-readable name for the rule (e.g., 'Frontend', 'API')"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set action variables
+      shell: bash
+      run: |
+        if [[ "${{ inputs.enable }}" == "true" ]]; then
+          echo "ACTION=enable" >> $GITHUB_ENV
+          echo "ENABLED_VALUE=true" >> $GITHUB_ENV
+          echo "ACTION_VERB=Enabling" >> $GITHUB_ENV
+        else
+          echo "ACTION=disable" >> $GITHUB_ENV
+          echo "ENABLED_VALUE=false" >> $GITHUB_ENV
+          echo "ACTION_VERB=Disabling" >> $GITHUB_ENV
+        fi
+
+    - name: ${{ env.ACTION_VERB }} ${{ inputs.rule_name }} Maintenance Rule
+      shell: bash
+      run: |
+        echo "${{ env.ACTION_VERB }} ${{ inputs.rule_name }} maintenance rule: ${{ inputs.rule_id }}"
+
+        # First, get the current ruleset to retrieve the full rule data
+        echo "Fetching current ruleset..."
+        get_response=$(curl -s -w "%{http_code}" -o ruleset_response.json \
+          -X GET \
+          "https://api.cloudflare.com/client/v4/zones/${{ inputs.cloudflare_zone_id }}/rulesets/${{ inputs.cloudflare_ruleset_id }}" \
+          -H "Authorization: Bearer ${{ inputs.cloudflare_api_token }}" \
+          -H "Content-Type: application/json")
+
+        get_http_code="${get_response: -3}"
+
+        if [[ "$get_http_code" -lt 200 || "$get_http_code" -ge 300 ]]; then
+          echo "❌ Failed to fetch ruleset (HTTP $get_http_code)"
+          cat ruleset_response.json
+          exit 1
+        fi
+
+        # Extract the rule data and modify the enabled field
+        echo "Extracting and modifying ${{ inputs.rule_name }} rule..."
+        rule_data=$(jq --arg rule_id "${{ inputs.rule_id }}" --argjson enabled ${{ env.ENABLED_VALUE }} \
+          '.result.rules[] | select(.id == $rule_id) | .enabled = $enabled' ruleset_response.json)
+
+        if [[ -z "$rule_data" || "$rule_data" == "null" ]]; then
+          echo "❌ ${{ inputs.rule_name }} rule not found in ruleset"
+          exit 1
+        fi
+
+        # Update the rule with the complete rule data
+        echo "Updating ${{ inputs.rule_name }} rule..."
+        response=$(curl -s -w "%{http_code}" -o rule_response.json \
+          -X PATCH \
+          "https://api.cloudflare.com/client/v4/zones/${{ inputs.cloudflare_zone_id }}/rulesets/${{ inputs.cloudflare_ruleset_id }}/rules/${{ inputs.rule_id }}" \
+          -H "Authorization: Bearer ${{ inputs.cloudflare_api_token }}" \
+          -H "Content-Type: application/json" \
+          -d "$rule_data")
+
+        http_code="${response: -3}"
+
+        if [[ "$http_code" -ge 200 && "$http_code" -lt 300 ]]; then
+          echo "✅ Successfully ${{ env.ACTION }}d ${{ inputs.rule_name }} maintenance rule"
+        else
+          echo "❌ Failed to ${{ env.ACTION }} ${{ inputs.rule_name }} maintenance rule (HTTP $http_code)"
+          cat rule_response.json
+          exit 1
+        fi

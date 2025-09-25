@@ -16,11 +16,15 @@ from polar.integrations.open_collective.service import open_collective
 from polar.integrations.stripe.service import stripe
 from polar.kit.pagination import PaginationParams
 from polar.models import Account, Organization, User
-from polar.models.transaction import TransactionType
-from polar.postgres import AsyncSession
-from polar.transaction.service.transaction import transaction as transaction_service
+from polar.models.user import IdentityVerificationStatus
+from polar.postgres import AsyncReadSession, AsyncSession
+from polar.user.repository import UserRepository
 
-from .schemas import AccountCreate, AccountLink, AccountUpdate
+from .schemas import (
+    AccountCreateForOrganization,
+    AccountLink,
+    AccountUpdate,
+)
 
 
 class AccountServiceError(PolarError):
@@ -39,10 +43,22 @@ class AccountExternalIdDoesNotExist(AccountServiceError):
         super().__init__(message)
 
 
+class CannotChangeAdminError(AccountServiceError):
+    def __init__(self, reason: str) -> None:
+        super().__init__(f"Cannot change account admin: {reason}")
+
+
+class UserNotOrganizationMemberError(AccountServiceError):
+    def __init__(self, user_id: uuid.UUID, organization_id: uuid.UUID) -> None:
+        super().__init__(
+            f"User {user_id} is not a member of organization {organization_id}"
+        )
+
+
 class AccountService:
     async def search(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User],
         *,
         pagination: PaginationParams,
@@ -52,13 +68,21 @@ class AccountService:
             joinedload(Account.users),
             joinedload(Account.organizations),
         )
-        return await repository.paginate(
+        accounts, count = await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
         )
 
+        # Filter out deleted organizations from the loaded accounts
+        for account in accounts:
+            account.organizations = [
+                org for org in account.organizations if org.deleted_at is None
+            ]
+
+        return accounts, count
+
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Account | None:
@@ -71,7 +95,39 @@ class AccountService:
                 joinedload(Account.organizations),
             )
         )
+        account = await repository.get_one_or_none(statement)
+
+        # Filter out deleted organizations if account exists
+        if account:
+            account.organizations = [
+                org for org in account.organizations if org.deleted_at is None
+            ]
+
+        return account
+
+    async def _get_unrestricted(
+        self,
+        session: AsyncReadSession,
+        id: uuid.UUID,
+    ) -> Account | None:
+        repository = AccountRepository.from_session(session)
+        statement = (
+            repository.get_base_statement()
+            .where(Account.id == id)
+            .options(
+                joinedload(Account.users),
+                joinedload(Account.organizations),
+            )
+        )
         return await repository.get_one_or_none(statement)
+
+    async def is_user_admin(
+        self, session: AsyncReadSession, account_id: uuid.UUID, user: User
+    ) -> bool:
+        account = await self._get_unrestricted(session, account_id)
+        if account is None:
+            return False
+        return account.admin_id == user.id
 
     async def update(
         self, session: AsyncSession, account: Account, account_update: AccountUpdate
@@ -85,12 +141,35 @@ class AccountService:
         repository = AccountRepository.from_session(session)
         return await repository.soft_delete(account)
 
+    async def delete_stripe_account(
+        self, session: AsyncSession, account: Account
+    ) -> None:
+        """Delete Stripe account and clear related database fields."""
+        if not account.stripe_id:
+            raise AccountServiceError("Account does not have a Stripe ID")
+
+        # Verify the account exists on Stripe before deletion
+        if not await stripe.account_exists(account.stripe_id):
+            raise AccountServiceError(
+                f"Stripe Account ID {account.stripe_id} doesn't exist"
+            )
+
+        # Delete the account on Stripe
+        await stripe.delete_account(account.stripe_id)
+
+        # Clear Stripe account data from database
+        account.stripe_id = None
+        account.is_details_submitted = False
+        account.is_charges_enabled = False
+        account.is_payouts_enabled = False
+        session.add(account)
+
     async def create_account(
         self,
         session: AsyncSession,
         *,
         admin: User,
-        account_create: AccountCreate,
+        account_create: AccountCreateForOrganization,
     ) -> Account:
         assert account_create.account_type == AccountType.stripe
         account = await self._create_stripe_account(session, admin, account_create)
@@ -99,21 +178,86 @@ class AccountService:
         )
         return account
 
-    async def check_review_threshold(
-        self, session: AsyncSession, account: Account
+    async def get_or_create_account_for_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        admin: User,
+        account_create: AccountCreateForOrganization,
     ) -> Account:
-        if account.is_under_review():
-            return account
+        """Get existing account for organization or create a new one.
 
-        transfers_sum = await transaction_service.get_transactions_sum(
-            session, account.id, type=TransactionType.balance
+        If organization already has an account:
+        - If account has no stripe_id (deleted), create new Stripe account
+        - Otherwise return existing account
+
+        If organization has no account, create new one and link it.
+        """
+
+        # Check if organization already has an account
+        if organization.account_id:
+            repository = AccountRepository.from_session(session)
+            account = await repository.get_by_id(
+                organization.account_id,
+                options=(
+                    joinedload(Account.users),
+                    joinedload(Account.organizations),
+                ),
+            )
+
+            if account and not account.stripe_id:
+                assert account_create.account_type == AccountType.stripe
+                try:
+                    stripe_account = await stripe.create_account(
+                        account_create, name=None
+                    )
+                except stripe_lib.StripeError as e:
+                    if e.user_message:
+                        raise AccountServiceError(e.user_message) from e
+                    else:
+                        raise AccountServiceError(
+                            "An unexpected Stripe error happened"
+                        ) from e
+
+                # Update account with new Stripe details
+                account.stripe_id = stripe_account.id
+                account.email = stripe_account.email
+                if stripe_account.country is not None:
+                    account.country = stripe_account.country
+                assert stripe_account.default_currency is not None
+                account.currency = stripe_account.default_currency
+                account.is_details_submitted = stripe_account.details_submitted or False
+                account.is_charges_enabled = stripe_account.charges_enabled or False
+                account.is_payouts_enabled = stripe_account.payouts_enabled or False
+                account.business_type = stripe_account.business_type
+                account.data = stripe_account.to_dict()
+
+                session.add(account)
+
+                await loops_service.user_created_account(
+                    session, admin, accountType=account.account_type
+                )
+
+                return account
+            elif account:
+                return account
+
+        # No account exists, create new one
+        account = await self.create_account(
+            session, admin=admin, account_create=account_create
         )
-        if (
-            account.next_review_threshold is not None
-            and transfers_sum >= account.next_review_threshold
-        ):
-            account.status = Account.Status.UNDER_REVIEW
-            session.add(account)
+
+        # Link account to organization. Import happens here to avoid circular dependency
+        from polar.organization.service import organization as organization_service
+
+        await organization_service.set_account(
+            session,
+            auth_subject=AuthSubject(subject=admin, scopes=set(), session=None),
+            organization=organization,
+            account_id=account.id,
+        )
+
+        await session.refresh(account, {"users", "organizations"})
 
         return account
 
@@ -131,7 +275,10 @@ class AccountService:
         return "·".join(associations)
 
     async def _create_stripe_account(
-        self, session: AsyncSession, admin: User, account_create: AccountCreate
+        self,
+        session: AsyncSession,
+        admin: User,
+        account_create: AccountCreateForOrganization,
     ) -> Account:
         try:
             stripe_account = await stripe.create_account(
@@ -167,6 +314,7 @@ class AccountService:
             account._platform_fee_fixed = campaign.fee_fixed
 
         session.add(account)
+        await session.flush()
         return account
 
     async def update_account_from_stripe(
@@ -225,14 +373,56 @@ class AccountService:
         return None
 
     async def sync_to_upstream(self, session: AsyncSession, account: Account) -> None:
+        if account.account_type != AccountType.stripe:
+            return
+
+        if not account.stripe_id:
+            return
+
         name = await self._build_stripe_account_name(session, account)
+        await stripe.update_account(account.stripe_id, name)
 
-        if account.account_type == AccountType.stripe and account.stripe_id:
-            await stripe.update_account(account.stripe_id, name)
+    async def change_admin(
+        self,
+        session: AsyncSession,
+        account: Account,
+        new_admin_id: uuid.UUID,
+        organization_id: uuid.UUID,
+    ) -> Account:
+        if account.stripe_id:
+            raise CannotChangeAdminError(
+                "Stripe account must be deleted before changing admin"
+            )
 
-    async def deny_account(self, session: AsyncSession, account: Account) -> Account:
-        account.status = Account.Status.DENIED
-        session.add(account)
+        user_repository = UserRepository.from_session(session)
+        is_member = await user_repository.is_organization_member(
+            new_admin_id, organization_id
+        )
+
+        if not is_member:
+            raise UserNotOrganizationMemberError(new_admin_id, organization_id)
+
+        new_admin_user = await user_repository.get_by_id(new_admin_id)
+
+        if new_admin_user is None:
+            raise UserNotOrganizationMemberError(new_admin_id, organization_id)
+
+        if (
+            new_admin_user.identity_verification_status
+            != IdentityVerificationStatus.verified
+        ):
+            raise CannotChangeAdminError(
+                f"New admin must be verified in Stripe. Current status: {new_admin_user.identity_verification_status.get_display_name()}"
+            )
+
+        if account.admin_id == new_admin_id:
+            raise CannotChangeAdminError("New admin is the same as current admin")
+
+        repository = AccountRepository.from_session(session)
+        account = await repository.update(
+            account, update_dict={"admin_id": new_admin_id}
+        )
+
         return account
 
 

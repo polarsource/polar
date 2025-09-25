@@ -1,5 +1,6 @@
 import OpenCollective from '@/components/Icons/OpenCollective'
 import Stripe from '@/components/Icons/Stripe'
+import ManualPayout from '@/components/Icons/ManualPayout';
 import { schemas } from '@polar-sh/client'
 
 export const ALL_ACCOUNT_TYPES: schemas['AccountType'][] = [
@@ -12,9 +13,13 @@ export const ACCOUNT_TYPE_DISPLAY_NAMES: Record<
   string
 > = {
   stripe: 'Stripe',
+  manual: 'Manual',
   open_collective: 'Open Collective',
 }
-export const ACCOUNT_STATUS_DISPLAY_NAMES: Record<schemas['Status'], string> = {
+export const ORGANIZATION_STATUS_DISPLAY_NAMES: Record<
+  schemas['Status'],
+  string
+> = {
   created: 'Onboarding incomplete',
   onboarding_started: 'Onboarding incomplete',
   under_review: 'Under review',
@@ -24,5 +29,6 @@ export const ACCOUNT_STATUS_DISPLAY_NAMES: Record<schemas['Status'], string> = {
 
 export const ACCOUNT_TYPE_ICON: Record<schemas['AccountType'], React.FC> = {
   stripe: Stripe,
+  manual: ManualPayout,
   open_collective: OpenCollective,
 }

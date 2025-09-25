@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import (
     Boolean,
     Column,
+    ColumnElement,
     ForeignKey,
     Index,
     String,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.address import Address, AddressType
@@ -160,6 +162,15 @@ class Customer(MetadataMixin, RecordModel):
             uselist=False,
             foreign_keys=[cls.default_payment_method_id],  # type: ignore
         )
+
+    @hybrid_property
+    def can_authenticate(self) -> bool:
+        return self.deleted_at is None
+
+    @can_authenticate.inplace.expression
+    @classmethod
+    def _can_authenticate_expression(cls) -> ColumnElement[bool]:
+        return cls.deleted_at.is_(None)
 
     def get_oauth_account(
         self, account_id: str, platform: CustomerOAuthPlatform

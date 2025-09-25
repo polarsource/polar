@@ -1,7 +1,7 @@
 import functools
 import uuid
 from collections.abc import Awaitable, Callable
-from typing import ParamSpec, TypeVar, cast
+from typing import ParamSpec, cast
 
 import stripe as stripe_lib
 import structlog
@@ -12,6 +12,7 @@ from polar.checkout.service import NotConfirmedCheckout
 from polar.exceptions import PolarTaskError
 from polar.external_event.service import external_event as external_event_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook, ProductType
+from polar.locker import Locker
 from polar.logging import Logger
 from polar.order.service import (
     NotAnOrderInvoice,
@@ -24,10 +25,11 @@ from polar.order.service import (
 from polar.order.service import order as order_service
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
+from polar.payment_method.service import payment_method as payment_method_service
 from polar.payout.service import payout as payout_service
 from polar.pledge.service import pledge as pledge_service
 from polar.refund.service import refund as refund_service
-from polar.subscription.service import SubscriptionDoesNotExist
+from polar.subscription.service import SubscriptionDoesNotExist, SubscriptionLocked
 from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.dispute import (
     DisputeClosed,
@@ -36,7 +38,14 @@ from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
 from polar.user.service import user as user_service
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, get_retries
+from polar.worker import (
+    AsyncSessionMaker,
+    RedisMiddleware,
+    TaskPriority,
+    actor,
+    can_retry,
+    get_retries,
+)
 
 from . import payment
 from .service import stripe as stripe_service
@@ -45,10 +54,9 @@ log: Logger = structlog.get_logger()
 
 
 Params = ParamSpec("Params")
-ReturnValue = TypeVar("ReturnValue")
 
 
-def stripe_api_connection_error_retry(
+def stripe_api_connection_error_retry[**Params, ReturnValue](
     func: Callable[Params, Awaitable[ReturnValue]],
 ) -> Callable[Params, Awaitable[ReturnValue]]:
     @functools.wraps(func)
@@ -104,6 +112,22 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
                     )
                 return
 
+            # Handle retry payments - save credit card and update subscription payment method
+            if payment_intent.metadata and payment_intent.metadata.get("order_id"):
+                order = await payment.resolve_order(session, payment_intent, None)
+                if order is not None:
+                    payment_method = await payment_method_service.upsert_from_stripe_payment_intent_for_order(
+                        session, payment_intent, order
+                    )
+
+                    if payment_method and order.subscription:
+                        await subscription_service.update_payment_method_from_retry(
+                            session, order.subscription, payment_method
+                        )
+
+                    await session.commit()
+                return
+
 
 @actor(
     actor_name="stripe.webhook.payment_intent.payment_failed",
@@ -118,6 +142,7 @@ async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
             )
             try:
                 await payment.handle_failure(session, payment_intent)
+
             except UnhandledPaymentIntent:
                 pass
             except payment.OrderDoesNotExist as e:
@@ -290,11 +315,13 @@ async def customer_subscription_updated(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             subscription = cast(stripe_lib.Subscription, event.stripe_data.data.object)
+            redis = RedisMiddleware.get()
+            locker = Locker(redis)
             try:
                 await subscription_service.update_from_stripe(
-                    session, stripe_subscription=subscription
+                    session, locker, stripe_subscription=subscription
                 )
-            except SubscriptionDoesNotExist as e:
+            except (SubscriptionDoesNotExist, SubscriptionLocked) as e:
                 log.warning(e.message, event_id=event.id)
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!
@@ -314,11 +341,13 @@ async def customer_subscription_deleted(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             subscription = cast(stripe_lib.Subscription, event.stripe_data.data.object)
+            redis = RedisMiddleware.get()
+            locker = Locker(redis)
             try:
                 await subscription_service.update_from_stripe(
-                    session, stripe_subscription=subscription
+                    session, locker, stripe_subscription=subscription
                 )
-            except SubscriptionDoesNotExist as e:
+            except (SubscriptionDoesNotExist, SubscriptionLocked) as e:
                 log.warning(e.message, event_id=event.id)
                 # Retry because Stripe webhooks order is not guaranteed,
                 # so we might not have been able to handle subscription.created yet!

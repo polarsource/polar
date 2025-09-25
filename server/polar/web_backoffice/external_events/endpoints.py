@@ -83,7 +83,7 @@ async def list(
             with datatable.Datatable[ExternalEvent, ExternalEventSortProperty](
                 datatable.DatatableActionsColumn(
                     "",
-                    datatable.DatatableActionHTMX(
+                    datatable.DatatableActionHTMX[ExternalEvent](
                         "Resend",
                         lambda r, i: str(r.url_for("external_events:resend", id=i.id)),
                         target="#modal",

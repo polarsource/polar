@@ -9,11 +9,16 @@ from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
+    RepositorySortingMixin,
+    SortingClause,
 )
 from polar.models import Benefit, UserOrganization
 
+from .sorting import BenefitSortProperty
+
 
 class BenefitRepository(
+    RepositorySortingMixin[Benefit, BenefitSortProperty],
     RepositorySoftDeletionIDMixin[Benefit, UUID],
     RepositorySoftDeletionMixin[Benefit],
     RepositoryBase[Benefit],
@@ -44,3 +49,12 @@ class BenefitRepository(
             )
 
         return statement
+
+    def get_sorting_clause(self, property: BenefitSortProperty) -> SortingClause:
+        match property:
+            case BenefitSortProperty.created_at:
+                return Benefit.created_at
+            case BenefitSortProperty.description:
+                return Benefit.description
+            case BenefitSortProperty.type:
+                return Benefit.type

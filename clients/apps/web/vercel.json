@@ -1,3 +1,20 @@
 {
-  "buildCommand": "cd ../.. && turbo run build --filter=web"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd ../.. && turbo run build --filter=web",
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/docs",
+      "destination": "https://polar.mintlify.dev/docs"
+    },
+    {
+      "source": "/docs/:match*",
+      "destination": "https://polar.mintlify.dev/docs/:match*"
+    }
+  ],
+  "trailingSlash": false
 }

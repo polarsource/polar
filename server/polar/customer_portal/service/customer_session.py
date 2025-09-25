@@ -1,4 +1,3 @@
-import datetime
 import secrets
 import string
 import uuid
@@ -88,20 +87,17 @@ class CustomerSessionService:
         body = render_email_template(
             "customer_session_code",
             {
-                "organization": {
-                    "name": organization.name,
-                    "slug": organization.slug,
-                },
+                "organization": organization.email_props,
                 "code": code,
                 "code_lifetime_minutes": code_lifetime_minutes,
                 "url": settings.generate_frontend_url(
                     f"/{organization.slug}/portal/authenticate"
                 ),
-                "current_year": datetime.datetime.now().year,
             },
         )
 
         enqueue_email(
+            **organization.email_from_reply,
             to_email_addr=customer.email,
             subject=f"Access your {organization.name} purchases",
             html_content=body,

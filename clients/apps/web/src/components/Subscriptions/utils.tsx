@@ -40,6 +40,8 @@ export const SubscriptionStatusLabel = ({
         return subscription.cancel_at_period_end
           ? 'border-yellow-500'
           : 'border-emerald-500'
+      case 'trialing':
+        return 'border-cyan-500'
       default:
         return 'border-red-500'
     }
@@ -79,6 +81,10 @@ export const getRecurringBillingLabel = (
   recurringInterval: schemas['SubscriptionRecurringInterval'],
 ) => {
   switch (recurringInterval) {
+    case 'day':
+      return '/day'
+    case 'week':
+      return '/week'
     case 'month':
       return '/mo'
     case 'year':

@@ -1,7 +1,6 @@
 import { setValidationErrors } from '@/utils/api/errors'
 import { api } from '@/utils/client'
-import { CONFIG } from '@/utils/config'
-import { isValidationError, schemas } from '@polar-sh/client'
+import { enums, isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import {
@@ -16,12 +15,6 @@ import {
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 
-const stripeConnectWhitelist = CONFIG.STRIPE_COUNTRIES_WHITELIST_CSV.split(',')
-
-interface AccountForm {
-  country: string
-}
-
 const AccountCreateModal = ({
   forOrganizationId,
   returnPath,
@@ -29,7 +22,7 @@ const AccountCreateModal = ({
   forOrganizationId: string
   returnPath: string
 }) => {
-  const form = useForm<AccountForm>({
+  const form = useForm<schemas['AccountCreateForOrganization']>({
     defaultValues: {
       country: 'US',
     },
@@ -43,35 +36,39 @@ const AccountCreateModal = ({
 
   const [loading, setLoading] = useState(false)
 
-  const goToOnboarding = async (account: schemas['Account']) => {
-    setLoading(true)
-    const { data, error } = await api.POST(
-      '/v1/accounts/{id}/onboarding_link',
-      {
-        params: {
-          path: { id: account.id },
-          query: { return_path: returnPath },
+  const goToOnboarding = useCallback(
+    async (account: schemas['Account']) => {
+      setLoading(true)
+      const { data, error } = await api.POST(
+        '/v1/accounts/{id}/onboarding_link',
+        {
+          params: {
+            path: { id: account.id },
+            query: { return_path: returnPath },
+          },
         },
-      },
-    )
-    setLoading(false)
+      )
+      setLoading(false)
 
-    if (error) {
-      window.location.reload()
-      return
-    }
+      if (error) {
+        window.location.reload()
+        return
+      }
 
-    window.location.href = data.url
-  }
+      window.location.href = data.url
+    },
+    [returnPath],
+  )
 
   const onSubmit = useCallback(
-    async (data: AccountForm) => {
+    async (data: schemas['AccountCreateForOrganization']) => {
       setLoading(true)
 
       const { data: account, error } = await api.POST('/v1/accounts', {
         body: {
           account_type: 'stripe',
           country: data.country,
+          organization_id: forOrganizationId,
         },
       })
 
@@ -81,13 +78,9 @@ const AccountCreateModal = ({
         } else {
           setError('root', { message: error.detail })
         }
+        setLoading(false)
         return
       }
-
-      await api.PATCH('/v1/organizations/{id}/account', {
-        params: { path: { id: forOrganizationId } },
-        body: { account_id: account.id },
-      })
 
       setLoading(false)
       await goToOnboarding(account)
@@ -127,7 +120,7 @@ const AccountCreateModal = ({
 }
 
 export const AccountCountry = () => {
-  const { control } = useFormContext<AccountForm>()
+  const { control } = useFormContext<schemas['AccountCreateForOrganization']>()
 
   return (
     <>
@@ -142,7 +135,7 @@ export const AccountCountry = () => {
                 <CountryPicker
                   value={field.value || undefined}
                   onChange={field.onChange}
-                  allowedCountries={stripeConnectWhitelist}
+                  allowedCountries={enums.stripeAccountCountryValues}
                 />
               </FormControl>
               <FormMessage />

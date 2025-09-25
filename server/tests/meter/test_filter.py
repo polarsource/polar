@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import pytest
+from pydantic import ValidationError
 
 from polar.event.repository import EventRepository
 from polar.kit.utils import utc_now
@@ -24,6 +25,65 @@ def test_strip_metadata_prefix() -> None:
     clause = filter.clauses[0]
     assert isinstance(clause, FilterClause)
     assert clause.property == "property"
+
+
+class TestFilterClauseValueValidation:
+    """Test validation of FilterClause.value field to prevent database overflow."""
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            2147483647,  # max valid int32
+            -2147483648,  # min valid int32
+            123,  # normal value
+            0,  # zero
+        ],
+    )
+    def test_valid_integer_values(self, value: int) -> None:
+        """Test that valid integers within int32 range are accepted."""
+        clause = FilterClause(property="test", operator=FilterOperator.eq, value=value)
+        assert clause.value == value
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            2147483648,  # too large
+            -2147483649,  # too small
+            9999999999999999,  # extremely large
+        ],
+    )
+    def test_invalid_integer_values(self, value: int) -> None:
+        """Test that integers outside int32 range are rejected."""
+        with pytest.raises(ValidationError):
+            FilterClause(property="test", operator=FilterOperator.eq, value=value)
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "short",  # normal string
+            "a" * 1000,  # max length string
+            "",  # empty string
+            "test@example.com",  # email format
+            "https://example.com/path",  # URL format
+        ],
+    )
+    def test_valid_string_values(self, value: str) -> None:
+        """Test that valid strings within length limit are accepted."""
+        clause = FilterClause(property="test", operator=FilterOperator.eq, value=value)
+        assert clause.value == value
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "a" * 1001,  # exceeds max length by 1
+            "a" * 2000,  # significantly exceeds max length
+            "a" * 10000,  # extremely long string
+        ],
+    )
+    def test_invalid_string_values(self, value: str) -> None:
+        """Test that strings exceeding length limit are rejected."""
+        with pytest.raises(ValidationError):
+            FilterClause(property="test", operator=FilterOperator.eq, value=value)
 
 
 @pytest.mark.asyncio

@@ -8,7 +8,7 @@ import structlog
 import typer
 from sqlalchemy import select
 
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Transaction
 from polar.models.transaction import TransactionType
 from polar.postgres import create_async_engine
@@ -48,91 +48,84 @@ def typer_async(f):  # type: ignore
 @typer_async
 async def fix_missing_refund_balance_reversals() -> None:
     engine = create_async_engine("script")
-    async with engine.connect() as connection:
-        async with connection.begin():
-            session = AsyncSession(
-                bind=connection, join_transaction_mode="create_savepoint"
+    sessionmaker = create_async_sessionmaker(engine)
+    async with sessionmaker() as session:
+        refunds_statement = (
+            select(Transaction)
+            .where(Transaction.type == TransactionType.refund)
+            .order_by(Transaction.created_at)
+        )
+        refunds = await session.stream_scalars(refunds_statement)
+        async for refund in refunds:
+            typer.echo("\n---\n")
+            typer.echo(f"🔄 Handling {refund.id} {refund.created_at} {refund.amount}")
+
+            payment_transaction = await refund_transaction_service.get_by(
+                session, type=TransactionType.payment, charge_id=refund.charge_id
             )
+            if payment_transaction is None:
+                typer.echo("❌ Payment transaction not found")
+                continue
 
-            refunds_statement = (
-                select(Transaction)
-                .where(Transaction.type == TransactionType.refund)
-                .order_by(Transaction.created_at)
-            )
-            refunds = await session.stream_scalars(refunds_statement)
-            async for refund in refunds:
-                typer.echo("\n---\n")
-                typer.echo(
-                    f"🔄 Handling {refund.id} {refund.created_at} {refund.amount}"
-                )
+            typer.echo(f"✅ Payment transaction found: {payment_transaction.id}")
 
-                payment_transaction = await refund_transaction_service.get_by(
-                    session, type=TransactionType.payment, charge_id=refund.charge_id
-                )
-                if payment_transaction is None:
-                    typer.echo("❌ Payment transaction not found")
-                    continue
-
-                typer.echo(f"✅ Payment transaction found: {payment_transaction.id}")
-
-                balance_transactions_couples = await refund_transaction_service._get_balance_transactions_for_payment(
+            balance_transactions_couples = (
+                await refund_transaction_service._get_balance_transactions_for_payment(
                     session, payment_transaction=payment_transaction
                 )
-                if len(balance_transactions_couples) == 0:
-                    typer.echo("🔍 The payment transaction was not balanced. Skipping.")
-                    continue
+            )
+            if len(balance_transactions_couples) == 0:
+                typer.echo("🔍 The payment transaction was not balanced. Skipping.")
+                continue
 
-                for balance_transactions_couple in balance_transactions_couples:
-                    outgoing, _ = balance_transactions_couple
-                    await session.refresh(
-                        outgoing,
-                        {"balance_reversal_transactions", "incurred_transactions"},
-                    )
-                    for (
+            for balance_transactions_couple in balance_transactions_couples:
+                outgoing, _ = balance_transactions_couple
+                await session.refresh(
+                    outgoing,
+                    {"balance_reversal_transactions", "incurred_transactions"},
+                )
+                for (
+                    balance_reversal_transaction
+                ) in outgoing.balance_reversal_transactions:
+                    if (
                         balance_reversal_transaction
-                    ) in outgoing.balance_reversal_transactions:
-                        if (
-                            balance_reversal_transaction
-                            not in outgoing.incurred_transactions
-                        ):
-                            typer.echo(
-                                f"✅ Refund balance reversal found: {balance_reversal_transaction.id}"
-                            )
-                            break
-                    else:
-                        typer.echo("❌ Refund not balanced")
-                        typer.echo("👨‍🔧 Let's fix this")
-                        refund_amount = refund.amount
-                        total_amount = (
-                            payment_transaction.amount + payment_transaction.tax_amount
-                        )
-
-                        # Refund each balance proportionally
-                        balance_refund_amount = abs(
-                            int(
-                                math.floor(outgoing.amount * refund_amount)
-                                / total_amount
-                            )
-                        )
-                        (
-                            outgoing_reversal,
-                            incoming_reversal,
-                        ) = await balance_transaction_service.create_reversal_balance(
-                            session,
-                            balance_transactions=balance_transactions_couple,
-                            amount=balance_refund_amount,
-                        )
-
-                        outgoing_reversal.created_at = refund.created_at
-                        incoming_reversal.created_at = refund.created_at
-                        session.add(outgoing_reversal)
-                        session.add(incoming_reversal)
-
+                        not in outgoing.incurred_transactions
+                    ):
                         typer.echo(
-                            f"✅ Balance reversal created: {outgoing_reversal.id} {incoming_reversal.id}"
+                            f"✅ Refund balance reversal found: {balance_reversal_transaction.id}"
                         )
+                        break
+                else:
+                    typer.echo("❌ Refund not balanced")
+                    typer.echo("👨‍🔧 Let's fix this")
+                    refund_amount = refund.amount
+                    total_amount = (
+                        payment_transaction.amount + payment_transaction.tax_amount
+                    )
 
-            await session.commit()
+                    # Refund each balance proportionally
+                    balance_refund_amount = abs(
+                        int(math.floor(outgoing.amount * refund_amount) / total_amount)
+                    )
+                    (
+                        outgoing_reversal,
+                        incoming_reversal,
+                    ) = await balance_transaction_service.create_reversal_balance(
+                        session,
+                        balance_transactions=balance_transactions_couple,
+                        amount=balance_refund_amount,
+                    )
+
+                    outgoing_reversal.created_at = refund.created_at
+                    incoming_reversal.created_at = refund.created_at
+                    session.add(outgoing_reversal)
+                    session.add(incoming_reversal)
+
+                    typer.echo(
+                        f"✅ Balance reversal created: {outgoing_reversal.id} {incoming_reversal.id}"
+                    )
+
+        await session.commit()
 
 
 if __name__ == "__main__":

@@ -42,7 +42,7 @@ class CannotLinkUnverifiedEmailError(GithubUserServiceError):
             "We cannot automatically link it to your GitHub account since "
             "this email address is not verified on GitHub. "
             "Either verify your email address on GitHub and try again "
-            "or sign in with a magic link."
+            "or sign in using your email."
         )
         super().__init__(message, 403)
 

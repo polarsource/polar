@@ -1,6 +1,7 @@
 'use client'
 
-import { ArrowOutwardOutlined, Check } from '@mui/icons-material'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import Check from '@mui/icons-material/Check'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Tabs,
@@ -9,6 +10,7 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import {
@@ -49,7 +51,7 @@ export async function POST(req: Request) {
 
   return Response.json({ text });
 }`,
-    link: 'https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/llm-strategy',
+    link: 'https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/llm-strategy',
   },
   {
     name: 'Delta Time',
@@ -81,10 +83,10 @@ export async function GET(request: Request) {
 
   return Response.json({ delta });
 }`,
-    link: 'https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/delta-time-strategy',
+    link: 'https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/delta-time-strategy',
   },
   {
-    name: 'Manual',
+    name: 'Custom Ingestion',
     description:
       'Manually ingest data from your application to bill your customers',
     bullets: [
@@ -150,7 +152,7 @@ export const Usage = () => {
                 </TabsTrigger>
               ))}
               <Link
-                href="https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
+                href="https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
                 target="_blank"
               >
                 <Button className="rounded-full" variant="ghost">
@@ -217,15 +219,16 @@ export const Usage = () => {
                   </div>
                 </div>
 
-                <div
-                  className="dark:bg-polar-800 flex flex-col justify-center bg-gray-100 p-8 text-sm md:w-1/2 md:p-16"
-                  style={{
-                    backgroundImage: 'url(/assets/landing/abstract_02.jpg)',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }}
-                >
-                  <div className="dark:bg-polar-900 rounded-lg bg-white p-4">
+                <div className="dark:bg-polar-800 relative flex flex-col justify-center bg-gray-100 p-8 text-sm md:w-1/2 md:p-16">
+                  <Image
+                    className="absolute inset-0 h-full w-full object-cover"
+                    src="/assets/landing/abstract_02.jpg"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 75vw, 640px"
+                    loading="lazy"
+                    alt=""
+                  />
+                  <div className="dark:bg-polar-900 z-[1] rounded-lg bg-white p-4">
                     <SyntaxHighlighterClient
                       lang="typescript"
                       code={strategy.code}

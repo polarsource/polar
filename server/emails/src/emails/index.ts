@@ -1,7 +1,6 @@
 import { CustomerSessionCode } from './customer_session_code'
 import { EmailUpdate } from './email_update'
 import { LoginCode } from './login_code'
-import { MagicLink } from './magic_link'
 import { NotificationAccountReviewed } from './notification_account_reviewed'
 import { NotificationAccountUnderReview } from './notification_account_under_review'
 import { NotificationCreateAccount } from './notification_create_account'
@@ -15,12 +14,13 @@ import { OrganizationInvite } from './organization_invite'
 import { PersonalAccessTokenLeaked } from './personal_access_token_leaked'
 import { SubscriptionCancellation } from './subscription_cancellation'
 import { SubscriptionConfirmation } from './subscription_confirmation'
+import { SubscriptionCycled } from './subscription_cycled'
 import { SubscriptionPastDue } from './subscription_past_due'
 import { SubscriptionRevoked } from './subscription_revoked'
 import { SubscriptionUncanceled } from './subscription_uncanceled'
+import { SubscriptionUpdated } from './subscription_updated'
 
 const TEMPLATES: Record<string, React.FC<any>> = {
-  magic_link: MagicLink,
   login_code: LoginCode,
   customer_session_code: CustomerSessionCode,
   email_update: EmailUpdate,
@@ -32,9 +32,11 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   personal_access_token_leaked: PersonalAccessTokenLeaked,
   subscription_cancellation: SubscriptionCancellation,
   subscription_confirmation: SubscriptionConfirmation,
+  subscription_cycled: SubscriptionCycled,
   subscription_past_due: SubscriptionPastDue,
   subscription_revoked: SubscriptionRevoked,
   subscription_uncanceled: SubscriptionUncanceled,
+  subscription_updated: SubscriptionUpdated,
   notification_account_under_review: NotificationAccountUnderReview,
   notification_account_reviewed: NotificationAccountReviewed,
   notification_new_sale: NotificationNewSale,

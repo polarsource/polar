@@ -8,7 +8,7 @@ from polar.models import Payment
 from polar.models.payment import PaymentStatus
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 
 from . import auth, sorting
@@ -16,7 +16,7 @@ from .schemas import Payment as PaymentSchema
 from .schemas import PaymentAdapter, PaymentID
 from .service import payment as payment_service
 
-router = APIRouter(prefix="/payments", tags=["payments", APITag.documented, APITag.mcp])
+router = APIRouter(prefix="/payments", tags=["payments", APITag.public, APITag.mcp])
 
 
 PaymentNotFound = {
@@ -48,7 +48,7 @@ async def list(
     customer_email: MultipleQueryFilter[str] | None = Query(
         None, title="CustomerEmail Filter", description="Filter by customer email."
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[PaymentSchema]:
     """List payments."""
     results, count = await payment_service.list(
@@ -80,7 +80,7 @@ async def list(
 async def get(
     id: PaymentID,
     auth_subject: auth.PaymentRead,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Payment:
     """Get a payment by ID."""
     payment = await payment_service.get(session, auth_subject, id)

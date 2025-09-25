@@ -1,12 +1,15 @@
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from authlib.integrations.sqla_oauth2 import OAuth2TokenMixin
 from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.auth.scope import Scope, scope_to_set
 from polar.kit.db.models import RecordModel
 from polar.oauth2.sub_type import SubTypeModelMixin
+
+if TYPE_CHECKING:
+    from .oauth2_client import OAuth2Client
 
 
 class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
@@ -14,6 +17,15 @@ class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
 
     client_id: Mapped[str] = mapped_column(String(52), nullable=False)
     nonce: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
+
+    @declared_attr
+    def client(cls) -> "Mapped[OAuth2Client]":
+        return relationship(
+            "OAuth2Client",
+            primaryjoin="foreign(OAuth2Token.client_id) == OAuth2Client.client_id",
+            viewonly=True,
+            lazy="raise",
+        )
 
     @property
     def expires_at(self) -> int:

@@ -11,14 +11,12 @@ import Spinner from '@/components/Shared/Spinner'
 import { useEventNames, useEvents } from '@/hooks/queries/events'
 import { useInViewport } from '@/hooks/utils'
 
-import {
-  AddOutlined,
-  ArrowDownward,
-  ArrowUpward,
-  CheckOutlined,
-  FilterList,
-  Search,
-} from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import ArrowDownward from '@mui/icons-material/ArrowDownward'
+import ArrowUpward from '@mui/icons-material/ArrowUpward'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import FilterList from '@mui/icons-material/FilterList'
+import Search from '@mui/icons-material/Search'
 import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'

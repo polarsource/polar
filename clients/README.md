@@ -40,17 +40,3 @@ pnpm generate
 
 **Adding a new API class?**
 You might need to manually add the generated model to `src/client/PolarAPI.ts` in the SDK package.
-
-### Designing with Storybook
-
-Polar uses [Storybook](https://storybook.js.org) to make it easier to work with web components and their design.
-
-To run the Storybook locally:
-
-```bash
-# from the "clients" directory
-pnpm install
-pnpm storybook
-```
-
-The storybook should start and run on [http://localhost:6006/](http://localhost:6006/).

@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.repository import (
@@ -13,6 +13,7 @@ from polar.kit.repository import (
 )
 from polar.kit.repository.base import Options
 from polar.models import Account, Organization, User, UserOrganization
+from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
 
 from .sorting import OrganizationSortProperty
@@ -82,6 +83,20 @@ class OrganizationRepository(
                 return self.model.slug
             case OrganizationSortProperty.organization_name:
                 return self.model.name
+            case OrganizationSortProperty.next_review_threshold:
+                return self.model.next_review_threshold
+            case OrganizationSortProperty.days_in_status:
+                # Calculate days since status was last updated
+                return (
+                    func.extract(
+                        "epoch",
+                        func.now()
+                        - func.coalesce(
+                            self.model.status_updated_at, self.model.modified_at
+                        ),
+                    )
+                    / 86400
+                )
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
@@ -122,3 +137,16 @@ class OrganizationRepository(
         )
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
+
+
+class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):
+    model = OrganizationReview
+
+    async def get_by_organization(
+        self, organization_id: UUID
+    ) -> OrganizationReview | None:
+        statement = self.get_base_statement().where(
+            OrganizationReview.organization_id == organization_id,
+            OrganizationReview.deleted_at.is_(None),
+        )
+        return await self.get_one_or_none(statement)

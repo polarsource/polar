@@ -1,0 +1,121 @@
+name: Deploy Environment
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Environment to deploy to (sandbox or production)"
+        required: true
+        type: string
+      docker-digest:
+        description: "Docker image digest to deploy"
+        required: true
+        type: string
+      render-service-ids:
+        description: "Comma-separated list of Render service IDs to deploy to"
+        required: true
+        type: string
+      skip-backend:
+        description: "Skip backend deployment if no backend changes"
+        required: false
+        type: boolean
+        default: false
+      skip-frontend:
+        description: "Skip frontend deployment if no frontend changes"
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      RENDER_API_TOKEN:
+        required: true
+      VERCEL_TOKEN:
+        required: true
+      VERCEL_ORG_ID:
+        required: true
+      VERCEL_PROJECT_ID:
+        required: true
+      SENTRY_AUTH_TOKEN:
+        required: true
+      SENTRY_ORG:
+        required: true
+    outputs:
+      frontend-deployment-url:
+        description: "Frontend deployment URL"
+        value: ${{ jobs.build-frontend.outputs.deployment-url }}
+
+jobs:
+  build-frontend:
+    name: "Frontend: Build"
+    if: inputs.skip-frontend != true
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    outputs:
+      deployment-url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Deploy to Vercel (Staged Production)
+        id: deploy
+        run: |
+          # Deploy as staged production build (Vercel builds remotely)
+          # --prod --skip-domain creates a production build without assigning to domain
+          DEPLOYMENT_URL=$(vercel deploy --prod --skip-domain --token=${{ secrets.VERCEL_TOKEN }})
+          echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "Staged production deployment URL: $DEPLOYMENT_URL"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  deploy-backend:
+    name: "Backend: Deploy to ${{ inputs.environment }}"
+    needs: build-frontend
+    if: always() && inputs.skip-backend != true
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Deploy Backend to Render
+        run: |
+          IFS=',' read -ra SERVICE_IDS <<< "${{ inputs.render-service-ids }}"
+          ./.github/workflows/deploy_server.sh ${{ inputs.docker-digest }} "${SERVICE_IDS[@]}"
+        env:
+          RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
+
+      - name: Sentry Release
+        uses: getsentry/action-release@v3.2.0
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+        with:
+          environment: ${{ inputs.environment }}
+          dist: ${{ inputs.docker-digest }}
+          release: ${{ github.sha }}
+          projects: server
+          working_directory: ./server
+
+  promote-frontend:
+    name: "Frontend: Promote to Production"
+    needs: [build-frontend, deploy-backend]
+    if: always() && !failure() && !cancelled() && inputs.skip-frontend != true
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Promote Frontend to Production
+        run: |
+          echo "Promoting deployment: ${{ needs.build-frontend.outputs.deployment-url }}"
+          vercel promote ${{ needs.build-frontend.outputs.deployment-url }} --token=${{ secrets.VERCEL_TOKEN }} --scope=${{ secrets.VERCEL_ORG_ID }}
+          echo "Successfully promoted to production: ${{ needs.build-frontend.outputs.deployment-url }}"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

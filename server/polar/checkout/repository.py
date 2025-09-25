@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Select, select, update
@@ -23,6 +24,9 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 
 from .sorting import CheckoutSortProperty
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm.strategy_options import _AbstractLoad
 
 
 class CheckoutRepository(
@@ -77,10 +81,14 @@ class CheckoutRepository(
 
         return statement
 
-    def get_eager_options(self) -> Options:
+    def get_eager_options(
+        self, *, product_load: "_AbstractLoad | None" = None
+    ) -> Options:
+        if product_load is None:
+            product_load = joinedload(Checkout.product)
         return (
             joinedload(Checkout.customer),
-            joinedload(Checkout.product).options(
+            product_load.options(
                 joinedload(Product.organization).joinedload(Organization.account),
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
@@ -90,6 +98,10 @@ class CheckoutRepository(
                     selectinload(Product.product_medias),
                 )
             ),
+            joinedload(Checkout.subscription),
+            joinedload(Checkout.discount),
+            joinedload(Checkout.customer),
+            joinedload(Checkout.product_price),
         )
 
     def get_sorting_clause(self, property: CheckoutSortProperty) -> SortingClause:

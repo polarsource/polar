@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from polar.account.endpoints import router as accounts_router
 from polar.auth.endpoints import router as auth_router
 from polar.benefit.endpoints import router as benefits_router
+from polar.benefit.grant.endpoints import router as benefit_grants_router
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.custom_field.endpoints import router as custom_field_router
@@ -26,7 +27,6 @@ from polar.integrations.plain.endpoints import router as plain_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
 from polar.login_code.endpoints import router as login_code_router
-from polar.magic_link.endpoints import router as magic_link_router
 from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
 from polar.notifications.endpoints import router as notifications_router
@@ -38,6 +38,7 @@ from polar.organization_access_token.endpoints import (
 )
 from polar.payment.endpoints import router as payment_router
 from polar.payout.endpoints import router as payout_router
+from polar.personal_access_token.endpoints import router as pat_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
 from polar.storefront.endpoints import router as storefront_router
@@ -58,12 +59,12 @@ router.include_router(github_repository_benefit_router)
 router.include_router(stripe_router)
 # /integrations/discord
 router.include_router(discord_router)
-# /magic-link
-router.include_router(magic_link_router)
 # /login-code
 router.include_router(login_code_router)
 # /notifications
 router.include_router(notifications_router)
+# /personal_access_tokens
+router.include_router(pat_router)
 # /accounts
 router.include_router(accounts_router)
 # /stream
@@ -80,6 +81,8 @@ router.include_router(auth_router)
 router.include_router(oauth2_router)
 # /benefits
 router.include_router(benefits_router)
+# /benefit-grants
+router.include_router(benefit_grants_router)
 # /webhooks
 router.include_router(webhook_router)
 # /products

@@ -12,7 +12,7 @@ from .service import customer_session as customer_session_service
 
 router = APIRouter(
     prefix="/customer-sessions",
-    tags=["customer-sessions", APITag.documented, APITag.featured],
+    tags=["customer-sessions", APITag.public],
 )
 
 

@@ -4,6 +4,8 @@ from uuid import UUID
 from sqlalchemy import TIMESTAMP, MetaData, Uuid, inspect
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from polar.enums import RateLimitGroup
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.utils import generate_uuid, utc_now
 
 my_metadata = MetaData(
@@ -30,11 +32,7 @@ class TimestampedModel(Model):
         TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
     )
     modified_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True),
-        onupdate=utc_now,
-        nullable=True,
-        default=None,
-        index=True,
+        TIMESTAMP(timezone=True), onupdate=utc_now, nullable=True, default=None
     )
     deleted_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
@@ -72,3 +70,13 @@ class RecordModel(TimestampedModel):
     @classmethod
     def generate_id(cls) -> UUID:
         return generate_uuid()
+
+
+class RateLimitGroupMixin:
+    __abstract__ = True
+
+    rate_limit_group: Mapped[RateLimitGroup] = mapped_column(
+        StringEnum(RateLimitGroup, length=16),
+        nullable=False,
+        default=RateLimitGroup.default,
+    )

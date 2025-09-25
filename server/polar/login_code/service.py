@@ -67,7 +67,6 @@ class LoginCodeService:
             {
                 "code": code,
                 "code_lifetime_minutes": code_lifetime_minutes,
-                "current_year": datetime.datetime.now().year,
             },
         )
 

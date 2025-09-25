@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from polar.kit.schemas import Schema
+from polar.kit.schemas import EmptyStrToNone, Schema
 from polar.models.benefit import BenefitType
 
 from ..base.schemas import (
@@ -29,7 +29,7 @@ class BenefitLicenseKeyActivationProperties(Schema):
 
 
 class BenefitLicenseKeysCreateProperties(Schema):
-    prefix: str | None = None
+    prefix: EmptyStrToNone | None = None
     expires: BenefitLicenseKeyExpirationProperties | None = None
     activations: BenefitLicenseKeyActivationCreateProperties | None = None
     limit_usage: int | None = Field(gt=0, default=None)

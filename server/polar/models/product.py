@@ -1,6 +1,6 @@
 import hashlib
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -23,6 +23,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StrEnumType
 from polar.kit.metadata import MetadataMixin
+from polar.kit.trial import TrialConfigurationMixin
 from polar.models.product_price import ProductPriceType
 
 from .product_price import ProductPrice
@@ -43,7 +44,7 @@ class ProductBillingType(StrEnum):
     recurring = "recurring"
 
 
-class Product(MetadataMixin, RecordModel):
+class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "products"
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
@@ -201,3 +202,10 @@ class Product(MetadataMixin, RecordModel):
         h.update(str(last_modified).encode("utf-8"))
         etag = h.hexdigest()
         return etag
+
+    @property
+    def email_props(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "benefits": [benefit.email_props for benefit in self.benefits],
+        }

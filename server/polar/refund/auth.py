@@ -11,7 +11,8 @@ RefundsRead = Annotated[
     Depends(
         Authenticator(
             required_scopes={
-                Scope.web_default,
+                Scope.web_read,
+                Scope.web_write,
                 Scope.refunds_read,
                 Scope.refunds_write,
             },
@@ -25,7 +26,7 @@ RefundsWrite = Annotated[
     Depends(
         Authenticator(
             required_scopes={
-                Scope.web_default,
+                Scope.web_write,
                 Scope.refunds_write,
             },
             allowed_subjects={User, Organization},

@@ -1,4 +1,4 @@
-from typing import Any, Protocol, TypeVar, cast
+from typing import Any, Protocol, cast
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
@@ -59,11 +59,9 @@ class BenefitActionRequiredError(BenefitServiceError):
     """
 
 
-BP = TypeVar("BP", bound=BenefitProperties)
-BGP = TypeVar("BGP", bound=BenefitGrantProperties)
-
-
-class BenefitServiceProtocol(Protocol[BP, BGP]):
+class BenefitServiceProtocol[BP: BenefitProperties, BGP: BenefitGrantProperties](
+    Protocol
+):
     """
     Protocol that should be implemented by each benefit type service.
 

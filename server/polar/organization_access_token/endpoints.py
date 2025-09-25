@@ -1,7 +1,7 @@
 from fastapi import Depends, Query
 from pydantic import UUID4
 
-from polar.auth.dependencies import WebUser
+from polar.auth.dependencies import WebUserRead, WebUserWrite
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -30,7 +30,7 @@ router = APIRouter(
 
 @router.get("/", response_model=ListResource[OrganizationAccessTokenSchema])
 async def list(
-    auth_subject: WebUser,
+    auth_subject: WebUserRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
@@ -57,7 +57,7 @@ async def list(
 @router.post("/", response_model=OrganizationAccessTokenCreateResponse, status_code=201)
 async def create(
     organization_access_token_create: OrganizationAccessTokenCreate,
-    auth_subject: WebUser,
+    auth_subject: WebUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationAccessTokenCreateResponse:
     organization_access_token, token = await organization_access_token_service.create(
@@ -75,7 +75,7 @@ async def create(
 async def update(
     id: UUID4,
     organization_access_token_update: OrganizationAccessTokenUpdate,
-    auth_subject: WebUser,
+    auth_subject: WebUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationAccessToken:
     organization_access_token = await organization_access_token_service.get(
@@ -92,7 +92,7 @@ async def update(
 @router.delete("/{id}", status_code=204)
 async def delete(
     id: UUID4,
-    auth_subject: WebUser,
+    auth_subject: WebUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     organization_access_token = await organization_access_token_service.get(

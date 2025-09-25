@@ -5,21 +5,31 @@ import { MeterIngestionGuide } from '@/components/Meter/MeterIngestionGuide'
 import { MeterPage } from '@/components/Meter/MeterPage'
 import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
-import { useMetersInfinite } from '@/hooks/queries/meters'
+import { useToast } from '@/components/Toast/use-toast'
+import { useMetersInfinite, useUpdateMeter } from '@/hooks/queries/meters'
 import { useInViewport } from '@/hooks/utils'
-import {
-  AddOutlined,
-  ArrowDownward,
-  ArrowUpward,
-  Search,
-} from '@mui/icons-material'
+import { apiErrorToast } from '@/utils/api/errors'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import ArrowDownward from '@mui/icons-material/ArrowDownward'
+import ArrowUpward from '@mui/icons-material/ArrowUpward'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import FilterList from '@mui/icons-material/FilterList'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({
@@ -42,6 +52,18 @@ const ClientPage = ({
   const [query, setQuery] = useQueryState('query', {
     defaultValue: '',
   })
+  const [archivedFilter, _setArchivedFilter] = useQueryState(
+    'filter',
+    parseAsStringLiteral(['all', 'active', 'archived'] as const).withDefault(
+      'active',
+    ),
+  )
+  const setArchivedFilter = (state: 'all' | 'active' | 'archived') => {
+    setSelectedMeterId('')
+    _setArchivedFilter(state)
+  }
+
+  const router = useRouter()
 
   const {
     isShown: isEditMeterModalShown,
@@ -49,11 +71,16 @@ const ClientPage = ({
     hide: hideEditMeterModal,
   } = useModal()
 
+  const { toast } = useToast()
+  const updateMeter = useUpdateMeter(selectedMeterId)
+
   const { data, hasNextPage, fetchNextPage, isLoading } = useMetersInfinite(
     organization.id,
     {
       sorting: [sorting],
       query,
+      is_archived:
+        archivedFilter === 'all' ? undefined : archivedFilter === 'archived',
     },
   )
 
@@ -80,6 +107,37 @@ const ClientPage = ({
     }
   }, [meters, selectedMeterId, setSelectedMeterId])
 
+  const handleArchiveMeter = useCallback(
+    async (meter: schemas['Meter']) => {
+      const isArchiving = !meter.archived_at
+      const { error } = await updateMeter.mutateAsync({
+        is_archived: isArchiving,
+      })
+
+      if (error) {
+        apiErrorToast(error, toast)
+        return
+      }
+
+      toast({
+        title: `Meter ${isArchiving ? 'archived' : 'unarchived'}`,
+        description: `${meter.name} has been ${
+          isArchiving ? 'archived' : 'unarchived'
+        } successfully.`,
+      })
+
+      let filterArg = ''
+      if (isArchiving) {
+        filterArg = '&filter=archived'
+      }
+
+      router.push(
+        `/dashboard/${organization.slug}/usage-billing/meters?selectedMeter=${meter.id}${filterArg}`,
+      )
+    },
+    [updateMeter, toast, organization, router],
+  )
+
   return (
     <DashboardBody
       title={
@@ -97,6 +155,12 @@ const ClientPage = ({
                   status={selectedMeter.aggregation.property}
                 />
               )}
+              {selectedMeter.archived_at && (
+                <Status
+                  className="bg-red-50 text-red-500 dark:bg-red-950 dark:text-red-500"
+                  status="Archived"
+                />
+              )}
             </div>
           </div>
         ) : (
@@ -105,12 +169,26 @@ const ClientPage = ({
       }
       header={
         selectedMeter && (
-          <Button
-            wrapperClassNames="flex items-center flex-row gap-x-2"
-            onClick={showEditMeterModal}
-          >
-            <span>Edit Meter</span>
-          </Button>
+          <div className="flex flex-row items-center gap-4">
+            <Button onClick={showEditMeterModal}>Edit Meter</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="focus:outline-none" asChild>
+                <Button className="h-10 w-10" variant="secondary">
+                  <MoreVertOutlined fontSize="inherit" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+              >
+                <DropdownMenuItem
+                  onClick={() => handleArchiveMeter(selectedMeter)}
+                >
+                  {selectedMeter.archived_at ? 'Unarchive' : 'Archive'} Meter
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )
       }
       className="h-full"
@@ -121,6 +199,44 @@ const ClientPage = ({
           <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
             <div>Meters</div>
             <div className="flex flex-row items-center gap-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" className="h-6 w-6" variant="ghost">
+                    <FilterList fontSize="small" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setArchivedFilter('all')}>
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        archivedFilter !== 'all' && 'invisible',
+                      )}
+                    />
+                    <span>All</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setArchivedFilter('active')}>
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        archivedFilter !== 'active' && 'invisible',
+                      )}
+                    />
+                    <span>Active</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setArchivedFilter('archived')}
+                  >
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        archivedFilter !== 'archived' && 'invisible',
+                      )}
+                    />
+                    <span>Archived</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 variant="ghost"
                 size="icon"
@@ -172,7 +288,9 @@ const ClientPage = ({
                 )}
               >
                 <div className="flex min-w-0 flex-col gap-y-1 px-6 py-2">
-                  <div className="w-full truncate text-sm">{meter.name}</div>
+                  <div className="flex items-center gap-x-2">
+                    <div className="w-full truncate text-sm">{meter.name}</div>
+                  </div>
                   <div className="w-full truncate text-xs capitalize text-gray-500 dark:text-gray-500">
                     {meter.aggregation.func}
                   </div>
@@ -199,7 +317,7 @@ const ClientPage = ({
           isEditMeterModalShown={isEditMeterModalShown}
           hideEditMeterModal={hideEditMeterModal}
         />
-      ) : !isLoading ? (
+      ) : !isLoading && !selectedMeterId ? (
         <MeterIngestionGuide />
       ) : (
         <div className="flex h-full items-center justify-center">

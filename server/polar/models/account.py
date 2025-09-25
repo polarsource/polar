@@ -1,4 +1,3 @@
-import math
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypeAlias
 from uuid import UUID
@@ -12,6 +11,7 @@ from polar.enums import AccountType
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
+from polar.kit.math import polar_round
 
 if TYPE_CHECKING:
     from .organization import Organization
@@ -157,25 +157,4 @@ class Account(RecordModel):
         basis_points, fixed = self.platform_fee
         fee_in_cents = (amount_in_cents * (basis_points / 10_000)) + fixed
         # Apply same logic as Stripe fee rounding
-        return (
-            math.ceil(fee_in_cents)
-            if fee_in_cents - int(fee_in_cents) >= 0.5
-            else math.floor(fee_in_cents)
-        )
-
-    def is_account_ready(self) -> bool:
-        """Check if account is ready to accept payments
-
-        We only check is_details_submitted because:
-        - is_charges_enabled and is_payouts_enabled can change during the account lifecycle
-        - We want to activate customer payments once organizations have submitted all required data
-        - is_details_submitted indicates that the organization has completed the onboarding process
-          and provided all necessary information, which is sufficient for accepting payments
-        - The actual charge/payout enablement status will be managed by Stripe based on their
-          verification processes, but we don't want to block payments while waiting for those
-        """
-        # Details must be submitted
-        if not self.is_details_submitted:
-            return False
-
-        return True
+        return polar_round(fee_in_cents)

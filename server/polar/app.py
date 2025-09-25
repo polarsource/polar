@@ -8,6 +8,7 @@ from fastapi.routing import APIRoute
 
 from polar import worker  # noqa
 from polar.api import router
+from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.checkout import ip_geolocation
 from polar.config import settings
 from polar.exception_handlers import add_exception_handlers
@@ -38,12 +39,19 @@ from polar.middlewares import (
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
 from polar.openapi import OPENAPI_PARAMETERS, APITag, set_openapi_generator
-from polar.postgres import create_async_engine, create_sync_engine
+from polar.postgres import (
+    AsyncSessionMiddleware,
+    create_async_engine,
+    create_async_read_engine,
+    create_sync_engine,
+)
 from polar.posthog import configure_posthog
 from polar.redis import Redis, create_redis
 from polar.sentry import configure_sentry
 from polar.web_backoffice import app as backoffice_app
 from polar.webhook.webhooks import document_webhooks
+
+from . import rate_limit
 
 log: Logger = structlog.get_logger()
 
@@ -87,6 +95,8 @@ def generate_unique_openapi_id(route: APIRoute) -> str:
 class State(TypedDict):
     async_engine: AsyncEngine
     async_sessionmaker: AsyncSessionMaker
+    async_read_engine: AsyncEngine
+    async_read_sessionmaker: AsyncSessionMaker
     sync_engine: Engine
     sync_sessionmaker: SyncSessionMaker
 
@@ -98,9 +108,16 @@ class State(TypedDict):
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     log.info("Starting Polar API")
 
-    async_engine = create_async_engine("app")
-    async_sessionmaker = create_async_sessionmaker(async_engine)
+    async_engine = async_read_engine = create_async_engine("app")
+    async_sessionmaker = async_read_sessionmaker = create_async_sessionmaker(
+        async_engine
+    )
     instrument_sqlalchemy(async_engine.sync_engine)
+
+    if settings.is_read_replica_configured():
+        async_read_engine = create_async_read_engine("app")
+        async_read_sessionmaker = create_async_sessionmaker(async_read_engine)
+        instrument_sqlalchemy(async_read_engine.sync_engine)
 
     sync_engine = create_sync_engine("app")
     sync_sessionmaker = create_sync_sessionmaker(sync_engine)
@@ -122,6 +139,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     yield {
         "async_engine": async_engine,
         "async_sessionmaker": async_sessionmaker,
+        "async_read_engine": async_read_engine,
+        "async_read_sessionmaker": async_read_sessionmaker,
         "sync_engine": sync_engine,
         "sync_sessionmaker": sync_sessionmaker,
         "redis": redis,
@@ -130,6 +149,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
 
     await redis.close(True)
     await async_engine.dispose()
+    if async_read_engine is not async_engine:
+        await async_read_engine.dispose()
     sync_engine.dispose()
     if ip_geolocation_client is not None:
         ip_geolocation_client.close()
@@ -143,13 +164,18 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         **OPENAPI_PARAMETERS,
     )
-    configure_cors(app)
 
-    app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
-    app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
-    app.add_middleware(LogCorrelationIdMiddleware)
     if settings.is_sandbox():
         app.add_middleware(SandboxResponseHeaderMiddleware)
+    if not settings.is_testing():
+        app.add_middleware(rate_limit.get_middleware)
+        app.add_middleware(AuthSubjectMiddleware)
+        app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
+        app.add_middleware(AsyncSessionMiddleware)
+    app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
+    app.add_middleware(LogCorrelationIdMiddleware)
+
+    configure_cors(app)
 
     add_exception_handlers(app)
     app.add_exception_handler(OAuth2Error, oauth2_error_exception_handler)  # pyright: ignore

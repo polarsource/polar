@@ -1,4 +1,4 @@
-import { useAccount, useOrganizationAccount } from '@/hooks/queries'
+import { useOrganizationAccount } from '@/hooks/queries'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { schemas } from '@polar-sh/client'
@@ -9,10 +9,12 @@ import Icon from '../Icons/Icon'
 
 const GenericAccountBanner: React.FC<{
   account: schemas['Account'] | undefined
+  organization: schemas['Organization'] | undefined
   setupLink: string
-}> = ({ account, setupLink }) => {
-  const isActive = account?.status === 'active'
-  const isUnderReview = account?.status === 'under_review'
+}> = ({ account, organization, setupLink }) => {
+  const isActive =
+    organization?.status === 'active' && account?.stripe_id !== null
+  const isUnderReview = organization?.status === 'under_review'
 
   if (!account) {
     return (
@@ -82,9 +84,11 @@ const GenericAccountBanner: React.FC<{
           color="muted"
           right={
             <>
-              <Link href={setupLink}>
-                <Button size="sm">Manage</Button>
-              </Link>
+              {accountType !== 'manual' && (
+                <Link href={setupLink}>
+                  <Button size="sm">Manage</Button>
+                </Link>
+              )}
             </>
           }
         >
@@ -94,6 +98,8 @@ const GenericAccountBanner: React.FC<{
               'Payouts will be made to the connected Stripe account'}
             {accountType === 'open_collective' &&
               'Payouts will be made in bulk once per month to the connected Open Collective account'}
+            {accountType === 'manual' &&
+              'Payouts will be made manually via bank transfers. Reach out to support@polar.sh to follow-up.'}
           </span>
         </Banner>
       </>
@@ -103,25 +109,10 @@ const GenericAccountBanner: React.FC<{
   return null
 }
 
-const UserAccountBanner: React.FC<{
-  user: schemas['UserRead']
-}> = ({ user }) => {
-  const { data: account, isLoading: personalAccountIsLoading } = useAccount(
-    user?.account_id,
-  )
-  const setupLink = '/finance/account'
-
-  if (personalAccountIsLoading) {
-    return null
-  }
-
-  return <GenericAccountBanner account={account} setupLink={setupLink} />
-}
-
 const OrganizationAccountBanner: React.FC<{
   organization: schemas['Organization']
 }> = ({ organization }) => {
-  const { data: account, isLoading: organizationAccountIsLoading } =
+  const { data: organizationAccount, isLoading: organizationAccountIsLoading, error: accountError } =
     useOrganizationAccount(organization?.id)
   const setupLink = `/dashboard/${organization.slug}/finance/account`
 
@@ -129,24 +120,36 @@ const OrganizationAccountBanner: React.FC<{
     return null
   }
 
-  return <GenericAccountBanner account={account} setupLink={setupLink} />
+  const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
+
+  if (isNotAdmin) {
+    return (
+      <Banner color="default">
+        <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
+        <span className="text-sm">
+          You are not the admin of the account. Only the admin can manage payout settings.
+        </span>
+      </Banner>
+    )
+  }
+
+  return (
+    <GenericAccountBanner
+      account={organizationAccount}
+      organization={organization}
+      setupLink={setupLink}
+    />
+  )
 }
 
 interface AccountBannerProps {
-  organization?: schemas['Organization']
-  user?: schemas['UserRead']
+  organization: schemas['Organization']
 }
 
-const AccountBanner: React.FC<AccountBannerProps> = ({
-  organization,
-  user,
-}) => {
+const AccountBanner: React.FC<AccountBannerProps> = ({ organization }) => {
   return (
     <>
-      {organization && (
-        <OrganizationAccountBanner organization={organization} />
-      )}
-      {user && <UserAccountBanner user={user} />}
+      <OrganizationAccountBanner organization={organization} />
     </>
   )
 }

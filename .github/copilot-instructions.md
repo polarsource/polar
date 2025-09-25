@@ -30,13 +30,6 @@ Polar is a payment infrastructure platform with a monorepo structure.
 
 The primary setup and workflow instructions are in `DEVELOPMENT.md`.
 
-### Setup
-
-1.  **Environment Variables**: Run `./dev/setup-environment` to create the necessary `.env` files for both the server and the web client.
-2.  **Dependencies**:
-    - Backend (in `server/`): Use `uv sync` to install Python dependencies.
-    - Frontend (in `clients/`): Use `pnpm install` to install JavaScript dependencies.
-
 ### Running the Application
 
 - **Backend**: In the `server/` directory, run the following commands in separate terminals:
@@ -54,6 +47,26 @@ A migration script can be generated automatically from the models changes using 
 uv run alembic revision --autogenerate -m "<description>"
 ```
 
+If you need to create an empty migration script, which can be useful if we need to perform data migrations, use:
+
+```bash
+uv run alembic revision -m "<description>"
+```
+
+### Linting and testing
+
+The backend requires to be linted and type-checked. To do so, run:
+
+```bash
+uv run task lint && uv run task lint_types
+```
+
+Backend tests are located in the `tests/` directory. It uses `pytest` for testing. To run the tests, use:
+
+```bash
+uv run task test
+```
+
 ## Backend Conventions
 
 - **Modular Structure**: The code is organized in a modular way, with each module in its own folder under `server/polar/`. A typical module contains:
@@ -65,12 +78,15 @@ uv run alembic revision --autogenerate -m "<description>"
 - **API Client Generation**: The frontend's TypeScript client is generated from the backend's OpenAPI schema. After making changes to the API, you may need to run `pnpm run generate` in `clients/packages/client` to update the client.
 
 ### Import Organization
+
 - **imports at module top**: Import statements like `from sqlalchemy import update, select` should be at the top of the file, not inside methods or functions.
 - **Follow modular structure**: Import models from `polar.models`, services from their respective modules, following the established patterns.
 - **Dependency injection**: Use FastAPI's dependency injection system for repositories and services.
 
 ### Repository Layer Standards
+
 - **Accept domain objects over IDs**: Repository methods should prefer accepting domain objects (e.g., `Order`) instead of just UUIDs when the calling code already has the object.
+
     ```python
     # Preferred
     async def release_payment_lock(self, order: Order, *, flush: bool = False) -> Order:
@@ -80,11 +96,13 @@ uv run alembic revision --autogenerate -m "<description>"
     async def release_payment_lock(self, order_id: UUID) -> None:
         # ...
     ```
+
 - **Return updated objects**: Repository methods should return updated domain objects to provide the caller with the latest state.
 - **Use flush parameters**: Include `flush: bool = False` parameters for controlling transaction boundaries. It should always be a keyword argument, after `*` to avoid confusion.
 - **Inherit from RepositoryBase**: Follow the established repository inheritance patterns.
 
 ### Service Layer Standards
+
 - **Proper exception handling**: Use appropriate HTTP status codes in custom exceptions:
     - `409` for conflicts (e.g., `PaymentAlreadyInProgress`)
     - `422` for validation errors
@@ -101,16 +119,19 @@ uv run alembic revision --autogenerate -m "<description>"
 - **Session management**: Use dependency injection for database sessions, don't create sessions manually.
 
 ### Exception Handling Standards
+
 - **Inherit from appropriate base classes**: Custom exceptions should inherit from domain-specific error classes (e.g., `OrderError`).
 - **Include HTTP status codes**: Pass status codes as the second parameter to the parent constructor for known errors.
 - **Contextual information**: Store relevant domain objects as attributes for error handling and logging.
 
 ### SQLAlchemy & Database Standards
+
 - **Use ORM patterns consistently**: Prefer SQLAlchemy ORM methods over raw SQL.
 - **Session management**: Use `AsyncSession` with proper dependency injection.
 - **Repository patterns**: Encapsulate database logic in repository classes inheriting from `RepositoryBase`.
 
 ### Testing Standards
+
 - **Avoid redundant fixture setup**: Don't manually set data that fixtures already provide (e.g., `customer.stripe_customer_id` when the `customer` fixture includes it).
 - **Descriptive test names**: Use method names that clearly describe the behavior being tested.
 - **Encapsulate test logic**: Use class based tests. Usually we have one class per method that we want to test, and each test case is a different scenario for that method.
@@ -118,7 +139,6 @@ uv run alembic revision --autogenerate -m "<description>"
 - **Proper mocking**: Mock external services (Stripe, etc.) using the established patterns with `MagicMock`.
 - **Use existing fixtures**: Leverage `SaveFixture`, `AsyncSession`, and other established test utilities.
 - **Test structure**: Follow the existing patterns with `pytest.mark.asyncio` and class-based test organization.
-
 
 ## Frontend Conventions
 
@@ -169,3 +189,13 @@ The backend uses a custom authentication system built on FastAPI's dependency in
 
 - **Stripe**: Handles payments and subscriptions. Requires API keys and a webhook secret in `server/.env`.
 - **GitHub**: Used for authentication and repository-related features. Requires a GitHub App to be configured for local development.
+
+## Documentation
+
+The documentation is located in the `docs/` directory and is generated by Mintlify. It serves as a reference for developers and users.
+
+From the `docs/` directory, it can be built and served locally with:
+
+```bash
+pnpm dev
+```

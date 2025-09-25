@@ -1,7 +1,6 @@
 import { useMetrics } from '@/hooks/queries/metrics'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
-import { AddOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -81,10 +80,10 @@ export const CustomerContextView = ({
           <Avatar
             avatar_url={customer.avatar_url}
             name={customer.name || customer.email}
-            className="h-16 w-16"
+            className="h-12 w-12"
           />
-          <div className="flex flex-col gap-1">
-            <p className="text-lg">
+          <div className="flex flex-col">
+            <p>
               {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
               {customer.deleted_at && (
                 <Pill className="ml-2 text-xs" color="red">
@@ -92,7 +91,7 @@ export const CustomerContextView = ({
                 </Pill>
               )}
             </p>
-            <div className="dark:text-polar-500 flex flex-row items-center gap-1 font-mono text-sm text-gray-500">
+            <div className="dark:text-polar-500 flex flex-row items-center gap-1 text-sm text-gray-500">
               {customer.email}
             </div>
           </div>
@@ -129,6 +128,7 @@ export const CustomerContextView = ({
               <Button
                 className="w-full"
                 size="lg"
+                variant="secondary"
                 loading={customerSessionLoading}
                 onClick={createCustomerSession}
               >
@@ -165,28 +165,28 @@ export const CustomerContextView = ({
       <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:gap-0 md:shadow-sm lg:rounded-2xl">
         {!customer.deleted_at && (
           <DetailRow
-            labelClassName="flex-none basis-24"
+            labelClassName="flex-none md:basis-24"
             label="ID"
             value={customer.id}
           />
         )}
         <DetailRow
-          labelClassName="flex-none basis-24"
+          labelClassName="flex-none md:basis-24"
           label="Email"
           value={customer.email}
         />
         <DetailRow
-          labelClassName="flex-none basis-24"
+          labelClassName="flex-none md:basis-24"
           label="Name"
           value={customer.name}
         />
         <DetailRow
-          labelClassName="flex-none basis-24"
+          labelClassName="flex-none md:basis-24"
           label="Tax ID"
           value={customer.tax_id}
         />
         <DetailRow
-          labelClassName="flex-none basis-24"
+          labelClassName="flex-none md:basis-24"
           label="Created At"
           value={<FormattedDateTime datetime={customer.created_at} />}
         />
@@ -195,44 +195,41 @@ export const CustomerContextView = ({
         <h4 className="text-lg">Billing Address</h4>
         <div className="flex flex-col gap-4 md:gap-0">
           <DetailRow
-            labelClassName="flex-none basis-24"
+            labelClassName="flex-none md:basis-24"
             label="Line 1"
             value={customer.billing_address?.line1}
           />
           <DetailRow
-            labelClassName="flex-none basis-24"
+            labelClassName="flex-none md:basis-24"
             label="Line 2"
             value={customer.billing_address?.line2}
           />
           <DetailRow
-            labelClassName="flex-none basis-24"
+            labelClassName="flex-none md:basis-24"
             label="City"
             value={customer.billing_address?.city}
           />
           <DetailRow
-            labelClassName="flex-none basis-24"
+            labelClassName="flex-none md:basis-24"
             label="State"
             value={customer.billing_address?.state}
           />
           <DetailRow
-            labelClassName="flex-none basis-24"
+            labelClassName="flex-none md:basis-24"
             label="Postal Code"
             value={customer.billing_address?.postal_code}
           />
           <DetailRow
-            labelClassName="flex-none basis-24"
+            labelClassName="flex-none md:basis-24"
             label="Country"
             value={customer.billing_address?.country}
           />
         </div>
       </ShadowBox>
-      {!customer.deleted_at && (
+      {!customer.deleted_at && Object.keys(customer.metadata).length > 0 && (
         <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-sm lg:rounded-2xl">
           <div className="flex flex-row items-center justify-between gap-2">
             <h3 className="text-lg">Metadata</h3>
-            <Button className="h-8 w-8" variant="secondary" onClick={showModal}>
-              <AddOutlined />
-            </Button>
           </div>
           {Object.entries(customer.metadata).map(([key, value]) => (
             <DetailRow key={key} label={key} value={value} />

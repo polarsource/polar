@@ -1,3 +1,5 @@
+import contextlib
+from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 from uuid import UUID
 
@@ -29,10 +31,16 @@ class CustomerRepository(
             customer_id = Customer.__table__.c.id.default.arg(None)
             customer.id = customer_id
 
+        return customer
+
+    @contextlib.asynccontextmanager
+    async def create_context(
+        self, object: Customer, *, flush: bool = False
+    ) -> AsyncGenerator[Customer]:
+        customer = await self.create(object, flush=flush)
+        yield customer
         assert customer.id is not None, "Customer.id is None"
         enqueue_job("customer.webhook", WebhookEventType.customer_created, customer.id)
-
-        return customer
 
     async def update(
         self,
@@ -92,6 +100,21 @@ class CustomerRepository(
             Customer.organization_id == organization_id,
         )
         return await self.get_one_or_none(statement)
+
+    async def stream_by_organization(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: Sequence[UUID] | None,
+    ) -> AsyncGenerator[Customer]:
+        statement = self.get_readable_statement(auth_subject)
+
+        if organization_id is not None:
+            statement = statement.where(
+                Customer.organization_id.in_(organization_id),
+            )
+
+        async for customer in self.stream(statement):
+            yield customer
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

@@ -5,6 +5,9 @@ name: "Client: Next.JS Bundle Analyzis 🧐"
 
 on:
   pull_request:
+    paths:
+      - "clients/**"
+      - ".github/workflows/nextjs_bundle_analysis.yml"
   push:
     branches:
       - main # change this if your default branch is named differently
@@ -29,14 +32,14 @@ jobs:
       VERCEL_ENV: "testing"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10.5.2
+          version: 10.13.1
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version-file: clients/.node-version
           cache: "pnpm"

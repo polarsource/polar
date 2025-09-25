@@ -1,0 +1,36 @@
+name: Disable Maintenance Mode
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  disable_maintenance:
+    name: Disable Maintenance Mode
+    runs-on: ubuntu-latest
+    environment: maintenance
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Disable Frontend Maintenance Rule
+        uses: ./.github/actions/maintenance-mode
+        with:
+          enable: "false"
+          cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          cloudflare_ruleset_id: ${{ secrets.CLOUDFLARE_RULESET_ID }}
+          rule_id: ${{ secrets.FRONTEND_MAINTENANCE_RULE_ID }}
+          rule_name: "Frontend"
+
+      - name: Disable API Maintenance Rule
+        uses: ./.github/actions/maintenance-mode
+        with:
+          enable: "false"
+          cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          cloudflare_ruleset_id: ${{ secrets.CLOUDFLARE_RULESET_ID }}
+          rule_id: ${{ secrets.API_MAINTENANCE_RULE_ID }}
+          rule_name: "API"

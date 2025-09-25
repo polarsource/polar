@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "palm",
+  "theme": "maple",
   "appearance": {
     "default": "system"
   },
@@ -18,9 +18,9 @@
   },
   "favicon": "./logo/favicon.png",
   "navigation": {
-    "anchors": [
+    "tabs": [
       {
-        "anchor": "Docs",
+        "tab": "Docs",
         "icon": "compass",
         "groups": [
           {
@@ -71,6 +71,7 @@
                   "features/checkout/session"
                 ]
               },
+              "features/trials",
               "features/custom-fields",
               "features/discounts",
               "features/orders",
@@ -168,12 +169,12 @@
         ]
       },
       {
-        "anchor": "API Reference",
+        "tab": "API Reference",
         "icon": "rectangle-terminal",
         "groups": [
           {
             "group": "General",
-            "pages": ["api-reference/rate-limits"]
+            "pages": ["api-reference/introduction"]
           },
           {
             "group": "Core API",
@@ -313,7 +314,10 @@
                   "api-reference/license-keys/get",
                   "api-reference/license-keys/list",
                   "api-reference/license-keys/update",
-                  "api-reference/license-keys/get-activation"
+                  "api-reference/license-keys/get-activation",
+                  "api-reference/license-keys/validate",
+                  "api-reference/license-keys/activate",
+                  "api-reference/license-keys/deactivate"
                 ]
               },
               {
@@ -504,24 +508,25 @@
         ]
       },
       {
-        "anchor": "Changelog",
-        "icon": "signal-stream",
-        "groups": [
-          {
-            "group": "Changelog",
-            "pages": ["changelog/recent", "changelog/api"]
-          }
+        "tab": "Guides",
+        "icon": "book-open",
+        "pages": [
+          "guides/introduction",
+          "guides/create-variants",
+          "guides/disable-subscription-changes-in-customer-portal",
+          "guides/allow-multiple-subscriptions-per-customer",
+          "guides/subscription-downgrades"
         ]
       },
       {
-        "anchor": "Support",
+        "tab": "Changelog",
+        "icon": "signal-stream",
+        "pages": ["changelog/recent", "changelog/api"]
+      },
+      {
+        "tab": "Support",
         "icon": "square-question",
-        "groups": [
-          {
-            "group": "Contact Us",
-            "pages": ["support"]
-          }
-        ]
+        "pages": ["support"]
       }
     ]
   },
@@ -533,25 +538,17 @@
   "navbar": {
     "links": [
       {
-        "label": "llms.txt",
-        "href": "https://docs.polar.sh/llms.txt"
-      },
-      {
         "label": "llms-full.txt",
-        "href": "https://docs.polar.sh/llms-full.txt"
+        "href": "https://polar.sh/docs/llms-full.txt"
       },
       {
-        "label": "Discord",
-        "href": "https://dub.sh/polar-discord"
-      },
-      {
-        "label": "GitHub",
-        "href": "https://github.com/polarsource/polar"
+        "label": "Contact support",
+        "href": "https://polar.sh/docs/support"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Get Started",
+      "label": "Dashboard",
       "href": "https://polar.sh"
     }
   },

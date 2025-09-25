@@ -4,7 +4,7 @@ import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from '@/ho
 import { useUserSSE } from '@/hooks/sse'
 import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
-import { RefreshOutlined } from '@mui/icons-material'
+import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
 import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -62,11 +62,9 @@ export const GitHubRepositoryBenefitForm = ({
 
   useEffect(() => {
     if (repositoriesError) {
-      repositoriesError.response.json().then((data: any) => {
-        setError('properties.repository_owner', {
-          message: data['detail'],
-          type: data['type'],
-        })
+      setError('properties.repository_owner', {
+        message: repositoriesError.error['detail'],
+        type: repositoriesError.error['type'],
       })
     } else {
       clearErrors('properties.repository_owner')
@@ -121,14 +119,14 @@ export const GitHubRepositoryBenefitForm = ({
   >()
 
   const onRepositoryChange = useCallback(
-    (key: string) => {
+    (key: string, onChange: (value: string) => void) => {
       const repo = repos.find((r) => r.key == key)
       if (!repo) {
         return
       }
       setSelectedRepository(repo)
       setValue('properties.repository_owner', repo.repository_owner)
-      setValue('properties.repository_name', repo.repository_name)
+      onChange(repo.repository_name)
     },
     [repos, setValue],
   )
@@ -170,7 +168,9 @@ export const GitHubRepositoryBenefitForm = ({
       const repo = repos.find((r) => r.key == key)
       if (repo) {
         didSetOnLoad.current = true
-        onRepositoryChange(key)
+        onRepositoryChange(key, (v: string) =>
+          setValue('properties.repository_name', v),
+        )
       }
     }
   }, [
@@ -179,6 +179,7 @@ export const GitHubRepositoryBenefitForm = ({
     defaultValues,
     onRepositoryChange,
     repos,
+    setValue,
   ])
 
   const authorizeURL = useMemo(() => {
@@ -231,62 +232,75 @@ export const GitHubRepositoryBenefitForm = ({
         </FormDescription>
       </>
 
-      <FormItem>
-        <div className="flex flex-row items-center justify-between">
-          <FormLabel>Repository</FormLabel>
-        </div>
-        <div className="flex items-center gap-2">
-          {(update && selectedRepository?.key === undefined) ||
-          isFetchingRepositories ? (
-            <FormControl>
-              <Select disabled={true}>
-                <SelectTrigger>
-                  <SelectValue placeholder={'Loading repositories'} />
-                </SelectTrigger>
-                <SelectContent></SelectContent>
-              </Select>
-            </FormControl>
-          ) : (
-            <FormControl>
-              <Select
-                onValueChange={onRepositoryChange}
-                defaultValue={selectedRepository?.key}
-                disabled={repos.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      update && defaultValues && defaultValues.properties
-                        ? `${defaultValues?.properties?.repository_owner}/${defaultValues?.properties?.repository_name}`
-                        : isFetchingRepositories
-                          ? 'Loading repositories'
-                          : 'Select a GitHub repository'
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {repos.map((r) => (
-                    <SelectItem key={r.key} value={r.key}>
-                      {r.repository_owner}/{r.repository_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormControl>
-          )}
-          <Button
-            variant="link"
-            type="button"
-            className="px-0 disabled:animate-spin"
-            onClick={() => refetchRepositories()}
-            disabled={isFetchingRepositories}
-          >
-            <RefreshOutlined />
-          </Button>
-        </div>
+      <FormField
+        control={control}
+        name="properties.repository_name"
+        rules={{
+          required: 'This field is required',
+        }}
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Repository</FormLabel>
+              </div>
+              <div className="flex items-center gap-2">
+                {(update && selectedRepository?.key === undefined) ||
+                isFetchingRepositories ? (
+                  <FormControl>
+                    <Select disabled={true}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Loading repositories" />
+                      </SelectTrigger>
+                      <SelectContent></SelectContent>
+                    </Select>
+                  </FormControl>
+                ) : (
+                  <FormControl>
+                    <Select
+                      onValueChange={(key) =>
+                        onRepositoryChange(key, field.onChange)
+                      }
+                      defaultValue={selectedRepository?.key}
+                      disabled={repos.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={
+                            update && defaultValues && defaultValues.properties
+                              ? `${defaultValues?.properties?.repository_owner}/${defaultValues?.properties?.repository_name}`
+                              : isFetchingRepositories
+                                ? 'Loading repositories'
+                                : 'Select a GitHub repository'
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {repos.map((r) => (
+                          <SelectItem key={r.key} value={r.key}>
+                            {r.repository_owner}/{r.repository_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                )}
+                <Button
+                  variant="link"
+                  type="button"
+                  className="px-0 disabled:animate-spin"
+                  onClick={() => refetchRepositories()}
+                  disabled={isFetchingRepositories}
+                >
+                  <RefreshOutlined />
+                </Button>
+              </div>
 
-        <FormMessage />
-      </FormItem>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
 
       <FormDescription>
         Not seeing your repository?{' '}

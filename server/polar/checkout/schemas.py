@@ -10,6 +10,7 @@ from pydantic import (
     HttpUrl,
     IPvAnyAddress,
     Tag,
+    computed_field,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -25,7 +26,7 @@ from polar.discount.schemas import (
     DiscountRepeatDurationBase,
 )
 from polar.enums import PaymentProcessor
-from polar.kit.address import Address
+from polar.kit.address import Address, AddressInput
 from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
     METADATA_DESCRIPTION,
@@ -39,6 +40,11 @@ from polar.kit.schemas import (
     Schema,
     SetSchemaReference,
     TimestampedSchema,
+)
+from polar.kit.trial import (
+    TrialConfigurationInputMixin,
+    TrialConfigurationOutputMixin,
+    TrialInterval,
 )
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
@@ -84,9 +90,11 @@ CustomerIPAddress = Annotated[
         description="IP address of the customer. Used to detect tax location.",
     ),
 ]
+CustomerBillingAddressInput = Annotated[
+    AddressInput, Field(description="Billing address of the customer.")
+]
 CustomerBillingAddress = Annotated[
-    Address,
-    Field(description="Billing address of the customer."),
+    Address, Field(description="Billing address of the customer.")
 ]
 SuccessURL = Annotated[
     HttpUrl | None,
@@ -140,7 +148,9 @@ _customer_metadata_description = METADATA_DESCRIPTION.format(
 )
 
 
-class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
+class CheckoutCreateBase(
+    CustomFieldDataInputMixin, MetadataInputMixin, TrialConfigurationInputMixin, Schema
+):
     """
     Create a new checkout session.
 
@@ -178,7 +188,7 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
-    customer_billing_address: CustomerBillingAddress | None = None
+    customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_metadata: MetadataField = Field(
         default_factory=dict, description=_customer_metadata_description
@@ -290,11 +300,13 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
-    customer_billing_address: CustomerBillingAddress | None = None
+    customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
 
-class CheckoutUpdate(MetadataInputMixin, CheckoutUpdateBase):
+class CheckoutUpdate(
+    MetadataInputMixin, TrialConfigurationInputMixin, CheckoutUpdateBase
+):
     """Update an existing checkout session using an access token."""
 
     discount_id: UUID4 | None = Field(
@@ -340,9 +352,19 @@ class CheckoutConfirmStripe(CheckoutConfirmBase):
 CheckoutConfirm = CheckoutConfirmStripe
 
 
-class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
+class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     payment_processor: PaymentProcessor = Field(description="Payment processor used.")
-    status: CheckoutStatus = Field(description="Status of the checkout session.")
+    status: CheckoutStatus = Field(
+        description="""
+        Status of the checkout session.
+
+        - Open: the checkout session was opened.
+        - Expired: the checkout session was expired and is no more accessible.
+        - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
+        - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
+        - Succeeded: the payment on the checkout was performed successfully.
+        """
+    )
     client_secret: str = Field(
         description=(
             "Client secret used to update and complete "
@@ -378,6 +400,25 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     )
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
     currency: str = Field(description="Currency code of the checkout session.")
+
+    active_trial_interval: TrialInterval | None = Field(
+        description=(
+            "Interval unit of the trial period, if any. "
+            "This value is either set from the checkout, if `trial_interval` is set, "
+            "or from the selected product."
+        )
+    )
+    active_trial_interval_count: int | None = Field(
+        description=(
+            "Number of interval units of the trial period, if any. "
+            "This value is either set from the checkout, if `trial_interval_count` "
+            "is set, or from the selected product."
+        )
+    )
+    trial_end: datetime | None = Field(
+        description="End date and time of the trial period, if any."
+    )
+
     product_id: UUID4 = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
     discount_id: UUID4 | None = Field(
@@ -428,10 +469,6 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
 
     payment_processor_metadata: dict[str, str]
 
-    subtotal_amount: SkipJsonSchema[int | None] = Field(
-        deprecated="Use `net_amount`.", validation_alias="net_amount"
-    )
-
     customer_billing_address_fields: SkipJsonSchema[
         CheckoutCustomerBillingAddressFields
     ] = Field(
@@ -443,6 +480,10 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
             "should be disabled, optional or required in the checkout form."
         )
     )
+
+    @computed_field(deprecated="Use `net_amount`.")
+    def subtotal_amount(self) -> SkipJsonSchema[int | None]:
+        return self.net_amount
 
 
 class CheckoutProduct(ProductBase):
@@ -516,7 +557,7 @@ CheckoutDiscount = Annotated[
 ]
 
 
-class Checkout(MetadataOutputMixin, CheckoutBase):
+class Checkout(MetadataOutputMixin, TrialConfigurationOutputMixin, CheckoutBase):
     """Checkout session data retrieved using an access token."""
 
     external_customer_id: str | None = Field(

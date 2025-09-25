@@ -4,25 +4,23 @@ import string
 import typing
 from collections.abc import Callable, Generator, Sequence
 from datetime import datetime
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 from inspect import isgenerator
 from operator import attrgetter
-from typing import Any, Generic, Protocol, TypeVar
+from typing import Any, Protocol
 
 from fastapi import Request
 from fastapi.datastructures import URL
 from tagflow import attr, classes, tag, text
 
 from polar.kit.pagination import PaginationParams
-from polar.kit.sorting import PE, Sorting
+from polar.kit.sorting import Sorting
 
 from .. import formatters
 from ._clipboard_button import clipboard_button
 
-M = TypeVar("M", contravariant=True)
 
-
-class DatatableColumn(Generic[M]):
+class DatatableColumn[M]:
     """Base class for datatable columns.
 
     Provides the foundation for all datatable column types. Subclasses must
@@ -62,7 +60,7 @@ class DatatableColumn(Generic[M]):
         return f"{self.__class__.__name__}(label={self.label!r})"
 
 
-class DatatableSortingColumn(Generic[M, PE], DatatableColumn[M]):
+class DatatableSortingColumn[M, PE: StrEnum](DatatableColumn[M]):
     """A datatable column that supports sorting functionality.
 
     Extends DatatableColumn to add sorting capabilities. This is detected by
@@ -86,7 +84,7 @@ class DatatableSortingColumn(Generic[M, PE], DatatableColumn[M]):
         super().__init__(label)
 
 
-class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
+class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
     """A datatable column that displays an attribute value from the model.
 
     This column extracts and displays a specific attribute from each model item.
@@ -246,7 +244,7 @@ class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
         return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r})"
 
 
-class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
+class DatatableDateTimeColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """A datatable column that displays datetime attributes with proper formatting.
 
     Extends DatatableAttrColumn to format datetime values using the backoffice
@@ -276,7 +274,7 @@ class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
         return formatters.datetime(value)
 
 
-class DatatableCurrencyColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
+class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """A datatable column that displays currency values with proper formatting.
 
     Extends DatatableAttrColumn to format integer currency values (in cents)
@@ -318,7 +316,7 @@ class DatatableCurrencyColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
         return getattr(item, "currency", "usd")
 
 
-class DatatableBooleanColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
+class DatatableBooleanColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """A datatable column that displays boolean attributes with icons.
 
     Extends DatatableAttrColumn to render boolean values as visual icons
@@ -351,7 +349,7 @@ class DatatableBooleanColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
         return None
 
 
-class DatatableAction(Protocol[M]):
+class DatatableAction[M](Protocol):
     """Protocol defining the interface for datatable row actions.
 
     Actions appear in action columns and provide interactive functionality
@@ -385,7 +383,7 @@ class DatatableAction(Protocol[M]):
         ...
 
 
-class DatatableActionLink(DatatableAction[M]):
+class DatatableActionLink[M](DatatableAction[M]):
     """A datatable action that renders as a navigation link.
 
     Creates a standard HTML anchor link that navigates to another page.
@@ -435,7 +433,7 @@ class DatatableActionLink(DatatableAction[M]):
         return False
 
 
-class DatatableActionHTMX(DatatableAction[M]):
+class DatatableActionHTMX[M](DatatableAction[M]):
     """A datatable action that performs an HTMX request.
 
     Creates a button that triggers an HTMX GET request and updates a target
@@ -499,7 +497,7 @@ class DatatableActionHTMX(DatatableAction[M]):
         return self.hidden(request, item)
 
 
-class DatatableActionsColumn(Generic[M], DatatableColumn[M]):
+class DatatableActionsColumn[M](DatatableColumn[M]):
     """A datatable column that displays a dropdown menu of actions for each row.
 
     Creates a column with an ellipsis button that opens a popover menu containing
@@ -561,7 +559,7 @@ class SortWay(Enum):
     DESC = auto()
 
 
-class Datatable(Generic[M, PE]):
+class Datatable[M, PE: StrEnum]:
     """A complete datatable component with sorting and customizable columns.
 
     Renders a responsive table with configurable columns, automatic sorting controls,

@@ -1,9 +1,8 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
-from pydantic import UUID4, AfterValidator, TypeAdapter
+from pydantic import UUID4, AfterValidator, Discriminator, TypeAdapter
 
-from polar.kit.address import Address
-from polar.kit.email import EmailStrDNS
+from polar.kit.address import Address, AddressInput
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import (
     ClassName,
@@ -27,6 +26,7 @@ class CustomerPortalCustomer(IDSchema, TimestampedSchema):
     email: str
     email_verified: bool
     name: str | None
+    billing_name: str | None
     billing_address: Address | None
     tax_id: TaxID | None
     oauth_accounts: dict[str, CustomerPortalOAuthAccount]
@@ -34,9 +34,8 @@ class CustomerPortalCustomer(IDSchema, TimestampedSchema):
 
 
 class CustomerPortalCustomerUpdate(Schema):
-    email: Annotated[EmailStrDNS | None, EmptyStrToNoneValidator] = None
-    name: Annotated[str | None, EmptyStrToNoneValidator] = None
-    billing_address: Address | None = None
+    billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
+    billing_address: AddressInput | None = None
     tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
 
@@ -56,3 +55,27 @@ class CustomerPaymentMethodCreate(Schema):
     confirmation_token_id: str
     set_default: bool
     return_url: Annotated[str, AfterValidator(get_safe_return_url)]
+
+
+class CustomerPaymentMethodCreateSucceededResponse(Schema):
+    status: Literal["succeeded"]
+    payment_method: CustomerPaymentMethod
+
+
+class CustomerPaymentMethodCreateRequiresActionResponse(Schema):
+    status: Literal["requires_action"]
+    client_secret: str
+
+
+CustomerPaymentMethodCreateResponse = Annotated[
+    CustomerPaymentMethodCreateSucceededResponse
+    | CustomerPaymentMethodCreateRequiresActionResponse,
+    Discriminator("status"),
+    SetSchemaReference("CustomerPaymentMethodCreateResponse"),
+    MergeJSONSchema({"title": "CustomerPaymentMethodCreateResponse"}),
+]
+
+
+class CustomerPaymentMethodConfirm(Schema):
+    setup_intent_id: str
+    set_default: bool

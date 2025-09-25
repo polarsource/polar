@@ -1,13 +1,16 @@
+import datetime
+import json
 from collections.abc import Sequence
 from typing import Literal, overload
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, desc, select, text
+from sqlalchemy import Select, desc, func, select, text, update
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
+from polar.checkout.repository import CheckoutRepository
 from polar.customer.schemas.state import CustomerState
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.crypto import generate_token
@@ -156,6 +159,8 @@ class WebhookService:
         auth_subject: AuthSubject[User | Organization],
         *,
         endpoint_id: Sequence[UUID] | None = None,
+        start_timestamp: datetime.datetime | None = None,
+        end_timestamp: datetime.datetime | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookDelivery], int]:
         readable_endpoints_statement = self._get_readable_endpoints_statement(
@@ -179,6 +184,12 @@ class WebhookService:
                 WebhookDelivery.webhook_endpoint_id.in_(endpoint_id)
             )
 
+        if start_timestamp is not None:
+            statement = statement.where(WebhookDelivery.created_at > start_timestamp)
+
+        if end_timestamp is not None:
+            statement = statement.where(WebhookDelivery.created_at < end_timestamp)
+
         return await paginate(session, statement, pagination=pagination)
 
     async def redeliver_event(
@@ -196,6 +207,7 @@ class WebhookService:
             .where(
                 WebhookEvent.id == id,
                 WebhookEvent.deleted_at.is_(None),
+                WebhookEvent.is_archived.is_(False),
                 WebhookEndpoint.id.in_(
                     readable_endpoints_statement.with_only_columns(WebhookEndpoint.id)
                 ),
@@ -208,7 +220,7 @@ class WebhookService:
         if event is None:
             raise ResourceNotFound()
 
-        enqueue_job("webhook_event.send", webhook_event_id=event.id)
+        enqueue_job("webhook_event.send", webhook_event_id=event.id, redeliver=True)
 
     async def on_event_success(self, session: AsyncSession, id: UUID) -> None:
         """
@@ -226,13 +238,18 @@ class WebhookService:
         if event.webhook_endpoint.format != WebhookFormat.raw:
             return
 
-        payload = WebhookPayloadTypeAdapter.validate_json(event.payload)
+        if event.payload is None:
+            return
 
-        if payload.type == WebhookEventType.checkout_updated:
+        if event.type == WebhookEventType.checkout_updated:
+            checkout_repository = CheckoutRepository.from_session(session)
+            payload = json.loads(event.payload)
+            checkout = await checkout_repository.get_by_id(UUID(payload["data"]["id"]))
+            assert checkout is not None
             await publish_checkout_event(
-                payload.data.client_secret,
+                checkout.client_secret,
                 CheckoutEvent.webhook_event_delivered,
-                {"status": payload.data.status},
+                {"status": checkout.status},
             )
 
     async def get_event_by_id(
@@ -245,6 +262,30 @@ class WebhookService:
         )
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
+
+    async def is_latest_event(self, session: AsyncSession, event: WebhookEvent) -> bool:
+        age_limit = utc_now() - datetime.timedelta(minutes=1)
+        statement = (
+            select(func.count(WebhookEvent.id))
+            .join(
+                WebhookDelivery,
+                WebhookDelivery.webhook_event_id == WebhookEvent.id,
+                isouter=True,
+            )
+            .where(
+                WebhookEvent.deleted_at.is_(None),
+                WebhookEvent.webhook_endpoint_id == event.webhook_endpoint_id,
+                WebhookEvent.id != event.id,  # Not the current event
+                WebhookDelivery.id.is_(None),  # Not delivered yet
+                WebhookEvent.created_at
+                < event.created_at,  # Older than the current event
+                WebhookEvent.created_at >= age_limit,  # Not too old
+            )
+            .limit(1)
+        )
+        res = await session.execute(statement)
+        count = res.scalar_one()
+        return count == 0
 
     @overload
     async def send(
@@ -496,18 +537,22 @@ class WebhookService:
         event: WebhookEventType,
         data: object,
     ) -> list[WebhookEvent]:
+        now = utc_now()
         payload = WebhookPayloadTypeAdapter.validate_python(
-            {"type": event, "data": data}
+            {"type": event, "timestamp": now, "data": data}
         )
 
         events: list[WebhookEvent] = []
-        for e in await self._get_event_target_endpoints(
-            session, event=payload.type, target=target
+        for endpoint in await self._get_event_target_endpoints(
+            session, event=event, target=target
         ):
             try:
-                payload_data = payload.get_payload(e.format, target)
+                payload_data = payload.get_payload(endpoint.format, target)
                 event_type = WebhookEvent(
-                    webhook_endpoint_id=e.id, payload=payload_data
+                    created_at=payload.timestamp,
+                    webhook_endpoint=endpoint,
+                    type=event,
+                    payload=payload_data,
                 )
                 session.add(event_type)
                 events.append(event_type)
@@ -521,6 +566,41 @@ class WebhookService:
                 continue
 
         return events
+
+    async def archive_events(
+        self,
+        session: AsyncSession,
+        older_than: datetime.datetime,
+        batch_size: int = 5000,
+    ) -> None:
+        log.debug(
+            "Archive webhook events", older_than=older_than, batch_size=batch_size
+        )
+
+        while True:
+            batch_subquery = (
+                select(WebhookEvent.id)
+                .where(
+                    WebhookEvent.created_at < older_than,
+                    WebhookEvent.payload.is_not(None),
+                )
+                .order_by(WebhookEvent.created_at.asc())
+                .limit(batch_size)
+            )
+            statement = (
+                update(WebhookEvent)
+                .where(WebhookEvent.id.in_(batch_subquery))
+                .values(payload=None)
+            )
+            result = await session.execute(statement)
+            updated_count = result.rowcount
+
+            await session.commit()
+
+            log.debug("Archived webhook events batch", updated_count=updated_count)
+
+            if updated_count < batch_size:
+                break
 
     def _get_readable_endpoints_statement(
         self, auth_subject: AuthSubject[User | Organization]

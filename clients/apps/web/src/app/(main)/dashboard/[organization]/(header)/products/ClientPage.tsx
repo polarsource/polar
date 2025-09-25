@@ -11,7 +11,9 @@ import {
   serializeSearchParams,
   sortingStateToQueryParam,
 } from '@/utils/datatable'
-import { AddOutlined, HiveOutlined, Search } from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import HiveOutlined from '@mui/icons-material/HiveOutlined'
+import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -94,7 +96,7 @@ export default function ClientPage({
   })
 
   return (
-    <DashboardBody wide>
+    <DashboardBody>
       <div className="flex flex-col gap-y-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">

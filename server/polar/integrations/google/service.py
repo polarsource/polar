@@ -36,7 +36,7 @@ class CannotLinkUnverifiedEmailError(GoogleServiceError):
             "We cannot automatically link it to your Google account since "
             "this email address is not verified on Google. "
             "Either verify your email address on Google and try again "
-            "or sign in with a magic link."
+            "or sign in using your email."
         )
         super().__init__(message, 403)
 

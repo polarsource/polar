@@ -3,6 +3,7 @@ import uuid
 import structlog
 from sqlalchemy import delete, select
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.config import settings
@@ -82,9 +83,15 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> CustomerSession | None:
         token_hash = get_token_hash(token, secret=settings.SECRET)
-        statement = select(CustomerSession).where(
-            CustomerSession.token == token_hash,
-            CustomerSession.deleted_at.is_(None),
+        statement = (
+            select(CustomerSession)
+            .join(CustomerSession.customer)
+            .where(
+                CustomerSession.token == token_hash,
+                CustomerSession.deleted_at.is_(None),
+                Customer.can_authenticate.is_(True),
+            )
+            .options(contains_eager(CustomerSession.customer))
         )
         if not expired:
             statement = statement.where(CustomerSession.expires_at > utc_now())

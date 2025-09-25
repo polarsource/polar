@@ -1,3 +1,4 @@
+import { useToast } from '@/components/Toast/use-toast'
 import { schemas } from '@polar-sh/client'
 import { FieldPath, FieldValues, UseFormSetError } from 'react-hook-form'
 
@@ -37,4 +38,29 @@ export const setValidationErrors = <TFieldValues extends FieldValues>(
       message: error.msg,
     })
   })
+}
+
+export const apiErrorToast = (
+  error:
+    | schemas['HTTPValidationError']
+    | schemas['ResourceNotFound']
+    | schemas['NotPermitted'],
+  toast: ReturnType<typeof useToast>['toast'],
+  options: Parameters<ReturnType<typeof useToast>['toast']>[0] = {},
+): void => {
+  if (
+    'error' in error &&
+    (error.error === 'ResourceNotFound' || error.error === 'NotPermitted')
+  ) {
+    // ResourceNotFound or NotPermitted
+    toast({ title: 'Error', description: error.detail, ...options })
+  } else {
+    // HTTPValidationError
+    toast({
+      title: 'Error',
+      description: error.detail ? error.detail[0]?.msg : 'An error occurred',
+      ...options,
+    })
+    return
+  }
 }

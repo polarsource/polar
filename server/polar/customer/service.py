@@ -5,7 +5,6 @@ from typing import Any
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from sqlalchemy.orm import joinedload
 from sqlalchemy_utils.types.range import timedelta
-from stripe import Customer as StripeCustomer
 
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
@@ -14,15 +13,10 @@ from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import (
-    BenefitGrant,
-    Customer,
-    Organization,
-    User,
-)
+from polar.models import BenefitGrant, Customer, Organization, User
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.organization.resolver import get_payload_organization
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
 from polar.webhook.service import webhook as webhook_service
@@ -37,7 +31,7 @@ from .sorting import CustomerSortProperty
 class CustomerService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -86,7 +80,7 @@ class CustomerService:
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Customer | None:
@@ -98,7 +92,7 @@ class CustomerService:
 
     async def get_external(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         external_id: str,
     ) -> Customer | None:
@@ -149,11 +143,15 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        customer = Customer(
-            organization=organization,
-            **customer_create.model_dump(exclude={"organization_id"}, by_alias=True),
-        )
-        return await repository.create(customer)
+        async with repository.create_context(
+            Customer(
+                organization=organization,
+                **customer_create.model_dump(
+                    exclude={"organization_id"}, by_alias=True
+                ),
+            )
+        ) as customer:
+            return customer
 
     async def update(
         self,
@@ -233,14 +231,14 @@ class CustomerService:
 
     async def get_state(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         redis: Redis,
         customer: Customer,
         cache: bool = True,
     ) -> CustomerState:
         # 👋 Whenever you change the state schema,
         # please also update the cache key with a version number.
-        cache_key = f"polar:customer_state:v2:{customer.id}"
+        cache_key = f"polar:customer_state:v3:{customer.id}"
 
         if cache:
             raw_state = await redis.get(cache_key)
@@ -274,53 +272,6 @@ class CustomerService:
         )
 
         return state
-
-    async def get_or_create_from_stripe_customer(
-        self,
-        session: AsyncSession,
-        stripe_customer: StripeCustomer,
-        organization: Organization,
-    ) -> Customer:
-        """
-        Get or create a customer from a Stripe customer object.
-
-        Make a first lookup by the Stripe customer ID, then by the email address.
-
-        If the customer does not exist, create a new one.
-        """
-        repository = CustomerRepository.from_session(session)
-
-        created = False
-        customer = await repository.get_by_stripe_customer_id_and_organization(
-            stripe_customer.id, organization.id
-        )
-        assert stripe_customer.email is not None
-
-        if customer is None:
-            customer = await repository.get_by_email_and_organization(
-                stripe_customer.email, organization.id
-            )
-
-        if customer is None:
-            customer = Customer(
-                email=stripe_customer.email,
-                email_verified=False,
-                stripe_customer_id=stripe_customer.id,
-                name=stripe_customer.name,
-                billing_address=stripe_customer.address,
-                # TODO: tax_id,
-                organization=organization,
-            )
-            created = True
-
-        customer.stripe_customer_id = stripe_customer.id
-
-        if created:
-            customer = await repository.create(customer)
-        else:
-            customer = await repository.update(customer)
-
-        return customer
 
     async def webhook(
         self,

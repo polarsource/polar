@@ -2,11 +2,12 @@ import contextlib
 import functools
 from collections.abc import Awaitable, Callable
 from enum import IntEnum
-from typing import Any, ParamSpec, TypeVar
+from typing import Any, ParamSpec
 
 import dramatiq
 import logfire
 import redis
+import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import actor as _actor
 from dramatiq import middleware
@@ -65,6 +66,32 @@ class SchedulerMiddleware(dramatiq.Middleware):
 
 
 scheduler_middleware = SchedulerMiddleware()
+
+
+class LogContextMiddleware(dramatiq.Middleware):
+    """Middleware to manage log context for each message."""
+
+    def before_process_message(
+        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+    ) -> None:
+        structlog.contextvars.bind_contextvars(
+            actor_name=message.actor_name, message_id=message.message_id
+        )
+
+    def after_process_message(
+        self,
+        broker: dramatiq.Broker,
+        message: dramatiq.Message[Any],
+        *,
+        result: Any | None = None,
+        exception: Exception | None = None,
+    ) -> None:
+        structlog.contextvars.unbind_contextvars("actor_name", "message_id")
+
+    def after_skip_message(
+        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+    ) -> None:
+        return self.after_process_message(broker, message)
 
 
 class LogfireMiddleware(dramatiq.Middleware):
@@ -140,6 +167,7 @@ broker.add_middleware(SQLAlchemyMiddleware())
 broker.add_middleware(RedisMiddleware())
 broker.add_middleware(scheduler_middleware)
 broker.add_middleware(LogfireMiddleware())
+broker.add_middleware(LogContextMiddleware())
 dramatiq.set_broker(broker)
 dramatiq.set_encoder(JSONEncoder())
 
@@ -151,10 +179,9 @@ class TaskPriority(IntEnum):
 
 
 P = ParamSpec("P")
-R = TypeVar("R")
 
 
-def actor(
+def actor[**P, R](
     actor_class: Callable[..., dramatiq.Actor[Any, Any]] = dramatiq.Actor,
     actor_name: str | None = None,
     queue_name: str = "default",

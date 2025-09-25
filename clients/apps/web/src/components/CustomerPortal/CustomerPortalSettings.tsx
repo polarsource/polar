@@ -22,11 +22,16 @@ import PaymentMethod from './PaymentMethod'
 interface CustomerPortalSettingsProps {
   organization: schemas['Organization']
   customerSessionToken?: string
+  setupIntentParams?: {
+    setup_intent_client_secret: string
+    setup_intent: string
+  }
 }
 
 export const CustomerPortalSettings = ({
   organization,
   customerSessionToken,
+  setupIntentParams,
 }: CustomerPortalSettingsProps) => {
   const api = createClientSideAPI(customerSessionToken)
 
@@ -34,7 +39,7 @@ export const CustomerPortalSettings = ({
     isShown: isAddPaymentMethodModalOpen,
     hide: hideAddPaymentMethodModal,
     show: showAddPaymentMethodModal,
-  } = useModal()
+  } = useModal(setupIntentParams !== undefined)
   const { data: customer } = useAuthenticatedCustomer(api)
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
@@ -82,10 +87,7 @@ export const CustomerPortalSettings = ({
         </WellContent>
       </Well>
       <Well
-        className={twMerge(
-          'flex flex-col gap-y-6',
-          themingPreset.polar.wellSecondary,
-        )}
+        className={twMerge('flex flex-col gap-y-6', themingPreset.polar.well)}
       >
         <WellHeader className="flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">
@@ -118,6 +120,7 @@ export const CustomerPortalSettings = ({
               revalidate(`customer_portal`)
               hideAddPaymentMethodModal()
             }}
+            setupIntentParams={setupIntentParams}
             hide={hideAddPaymentMethodModal}
             themingPreset={themingPreset}
           />

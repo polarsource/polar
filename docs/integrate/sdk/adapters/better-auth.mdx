@@ -10,6 +10,7 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 ## Features
 
 - [Automatic Customer creation on signup](#automatic-customer-creation-on-signup)
+- [Sync customer deletion](#sync-customer-deletion)
 - [Reference System to associate purchases with organizations](#3-2-orders)
 - [Checkout Integration](#checkout-plugin)
 - [Event Ingestion & Customer Meters for flexible Usage Based Billing](#usage-plugin)
@@ -161,6 +162,25 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 Enable the `createCustomerOnSignUp` [Polar plugin configuration option](#polar-plugin-configuration-options) to automatically create a new Polar Customer when a new User is added in the BetterAuth database.
 
 All new customers are created with an associated `externalId`, i.e. the ID of your User in the Database. This skips any Polar to User mapping in your database.
+
+## Sync Customer deletion
+
+To add user deletion logic with external Polar customer deletion in BetterAuth, extend the user config of your betterAuth setup with the deleteUser option and an afterDelete hook. Here’s how to integrate this alongside your Polar plugin and automatic customer creation:
+
+```typescript icon="square-js" Customer Deletion Example
+const auth = betterAuth({
+    user: { // [!code ++]
+        deleteUser: { // [!code ++]
+            enabled: true, // [!code ++]
+            afterDelete: async (user, request) => { // [!code ++]
+                await polar.customers.deleteExternal({ // [!code ++]
+                  externalId: user.id // [!code ++]
+                }) // [!code ++]
+            }, // [!code ++]
+        }, // [!code ++]
+    }, // [!code ++]
+});
+```
 
 ## Checkout Plugin
 
@@ -459,7 +479,7 @@ The customer state object contains:
 
 Using the customer state object, you can determine whether to provision access for the user to your service.
 
-Learn more about the Polar Customer State [in the Polar Docs](https://docs.polar.sh/integrate/customer-state).
+Learn more about the Polar Customer State [in the Polar Docs](https://polar.sh/docs/integrate/customer-state).
 
 ### 3. Benefits, Orders & Subscriptions
 

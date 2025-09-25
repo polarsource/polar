@@ -72,16 +72,41 @@ export const useAddCustomerPaymentMethod = (api: Client) =>
     },
   })
 
-export const useDeleteCustomerPaymentMethod = (api: Client) =>
+export const useConfirmCustomerPaymentMethod = (api: Client) =>
   useMutation({
-    mutationFn: async (id: string) =>
-      api.DELETE('/v1/customer-portal/customers/me/payment-methods/{id}', {
-        params: { path: { id } },
+    mutationFn: async (body: schemas['CustomerPaymentMethodConfirm']) =>
+      api.POST('/v1/customer-portal/customers/me/payment-methods/confirm', {
+        body,
       }),
     onSuccess: async (result, _variables, _ctx) => {
       if (result.error) {
         return
       }
+      queryClient.invalidateQueries({
+        queryKey: ['customer_payment_methods'],
+      })
+    },
+  })
+
+export const useDeleteCustomerPaymentMethod = (api: Client) =>
+  useMutation({
+    mutationFn: async (id: string) => {
+      const result = await api.DELETE(
+        '/v1/customer-portal/customers/me/payment-methods/{id}',
+        {
+          params: { path: { id } },
+        },
+      )
+      if (result.error) {
+        const errorMessage =
+          typeof result.error.detail === 'string'
+            ? result.error.detail
+            : 'Failed to delete payment method'
+        throw new Error(errorMessage)
+      }
+      return result
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['customer_payment_methods'],
       })
@@ -236,6 +261,18 @@ export const useCustomerSubscriptions = (
     retry: defaultRetry,
   })
 
+export const useCustomerSubscriptionChargePreview = (api: Client, id: string) =>
+  useQuery({
+    queryKey: ['customer_subscription_charge_preview', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/subscriptions/{id}/charge-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
 export const useCustomerUpdateSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: {
@@ -252,6 +289,9 @@ export const useCustomerUpdateSubscription = (api: Client) =>
       }
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
       })
     },
   })
@@ -273,6 +313,9 @@ export const useCustomerCancelSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
+      })
     },
   })
 
@@ -290,6 +333,9 @@ export const useCustomerUncancelSubscription = (api: Client) =>
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
       })
     },
   })
@@ -309,4 +355,46 @@ export const useCustomerCustomerMeters = (
         }),
       ),
     retry: defaultRetry,
+  })
+
+export const useCustomerOrderConfirmPayment = (api: Client) =>
+  useMutation({
+    mutationFn: async (variables: {
+      orderId: string
+      confirmation_token_id?: string
+      payment_method_id?: string
+      payment_processor?: schemas['PaymentProcessor']
+    }) =>
+      api.POST('/v1/customer-portal/orders/{id}/confirm-payment', {
+        params: { path: { id: variables.orderId } },
+        body: {
+          ...(variables.confirmation_token_id && {
+            confirmation_token_id: variables.confirmation_token_id,
+          }),
+          ...(variables.payment_method_id && {
+            payment_method_id: variables.payment_method_id,
+          }),
+          payment_processor: variables.payment_processor || 'stripe',
+        } as any,
+      }),
+    onSuccess: async (result, variables, _ctx) => {
+      if (result.error) {
+        return
+      }
+      // Invalidate order queries to refresh data
+      queryClient.invalidateQueries({
+        queryKey: ['customer_order', { id: variables.orderId }],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_orders'],
+      })
+    },
+  })
+
+export const useCustomerOrderPaymentStatus = (api: Client) =>
+  useMutation({
+    mutationFn: async (variables: { orderId: string }) =>
+      api.GET('/v1/customer-portal/orders/{id}/payment-status', {
+        params: { path: { id: variables.orderId } },
+      }),
   })

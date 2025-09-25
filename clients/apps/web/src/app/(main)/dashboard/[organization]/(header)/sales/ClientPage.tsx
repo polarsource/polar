@@ -148,7 +148,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'net_amount',
       enableSorting: true,
-      size: 50,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Amount" />
       ),
@@ -180,7 +179,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'status',
       enableSorting: true,
-      size: 50,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
@@ -191,9 +189,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
     },
     {
+      accessorKey: 'invoice_number',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Invoice number" />
+      ),
+    },
+    {
       accessorKey: 'created_at',
       enableSorting: true,
-      size: 50,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Date" />
       ),
@@ -258,6 +262,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <MiniMetricChartBox
+            title="Orders"
             value={metricsData?.totals.orders}
             metric={metricsData?.metrics.orders}
           />
@@ -267,6 +272,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             metric={todayMetricsData?.metrics.revenue}
           />
           <MiniMetricChartBox
+            title="Cumulative Revenue"
             value={metricsData?.totals.revenue}
             metric={metricsData?.metrics.cumulative_revenue}
           />

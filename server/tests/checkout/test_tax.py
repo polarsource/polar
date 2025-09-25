@@ -1,5 +1,4 @@
 import pytest
-from pydantic_extra_types.country import CountryAlpha2
 
 from polar.kit.tax import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
 
@@ -26,9 +25,7 @@ from polar.kit.tax import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         ("234567899", "CA", ("234567899", TaxIDFormat.ca_bn)),
     ],
 )
-def test_validate_tax_id_valid(
-    number: str, country: CountryAlpha2, expected: TaxID
-) -> None:
+def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> None:
     validated_tax_id = validate_tax_id(number, country)
     assert validated_tax_id == expected
 
@@ -42,6 +39,6 @@ def test_validate_tax_id_valid(
         ("GB980780684", "foo"),
     ],
 )
-def test_validate_tax_id_invalid(number: str, country: CountryAlpha2) -> None:
+def test_validate_tax_id_invalid(number: str, country: str) -> None:
     with pytest.raises(InvalidTaxID):
         validate_tax_id(number, country)

@@ -1,4 +1,5 @@
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export const testimonials = [
@@ -64,7 +65,7 @@ export const testimonials = [
     ),
   },
   {
-    name: 'Andrea Bizzotto 🇺🇦',
+    name: 'Andrea Bizzotto 🇺',
     username: 'biz84',
     avatar: '/assets/landing/testamonials/andrea.png',
     link: 'https://x.com/biz84/status/1883284175459135808',
@@ -288,7 +289,15 @@ export const Testamonial = ({
     >
       <div className="flex flex-col gap-y-4 pt-1.5">
         <div className="flex flex-row items-center gap-x-3">
-          <Avatar className="h-12 w-12" avatar_url={avatar} name={name} />
+          <Avatar
+            name={name}
+            avatar_url={avatar}
+            className="h-12 w-12"
+            width={48}
+            height={48}
+            loading="lazy"
+            CustomImageComponent={Image}
+          />
           <div className="flex flex-col text-sm">
             <div className="flex flex-row items-center gap-x-2">
               <span>{name}</span>
@@ -315,7 +324,7 @@ export const Testimonials = () => {
   const secondRow = testimonials.slice(halfLength)
 
   return (
-    <div className="flex flex-col items-center gap-y-12 px-4 md:gap-y-24 md:px-0">
+    <div className="flex flex-col items-center gap-y-12 md:gap-y-24 md:py-12">
       <div className="flex flex-col gap-4 md:relative md:w-full md:overflow-hidden">
         <div className="flex flex-col gap-y-4 md:hidden">
           {firstRow.map((testimonial, index) => (

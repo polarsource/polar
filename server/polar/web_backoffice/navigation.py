@@ -6,6 +6,9 @@ NAVIGATION = [
         "Organizations", "organizations:list", active_route_name_prefix="organizations:"
     ),
     navigation.NavigationItem(
+        "Benefits", "benefits:list", active_route_name_prefix="benefits:"
+    ),
+    navigation.NavigationItem(
         "Subscriptions", "subscriptions:list", active_route_name_prefix="subscriptions:"
     ),
     navigation.NavigationItem(

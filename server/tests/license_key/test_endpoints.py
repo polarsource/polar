@@ -200,12 +200,20 @@ class TestLicenseKeyEndpoints:
         data = response.json()
         assert data["pagination"]["total_count"] == count
 
+    @pytest.mark.parametrize(
+        "activate_path",
+        [
+            "/v1/customer-portal/license-keys/activate",
+            "/v1/license-keys/activate",
+        ],
+    )
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
     async def test_get_activation(
         self,
+        activate_path: str,
         session: AsyncSession,
         redis: Redis,
         client: AsyncClient,
@@ -234,7 +242,7 @@ class TestLicenseKeyEndpoints:
         assert lk is not None
 
         activate = await client.post(
-            "/v1/customer-portal/license-keys/activate",
+            activate_path,
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),
@@ -252,12 +260,20 @@ class TestLicenseKeyEndpoints:
         assert data["id"] == activation_id
         assert data["license_key"]["id"] == str(lk.id)
 
+    @pytest.mark.parametrize(
+        "activate_path",
+        [
+            "/v1/customer-portal/license-keys/activate",
+            "/v1/license-keys/activate",
+        ],
+    )
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
     async def test_activate_license_without_activations_returns_descriptive_error(
         self,
+        activate_path: str,
         session: AsyncSession,
         redis: Redis,
         client: AsyncClient,
@@ -285,7 +301,7 @@ class TestLicenseKeyEndpoints:
         assert lk is not None
 
         activate = await client.post(
-            "/v1/customer-portal/license-keys/activate",
+            activate_path,
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),

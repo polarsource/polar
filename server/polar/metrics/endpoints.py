@@ -16,7 +16,7 @@ from polar.kit.time_queries import (
 from polar.models.product import ProductBillingType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
@@ -24,7 +24,7 @@ from . import auth
 from .schemas import MetricsLimits, MetricsResponse
 from .service import metrics as metrics_service
 
-router = APIRouter(prefix="/metrics", tags=["metrics", APITag.documented, APITag.mcp])
+router = APIRouter(prefix="/metrics", tags=["metrics", APITag.public, APITag.mcp])
 
 
 @router.get("/", summary="Get Metrics", response_model=MetricsResponse)
@@ -59,7 +59,7 @@ async def get(
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
     ),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> MetricsResponse:
     """
     Get metrics about your orders and subscriptions.

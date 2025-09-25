@@ -1,7 +1,7 @@
 import contextlib
 import typing
 import uuid
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 
 import stripe as stripe_lib
 import structlog
@@ -27,6 +27,7 @@ from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.exceptions import (
+    BadRequest,
     NotPermitted,
     PaymentNotReady,
     PolarError,
@@ -36,12 +37,13 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.kit.address import Address
+from polar.kit.address import AddressInput
 from polar.kit.crypto import generate_token
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.tax import TaxID, to_stripe_tax_id, validate_tax_id
+from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
@@ -69,7 +71,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.guard import (
     is_currency_price,
     is_custom_price,
@@ -192,7 +194,7 @@ CHECKOUT_CLIENT_SECRET_PREFIX = "polar_c_"
 class CheckoutService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -207,7 +209,7 @@ class CheckoutService:
     ) -> tuple[Sequence[Checkout], int]:
         repository = CheckoutRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).options(
-            *repository.get_eager_options()
+            *repository.get_eager_options(product_load=contains_eager(Checkout.product))
         )
 
         if organization_id is not None:
@@ -233,7 +235,7 @@ class CheckoutService:
 
     async def get_by_id(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Checkout | None:
@@ -241,7 +243,11 @@ class CheckoutService:
         statement = (
             repository.get_readable_statement(auth_subject)
             .where(Checkout.id == id)
-            .options(*repository.get_eager_options())
+            .options(
+                *repository.get_eager_options(
+                    product_load=contains_eager(Checkout.product)
+                )
+            )
         )
         checkout = await repository.get_one_or_none(statement)
 
@@ -386,7 +392,11 @@ class CheckoutService:
         elif is_custom_price(price):
             currency = price.price_currency
             if amount is None:
-                amount = price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+                amount = (
+                    price.preset_amount
+                    or price.minimum_amount
+                    or settings.CUSTOM_PRICE_PRESET_FALLBACK
+                )
         else:
             amount = 0
             currency = price.price_currency if is_currency_price(price) else "usd"
@@ -479,6 +489,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -549,7 +560,11 @@ class CheckoutService:
             currency = price.price_currency
         elif is_custom_price(price):
             currency = price.price_currency
-            amount = price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+            amount = (
+                price.preset_amount
+                or price.minimum_amount
+                or settings.CUSTOM_PRICE_PRESET_FALLBACK
+            )
         elif is_currency_price(price):
             currency = price.price_currency
 
@@ -561,6 +576,7 @@ class CheckoutService:
             checkout_products=[CheckoutProduct(product=product, order=0)],
             product=product,
             product_price=price,
+            discount=None,
             customer=None,
             subscription=None,
             customer_email=checkout_create.customer_email,
@@ -584,6 +600,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -634,7 +651,11 @@ class CheckoutService:
             currency = price.price_currency
         elif is_custom_price(price):
             currency = price.price_currency
-            amount = price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+            amount = (
+                price.preset_amount
+                or price.minimum_amount
+                or settings.CUSTOM_PRICE_PRESET_FALLBACK
+            )
         elif is_currency_price(price):
             currency = price.price_currency
 
@@ -652,6 +673,8 @@ class CheckoutService:
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
+            trial_interval=checkout_link.trial_interval,
+            trial_interval_count=checkout_link.trial_interval_count,
             allow_discount_codes=checkout_link.allow_discount_codes,
             require_billing_address=checkout_link.require_billing_address,
             checkout_products=[
@@ -685,6 +708,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -839,81 +863,91 @@ class CheckoutService:
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
 
-        if checkout.payment_processor == PaymentProcessor.stripe:
-            customer = await self._create_or_update_customer(
-                session, auth_subject, checkout
+        if (
+            checkout.trial_end is not None
+            and not checkout.organization.subscriptions_billing_engine
+        ):
+            raise BadRequest(
+                "Trials are not supported on susbcriptions managed by Stripe."
             )
 
-            checkout.customer = customer
-            stripe_customer_id = customer.stripe_customer_id
-            assert stripe_customer_id is not None
-            checkout.payment_processor_metadata = {
-                **checkout.payment_processor_metadata,
-                "customer_id": stripe_customer_id,
-            }
-
-            if checkout.is_payment_form_required:
-                assert checkout_confirm.confirmation_token_id is not None
-                assert checkout.customer_billing_address is not None
-                intent_metadata: dict[str, str] = {
-                    "checkout_id": str(checkout.id),
-                    "type": ProductType.product,
-                    "tax_amount": str(checkout.tax_amount),
-                    "tax_country": checkout.customer_billing_address.country,
+        if checkout.payment_processor == PaymentProcessor.stripe:
+            async with self._create_or_update_customer(
+                session, auth_subject, checkout
+            ) as customer:
+                checkout.customer = customer
+                stripe_customer_id = customer.stripe_customer_id
+                assert stripe_customer_id is not None
+                checkout.payment_processor_metadata = {
+                    **checkout.payment_processor_metadata,
+                    "customer_id": stripe_customer_id,
                 }
-                if (
-                    state := checkout.customer_billing_address.get_unprefixed_state()
-                ) is not None:
-                    intent_metadata["tax_state"] = state
 
-                intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent
-                try:
-                    if checkout.is_payment_required:
-                        payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
-                            "amount": checkout.total_amount,
-                            "currency": checkout.currency,
-                            "automatic_payment_methods": {"enabled": True},
-                            "confirm": True,
-                            "confirmation_token": checkout_confirm.confirmation_token_id,
-                            "customer": stripe_customer_id,
-                            "statement_descriptor_suffix": checkout.organization.statement_descriptor,
-                            "description": f"{checkout.organization.name} — {checkout.product.name}",
-                            "metadata": intent_metadata,
-                            "return_url": settings.generate_frontend_url(
-                                f"/checkout/{checkout.client_secret}/confirmation"
-                            ),
-                        }
-                        if checkout.product.is_recurring:
-                            payment_intent_params["setup_future_usage"] = "off_session"
-                        intent = await stripe_service.create_payment_intent(
-                            **payment_intent_params
-                        )
-                    else:
-                        setup_intent_params: stripe_lib.SetupIntent.CreateParams = {
-                            "automatic_payment_methods": {"enabled": True},
-                            "confirm": True,
-                            "confirmation_token": checkout_confirm.confirmation_token_id,
-                            "customer": stripe_customer_id,
-                            "description": f"{checkout.organization.name} — {checkout.product.name}",
-                            "metadata": intent_metadata,
-                            "return_url": settings.generate_frontend_url(
-                                f"/checkout/{checkout.client_secret}/confirmation"
-                            ),
-                        }
-                        intent = await stripe_service.create_setup_intent(
-                            **setup_intent_params
-                        )
-                except stripe_lib.StripeError as e:
-                    error = e.error
-                    error_type = error.type if error is not None else None
-                    error_message = error.message if error is not None else None
-                    raise PaymentError(checkout, error_type, error_message)
-                else:
-                    checkout.payment_processor_metadata = {
-                        **checkout.payment_processor_metadata,
-                        "intent_client_secret": intent.client_secret,
-                        "intent_status": intent.status,
+                if checkout.is_payment_form_required:
+                    assert checkout_confirm.confirmation_token_id is not None
+                    assert checkout.customer_billing_address is not None
+                    intent_metadata: dict[str, str] = {
+                        "checkout_id": str(checkout.id),
+                        "type": ProductType.product,
+                        "tax_amount": str(checkout.tax_amount),
+                        "tax_country": checkout.customer_billing_address.country,
                     }
+                    if (
+                        state
+                        := checkout.customer_billing_address.get_unprefixed_state()
+                    ) is not None:
+                        intent_metadata["tax_state"] = state
+
+                    intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent
+                    try:
+                        if checkout.is_payment_required:
+                            payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
+                                "amount": checkout.total_amount,
+                                "currency": checkout.currency,
+                                "automatic_payment_methods": {"enabled": True},
+                                "confirm": True,
+                                "confirmation_token": checkout_confirm.confirmation_token_id,
+                                "customer": stripe_customer_id,
+                                "statement_descriptor_suffix": checkout.organization.statement_descriptor,
+                                "description": f"{checkout.organization.name} — {checkout.product.name}",
+                                "metadata": intent_metadata,
+                                "return_url": settings.generate_frontend_url(
+                                    f"/checkout/{checkout.client_secret}/confirmation"
+                                ),
+                            }
+                            if checkout.product.is_recurring:
+                                payment_intent_params["setup_future_usage"] = (
+                                    "off_session"
+                                )
+                            intent = await stripe_service.create_payment_intent(
+                                **payment_intent_params
+                            )
+                        else:
+                            setup_intent_params: stripe_lib.SetupIntent.CreateParams = {
+                                "automatic_payment_methods": {"enabled": True},
+                                "confirm": True,
+                                "confirmation_token": checkout_confirm.confirmation_token_id,
+                                "customer": stripe_customer_id,
+                                "description": f"{checkout.organization.name} — {checkout.product.name}",
+                                "metadata": intent_metadata,
+                                "return_url": settings.generate_frontend_url(
+                                    f"/checkout/{checkout.client_secret}/confirmation"
+                                ),
+                            }
+                            intent = await stripe_service.create_setup_intent(
+                                **setup_intent_params
+                            )
+                    except stripe_lib.StripeError as e:
+                        error = e.error
+                        error_type = error.type if error is not None else None
+                        error_message = error.message if error is not None else None
+                        raise PaymentError(checkout, error_type, error_message) from e
+                    else:
+                        checkout.payment_processor_metadata = {
+                            **checkout.payment_processor_metadata,
+                            "intent_client_secret": intent.client_secret,
+                            "intent_status": intent.status,
+                        }
 
         if not checkout.is_payment_form_required:
             enqueue_job("checkout.handle_free_success", checkout_id=checkout.id)
@@ -1399,7 +1433,9 @@ class CheckoutService:
                 checkout.currency = price.price_currency
             elif is_custom_price(price):
                 checkout.amount = (
-                    price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+                    price.preset_amount
+                    or price.minimum_amount
+                    or settings.CUSTOM_PRICE_PRESET_FALLBACK
                 )
                 checkout.currency = price.price_currency
             elif is_currency_price(price):
@@ -1528,6 +1564,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         exclude = {
             "product_id",
@@ -1578,6 +1615,7 @@ class CheckoutService:
                         if checkout.customer_tax_id is not None
                         else []
                     ),
+                    customer_exempt=False,
                 )
                 checkout.tax_amount = tax_calculation["amount"]
                 checkout.tax_processor_id = tax_calculation["processor_id"]
@@ -1612,12 +1650,27 @@ class CheckoutService:
             return checkout
 
         try:
-            address = Address.model_validate({"country": country})
+            address = AddressInput.model_validate({"country": country})
         except PydanticValidationError:
             return checkout
 
         checkout.customer_billing_address = address
         session.add(checkout)
+        return checkout
+
+    async def _update_trial_end(self, checkout: Checkout) -> Checkout:
+        if not checkout.product.is_recurring:
+            checkout.trial_end = None
+            return checkout
+
+        trial_interval = checkout.active_trial_interval
+        trial_interval_count = checkout.active_trial_interval_count
+
+        if trial_interval is not None and trial_interval_count is not None:
+            checkout.trial_end = trial_interval.get_end(utc_now(), trial_interval_count)
+        else:
+            checkout.trial_end = None
+
         return checkout
 
     async def _validate_subscription_uniqueness(
@@ -1681,12 +1734,13 @@ class CheckoutService:
             fields.update({("customer_billing_name",), ("customer_billing_address",)})
         return fields
 
+    @contextlib.asynccontextmanager
     async def _create_or_update_customer(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
-    ) -> Customer:
+    ) -> AsyncGenerator[Customer]:
         repository = CustomerRepository.from_session(session)
 
         created = False
@@ -1757,11 +1811,10 @@ class CheckoutService:
         }
 
         if created:
-            customer = await repository.create(customer, flush=True)
+            async with repository.create_context(customer, flush=False) as customer:
+                yield customer
         else:
-            customer = await repository.update(customer, flush=True)
-
-        return customer
+            yield await repository.update(customer, flush=True)
 
     async def _create_ad_hoc_custom_price(
         self, checkout: Checkout, *, idempotency_key: str | None = None

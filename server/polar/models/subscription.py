@@ -107,9 +107,33 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
         StringEnum(SubscriptionRecurringInterval), nullable=False, index=True
     )
+
     stripe_subscription_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True, default=None
     )
+    """
+    The ID of the subscription in Stripe.
+
+    If set, indicates that the subscription is managed by Stripe Billing.
+    """
+    legacy_stripe_subscription_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True, default=None
+    )
+    """
+    Original ID of the subscription in Stripe.
+
+    If set, indicates that the subscription was originally managed by Stripe Billing,
+    but has been migrated to be managed by Polar.
+    """
+
+    tax_exempted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    """
+    Whether the subscription is tax exempted.
+
+    We use this to disable tax on subscriptions created before we were
+    registered in a given country, so we don't surprise customers with
+    tax charges.
+    """
 
     status: Mapped[SubscriptionStatus] = mapped_column(
         StringEnum(SubscriptionStatus), nullable=False
@@ -117,7 +141,13 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     current_period_start: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
-    current_period_end: Mapped[datetime] = mapped_column(
+    current_period_end: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    trial_start: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    trial_end: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False)
@@ -134,8 +164,8 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    scheduler_locked: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, index=True
+    scheduler_locked_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
 
     customer_id: Mapped[UUID] = mapped_column(
@@ -232,6 +262,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return SubscriptionStatus.is_incomplete(self.status)
 
     @hybrid_property
+    def trialing(self) -> bool:
+        return self.status == SubscriptionStatus.trialing
+
+    @trialing.inplace.expression
+    @classmethod
+    def _trialing_expression(cls) -> ColumnElement[bool]:
+        return cls.status == SubscriptionStatus.trialing
+
+    @hybrid_property
     def active(self) -> bool:
         return SubscriptionStatus.is_active(self.status)
 
@@ -254,6 +293,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             cls.status.in_(SubscriptionStatus.revoked_statuses()),
             Boolean,
         )
+
+    @hybrid_property
+    def canceled(self) -> bool:
+        return self.canceled_at is not None
+
+    @canceled.inplace.expression
+    @classmethod
+    def _canceled_expression(cls) -> ColumnElement[bool]:
+        return cls.canceled_at.is_not(None)
 
     @hybrid_property
     def billable(self) -> bool:

@@ -15,7 +15,7 @@ class TestGetMetrics:
         assert response.status_code == 401
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.web_read}),
         AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_over_limits(
@@ -33,7 +33,7 @@ class TestGetMetrics:
         assert response.status_code == 422
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.web_read}),
         AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_user_valid(
@@ -71,6 +71,35 @@ class TestGetMetrics:
         json = response.json()
         assert len(json["periods"]) == 12
 
+    @pytest.mark.parametrize(
+        "timezone",
+        [
+            "Europe/Paris",
+            "America/New_York",
+            "Asia/Rangoon",
+            "Asia/Calcutta",
+            "Asia/Kolkata",
+        ],
+    )
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
+    )
+    async def test_timezones(self, timezone: str, client: AsyncClient) -> None:
+        response = await client.get(
+            "/v1/metrics/",
+            params={
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "interval": "month",
+                "timezone": timezone,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["periods"]) == 12
+
 
 @pytest.mark.asyncio
 class TestGetMetricsLimits:
@@ -80,7 +109,7 @@ class TestGetMetricsLimits:
         assert response.status_code == 401
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.web_read}),
         AuthSubjectFixture(scopes={Scope.metrics_read}),
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read}),
     )

@@ -19,6 +19,11 @@ services:
     region: ohio
     healthCheckPath: /healthz
     autoDeploy: false # deploys are triggered by github actions
+    scaling:
+      minInstances: 1
+      maxInstances: 2
+      targetMemoryPercent: 90
+      targetCPUPercent: 90
     domains:
       - api.polar.sh
     envVars:
@@ -27,9 +32,9 @@ services:
       - key: FORWARDED_ALLOW_IPS
         value: "*"
       - key: POLAR_ALLOWED_HOSTS
-        value: '["polar.sh","docs.polar.sh"]'
+        value: '["polar.sh"]'
       - key: POLAR_CORS_ORIGINS
-        value: '["https://dashboard.polar.sh", "https://github.com" , "https://polar.sh", "https://docs.polar.sh", "https://polar-polar-sh.vercel.app"]'
+        value: '["https://dashboard.polar.sh", "https://github.com", "https://polar.sh", "https://polar-polar-sh.vercel.app"]'
       - key: POLAR_POSTGRES_DATABASE
         fromDatabase:
           name: db
@@ -49,6 +54,26 @@ services:
       - key: POLAR_POSTGRES_USER
         fromDatabase:
           name: db
+          property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        fromDatabase:
+          name: polar-read
+          property: database
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
           property: user
       - key: POLAR_REDIS_HOST
         fromService:
@@ -107,6 +132,26 @@ services:
       - key: POLAR_POSTGRES_USER
         fromDatabase:
           name: db
+          property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        fromDatabase:
+          name: polar-read
+          property: database
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
           property: user
       - key: POLAR_REDIS_HOST
         fromService:
@@ -183,6 +228,24 @@ services:
         fromDatabase:
           name: db
           property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        value: polar_sandbox
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
+          property: user
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
@@ -238,6 +301,24 @@ services:
         fromDatabase:
           name: db
           property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        value: polar_sandbox
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
+          property: user
       - key: POLAR_REDIS_HOST
         fromService:
           type: redis
@@ -261,11 +342,14 @@ databases:
   - name: db
     databaseName: polar_cpit
     user: polar_cpit_user
-    plan: pro-4gb
-    diskSizeGB: 16
+    plan: pro-16gb
+    diskSizeGB: 100
     region: ohio
     postgresMajorVersion: "15"
+    highAvailability:
+      enabled: true
     readReplicas:
+      - name: polar-read
       - name: polar-replica
 
 envVarGroups:
@@ -303,8 +387,8 @@ envVarGroups:
         value: resend
       - key: POLAR_EMAIL_FROM_NAME
         value: Polar
-      - key: POLAR_EMAIL_FROM_EMAIL_ADDRESS
-        value: noreply@notifications.polar.sh
+      - key: POLAR_EMAIL_FROM_DOMAIN
+        value: notifications.polar.sh
       - key: POLAR_ENV
         value: production
       - key: POLAR_FRONTEND_BASE_URL
@@ -331,6 +415,8 @@ envVarGroups:
         sync: false
       - key: POLAR_TESTING
         value: 0
+      - key: POLAR_ORGANIZATIONS_BILLING_ENGINE_DEFAULT
+        value: 1
 
   - name: aws-s3-production
     envVars:
@@ -419,8 +505,8 @@ envVarGroups:
         value: resend
       - key: POLAR_EMAIL_FROM_NAME
         value: "[SANDBOX] Polar"
-      - key: POLAR_EMAIL_FROM_EMAIL_ADDRESS
-        value: noreply@notifications.sandbox.polar.sh
+      - key: POLAR_EMAIL_FROM_DOMAIN
+        value: notifications.sandbox.polar.sh
       - key: POLAR_ENV
         value: sandbox
       - key: POLAR_FRONTEND_BASE_URL
@@ -443,6 +529,8 @@ envVarGroups:
         sync: false
       - key: POLAR_TESTING
         value: 0
+      - key: POLAR_ORGANIZATIONS_BILLING_ENGINE_DEFAULT
+        value: 1
 
   - name: aws-s3-sandbox
     envVars:

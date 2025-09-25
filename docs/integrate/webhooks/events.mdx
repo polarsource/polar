@@ -125,6 +125,60 @@ In order to properly implement logic for handling subscriptions, you should look
   horizontal
 ></Card>
 
+#### Cancellation Sequences
+
+When a subscription is canceled, the events triggered depend on whether the cancellation is immediate or scheduled for the end of the billing period.
+
+**End-of-Period Cancellation (default)**
+
+When a subscription is **canceled** (by customer action from the portal or by the merchant from the dashboard/API), the following events are sent immediately:
+
+1. `subscription.updated`
+2. `subscription.canceled`
+
+Both events contain the same subscription data. The subscription will still have `active` status, but the `cancel_at_period_end` flag will be set to `true`.
+
+When the end of the current billing period arrives, the subscription is definitively revoked: billing cycles stop and benefits are revoked. The following events are then sent:
+
+3. `subscription.updated`
+4. `subscription.revoked`
+
+Both events contain the same subscription data. The subscription will have the `canceled` status.
+
+**Immediate Revocation**
+
+When a merchant cancels a subscription with **immediate revocation**, those events are sent at once:
+
+1. `subscription.updated`
+2. `subscription.canceled`
+3. `subscription.revoked`
+
+All three events contain the same subscription data. The subscription will have the `canceled` status immediately.
+
+#### Renewal Sequences
+
+When a subscription is renewed for a new cycle, the webhook events are triggered in a specific sequence to help you track the renewal process and handle billing logic appropriately.
+
+**Initial Renewal Events**
+
+When a subscription reaches its renewal date, the following events are sent immediately (if enabled on the webhook):
+
+1. `subscription.updated`
+2. `order.created`
+
+The subscription data will reflect the new billing period through the `current_period_start` and `current_period_end` properties, showing the updated cycle dates.
+
+The order data represents the new invoice for the upcoming cycle, with a total representing what the customer will pay for this new period. If usage-based billing is involved, their consumption for the past period will be included in the total. The status of this order is `pending` at this stage.
+
+**Payment Processing Events**
+
+Shortly after the initial renewal events, the platform will trigger a payment for the new order. Once the payment is successfully processed, the following events are sent:
+
+3. `order.updated`
+4. `order.paid`
+
+Both events will contain the same order data, with the order status changed to `paid`.
+
 ### Order
 
 <Card

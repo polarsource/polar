@@ -27,6 +27,7 @@ class Processor(StrEnum):
     """
 
     stripe = "stripe"
+    manual = "manual"
     # Legacy
     open_collective = "open_collective"
 

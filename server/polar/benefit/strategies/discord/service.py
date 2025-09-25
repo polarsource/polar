@@ -51,9 +51,15 @@ class BenefitDiscordService(
             bound_logger.debug("Grant benefit update")
             previous_guild_id = grant_properties.get("guild_id")
             previous_role_id = grant_properties.get("role_id")
-            if previous_guild_id != guild_id or previous_role_id != role_id:
+            account_id = grant_properties.get("account_id")
+            granted_account_id = grant_properties.get("granted_account_id")
+            if (
+                (previous_guild_id is not None and previous_guild_id != guild_id)
+                or (previous_role_id is not None and previous_role_id != role_id)
+                or (granted_account_id is not None and granted_account_id != account_id)
+            ):
                 bound_logger.debug(
-                    "Revoke before granting because guild or role have changed"
+                    "Revoke before granting because guild, role or account have changed"
                 )
                 await self.revoke(benefit, customer, grant_properties, attempt=attempt)
 
@@ -84,6 +90,7 @@ class BenefitDiscordService(
             **grant_properties,
             "guild_id": guild_id,
             "role_id": role_id,
+            "granted_account_id": account_id,
         }
 
     async def cycle(
@@ -111,7 +118,7 @@ class BenefitDiscordService(
 
         guild_id = grant_properties.get("guild_id")
         role_id = grant_properties.get("role_id")
-        account_id = grant_properties.get("account_id")
+        account_id = grant_properties.get("granted_account_id")
 
         if not (guild_id and role_id and account_id):
             return {}
@@ -136,7 +143,10 @@ class BenefitDiscordService(
 
         bound_logger.debug("Benefit revoked")
 
-        return {}
+        # Keep account_id in case we need to re-grant later
+        return {
+            "account_id": grant_properties.get("account_id"),
+        }
 
     async def requires_update(
         self, benefit: Benefit, previous_properties: BenefitDiscordProperties

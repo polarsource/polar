@@ -11,6 +11,7 @@ from polar.models import (
     Product,
     Subscription,
 )
+from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -43,9 +44,11 @@ class TestHandleFailure:
             product=product,
             customer=customer,
             subscription=subscription,
+            status=OrderStatus.pending,
         )
 
         order.next_payment_attempt_at = None
+        assert order.subscription is not None
         order.subscription.stripe_subscription_id = None
         await save_fixture(order)
 

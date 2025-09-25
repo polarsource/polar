@@ -1,6 +1,7 @@
 import inspect
 import json
 import typing
+from datetime import datetime
 from inspect import Parameter, Signature
 from typing import Annotated, Any, Literal, assert_never, get_args, get_origin
 
@@ -105,6 +106,7 @@ class SkipEvent(PolarError):
 
 class BaseWebhookPayload(Schema):
     type: WebhookEventType
+    timestamp: datetime
     data: IDSchema
 
     def get_payload(self, format: WebhookFormat, target: User | Organization) -> str:

@@ -79,11 +79,12 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     status: Mapped[OrderStatus] = mapped_column(
-        String, nullable=False, default=OrderStatus.pending
+        String, nullable=False, default=OrderStatus.pending, index=True
     )
     subtotal_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     discount_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    from_balance_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     billing_reason: Mapped[OrderBillingReason] = mapped_column(
         String, nullable=False, index=True
@@ -91,6 +92,8 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     refunded_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     refunded_tax_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    platform_fee_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     billing_name: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
@@ -136,7 +139,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return relationship("Customer", lazy="raise")
 
     product_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("products.id"), nullable=False
+        Uuid, ForeignKey("products.id"), nullable=False, index=True
     )
 
     @declared_attr
@@ -160,7 +163,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     @declared_attr
-    def subscription(cls) -> Mapped["Subscription"]:
+    def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise")
 
     checkout_id: Mapped[UUID | None] = mapped_column(
@@ -222,6 +225,15 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @classmethod
     def _total_amount_expression(cls) -> ColumnElement[int]:
         return cls.net_amount + cls.tax_amount
+
+    @hybrid_property
+    def payout_amount(self) -> int:
+        return self.net_amount - self.platform_fee_amount - self.refunded_amount
+
+    @payout_amount.inplace.expression
+    @classmethod
+    def _payout_amount_expression(cls) -> ColumnElement[int]:
+        return cls.net_amount - cls.platform_fee_amount - cls.refunded_amount
 
     @property
     def taxed(self) -> int:

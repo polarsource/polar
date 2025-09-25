@@ -65,6 +65,39 @@ class BenefitGitHubRepositoryService(
             repository_name = properties["repository_name"]
             permission = properties["permission"]
 
+            # If we already granted this benefit, make sure we revoke the previous config
+            if update and grant_properties:
+                bound_logger.debug("Grant benefit update")
+                previous_repository_owner = grant_properties.get("repository_owner")
+                previous_repository_name = grant_properties.get("repository_name")
+                previous_permission = grant_properties.get("permission")
+                granted_account_id = grant_properties.get("granted_account_id")
+                # The repository, the permission or the account changed: revoke first
+                if (
+                    (
+                        previous_repository_owner is not None
+                        and repository_owner != previous_repository_owner
+                    )
+                    or (
+                        previous_repository_name is not None
+                        and repository_name != previous_repository_name
+                    )
+                    or (
+                        previous_permission is not None
+                        and permission != previous_permission
+                    )
+                    or (
+                        granted_account_id is not None
+                        and grant_properties.get("account_id") != granted_account_id
+                    )
+                ):
+                    bound_logger.debug(
+                        "Revoke before granting because repository, permission or account changed"
+                    )
+                    await self.revoke(
+                        benefit, customer, grant_properties, attempt=attempt
+                    )
+
             if (account_id := grant_properties.get("account_id")) is None:
                 raise BenefitActionRequiredError(
                     "The customer needs to connect their GitHub account"
@@ -78,29 +111,6 @@ class BenefitGitHubRepositoryService(
                 raise BenefitActionRequiredError(
                     "The customer needs to connect their GitHub account"
                 )
-
-            # If we already granted this benefit, make sure we revoke the previous config
-            if update and grant_properties:
-                bound_logger.debug("Grant benefit update")
-                invitation = await self._get_invitation(
-                    client,
-                    repository_owner=repository_owner,
-                    repository_name=repository_name,
-                    user_id=int(oauth_account.account_id),
-                )
-                # The repository changed, or the invitation is still pending: revoke
-                if (
-                    repository_owner != grant_properties.get("repository_owner")
-                    or repository_name != grant_properties.get("repository_name")
-                    or invitation is not None
-                ):
-                    await self.revoke(
-                        benefit, customer, grant_properties, attempt=attempt
-                    )
-                # The permission changed, and the invitation is already accepted
-                elif permission != grant_properties.get("permission"):
-                    # The permission change will be handled by the add_collaborator call
-                    pass
 
             try:
                 await client.rest.repos.async_add_collaborator(
@@ -120,12 +130,13 @@ class BenefitGitHubRepositoryService(
 
             bound_logger.debug("Benefit granted")
 
-            # Store repository and permission to compare on update
+            # Store repository, permission and account ID to compare on update
             return {
                 **grant_properties,
                 "repository_owner": repository_owner,
                 "repository_name": repository_name,
                 "permission": permission,
+                "granted_account_id": account_id,
             }
 
     async def cycle(
@@ -156,9 +167,9 @@ class BenefitGitHubRepositoryService(
             repository_owner = properties["repository_owner"]
             repository_name = properties["repository_name"]
 
-            if (account_id := grant_properties.get("account_id")) is None:
+            if (account_id := grant_properties.get("granted_account_id")) is None:
                 raise BenefitActionRequiredError(
-                    "The customer needs to connect their GitHub account"
+                    "The benefit was never granted to the customer"
                 )
 
             oauth_account = customer.get_oauth_account(
@@ -200,7 +211,10 @@ class BenefitGitHubRepositoryService(
 
             bound_logger.debug("Benefit revoked")
 
-            return {}
+            # Keep account_id in case we need to re-grant later
+            return {
+                "account_id": grant_properties.get("account_id"),
+            }
 
     async def requires_update(
         self, benefit: Benefit, previous_properties: BenefitGitHubRepositoryProperties

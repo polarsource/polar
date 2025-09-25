@@ -24,10 +24,7 @@ from polar.models import (
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import is_static_price
-from polar.subscription.service import (
-    AlreadyCanceledSubscription,
-    SubscriptionNotActiveOnStripe,
-)
+from polar.subscription.service import AlreadyCanceledSubscription
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -135,15 +132,32 @@ class TestUpdate:
             )
 
     async def test_not_existing_stripe_subscription(
-        self, session: AsyncSession, subscription: Subscription, product_second: Product
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        subscription: Subscription,
+        product_second: Product,
     ) -> None:
         subscription.stripe_subscription_id = None
-        with pytest.raises(SubscriptionNotActiveOnStripe):
-            await customer_subscription_service.update(
-                session,
-                subscription,
-                updates=CustomerSubscriptionUpdateProduct(product_id=product_second.id),
-            )
+
+        new_price = product_second.prices[0]
+        updated_subscription = await customer_subscription_service.update(
+            session,
+            subscription,
+            updates=CustomerSubscriptionUpdateProduct(product_id=product_second.id),
+        )
+
+        assert isinstance(new_price, ProductPriceFixed)
+        assert updated_subscription.product == product_second
+        assert updated_subscription.prices == product_second.prices
+        assert updated_subscription.amount == new_price.price_amount
+        assert (
+            updated_subscription.recurring_interval == product_second.recurring_interval
+        )
+
+        # Since the subscription has no `stripe_subscription_id` it should be
+        # handled by our own billing engine
+        stripe_service_mock.update_subscription_price.assert_not_called()
 
     async def test_update_not_allowed(
         self,
@@ -246,35 +260,6 @@ class TestCancel:
 
         with pytest.raises(AlreadyCanceledSubscription):
             await customer_subscription_service.cancel(session, subscription)
-
-    @pytest.mark.auth
-    async def test_free_subscription(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            stripe_subscription_id=None,
-        )
-
-        updated_subscription = await customer_subscription_service.cancel(
-            session, subscription
-        )
-
-        assert updated_subscription.id == subscription.id
-        assert updated_subscription.status == SubscriptionStatus.canceled
-        assert updated_subscription.cancel_at_period_end is False
-        assert updated_subscription.canceled_at is not None
-        assert updated_subscription.ends_at is not None
-        assert updated_subscription.ended_at is not None
-
-        stripe_service_mock.cancel_subscription.assert_not_called()
 
     @pytest.mark.auth
     async def test_stripe_subscription_cancellation(

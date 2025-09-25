@@ -1,10 +1,10 @@
-import { useRetryPayment } from '@/hooks/useRetryPayment'
 import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -12,7 +12,6 @@ import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import { OrderStatus } from '../Orders/OrderStatus'
 import CustomerPortalOrder from './CustomerPortalOrder'
-import { RetryPaymentButton } from './RetryPaymentButton'
 
 export interface CustomerPortalOrdersProps {
   organization: schemas['Organization']
@@ -26,11 +25,11 @@ export const CustomerPortalOrders = ({
   customerSessionToken,
 }: CustomerPortalOrdersProps) => {
   const api = createClientSideAPI(customerSessionToken)
-  const { retryPayment, isRetrying, isLoading } =
-    useRetryPayment(customerSessionToken)
 
+  const theme = useTheme()
   const themingPreset = useThemePreset(
     organization.slug === 'midday' ? 'midday' : 'polar',
+    theme.resolvedTheme as 'light' | 'dark',
   )
 
   const [selectedOrder, setSelectedOrder] = useState<
@@ -87,14 +86,6 @@ export const CustomerPortalOrders = ({
 
               return (
                 <span className="flex justify-end gap-2">
-                  <RetryPaymentButton
-                    order={order}
-                    onRetry={retryPayment}
-                    isRetrying={isRetrying(order.id)}
-                    isLoading={isLoading(order.id)}
-                    themingPreset={themingPreset}
-                    className="hidden md:flex"
-                  />
                   <Button
                     variant="secondary"
                     onClick={() => {

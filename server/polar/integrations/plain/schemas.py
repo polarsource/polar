@@ -9,6 +9,7 @@ class CustomerCardKey(StrEnum):
     organization = "organization"
     customer = "customer"
     order = "order"
+    snippets = "snippets"
 
 
 class CustomerCardCustomer(BaseModel):

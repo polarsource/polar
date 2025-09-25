@@ -1,5 +1,6 @@
 'use client'
 
+import type { AddressInput } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
@@ -59,6 +60,7 @@ export interface CheckoutFormContextProps {
   ) => Promise<CheckoutPublicConfirmed>
   loading: boolean
   loadingLabel: string | undefined
+  isUpdatePending: boolean
 }
 
 // @ts-ignore
@@ -75,10 +77,13 @@ export const CheckoutFormProvider = ({
   const { checkout, update: updateOuter, confirm: confirmOuter } = useCheckout()
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState<string | undefined>()
+  const [isUpdatePending, setIsUpdatePending] = useState(false)
 
   const form = useForm<CheckoutUpdatePublic>({
     defaultValues: {
       ...checkout,
+      customerBillingAddress:
+        checkout.customerBillingAddress as AddressInput | null,
       discountCode: checkout.discount ? checkout.discount.code : undefined,
       ...(prefilledParameters ? unflatten(prefilledParameters) : {}),
     },
@@ -90,7 +95,12 @@ export const CheckoutFormProvider = ({
     async (
       checkoutUpdatePublic: CheckoutUpdatePublic,
     ): Promise<CheckoutPublic> => {
-      const { ok, value, error } = await updateOuter(checkoutUpdatePublic)
+      setIsUpdatePending(true)
+      const { ok, value, error } = await updateOuter(
+        checkoutUpdatePublic,
+      ).finally(() => {
+        setIsUpdatePending(false)
+      })
       if (ok) {
         return value
       } else {
@@ -255,6 +265,7 @@ export const CheckoutFormProvider = ({
         confirm,
         loading,
         loadingLabel,
+        isUpdatePending,
       }}
     >
       {children}

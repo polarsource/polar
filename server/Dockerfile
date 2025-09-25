@@ -30,7 +30,7 @@ COPY ./polar/web_backoffice/ .
 
 RUN pnpm run build
 
-FROM --platform=$BUILDPLATFORM python:3.12-slim
+FROM --platform=$BUILDPLATFORM python:3-slim
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
 LABEL org.opencontainers.image.licenses=Apache-2.0
@@ -45,7 +45,14 @@ WORKDIR /app/server
 
 RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-  apt-get update && apt-get install -y build-essential redis libpq-dev curl \
+  apt-get update \
+  && apt-get install -y \
+  build-essential \
+  redis \
+  libpq-dev \
+  curl \
+  # tzdata-legacy is needed to accept legacy timezone names in Python like "Asia/Calcutta"
+  tzdata-legacy \
   && uv sync --no-group dev --frozen \
   && apt-get autoremove -y build-essential
 

@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from polar.exceptions import PolarError
 from polar.kit.utils import utc_now
 from polar.models import UserOrganization
-from polar.postgres import AsyncSession, sql
+from polar.postgres import AsyncReadSession, AsyncSession, sql
 
 
 class UserOrganizationError(PolarError): ...
@@ -40,7 +40,7 @@ class CannotRemoveOrganizationAdmin(UserOrganizationError):
 
 class UserOrganizationService:
     async def list_by_org(
-        self, session: AsyncSession, org_id: UUID
+        self, session: AsyncReadSession, org_id: UUID
     ) -> Sequence[UserOrganization]:
         stmt = (
             sql.select(UserOrganization)

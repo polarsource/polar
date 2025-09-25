@@ -5,14 +5,13 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import PaymentOnboardingStepper from '@/components/Onboarding/PaymentOnboardingStepper'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
-import CheckoutsWidget from '@/components/Widgets/CheckoutsWidget'
 import { MonthWidget } from '@/components/Widgets/MonthWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { useMetrics, useOrganizationPaymentStatus } from '@/hooks/queries'
 import { getChartRangeParams, getPreviousParams } from '@/utils/metrics'
-import { ArrowOutwardOutlined } from '@mui/icons-material'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
@@ -80,7 +79,7 @@ interface OverviewPageProps {
 
 export default function OverviewPage({ organization }: OverviewPageProps) {
   const { data: paymentStatus } = useOrganizationPaymentStatus(organization.id)
-  
+
   const motionVariants = {
     variants: {
       initial: { opacity: 0 },
@@ -123,12 +122,6 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
           {...motionVariants}
         >
           <RevenueWidget />
-        </motion.div>
-        <motion.div
-          className={twMerge(cardClassName, 'xl:col-span-2')}
-          {...motionVariants}
-        >
-          <CheckoutsWidget />
         </motion.div>
         <motion.div className={cardClassName} {...motionVariants}>
           <OrdersWidget />

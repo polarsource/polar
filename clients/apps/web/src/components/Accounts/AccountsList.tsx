@@ -1,24 +1,31 @@
 import {
-  ACCOUNT_STATUS_DISPLAY_NAMES,
   ACCOUNT_TYPE_DISPLAY_NAMES,
+  ORGANIZATION_STATUS_DISPLAY_NAMES,
 } from '@/utils/account'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import Link from 'next/link'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import AccountAssociations from './AccountAssociations'
 
 interface AccountsListProps {
   accounts: schemas['Account'][]
-  returnPath: string
   pauseActions?: boolean
 }
 
-const AccountsList = ({
-  accounts,
-  returnPath,
-  pauseActions,
-}: AccountsListProps) => {
+const AccountsList = ({ accounts }: AccountsListProps) => {
+  const accountOrgs = useMemo(
+    () =>
+      accounts.flatMap((account) =>
+        account.organizations.map((organization) => ({
+          account,
+          organization,
+        })),
+      ),
+    [accounts],
+  )
+
   return (
     <table className="-mx-4 w-full text-left">
       <thead className="dark:text-polar-500 text-gray-500">
@@ -50,12 +57,11 @@ const AccountsList = ({
         </tr>
       </thead>
       <tbody>
-        {accounts.map((account) => (
+        {accountOrgs.map(({ account, organization }) => (
           <AccountListItem
-            key={account.id}
+            key={organization.id}
             account={account}
-            pauseActions={pauseActions}
-            returnPath={returnPath}
+            organization={organization}
           />
         ))}
       </tbody>
@@ -67,38 +73,17 @@ export default AccountsList
 
 interface AccountListItemProps {
   account: schemas['Account']
-  returnPath: string
-  pauseActions?: boolean
+  organization: schemas['Organization']
 }
 
-const AccountListItem = ({
-  account,
-  returnPath,
-  pauseActions,
-}: AccountListItemProps) => {
-  pauseActions = pauseActions === true
+const AccountListItem = ({ account, organization }: AccountListItemProps) => {
   const childClass = twMerge(
     'dark:group-hover:bg-polar-700 px-4 py-2 transition-colors group-hover:bg-blue-50 group-hover:text-gray-950 text-gray-700 dark:text-polar-200 group-hover:dark:text-white',
   )
 
-  const isActive = account?.status === 'active'
-  const isUnderReview = account?.status === 'under_review'
-
-  const goToOnboarding = async () => {
-    const link = await unwrap(
-      api.POST('/v1/accounts/{id}/onboarding_link', {
-        params: {
-          path: {
-            id: account.id,
-          },
-          query: {
-            return_path: returnPath,
-          },
-        },
-      }),
-    )
-    window.location.href = link.url
-  }
+  const isActive =
+    organization?.status === 'active' && account?.stripe_id !== null
+  const isUnderReview = organization?.status === 'under_review'
 
   const goToDashboard = async () => {
     const link = await unwrap(
@@ -119,17 +104,18 @@ const AccountListItem = ({
         {ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}
       </td>
       <td className={childClass}>
-        {ACCOUNT_STATUS_DISPLAY_NAMES[account.status]}
+        {organization
+          ? ORGANIZATION_STATUS_DISPLAY_NAMES[organization.status]
+          : 'No Status'}
       </td>
-      <td className={childClass}>
-        <AccountAssociations account={account} />
-      </td>
+      <td className={childClass}>{organization.slug}</td>
       <td className={twMerge(childClass, 'rounded-r-xl uppercase')}>
         {!isActive && !isUnderReview && (
-          <Button size="sm" onClick={goToOnboarding} disabled={pauseActions}>
-            Continue setup
-          </Button>
+          <Link href={`/dashboard/${organization.slug}/finance/account`}>
+            <Button size="sm">Continue setup</Button>
+          </Link>
         )}
+
         {isActive && (
           <Button size="sm" onClick={goToDashboard}>
             Open dashboard

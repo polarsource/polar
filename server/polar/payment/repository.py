@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
@@ -11,7 +12,7 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Payment, UserOrganization
+from polar.models import Order, Payment, UserOrganization
 from polar.models.payment import PaymentStatus
 
 from .sorting import PaymentSortProperty
@@ -24,6 +25,18 @@ class PaymentRepository(
     RepositoryBase[Payment],
 ):
     model = Payment
+
+    async def get_all_by_customer(
+        self, customer_id: UUID, *, status: PaymentStatus | None = None
+    ) -> Sequence[Payment]:
+        statement = (
+            self.get_base_statement()
+            .join(Order, Payment.order_id == Order.id)
+            .where(Order.deleted_at.is_(None), Order.customer_id == customer_id)
+        )
+        if status is not None:
+            statement = statement.where(Payment.status == status)
+        return await self.get_all(statement)
 
     async def get_by_processor_id(
         self, processor: PaymentProcessor, processor_id: str
@@ -74,3 +87,13 @@ class PaymentRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar() or 0
+
+    async def get_latest_for_order(self, order_id: UUID) -> Payment | None:
+        """Get the latest payment for a specific order."""
+        statement = (
+            select(Payment)
+            .where(Payment.order_id == order_id)
+            .order_by(Payment.created_at.desc())
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)

@@ -4,6 +4,7 @@ import CreateMeterModalContent from '@/components/Meter/CreateMeterModalContent'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
+import { useAuth } from '@/hooks/auth'
 import { useMeters } from '@/hooks/queries/meters'
 import {
   isLegacyRecurringPrice,
@@ -12,9 +13,8 @@ import {
 } from '@/utils/product'
 import { PlusIcon } from '@heroicons/react/20/solid'
 import { ErrorMessage } from '@hookform/error-message'
-import { CloseOutlined } from '@mui/icons-material'
+import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { schemas } from '@polar-sh/client'
-import Alert from '@polar-sh/ui/components/atoms/Alert'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
@@ -110,7 +110,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
               <FormControl>
                 <MoneyInput
                   name={field.name}
-                  value={field.value || undefined}
+                  value={field.value}
                   onChange={(v) => {
                     field.onChange(v)
                     setValue(`prices.${index}.id`, '')
@@ -140,7 +140,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
               <FormControl>
                 <MoneyInput
                   name={field.name}
-                  value={field.value || undefined}
+                  value={field.value}
                   onChange={(v) => {
                     field.onChange(v)
                     setValue(`prices.${index}.id`, '')
@@ -177,6 +177,8 @@ export const ProductPriceMeteredUnitItem: React.FC<
 
   const { data: meters, refetch } = useMeters(organization.id, {
     sorting: ['name'],
+    limit: 30,
+    is_archived: false,
   })
 
   const {
@@ -220,21 +222,15 @@ export const ProductPriceMeteredUnitItem: React.FC<
   return (
     <>
       {meters.items.length === 0 ? (
-        <Alert color="gray">
-          <p className="text-center text-sm">
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                showCreateMeterModal()
-              }}
-              type="button"
-              className="font-medium underline"
-            >
-              Set up your first meter
-            </button>{' '}
-            to start using metered pricing
-          </p>
-        </Alert>
+        <Button
+          onClick={(e) => {
+            e.preventDefault()
+            showCreateMeterModal()
+          }}
+          size="sm"
+        >
+          Create a Meter
+        </Button>
       ) : (
         <>
           <FormField
@@ -323,7 +319,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
                     <MoneyInput
                       {...field}
                       name={field.name}
-                      value={field.value || undefined}
+                      value={field.value}
                       onChange={(v) => {
                         field.onChange(v)
                         setValue(`prices.${index}.id`, '')
@@ -555,6 +551,8 @@ export const ProductPricingSection = ({
     })
   }, [recurringInterval, prices, remove])
 
+  const { currentUser } = useAuth()
+
   return (
     <Section
       title="Pricing"
@@ -604,6 +602,12 @@ export const ProductPricingSection = ({
                             One-time purchase
                           </SelectItem>
                         )}
+                        {currentUser && currentUser.is_admin && (
+                          <>
+                            <SelectItem value="day">Daily</SelectItem>
+                            <SelectItem value="week">Weekly</SelectItem>
+                          </>
+                        )}
                         <SelectItem value="month">Monthly</SelectItem>
                         <SelectItem value="year">Yearly</SelectItem>
                       </SelectContent>
@@ -640,6 +644,7 @@ export const ProductPricingSection = ({
           {recurringInterval !== null && (
             <Button
               className="self-start"
+              variant="secondary"
               onClick={() =>
                 append({
                   amount_type: 'metered_unit',
@@ -649,7 +654,7 @@ export const ProductPricingSection = ({
                 })
               }
             >
-              Add Price
+              Add Additional Price
             </Button>
           )}
           <ErrorMessage

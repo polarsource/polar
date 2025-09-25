@@ -1,7 +1,7 @@
 'use client'
 
 import { usePostHog } from '@/hooks/posthog'
-import { KeyboardArrowRight } from '@mui/icons-material'
+import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ComponentProps, FormEvent, useCallback, useMemo } from 'react'

@@ -2,7 +2,6 @@
 
 import { PlusIcon } from '@heroicons/react/20/solid'
 import { schemas } from '@polar-sh/client'
-import Alert from '@polar-sh/ui/components/atoms/Alert'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
@@ -28,6 +27,7 @@ import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
 import { useMeters } from '@/hooks/queries/meters'
+import Button from '@polar-sh/ui/components/atoms/Button'
 
 export const MeterCreditBenefitForm = ({
   organization,
@@ -36,6 +36,7 @@ export const MeterCreditBenefitForm = ({
 }) => {
   const { data: meters, refetch } = useMeters(organization.id, {
     sorting: ['name'],
+    is_archived: false,
   })
 
   const { control, setValue } =
@@ -82,21 +83,15 @@ export const MeterCreditBenefitForm = ({
   return (
     <>
       {meters.items.length === 0 ? (
-        <Alert color="gray">
-          <p className="text-center text-sm">
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                showCreateMeterModal()
-              }}
-              type="button"
-              className="font-medium underline"
-            >
-              Set up your first meter
-            </button>{' '}
-            to start using meter credits
-          </p>
-        </Alert>
+        <Button
+          onClick={(e) => {
+            e.preventDefault()
+            showCreateMeterModal()
+          }}
+          size="sm"
+        >
+          Create a Meter
+        </Button>
       ) : (
         <>
           <FormField

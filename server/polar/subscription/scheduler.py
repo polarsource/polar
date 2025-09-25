@@ -9,6 +9,7 @@ from apscheduler.triggers.date import DateTrigger
 from sqlalchemy import Select, select, update
 from sqlalchemy.orm import Session
 
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Subscription
 from polar.postgres import create_sync_engine
@@ -41,9 +42,10 @@ class SubscriptionJobStore(BaseJobStore):
         statement = (
             select(Subscription)
             .where(
-                Subscription.scheduler_locked.is_(False),
+                Subscription.scheduler_locked_at.is_(None),
                 Subscription.stripe_subscription_id.is_(None),
                 Subscription.active.is_(True),
+                Subscription.current_period_end.is_not(None),
                 Subscription.current_period_end <= now,
             )
             .order_by(Subscription.current_period_end.asc())
@@ -56,9 +58,10 @@ class SubscriptionJobStore(BaseJobStore):
         statement = (
             select(Subscription.current_period_end)
             .where(
-                Subscription.scheduler_locked.is_(False),
+                Subscription.scheduler_locked_at.is_(None),
                 Subscription.stripe_subscription_id.is_(None),
                 Subscription.active.is_(True),
+                Subscription.current_period_end.is_not(None),
             )
             .order_by(Subscription.current_period_end.asc())
             .limit(1)
@@ -73,9 +76,10 @@ class SubscriptionJobStore(BaseJobStore):
         statement = (
             select(Subscription)
             .where(
-                Subscription.scheduler_locked.is_(False),
+                Subscription.scheduler_locked_at.is_(None),
                 Subscription.stripe_subscription_id.is_(None),
                 Subscription.active.is_(True),
+                Subscription.current_period_end.is_not(None),
             )
             .order_by(Subscription.current_period_end.asc())
         )
@@ -88,7 +92,7 @@ class SubscriptionJobStore(BaseJobStore):
         statement = (
             update(Subscription)
             .where(Subscription.id == subscription_id)
-            .values(scheduler_locked=True)
+            .values(scheduler_locked_at=utc_now())
         )
         with self.engine.begin() as connection:
             connection.execute(statement)
@@ -116,6 +120,7 @@ class SubscriptionJobStore(BaseJobStore):
                 subscription_id, current_period_end = result._tuple()
                 trigger = DateTrigger(current_period_end, datetime.UTC)
                 job_kwargs = {
+                    **(self._scheduler._job_defaults if self._scheduler else {}),
                     "trigger": trigger,
                     "executor": self.executor,
                     "func": enqueue_subscription_cycle,
@@ -124,7 +129,7 @@ class SubscriptionJobStore(BaseJobStore):
                     "id": f"subscriptions:cycle:{subscription_id}",
                     "name": None,
                     "next_run_time": trigger.run_date,
-                    **(self._scheduler._job_defaults if self._scheduler else {}),
+                    "misfire_grace_time": None,
                 }
                 job = Job(self._scheduler, **job_kwargs)
                 jobs.append(job)

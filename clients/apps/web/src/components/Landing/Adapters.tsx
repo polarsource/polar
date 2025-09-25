@@ -1,6 +1,7 @@
 'use client'
 
-import { ArrowOutwardOutlined, Check } from '@mui/icons-material'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import Check from '@mui/icons-material/Check'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Tabs,
@@ -9,6 +10,7 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import {
@@ -24,7 +26,7 @@ const adapters = [
 export const GET = Checkout({
   accessToken: 'xxx'
 });`,
-    link: 'https://docs.polar.sh/integrate/sdk/adapters/nextjs',
+    link: 'https://polar.sh/docs/integrate/sdk/adapters/nextjs',
   },
   {
     name: 'BetterAuth',
@@ -49,7 +51,7 @@ const auth = betterAuth({
         })
     ]
 });`,
-    link: 'https://docs.polar.sh/integrate/sdk/adapters/better-auth',
+    link: 'https://polar.sh/docs/integrate/sdk/adapters/better-auth',
   },
   {
     name: 'TypeScript',
@@ -64,7 +66,7 @@ const checkout = await polar.checkouts.create({
 });
 
 redirect(checkout.url)`,
-    link: 'https://docs.polar.sh/api-reference/checkouts/create-session',
+    link: 'https://polar.sh/docs/api-reference/checkouts/create-session',
   },
 ]
 
@@ -111,7 +113,7 @@ export const Adapters = () => {
                 </TabsTrigger>
               ))}
               <Link
-                href="https://docs.polar.sh/integrate/sdk/adapters/nextjs"
+                href="https://polar.sh/docs/integrate/sdk/adapters/nextjs"
                 target="_blank"
               >
                 <Button className="rounded-full" variant="ghost">
@@ -201,15 +203,16 @@ export const Adapters = () => {
                   </div>
                 </div>
 
-                <div
-                  className="dark:bg-polar-800 flex flex-col justify-center bg-gray-100 p-8 text-sm md:w-1/2 md:p-16"
-                  style={{
-                    backgroundImage: 'url(/assets/landing/abstract.jpg)',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }}
-                >
-                  <div className="dark:bg-polar-900 rounded-lg bg-white p-4">
+                <div className="dark:bg-polar-800 relative flex flex-col justify-center bg-gray-100 p-8 text-sm md:w-1/2 md:p-16">
+                  <Image
+                    className="absolute inset-0 h-full w-full object-cover"
+                    src="/assets/landing/abstract.jpg"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 75vw, 640px"
+                    loading="lazy"
+                    alt=""
+                  />
+                  <div className="dark:bg-polar-900 z-[1] rounded-lg bg-white p-4">
                     <SyntaxHighlighterClient
                       lang="typescript"
                       code={adapter.code}

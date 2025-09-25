@@ -2,12 +2,14 @@
 
 import { CalendarIcon } from '@heroicons/react/24/outline'
 import {
+  endOfDay,
   endOfMonth,
   endOfToday,
   endOfWeek,
   endOfYear,
   endOfYesterday,
   format,
+  startOfDay,
   startOfMonth,
   startOfToday,
   startOfWeek,
@@ -37,7 +39,7 @@ export type DateRange = {
 }
 
 interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
-  date: DateRange
+  date: DateRange | undefined
   onDateChange: (v: DateRange) => void
   maxDaysRange?: number
   minDate?: Date
@@ -60,11 +62,12 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   useEffect(() => {
     if (internalDate && internalDate.from && internalDate.to) {
       onDateChange({
-        from: internalDate.from,
-        to: internalDate.to,
+        from: startOfDay(internalDate.from),
+        to: endOfDay(internalDate.to),
       })
     }
-  }, [internalDate, onDateChange])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [internalDate])
 
   return (
     <div className={twMerge('grid gap-2', className)}>
@@ -111,7 +114,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             }}
           />
           <Calendar
-            initialFocus
+            autoFocus
             mode="range"
             defaultMonth={internalDate?.to}
             selected={internalDate}

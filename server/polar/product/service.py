@@ -1,7 +1,7 @@
 import builtins
 import uuid
 from collections.abc import Sequence
-from typing import Any, List, Literal, TypeVar  # noqa: UP035
+from typing import Any, Literal
 
 import stripe
 from sqlalchemy import UnaryExpression, asc, case, desc, func, select
@@ -13,6 +13,7 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
+    NotPermitted,
     PolarError,
     PolarRequestValidationError,
     ValidationError,
@@ -20,9 +21,9 @@ from polar.exceptions import (
 from polar.file.service import file as file_service
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
-from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.meter.repository import MeterRepository
 from polar.models import (
@@ -59,13 +60,10 @@ from .sorting import ProductSortProperty
 class ProductError(PolarError): ...
 
 
-T = TypeVar("T", bound=tuple[Any])
-
-
 class ProductService:
     async def list(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         id: Sequence[uuid.UUID] | None = None,
@@ -76,7 +74,7 @@ class ProductService:
         benefit_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[ProductSortProperty]] = [
+        sorting: Sequence[Sorting[ProductSortProperty]] = [
             (ProductSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Product], int]:
@@ -181,11 +179,13 @@ class ProductService:
             selectinload(Product.attached_custom_fields),
         )
 
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def get(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Product | None:
@@ -197,7 +197,9 @@ class ProductService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def get_embed(self, session: AsyncSession, id: uuid.UUID) -> Product | None:
+    async def get_embed(
+        self, session: AsyncReadSession, id: uuid.UUID
+    ) -> Product | None:
         repository = ProductRepository.from_session(session)
         statement = (
             repository.get_base_statement()
@@ -218,6 +220,16 @@ class ProductService:
         )
 
         errors: list[ValidationError] = []
+
+        if create_schema.recurring_interval not in (
+            SubscriptionRecurringInterval.month,
+            SubscriptionRecurringInterval.year,
+            None,
+        ):
+            if not is_user(auth_subject) or not auth_subject.subject.is_admin:
+                raise NotPermitted(
+                    "Recurring intervals `day` and `week` are only accessible to Polar staff"
+                )
 
         prices, _, _, prices_errors = await self._get_validated_prices(
             session,
@@ -329,6 +341,16 @@ class ProductService:
     ) -> Product:
         errors: list[ValidationError] = []
 
+        if update_schema.recurring_interval not in (
+            SubscriptionRecurringInterval.month,
+            SubscriptionRecurringInterval.year,
+            None,
+        ):
+            if not is_user(auth_subject) or not auth_subject.subject.is_admin:
+                raise NotPermitted(
+                    "Recurring intervals `day` and `week` are only accessible to Polar staff"
+                )
+
         # Prevent non-legacy products from changing their recurring interval
         if (
             update_schema.recurring_interval is not None
@@ -342,6 +364,28 @@ class ProductService:
                     "msg": "Recurring interval cannot be changed.",
                     "input": update_schema.recurring_interval,
                 }
+            )
+
+        # Prevent trying to add trial configuration to non-recurring products
+        if (
+            update_schema.trial_interval is not None
+            or update_schema.trial_interval_count is not None
+        ) and product.recurring_interval is None:
+            errors.extend(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "trial_interval"),
+                        "msg": "Trial configuration is only supported on recurring products.",
+                        "input": update_schema.trial_interval,
+                    },
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "trial_interval_count"),
+                        "msg": "Trial configuration is only supported on recurring products.",
+                        "input": update_schema.trial_interval_count,
+                    },
+                ]
             )
 
         if update_schema.medias is not None:
@@ -406,12 +450,11 @@ class ProductService:
                 await nested.rollback()
                 errors.extend(attached_custom_fields_errors)
 
-        prices = product.prices
         existing_prices = set(product.prices)
         added_prices: list[ProductPrice] = []
         if update_schema.prices is not None:
             (
-                prices,
+                _,
                 existing_prices,
                 added_prices,
                 prices_errors,
@@ -473,7 +516,6 @@ class ProductService:
 
         for attr, value in update_schema.model_dump(
             exclude_unset=True,
-            exclude_none=True,
             exclude={"prices", "medias", "attached_custom_fields"},
             by_alias=True,
         ).items():
@@ -492,7 +534,7 @@ class ProductService:
         self,
         session: AsyncSession,
         product: Product,
-        benefits: List[uuid.UUID],  # noqa: UP006
+        benefits: Sequence[uuid.UUID],
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
         previous_benefits = set(product.benefits)

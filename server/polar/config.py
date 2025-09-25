@@ -6,10 +6,9 @@ from typing import Annotated, Literal
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
-from pydantic_extra_types.country import CountryAlpha2
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from polar.kit.address import Address
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.jwk import JWKSFile
 
 
@@ -47,14 +46,17 @@ file_extension = ".exe" if os.name == "nt" else ""
 
 class Settings(BaseSettings):
     ENV: Environment = Environment.development
-    DEBUG: bool = False
+    SQLALCHEMY_DEBUG: bool = False
+    POSTHOG_DEBUG: bool = False
     LOG_LEVEL: str = "DEBUG"
     TESTING: bool = False
 
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
     WORKER_MAX_RETRIES: int = 20
     WORKER_MIN_BACKOFF_MILLISECONDS: int = 2_000
+
     WEBHOOK_MAX_RETRIES: int = 10
+    WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=30)
 
     SECRET: str = "super secret jwt secret"
     JWKS: JWKSFile = Field(default="./.jwks.json")
@@ -89,8 +91,9 @@ class Settings(BaseSettings):
     CUSTOMER_SESSION_CODE_TTL: timedelta = timedelta(minutes=30)
     CUSTOMER_SESSION_CODE_LENGTH: int = 6
 
-    # Magic link
-    MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
+    # Impersonation session
+    IMPERSONATION_COOKIE_KEY: str = "polar_original_session"
+    IMPERSONATION_INDICATOR_COOKIE_KEY: str = "polar_is_impersonating"
 
     # Login code
     LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
@@ -116,6 +119,13 @@ class Settings(BaseSettings):
     DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
     DATABASE_COMMAND_TIMEOUT_SECONDS: float = 30.0
+    DATABASE_STREAM_YIELD_PER: int = 100
+
+    POSTGRES_READ_USER: str | None = None
+    POSTGRES_READ_PWD: str | None = None
+    POSTGRES_READ_HOST: str | None = None
+    POSTGRES_READ_PORT: int | None = None
+    POSTGRES_READ_DATABASE: str | None = None
 
     # Redis
     REDIS_HOST: str = "127.0.0.1"
@@ -134,7 +144,8 @@ class Settings(BaseSettings):
     EMAIL_SENDER: EmailSender = EmailSender.logger
     RESEND_API_KEY: str = ""
     EMAIL_FROM_NAME: str = "Polar"
-    EMAIL_FROM_EMAIL_ADDRESS: str = "noreply@notifications.polar.sh"
+    EMAIL_FROM_DOMAIN: str = "notifications.polar.sh"
+    EMAIL_FROM_LOCAL: str = "mail"
 
     # Github App
     GITHUB_CLIENT_ID: str = ""
@@ -158,6 +169,10 @@ class Settings(BaseSettings):
     # Google
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
+
+    # OpenAI
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "o4-mini-2025-04-16"
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""
@@ -221,12 +236,10 @@ class Settings(BaseSettings):
         line2="PMB 61301",
         postal_code="94104",
         city="San Francisco",
-        state="CA",
+        state="US-CA",
         country=CountryAlpha2("US"),
     )
-    INVOICES_ADDITIONAL_INFO: str | None = (
-        "[support@polar.sh](mailto:support@polar.sh)\n"
-    )
+    INVOICES_ADDITIONAL_INFO: str | None = "[support@polar.sh](mailto:support@polar.sh)"
     PAYOUT_INVOICES_PREFIX: str = "POLAR-"
 
     # Application behaviours
@@ -270,6 +283,8 @@ class Settings(BaseSettings):
         ".well-known",
     ]
 
+    ORGANIZATIONS_BILLING_ENGINE_DEFAULT: bool = True
+
     # Dunning Configuration
     DUNNING_RETRY_INTERVALS: list[timedelta] = [
         timedelta(days=2),  # First retry after 2 days
@@ -299,6 +314,34 @@ class Settings(BaseSettings):
                 host=self.POSTGRES_HOST,
                 port=self.POSTGRES_PORT,
                 path=self.POSTGRES_DATABASE,
+            )
+        )
+
+    def is_read_replica_configured(self) -> bool:
+        return all(
+            [
+                self.POSTGRES_READ_USER,
+                self.POSTGRES_READ_PWD,
+                self.POSTGRES_READ_HOST,
+                self.POSTGRES_READ_PORT,
+                self.POSTGRES_READ_DATABASE,
+            ]
+        )
+
+    def get_postgres_read_dsn(
+        self, driver: Literal["asyncpg", "psycopg2"]
+    ) -> str | None:
+        if not self.is_read_replica_configured():
+            return None
+
+        return str(
+            PostgresDsn.build(
+                scheme=f"postgresql+{driver}",
+                username=self.POSTGRES_READ_USER,
+                password=self.POSTGRES_READ_PWD,
+                host=self.POSTGRES_READ_HOST,
+                port=self.POSTGRES_READ_PORT,
+                path=self.POSTGRES_READ_DATABASE,
             )
         )
 

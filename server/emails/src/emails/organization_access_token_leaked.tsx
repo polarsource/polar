@@ -8,7 +8,6 @@ interface OrganizationAccessTokenLeakedProps {
   notifier: string
   url?: string
   organization_access_token: string
-  current_year: number
 }
 
 export function OrganizationAccessTokenLeaked({
@@ -24,7 +23,7 @@ export function OrganizationAccessTokenLeaked({
       </Preview>
       <PolarHeader />
       <Section>
-        <Text className="text-xl font-bold text-gray-900 dark:text-white">
+        <Text className="text-xl font-bold text-gray-900">
           Important security notice
         </Text>
         <Text>
@@ -47,25 +46,25 @@ export function OrganizationAccessTokenLeaked({
           {url && <li>URL: {url}</li>}
           <li>Organization Access Token: {organization_access_token}</li>
         </ul>
-        <Text className="mb-0 mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <Text className="mb-0 mt-4 text-sm text-gray-600">
           As a reminder, organization access tokens are super sensitive values
           that shouldn't be shared publicly on the web or in a code repository.
           Use dedicated features to safely store secrets, like{' '}
           <Link
             href="https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions"
-            className="text-blue-600 underline dark:text-blue-400"
+            className="text-blue-600 underline"
           >
             GitHub Actions secrets
           </Link>
           .
         </Text>
       </InfoBox>
-      <Section className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
-        <Text className="text-sm text-gray-600 dark:text-gray-400">
+      <Section className="mt-6 border-t border-gray-200 pt-6">
+        <Text className="text-sm text-gray-600">
           You can read more about why you received this alert in our{' '}
           <Link
-            href="https://docs.polar.sh/documentation/integration-guides/authenticating-with-polar#security"
-            className="text-blue-600 underline dark:text-blue-400"
+            href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar#security"
+            className="text-blue-600 underline"
           >
             FAQ
           </Link>
@@ -81,7 +80,6 @@ OrganizationAccessTokenLeaked.PreviewProps = {
   notifier: 'GitHub',
   url: 'https://github.com/example/repo',
   organization_access_token: 'token_abc123',
-  current_year: new Date().getFullYear(),
 }
 
 export default OrganizationAccessTokenLeaked

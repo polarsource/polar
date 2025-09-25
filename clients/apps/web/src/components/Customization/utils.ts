@@ -272,6 +272,7 @@ export const ORDER_PREVIEW: schemas['CustomerOrder'] = {
   billing_address: null,
   is_invoice_generated: false,
   status: 'paid',
+  invoice_number: 'INV-0001',
   paid: true,
   subtotal_amount: 10000,
   discount_amount: 0,

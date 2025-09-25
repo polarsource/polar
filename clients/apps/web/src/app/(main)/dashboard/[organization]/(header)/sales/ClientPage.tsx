@@ -189,6 +189,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
     },
     {
+      accessorKey: 'invoice_number',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Invoice number" />
+      ),
+    },
+    {
       accessorKey: 'created_at',
       enableSorting: true,
       header: ({ column }) => (

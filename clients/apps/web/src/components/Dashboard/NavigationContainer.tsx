@@ -7,7 +7,7 @@ export interface NavigationContainerProps {
   title?: string
   dummyRoutes?: {
     title: string
-    icon: React.ReactElement
+    icon: React.ReactElement<any>
   }[]
 }
 

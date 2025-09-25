@@ -85,7 +85,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const api = getServerSideAPI()
+  const api = await getServerSideAPI()
 
   let authenticatedUser: schemas['UserRead'] | undefined = undefined
   let userOrganizations: schemas['Organization'][] = []

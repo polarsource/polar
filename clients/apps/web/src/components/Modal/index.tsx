@@ -1,11 +1,6 @@
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
-import React, {
-  FunctionComponent,
-  MouseEvent,
-  useCallback,
-  useEffect,
-} from 'react'
+import React, { FunctionComponent, MouseEvent, useCallback, useEffect, type JSX } from 'react';
 import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
 import { twMerge } from 'tailwind-merge'
@@ -88,7 +83,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
 }
 
 export const ModalHeader = (props: {
-  children: React.ReactElement
+  children: React.ReactElement<any>
   className?: string
   hide: () => void
 }) => {
@@ -140,7 +135,7 @@ export const ModalBox = ({
   children,
   className,
 }: {
-  children: React.ReactElement
+  children: React.ReactElement<any>
   className?: string
 }) => {
   return (

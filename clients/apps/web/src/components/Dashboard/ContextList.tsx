@@ -6,6 +6,8 @@ import Input, { InputProps } from '@polar-sh/ui/components/atoms/Input'
 import { twMerge } from 'tailwind-merge'
 import Spinner from '../Shared/Spinner'
 
+import type { JSX } from "react";
+
 export interface ContextListItemProps {
   id: string
   title: string

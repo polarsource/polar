@@ -6,14 +6,15 @@ import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { twMerge } from 'tailwind-merge'
 import { Navigation } from './Navigation'
 
-export default async function Layout({
-  params,
-  children,
-}: {
-  params: { organization: string }
+export default async function Layout(props: {
+  params: Promise<{ organization: string }>
   children: React.ReactNode
 }) {
-  const api = getServerSideAPI()
+  const params = await props.params
+
+  const { children } = props
+
+  const api = await getServerSideAPI()
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,

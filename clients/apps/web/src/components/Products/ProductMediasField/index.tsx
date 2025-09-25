@@ -11,7 +11,7 @@ const DropzoneView = ({
   children,
 }: {
   isDragActive: boolean
-  children: ReactElement
+  children: ReactElement<any>
 }) => {
   return (
     <>

@@ -8,14 +8,15 @@ import { getStorefrontOrNotFound } from '@/utils/storefront'
 import { getAuthenticatedUser } from '@/utils/user'
 import React from 'react'
 
-export default async function Layout({
-  params,
-  children,
-}: {
-  params: { organization: string }
+export default async function Layout(props: {
+  params: Promise<{ organization: string }>
   children: React.ReactNode
 }) {
-  const api = getServerSideAPI()
+  const params = await props.params
+
+  const { children } = props
+
+  const api = await getServerSideAPI()
 
   const { organization } = await getStorefrontOrNotFound(
     api,

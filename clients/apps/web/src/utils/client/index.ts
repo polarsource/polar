@@ -22,14 +22,14 @@ export const createClientSideAPI = (token?: string): Client => {
 
 export const api = createClientSideAPI()
 
-export const createServerSideAPI = (
-  headers: Headers,
+export const createServerSideAPI = async (
+  headers: Promise<Headers>,
   cookies: any,
   token?: string,
-): Client => {
+): Promise<Client> => {
   let apiHeaders = {}
 
-  const xForwardedFor = headers.get('X-Forwarded-For')
+  const xForwardedFor = (await headers).get('X-Forwarded-For')
   if (xForwardedFor) {
     apiHeaders = {
       ...apiHeaders,
@@ -39,7 +39,7 @@ export const createServerSideAPI = (
 
   apiHeaders = {
     ...apiHeaders,
-    Cookie: cookies.toString(),
+    Cookie: (await cookies).toString(),
   }
 
   // When running inside GitHub Codespaces, we need to pass a token to access forwarded ports

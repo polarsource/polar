@@ -243,12 +243,12 @@ export const POST = Webhooks({
 }
 
 export default async function Page() {
-  const api = getServerSideAPI()
+  const api = await getServerSideAPI()
   const userOrganizations = await getUserOrganizations(api)
 
   if (userOrganizations.length > 0) {
     const org = userOrganizations.find(
-      (org) => org.slug === getLastVisitedOrg(cookies()),
+      async (org) => org.slug === getLastVisitedOrg(await cookies()),
     )
 
     const targetOrg = org?.slug ?? userOrganizations[0].slug

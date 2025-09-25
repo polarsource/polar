@@ -34,7 +34,7 @@ export const PostHogContext = createContext<{
 export function PolarPostHogProvider({
   children,
 }: {
-  children: React.ReactElement
+  children: React.ReactElement<any>
 }) {
   const [persistence, setPersistence] = useState<
     'localStorage' | 'sessionStorage' | 'cookie' | 'memory'
@@ -75,7 +75,7 @@ export function PolarThemeProvider({
   children,
   forceTheme,
 }: {
-  children: React.ReactElement
+  children: React.ReactElement<any>
   forceTheme?: 'light' | 'dark'
 }) {
   const pathname = usePathname()
@@ -104,7 +104,7 @@ export function PolarThemeProvider({
 export function PolarQueryClientProvider({
   children,
 }: {
-  children: React.ReactElement
+  children: React.ReactElement<any>
 }) {
   return (
     <QueryClientProvider client={queryClient}>

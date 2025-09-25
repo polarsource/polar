@@ -10,7 +10,6 @@
     "generate": "pnpm -C packages/client generate",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "preinstall": "npx only-allow pnpm",
-    "postinstall": "manypkg check",
     "release-packages": "turbo run build lint test --filter='./packages/*' && changeset publish"
   },
   "devDependencies": {

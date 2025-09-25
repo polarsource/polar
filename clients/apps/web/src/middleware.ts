@@ -36,7 +36,7 @@ const getLoginResponse = (request: NextRequest): NextResponse => {
 export async function middleware(request: NextRequest) {
   let user: schemas['UserRead'] | undefined = undefined
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
-    const api = createServerSideAPI(request.headers, request.cookies)
+    const api = await createServerSideAPI(request.headers, request.cookies)
     const { data, response } = await api.GET('/v1/users/me', {
       cache: 'no-cache',
     })

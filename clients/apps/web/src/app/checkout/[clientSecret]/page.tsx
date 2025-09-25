@@ -10,16 +10,29 @@ import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
-export default async function Page({
-  params: { clientSecret },
-  searchParams: { embed: _embed, theme, ...prefilledParameters },
-}: {
-  params: { clientSecret: string }
-  searchParams: { embed?: string; theme?: 'light' | 'dark' } & Record<
-    string,
-    string
-  >
-}) {
+export default async function Page(
+  props: {
+    params: Promise<{ clientSecret: string }>
+    searchParams: Promise<{ embed?: string; theme?: 'light' | 'dark' } & Record<
+      string,
+      string
+    >>
+  }
+) {
+  const searchParams = await props.searchParams;
+
+  const {
+    embed: _embed,
+    theme,
+    ...prefilledParameters
+  } = searchParams;
+
+  const params = await props.params;
+
+  const {
+    clientSecret
+  } = params;
+
   const embed = _embed === 'true'
   const client = new PolarCore({ serverURL: getServerURL() })
 

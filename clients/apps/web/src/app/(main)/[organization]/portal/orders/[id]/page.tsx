@@ -4,12 +4,11 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { organization: string }
+export async function generateMetadata(props: {
+  params: Promise<{ organization: string }>
 }): Promise<Metadata> {
-  const api = getServerSideAPI()
+  const params = await props.params
+  const api = await getServerSideAPI()
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
@@ -46,13 +45,12 @@ export async function generateMetadata({
   }
 }
 
-export default async function Page({
-  params,
-  searchParams,
-}: {
-  params: { organization: string; id: string }
-  searchParams: { customer_session_token?: string }
+export default async function Page(props: {
+  params: Promise<{ organization: string; id: string }>
+  searchParams: Promise<{ customer_session_token?: string }>
 }) {
+  const searchParams = await props.searchParams
+  const params = await props.params
   const api = getServerSideAPI(searchParams.customer_session_token)
   const { organization } = await getOrganizationOrNotFound(
     api,

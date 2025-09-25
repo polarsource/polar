@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 export default async function Page() {
-  const api = getServerSideAPI()
+  const api = await getServerSideAPI()
   const userOrganizations = await getUserOrganizations(api, true)
 
   if (userOrganizations.length === 0) {
@@ -13,7 +13,7 @@ export default async function Page() {
   }
 
   const org = userOrganizations.find(
-    (org) => org.slug === getLastVisitedOrg(cookies()),
+    async (org) => org.slug === getLastVisitedOrg(await cookies()),
   )
 
   const targetOrg = org?.slug ?? userOrganizations[0].slug

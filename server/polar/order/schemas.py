@@ -50,6 +50,10 @@ class OrderBase(TimestampedSchema, IDSchema):
         description="The name of the customer that should appear on the invoice. "
     )
     billing_address: Address | None
+
+    invoice_number: str = Field(
+        description="The invoice number associated with this order."
+    )
     is_invoice_generated: bool = Field(
         description="Whether an invoice has been generated for this order."
     )

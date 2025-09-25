@@ -686,8 +686,8 @@ const BaseCheckoutForm = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex flex-row items-center justify-between">
-                        <div>Discount Code</div>
-                        <div className="dark:text-polar-500 text-xs text-gray-500">
+                        <div>Discount code</div>
+                        <div className="dark:text-polar-500 text-xs font-normal text-gray-500">
                           Optional
                         </div>
                       </FormLabel>

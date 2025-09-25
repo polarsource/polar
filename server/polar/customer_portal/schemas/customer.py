@@ -1,6 +1,6 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
-from pydantic import UUID4, AfterValidator, TypeAdapter
+from pydantic import UUID4, AfterValidator, Discriminator, TypeAdapter
 
 from polar.kit.address import Address, AddressInput
 from polar.kit.http import get_safe_return_url
@@ -55,3 +55,27 @@ class CustomerPaymentMethodCreate(Schema):
     confirmation_token_id: str
     set_default: bool
     return_url: Annotated[str, AfterValidator(get_safe_return_url)]
+
+
+class CustomerPaymentMethodCreateSucceededResponse(Schema):
+    status: Literal["succeeded"]
+    payment_method: CustomerPaymentMethod
+
+
+class CustomerPaymentMethodCreateRequiresActionResponse(Schema):
+    status: Literal["requires_action"]
+    client_secret: str
+
+
+CustomerPaymentMethodCreateResponse = Annotated[
+    CustomerPaymentMethodCreateSucceededResponse
+    | CustomerPaymentMethodCreateRequiresActionResponse,
+    Discriminator("status"),
+    SetSchemaReference("CustomerPaymentMethodCreateResponse"),
+    MergeJSONSchema({"title": "CustomerPaymentMethodCreateResponse"}),
+]
+
+
+class CustomerPaymentMethodConfirm(Schema):
+    setup_intent_id: str
+    set_default: bool

@@ -362,24 +362,34 @@ const nextConfig = {
     ]
   },
   async headers() {
+    const baseHeaders = [
+      {
+        key: 'Content-Security-Policy',
+        value: nonEmbeddedCSP.replace(/\n/g, ''),
+      },
+      {
+        key: 'Permissions-Policy',
+        value:
+          'payment=(), publickey-credentials-get=(), camera=(), microphone=(), geolocation=()',
+      },
+      {
+        key: 'X-Frame-Options',
+        value: 'DENY',
+      },
+    ]
+
+    // Add X-Robots-Tag header for sandbox environment
+    if (ENVIRONMENT === 'sandbox') {
+      baseHeaders.push({
+        key: 'X-Robots-Tag',
+        value: 'noindex, nofollow, noarchive, nosnippet, noimageindex',
+      })
+    }
+
     return [
       {
         source: '/((?!checkout|oauth2|docs).*)',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: nonEmbeddedCSP.replace(/\n/g, ''),
-          },
-          {
-            key: 'Permissions-Policy',
-            value:
-              'payment=(), publickey-credentials-get=(), camera=(), microphone=(), geolocation=()',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-        ],
+        headers: baseHeaders,
       },
       {
         source: '/oauth2/:path*',
@@ -397,6 +407,10 @@ const nextConfig = {
             key: 'X-Frame-Options',
             value: 'DENY',
           },
+          ...(ENVIRONMENT === 'sandbox' ? [{
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow, noarchive, nosnippet, noimageindex',
+          }] : []),
         ],
       },
       {
@@ -410,6 +424,10 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: `payment=*, publickey-credentials-get=*, camera=(), microphone=(), geolocation=()`,
           },
+          ...(ENVIRONMENT === 'sandbox' ? [{
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow, noarchive, nosnippet, noimageindex',
+          }] : []),
         ],
       },
       {
@@ -428,6 +446,10 @@ const nextConfig = {
             key: 'X-Frame-Options',
             value: 'DENY',
           },
+          ...(ENVIRONMENT === 'sandbox' ? [{
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow, noarchive, nosnippet, noimageindex',
+          }] : []),
         ],
       },
     ]

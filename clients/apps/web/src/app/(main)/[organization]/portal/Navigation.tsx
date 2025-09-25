@@ -47,6 +47,15 @@ export const Navigation = ({
   const currentPath = usePathname()
   const searchParams = useSearchParams()
 
+  // Hide navigation on routes where portal access is being requested or authenticated
+  const hideNav =
+    currentPath.endsWith('/portal/request') ||
+    currentPath.endsWith('/portal/authenticate')
+
+  if (hideNav) {
+    return null
+  }
+
   const buildPath = (path: string) => {
     return `${path}?${searchParams.toString()}`
   }
@@ -63,7 +72,7 @@ export const Navigation = ({
             className={twMerge(
               'dark:text-polar-500 dark:hover:bg-polar-800 border border-transparent px-4 py-2 font-medium text-gray-500 transition-colors duration-75 hover:bg-gray-100',
               link.isActive(currentPath) &&
-                themePreset.polar.customerPortalNavigationItemActive,
+              themePreset.polar.customerPortalNavigationItemActive,
               themePreset.polar.customerPortalNavigationItem,
             )}
             prefetch

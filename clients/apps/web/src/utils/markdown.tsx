@@ -1,4 +1,5 @@
 import { MarkdownToJSX } from 'markdown-to-jsx'
+import React from 'react'
 
 export const firstImageUrlFromMarkdown = (markdown: string): string | null => {
   const imagesMatch = markdown.match(/!\[.*?\]\((.*?)\)/)
@@ -11,6 +12,7 @@ export const firstImageUrlFromMarkdown = (markdown: string): string | null => {
 export const markdownOptions: MarkdownToJSX.Options = {
   disableParsingRawHTML: true,
   forceBlock: false,
+  wrapper: React.Fragment,
   overrides: {
     embed: () => <></>,
     iframe: () => <></>,

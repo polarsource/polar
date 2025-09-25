@@ -9824,6 +9824,11 @@ export interface components {
             billing_name: string | null;
             billing_address: components["schemas"]["Address"] | null;
             /**
+             * Invoice Number
+             * @description The invoice number associated with this order.
+             */
+            invoice_number: string;
+            /**
              * Is Invoice Generated
              * @description Whether an invoice has been generated for this order.
              */
@@ -14402,6 +14407,11 @@ export interface components {
              */
             billing_name: string | null;
             billing_address: components["schemas"]["Address"] | null;
+            /**
+             * Invoice Number
+             * @description The invoice number associated with this order.
+             */
+            invoice_number: string;
             /**
              * Is Invoice Generated
              * @description Whether an invoice has been generated for this order.

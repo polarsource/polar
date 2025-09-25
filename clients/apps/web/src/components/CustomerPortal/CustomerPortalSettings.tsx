@@ -4,6 +4,7 @@ import revalidate from "@/app/actions";
 import {
 	useAuthenticatedCustomer,
 	useCustomerPaymentMethods,
+	useCustomerPortalSignOut,
 } from "@/hooks/queries";
 import { createClientSideAPI } from "@/utils/client";
 import { schemas } from "@polar-sh/client";
@@ -11,6 +12,7 @@ import Button from "@polar-sh/ui/components/atoms/Button";
 import { Separator } from "@polar-sh/ui/components/ui/separator";
 import { useThemePreset } from "@polar-sh/ui/hooks/theming";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { twMerge } from "tailwind-merge";
 import { Modal } from "../Modal";
 import { useModal } from "../Modal/useModal";
@@ -29,6 +31,7 @@ export const CustomerPortalSettings = ({
 	customerSessionToken,
 }: CustomerPortalSettingsProps) => {
 	const api = createClientSideAPI(customerSessionToken);
+	const router = useRouter();
 
 	const {
 		isShown: isAddPaymentMethodModalOpen,
@@ -37,12 +40,27 @@ export const CustomerPortalSettings = ({
 	} = useModal();
 	const { data: customer } = useAuthenticatedCustomer(api);
 	const { data: paymentMethods } = useCustomerPaymentMethods(api);
+	const customerPortalSignOut = useCustomerPortalSignOut(api);
 
 	const theme = useTheme();
 	const themingPreset = useThemePreset(
 		organization.slug === "midday" ? "midday" : "polar",
 		theme.resolvedTheme as "light" | "dark",
 	);
+
+	const handleSignOut = async () => {
+		try {
+			await customerPortalSignOut.mutateAsync();
+
+			const url = new URL(window.location.href);
+			const parts = url.pathname.split("/");
+			const orgSlug = parts[1];
+
+			router.replace(`/${orgSlug}/portal/request`);
+		} catch (error) {
+			console.error("Failed to sign out:", error);
+		}
+	};
 
 	if (!customer) {
 		return null;
@@ -104,6 +122,16 @@ export const CustomerPortalSettings = ({
 					/>
 				</WellContent>
 			</Well>
+
+            <div className="flex">
+                <Button
+                    variant="destructive"
+                    onClick={handleSignOut}
+                    disabled={customerPortalSignOut.isPending}
+                >
+                    {customerPortalSignOut.isPending ? "Signing Out..." : "Sign Out"}
+                </Button>
+            </div>
 
 			<Modal
 				isShown={isAddPaymentMethodModalOpen}

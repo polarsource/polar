@@ -1,6 +1,6 @@
 'use client'
 
-import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
+import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -140,7 +140,7 @@ const LandingPageMobileNavigation = () => {
     <>
       <Sidebar className="md:hidden">
         <SidebarHeader className="p-4">
-          <BrandingMenu logoVariant="icon" />
+          <PolarLogotype logoVariant="icon" />
         </SidebarHeader>
         <SidebarContent className="flex flex-col gap-y-6 px-6 py-2">
           <div className="flex flex-col gap-y-1">
@@ -192,7 +192,7 @@ const LandingPageDesktopNavigation = () => {
   return (
     <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-8 md:flex">
       <div className="relative flex w-full flex-row items-center justify-between lg:max-w-6xl">
-        <BrandingMenu logoVariant="icon" size={40} />
+        <PolarLogotype logoVariant="icon" size={40} />
 
         <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-8 font-medium">
           <li>
@@ -284,7 +284,7 @@ const LandingPageDesktopNavigation = () => {
 const LandingPageTopbar = () => {
   return (
     <div className="z-30 flex w-full flex-row items-center justify-between px-6 py-6 md:hidden md:px-12">
-      <BrandingMenu
+      <PolarLogotype
         className="ml-2 mt-1 md:hidden"
         logoVariant="logotype"
         size={100}

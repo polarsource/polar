@@ -7,7 +7,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { ArrowDown, Clipboard } from 'lucide-react'
@@ -15,7 +14,7 @@ import Link from 'next/link'
 import { MouseEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export const BrandingMenu = ({
+export const PolarLogotype = ({
   logoVariant = 'icon',
   size,
   className,
@@ -26,17 +25,17 @@ export const BrandingMenu = ({
   className?: string
   logoClassName?: string
 }) => {
-  const brandingMenuRef = useRef<HTMLDivElement>(null)
+  const PolarLogotypeRef = useRef<HTMLDivElement>(null)
 
-  useOutsideClick([brandingMenuRef], () => setBrandingMenuOpen(false))
+  useOutsideClick([PolarLogotypeRef], () => setPolarLogotypeOpen(false))
 
-  const [brandingMenuOpen, setBrandingMenuOpen] = useState(false)
+  const [PolarLogotypeOpen, setPolarLogotypeOpen] = useState(false)
 
   const handleTriggerClick: MouseEventHandler<HTMLElement> = useCallback(
     (e) => {
       e.preventDefault()
       e.stopPropagation()
-      setBrandingMenuOpen(true)
+      setPolarLogotypeOpen(true)
     },
     [],
   )
@@ -45,12 +44,12 @@ export const BrandingMenu = ({
     navigator.clipboard.writeText(
       logoVariant === 'icon' ? PolarIconSVGString : PolarLogoSVGString,
     )
-    setBrandingMenuOpen(false)
+    setPolarLogotypeOpen(false)
   }, [logoVariant])
 
   return (
     <div className={twMerge('relative flex flex-row items-center', className)}>
-      <DropdownMenu open={brandingMenuOpen}>
+      <DropdownMenu open={PolarLogotypeOpen}>
         <DropdownMenuTrigger asChild onContextMenu={handleTriggerClick}>
           <Link href="/">
             {logoVariant === 'logotype' ? (
@@ -69,8 +68,7 @@ export const BrandingMenu = ({
             )}
           </Link>
         </DropdownMenuTrigger>
-        <DropdownMenuContent ref={brandingMenuRef} align="start">
-          <DropdownMenuLabel>Platform</DropdownMenuLabel>
+        <DropdownMenuContent ref={PolarLogotypeRef} align="start">
           <DropdownMenuItem
             className="flex flex-row gap-x-3"
             onClick={handleCopyLogoToClipboard}
@@ -80,7 +78,7 @@ export const BrandingMenu = ({
           </DropdownMenuItem>
           <DropdownMenuItem
             className="flex flex-row gap-x-3"
-            onClick={() => setBrandingMenuOpen(false)}
+            onClick={() => setPolarLogotypeOpen(false)}
           >
             <ArrowDown className="h-3 w-3" />
             <Link href="/assets/brand/polar_brand.zip">

@@ -67,8 +67,8 @@ export const PageContent = () => {
         <Checkout />
         <MerchantOfRecord />
         <Benefits />
+        <Testimonials />
       </Section>
-      <Testimonials />
       <Section className="flex flex-col gap-y-24">
         <Pricing />
       </Section>

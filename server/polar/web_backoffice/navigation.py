@@ -15,6 +15,11 @@ NAVIGATION = [
         "Orders", "orders:list", active_route_name_prefix="orders:"
     ),
     navigation.NavigationItem(
+        "Checkout Links",
+        "checkout_links:list",
+        active_route_name_prefix="checkout_links:",
+    ),
+    navigation.NavigationItem(
         "External Events",
         "external_events:list",
         active_route_name_prefix="external_events:",

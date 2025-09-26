@@ -472,12 +472,12 @@ const UpdateTrial = ({
           <div className="mb-6">
             <h3 className="text-lg font-medium">
               {subscription.status === 'trialing'
-                ? 'Extend Trial'
+                ? 'Update Trial'
                 : 'Add Trial Period'}
             </h3>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               {subscription.status === 'trialing'
-                ? 'Set a new trial end date to extend the current trial period.'
+                ? 'Set a new trial end date to extend or reduce the current trial period.'
                 : 'Add a trial period by setting a trial end date in the future.'}
             </p>
           </div>
@@ -494,25 +494,13 @@ const UpdateTrial = ({
                   return (
                     <FormItem>
                       <FormLabel>Trial End Date</FormLabel>
-                      <div className="flex flex-row items-center gap-2">
-                        <DatePicker
-                          value={
-                            field.value === 'now' ? undefined : field.value
-                          }
-                          onChange={field.onChange}
-                          disabled={minDate ? { before: minDate } : undefined}
-                        />
-                        {field.value && field.value !== 'now' && (
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            type="button"
-                            onClick={() => field.onChange(undefined)}
-                          >
-                            <XIcon className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
+
+                      <DatePicker
+                        value={field.value === 'now' ? undefined : field.value}
+                        onChange={field.onChange}
+                        disabled={minDate ? { before: minDate } : undefined}
+                      />
+
                       <FormMessage />
                       {field.value && field.value !== 'now' && (
                         <FormDescription>

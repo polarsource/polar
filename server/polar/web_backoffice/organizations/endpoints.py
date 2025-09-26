@@ -1410,7 +1410,7 @@ async def get(
                 with tag.div(classes="flex gap-2"):
                     # Plain Actions
                     with tag.a(
-                        classes="btn btn-outline",
+                        classes="btn",
                         href=str(
                             request.url_for(
                                 "organizations:plain_search_url", id=organization.id
@@ -1419,9 +1419,11 @@ async def get(
                         title="Search in Plain",
                         target="_blank",
                     ):
-                        text("🔍 Search in Plain")
+                        with tag.div(classes="icon-search"):
+                            pass
+                        text("Search in Plain")
                     with tag.button(
-                        classes="btn btn-outline",
+                        classes="btn",
                         hx_get=str(
                             request.url_for(
                                 "organizations:create_thread_modal", id=organization.id
@@ -1430,8 +1432,11 @@ async def get(
                         hx_target="#modal",
                         title="Create Thread in Plain",
                     ):
-                        text("💬 Create Thread")
+                        with tag.div(classes="icon-message-square-more"):
+                            pass
+                        text("Create Thread")
                     with button(
+                        variant="primary",
                         hx_get=str(
                             request.url_for("organizations:update", id=organization.id)
                         ),

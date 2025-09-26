@@ -1,6 +1,7 @@
 import {
   useCreateCheckoutLink,
   useDiscounts,
+  useSelectedProducts,
   useUpdateCheckoutLink,
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -89,7 +90,7 @@ export const CheckoutLinkForm = ({
     defaultValues,
   })
 
-  const { control, handleSubmit, setError, reset } = form
+  const { control, handleSubmit, setError, reset, watch } = form
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'metadata',
@@ -97,6 +98,15 @@ export const CheckoutLinkForm = ({
       maxLength: 50,
     },
   })
+
+  // Watch for selected product IDs to determine if we should show trial configuration
+  const selectedProductIds = watch('products') || []
+  const { data: selectedProducts } = useSelectedProducts(selectedProductIds)
+  
+  // Check if any selected products are recurring (subscription products)
+  const hasRecurringProducts = useMemo(() => {
+    return selectedProducts?.some((product) => product.is_recurring) ?? false
+  }, [selectedProducts])
 
   useEffect(() => {
     if (!checkoutLink) return
@@ -379,7 +389,9 @@ export const CheckoutLinkForm = ({
             }}
           />
 
-          <TrialConfigurationForm bottomText="This will override the trial configuration set on products." />
+          {hasRecurringProducts && (
+            <TrialConfigurationForm bottomText="This will override the trial configuration set on products." />
+          )}
 
           <FormItem>
             <div className="flex flex-row items-center justify-between gap-2 py-2">

@@ -53,38 +53,40 @@ export const SavedCardsSelector = ({
         <h4 className="font-medium">Saved Payment Methods</h4>
         <div className="space-y-2">
           {paymentMethods.map((paymentMethod) => {
-            const { brand, last4, exp_year, exp_month } =
-              paymentMethod.method_metadata
+            const { brand, last4, exp_year, exp_month } = paymentMethod.method_metadata
             const isSelected = selectedMethodId === paymentMethod.id
-
+            
             return (
               <button
                 key={paymentMethod.id}
                 onClick={() => handleCardSelect(paymentMethod.id)}
                 disabled={disabled}
-                className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                  isSelected
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-                    : 'dark:border-polar-700 dark:hover:bg-polar-800 border-gray-200 hover:bg-gray-50'
-                } ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} `}
+                className={`
+                  w-full rounded-lg border p-3 text-left transition-colors
+                  ${isSelected 
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' 
+                    : 'border-gray-200 hover:bg-gray-50 dark:border-polar-700 dark:hover:bg-polar-800'
+                  }
+                  ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}
               >
                 <div className="flex items-center gap-3">
                   <CreditCardBrandIcon
                     width="2.5em"
                     brand={brand}
-                    className="dark:border-polar-700 flex-shrink-0 rounded border border-gray-200 p-1"
+                    className="flex-shrink-0 rounded border border-gray-200 p-1 dark:border-polar-700"
                   />
                   <div className="flex-grow">
                     <div className="font-medium capitalize">
                       {brand} •••• {last4}
                     </div>
-                    <div className="dark:text-polar-500 text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-polar-500">
                       Expires {exp_month.toString().padStart(2, '0')}/{exp_year}
                     </div>
                   </div>
                   {isSelected && (
                     <div className="flex-shrink-0">
-                      <div className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500">
+                      <div className="h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
                         <div className="h-2 w-2 rounded-full bg-white" />
                       </div>
                     </div>
@@ -95,7 +97,7 @@ export const SavedCardsSelector = ({
           })}
         </div>
       </div>
-
+      
       <div className="border-t pt-4">
         <Button
           onClick={handleAddNewCard}

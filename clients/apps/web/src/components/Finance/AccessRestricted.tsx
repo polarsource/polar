@@ -6,16 +6,18 @@ export interface AccessRestrictedProps {
   variant?: 'card' | 'inline'
 }
 
-export default function AccessRestricted({
-  message = 'You are not the admin of the account. Only the account admin can manage payout settings and view account details.',
-  variant = 'card',
+export default function AccessRestricted({ 
+  message = "You are not the admin of the account. Only the account admin can manage payout settings and view account details.",
+  variant = 'card'
 }: AccessRestrictedProps) {
   const content = (
     <div className="flex items-center gap-4 p-8">
-      <ExclamationCircleIcon className="h-8 w-8 flex-shrink-0 text-red-500" />
+      <ExclamationCircleIcon className="h-8 w-8 text-red-500 flex-shrink-0" />
       <div className="flex flex-col gap-2">
         <h2 className="text-lg font-medium">Access Restricted</h2>
-        <p className="dark:text-polar-500 text-gray-500">{message}</p>
+        <p className="dark:text-polar-500 text-gray-500">
+          {message}
+        </p>
       </div>
     </div>
   )
@@ -24,5 +26,9 @@ export default function AccessRestricted({
     return content
   }
 
-  return <ShadowBoxOnMd>{content}</ShadowBoxOnMd>
+  return (
+    <ShadowBoxOnMd>
+      {content}
+    </ShadowBoxOnMd>
+  )
 }

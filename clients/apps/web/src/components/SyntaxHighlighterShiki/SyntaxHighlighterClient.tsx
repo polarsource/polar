@@ -83,13 +83,11 @@ export const SyntaxHighlighterProvider = ({
       }
 
       if (highlighter.getLoadedLanguages().includes(lang)) {
-        return true
+        return true;
       }
 
       try {
-        await highlighter.loadLanguage(
-          LANGUAGE_MAP[lang as keyof typeof LANGUAGE_MAP],
-        )
+        await highlighter.loadLanguage(LANGUAGE_MAP[lang as keyof typeof LANGUAGE_MAP])
         return true
       } catch (e) {
         return false

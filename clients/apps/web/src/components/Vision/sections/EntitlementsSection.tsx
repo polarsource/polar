@@ -56,9 +56,8 @@ export const POST = Webhooks({
       }
     >
       <p>
-        We&apos;ve built an entitlement engine going beyond mere flags to
-        automate granting, revoking and delivering the features themselves
-        depending on billing lifecycles.
+        We&apos;ve built an entitlement engine going beyond mere flags to automate
+        granting, revoking and delivering the features themselves depending on billing lifecycles.
       </p>
       <ul>
         <li>- License Keys</li>
@@ -68,9 +67,8 @@ export const POST = Webhooks({
       </ul>
       <strong>Next: Open Source Entitlement Strategies</strong>
       <p>
-        Inspired by Passport.js, we&apos;re building our SDK/adapters to design
-        for a rich suite of entitlement strategies to cherry-pick and npm, pip
-        or gem install from.
+        Inspired by Passport.js, we&apos;re building our SDK/adapters to design for a rich suite
+        of entitlement strategies to cherry-pick and npm, pip or gem install from.
       </p>
     </Section>
   )

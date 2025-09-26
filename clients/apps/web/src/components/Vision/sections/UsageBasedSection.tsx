@@ -34,16 +34,16 @@ export const POST = Usage()
       }
     >
       <p>
-        Understandable fear and complexity around overages, credits and spend
-        limits is holding the ecosystem back from experimenting &amp; innovating
-        on pricing.
+        Understandable fear and complexity around overages, credits and spend limits
+        is holding the ecosystem back from experimenting &amp; innovating on pricing.
       </p>
       <p>
-        We&apos;re hell-bent at removing all those headaches and concerns for
-        developers and their customers. Both from a technical and business
-        perspective.
+        We&apos;re hell-bent at removing all those headaches and concerns for developers and their customers.
+        Both from a technical and business perspective.
       </p>
-      <p>New times deserve new pricing.</p>
+      <p>
+        New times deserve new pricing.
+      </p>
       <strong>Focus ahead:</strong>
       <ul>
         <li>

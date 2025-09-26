@@ -160,9 +160,7 @@ class EmbedCheckout {
     iframe.style.colorScheme = 'auto'
 
     // @ts-ignore
-    const origins = __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__
-      .split(',')
-      .join(' ')
+    const origins = __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__.split(',').join(' ')
     iframe.allow = `payment 'self' ${origins}; publickey-credentials-get 'self' ${origins};`
 
     document.body.appendChild(iframe)
@@ -206,8 +204,7 @@ class EmbedCheckout {
    * Close the embedded checkout.
    */
   public close(): void {
-    if (document.body.contains(this.iframe))
-      document.body.removeChild(this.iframe)
+    if (document.body.contains(this.iframe)) document.body.removeChild(this.iframe)
     document.body.classList.remove('polar-no-scroll')
   }
 

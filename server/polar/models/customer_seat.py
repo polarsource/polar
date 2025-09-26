@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
@@ -53,7 +53,7 @@ class CustomerSeat(RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    seat_metadata: Mapped[dict | None] = mapped_column(
+    seat_metadata: Mapped[dict[str, Any] | None] = mapped_column(
         "metadata", JSONB, nullable=True, default=None
     )
 

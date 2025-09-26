@@ -10,6 +10,7 @@ from sqlalchemy import (
     UnaryExpression,
     and_,
     asc,
+    cte,
     desc,
     func,
     or_,
@@ -26,6 +27,7 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadat
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
+from polar.meter.aggregation import AggregationFunction
 from polar.models import (
     Benefit,
     BillingEntry,
@@ -271,6 +273,7 @@ class MeterService:
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         metadata: MetadataQuery | None = None,
+        customer_aggregation_function: AggregationFunction | None = None,
     ) -> MeterQuantities:
         timestamp_series = get_timestamp_series_cte(
             start_timestamp, end_timestamp, interval
@@ -304,7 +307,7 @@ class MeterService:
                         == interval.sql_date_trunc(timestamp_column),
                     ),
                     0,
-                ),
+                ).label("quantity"),
                 func.coalesce(
                     meter.aggregation.get_sql_column(Event).filter(
                         interval.sql_date_trunc(Event.timestamp)
@@ -313,12 +316,36 @@ class MeterService:
                         <= interval.sql_date_trunc(end_timestamp),
                     ),
                     0,
-                ),
+                ).label("total"),
             )
             .join(Event, onclause=and_(*event_clauses), isouter=True)
             .group_by(timestamp_column)
             .order_by(timestamp_column.asc())
         )
+
+        if customer_aggregation_function is not None:
+            inner_statement = cte(
+                statement.add_columns(Event.resolved_customer_id).group_by(
+                    timestamp_column, Event.resolved_customer_id
+                )
+            )
+            statement = (
+                select(
+                    timestamp_column.label("timestamp"),
+                    customer_aggregation_function.get_sql_function(
+                        inner_statement.c.quantity
+                    ).label("quantity"),
+                    customer_aggregation_function.get_sql_function(
+                        inner_statement.c.total
+                    ).label("total"),
+                )
+                .join(
+                    inner_statement,
+                    onclause=inner_statement.c.timestamp == timestamp_column,
+                )
+                .group_by(timestamp_column)
+                .order_by(timestamp_column.asc())
+            )
 
         total = 0.0
         quantities: list[MeterQuantity] = []
@@ -327,8 +354,8 @@ class MeterService:
             execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
         )
         async for row in result:
-            quantities.append(MeterQuantity(timestamp=row.timestamp, quantity=row[1]))
-            total = row[2]
+            quantities.append(MeterQuantity.model_validate(row))
+            total = row.total
 
         return MeterQuantities(quantities=quantities, total=total)
 

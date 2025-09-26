@@ -23,4 +23,4 @@ export default (
       </g>
     </g>
   </g>
-);
+)

@@ -54,6 +54,9 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
     buildFileObjects(initialFiles) as unknown as FileObject<T>[],
   )
 
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [lastError, setLastError] = useState<string | null>(null)
+
   const setFiles = (callback: (prev: FileObject<T>[]) => FileObject<T>[]) => {
     setFilesState((prev) => {
       const updated = callback(prev)
@@ -119,24 +122,39 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
   }
 
   const onDrop = (acceptedFiles: File[], fileRejections: FileRejection[]) => {
+    setIsProcessing(true)
+    setLastError(null)
+
     for (const file of acceptedFiles) {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        const buffer = reader.result
-        if (buffer instanceof ArrayBuffer) {
-          const upload = new Upload({
-            service,
-            organization,
-            file,
-            buffer,
-            onFileCreate,
-            onFileUploadProgress,
-            onFileUploaded,
-          })
-          await upload.run()
-        }
-      }
-      reader.readAsArrayBuffer(file)
+      const upload = new Upload({
+        service,
+        organization,
+        file,
+        buffer: new ArrayBuffer(0),
+        onFileCreate,
+        onFileUploadProgress,
+        onFileUploaded,
+        onError: (msg) => {
+          console.error(msg)
+          setLastError(msg)
+          setIsProcessing(false)
+        },
+      })
+        ; (async () => {
+          const ok = await upload.run()
+          if (!ok) {
+            setIsProcessing(false)
+            return
+          }
+          if (acceptedFiles.length === 1) {
+            setIsProcessing(false)
+          }
+        })()
+    }
+
+    if (fileRejections.length > 0) {
+      setLastError('Some files were rejected. See console for details.')
+      setIsProcessing(false)
     }
 
     if (onFilesRejected) {
@@ -155,6 +173,8 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
     setFiles,
     updateFile,
     removeFile,
+    isProcessing,
+    lastError,
     ...dropzone,
   }
 }

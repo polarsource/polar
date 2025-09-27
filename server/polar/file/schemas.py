@@ -26,6 +26,12 @@ class DownloadableFileCreate(FileCreateBase):
     """Schema to create a file to be associated with the downloadables benefit."""
 
     service: Literal[FileServiceTypes.downloadable]
+    size: int = Field(
+        description=(
+            "Size of the file. A maximum of 10 GB is allowed for downloadable files."
+        ),
+        le=10 * 1024 * 1024 * 1024,
+    )
 
 
 class ProductMediaFileCreate(FileCreateBase):

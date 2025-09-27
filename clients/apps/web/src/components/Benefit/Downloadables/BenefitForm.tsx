@@ -112,9 +112,12 @@ const DownloadablesForm = ({
     getRootProps,
     getInputProps,
     isDragActive,
+    isProcessing,
+    lastError,
   } = useFileUpload({
     organization: organization,
     service: 'downloadable',
+    maxSize: 10 * 1024 * 1024 * 1024, // 10GB limit for downloadable files
     onFilesUpdated: setFormFiles,
     initialFiles,
   })
@@ -130,6 +133,16 @@ const DownloadablesForm = ({
           <input {...getInputProps()} />
         </DropzoneView>
       </div>
+      {isProcessing && (
+        <div className="mt-2 text-sm text-blue-600 dark:text-blue-400">
+          Uploading... please keep this tab open
+        </div>
+      )}
+      {lastError && (
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          {lastError}
+        </p>
+      )}
       <FileList
         files={files}
         setFiles={setFiles}

@@ -1,7 +1,8 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import { ArrowOutwardOutlined, CheckOutlined } from '@mui/icons-material'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import Link from 'next/link'
 import { Midday, StillaAI, Tailwind } from '../Logos'
 import { ResourceLayout, ResourceSection } from './ResourceLayout'

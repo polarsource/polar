@@ -20,8 +20,6 @@
     "NEXT_PUBLIC_VERCEL_ENV",
     "NEXT_PUBLIC_LOGIN_PATH",
     "NEXT_PUBLIC_GITHUB_APP_NAMESPACE",
-    "NEXT_PUBLIC_LOCALSTORAGE_PERSIST_KEY",
-    "NEXT_PUBLIC_LOCALSTORAGE_PERSIST_VERSION",
     "NEXT_PUBLIC_GITHUB_BADGE_EMBED_DEFAULT_LABEL",
     "NEXT_PUBLIC_SENTRY_DSN",
     "NEXT_PUBLIC_POSTHOG_TOKEN",
@@ -44,21 +42,11 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "storybook-static/**",
-        "dist/**"
-      ]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "lint": {},
     "test": {},
     "dev": {
-      "dependsOn": ["^build"],
-      "cache": false,
-      "persistent": true
-    },
-    "storybook": {
       "dependsOn": ["^build"],
       "cache": false,
       "persistent": true

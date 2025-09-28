@@ -216,9 +216,11 @@ export const useOrganizationPaymentStatus = (
     queryFn: () =>
       unwrap(
         api.GET('/v1/organizations/{id}/payment-status', {
-          params: { 
+          params: {
             path: { id },
-            query: accountVerificationOnly ? { account_verification_only: true } : {}
+            query: accountVerificationOnly
+              ? { account_verification_only: true }
+              : {},
           },
         }),
       ),
@@ -228,12 +230,12 @@ export const useOrganizationPaymentStatus = (
 
 export const useOrganizationAIValidation = (id: string) =>
   useMutation({
-    mutationFn: () => {
-      return api.POST('/v1/organizations/{id}/ai-validation', {
-        params: { path: { id } },
-      })
-    },
-    retry: defaultRetry,
+    mutationFn: () =>
+      unwrap(
+        api.POST('/v1/organizations/{id}/ai-validation', {
+          params: { path: { id } },
+        }),
+      ),
   })
 
 export const useOrganizationAppeal = (id: string) =>
@@ -247,14 +249,20 @@ export const useOrganizationAppeal = (id: string) =>
     retry: defaultRetry,
   })
 
-export const useOrganizationReviewStatus = (id: string, enabled: boolean = true) =>
+export const useOrganizationReviewStatus = (
+  id: string,
+  enabled: boolean = true,
+  refetchInterval?: number,
+) =>
   useQuery({
     queryKey: ['organizationReviewStatus', id],
     queryFn: () =>
       unwrap(
-        api.GET('/v1/organizations/{id}/review-status', { params: { path: { id } } }),
+        api.GET('/v1/organizations/{id}/review-status', {
+          params: { path: { id } },
+        }),
       ),
     retry: defaultRetry,
     enabled: enabled && !!id,
+    refetchInterval,
   })
-

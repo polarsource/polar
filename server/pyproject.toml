@@ -4,6 +4,7 @@ version = "0.0.0"
 readme = "README.md"
 requires-python = "==3.12.11"
 dependencies = [
+  "certifi<=2025.1.31", # Remove this pin when CI tells us it's safe
   "fastapi>=0.115.2",
   "uvicorn[standard]>=0.31.1",
   "asyncpg>=0.29.0",
@@ -145,3 +146,9 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = false
 warn_untyped_fields = true
+
+[tool.basedpyright]
+reportUnusedCallResult = 'none'
+reportUnusedParameter = 'none'
+reportAny = 'none'
+reportExplicitAny = 'none'

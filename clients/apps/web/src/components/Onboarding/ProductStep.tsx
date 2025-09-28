@@ -5,32 +5,21 @@ import {
 } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  CheckoutProductSwitcher,
-  CheckoutPWYWForm,
-} from '@polar-sh/checkout/components'
 import { schemas } from '@polar-sh/client'
-import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { memo, useCallback, useContext, useMemo, useState } from 'react'
-import { useForm, useFormContext } from 'react-hook-form'
+import { useCallback, useContext, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { FadeUp } from '../Animated/FadeUp'
 import LogoIcon from '../Brand/LogoIcon'
-import { CheckoutCard } from '../Checkout/CheckoutCard'
-import CheckoutProductInfo from '../Checkout/CheckoutProductInfo'
-import { createCheckoutPreview } from '../Customization/utils'
 import ProductBenefitsForm from '../Products/ProductBenefitsForm'
 import { ProductFullMediasMixin } from '../Products/ProductForm/ProductForm'
 import { ProductInfoSection } from '../Products/ProductForm/ProductInfoSection'
 import { ProductMediaSection } from '../Products/ProductForm/ProductMediaSection'
 import { ProductPricingSection } from '../Products/ProductForm/ProductPricingSection'
-import { productCreateToProduct } from '../Products/utils'
 
 type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
   ProductFullMediasMixin & {
@@ -224,81 +213,3 @@ export const ProductStep = () => {
     </Form>
   )
 }
-
-interface CheckoutPreviewProps {
-  enabledBenefitIds: schemas['Benefit']['id'][]
-  organizationBenefits: schemas['Benefit'][]
-  meters: schemas['Meter'][]
-}
-
-const CheckoutPreview = memo(
-  ({
-    enabledBenefitIds,
-    organizationBenefits,
-    meters,
-  }: CheckoutPreviewProps) => {
-    const { organization } = useContext(OrganizationContext)
-    const { watch } = useFormContext<ProductCreateForm>()
-    const createdProduct = watch()
-
-    const newProduct = useMemo(() => {
-      return productCreateToProduct(
-        organization.id,
-        {
-          ...createdProduct,
-          metadata: createdProduct.metadata.reduce(
-            (acc, { key, value }) => ({ ...acc, [key]: value }),
-            {},
-          ),
-        },
-        enabledBenefitIds
-          .map((id) => organizationBenefits.find((b) => b.id === id))
-          .filter(Boolean) as schemas['Benefit'][],
-        meters,
-      )
-    }, [
-      createdProduct,
-      enabledBenefitIds,
-      organization,
-      organizationBenefits,
-      meters,
-    ])
-
-    const checkoutPreview = useMemo(() => {
-      return createCheckoutPreview(newProduct, organization)
-    }, [newProduct, organization])
-
-    const themePreset = useThemePreset('polar')
-
-    return (
-      <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex w-full flex-col gap-y-8 border border-gray-200 bg-white">
-        <CheckoutProductInfo
-          organization={checkoutPreview.organization}
-          product={checkoutPreview.product}
-        />
-        <CheckoutProductSwitcher
-          checkout={checkoutPreview}
-          themePreset={themePreset}
-        />
-        {checkoutPreview.productPrice.amountType === 'custom' && (
-          <CheckoutPWYWForm
-            checkout={checkoutPreview}
-            productPrice={checkoutPreview.productPrice as ProductPriceCustom}
-            themePreset={themePreset}
-            update={() => Promise.resolve(checkoutPreview)}
-          />
-        )}
-        {checkoutPreview.product.benefits.length > 0 && (
-          <CheckoutCard checkout={checkoutPreview} themePreset={themePreset} />
-        )}
-        <Button size="lg">
-          {checkoutPreview.productPrice.amountType === 'free'
-            ? 'Continue'
-            : `Buy Now`}
-        </Button>
-      </ShadowBox>
-    )
-  },
-)
-
-CheckoutPreview.displayName = 'CheckoutPreview'

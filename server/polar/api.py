@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from polar.account.endpoints import router as accounts_router
 from polar.auth.endpoints import router as auth_router
 from polar.benefit.endpoints import router as benefits_router
+from polar.benefit.grant.endpoints import router as benefit_grants_router
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.custom_field.endpoints import router as custom_field_router
@@ -80,6 +81,8 @@ router.include_router(auth_router)
 router.include_router(oauth2_router)
 # /benefits
 router.include_router(benefits_router)
+# /benefit-grants
+router.include_router(benefit_grants_router)
 # /webhooks
 router.include_router(webhook_router)
 # /products

@@ -84,6 +84,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     subtotal_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     discount_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    from_balance_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     billing_reason: Mapped[OrderBillingReason] = mapped_column(
         String, nullable=False, index=True
@@ -162,7 +163,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     @declared_attr
-    def subscription(cls) -> Mapped["Subscription"]:
+    def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise")
 
     checkout_id: Mapped[UUID | None] = mapped_column(

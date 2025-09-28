@@ -9,6 +9,7 @@ import {
 } from '@/hooks/queries'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -93,6 +94,23 @@ const CustomerSubscriptionDetails = ({
     return null
   }, [subscription, isCanceled, organization, uncancelSubscription])
 
+  const subscriptionBaseAmount = useMemo(() => {
+    const price = subscription.product.prices.find(
+      ({ amount_type }) => amount_type === 'fixed' || amount_type === 'custom',
+    )
+
+    if (!price) {
+      return null
+    }
+
+    // This should be obsolete but I don't think we have proper type guards for the generated schema
+    if ('price_amount' in price) {
+      return price.price_amount
+    }
+
+    return null
+  }, [subscription])
+
   if (!organization) {
     return null
   }
@@ -113,11 +131,24 @@ const CustomerSubscriptionDetails = ({
         <div className="flex flex-row items-center justify-between">
           <span className="dark:text-polar-500 text-gray-500">Amount</span>
           {subscription.amount && subscription.currency ? (
-            <AmountLabel
-              amount={subscription.amount}
-              currency={subscription.currency}
-              interval={subscription.recurring_interval}
-            />
+            <span className="flex flex-row items-center justify-end gap-x-1">
+              {subscriptionBaseAmount &&
+                subscription.amount !== subscriptionBaseAmount && (
+                  <span className="text-gray-500 line-through">
+                    {formatCurrencyAndAmount(
+                      subscriptionBaseAmount,
+                      subscription.currency,
+                      subscriptionBaseAmount % 100 === 0 ? 0 : 2,
+                    )}
+                  </span>
+                )}
+              <AmountLabel
+                amount={subscription.amount}
+                currency={subscription.currency}
+                interval={subscription.recurring_interval}
+                minimumFractionDigits={subscription.amount % 100 === 0 ? 0 : 2}
+              />
+            </span>
           ) : (
             'Free'
           )}
@@ -132,32 +163,42 @@ const CustomerSubscriptionDetails = ({
               Start Date
             </span>
             <span>
-              {new Date(subscription.started_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
+              <FormattedDateTime
+                datetime={subscription.started_at}
+                dateStyle="long"
+              />
             </span>
           </div>
         )}
-        {!subscription.ended_at && subscription.current_period_end && (
+        {subscription.trial_end && subscription.status === 'trialing' ? (
           <div className="flex flex-row items-center justify-between">
             <span className="dark:text-polar-500 text-gray-500">
-              {subscription.cancel_at_period_end
-                ? 'Expiry Date'
-                : 'Renewal Date'}
+              Trial Ends
             </span>
             <span>
-              {new Date(subscription.current_period_end).toLocaleDateString(
-                'en-US',
-                {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                },
-              )}
+              <FormattedDateTime
+                datetime={subscription.trial_end}
+                dateStyle="long"
+              />
             </span>
           </div>
+        ) : (
+          !subscription.ended_at &&
+          subscription.current_period_end && (
+            <div className="flex flex-row items-center justify-between">
+              <span className="dark:text-polar-500 text-gray-500">
+                {subscription.cancel_at_period_end
+                  ? 'Expiry Date'
+                  : 'Renewal Date'}
+              </span>
+              <span>
+                <FormattedDateTime
+                  datetime={subscription.current_period_end}
+                  dateStyle="long"
+                />
+              </span>
+            </div>
+          )
         )}
         {subscription.meters.length > 0 && (
           <div className="flex flex-col gap-y-4 py-2">
@@ -186,11 +227,10 @@ const CustomerSubscriptionDetails = ({
           <div className="flex flex-row items-center justify-between">
             <span className="dark:text-polar-500 text-gray-500">Expired</span>
             <span>
-              {new Date(subscription.ended_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
+              <FormattedDateTime
+                datetime={subscription.ended_at}
+                dateStyle="long"
+              />
             </span>
           </div>
         )}

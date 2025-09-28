@@ -115,7 +115,9 @@ class PaymentMethodService:
         )
 
         customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_by_id(order.customer_id)
+        customer = await customer_repository.get_by_id(
+            order.customer_id, include_deleted=True
+        )
         assert customer is not None
 
         return await self.upsert_from_stripe(session, customer, stripe_payment_method)

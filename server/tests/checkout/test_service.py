@@ -36,13 +36,14 @@ from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInte
 from polar.exceptions import PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
-from polar.kit.address import Address
+from polar.kit.address import AddressInput
 from polar.kit.tax import (
     IncompleteTaxLocation,
     TaxabilityReason,
     TaxIDFormat,
     calculate_tax,
 )
+from polar.kit.trial import TrialInterval
 from polar.locker import Locker
 from polar.models import (
     Account,
@@ -715,7 +716,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
                 customer_tax_id="FR61954506077",
             ),
             auth_subject,
@@ -795,7 +796,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                customer_billing_address=Address.model_validate({"country": "US"}),
+                customer_billing_address=AddressInput.model_validate({"country": "US"}),
             ),
             auth_subject,
         )
@@ -826,7 +827,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
             auth_subject,
         )
@@ -989,7 +990,7 @@ class TestCreate:
             session,
             CheckoutPriceCreate(
                 product_price_id=price.id,
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
             auth_subject,
         )
@@ -1336,11 +1337,11 @@ class TestCreate:
         "address,require_billing_address",
         [
             (None, False),
-            (Address.model_validate({"country": "FR"}), False),
-            (Address.model_validate({"country": "FR", "city": "Lyon"}), True),
-            (Address.model_validate({"country": "CA", "state": "CA-QC"}), False),
+            (AddressInput.model_validate({"country": "FR"}), False),
+            (AddressInput.model_validate({"country": "FR", "city": "Lyon"}), True),
+            (AddressInput.model_validate({"country": "CA", "state": "CA-QC"}), False),
             (
-                Address.model_validate(
+                AddressInput.model_validate(
                     {"country": "CA", "state": "CA-QC", "city": "Quebec"}
                 ),
                 True,
@@ -1353,7 +1354,7 @@ class TestCreate:
     )
     async def test_implicit_require_billing_address(
         self,
-        address: Address | None,
+        address: AddressInput | None,
         require_billing_address: bool,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
@@ -1394,6 +1395,90 @@ class TestCreate:
         checkout = await checkout_service.create(session, checkout_create, auth_subject)
 
         assert checkout.amount == expected_amount
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_products_trial(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(products=[product_recurring_trial.id]),
+            auth_subject,
+        )
+
+        assert checkout.products == [product_recurring_trial]
+        assert checkout.product == product_recurring_trial
+        assert checkout.product_price == product_recurring_trial.prices[0]
+        assert checkout.trial_interval is None
+        assert checkout.trial_interval_count is None
+        assert checkout.trial_end is not None
+        assert checkout.is_payment_required is False
+        assert checkout.is_payment_setup_required is True
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_set_trial(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product_recurring_trial.id],
+                trial_interval=TrialInterval.day,
+                trial_interval_count=7,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.products == [product_recurring_trial]
+        assert checkout.product == product_recurring_trial
+        assert checkout.trial_interval == TrialInterval.day
+        assert checkout.trial_interval_count == 7
+        assert checkout.trial_end is not None
+        assert checkout.is_payment_required is False
+        assert checkout.is_payment_setup_required is True
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_set_trial_non_recurring_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product_one_time.id],
+                trial_interval=TrialInterval.day,
+                trial_interval_count=7,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.products == [product_one_time]
+        assert checkout.product == product_one_time
+        assert checkout.trial_interval == TrialInterval.day
+        assert checkout.trial_interval_count == 7
+        assert checkout.trial_end is None
+        assert checkout.is_payment_required is True
+        assert checkout.is_payment_setup_required is False
 
 
 @pytest.mark.asyncio
@@ -1505,6 +1590,23 @@ class TestClientCreate:
         )
 
         assert checkout.amount == expected_amount
+
+    async def test_valid_product_trial(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout = await checkout_service.client_create(
+            session,
+            CheckoutCreatePublic(product_id=product_recurring_trial.id),
+            auth_subject,
+        )
+
+        assert checkout.product == product_recurring_trial
+        assert checkout.trial_interval is None
+        assert checkout.trial_interval_count is None
+        assert checkout.trial_end is not None
 
 
 @pytest.mark.asyncio
@@ -1632,6 +1734,48 @@ class TestCheckoutLinkCreate:
         checkout = await checkout_service.checkout_link_create(session, checkout_link)
 
         assert checkout.amount == expected_amount
+
+    async def test_valid_product_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_recurring_trial],
+            success_url="https://example.com/success",
+            user_metadata={"key": "value"},
+        )
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.product == product_recurring_trial
+        assert checkout.products == [product_recurring_trial]
+        assert checkout.trial_interval is None
+        assert checkout.trial_interval_count is None
+        assert checkout.trial_end is not None
+
+    async def test_valid_set_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_recurring_trial],
+            success_url="https://example.com/success",
+            user_metadata={"key": "value"},
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.product == product_recurring_trial
+        assert checkout.products == [product_recurring_trial]
+        assert checkout.trial_interval == TrialInterval.day
+        assert checkout.trial_interval_count == 7
+        assert checkout.trial_end is not None
 
 
 @pytest.mark.asyncio
@@ -2055,7 +2199,7 @@ class TestUpdate:
             locker,
             checkout_one_time_custom,
             CheckoutUpdate(
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
                 customer_tax_id="FR61954506077",
             ),
         )
@@ -2078,7 +2222,7 @@ class TestUpdate:
             locker,
             checkout_one_time_custom,
             CheckoutUpdate(
-                customer_billing_address=Address.model_validate({"country": "US"}),
+                customer_billing_address=AddressInput.model_validate({"country": "US"}),
                 customer_tax_id=None,
             ),
         )
@@ -2104,7 +2248,7 @@ class TestUpdate:
             locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
-                customer_billing_address=Address.model_validate({"country": "US"}),
+                customer_billing_address=AddressInput.model_validate({"country": "US"}),
             ),
         )
 
@@ -2132,7 +2276,7 @@ class TestUpdate:
             locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
         )
 
@@ -2305,7 +2449,7 @@ class TestUpdate:
             locker,
             checkout_tax_not_applicable,
             CheckoutUpdate(
-                customer_billing_address=Address.model_validate({"country": "FR"}),
+                customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
         )
 

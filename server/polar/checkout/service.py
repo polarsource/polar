@@ -27,6 +27,7 @@ from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.exceptions import (
+    BadRequest,
     NotPermitted,
     PaymentNotReady,
     PolarError,
@@ -36,12 +37,13 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.kit.address import Address
+from polar.kit.address import AddressInput
 from polar.kit.crypto import generate_token
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.tax import TaxID, to_stripe_tax_id, validate_tax_id
+from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
@@ -487,6 +489,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -597,6 +600,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -669,6 +673,8 @@ class CheckoutService:
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
+            trial_interval=checkout_link.trial_interval,
+            trial_interval_count=checkout_link.trial_interval_count,
             allow_discount_codes=checkout_link.allow_discount_codes,
             require_billing_address=checkout_link.require_billing_address,
             checkout_products=[
@@ -702,6 +708,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -855,6 +862,14 @@ class CheckoutService:
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
+
+        if (
+            checkout.trial_end is not None
+            and not checkout.organization.subscriptions_billing_engine
+        ):
+            raise BadRequest(
+                "Trials are not supported on susbcriptions managed by Stripe."
+            )
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(
@@ -1549,6 +1564,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         exclude = {
             "product_id",
@@ -1634,12 +1650,27 @@ class CheckoutService:
             return checkout
 
         try:
-            address = Address.model_validate({"country": country})
+            address = AddressInput.model_validate({"country": country})
         except PydanticValidationError:
             return checkout
 
         checkout.customer_billing_address = address
         session.add(checkout)
+        return checkout
+
+    async def _update_trial_end(self, checkout: Checkout) -> Checkout:
+        if not checkout.product.is_recurring:
+            checkout.trial_end = None
+            return checkout
+
+        trial_interval = checkout.active_trial_interval
+        trial_interval_count = checkout.active_trial_interval_count
+
+        if trial_interval is not None and trial_interval_count is not None:
+            checkout.trial_end = trial_interval.get_end(utc_now(), trial_interval_count)
+        else:
+            checkout.trial_end = None
+
         return checkout
 
     async def _validate_subscription_uniqueness(

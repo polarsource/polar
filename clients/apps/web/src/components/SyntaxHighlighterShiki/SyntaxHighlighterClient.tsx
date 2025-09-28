@@ -1,35 +1,54 @@
 'use client'
 
 import React, { useCallback, useContext, useEffect, useState } from 'react'
+import { BundledLanguage } from 'shiki'
+import { createHighlighterCore, HighlighterCore } from 'shiki/core'
+import { createOnigurumaEngine } from 'shiki/engine/oniguruma'
+import langBash from 'shiki/langs/bash.mjs'
+import langJavascript from 'shiki/langs/javascript.mjs'
+import langPython from 'shiki/langs/python.mjs'
+import langTypescript from 'shiki/langs/typescript.mjs'
+import themeCatppuccinLatte from 'shiki/themes/catppuccin-latte.mjs'
+import themePoimandres from 'shiki/themes/poimandres.mjs'
 import {
-  BundledLanguage,
-  Highlighter,
-  ShikiError,
-  createHighlighter,
-} from 'shiki/bundle/web'
-import { themeConfig, themesList, transformers } from '../../../shiki.config'
+  themeConfig,
+  themesList,
+  transformers,
+  USED_LANGUAGES,
+} from '../../../shiki.config'
 
-const highlighterPromise = createHighlighter({
-  langs: ['bash', 'js'],
-  themes: themesList,
+// Map configuration to actual imports for tree-shaking
+const LANGUAGE_MAP = {
+  js: langJavascript,
+  javascript: langJavascript,
+  bash: langBash,
+  typescript: langTypescript,
+  python: langPython,
+} as const
+
+const THEME_MAP = {
+  'catppuccin-latte': themeCatppuccinLatte,
+  poimandres: themePoimandres,
+} as const
+
+const highlighterPromise = createHighlighterCore({
+  langs: USED_LANGUAGES.map(
+    (lang) => LANGUAGE_MAP[lang as keyof typeof LANGUAGE_MAP],
+  ).filter(Boolean),
+  themes: themesList
+    .map((theme) => THEME_MAP[theme as keyof typeof THEME_MAP])
+    .filter(Boolean),
+  engine: createOnigurumaEngine(() => import('shiki/wasm')),
 })
 
-const getHighlighter = async (): Promise<Highlighter> => {
+const getHighlighter = async (): Promise<HighlighterCore> => {
   return highlighterPromise
 }
 
-const loadLanguage = async (
-  lang: BundledLanguage,
-  highlighter: Highlighter,
-): Promise<void> => {
-  if (highlighter.getLoadedLanguages().includes(lang)) return
-  await highlighter.loadLanguage(lang)
-}
-
 interface SyntaxHighlighterContextType {
-  highlighter: Highlighter | null
+  highlighter: HighlighterCore | null
   loadedLanguages: string[]
-  loadLanguage: (lang: BundledLanguage) => Promise<boolean>
+  loadLanguage: (lang: keyof typeof LANGUAGE_MAP) => Promise<boolean>
 }
 
 const stub = (): never => {
@@ -47,7 +66,7 @@ export const SyntaxHighlighterProvider = ({
 }: {
   children: React.ReactNode
 }) => {
-  const [highlighter, setHighlighter] = useState<Highlighter | null>(null)
+  const [highlighter, setHighlighter] = useState<HighlighterCore | null>(null)
   const [loadedLanguages, setLoadedLanguages] = useState<string[]>([])
 
   useEffect(() => {
@@ -59,16 +78,19 @@ export const SyntaxHighlighterProvider = ({
 
   const _loadLanguage = useCallback(
     async (lang: BundledLanguage): Promise<boolean> => {
-      if (!highlighter) return false
+      if (!highlighter) {
+        return false
+      }
+
+      if (highlighter.getLoadedLanguages().includes(lang)) {
+        return true;
+      }
+
       try {
-        await loadLanguage(lang, highlighter)
-        setLoadedLanguages(highlighter.getLoadedLanguages())
+        await highlighter.loadLanguage(LANGUAGE_MAP[lang as keyof typeof LANGUAGE_MAP])
         return true
-      } catch (err) {
-        if (err instanceof ShikiError) {
-          return false
-        }
-        throw err
+      } catch (e) {
+        return false
       }
     },
     [highlighter],
@@ -92,7 +114,7 @@ export const SyntaxHighlighterClient = ({
   code,
   customThemeConfig,
 }: {
-  lang: string
+  lang: keyof typeof LANGUAGE_MAP
   code: string
   customThemeConfig?: typeof themeConfig
 }) => {
@@ -101,7 +123,8 @@ export const SyntaxHighlighterClient = ({
 
   useEffect(() => {
     if (!highlighter) return
-    loadLanguage(lang as BundledLanguage).then((success) => {
+
+    loadLanguage(lang).then((success) => {
       const highlightedCode = highlighter.codeToHtml(code, {
         lang: success ? lang : 'text',
         themes: customThemeConfig ?? themeConfig,

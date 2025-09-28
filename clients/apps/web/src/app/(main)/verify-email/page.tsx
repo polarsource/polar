@@ -2,7 +2,6 @@ import LogoIcon from '@/components/Brand/LogoIcon'
 import { CONFIG } from '@/utils/config'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Metadata } from 'next'
-import { redirect } from 'next/navigation'
 
 export const metadata: Metadata = {
   title: 'Email Update confirmation',
@@ -16,26 +15,12 @@ export default function Page({
   const urlSearchParams = new URLSearchParams({
     ...(return_to && { return_to }),
   })
-  const handleSubmit = async (formData: FormData) => {
-    'use server'
-    try {
-      await fetch(
-        `${CONFIG.BASE_URL}/v1/email-update/verify${urlSearchParams}`,
-        {
-          method: 'POST',
-          body: formData,
-        },
-      )
-    } catch (error) {
-      console.error(error)
-    }
-    redirect('/settings?update_email=verified')
-  }
 
   return (
     <form
       className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-gray-50"
-      action={handleSubmit}
+      method="POST"
+      action={`${CONFIG.BASE_URL}/v1/email-update/verify?${urlSearchParams.toString()}`}
     >
       <div id="polar-bg-gradient"></div>
       <div className="flex w-80 flex-col items-center gap-4">

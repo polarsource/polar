@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowBack } from '@mui/icons-material'
+import ArrowBack from '@mui/icons-material/ArrowBack'
 import { schemas } from '@polar-sh/client'
 import {
   SidebarMenu,
@@ -37,14 +37,18 @@ export const OrganizationNavigation = ({
     <SidebarMenu>
       {dashboardRoutes.map((route) => (
         <SidebarMenuItem key={route.link}>
-          <SidebarMenuButton tooltip={route.title} asChild>
+          <SidebarMenuButton
+            tooltip={route.title}
+            asChild
+            isActive={route.isActive}
+          >
             <Link
               key={route.link}
               prefetch={true}
               className={twMerge(
                 'flex flex-row items-center rounded-lg border border-transparent px-2 transition-colors dark:border-transparent',
                 route.isActive
-                  ? 'dark:bg-polar-900 dark:border-polar-800 border-gray-200 bg-white text-black shadow-sm dark:text-white'
+                  ? 'dark:!bg-polar-900 dark:border-polar-800 border-gray-200 !bg-white text-black shadow-sm dark:text-white'
                   : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
                 isCollapsed && '!dark:text-polar-600',
               )}
@@ -113,7 +117,11 @@ export const AccountNavigation = () => {
       </SidebarMenuItem>
       {accountRoutes.map((route) => (
         <SidebarMenuItem key={route.link}>
-          <SidebarMenuButton tooltip={route.title} asChild>
+          <SidebarMenuButton
+            tooltip={route.title}
+            asChild
+            isActive={route.isActive}
+          >
             <Link
               key={route.link}
               prefetch={true}

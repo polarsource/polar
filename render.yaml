@@ -32,9 +32,9 @@ services:
       - key: FORWARDED_ALLOW_IPS
         value: "*"
       - key: POLAR_ALLOWED_HOSTS
-        value: '["polar.sh","docs.polar.sh"]'
+        value: '["polar.sh"]'
       - key: POLAR_CORS_ORIGINS
-        value: '["https://dashboard.polar.sh", "https://github.com" , "https://polar.sh", "https://docs.polar.sh", "https://polar-polar-sh.vercel.app"]'
+        value: '["https://dashboard.polar.sh", "https://github.com", "https://polar.sh", "https://polar-polar-sh.vercel.app"]'
       - key: POLAR_POSTGRES_DATABASE
         fromDatabase:
           name: db

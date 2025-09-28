@@ -1,6 +1,8 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
+from babel.dates import format_date
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Uuid
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -71,3 +73,10 @@ class OrderItem(RecordModel):
             proration=False,
             product_price=price,
         )
+
+    @classmethod
+    def from_trial(cls, product: "Product", start: datetime, end: datetime) -> Self:
+        formatted_start = format_date(start.date(), locale="en_US")
+        formatted_end = format_date(end.date(), locale="en_US")
+        label = f"Trial period for {product.name} ({formatted_start} - {formatted_end})"
+        return cls(label=label, amount=0, tax_amount=0, proration=False)

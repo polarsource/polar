@@ -1,5 +1,6 @@
 'use client'
 
+import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useListWebhooksDeliveries,
@@ -11,10 +12,8 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import {
-  KeyboardArrowDownOutlined,
-  KeyboardArrowRightOutlined,
-} from '@mui/icons-material'
+import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
+import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -33,6 +32,7 @@ interface DeliveriesTableProps {
   endpoint: schemas['WebhookEndpoint']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
+  dateRange?: DateRange
 }
 
 type DeliveryRow = schemas['WebhookDelivery'] & {
@@ -44,6 +44,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   endpoint,
   pagination,
   sorting,
+  dateRange,
 }) => {
   const getSearchParams = (
     pagination: DataTablePaginationState,
@@ -94,6 +95,8 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   const deliveriesHook = useListWebhooksDeliveries({
     webhookEndpointId: endpoint.id,
     ...getAPIParams(pagination, sorting),
+    ...(dateRange?.from ? { start_timestamp: dateRange.from } : {}),
+    ...(dateRange?.to ? { end_timestamp: dateRange.to } : {}),
   })
 
   const deliveries: DeliveryRow[] = deliveriesHook.data?.items || []
@@ -321,10 +324,18 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
         )}
       </div>
       <hr />
+      <div className="font-medium">Payload</div>
       {payload ? (
         <pre className="whitespace-pre-wrap text-xs">{payload}</pre>
       ) : (
         <div className="text-sm italic text-gray-500">Archived event</div>
+      )}
+      {delivery.response && (
+        <>
+          <hr />
+          <div className="font-medium">Response</div>
+          <pre className="whitespace-pre-wrap text-xs">{delivery.response}</pre>
+        </>
       )}
     </div>
   )

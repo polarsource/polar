@@ -1,5 +1,5 @@
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { ArrowOutwardOutlined } from '@mui/icons-material'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
@@ -22,7 +22,7 @@ const frameworks = (product: schemas['Product']) =>
     {
       slug: 'nextjs',
       name: 'Next.js',
-      link: 'https://docs.polar.sh/integrate/sdk/adapters/nextjs',
+      link: 'https://polar.sh/docs/integrate/sdk/adapters/nextjs',
       icon: <NextJsIcon size={24} />,
       install: 'pnpm add @polar-sh/nextjs',
       code: `import { Checkout } from "@polar-sh/nextjs";
@@ -35,7 +35,7 @@ export const GET = Checkout({
     {
       slug: 'better-auth',
       name: 'BetterAuth',
-      link: 'https://docs.polar.sh/integrate/sdk/adapters/better-auth',
+      link: 'https://polar.sh/docs/integrate/sdk/adapters/better-auth',
       icon: <BetterAuthIcon size={24} />,
       install: 'pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk',
       code: `import { betterAuth } from "better-auth";
@@ -71,7 +71,7 @@ const auth = betterAuth({
     {
       slug: 'nodejs',
       name: 'Node.js',
-      link: 'https://docs.polar.sh/integrate/sdk/typescript',
+      link: 'https://polar.sh/docs/integrate/sdk/typescript',
       icon: <NodeJsIcon size={24} />,
       install: 'pnpm add @polar-sh/sdk',
       code: `import { Polar } from "@polar-sh/sdk";
@@ -90,7 +90,7 @@ redirect(checkout.url)`,
     {
       slug: 'python',
       name: 'Python',
-      link: 'https://docs.polar.sh/integrate/sdk/python',
+      link: 'https://polar.sh/docs/integrate/sdk/python',
       icon: <PythonIcon size={24} />,
       install: 'pip install polar-sdk',
       code: `import os
@@ -153,7 +153,7 @@ export const IntegrateStep = ({ product }: IntegrateStepProps) => {
           </div>
           <div className="flex flex-col gap-y-4">
             <Link
-              href={`https://docs.polar.sh/integrate/sdk/adapters/nextjs`}
+              href={`https://polar.sh/docs/integrate/sdk/adapters/nextjs`}
               target="_blank"
               className="w-full"
             >

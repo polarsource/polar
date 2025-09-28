@@ -1,5 +1,6 @@
 import { useInViewport } from '@/hooks/utils'
-import { AddOutlined, Search } from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import Search from '@mui/icons-material/Search'
 import Button, { ButtonProps } from '@polar-sh/ui/components/atoms/Button'
 import Input, { InputProps } from '@polar-sh/ui/components/atoms/Input'
 import { twMerge } from 'tailwind-merge'

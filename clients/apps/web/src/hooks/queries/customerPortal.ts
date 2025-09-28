@@ -86,16 +86,38 @@ export const useAddCustomerPaymentMethod = (api: Client) =>
     },
   })
 
+export const useConfirmCustomerPaymentMethod = (api: Client) =>
+  useMutation({
+    mutationFn: async (body: schemas['CustomerPaymentMethodConfirm']) =>
+      api.POST('/v1/customer-portal/customers/me/payment-methods/confirm', {
+        body,
+      }),
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
+      queryClient.invalidateQueries({
+        queryKey: ['customer_payment_methods'],
+      })
+    },
+  })
+
 export const useDeleteCustomerPaymentMethod = (api: Client) =>
   useMutation({
     mutationFn: async (id: string) => {
-      const result = await api.DELETE('/v1/customer-portal/customers/me/payment-methods/{id}', {
-        params: { path: { id } },
-      })
+      const result = await api.DELETE(
+        '/v1/customer-portal/customers/me/payment-methods/{id}',
+        {
+          params: { path: { id } },
+        },
+      )
       if (result.error) {
-        const errorMessage = typeof result.error.detail === 'string'
-          ? result.error.detail
-          : 'Failed to delete payment method'
+
+        const errorMessage =
+          typeof result.error.detail === 'string'
+            ? result.error.detail
+            : 'Failed to delete payment method'
+
         throw new Error(errorMessage)
       }
       return result
@@ -255,6 +277,18 @@ export const useCustomerSubscriptions = (
     retry: defaultRetry,
   })
 
+export const useCustomerSubscriptionChargePreview = (api: Client, id: string) =>
+  useQuery({
+    queryKey: ['customer_subscription_charge_preview', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/subscriptions/{id}/charge-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
 export const useCustomerUpdateSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: {
@@ -271,6 +305,9 @@ export const useCustomerUpdateSubscription = (api: Client) =>
       }
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
       })
     },
   })
@@ -292,6 +329,9 @@ export const useCustomerCancelSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
+      })
     },
   })
 
@@ -309,6 +349,9 @@ export const useCustomerUncancelSubscription = (api: Client) =>
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
       })
     },
   })

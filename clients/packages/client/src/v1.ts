@@ -1116,6 +1116,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/benefit-grants/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Benefit Grants
+         * @description List benefit grants across all benefits for the authenticated organization.
+         *
+         *     **Scopes**: `benefits:read` `benefits:write`
+         */
+        get: operations["benefit-grants:list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/webhooks/endpoints": {
         parameters: {
             query?: never;
@@ -2142,6 +2164,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/customers/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Customers
+         * @description Export customers as a CSV file.
+         *
+         *     **Scopes**: `customers:read` `customers:write`
+         */
+        get: operations["customers:export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/customers/{id}": {
         parameters: {
             query?: never;
@@ -2280,6 +2324,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/customers/{id}/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Customer Balance
+         * @description Get customer balance information.
+         *
+         *     **Scopes**: `customers:read` `customers:write`
+         */
+        get: operations["customers:get_balance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/customer-portal/benefit-grants/": {
         parameters: {
             query?: never;
@@ -2380,6 +2446,28 @@ export interface paths {
          *     **Scopes**: `customer_portal:read` `customer_portal:write`
          */
         post: operations["customer_portal:customers:add_payment_method"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customer-portal/customers/me/payment-methods/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Customer Payment Method
+         * @description Confirm a payment method for the authenticated customer.
+         *
+         *     **Scopes**: `customer_portal:read` `customer_portal:write`
+         */
+        post: operations["customer_portal:customers:confirm_payment_method"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2876,6 +2964,28 @@ export interface paths {
          *     **Scopes**: `customer_portal:write`
          */
         patch: operations["customer_portal:subscriptions:update"];
+        trace?: never;
+    };
+    "/v1/customer-portal/subscriptions/{id}/charge-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview Next Charge For Active Subscription
+         * @description Get current period usage and cost breakdown for a subscription.
+         *
+         *     **Scopes**: `customer_portal:read` `customer_portal:write`
+         */
+        get: operations["customer_portal:subscriptions:get_charge_preview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/email-update/request": {
@@ -4007,11 +4117,7 @@ export interface components {
              * @constant
              */
             account_type: "stripe";
-            /**
-             * Country
-             * @description Two letter uppercase country code
-             */
-            country: string;
+            country: components["schemas"]["StripeAccountCountry"];
         };
         /** AccountLink */
         AccountLink: {
@@ -4031,7 +4137,7 @@ export interface components {
              */
             billing_name?: string | null;
             /** @description Billing address that should appear on the reverse invoice. */
-            billing_address?: components["schemas"]["Address"] | null;
+            billing_address?: components["schemas"]["AddressInput"] | null;
             /**
              * Billing Additional Info
              * @description Additional information that should appear on the reverse invoice.
@@ -4055,9 +4161,35 @@ export interface components {
             city?: string | null;
             /** State */
             state?: string | null;
-            /** Country */
-            country: string;
+            /**
+             * CountryAlpha2
+             * @enum {string}
+             */
+            country: "AD" | "AE" | "AF" | "AG" | "AI" | "AL" | "AM" | "AO" | "AQ" | "AR" | "AS" | "AT" | "AU" | "AW" | "AX" | "AZ" | "BA" | "BB" | "BD" | "BE" | "BF" | "BG" | "BH" | "BI" | "BJ" | "BL" | "BM" | "BN" | "BO" | "BQ" | "BR" | "BS" | "BT" | "BV" | "BW" | "BY" | "BZ" | "CA" | "CC" | "CD" | "CF" | "CG" | "CH" | "CI" | "CK" | "CL" | "CM" | "CN" | "CO" | "CR" | "CU" | "CV" | "CW" | "CX" | "CY" | "CZ" | "DE" | "DJ" | "DK" | "DM" | "DO" | "DZ" | "EC" | "EE" | "EG" | "EH" | "ER" | "ES" | "ET" | "FI" | "FJ" | "FK" | "FM" | "FO" | "FR" | "GA" | "GB" | "GD" | "GE" | "GF" | "GG" | "GH" | "GI" | "GL" | "GM" | "GN" | "GP" | "GQ" | "GR" | "GS" | "GT" | "GU" | "GW" | "GY" | "HK" | "HM" | "HN" | "HR" | "HT" | "HU" | "ID" | "IE" | "IL" | "IM" | "IN" | "IO" | "IQ" | "IR" | "IS" | "IT" | "JE" | "JM" | "JO" | "JP" | "KE" | "KG" | "KH" | "KI" | "KM" | "KN" | "KP" | "KR" | "KW" | "KY" | "KZ" | "LA" | "LB" | "LC" | "LI" | "LK" | "LR" | "LS" | "LT" | "LU" | "LV" | "LY" | "MA" | "MC" | "MD" | "ME" | "MF" | "MG" | "MH" | "MK" | "ML" | "MM" | "MN" | "MO" | "MP" | "MQ" | "MR" | "MS" | "MT" | "MU" | "MV" | "MW" | "MX" | "MY" | "MZ" | "NA" | "NC" | "NE" | "NF" | "NG" | "NI" | "NL" | "NO" | "NP" | "NR" | "NU" | "NZ" | "OM" | "PA" | "PE" | "PF" | "PG" | "PH" | "PK" | "PL" | "PM" | "PN" | "PR" | "PS" | "PT" | "PW" | "PY" | "QA" | "RE" | "RO" | "RS" | "RU" | "RW" | "SA" | "SB" | "SC" | "SD" | "SE" | "SG" | "SH" | "SI" | "SJ" | "SK" | "SL" | "SM" | "SN" | "SO" | "SR" | "SS" | "ST" | "SV" | "SX" | "SY" | "SZ" | "TC" | "TD" | "TF" | "TG" | "TH" | "TJ" | "TK" | "TL" | "TM" | "TN" | "TO" | "TR" | "TT" | "TV" | "TW" | "TZ" | "UA" | "UG" | "UM" | "US" | "UY" | "UZ" | "VA" | "VC" | "VE" | "VG" | "VI" | "VN" | "VU" | "WF" | "WS" | "YE" | "YT" | "ZA" | "ZM" | "ZW";
         };
+        /** AddressInput */
+        AddressInput: {
+            /** Line1 */
+            line1?: string | null;
+            /** Line2 */
+            line2?: string | null;
+            /** Postal Code */
+            postal_code?: string | null;
+            /** City */
+            city?: string | null;
+            /** State */
+            state?: string | null;
+            /**
+             * CountryAlpha2Input
+             * @enum {string}
+             */
+            country: "AD" | "AE" | "AF" | "AG" | "AI" | "AL" | "AM" | "AO" | "AQ" | "AR" | "AS" | "AT" | "AU" | "AW" | "AX" | "AZ" | "BA" | "BB" | "BD" | "BE" | "BF" | "BG" | "BH" | "BI" | "BJ" | "BL" | "BM" | "BN" | "BO" | "BQ" | "BR" | "BS" | "BT" | "BV" | "BW" | "BY" | "BZ" | "CA" | "CC" | "CD" | "CF" | "CG" | "CH" | "CI" | "CK" | "CL" | "CM" | "CN" | "CO" | "CR" | "CV" | "CW" | "CX" | "CY" | "CZ" | "DE" | "DJ" | "DK" | "DM" | "DO" | "DZ" | "EC" | "EE" | "EG" | "EH" | "ER" | "ES" | "ET" | "FI" | "FJ" | "FK" | "FM" | "FO" | "FR" | "GA" | "GB" | "GD" | "GE" | "GF" | "GG" | "GH" | "GI" | "GL" | "GM" | "GN" | "GP" | "GQ" | "GR" | "GS" | "GT" | "GU" | "GW" | "GY" | "HK" | "HM" | "HN" | "HR" | "HT" | "HU" | "ID" | "IE" | "IL" | "IM" | "IN" | "IO" | "IQ" | "IS" | "IT" | "JE" | "JM" | "JO" | "JP" | "KE" | "KG" | "KH" | "KI" | "KM" | "KN" | "KR" | "KW" | "KY" | "KZ" | "LA" | "LB" | "LC" | "LI" | "LK" | "LR" | "LS" | "LT" | "LU" | "LV" | "LY" | "MA" | "MC" | "MD" | "ME" | "MF" | "MG" | "MH" | "MK" | "ML" | "MM" | "MN" | "MO" | "MP" | "MQ" | "MR" | "MS" | "MT" | "MU" | "MV" | "MW" | "MX" | "MY" | "MZ" | "NA" | "NC" | "NE" | "NF" | "NG" | "NI" | "NL" | "NO" | "NP" | "NR" | "NU" | "NZ" | "OM" | "PA" | "PE" | "PF" | "PG" | "PH" | "PK" | "PL" | "PM" | "PN" | "PR" | "PS" | "PT" | "PW" | "PY" | "QA" | "RE" | "RO" | "RS" | "RW" | "SA" | "SB" | "SC" | "SD" | "SE" | "SG" | "SH" | "SI" | "SJ" | "SK" | "SL" | "SM" | "SN" | "SO" | "SR" | "SS" | "ST" | "SV" | "SX" | "SZ" | "TC" | "TD" | "TF" | "TG" | "TH" | "TJ" | "TK" | "TL" | "TM" | "TN" | "TO" | "TR" | "TT" | "TV" | "TW" | "TZ" | "UA" | "UG" | "UM" | "US" | "UY" | "UZ" | "VA" | "VC" | "VE" | "VG" | "VI" | "VN" | "VU" | "WF" | "WS" | "YE" | "YT" | "ZA" | "ZM" | "ZW";
+        };
+        /**
+         * AggregationFunction
+         * @enum {string}
+         */
+        AggregationFunction: "count" | "sum" | "max" | "min" | "avg" | "unique";
         /** AlreadyActiveSubscriptionError */
         AlreadyActiveSubscriptionError: {
             /**
@@ -5161,78 +5293,15 @@ export interface components {
             /** @description The error information if the benefit grant failed with an unrecoverable error. */
             error?: components["schemas"]["BenefitGrantError"] | null;
             customer: components["schemas"]["Customer"];
+            /** Benefit */
+            benefit: components["schemas"]["Benefit"];
             /** Properties */
             properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
         };
         /** BenefitGrantCustomProperties */
         BenefitGrantCustomProperties: Record<string, never>;
-        /** BenefitGrantDiscordProperties */
-        BenefitGrantDiscordProperties: {
-            /** Account Id */
-            account_id?: string | null;
-            /** Guild Id */
-            guild_id?: string;
-            /** Role Id */
-            role_id?: string;
-            /** Granted Account Id */
-            granted_account_id?: string;
-        };
-        /** BenefitGrantDownloadablesProperties */
-        BenefitGrantDownloadablesProperties: {
-            /** Files */
-            files?: string[];
-        };
-        /** BenefitGrantError */
-        BenefitGrantError: {
-            /** Message */
-            message: string;
-            /** Type */
-            type: string;
-            /** Timestamp */
-            timestamp: string;
-        };
-        /** BenefitGrantGitHubRepositoryProperties */
-        BenefitGrantGitHubRepositoryProperties: {
-            /** Account Id */
-            account_id?: string | null;
-            /** Repository Owner */
-            repository_owner?: string;
-            /** Repository Name */
-            repository_name?: string;
-            /**
-             * Permission
-             * @enum {string}
-             */
-            permission?: "pull" | "triage" | "push" | "maintain" | "admin";
-            /** Granted Account Id */
-            granted_account_id?: string;
-        };
-        /** BenefitGrantLicenseKeysProperties */
-        BenefitGrantLicenseKeysProperties: {
-            /** License Key Id */
-            license_key_id?: string;
-            /** Display Key */
-            display_key?: string;
-        };
-        /** BenefitGrantMetadata */
-        BenefitGrantMetadata: {
-            /** Benefit Id */
-            benefit_id: string;
-            /** Benefit Grant Id */
-            benefit_grant_id: string;
-            benefit_type: components["schemas"]["BenefitType"];
-        };
-        /** BenefitGrantMeterCreditProperties */
-        BenefitGrantMeterCreditProperties: {
-            /** Last Credited Meter Id */
-            last_credited_meter_id: string;
-            /** Last Credited Units */
-            last_credited_units: number;
-            /** Last Credited At */
-            last_credited_at: string;
-        };
-        /** BenefitGrantWebhook */
-        BenefitGrantWebhook: {
+        /** BenefitGrantCustomWebhook */
+        BenefitGrantCustomWebhook: {
             /**
              * Created At
              * Format: date-time
@@ -5295,13 +5364,421 @@ export interface components {
             /** @description The error information if the benefit grant failed with an unrecoverable error. */
             error?: components["schemas"]["BenefitGrantError"] | null;
             customer: components["schemas"]["Customer"];
-            /** Properties */
-            properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
-            /** Benefit */
-            benefit: components["schemas"]["Benefit"];
-            /** Previous Properties */
-            previous_properties?: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"] | null;
+            benefit: components["schemas"]["BenefitCustom"];
+            properties: components["schemas"]["BenefitGrantCustomProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantCustomProperties"] | null;
         };
+        /** BenefitGrantDiscordProperties */
+        BenefitGrantDiscordProperties: {
+            /** Account Id */
+            account_id?: string | null;
+            /** Guild Id */
+            guild_id?: string;
+            /** Role Id */
+            role_id?: string;
+            /** Granted Account Id */
+            granted_account_id?: string;
+        };
+        /** BenefitGrantDiscordWebhook */
+        BenefitGrantDiscordWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitDiscord"];
+            properties: components["schemas"]["BenefitGrantDiscordProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantDiscordProperties"] | null;
+        };
+        /** BenefitGrantDownloadablesProperties */
+        BenefitGrantDownloadablesProperties: {
+            /** Files */
+            files?: string[];
+        };
+        /** BenefitGrantDownloadablesWebhook */
+        BenefitGrantDownloadablesWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitDownloadables"];
+            properties: components["schemas"]["BenefitGrantDownloadablesProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantDownloadablesProperties"] | null;
+        };
+        /** BenefitGrantError */
+        BenefitGrantError: {
+            /** Message */
+            message: string;
+            /** Type */
+            type: string;
+            /** Timestamp */
+            timestamp: string;
+        };
+        /** BenefitGrantGitHubRepositoryProperties */
+        BenefitGrantGitHubRepositoryProperties: {
+            /** Account Id */
+            account_id?: string | null;
+            /** Repository Owner */
+            repository_owner?: string;
+            /** Repository Name */
+            repository_name?: string;
+            /**
+             * Permission
+             * @enum {string}
+             */
+            permission?: "pull" | "triage" | "push" | "maintain" | "admin";
+            /** Granted Account Id */
+            granted_account_id?: string;
+        };
+        /** BenefitGrantGitHubRepositoryWebhook */
+        BenefitGrantGitHubRepositoryWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitGitHubRepository"];
+            properties: components["schemas"]["BenefitGrantGitHubRepositoryProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | null;
+        };
+        /** BenefitGrantLicenseKeysProperties */
+        BenefitGrantLicenseKeysProperties: {
+            /** License Key Id */
+            license_key_id?: string;
+            /** Display Key */
+            display_key?: string;
+        };
+        /** BenefitGrantLicenseKeysWebhook */
+        BenefitGrantLicenseKeysWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitLicenseKeys"];
+            properties: components["schemas"]["BenefitGrantLicenseKeysProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantLicenseKeysProperties"] | null;
+        };
+        /** BenefitGrantMetadata */
+        BenefitGrantMetadata: {
+            /** Benefit Id */
+            benefit_id: string;
+            /** Benefit Grant Id */
+            benefit_grant_id: string;
+            benefit_type: components["schemas"]["BenefitType"];
+        };
+        /** BenefitGrantMeterCreditProperties */
+        BenefitGrantMeterCreditProperties: {
+            /** Last Credited Meter Id */
+            last_credited_meter_id?: string;
+            /** Last Credited Units */
+            last_credited_units?: number;
+            /** Last Credited At */
+            last_credited_at?: string;
+        };
+        /** BenefitGrantMeterCreditWebhook */
+        BenefitGrantMeterCreditWebhook: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Granted At
+             * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+             */
+            granted_at?: string | null;
+            /**
+             * Is Granted
+             * @description Whether the benefit is granted.
+             */
+            is_granted: boolean;
+            /**
+             * Revoked At
+             * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+             */
+            revoked_at?: string | null;
+            /**
+             * Is Revoked
+             * @description Whether the benefit is revoked.
+             */
+            is_revoked: boolean;
+            /**
+             * Subscription Id
+             * @description The ID of the subscription that granted this benefit.
+             */
+            subscription_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order that granted this benefit.
+             */
+            order_id: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer concerned by this grant.
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
+            customer: components["schemas"]["Customer"];
+            benefit: components["schemas"]["BenefitMeterCredit"];
+            properties: components["schemas"]["BenefitGrantMeterCreditProperties"];
+            previous_properties?: components["schemas"]["BenefitGrantMeterCreditProperties"] | null;
+        };
+        /**
+         * BenefitGrantSortProperty
+         * @enum {string}
+         */
+        BenefitGrantSortProperty: "created_at" | "-created_at" | "granted_at" | "-granted_at" | "revoked_at" | "-revoked_at";
+        BenefitGrantWebhook: components["schemas"]["BenefitGrantDiscordWebhook"] | components["schemas"]["BenefitGrantCustomWebhook"] | components["schemas"]["BenefitGrantGitHubRepositoryWebhook"] | components["schemas"]["BenefitGrantDownloadablesWebhook"] | components["schemas"]["BenefitGrantLicenseKeysWebhook"] | components["schemas"]["BenefitGrantMeterCreditWebhook"];
         /**
          * BenefitGrantedEvent
          * @description An event created by Polar when a benefit is granted to a customer.
@@ -6066,6 +6543,12 @@ export interface components {
          */
         Checkout: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -6076,12 +6559,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
             /**
              * Custom Field Data
              * @description Key-value object storing custom field values.
@@ -6157,6 +6634,18 @@ export interface components {
              * @description Currency code of the checkout session.
              */
             currency: string;
+            /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
+            active_trial_interval: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Active Trial Interval Count
+             * @description Number of interval units of the trial period, if any. This value is either set from the checkout, if `trial_interval_count` is set, or from the selected product.
+             */
+            active_trial_interval_count: number | null;
+            /**
+             * Trial End
+             * @description End date and time of the trial period, if any.
+             */
+            trial_end: string | null;
             /**
              * Product Id
              * Format: uuid4
@@ -6239,6 +6728,13 @@ export interface components {
             };
             /** @description Determine which billing address fields should be disabled, optional or required in the checkout form. */
             billing_address_fields: components["schemas"]["CheckoutBillingAddressFields"];
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count: number | null;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -6318,7 +6814,7 @@ export interface components {
             customer_email?: string | null;
             /** Customer Billing Name */
             customer_billing_name?: string | null;
-            customer_billing_address?: components["schemas"]["Address"] | null;
+            customer_billing_address?: components["schemas"]["AddressInput"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
             /**
@@ -6467,6 +6963,12 @@ export interface components {
          */
         CheckoutLink: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -6477,12 +6979,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -6532,6 +7035,7 @@ export interface components {
             /** Url */
             readonly url: string;
         };
+        CheckoutLinkCreate: components["schemas"]["CheckoutLinkCreateProductPrice"] | components["schemas"]["CheckoutLinkCreateProduct"] | components["schemas"]["CheckoutLinkCreateProducts"];
         /**
          * CheckoutLinkCreateProduct
          * @description Schema to create a new checkout link from a a single product.
@@ -6556,6 +7060,13 @@ export interface components {
             metadata?: {
                 [key: string]: string | number | boolean;
             };
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Payment Processor
              * @description Payment processor to use. Currently only Stripe is supported.
@@ -6619,6 +7130,13 @@ export interface components {
             metadata?: {
                 [key: string]: string | number | boolean;
             };
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Payment Processor
              * @description Payment processor to use. Currently only Stripe is supported.
@@ -6680,6 +7198,13 @@ export interface components {
             metadata?: {
                 [key: string]: string | number | boolean;
             };
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Payment Processor
              * @description Payment processor to use. Currently only Stripe is supported.
@@ -6729,6 +7254,12 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -6739,12 +7270,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -6799,6 +7331,13 @@ export interface components {
          * @description Schema to update an existing checkout link.
          */
         CheckoutLinkUpdate: {
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -6854,6 +7393,13 @@ export interface components {
          *     to the resulting order and/or subscription.
          */
         CheckoutPriceCreate: {
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -6921,7 +7467,7 @@ export interface components {
             customer_ip_address?: string | null;
             /** Customer Billing Name */
             customer_billing_name?: string | null;
-            customer_billing_address?: components["schemas"]["Address"] | null;
+            customer_billing_address?: components["schemas"]["AddressInput"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
             /**
@@ -6969,6 +7515,12 @@ export interface components {
          */
         CheckoutProduct: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -6979,12 +7531,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -7039,6 +7592,13 @@ export interface components {
          *     to the resulting order and/or subscription.
          */
         CheckoutProductCreate: {
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -7106,7 +7666,7 @@ export interface components {
             customer_ip_address?: string | null;
             /** Customer Billing Name */
             customer_billing_name?: string | null;
-            customer_billing_address?: components["schemas"]["Address"] | null;
+            customer_billing_address?: components["schemas"]["AddressInput"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
             /**
@@ -7157,6 +7717,13 @@ export interface components {
          *     to the resulting order and/or subscription.
          */
         CheckoutProductsCreate: {
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -7224,7 +7791,7 @@ export interface components {
             customer_ip_address?: string | null;
             /** Customer Billing Name */
             customer_billing_name?: string | null;
-            customer_billing_address?: components["schemas"]["Address"] | null;
+            customer_billing_address?: components["schemas"]["AddressInput"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
             /**
@@ -7271,6 +7838,12 @@ export interface components {
          */
         CheckoutPublic: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -7281,12 +7854,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
             /**
              * Custom Field Data
              * @description Key-value object storing custom field values.
@@ -7362,6 +7929,18 @@ export interface components {
              * @description Currency code of the checkout session.
              */
             currency: string;
+            /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
+            active_trial_interval: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Active Trial Interval Count
+             * @description Number of interval units of the trial period, if any. This value is either set from the checkout, if `trial_interval_count` is set, or from the selected product.
+             */
+            active_trial_interval_count: number | null;
+            /**
+             * Trial End
+             * @description End date and time of the trial period, if any.
+             */
+            trial_end: string | null;
             /**
              * Product Id
              * Format: uuid4
@@ -7471,6 +8050,12 @@ export interface components {
          */
         CheckoutPublicConfirmed: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -7481,12 +8066,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
             /**
              * Custom Field Data
              * @description Key-value object storing custom field values.
@@ -7557,6 +8136,18 @@ export interface components {
              * @description Currency code of the checkout session.
              */
             currency: string;
+            /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
+            active_trial_interval: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Active Trial Interval Count
+             * @description Number of interval units of the trial period, if any. This value is either set from the checkout, if `trial_interval_count` is set, or from the selected product.
+             */
+            active_trial_interval_count: number | null;
+            /**
+             * Trial End
+             * @description End date and time of the trial period, if any.
+             */
+            trial_end: string | null;
             /**
              * Product Id
              * Format: uuid4
@@ -7702,9 +8293,16 @@ export interface components {
             customer_email?: string | null;
             /** Customer Billing Name */
             customer_billing_name?: string | null;
-            customer_billing_address?: components["schemas"]["Address"] | null;
+            customer_billing_address?: components["schemas"]["AddressInput"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -7800,7 +8398,7 @@ export interface components {
             customer_email?: string | null;
             /** Customer Billing Name */
             customer_billing_name?: string | null;
-            customer_billing_address?: components["schemas"]["Address"] | null;
+            customer_billing_address?: components["schemas"]["AddressInput"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
             /**
@@ -7817,6 +8415,11 @@ export interface components {
              */
             func: "count";
         };
+        /**
+         * CountryAlpha2
+         * @enum {string}
+         */
+        CountryAlpha2: "AD" | "AE" | "AF" | "AG" | "AI" | "AL" | "AM" | "AO" | "AQ" | "AR" | "AS" | "AT" | "AU" | "AW" | "AX" | "AZ" | "BA" | "BB" | "BD" | "BE" | "BF" | "BG" | "BH" | "BI" | "BJ" | "BL" | "BM" | "BN" | "BO" | "BQ" | "BR" | "BS" | "BT" | "BV" | "BW" | "BY" | "BZ" | "CA" | "CC" | "CD" | "CF" | "CG" | "CH" | "CI" | "CK" | "CL" | "CM" | "CN" | "CO" | "CR" | "CU" | "CV" | "CW" | "CX" | "CY" | "CZ" | "DE" | "DJ" | "DK" | "DM" | "DO" | "DZ" | "EC" | "EE" | "EG" | "EH" | "ER" | "ES" | "ET" | "FI" | "FJ" | "FK" | "FM" | "FO" | "FR" | "GA" | "GB" | "GD" | "GE" | "GF" | "GG" | "GH" | "GI" | "GL" | "GM" | "GN" | "GP" | "GQ" | "GR" | "GS" | "GT" | "GU" | "GW" | "GY" | "HK" | "HM" | "HN" | "HR" | "HT" | "HU" | "ID" | "IE" | "IL" | "IM" | "IN" | "IO" | "IQ" | "IR" | "IS" | "IT" | "JE" | "JM" | "JO" | "JP" | "KE" | "KG" | "KH" | "KI" | "KM" | "KN" | "KP" | "KR" | "KW" | "KY" | "KZ" | "LA" | "LB" | "LC" | "LI" | "LK" | "LR" | "LS" | "LT" | "LU" | "LV" | "LY" | "MA" | "MC" | "MD" | "ME" | "MF" | "MG" | "MH" | "MK" | "ML" | "MM" | "MN" | "MO" | "MP" | "MQ" | "MR" | "MS" | "MT" | "MU" | "MV" | "MW" | "MX" | "MY" | "MZ" | "NA" | "NC" | "NE" | "NF" | "NG" | "NI" | "NL" | "NO" | "NP" | "NR" | "NU" | "NZ" | "OM" | "PA" | "PE" | "PF" | "PG" | "PH" | "PK" | "PL" | "PM" | "PN" | "PR" | "PS" | "PT" | "PW" | "PY" | "QA" | "RE" | "RO" | "RS" | "RU" | "RW" | "SA" | "SB" | "SC" | "SD" | "SE" | "SG" | "SH" | "SI" | "SJ" | "SK" | "SL" | "SM" | "SN" | "SO" | "SR" | "SS" | "ST" | "SV" | "SX" | "SY" | "SZ" | "TC" | "TD" | "TF" | "TG" | "TH" | "TJ" | "TK" | "TL" | "TM" | "TN" | "TO" | "TR" | "TT" | "TV" | "TW" | "TZ" | "UA" | "UG" | "UM" | "US" | "UY" | "UZ" | "VA" | "VC" | "VE" | "VG" | "VI" | "VN" | "VU" | "WF" | "WS" | "YE" | "YT" | "ZA" | "ZM" | "ZW";
         CustomField: components["schemas"]["CustomFieldText"] | components["schemas"]["CustomFieldNumber"] | components["schemas"]["CustomFieldDate"] | components["schemas"]["CustomFieldCheckbox"] | components["schemas"]["CustomFieldSelect"];
         /**
          * CustomFieldCheckbox
@@ -8594,6 +9197,22 @@ export interface components {
             /** Avatar Url */
             readonly avatar_url: string;
         };
+        /**
+         * CustomerBalance
+         * @description Customer balance information.
+         */
+        CustomerBalance: {
+            /**
+             * Balance
+             * @description Customer balance in cents. Positive values represent credit (customer is owed money), negative values represent debit (customer owes money).
+             */
+            balance: number;
+            /**
+             * Currency
+             * @description The currency code (ISO 4217) for the balance amount.
+             */
+            currency: string;
+        };
         CustomerBenefitGrant: components["schemas"]["CustomerBenefitGrantDiscord"] | components["schemas"]["CustomerBenefitGrantGitHubRepository"] | components["schemas"]["CustomerBenefitGrantDownloadables"] | components["schemas"]["CustomerBenefitGrantLicenseKeys"] | components["schemas"]["CustomerBenefitGrantCustom"] | components["schemas"]["CustomerBenefitGrantMeterCredit"];
         /** CustomerBenefitGrantCustom */
         CustomerBenefitGrantCustom: {
@@ -8971,7 +9590,7 @@ export interface components {
              * @description The name of the customer.
              */
             name?: string | null;
-            billing_address?: components["schemas"]["Address"] | null;
+            billing_address?: components["schemas"]["AddressInput"] | null;
             /** Tax Id */
             tax_id?: [
                 string,
@@ -9120,6 +9739,16 @@ export interface components {
          * @enum {string}
          */
         CustomerMeterSortProperty: "created_at" | "-created_at" | "modified_at" | "-modified_at" | "customer_id" | "-customer_id" | "customer_name" | "-customer_name" | "meter_id" | "-meter_id" | "meter_name" | "-meter_name" | "consumed_units" | "-consumed_units" | "credited_units" | "-credited_units" | "balance" | "-balance";
+        /** CustomerNotReady */
+        CustomerNotReady: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "CustomerNotReady";
+            /** Detail */
+            detail: string;
+        };
         /**
          * CustomerOAuthPlatform
          * @enum {string}
@@ -9176,6 +9805,11 @@ export interface components {
              */
             total_amount: number;
             /**
+             * From Balance Amount
+             * @description How much of this invoice was paid using the customer's balance. Amount in cents.
+             */
+            from_balance_amount: number;
+            /**
              * Refunded Amount
              * @description Amount refunded in cents.
              */
@@ -9194,6 +9828,11 @@ export interface components {
              */
             billing_name: string | null;
             billing_address: components["schemas"]["Address"] | null;
+            /**
+             * Invoice Number
+             * @description The invoice number associated with this order.
+             */
+            invoice_number: string;
             /**
              * Is Invoice Generated
              * @description Whether an invoice has been generated for this order.
@@ -9306,6 +9945,12 @@ export interface components {
         /** CustomerOrderProduct */
         CustomerOrderProduct: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -9316,12 +9961,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -9417,6 +10063,16 @@ export interface components {
              */
             current_period_end: string | null;
             /**
+             * Trial Start
+             * @description The start timestamp of the trial period, if any.
+             */
+            trial_start: string | null;
+            /**
+             * Trial End
+             * @description The end timestamp of the trial period, if any.
+             */
+            trial_end: string | null;
+            /**
              * Cancel At Period End
              * @description Whether the subscription will be canceled at the end of the current period.
              */
@@ -9475,7 +10131,7 @@ export interface components {
              */
             billing_name: string | null;
             /** @description The address of the customer that should appear on the invoice. Can't be updated after the invoice is generated. */
-            billing_address: components["schemas"]["Address"] | null;
+            billing_address: components["schemas"]["AddressInput"] | null;
         };
         /**
          * CustomerOrganization
@@ -9487,6 +10143,13 @@ export interface components {
             products: components["schemas"]["CustomerProduct"][];
         };
         CustomerPaymentMethod: components["schemas"]["PaymentMethodCard"] | components["schemas"]["PaymentMethodGeneric"];
+        /** CustomerPaymentMethodConfirm */
+        CustomerPaymentMethodConfirm: {
+            /** Setup Intent Id */
+            setup_intent_id: string;
+            /** Set Default */
+            set_default: boolean;
+        };
         /** CustomerPaymentMethodCreate */
         CustomerPaymentMethodCreate: {
             /** Confirmation Token Id */
@@ -9495,6 +10158,27 @@ export interface components {
             set_default: boolean;
             /** Return Url */
             return_url: string;
+        };
+        /** CustomerPaymentMethodCreateRequiresActionResponse */
+        CustomerPaymentMethodCreateRequiresActionResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            status: "requires_action";
+            /** Client Secret */
+            client_secret: string;
+        };
+        CustomerPaymentMethodCreateResponse: components["schemas"]["CustomerPaymentMethodCreateSucceededResponse"] | components["schemas"]["CustomerPaymentMethodCreateRequiresActionResponse"];
+        /** CustomerPaymentMethodCreateSucceededResponse */
+        CustomerPaymentMethodCreateSucceededResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            status: "succeeded";
+            /** CustomerPaymentMethod */
+            payment_method: components["schemas"]["CustomerPaymentMethod"];
         };
         /** CustomerPortalCustomer */
         CustomerPortalCustomer: {
@@ -9540,7 +10224,7 @@ export interface components {
         CustomerPortalCustomerUpdate: {
             /** Billing Name */
             billing_name?: string | null;
-            billing_address?: components["schemas"]["Address"] | null;
+            billing_address?: components["schemas"]["AddressInput"] | null;
             /** Tax Id */
             tax_id?: string | null;
         };
@@ -9557,6 +10241,12 @@ export interface components {
          */
         CustomerProduct: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -9567,12 +10257,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -9916,9 +10607,9 @@ export interface components {
             };
             /**
              * Status
-             * @constant
+             * @enum {string}
              */
-            status: "active";
+            status: "active" | "trialing";
             /**
              * Amount
              * @description The amount of the subscription.
@@ -9942,6 +10633,16 @@ export interface components {
              * @description The end timestamp of the current billing period.
              */
             current_period_end: string | null;
+            /**
+             * Trial Start
+             * @description The start timestamp of the trial period, if any.
+             */
+            trial_start: string | null;
+            /**
+             * Trial End
+             * @description The end timestamp of the trial period, if any.
+             */
+            trial_end: string | null;
             /**
              * Cancel At Period End
              * @description Whether the subscription will be canceled at the end of the current period.
@@ -10068,6 +10769,16 @@ export interface components {
              */
             current_period_end: string | null;
             /**
+             * Trial Start
+             * @description The start timestamp of the trial period, if any.
+             */
+            trial_start: string | null;
+            /**
+             * Trial End
+             * @description The end timestamp of the trial period, if any.
+             */
+            trial_end: string | null;
+            /**
              * Cancel At Period End
              * @description Whether the subscription will be canceled at the end of the current period.
              */
@@ -10125,6 +10836,11 @@ export interface components {
              * @description List of meters associated with the subscription.
              */
             meters: components["schemas"]["CustomerSubscriptionMeter"][];
+            /**
+             * Is Polar Managed
+             * @description Whether the subscription is managed by Polar.
+             */
+            readonly is_polar_managed: boolean;
         };
         /** CustomerSubscriptionCancel */
         CustomerSubscriptionCancel: {
@@ -10222,6 +10938,12 @@ export interface components {
         /** CustomerSubscriptionProduct */
         CustomerSubscriptionProduct: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -10232,12 +10954,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -10327,7 +11050,7 @@ export interface components {
              * @description The name of the customer.
              */
             name?: string | null;
-            billing_address?: components["schemas"]["Address"] | null;
+            billing_address?: components["schemas"]["AddressInput"] | null;
             /** Tax Id */
             tax_id?: [
                 string,
@@ -10368,7 +11091,7 @@ export interface components {
              * @description The name of the customer.
              */
             name?: string | null;
-            billing_address?: components["schemas"]["Address"] | null;
+            billing_address?: components["schemas"]["AddressInput"] | null;
             /** Tax Id */
             tax_id?: [
                 string,
@@ -11253,6 +11976,12 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -11263,12 +11992,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -13131,6 +13861,24 @@ export interface components {
             succeeded_checkouts: number;
             /** Checkouts Conversion */
             checkouts_conversion: number;
+            /** Canceled Subscriptions */
+            canceled_subscriptions: number;
+            /** Canceled Subscriptions Customer Service */
+            canceled_subscriptions_customer_service: number;
+            /** Canceled Subscriptions Low Quality */
+            canceled_subscriptions_low_quality: number;
+            /** Canceled Subscriptions Missing Features */
+            canceled_subscriptions_missing_features: number;
+            /** Canceled Subscriptions Switched Service */
+            canceled_subscriptions_switched_service: number;
+            /** Canceled Subscriptions Too Complex */
+            canceled_subscriptions_too_complex: number;
+            /** Canceled Subscriptions Too Expensive */
+            canceled_subscriptions_too_expensive: number;
+            /** Canceled Subscriptions Unused */
+            canceled_subscriptions_unused: number;
+            /** Canceled Subscriptions Other */
+            canceled_subscriptions_other: number;
         };
         /**
          * MetricType
@@ -13161,6 +13909,15 @@ export interface components {
             checkouts: components["schemas"]["Metric"];
             succeeded_checkouts: components["schemas"]["Metric"];
             checkouts_conversion: components["schemas"]["Metric"];
+            canceled_subscriptions: components["schemas"]["Metric"];
+            canceled_subscriptions_customer_service: components["schemas"]["Metric"];
+            canceled_subscriptions_low_quality: components["schemas"]["Metric"];
+            canceled_subscriptions_missing_features: components["schemas"]["Metric"];
+            canceled_subscriptions_switched_service: components["schemas"]["Metric"];
+            canceled_subscriptions_too_complex: components["schemas"]["Metric"];
+            canceled_subscriptions_too_expensive: components["schemas"]["Metric"];
+            canceled_subscriptions_unused: components["schemas"]["Metric"];
+            canceled_subscriptions_other: components["schemas"]["Metric"];
         };
         /**
          * MetricsIntervalLimit
@@ -13264,6 +14021,24 @@ export interface components {
             succeeded_checkouts: number;
             /** Checkouts Conversion */
             checkouts_conversion: number;
+            /** Canceled Subscriptions */
+            canceled_subscriptions: number;
+            /** Canceled Subscriptions Customer Service */
+            canceled_subscriptions_customer_service: number;
+            /** Canceled Subscriptions Low Quality */
+            canceled_subscriptions_low_quality: number;
+            /** Canceled Subscriptions Missing Features */
+            canceled_subscriptions_missing_features: number;
+            /** Canceled Subscriptions Switched Service */
+            canceled_subscriptions_switched_service: number;
+            /** Canceled Subscriptions Too Complex */
+            canceled_subscriptions_too_complex: number;
+            /** Canceled Subscriptions Too Expensive */
+            canceled_subscriptions_too_expensive: number;
+            /** Canceled Subscriptions Unused */
+            canceled_subscriptions_unused: number;
+            /** Canceled Subscriptions Other */
+            canceled_subscriptions_other: number;
         };
         /** MissingInvoiceBillingDetails */
         MissingInvoiceBillingDetails: {
@@ -13614,6 +14389,11 @@ export interface components {
              */
             total_amount: number;
             /**
+             * From Balance Amount
+             * @description How much of this invoice was paid using the customer's balance. Amount in cents.
+             */
+            from_balance_amount: number;
+            /**
              * Refunded Amount
              * @description Amount refunded in cents.
              */
@@ -13632,6 +14412,11 @@ export interface components {
              */
             billing_name: string | null;
             billing_address: components["schemas"]["Address"] | null;
+            /**
+             * Invoice Number
+             * @description The invoice number associated with this order.
+             */
+            invoice_number: string;
             /**
              * Is Invoice Generated
              * @description Whether an invoice has been generated for this order.
@@ -13825,6 +14610,12 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -13835,12 +14626,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -13929,6 +14721,16 @@ export interface components {
              */
             current_period_end: string | null;
             /**
+             * Trial Start
+             * @description The start timestamp of the trial period, if any.
+             */
+            trial_start: string | null;
+            /**
+             * Trial End
+             * @description The end timestamp of the trial period, if any.
+             */
+            trial_end: string | null;
+            /**
              * Cancel At Period End
              * @description Whether the subscription will be canceled at the end of the current period.
              */
@@ -13987,7 +14789,7 @@ export interface components {
              */
             billing_name: string | null;
             /** @description The address of the customer that should appear on the invoice. Can't be updated after the invoice is generated. */
-            billing_address: components["schemas"]["Address"] | null;
+            billing_address: components["schemas"]["AddressInput"] | null;
         };
         /** OrderUser */
         OrderUser: {
@@ -14454,7 +15256,7 @@ export interface components {
          * OrganizationSortProperty
          * @enum {string}
          */
-        OrganizationSortProperty: "created_at" | "-created_at" | "slug" | "-slug" | "name" | "-name";
+        OrganizationSortProperty: "created_at" | "-created_at" | "slug" | "-slug" | "name" | "-name" | "next_review_threshold" | "-next_review_threshold" | "days_in_status" | "-days_in_status";
         /** OrganizationSubscriptionSettings */
         OrganizationSubscriptionSettings: {
             /** Allow Multiple Subscriptions */
@@ -14489,26 +15291,6 @@ export interface components {
             feature_settings?: components["schemas"]["OrganizationFeatureSettings"] | null;
             subscription_settings?: components["schemas"]["OrganizationSubscriptionSettings"] | null;
             notification_settings?: components["schemas"]["OrganizationNotificationSettings"] | null;
-        };
-        /** OrganizationValidationResult */
-        OrganizationValidationResult: {
-            /**
-             * Reason
-             * @description A 1 or 3 line explanation of the verdict and the reasoning behind it. The reason will be shown to our customer.
-             */
-            reason: string;
-            /**
-             * Verdict
-             * @description PASS | FAIL | UNCERTAIN - indicates compliance status.
-             * @enum {string}
-             */
-            verdict: "PASS" | "FAIL" | "UNCERTAIN";
-            /**
-             * Timed Out
-             * @description Whether the validation timed out
-             * @default false
-             */
-            timed_out: boolean;
         };
         /** Pagination */
         Pagination: {
@@ -14790,6 +15572,12 @@ export interface components {
          */
         Product: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -14800,12 +15588,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -14875,11 +15664,9 @@ export interface components {
          * @enum {string}
          */
         ProductBillingType: "one_time" | "recurring";
-        /**
-         * ProductCreate
-         * @description Schema to create a product.
-         */
-        ProductCreate: {
+        ProductCreate: components["schemas"]["ProductCreateRecurring"] | components["schemas"]["ProductCreateOneTime"];
+        /** ProductCreateOneTime */
+        ProductCreateOneTime: {
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -14907,8 +15694,6 @@ export interface components {
              * @description The description of the product.
              */
             description?: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
-            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * ProductPriceCreateList
              * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
@@ -14929,6 +15714,70 @@ export interface components {
              * @description The ID of the organization owning the product. **Required unless you use an organization token.**
              */
             organization_id?: string | null;
+            /**
+             * Recurring Interval
+             * @description States that the product is a one-time purchase.
+             */
+            recurring_interval?: null;
+        };
+        /** ProductCreateRecurring */
+        ProductCreateRecurring: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Name
+             * @description The name of the product.
+             */
+            name: string;
+            /**
+             * Description
+             * @description The description of the product.
+             */
+            description?: string | null;
+            /**
+             * ProductPriceCreateList
+             * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
+             */
+            prices: (components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"] | components["schemas"]["ProductPriceMeteredUnitCreate"])[];
+            /**
+             * Medias
+             * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
+             */
+            medias?: string[] | null;
+            /**
+             * Attached Custom Fields
+             * @description List of custom fields to attach.
+             */
+            attached_custom_fields?: components["schemas"]["AttachedCustomFieldCreate"][];
+            /**
+             * Organization Id
+             * @description The ID of the organization owning the product. **Required unless you use an organization token.**
+             */
+            organization_id?: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
+            /** @description The recurring interval of the product. Note that the `day` and `week` values are for internal Polar staff use only. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
         };
         /** ProductEmbed */
         ProductEmbed: {
@@ -15400,6 +16249,12 @@ export interface components {
          */
         ProductStorefront: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -15410,12 +16265,13 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
             /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the product.
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
              */
-            id: string;
+            trial_interval_count: number | null;
             /**
              * Name
              * @description The name of the product.
@@ -15482,6 +16338,13 @@ export interface components {
             metadata?: {
                 [key: string]: string | number | boolean;
             };
+            /** @description The interval unit for the trial period. */
+            trial_interval?: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count?: number | null;
             /** Name */
             name?: string | null;
             /**
@@ -15774,6 +16637,11 @@ export interface components {
             customers: components["schemas"]["StorefrontCustomer"][];
         };
         /**
+         * StripeAccountCountry
+         * @enum {string}
+         */
+        StripeAccountCountry: "AL" | "AG" | "AR" | "AM" | "AU" | "AT" | "BH" | "BE" | "BO" | "BA" | "BG" | "KH" | "CA" | "CL" | "CO" | "CR" | "HR" | "CY" | "CZ" | "CI" | "DK" | "DO" | "EC" | "EG" | "SV" | "EE" | "ET" | "FI" | "FR" | "GM" | "DE" | "GH" | "GR" | "GT" | "GY" | "HK" | "HU" | "IS" | "IN" | "ID" | "IE" | "IL" | "IT" | "JM" | "JP" | "JO" | "KE" | "KW" | "LV" | "LI" | "LT" | "LU" | "MO" | "MG" | "MY" | "MT" | "MU" | "MX" | "MD" | "MN" | "MA" | "NA" | "NL" | "NZ" | "NG" | "MK" | "NO" | "OM" | "PA" | "PY" | "PE" | "PH" | "PL" | "PT" | "QA" | "RO" | "RW" | "SA" | "SN" | "RS" | "SG" | "SK" | "SI" | "ZA" | "KR" | "ES" | "LK" | "LC" | "SE" | "CH" | "TZ" | "TH" | "TT" | "TN" | "TR" | "AE" | "GB" | "US" | "UY" | "UZ" | "VN" | "DZ" | "AO" | "AZ" | "BS" | "BD" | "BJ" | "BT" | "BW" | "BN" | "GA" | "KZ" | "LA" | "MC" | "MZ" | "NE" | "PK" | "SM" | "TW";
+        /**
          * SubType
          * @enum {string}
          */
@@ -15822,6 +16690,16 @@ export interface components {
              * @description The end timestamp of the current billing period.
              */
             current_period_end: string | null;
+            /**
+             * Trial Start
+             * @description The start timestamp of the trial period, if any.
+             */
+            trial_start: string | null;
+            /**
+             * Trial End
+             * @description The end timestamp of the trial period, if any.
+             */
+            trial_end: string | null;
             /**
              * Cancel At Period End
              * @description Whether the subscription will be canceled at the end of the current period.
@@ -15935,6 +16813,21 @@ export interface components {
              *     Or uncancel a subscription currently set to be revoked at period end.
              */
             cancel_at_period_end: boolean;
+        };
+        /** SubscriptionChargePreviewResponse */
+        SubscriptionChargePreviewResponse: {
+            /** Base Amount */
+            base_amount: number;
+            /** Metered Amount */
+            metered_amount: number;
+            /** Subtotal Amount */
+            subtotal_amount: number;
+            /** Discount Amount */
+            discount_amount: number;
+            /** Tax Amount */
+            tax_amount: number;
+            /** Total Amount */
+            total_amount: number;
         };
         /** SubscriptionCustomer */
         SubscriptionCustomer: {
@@ -16278,7 +17171,7 @@ export interface components {
          * @enum {string}
          */
         SubscriptionStatus: "incomplete" | "incomplete_expired" | "trialing" | "active" | "past_due" | "canceled" | "unpaid";
-        SubscriptionUpdate: components["schemas"]["SubscriptionUpdateProduct"] | components["schemas"]["SubscriptionUpdateDiscount"] | components["schemas"]["SubscriptionCancel"] | components["schemas"]["SubscriptionRevoke"];
+        SubscriptionUpdate: components["schemas"]["SubscriptionUpdateProduct"] | components["schemas"]["SubscriptionUpdateDiscount"] | components["schemas"]["SubscriptionUpdateTrial"] | components["schemas"]["SubscriptionCancel"] | components["schemas"]["SubscriptionRevoke"];
         /** SubscriptionUpdateDiscount */
         SubscriptionUpdateDiscount: {
             /**
@@ -16297,6 +17190,14 @@ export interface components {
             product_id: string;
             /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
             proration_behavior?: components["schemas"]["SubscriptionProrationBehavior"] | null;
+        };
+        /** SubscriptionUpdateTrial */
+        SubscriptionUpdateTrial: {
+            /**
+             * Trial End
+             * @description Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately.
+             */
+            trial_end: string | "now";
         };
         /** SubscriptionUser */
         SubscriptionUser: {
@@ -16642,6 +17543,11 @@ export interface components {
             balance: components["schemas"]["TransactionsBalance"];
             payout: components["schemas"]["TransactionsBalance"];
         };
+        /**
+         * TrialInterval
+         * @enum {string}
+         */
+        TrialInterval: "day" | "week" | "month" | "year";
         /** Unauthorized */
         Unauthorized: {
             /**
@@ -16917,6 +17823,7 @@ export interface components {
              * Format: date-time
              */
             timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16937,6 +17844,7 @@ export interface components {
              * Format: date-time
              */
             timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16956,6 +17864,7 @@ export interface components {
              * Format: date-time
              */
             timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -16975,6 +17884,7 @@ export interface components {
              * Format: date-time
              */
             timestamp: string;
+            /** BenefitGrantWebhook */
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
@@ -17149,15 +18059,20 @@ export interface components {
              */
             id: string;
             /**
-             * Http Code
-             * @description The HTTP code returned by the URL. `null` if the endpoint was unreachable.
-             */
-            http_code?: number | null;
-            /**
              * Succeeded
              * @description Whether the delivery was successful.
              */
             succeeded: boolean;
+            /**
+             * Http Code
+             * @description The HTTP code returned by the URL. `null` if the endpoint was unreachable.
+             */
+            http_code: number | null;
+            /**
+             * Response
+             * @description The response body returned by the URL, or the error message if the endpoint was unreachable.
+             */
+            response: string | null;
             /** @description The webhook event sent by this delivery. */
             webhook_event: components["schemas"]["WebhookEvent"];
         };
@@ -18875,7 +19790,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OrganizationValidationResult"];
+                    "application/json": components["schemas"]["OrganizationReviewStatus"];
                 };
             };
             /** @description Organization not found. */
@@ -19924,6 +20839,48 @@ export interface operations {
             };
         };
     };
+    "benefit-grants:list": {
+        parameters: {
+            query?: {
+                /** @description Filter by organization ID. */
+                organization_id?: string | string[] | null;
+                /** @description Filter by customer ID. */
+                customer_id?: string | string[] | null;
+                /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.  */
+                is_granted?: boolean | null;
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+                /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+                sorting?: components["schemas"]["BenefitGrantSortProperty"][] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResource_BenefitGrant_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "webhooks:list_webhook_endpoints": {
         parameters: {
             query?: {
@@ -20164,6 +21121,10 @@ export interface operations {
             query?: {
                 /** @description Filter by webhook endpoint ID. */
                 endpoint_id?: string | string[] | null;
+                /** @description Filter deliveries after this timestamp. */
+                start_timestamp?: string | null;
+                /** @description Filter deliveries before this timestamp. */
+                end_timestamp?: string | null;
                 /** @description Page number, defaults to 1. */
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -21929,7 +22890,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CheckoutLinkCreateProductPrice"] | components["schemas"]["CheckoutLinkCreateProduct"] | components["schemas"]["CheckoutLinkCreateProducts"];
+                "application/json": components["schemas"]["CheckoutLinkCreate"];
             };
         };
         responses: {
@@ -22706,6 +23667,38 @@ export interface operations {
             };
         };
     };
+    "customers:export": {
+        parameters: {
+            query?: {
+                /** @description Filter by organization ID. */
+                organization_id?: string | string[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "customers:get": {
         parameters: {
             query?: never;
@@ -23038,6 +24031,47 @@ export interface operations {
             };
         };
     };
+    "customers:get_balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The customer ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerBalance"];
+                };
+            };
+            /** @description Customer not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "customer_portal:benefit-grants:list": {
         parameters: {
             query?: {
@@ -23281,13 +24315,55 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Payment method created. */
+            /** @description Payment method created or setup initiated. */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CustomerPaymentMethod"];
+                    "application/json": components["schemas"]["CustomerPaymentMethodCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "customer_portal:customers:confirm_payment_method": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerPaymentMethodConfirm"];
+            };
+        };
+        responses: {
+            /** @description Payment method created or setup initiated. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerPaymentMethodCreateResponse"];
+                };
+            };
+            /** @description Customer is not ready to confirm a payment method. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerNotReady"];
                 };
             };
             /** @description Validation Error */
@@ -24426,6 +25502,47 @@ export interface operations {
             };
         };
     };
+    "customer_portal:subscriptions:get_charge_preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionChargePreviewResponse"];
+                };
+            };
+            /** @description Customer subscription was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "email-update:request_email_update": {
         parameters: {
             query?: never;
@@ -24879,6 +25996,8 @@ export interface operations {
                 customer_id?: string | string[] | null;
                 /** @description Filter by external customer ID. */
                 external_customer_id?: string | string[] | null;
+                /** @description If set, will first compute the quantities per customer before aggregating them using the given function. If not set, the quantities will be aggregated across all events. */
+                customer_aggregation_function?: components["schemas"]["AggregationFunction"] | null;
                 /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
                 metadata?: components["schemas"]["MetadataQuery"];
             };
@@ -26329,6 +27448,9 @@ type ReadonlyArray<T> = [
 ] ? Readonly<Exclude<T, undefined>> : Readonly<Exclude<T, undefined>[]>;
 export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<paths["/v1/metrics/"]["get"]["parameters"]["query"]["timezone"]> = ["Africa/Abidjan", "Africa/Accra", "Africa/Addis_Ababa", "Africa/Algiers", "Africa/Asmara", "Africa/Asmera", "Africa/Bamako", "Africa/Bangui", "Africa/Banjul", "Africa/Bissau", "Africa/Blantyre", "Africa/Brazzaville", "Africa/Bujumbura", "Africa/Cairo", "Africa/Casablanca", "Africa/Ceuta", "Africa/Conakry", "Africa/Dakar", "Africa/Dar_es_Salaam", "Africa/Djibouti", "Africa/Douala", "Africa/El_Aaiun", "Africa/Freetown", "Africa/Gaborone", "Africa/Harare", "Africa/Johannesburg", "Africa/Juba", "Africa/Kampala", "Africa/Khartoum", "Africa/Kigali", "Africa/Kinshasa", "Africa/Lagos", "Africa/Libreville", "Africa/Lome", "Africa/Luanda", "Africa/Lubumbashi", "Africa/Lusaka", "Africa/Malabo", "Africa/Maputo", "Africa/Maseru", "Africa/Mbabane", "Africa/Mogadishu", "Africa/Monrovia", "Africa/Nairobi", "Africa/Ndjamena", "Africa/Niamey", "Africa/Nouakchott", "Africa/Ouagadougou", "Africa/Porto-Novo", "Africa/Sao_Tome", "Africa/Timbuktu", "Africa/Tripoli", "Africa/Tunis", "Africa/Windhoek", "America/Adak", "America/Anchorage", "America/Anguilla", "America/Antigua", "America/Araguaina", "America/Argentina/Buenos_Aires", "America/Argentina/Catamarca", "America/Argentina/ComodRivadavia", "America/Argentina/Cordoba", "America/Argentina/Jujuy", "America/Argentina/La_Rioja", "America/Argentina/Mendoza", "America/Argentina/Rio_Gallegos", "America/Argentina/Salta", "America/Argentina/San_Juan", "America/Argentina/San_Luis", "America/Argentina/Tucuman", "America/Argentina/Ushuaia", "America/Aruba", "America/Asuncion", "America/Atikokan", "America/Atka", "America/Bahia", "America/Bahia_Banderas", "America/Barbados", "America/Belem", "America/Belize", "America/Blanc-Sablon", "America/Boa_Vista", "America/Bogota", "America/Boise", "America/Buenos_Aires", "America/Cambridge_Bay", "America/Campo_Grande", "America/Cancun", "America/Caracas", "America/Catamarca", "America/Cayenne", "America/Cayman", "America/Chicago", "America/Chihuahua", "America/Ciudad_Juarez", "America/Coral_Harbour", "America/Cordoba", "America/Costa_Rica", "America/Coyhaique", "America/Creston", "America/Cuiaba", "America/Curacao", "America/Danmarkshavn", "America/Dawson", "America/Dawson_Creek", "America/Denver", "America/Detroit", "America/Dominica", "America/Edmonton", "America/Eirunepe", "America/El_Salvador", "America/Ensenada", "America/Fort_Nelson", "America/Fort_Wayne", "America/Fortaleza", "America/Glace_Bay", "America/Godthab", "America/Goose_Bay", "America/Grand_Turk", "America/Grenada", "America/Guadeloupe", "America/Guatemala", "America/Guayaquil", "America/Guyana", "America/Halifax", "America/Havana", "America/Hermosillo", "America/Indiana/Indianapolis", "America/Indiana/Knox", "America/Indiana/Marengo", "America/Indiana/Petersburg", "America/Indiana/Tell_City", "America/Indiana/Vevay", "America/Indiana/Vincennes", "America/Indiana/Winamac", "America/Indianapolis", "America/Inuvik", "America/Iqaluit", "America/Jamaica", "America/Jujuy", "America/Juneau", "America/Kentucky/Louisville", "America/Kentucky/Monticello", "America/Knox_IN", "America/Kralendijk", "America/La_Paz", "America/Lima", "America/Los_Angeles", "America/Louisville", "America/Lower_Princes", "America/Maceio", "America/Managua", "America/Manaus", "America/Marigot", "America/Martinique", "America/Matamoros", "America/Mazatlan", "America/Mendoza", "America/Menominee", "America/Merida", "America/Metlakatla", "America/Mexico_City", "America/Miquelon", "America/Moncton", "America/Monterrey", "America/Montevideo", "America/Montreal", "America/Montserrat", "America/Nassau", "America/New_York", "America/Nipigon", "America/Nome", "America/Noronha", "America/North_Dakota/Beulah", "America/North_Dakota/Center", "America/North_Dakota/New_Salem", "America/Nuuk", "America/Ojinaga", "America/Panama", "America/Pangnirtung", "America/Paramaribo", "America/Phoenix", "America/Port-au-Prince", "America/Port_of_Spain", "America/Porto_Acre", "America/Porto_Velho", "America/Puerto_Rico", "America/Punta_Arenas", "America/Rainy_River", "America/Rankin_Inlet", "America/Recife", "America/Regina", "America/Resolute", "America/Rio_Branco", "America/Rosario", "America/Santa_Isabel", "America/Santarem", "America/Santiago", "America/Santo_Domingo", "America/Sao_Paulo", "America/Scoresbysund", "America/Shiprock", "America/Sitka", "America/St_Barthelemy", "America/St_Johns", "America/St_Kitts", "America/St_Lucia", "America/St_Thomas", "America/St_Vincent", "America/Swift_Current", "America/Tegucigalpa", "America/Thule", "America/Thunder_Bay", "America/Tijuana", "America/Toronto", "America/Tortola", "America/Vancouver", "America/Virgin", "America/Whitehorse", "America/Winnipeg", "America/Yakutat", "America/Yellowknife", "Antarctica/Casey", "Antarctica/Davis", "Antarctica/DumontDUrville", "Antarctica/Macquarie", "Antarctica/Mawson", "Antarctica/McMurdo", "Antarctica/Palmer", "Antarctica/Rothera", "Antarctica/South_Pole", "Antarctica/Syowa", "Antarctica/Troll", "Antarctica/Vostok", "Arctic/Longyearbyen", "Asia/Aden", "Asia/Almaty", "Asia/Amman", "Asia/Anadyr", "Asia/Aqtau", "Asia/Aqtobe", "Asia/Ashgabat", "Asia/Ashkhabad", "Asia/Atyrau", "Asia/Baghdad", "Asia/Bahrain", "Asia/Baku", "Asia/Bangkok", "Asia/Barnaul", "Asia/Beirut", "Asia/Bishkek", "Asia/Brunei", "Asia/Calcutta", "Asia/Chita", "Asia/Choibalsan", "Asia/Chongqing", "Asia/Chungking", "Asia/Colombo", "Asia/Dacca", "Asia/Damascus", "Asia/Dhaka", "Asia/Dili", "Asia/Dubai", "Asia/Dushanbe", "Asia/Famagusta", "Asia/Gaza", "Asia/Harbin", "Asia/Hebron", "Asia/Ho_Chi_Minh", "Asia/Hong_Kong", "Asia/Hovd", "Asia/Irkutsk", "Asia/Istanbul", "Asia/Jakarta", "Asia/Jayapura", "Asia/Jerusalem", "Asia/Kabul", "Asia/Kamchatka", "Asia/Karachi", "Asia/Kashgar", "Asia/Kathmandu", "Asia/Katmandu", "Asia/Khandyga", "Asia/Kolkata", "Asia/Krasnoyarsk", "Asia/Kuala_Lumpur", "Asia/Kuching", "Asia/Kuwait", "Asia/Macao", "Asia/Macau", "Asia/Magadan", "Asia/Makassar", "Asia/Manila", "Asia/Muscat", "Asia/Nicosia", "Asia/Novokuznetsk", "Asia/Novosibirsk", "Asia/Omsk", "Asia/Oral", "Asia/Phnom_Penh", "Asia/Pontianak", "Asia/Pyongyang", "Asia/Qatar", "Asia/Qostanay", "Asia/Qyzylorda", "Asia/Rangoon", "Asia/Riyadh", "Asia/Saigon", "Asia/Sakhalin", "Asia/Samarkand", "Asia/Seoul", "Asia/Shanghai", "Asia/Singapore", "Asia/Srednekolymsk", "Asia/Taipei", "Asia/Tashkent", "Asia/Tbilisi", "Asia/Tehran", "Asia/Tel_Aviv", "Asia/Thimbu", "Asia/Thimphu", "Asia/Tokyo", "Asia/Tomsk", "Asia/Ujung_Pandang", "Asia/Ulaanbaatar", "Asia/Ulan_Bator", "Asia/Urumqi", "Asia/Ust-Nera", "Asia/Vientiane", "Asia/Vladivostok", "Asia/Yakutsk", "Asia/Yangon", "Asia/Yekaterinburg", "Asia/Yerevan", "Atlantic/Azores", "Atlantic/Bermuda", "Atlantic/Canary", "Atlantic/Cape_Verde", "Atlantic/Faeroe", "Atlantic/Faroe", "Atlantic/Jan_Mayen", "Atlantic/Madeira", "Atlantic/Reykjavik", "Atlantic/South_Georgia", "Atlantic/St_Helena", "Atlantic/Stanley", "Australia/ACT", "Australia/Adelaide", "Australia/Brisbane", "Australia/Broken_Hill", "Australia/Canberra", "Australia/Currie", "Australia/Darwin", "Australia/Eucla", "Australia/Hobart", "Australia/LHI", "Australia/Lindeman", "Australia/Lord_Howe", "Australia/Melbourne", "Australia/NSW", "Australia/North", "Australia/Perth", "Australia/Queensland", "Australia/South", "Australia/Sydney", "Australia/Tasmania", "Australia/Victoria", "Australia/West", "Australia/Yancowinna", "Brazil/Acre", "Brazil/DeNoronha", "Brazil/East", "Brazil/West", "CET", "CST6CDT", "Canada/Atlantic", "Canada/Central", "Canada/Eastern", "Canada/Mountain", "Canada/Newfoundland", "Canada/Pacific", "Canada/Saskatchewan", "Canada/Yukon", "Chile/Continental", "Chile/EasterIsland", "Cuba", "EET", "EST", "EST5EDT", "Egypt", "Eire", "Etc/GMT", "Etc/GMT+0", "Etc/GMT+1", "Etc/GMT+10", "Etc/GMT+11", "Etc/GMT+12", "Etc/GMT+2", "Etc/GMT+3", "Etc/GMT+4", "Etc/GMT+5", "Etc/GMT+6", "Etc/GMT+7", "Etc/GMT+8", "Etc/GMT+9", "Etc/GMT-0", "Etc/GMT-1", "Etc/GMT-10", "Etc/GMT-11", "Etc/GMT-12", "Etc/GMT-13", "Etc/GMT-14", "Etc/GMT-2", "Etc/GMT-3", "Etc/GMT-4", "Etc/GMT-5", "Etc/GMT-6", "Etc/GMT-7", "Etc/GMT-8", "Etc/GMT-9", "Etc/GMT0", "Etc/Greenwich", "Etc/UCT", "Etc/UTC", "Etc/Universal", "Etc/Zulu", "Europe/Amsterdam", "Europe/Andorra", "Europe/Astrakhan", "Europe/Athens", "Europe/Belfast", "Europe/Belgrade", "Europe/Berlin", "Europe/Bratislava", "Europe/Brussels", "Europe/Bucharest", "Europe/Budapest", "Europe/Busingen", "Europe/Chisinau", "Europe/Copenhagen", "Europe/Dublin", "Europe/Gibraltar", "Europe/Guernsey", "Europe/Helsinki", "Europe/Isle_of_Man", "Europe/Istanbul", "Europe/Jersey", "Europe/Kaliningrad", "Europe/Kiev", "Europe/Kirov", "Europe/Kyiv", "Europe/Lisbon", "Europe/Ljubljana", "Europe/London", "Europe/Luxembourg", "Europe/Madrid", "Europe/Malta", "Europe/Mariehamn", "Europe/Minsk", "Europe/Monaco", "Europe/Moscow", "Europe/Nicosia", "Europe/Oslo", "Europe/Paris", "Europe/Podgorica", "Europe/Prague", "Europe/Riga", "Europe/Rome", "Europe/Samara", "Europe/San_Marino", "Europe/Sarajevo", "Europe/Saratov", "Europe/Simferopol", "Europe/Skopje", "Europe/Sofia", "Europe/Stockholm", "Europe/Tallinn", "Europe/Tirane", "Europe/Tiraspol", "Europe/Ulyanovsk", "Europe/Uzhgorod", "Europe/Vaduz", "Europe/Vatican", "Europe/Vienna", "Europe/Vilnius", "Europe/Volgograd", "Europe/Warsaw", "Europe/Zagreb", "Europe/Zaporozhye", "Europe/Zurich", "Factory", "GB", "GB-Eire", "GMT", "GMT+0", "GMT-0", "GMT0", "Greenwich", "HST", "Hongkong", "Iceland", "Indian/Antananarivo", "Indian/Chagos", "Indian/Christmas", "Indian/Cocos", "Indian/Comoro", "Indian/Kerguelen", "Indian/Mahe", "Indian/Maldives", "Indian/Mauritius", "Indian/Mayotte", "Indian/Reunion", "Iran", "Israel", "Jamaica", "Japan", "Kwajalein", "Libya", "MET", "MST", "MST7MDT", "Mexico/BajaNorte", "Mexico/BajaSur", "Mexico/General", "NZ", "NZ-CHAT", "Navajo", "PRC", "PST8PDT", "Pacific/Apia", "Pacific/Auckland", "Pacific/Bougainville", "Pacific/Chatham", "Pacific/Chuuk", "Pacific/Easter", "Pacific/Efate", "Pacific/Enderbury", "Pacific/Fakaofo", "Pacific/Fiji", "Pacific/Funafuti", "Pacific/Galapagos", "Pacific/Gambier", "Pacific/Guadalcanal", "Pacific/Guam", "Pacific/Honolulu", "Pacific/Johnston", "Pacific/Kanton", "Pacific/Kiritimati", "Pacific/Kosrae", "Pacific/Kwajalein", "Pacific/Majuro", "Pacific/Marquesas", "Pacific/Midway", "Pacific/Nauru", "Pacific/Niue", "Pacific/Norfolk", "Pacific/Noumea", "Pacific/Pago_Pago", "Pacific/Palau", "Pacific/Pitcairn", "Pacific/Pohnpei", "Pacific/Ponape", "Pacific/Port_Moresby", "Pacific/Rarotonga", "Pacific/Saipan", "Pacific/Samoa", "Pacific/Tahiti", "Pacific/Tarawa", "Pacific/Tongatapu", "Pacific/Truk", "Pacific/Wake", "Pacific/Wallis", "Pacific/Yap", "Poland", "Portugal", "ROC", "ROK", "Singapore", "Turkey", "UCT", "US/Alaska", "US/Aleutian", "US/Arizona", "US/Central", "US/East-Indiana", "US/Eastern", "US/Hawaii", "US/Indiana-Starke", "US/Michigan", "US/Mountain", "US/Pacific", "US/Samoa", "UTC", "Universal", "W-SU", "WET", "Zulu"];
 export const accountTypeValues: ReadonlyArray<components["schemas"]["AccountType"]> = ["stripe", "manual", "open_collective"];
+export const addressCountryValues: ReadonlyArray<components["schemas"]["Address"]["country"]> = ["AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS", "AT", "AU", "AW", "AX", "AZ", "BA", "BB", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BL", "BM", "BN", "BO", "BQ", "BR", "BS", "BT", "BV", "BW", "BY", "BZ", "CA", "CC", "CD", "CF", "CG", "CH", "CI", "CK", "CL", "CM", "CN", "CO", "CR", "CU", "CV", "CW", "CX", "CY", "CZ", "DE", "DJ", "DK", "DM", "DO", "DZ", "EC", "EE", "EG", "EH", "ER", "ES", "ET", "FI", "FJ", "FK", "FM", "FO", "FR", "GA", "GB", "GD", "GE", "GF", "GG", "GH", "GI", "GL", "GM", "GN", "GP", "GQ", "GR", "GS", "GT", "GU", "GW", "GY", "HK", "HM", "HN", "HR", "HT", "HU", "ID", "IE", "IL", "IM", "IN", "IO", "IQ", "IR", "IS", "IT", "JE", "JM", "JO", "JP", "KE", "KG", "KH", "KI", "KM", "KN", "KP", "KR", "KW", "KY", "KZ", "LA", "LB", "LC", "LI", "LK", "LR", "LS", "LT", "LU", "LV", "LY", "MA", "MC", "MD", "ME", "MF", "MG", "MH", "MK", "ML", "MM", "MN", "MO", "MP", "MQ", "MR", "MS", "MT", "MU", "MV", "MW", "MX", "MY", "MZ", "NA", "NC", "NE", "NF", "NG", "NI", "NL", "NO", "NP", "NR", "NU", "NZ", "OM", "PA", "PE", "PF", "PG", "PH", "PK", "PL", "PM", "PN", "PR", "PS", "PT", "PW", "PY", "QA", "RE", "RO", "RS", "RU", "RW", "SA", "SB", "SC", "SD", "SE", "SG", "SH", "SI", "SJ", "SK", "SL", "SM", "SN", "SO", "SR", "SS", "ST", "SV", "SX", "SY", "SZ", "TC", "TD", "TF", "TG", "TH", "TJ", "TK", "TL", "TM", "TN", "TO", "TR", "TT", "TV", "TW", "TZ", "UA", "UG", "UM", "US", "UY", "UZ", "VA", "VC", "VE", "VG", "VI", "VN", "VU", "WF", "WS", "YE", "YT", "ZA", "ZM", "ZW"];
+export const addressInputCountryValues: ReadonlyArray<components["schemas"]["AddressInput"]["country"]> = ["AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS", "AT", "AU", "AW", "AX", "AZ", "BA", "BB", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BL", "BM", "BN", "BO", "BQ", "BR", "BS", "BT", "BV", "BW", "BY", "BZ", "CA", "CC", "CD", "CF", "CG", "CH", "CI", "CK", "CL", "CM", "CN", "CO", "CR", "CV", "CW", "CX", "CY", "CZ", "DE", "DJ", "DK", "DM", "DO", "DZ", "EC", "EE", "EG", "EH", "ER", "ES", "ET", "FI", "FJ", "FK", "FM", "FO", "FR", "GA", "GB", "GD", "GE", "GF", "GG", "GH", "GI", "GL", "GM", "GN", "GP", "GQ", "GR", "GS", "GT", "GU", "GW", "GY", "HK", "HM", "HN", "HR", "HT", "HU", "ID", "IE", "IL", "IM", "IN", "IO", "IQ", "IS", "IT", "JE", "JM", "JO", "JP", "KE", "KG", "KH", "KI", "KM", "KN", "KR", "KW", "KY", "KZ", "LA", "LB", "LC", "LI", "LK", "LR", "LS", "LT", "LU", "LV", "LY", "MA", "MC", "MD", "ME", "MF", "MG", "MH", "MK", "ML", "MM", "MN", "MO", "MP", "MQ", "MR", "MS", "MT", "MU", "MV", "MW", "MX", "MY", "MZ", "NA", "NC", "NE", "NF", "NG", "NI", "NL", "NO", "NP", "NR", "NU", "NZ", "OM", "PA", "PE", "PF", "PG", "PH", "PK", "PL", "PM", "PN", "PR", "PS", "PT", "PW", "PY", "QA", "RE", "RO", "RS", "RW", "SA", "SB", "SC", "SD", "SE", "SG", "SH", "SI", "SJ", "SK", "SL", "SM", "SN", "SO", "SR", "SS", "ST", "SV", "SX", "SZ", "TC", "TD", "TF", "TG", "TH", "TJ", "TK", "TL", "TM", "TN", "TO", "TR", "TT", "TV", "TW", "TZ", "UA", "UG", "UM", "US", "UY", "UZ", "VA", "VC", "VE", "VG", "VI", "VN", "VU", "WF", "WS", "YE", "YT", "ZA", "ZM", "ZW"];
+export const aggregationFunctionValues: ReadonlyArray<components["schemas"]["AggregationFunction"]> = ["count", "sum", "max", "min", "avg", "unique"];
 export const appealDecisionValues: ReadonlyArray<components["schemas"]["AppealDecision"]> = ["approved", "rejected"];
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseOrganization"]["sub_type"]> = ["organization"];
 export const authorizeResponseUserSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseUser"]["sub_type"]> = ["user"];
@@ -26341,6 +27463,7 @@ export const benefitGitHubRepositoryCreateTypeValues: ReadonlyArray<components["
 export const benefitGitHubRepositoryCreatePropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryCreateProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
 export const benefitGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
 export const benefitGrantGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGrantGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
+export const benefitGrantSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitGrantSortProperty"]> = ["created_at", "-created_at", "granted_at", "-granted_at", "revoked_at", "-revoked_at"];
 export const benefitGrantedEventNameValues: ReadonlyArray<components["schemas"]["BenefitGrantedEvent"]["name"]> = ["benefit.granted"];
 export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeyExpirationProperties"]["timeframe"]> = ["year", "month", "day"];
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeysCreate"]["type"]> = ["license_keys"];
@@ -26355,6 +27478,7 @@ export const checkoutLinkSortPropertyValues: ReadonlyArray<components["schemas"]
 export const checkoutSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutSortProperty"]> = ["created_at", "-created_at", "expires_at", "-expires_at", "status", "-status"];
 export const checkoutStatusValues: ReadonlyArray<components["schemas"]["CheckoutStatus"]> = ["open", "expired", "confirmed", "succeeded", "failed"];
 export const countAggregationFuncValues: ReadonlyArray<components["schemas"]["CountAggregation"]["func"]> = ["count"];
+export const countryAlpha2Values: ReadonlyArray<components["schemas"]["CountryAlpha2"]> = ["AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS", "AT", "AU", "AW", "AX", "AZ", "BA", "BB", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BL", "BM", "BN", "BO", "BQ", "BR", "BS", "BT", "BV", "BW", "BY", "BZ", "CA", "CC", "CD", "CF", "CG", "CH", "CI", "CK", "CL", "CM", "CN", "CO", "CR", "CU", "CV", "CW", "CX", "CY", "CZ", "DE", "DJ", "DK", "DM", "DO", "DZ", "EC", "EE", "EG", "EH", "ER", "ES", "ET", "FI", "FJ", "FK", "FM", "FO", "FR", "GA", "GB", "GD", "GE", "GF", "GG", "GH", "GI", "GL", "GM", "GN", "GP", "GQ", "GR", "GS", "GT", "GU", "GW", "GY", "HK", "HM", "HN", "HR", "HT", "HU", "ID", "IE", "IL", "IM", "IN", "IO", "IQ", "IR", "IS", "IT", "JE", "JM", "JO", "JP", "KE", "KG", "KH", "KI", "KM", "KN", "KP", "KR", "KW", "KY", "KZ", "LA", "LB", "LC", "LI", "LK", "LR", "LS", "LT", "LU", "LV", "LY", "MA", "MC", "MD", "ME", "MF", "MG", "MH", "MK", "ML", "MM", "MN", "MO", "MP", "MQ", "MR", "MS", "MT", "MU", "MV", "MW", "MX", "MY", "MZ", "NA", "NC", "NE", "NF", "NG", "NI", "NL", "NO", "NP", "NR", "NU", "NZ", "OM", "PA", "PE", "PF", "PG", "PH", "PK", "PL", "PM", "PN", "PR", "PS", "PT", "PW", "PY", "QA", "RE", "RO", "RS", "RU", "RW", "SA", "SB", "SC", "SD", "SE", "SG", "SH", "SI", "SJ", "SK", "SL", "SM", "SN", "SO", "SR", "SS", "ST", "SV", "SX", "SY", "SZ", "TC", "TD", "TF", "TG", "TH", "TJ", "TK", "TL", "TM", "TN", "TO", "TR", "TT", "TV", "TW", "TZ", "UA", "UG", "UM", "US", "UY", "UZ", "VA", "VC", "VE", "VG", "VI", "VN", "VU", "WF", "WS", "YE", "YT", "ZA", "ZM", "ZW"];
 export const customFieldCheckboxTypeValues: ReadonlyArray<components["schemas"]["CustomFieldCheckbox"]["type"]> = ["checkbox"];
 export const customFieldCreateCheckboxTypeValues: ReadonlyArray<components["schemas"]["CustomFieldCreateCheckbox"]["type"]> = ["checkbox"];
 export const customFieldCreateDateTypeValues: ReadonlyArray<components["schemas"]["CustomFieldCreateDate"]["type"]> = ["date"];
@@ -26384,7 +27508,10 @@ export const customerCustomerMeterSortPropertyValues: ReadonlyArray<components["
 export const customerMeterSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerMeterSortProperty"]> = ["created_at", "-created_at", "modified_at", "-modified_at", "customer_id", "-customer_id", "customer_name", "-customer_name", "meter_id", "-meter_id", "meter_name", "-meter_name", "consumed_units", "-consumed_units", "credited_units", "-credited_units", "balance", "-balance"];
 export const customerOAuthPlatformValues: ReadonlyArray<components["schemas"]["CustomerOAuthPlatform"]> = ["github", "discord"];
 export const customerOrderSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerOrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "net_amount", "-net_amount", "product", "-product", "subscription", "-subscription"];
+export const customerPaymentMethodCreateRequiresActionResponseStatusValues: ReadonlyArray<components["schemas"]["CustomerPaymentMethodCreateRequiresActionResponse"]["status"]> = ["requires_action"];
+export const customerPaymentMethodCreateSucceededResponseStatusValues: ReadonlyArray<components["schemas"]["CustomerPaymentMethodCreateSucceededResponse"]["status"]> = ["succeeded"];
 export const customerSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerSortProperty"]> = ["created_at", "-created_at", "email", "-email", "name", "-name"];
+export const customerStateSubscriptionStatusValues: ReadonlyArray<components["schemas"]["CustomerStateSubscription"]["status"]> = ["active", "trialing"];
 export const customerSubscriptionSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerSubscriptionSortProperty"]> = ["started_at", "-started_at", "amount", "-amount", "status", "-status", "organization", "-organization", "product", "-product"];
 export const discountDurationValues: ReadonlyArray<components["schemas"]["DiscountDuration"]> = ["once", "forever", "repeating"];
 export const discountSortPropertyValues: ReadonlyArray<components["schemas"]["DiscountSortProperty"]> = ["created_at", "-created_at", "name", "-name", "code", "-code", "redemptions_count", "-redemptions_count"];
@@ -26429,8 +27556,7 @@ export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["
 export const organizationDetailsSwitching_fromValues: ReadonlyArray<components["schemas"]["OrganizationDetails"]["switching_from"]> = ["paddle", "lemon_squeezy", "gumroad", "stripe", "other"];
 export const organizationReviewStatusVerdictValues: ReadonlyArray<components["schemas"]["OrganizationReviewStatus"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];
 export const organizationSocialPlatformsValues: ReadonlyArray<components["schemas"]["OrganizationSocialPlatforms"]> = ["x", "github", "facebook", "instagram", "youtube", "tiktok", "linkedin", "other"];
-export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name"];
-export const organizationValidationResultVerdictValues: ReadonlyArray<components["schemas"]["OrganizationValidationResult"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];
+export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name", "next_review_threshold", "-next_review_threshold", "days_in_status", "-days_in_status"];
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
 export const paymentSortPropertyValues: ReadonlyArray<components["schemas"]["PaymentSortProperty"]> = ["created_at", "-created_at", "status", "-status", "amount", "-amount", "method", "-method"];
 export const paymentStatusValues: ReadonlyArray<components["schemas"]["PaymentStatus"]> = ["pending", "succeeded", "failed"];
@@ -26454,6 +27580,7 @@ export const refundSortPropertyValues: ReadonlyArray<components["schemas"]["Refu
 export const refundStatusValues: ReadonlyArray<components["schemas"]["RefundStatus"]> = ["pending", "succeeded", "failed", "canceled"];
 export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "web:read", "web:write", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "transactions:read", "transactions:write", "payouts:read", "payouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notifications:read", "notifications:write", "notification_recipients:read", "notification_recipients:write"];
 export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "denied", "active"];
+export const stripeAccountCountryValues: ReadonlyArray<components["schemas"]["StripeAccountCountry"]> = ["AL", "AG", "AR", "AM", "AU", "AT", "BH", "BE", "BO", "BA", "BG", "KH", "CA", "CL", "CO", "CR", "HR", "CY", "CZ", "CI", "DK", "DO", "EC", "EG", "SV", "EE", "ET", "FI", "FR", "GM", "DE", "GH", "GR", "GT", "GY", "HK", "HU", "IS", "IN", "ID", "IE", "IL", "IT", "JM", "JP", "JO", "KE", "KW", "LV", "LI", "LT", "LU", "MO", "MG", "MY", "MT", "MU", "MX", "MD", "MN", "MA", "NA", "NL", "NZ", "NG", "MK", "NO", "OM", "PA", "PY", "PE", "PH", "PL", "PT", "QA", "RO", "RW", "SA", "SN", "RS", "SG", "SK", "SI", "ZA", "KR", "ES", "LK", "LC", "SE", "CH", "TZ", "TH", "TT", "TN", "TR", "AE", "GB", "US", "UY", "UZ", "VN", "DZ", "AO", "AZ", "BS", "BD", "BJ", "BT", "BW", "BN", "GA", "KZ", "LA", "MC", "MZ", "NE", "PK", "SM", "TW"];
 export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];
 export const subscriptionCycledEventNameValues: ReadonlyArray<components["schemas"]["SubscriptionCycledEvent"]["name"]> = ["subscription.cycled"];
 export const subscriptionProductUpdatedEventNameValues: ReadonlyArray<components["schemas"]["SubscriptionProductUpdatedEvent"]["name"]> = ["subscription.product_updated"];
@@ -26466,6 +27593,7 @@ export const taxIDFormatValues: ReadonlyArray<components["schemas"]["TaxIDFormat
 export const timeIntervalValues: ReadonlyArray<components["schemas"]["TimeInterval"]> = ["year", "month", "week", "day", "hour"];
 export const transactionSortPropertyValues: ReadonlyArray<components["schemas"]["TransactionSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const transactionTypeValues: ReadonlyArray<components["schemas"]["TransactionType"]> = ["payment", "processor_fee", "refund", "refund_reversal", "dispute", "dispute_reversal", "balance", "payout"];
+export const trialIntervalValues: ReadonlyArray<components["schemas"]["TrialInterval"]> = ["day", "week", "month", "year"];
 export const uniqueAggregationFuncValues: ReadonlyArray<components["schemas"]["UniqueAggregation"]["func"]> = ["unique"];
 export const userEventSourceValues: ReadonlyArray<components["schemas"]["UserEvent"]["source"]> = ["user"];
 export const userSignupAttributionIntentValues: ReadonlyArray<components["schemas"]["UserSignupAttribution"]["intent"]> = ["creator", "pledge", "purchase", "subscription", "newsletter_subscription"];

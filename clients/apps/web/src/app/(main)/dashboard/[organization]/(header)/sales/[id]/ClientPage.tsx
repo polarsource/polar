@@ -116,6 +116,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:!rounded-3xl">
         <div className="flex flex-col gap-6 p-4 md:p-8">
           <div className="flex flex-col gap-4 md:gap-1">
+            <DetailRow label="Invoice number" value={order.invoice_number} />
             <DetailRow
               label="Order ID"
               value={order.id}
@@ -185,6 +186,20 @@ const ClientPage: React.FC<ClientPageProps> = ({
               label="Total"
               value={formatCurrencyAndAmount(order.total_amount)}
             />
+            {order.from_balance_amount > 0 && (
+              <DetailRow
+                label="From customer balance"
+                value={formatCurrencyAndAmount(-order.from_balance_amount)}
+              />
+            )}
+            {order.from_balance_amount > 0 && (
+              <DetailRow
+                label="To be paid"
+                value={formatCurrencyAndAmount(
+                  order.total_amount - order.from_balance_amount,
+                )}
+              />
+            )}
             {order.billing_address ? (
               <>
                 <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />

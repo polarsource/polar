@@ -26,6 +26,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceType,
@@ -45,6 +46,9 @@ from polar.models.product_price import (
 from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
+
+# PostgreSQL int4 range limit
+INT_MAX_VALUE = 2_147_483_647
 
 # Product
 
@@ -166,6 +170,7 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
     cap_amount: int | None = Field(
         default=None,
         ge=0,
+        le=INT_MAX_VALUE,
         description=(
             "Optional maximum amount in cents that can be charged, "
             "regardless of the number of units consumed."
@@ -200,21 +205,9 @@ ProductPriceCreateList = Annotated[
 ]
 
 
-class ProductCreate(MetadataInputMixin, Schema):
-    """
-    Schema to create a product.
-    """
-
+class ProductCreateBase(MetadataInputMixin, Schema):
     name: ProductName
     description: ProductDescription = None
-    recurring_interval: SubscriptionRecurringInterval | None = Field(
-        description=(
-            "The recurring interval of the product. "
-            "If `None`, the product is a one-time purchase."
-            ""
-            "Note that the `day` and `week` values are for internal Polar staff use only."
-        ),
-    )
     prices: ProductPriceCreateList = Field(
         ...,
         description="List of available prices for this product. "
@@ -240,6 +233,27 @@ class ProductCreate(MetadataInputMixin, Schema):
     )
 
 
+class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
+    recurring_interval: SubscriptionRecurringInterval = Field(
+        description=(
+            "The recurring interval of the product. "
+            "Note that the `day` and `week` values are for internal Polar staff use only."
+        ),
+    )
+
+
+class ProductCreateOneTime(ProductCreateBase):
+    recurring_interval: Literal[None] = Field(
+        default=None, description="States that the product is a one-time purchase."
+    )
+
+
+ProductCreate = Annotated[
+    ProductCreateRecurring | ProductCreateOneTime,
+    SetSchemaReference("ProductCreate"),
+]
+
+
 class ExistingProductPrice(Schema):
     """
     A price that already exists for this product.
@@ -255,7 +269,7 @@ ProductPriceUpdate = Annotated[
 ]
 
 
-class ProductUpdate(MetadataInputMixin, Schema):
+class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
     """
     Schema to update a product.
     """
@@ -495,15 +509,16 @@ ProductPrice = Annotated[
 ]
 
 
-class ProductBase(IDSchema, TimestampedSchema):
-    id: UUID4 = Field(description="The ID of the product.")
+class ProductBase(TrialConfigurationOutputMixin, TimestampedSchema, IDSchema):
     name: str = Field(description="The name of the product.")
     description: str | None = Field(description="The description of the product.")
     recurring_interval: SubscriptionRecurringInterval | None = Field(
-        description="The recurring interval of the product. "
-        "If `None`, the product is a one-time purchase."
-        ""
-        "Note that the `day` and `week` values are for internal Polar staff use only."
+        description=(
+            "The recurring interval of the product. "
+            "If `None`, the product is a one-time purchase."
+            ""
+            "Note that the `day` and `week` values are for internal Polar staff use only."
+        )
     )
     is_recurring: bool = Field(description="Whether the product is a subscription.")
     is_archived: bool = Field(

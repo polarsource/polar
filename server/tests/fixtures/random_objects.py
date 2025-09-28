@@ -14,6 +14,7 @@ from typing_extensions import TypeIs
 from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.kit.address import Address
 from polar.kit.tax import TaxID
+from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import Aggregation, CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
@@ -359,6 +360,8 @@ async def create_product(
     is_archived: bool = False,
     prices: Sequence[PriceFixtureType] = [(1000,)],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
+    trial_interval: TrialInterval | None = None,
+    trial_interval_count: int | None = None,
     is_tax_applicable: bool = True,
 ) -> Product:
     product = Product(
@@ -369,6 +372,8 @@ async def create_product(
         is_archived=is_archived,
         organization=organization,
         stripe_product_id=rstr("PRODUCT_ID"),
+        trial_interval=trial_interval,
+        trial_interval_count=trial_interval_count,
         all_prices=[],
         prices=[],
         product_benefits=[],
@@ -752,6 +757,7 @@ async def create_order(
     discount_amount: int = 0,
     refunded_amount: int = 0,
     refunded_tax_amount: int = 0,
+    order_items: list[OrderItem] | None = None,
     subscription: Subscription | None = None,
     stripe_invoice_id: str | None = "INVOICE_ID",
     billing_reason: OrderBillingReason = OrderBillingReason.purchase,
@@ -766,6 +772,16 @@ async def create_order(
     next_payment_attempt_at: datetime | None = None,
     payment_lock_acquired_at: datetime | None = None,
 ) -> Order:
+    if order_items is None:
+        order_items = [
+            OrderItem(
+                label="",
+                amount=subtotal_amount,
+                tax_amount=tax_amount,
+                proration=False,
+            )
+        ]
+
     order = Order(
         created_at=created_at or utc_now(),
         status=status,
@@ -774,14 +790,7 @@ async def create_order(
         discount_amount=discount_amount,
         refunded_amount=refunded_amount,
         refunded_tax_amount=refunded_tax_amount,
-        items=[
-            OrderItem(
-                label="",
-                amount=subtotal_amount,
-                tax_amount=tax_amount,
-                proration=False,
-            )
-        ],
+        items=order_items,
         currency="usd",
         billing_reason=billing_reason,
         stripe_invoice_id=stripe_invoice_id,
@@ -874,6 +883,8 @@ async def create_subscription(
     ends_at: datetime | None = None,
     current_period_start: datetime | None = None,
     current_period_end: datetime | None = None,
+    trial_start: datetime | None = None,
+    trial_end: datetime | None = None,
     discount: Discount | None = None,
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
     cancel_at_period_end: bool = False,
@@ -913,6 +924,8 @@ async def create_subscription(
         tax_exempted=tax_exempted,
         current_period_start=current_period_start,
         current_period_end=current_period_end,
+        trial_start=trial_start,
+        trial_end=trial_end,
         cancel_at_period_end=cancel_at_period_end,
         canceled_at=canceled_at,
         started_at=started_at,
@@ -930,6 +943,43 @@ async def create_subscription(
     await save_fixture(subscription)
 
     return subscription
+
+
+async def create_trialing_subscription(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    trial_interval: TrialInterval = TrialInterval.month,
+    trial_interval_count: int = 1,
+    prices: Sequence[ProductPrice] | None = None,
+    customer: Customer,
+    tax_exempted: bool = False,
+    discount: Discount | None = None,
+    user_metadata: dict[str, Any] | None = None,
+    scheduler_locked_at: datetime | None = None,
+) -> Subscription:
+    now = utc_now()
+    trial_start = now
+    trial_end = trial_interval.get_end(now, trial_interval_count)
+
+    return await create_subscription(
+        save_fixture,
+        product=product,
+        prices=prices,
+        customer=customer,
+        tax_exempted=tax_exempted,
+        discount=discount,
+        status=SubscriptionStatus.trialing,
+        started_at=now,
+        ended_at=None,
+        current_period_start=trial_start,
+        current_period_end=trial_end,
+        trial_start=trial_start,
+        trial_end=trial_end,
+        user_metadata=user_metadata or {},
+        scheduler_locked_at=scheduler_locked_at,
+        stripe_subscription_id=None,
+    )
 
 
 async def create_active_subscription(
@@ -1113,6 +1163,19 @@ async def product_recurring_fixed_and_metered(
 
 
 @pytest_asyncio.fixture
+async def product_recurring_trial(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        trial_interval=TrialInterval.month,
+        trial_interval_count=1,
+    )
+
+
+@pytest_asyncio.fixture
 async def product_second(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1164,6 +1227,8 @@ async def create_checkout(
     customer: Customer | None = None,
     subscription: Subscription | None = None,
     discount: Discount | None = None,
+    trial_interval: TrialInterval | None = None,
+    trial_interval_count: int | None = None,
 ) -> Checkout:
     product = product or products[0]
     price = price or product.prices[0]
@@ -1177,6 +1242,10 @@ async def create_checkout(
     else:
         amount = 0
         currency = "usd"
+
+    trial_end: datetime | None = None
+    if trial_interval is not None and trial_interval_count is not None:
+        trial_end = trial_interval.get_end(utc_now(), trial_interval_count)
 
     checkout = Checkout(
         payment_processor=payment_processor,
@@ -1201,6 +1270,9 @@ async def create_checkout(
         customer=customer,
         subscription=subscription,
         discount=discount,
+        trial_interval=trial_interval,
+        trial_interval_count=trial_interval_count,
+        trial_end=trial_end,
     )
     await save_fixture(checkout)
     return checkout
@@ -1214,6 +1286,8 @@ async def create_checkout_link(
     discount: Discount | None = None,
     client_secret: str | None = None,
     success_url: str | None = None,
+    trial_interval: TrialInterval | None = None,
+    trial_interval_count: int | None = None,
     user_metadata: dict[str, Any] = {},
 ) -> CheckoutLink:
     checkout_link = CheckoutLink(
@@ -1228,6 +1302,8 @@ async def create_checkout_link(
             CheckoutLinkProduct(product=p, order=i) for i, p in enumerate(products)
         ],
         discount=discount,
+        trial_interval=trial_interval,
+        trial_interval_count=trial_interval_count,
         user_metadata=user_metadata,
     )
     await save_fixture(checkout_link)

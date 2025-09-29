@@ -28,7 +28,13 @@ const FeatureCard = ({
   children,
 }: FeatureCardProps) => {
   return (
-    <motion.div className={twMerge('flex flex-col gap-y-6', className)}>
+    <motion.div
+      variants={{
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { duration: 2 } },
+      }}
+      className={twMerge('flex flex-col gap-y-6', className)}
+    >
       <Link
         href={linkHref}
         target="_blank"

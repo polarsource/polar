@@ -1,36 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-
 const defaultTheme = require('tailwindcss/defaultTheme')
-const colors = require('tailwindcss/colors')
-const plugin = require('tailwindcss/plugin')
-
-const toRgba = (hexCode, opacity = 50) => {
-  let hex = hexCode.replace('#', '')
-
-  if (hex.length === 3) {
-    hex = `${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`
-  }
-
-  const r = parseInt(hex.substring(0, 2), 16)
-  const g = parseInt(hex.substring(2, 4), 16)
-  const b = parseInt(hex.substring(4, 6), 16)
-
-  return `rgba(${r},${g},${b},${opacity / 100})`
-}
-
-const flattenColorPalette = (obj, sep = '-') =>
-  Object.assign(
-    {},
-    ...(function _flatten(o, p = '') {
-      return [].concat(
-        ...Object.keys(o).map((k) =>
-          typeof o[k] === 'object'
-            ? _flatten(o[k], k + sep)
-            : { [p + k]: o[k] },
-        ),
-      )
-    })(obj),
-  )
 
 module.exports = {
   mode: 'jit',
@@ -38,7 +7,6 @@ module.exports = {
     './src/**/*.{ts,tsx,mdx}',
     'node_modules/@polar-sh/ui/src/**/*.{ts,tsx}',
     'node_modules/@polar-sh/checkout/src/**/*.{ts,tsx}',
-    '.storybook/**/*.{ts,tsx}',
   ],
   darkMode: 'class',
   theme: {
@@ -48,15 +16,8 @@ module.exports = {
       medium: '500',
       semibold: '600',
       bold: '700',
-      display: '350',
     },
     extend: {
-      backgroundImage: {
-        'grid-pattern':
-          'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAmCAYAAACoPemuAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABSSURBVHgB7dihEYBAEATBf/JPEksEOCgEAYw70W3OTp3cvYY5r/v57rGGElYJq4RVwiphlbBKWCWsElYJq4RVwiphlbBKWCWsElbtf/OcZuzHXh9bB88+HN8BAAAAAElFTkSuQmCC")',
-        'grid-pattern-dark':
-          'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAmCAYAAACoPemuAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABTSURBVHgB7dihEYBAEATBf9LCEQj5ZwGFIIBxJ7rN2amTu9cw53U/3z3WUMIqYZWwSlglrBJWCauEVcIqYZWwSlglrBJWCauEVcKq/W+e04z92AukgAP/IH2i4wAAAABJRU5ErkJggg==")',
-      },
       borderColor: {
         DEFAULT: 'rgb(0 0 0 / 0.07)',
       },
@@ -64,8 +25,6 @@ module.exports = {
         DEFAULT: `0 0px 15px rgba(0 0 0 / 0.04), 0 0px 2px rgba(0 0 0 / 0.06)`,
         lg: '0 0px 20px rgba(0 0 0 / 0.04), 0 0px 5px rgba(0 0 0 / 0.06)',
         xl: '0 0px 30px rgba(0 0 0 / 0.04), 0 0px 10px rgba(0 0 0 / 0.06)',
-        hidden: '0 1px 8px rgb(0 0 0 / 0), 0 0.5px 2.5px rgb(0 0 0 / 0)',
-        up: '-2px -2px 22px 0px rgba(61, 84, 171, 0.15)',
         '3xl': '0 0 50px rgba(0 0 0 / 0.02), 0 0 50px rgba(0 0 0 / 0.04)',
       },
       fontFamily: {
@@ -206,24 +165,10 @@ module.exports = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: 0 },
         },
-        'infinite-scroll': {
-          from: { transform: 'translateX(0)' },
-          to: { transform: 'translateX(-25%)' },
-        },
-        'infinite-vertical-scroll': {
-          from: { transform: 'translateY(0)' },
-          to: { transform: 'translateY(-25%)' },
-        },
-        gradient: {
-          '0%': { backgroundPosition: '0% 50%' },
-          '50%': { backgroundPosition: '100% 50%' },
-          '100%': { backgroundPosition: '0% 50%' },
-        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        gradient: 'gradient 5s linear infinite',
       },
       // chadcn/ui end
     },
@@ -233,38 +178,5 @@ module.exports = {
     require('tailwindcss-radix')(),
     require('tailwindcss-animate'),
     require('@tailwindcss/typography'),
-
-    // Striped backgrounds
-    function ({ addUtilities, theme, addVariant }) {
-      const utilities = {
-        '.bg-stripes': {
-          backgroundImage:
-            'linear-gradient(45deg, var(--stripes-color) 12.50%, transparent 12.50%, transparent 50%, var(--stripes-color) 50%, var(--stripes-color) 62.50%, transparent 62.50%, transparent 100%)',
-          // backgroundSize: '5.66px 5.66px',
-          backgroundSize: '20px 20px',
-        },
-      }
-
-      const addColor = (name, color) =>
-        (utilities[`.bg-stripes-${name}`] = { '--stripes-color': color })
-
-      const colors = flattenColorPalette(theme('backgroundColor'))
-      for (let name in colors) {
-        try {
-          const [r, g, b, a] = toRgba(colors[name])
-          if (a !== undefined) {
-            addColor(name, colors[name])
-          } else {
-            addColor(name, `rgba(${r}, ${g}, ${b}, 0.4)`)
-          }
-        } catch (_) {
-          addColor(name, colors[name])
-        }
-      }
-
-      addUtilities(utilities)
-
-      addVariant('not-last', '&:not(:last-child)')
-    },
   ],
 }

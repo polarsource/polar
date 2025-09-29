@@ -11496,6 +11496,11 @@ export interface components {
        */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
+      /**
        * @description The status of the subscription.
        * @example active
        */
@@ -12368,6 +12373,11 @@ export interface components {
        * @example month
        */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /**
        * @description The status of the subscription.
        * @example active
@@ -16655,6 +16665,11 @@ export interface components {
        */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
+      /**
        * @description The status of the subscription.
        * @example active
        */
@@ -19193,6 +19208,11 @@ export interface components {
        * @example month
        */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /**
        * @description The status of the subscription.
        * @example active

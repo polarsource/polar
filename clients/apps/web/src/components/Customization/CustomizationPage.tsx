@@ -114,11 +114,11 @@ const Customization = ({
         </Tabs>
         <PublicProfileDropdown
           authenticatedUser={currentUser}
-          className="flex-shrink-0"
+          className="shrink-0"
         />
       </div>
       <Form {...form}>
-        <div className="flex min-h-0 flex-grow flex-row gap-x-6 pb-8">
+        <div className="flex min-h-0 grow flex-row gap-x-6 pb-8">
           {customizationContent}
           {customizationMode === 'storefront' && (
             <StorefrontSidebar organization={organization} />

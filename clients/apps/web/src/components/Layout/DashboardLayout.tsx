@@ -57,7 +57,7 @@ const DashboardLayout = (
           )}
         >
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
-          <main className="relative flex min-h-0 w-full flex-grow flex-col">
+          <main className="relative flex min-h-0 w-full grow flex-col">
             {props.children}
           </main>
         </div>
@@ -89,7 +89,7 @@ const MobileNav = ({
     <div className="dark:bg-polar-900 sticky left-0 right-0 top-0 flex w-full flex-row items-center justify-between bg-gray-50 p-4">
       <a
         href="/"
-        className="flex-shrink-0 items-center font-semibold text-black dark:text-white"
+        className="shrink-0 items-center font-semibold text-black dark:text-white"
       >
         <LogoIcon className="h-10 w-10" />
       </a>
@@ -190,7 +190,7 @@ export const DashboardBody = ({
           className={twMerge(
             'flex h-full w-full flex-col',
             wrapperClassName,
-            wide ? '' : 'max-w-screen-xl',
+            wide ? '' : 'max-w-(--breakpoint-xl)',
           )}
         >
           <div className="flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:py-8">

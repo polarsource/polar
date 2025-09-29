@@ -57,7 +57,7 @@
     "react-hook-form": "^7.63.0",
     "react-timeago": "^8.3.0",
     "recharts": "^2.15.2",
-    "tailwind-merge": "^2.6.0"
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@storybook/react": "^8.6.14",

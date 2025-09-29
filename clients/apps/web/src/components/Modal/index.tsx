@@ -65,7 +65,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
               hide()
             }}
           >
-            <div className="block h-[80px] w-2 lg:max-h-[10%] lg:grow-[2]"></div>
+            <div className="block h-[80px] w-2 lg:max-h-[10%] lg:grow-2"></div>
             <motion.div
               className={twMerge(
                 'dark:bg-polar-900 dark:border-polar-800 rounded-4xl relative z-10 flex max-h-full w-full flex-col overflow-y-auto overflow-x-hidden bg-white shadow lg:w-[800px] lg:max-w-full dark:border',

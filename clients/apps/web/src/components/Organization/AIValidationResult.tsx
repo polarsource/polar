@@ -137,7 +137,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
       <div className="space-y-6">
         {/* Status Header */}
         <div className="flex items-center space-x-4">
-          <div className="flex-shrink-0">{status.icon}</div>
+          <div className="shrink-0">{status.icon}</div>
           <div className="flex-1">
             <h3 className={`text-lg font-medium`}>{status.title}</h3>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">

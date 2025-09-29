@@ -149,7 +149,7 @@ export const DashboardSidebar = ({
                 <DropdownMenuContent
                   side="top"
                   align={isCollapsed ? 'start' : 'center'}
-                  className="w-[--radix-popper-anchor-width] min-w-[200px]"
+                  className="w-(--radix-popper-anchor-width) min-w-[200px]"
                 >
                   {organizations.map((org) => (
                     <DropdownMenuItem

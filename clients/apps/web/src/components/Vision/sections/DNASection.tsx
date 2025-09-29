@@ -44,7 +44,7 @@ export const DNASection = ({ active }: { active: boolean }) => {
             ]}
           />
           <Grid
-            className="hidden grid-cols-2 text-xs md:grid md:grid-cols-4 [&>*]:aspect-auto"
+            className="hidden grid-cols-2 text-xs md:grid md:grid-cols-4 *:aspect-auto"
             items={[
               <span key="e">@polar-sh/nextjs</span>,
               <span key="f">@polar-sh/fastify</span>,

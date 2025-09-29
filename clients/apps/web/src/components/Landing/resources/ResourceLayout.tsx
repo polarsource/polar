@@ -30,7 +30,7 @@ export const ResourceLayout = ({
             {/* Top Section */}
             <div className="flex flex-col">
               <div className={twMerge('flex flex-col gap-y-8')}>
-                <h1 className="text-balance text-5xl !leading-tight md:text-6xl lg:w-2/3">
+                <h1 className="text-balance text-5xl leading-tight! md:text-6xl lg:w-2/3">
                   {title}
                 </h1>
               </div>

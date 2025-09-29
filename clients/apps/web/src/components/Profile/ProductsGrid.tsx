@@ -31,7 +31,7 @@ export const ProductsGrid = ({
   gridClassName,
 }: ProductsGridProps) => {
   return (
-    <div className={twMerge('flex flex-grow flex-col gap-y-8', className)}>
+    <div className={twMerge('flex grow flex-col gap-y-8', className)}>
       <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
         {title && <h2 className="text-2xl font-medium">{title}</h2>}
         {hasBothIntervals && recurringInterval && setRecurringInterval && (

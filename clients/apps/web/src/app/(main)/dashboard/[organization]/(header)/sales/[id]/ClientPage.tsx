@@ -113,7 +113,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       <List size="small">
         <ProductListItem organization={organization} product={product} />
       </List>
-      <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:!rounded-3xl">
+      <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-4 md:p-8">
           <div className="flex flex-col gap-4 md:gap-1">
             <DetailRow label="Invoice number" value={order.invoice_number} />
@@ -150,7 +150,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               valueClassName="capitalize"
             />
 
-            <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />
+            <Separator className="dark:bg-polar-700 my-4 h-px bg-gray-300" />
 
             <div className="flex flex-col gap-y-6 pb-4">
               {order.items.map((item) => (
@@ -202,7 +202,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             )}
             {order.billing_address ? (
               <>
-                <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />
+                <Separator className="dark:bg-polar-700 my-4 h-px bg-gray-300" />
                 <DetailRow
                   label="Country"
                   value={order.billing_address?.country}

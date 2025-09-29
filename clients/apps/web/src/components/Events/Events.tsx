@@ -40,21 +40,21 @@ const EventRow = ({
         )}
       >
         <td className="px-4 py-2">
-          <div className="flex w-[180px] flex-shrink-0">
+          <div className="flex w-[180px] shrink-0">
             <span className="font-mono text-xs capitalize">
               {formattedTimestamp}
             </span>
           </div>
         </td>
         <td className="px-4 py-2">
-          <div className="w-[120px] flex-shrink-0 font-mono text-xs">
+          <div className="w-[120px] shrink-0 font-mono text-xs">
             <span>{event.name}</span>
           </div>
         </td>
         <td className="px-4 py-2">
           <Link
             href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}`}
-            className="flex w-[180px] flex-shrink-0 items-center gap-x-3"
+            className="flex w-[180px] shrink-0 items-center gap-x-3"
             onClick={(e) => {
               e.stopPropagation()
             }}

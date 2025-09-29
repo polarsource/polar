@@ -47,7 +47,7 @@ export const CheckoutLinkPage = ({ checkoutLink }: CheckoutLinkPageProps) => {
   const showDarkmodeToggle = embedType === 'svg' || embedType === 'checkout'
 
   const triggerClassName =
-    'dark:data-[state=active]:bg-polar-900 data-[state=active]:bg-white w-full !rounded-full'
+    'dark:data-[state=active]:bg-polar-900 data-[state=active]:bg-white w-full rounded-full!'
 
   return (
     <div className="flex w-full flex-col gap-8">

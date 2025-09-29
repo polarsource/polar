@@ -10,7 +10,7 @@ export const Grid: React.FC<GridProps> = ({ items, className }) => {
   return (
     <div
       className={twMerge(
-        'bg-polar-200 border-polar-200 grid gap-[1px] border',
+        'bg-polar-200 border-polar-200 grid gap-px border',
         className,
       )}
     >

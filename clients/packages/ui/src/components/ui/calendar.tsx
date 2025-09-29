@@ -40,16 +40,16 @@ function Calendar({
         weekday:
           "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
         week: "flex w-full mt-2",
-        day: "h-9 w-9 text-center text-sm p-0 relative [&[data-selected].day-outside]:bg-accent/50 data-[selected]:bg-accent first:data-[selected]:rounded-l-md last:data-[selected]:rounded-r-md focus-within:relative focus-within:z-20",
+        day: "h-9 w-9 text-center text-sm p-0 relative [&[data-selected].day-outside]:bg-accent/50 data-[selected]:bg-accent first:data-selected:rounded-l-md last:data-selected:rounded-r-md focus-within:relative focus-within:z-20",
         day_button: cn(
           buttonVariants({ variant: "ghost" }),
           "h-9 w-9 p-0 font-normal"
         ),
-        range_start: "!rounded-l-md", // !important has to override rounded-none from `today[data-selected]` that in its turn overrides the default rounded-md for today
-        range_end: "!rounded-r-md", // !important has to override rounded-none from `today[data-selected]` that in its turn overrides the default rounded-md for today
+        range_start: "rounded-l-md!", // !important has to override rounded-none from `today[data-selected]` that in its turn overrides the default rounded-md for today
+        range_end: "rounded-r-md!", // !important has to override rounded-none from `today[data-selected]` that in its turn overrides the default rounded-md for today
         selected:
           "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        today: "bg-foreground text-accent-foreground rounded-md data-[selected]:rounded-none",
+        today: "bg-foreground text-accent-foreground rounded-md data-selected:rounded-none",
         outside:
           "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-foreground",
         disabled: "text-muted-foreground opacity-50",

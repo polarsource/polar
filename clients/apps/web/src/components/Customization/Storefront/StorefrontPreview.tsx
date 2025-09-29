@@ -35,12 +35,12 @@ export const StorefrontPreview = ({
 
           <TopbarRight authenticatedUser={currentUser} />
         </div>
-        <div className="flex flex-grow flex-col items-center">
+        <div className="flex grow flex-col items-center">
           <StorefrontHeader
             organization={organization as schemas['Organization']}
           />
         </div>
-        <div className="flex h-full flex-grow flex-col gap-y-8 pb-16 md:gap-y-16">
+        <div className="flex h-full grow flex-col gap-y-8 pb-16 md:gap-y-16">
           <Storefront
             organization={organization as schemas['Organization']}
             products={products}

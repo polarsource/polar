@@ -632,7 +632,7 @@ export const ProductPricingSection = ({
           ))}
 
           {update && recurringInterval && (
-            <ShadowBox className="dark:bg-polar-800 flex flex-col gap-2 !rounded-2xl !border-none p-4">
+            <ShadowBox className="dark:bg-polar-800 flex flex-col gap-2 rounded-2xl! border-none! p-4">
               <h3 className="text-sm font-medium">Updating pricing model</h3>
               <p className="dark:text-polar-500 text-gray-5 00 text-sm">
                 Changing pricing model on subscription products will only affect

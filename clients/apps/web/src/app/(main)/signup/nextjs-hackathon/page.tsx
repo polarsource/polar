@@ -260,7 +260,7 @@ export default async function Page() {
 
   return (
     <div className="flex h-full flex-col justify-between gap-y-12 text-sm">
-      <div className="relative flex flex-grow flex-col gap-y-16">
+      <div className="relative flex grow flex-col gap-y-16">
         <div
           className={twMerge(desktopClasses, 'mb-16 flex flex-col gap-y-16')}
         >

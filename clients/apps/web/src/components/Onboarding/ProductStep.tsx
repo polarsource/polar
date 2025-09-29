@@ -138,7 +138,7 @@ export const ProductStep = () => {
           initial="hidden"
           animate="visible"
           transition={{ duration: 1, staggerChildren: 0.3 }}
-          className="flex min-h-0 w-full flex-shrink-0 flex-col gap-12 md:max-w-xl md:p-8"
+          className="flex min-h-0 w-full shrink-0 flex-col gap-12 md:max-w-xl md:p-8"
         >
           <FadeUp className="flex flex-col items-center gap-y-8">
             <LogoIcon size={50} />

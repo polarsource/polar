@@ -117,7 +117,7 @@ export default function ConfirmationButton({
       </div>
       
       {/* Confirmation Buttons */}
-      <div className="flex gap-2 sm:flex-shrink-0">
+      <div className="flex gap-2 sm:shrink-0">
         <Button
           type="button"
           onClick={handleConfirm}

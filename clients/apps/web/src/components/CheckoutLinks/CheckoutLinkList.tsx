@@ -98,7 +98,7 @@ export const CheckoutLinkList = ({
           onChange={(productIds) => setProductIds(productIds)}
         />
       </div>
-      <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-50 overflow-y-auto">
+      <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
         {checkoutLinks.map((checkoutLink) => {
           const productLabel =
             checkoutLink.products.length === 1

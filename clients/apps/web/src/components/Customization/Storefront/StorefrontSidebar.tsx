@@ -39,7 +39,7 @@ const StorefrontSidebarContentWrapper = ({
   organization: schemas['Organization']
 }>) => {
   return (
-    <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col overflow-y-auto bg-white p-8 dark:border-transparent">
+    <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 shrink-0 grow-0 flex-col overflow-y-auto bg-white p-8 dark:border-transparent">
       <div className="flex h-full flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg">{title}</h2>
@@ -53,7 +53,7 @@ const StorefrontSidebarContentWrapper = ({
           )}
         </div>
         <div
-          className={twMerge('flex flex-grow flex-col justify-between gap-y-8')}
+          className={twMerge('flex grow flex-col justify-between gap-y-8')}
         >
           {children}
         </div>

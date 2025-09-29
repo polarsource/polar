@@ -74,9 +74,9 @@ export const SavedCardsSelector = ({
                   <CreditCardBrandIcon
                     width="2.5em"
                     brand={brand}
-                    className="flex-shrink-0 rounded border border-gray-200 p-1 dark:border-polar-700"
+                    className="shrink-0 rounded border border-gray-200 p-1 dark:border-polar-700"
                   />
-                  <div className="flex-grow">
+                  <div className="grow">
                     <div className="font-medium capitalize">
                       {brand} •••• {last4}
                     </div>
@@ -85,7 +85,7 @@ export const SavedCardsSelector = ({
                     </div>
                   </div>
                   {isSelected && (
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       <div className="h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
                         <div className="h-2 w-2 rounded-full bg-white" />
                       </div>

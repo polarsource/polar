@@ -26,7 +26,7 @@ export default async function Layout({
   return (
     <div
       className={twMerge(
-        'flex flex-grow flex-col',
+        'flex grow flex-col',
         themePreset.polar.customerPortalWrapper,
       )}
     >

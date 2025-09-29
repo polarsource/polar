@@ -34,13 +34,13 @@ export const Hero = ({ className }: { className?: string }) => {
       viewport={{ once: true }}
     >
       <motion.h1
-        className="text-balance text-5xl !leading-tight tracking-tight md:px-0 md:text-6xl"
+        className="text-balance text-5xl leading-tight! tracking-tight md:px-0 md:text-6xl"
         variants={itemVariants}
       >
         Monetize your software
       </motion.h1>
       <motion.p
-        className="dark:text-polar-500 text-balance text-xl !leading-tight text-gray-500 md:px-0"
+        className="dark:text-polar-500 text-balance text-xl leading-tight! text-gray-500 md:px-0"
         variants={itemVariants}
       >
         Turn your software into a business with 6 lines of code

@@ -296,7 +296,7 @@ const MetricChartBox = forwardRef<HTMLDivElement, MetricChartBoxProps>(
         </div>
         {shareable && data && (
           <Modal
-            className="lg:!w-fit"
+            className="lg:w-fit!"
             isShown={isModalOpen}
             hide={hideModal}
             modalContent={

@@ -38,13 +38,13 @@ export default async function Layout({
         />
       </div>
       <div className="flex flex-col gap-y-8">
-        <div className="flex flex-grow flex-col items-center">
+        <div className="flex grow flex-col items-center">
           <StorefrontHeader organization={organization} />
         </div>
         <div className="flex flex-col items-center">
           <StorefrontNav organization={organization} />
         </div>
-        <div className="flex h-full flex-grow flex-col gap-y-8 md:gap-y-16 md:py-12">
+        <div className="flex h-full grow flex-col gap-y-8 md:gap-y-16 md:py-12">
           {children}
         </div>
       </div>

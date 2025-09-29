@@ -62,7 +62,7 @@ export const CustomerPortalOrders = ({
             accessorKey: 'status',
             header: 'Status',
             cell: ({ row }) => (
-              <span className="flex flex-shrink">
+              <span className="flex shrink">
                 <OrderStatus status={row.original.status} />
               </span>
             ),

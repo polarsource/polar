@@ -138,7 +138,7 @@ export const useThemePreset = (
 						"rounded-3xl dark:md:bg-polar-900 md:bg-white divide-gray-200 dark:divide-transparent",
 					checkoutInfoWrapper: "md:bg-gray-50 md:dark:bg-polar-950",
 					checkoutCardWrapper:
-						"dark:bg-polar-900 dark:border-polar-700 !rounded-3xl bg-white shadow-sm border border-gray-200",
+						"dark:bg-polar-900 dark:border-polar-700 rounded-3xl! bg-white shadow-sm border border-gray-200",
 					checkoutProductSwitch:
 						"rounded-2xl md:shadow-none shadow-sm hover:border-blue-500 dark:hover:border-blue-500 divide-y divide-gray-200 dark:divide-polar-700 md:bg-white dark:md:bg-polar-950",
 					checkoutProductSwitchSelected: "border-blue-500 dark:border-blue-500",
@@ -231,33 +231,33 @@ export const useThemePreset = (
 						"rounded-none dark:bg-[#2C2C2C] dark:text-white dark:hover:bg-[#2C2C2C]",
 					dropdown:
 						"bg-[#1d1d1d] dark:bg-[#1d1d1d] border-none rounded-none hover:bg-[rgba(255,255,255,.1)] dark:hover:bg-[rgba(255,255,255,.1)]",
-					dropdownContent: "bg-[#1d1d1d] dark:bg-[#1d1d1d] !rounded-none",
+					dropdownContent: "bg-[#1d1d1d] dark:bg-[#1d1d1d] rounded-none!",
 					checkbox: "rounded-none",
-					dropdownItem: "!rounded-none",
-					list: "!rounded-none",
-					listItem: "!rounded-none",
-					well: "!rounded-none dark:!bg-[#1d1d1d]",
+					dropdownItem: "rounded-none!",
+					list: "rounded-none!",
+					listItem: "rounded-none!",
+					well: "rounded-none! dark:bg-[#1d1d1d]!",
 					wellSecondary:
-						"border !rounded-none dark:border-[#2c2c2c] dark:!bg-transparent",
-					table: "!rounded-none dark:border-[#2c2c2c]",
-					tableHeader: "dark:bg-[#1d1d1d] dark:!text-[#878787]",
+						"border rounded-none! dark:border-[#2c2c2c] dark:bg-transparent!",
+					table: "rounded-none! dark:border-[#2c2c2c]",
+					tableHeader: "dark:bg-[#1d1d1d] dark:text-[#878787]!",
 					checkoutWrapper:
 						"bg-[#121212] dark:bg-[#121212] md:bg-[#0c0c0c] md:dark:bg-[#0c0c0c] text-white",
 					checkoutInnerWrapper:
-						"md:bg-[#121212] dark:md:bg-[#121212] md:!rounded-none",
+						"md:bg-[#121212] dark:md:bg-[#121212] md:rounded-none!",
 					checkoutInfoWrapper: "dark:md:bg-transparent",
 					checkoutCardWrapper:
-						"dark:bg-[#1d1d1d] bg-[#1d1d1d] border-none !rounded-none text-white",
+						"dark:bg-[#1d1d1d] bg-[#1d1d1d] border-none rounded-none! text-white",
 					checkoutProductSwitch:
-						"!rounded-none bg-[#1d1d1d] hover:bg-[#ddd] divide-y divide-gray-500 dark:divide-[#2c2c2c] dark:hover:text-black",
+						"rounded-none! bg-[#1d1d1d] hover:bg-[#ddd] divide-y divide-gray-500 dark:divide-[#2c2c2c] dark:hover:text-black",
 					checkoutProductSwitchSelected:
 						"bg-white text-black dark:divide-[#ccc]",
 					customerPortalWrapper: "dark:bg-[#121212]",
 					customerPortalHeader: "dark:bg-[#0c0c0c]",
 					customerPortalNavigationItem:
-						"hover:!bg-transparent hover:!text-white",
+						"hover:bg-transparent! hover:text-white!",
 					customerPortalNavigationItemActive:
-						"dark:!bg-[#2c2c2c] dark:!text-white",
+						"dark:bg-[#2c2c2c]! dark:text-white!",
 					customerPortalSubscriptionCard: "",
 				},
 			};

@@ -5,6 +5,10 @@ from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
 
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
+from polar.customer_seat import seat_service
+from polar.customer_seat.auth import SeatRead, SeatWrite
+from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
+from polar.customer_seat.schemas import CustomerSeatID, SeatAssign, SeatsList
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -245,3 +249,100 @@ async def revoke(
     )
     async with subscription_service.lock(locker, subscription):
         return await subscription_service.revoke(session, subscription)
+
+
+#
+# Seat Management Endpoints
+#
+
+
+@router.get(
+    "/{id}/seats",
+    summary="List Subscription Seats",
+    response_model=SeatsList,
+    tags=["subscriptions", APITag.private],
+    responses={
+        404: SubscriptionNotFound,
+        403: {"description": "Seat-based pricing not enabled for organization"},
+    },
+)
+async def list_seats(
+    id: SubscriptionID,
+    auth_subject: SeatRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> SeatsList:
+    subscription = await subscription_service.get(session, auth_subject, id)
+    if not subscription:
+        raise ResourceNotFound()
+
+    seats = await seat_service.list_seats(session, subscription)
+    available_seats = await seat_service.get_available_seats_count(
+        session, subscription
+    )
+    total_seats = subscription.seats or 0
+
+    return SeatsList(
+        seats=[CustomerSeatSchema.model_validate(seat) for seat in seats],
+        available_seats=available_seats,
+        total_seats=total_seats,
+    )
+
+
+@router.post(
+    "/{id}/seats",
+    summary="Assign Seat",
+    response_model=CustomerSeatSchema,
+    tags=["subscriptions", APITag.private],
+    responses={
+        400: {"description": "No seats available or customer already has seat"},
+        403: {"description": "Seat-based pricing not enabled for organization"},
+        404: SubscriptionNotFound,
+    },
+)
+async def assign_seat(
+    id: SubscriptionID,
+    seat_assign: SeatAssign,
+    auth_subject: SeatWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerSeatSchema:
+    subscription = await subscription_service.get(session, auth_subject, id)
+    if not subscription:
+        raise ResourceNotFound()
+
+    seat = await seat_service.assign_seat(
+        session,
+        subscription=subscription,
+        email=seat_assign.email,
+        external_customer_id=seat_assign.external_customer_id,
+        metadata=seat_assign.metadata,
+    )
+
+    return CustomerSeatSchema.model_validate(seat)
+
+
+@router.delete(
+    "/{id}/seats/{seat_id}",
+    summary="Revoke Seat",
+    response_model=CustomerSeatSchema,
+    tags=["subscriptions", APITag.private],
+    responses={
+        403: {"description": "Seat-based pricing not enabled for organization"},
+        404: SubscriptionNotFound,
+    },
+)
+async def revoke_seat(
+    id: SubscriptionID,
+    seat_id: CustomerSeatID,
+    auth_subject: SeatWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerSeatSchema:
+    subscription = await subscription_service.get(session, auth_subject, id)
+    if not subscription:
+        raise ResourceNotFound()
+
+    seat = await seat_service.get_seat(session, auth_subject, seat_id)
+    if not seat or seat.subscription_id != subscription.id:
+        raise ResourceNotFound()
+
+    revoked_seat = await seat_service.revoke_seat(session, seat)
+    return CustomerSeatSchema.model_validate(revoked_seat)

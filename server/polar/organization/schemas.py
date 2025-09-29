@@ -65,6 +65,9 @@ class OrganizationFeatureSettings(Schema):
     issue_funding_enabled: bool = Field(
         False, description="If this organization has issue funding enabled"
     )
+    seat_based_pricing_enabled: bool = Field(
+        False, description="If this organization has seat-based pricing enabled"
+    )
 
 
 class OrganizationSubscribePromoteSettings(Schema):

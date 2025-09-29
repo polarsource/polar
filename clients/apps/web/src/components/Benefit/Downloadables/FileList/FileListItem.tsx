@@ -54,7 +54,7 @@ export const FilePreview = ({ mimeType }: { mimeType: string }) => {
   }, [mimeType])
 
   return (
-    <div className="dark:bg-polar-700 flex h-10 w-10 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-white text-blue-500 dark:text-white">
+    <div className="dark:bg-polar-700 flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-white text-blue-500 dark:text-white">
       {icon}
     </div>
   )
@@ -65,10 +65,10 @@ const FileUploadProgress = ({ file }: { file: FileObject }) => {
   return (
     <>
       <div className="flex w-full items-center space-x-4">
-        <div className="flex-grow">
-          <div className="dark:bg-polar-700 h-2 w-full rounded bg-gray-200">
+        <div className="grow">
+          <div className="dark:bg-polar-700 h-2 w-full rounded-sm bg-gray-200">
             <div
-              className="h-2 rounded bg-blue-400"
+              className="h-2 rounded-sm bg-blue-400"
               style={{ width: `${pct}%` }}
             >
               &nbsp;
@@ -296,7 +296,7 @@ export const FileListItem = ({
         >
           <FilePreview mimeType={file.mime_type} />
         </div>
-        <div className="flex w-full min-w-0 flex-grow flex-col gap-y-1 text-gray-950 dark:text-white">
+        <div className="flex w-full min-w-0 grow flex-col gap-y-1 text-gray-950 dark:text-white">
           <FilenameEditor
             name={file.name}
             className="text-sm font-medium"

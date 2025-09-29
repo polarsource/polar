@@ -5,6 +5,7 @@ packages:
 
 onlyBuiltDependencies:
   - '@sentry/cli'
+  - '@tailwindcss/oxide'
   - core-js-pure
   - esbuild
   - sharp

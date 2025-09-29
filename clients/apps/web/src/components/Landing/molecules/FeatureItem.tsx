@@ -30,7 +30,7 @@ const FeatureItem = ({
     >
       <div className="flex flex-row items-center gap-x-3 space-y-0 pb-4">
         {icon && (
-          <span className="dark:bg-polar-700 dark flex h-10 w-10 flex-col items-center justify-center rounded-full bg-gray-50 text-xl shadow-sm transition-colors">
+          <span className="dark:bg-polar-700 shadow-xs dark flex h-10 w-10 flex-col items-center justify-center rounded-full bg-gray-50 text-xl transition-colors">
             {React.cloneElement(icon, { fontSize: 'inherit' })}
           </span>
         )}

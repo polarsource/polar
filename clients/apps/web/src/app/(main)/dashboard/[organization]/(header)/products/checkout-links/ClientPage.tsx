@@ -116,7 +116,7 @@ export const ClientPage = () => {
           </div>
         ) : undefined
       }
-      wrapperClassName="!max-w-screen-sm"
+      wrapperClassName="max-w-(--breakpoint-sm)!"
     >
       {checkoutLink ? (
         <>

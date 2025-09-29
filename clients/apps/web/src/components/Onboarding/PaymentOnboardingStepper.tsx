@@ -68,12 +68,12 @@ export const PaymentOnboardingStepper = ({
   if (isLoading) {
     return (
       <div className={twMerge('animate-pulse space-y-4', className)}>
-        <div className="dark:bg-polar-700 h-6 rounded bg-gray-200" />
+        <div className="dark:bg-polar-700 h-6 rounded-sm bg-gray-200" />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="dark:bg-polar-700 h-16 rounded bg-gray-200"
+              className="dark:bg-polar-700 h-16 rounded-sm bg-gray-200"
             />
           ))}
         </div>
@@ -131,7 +131,7 @@ export const PaymentOnboardingStepper = ({
                 className={twMerge('relative flex flex-col gap-4 p-6 lg:p-10')}
               >
                 {/* Step Icon */}
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   {step.completed ? (
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950">
                       {React.cloneElement(icon, {
@@ -215,7 +215,7 @@ export const PaymentOnboardingStepper = ({
         {/* Status Warning */}
         {!paymentStatus.payment_ready && (
           <div className="dark:bg-polar-700 flex items-start gap-3 rounded-2xl bg-gray-100 p-4">
-            <AlertCircle className="h-5 w-5 flex-shrink-0" />
+            <AlertCircle className="h-5 w-5 shrink-0" />
             <div className="flex flex-col gap-y-1 text-sm">
               <p className="font-medium">
                 Payment processing is not yet available

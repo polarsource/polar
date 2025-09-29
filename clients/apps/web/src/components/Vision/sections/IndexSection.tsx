@@ -9,7 +9,7 @@ export const IndexSection = ({ active }: { active: boolean }) => {
       title="Payments for developers is a mess, again"
       context={
         <Console
-          className="flex aspect-video flex-grow self-start md:max-w-lg"
+          className="flex aspect-video grow self-start md:max-w-lg"
           title="Terminal"
           input="$ cat PAYMENT_INTEGRATION.md"
           output={`1. Signup

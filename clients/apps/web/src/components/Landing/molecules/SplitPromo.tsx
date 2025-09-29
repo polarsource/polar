@@ -50,7 +50,7 @@ export const SplitPromo: React.FC<SplitPromoProps> = ({
     >
       <div className="flex flex-1 flex-col justify-center gap-y-8 p-8 md:aspect-square md:p-16">
         <motion.h2
-          className="text-2xl !leading-normal md:text-3xl"
+          className="text-2xl leading-normal! md:text-3xl"
           variants={itemVariants}
         >
           {title}

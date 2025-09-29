@@ -18,7 +18,7 @@ const AccordionItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ShadAccordionItem
     ref={ref}
-    className={cn('!rounded-2xl px-3', className)}
+    className={cn('rounded-2xl! px-3', className)}
     {...props}
   />
 ))

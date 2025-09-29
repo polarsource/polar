@@ -41,6 +41,7 @@
     "@stripe/react-stripe-js": "^4.0.2",
     "@stripe/stripe-js": "^7.9.0",
     "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/postcss": "^4.1.13",
     "@tailwindcss/typography": "^0.5.18",
     "@tanstack/react-query": "^5.90.1",
     "@tanstack/react-query-next-experimental": "^5.90.1",
@@ -78,9 +79,10 @@
     "satori": "^0.18.3",
     "shiki": "^3.13.0",
     "slugify": "^1.6.6",
-    "tailwind-merge": "^2.6.0",
-    "tailwindcss-radix": "^3.0.5",
-    "tinycolor2": "^1.6.0"
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-radix": "^4.0.2",
+    "tinycolor2": "^1.6.0",
+    "tw-animate-css": "^1.4.0"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^14.2.32",
@@ -108,8 +110,7 @@
     "prop-types": "^15.8.1",
     "remark": "^15.0.1",
     "remark-mdx": "^3.1.1",
-    "tailwindcss": "^3.4.17",
-    "tailwindcss-animate": "^1.0.7",
+    "tailwindcss": "^4.1.13",
     "ts-node": "^10.9.2",
     "tsconfig": "workspace:*",
     "typescript": "5.9.2",

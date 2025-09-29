@@ -12,7 +12,7 @@ export default function AccessRestricted({
 }: AccessRestrictedProps) {
   const content = (
     <div className="flex items-center gap-4 p-8">
-      <ExclamationCircleIcon className="h-8 w-8 text-red-500 flex-shrink-0" />
+      <ExclamationCircleIcon className="h-8 w-8 text-red-500 shrink-0" />
       <div className="flex flex-col gap-2">
         <h2 className="text-lg font-medium">Access Restricted</h2>
         <p className="dark:text-polar-500 text-gray-500">

@@ -99,13 +99,13 @@ const Customization = ({
         >
           <TabsList className="rounded-full bg-gray-200 dark:bg-transparent">
             <TabsTrigger
-              className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="data-[state=active]:shadow-xs data-[state=active]:bg-white"
               value="storefront"
             >
               Storefront
             </TabsTrigger>
             <TabsTrigger
-              className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="data-[state=active]:shadow-xs data-[state=active]:bg-white"
               value="checkout"
             >
               Checkout
@@ -114,11 +114,11 @@ const Customization = ({
         </Tabs>
         <PublicProfileDropdown
           authenticatedUser={currentUser}
-          className="flex-shrink-0"
+          className="shrink-0"
         />
       </div>
       <Form {...form}>
-        <div className="flex min-h-0 flex-grow flex-row gap-x-6 pb-8">
+        <div className="flex min-h-0 grow flex-row gap-x-6 pb-8">
           {customizationContent}
           {customizationMode === 'storefront' && (
             <StorefrontSidebar organization={organization} />

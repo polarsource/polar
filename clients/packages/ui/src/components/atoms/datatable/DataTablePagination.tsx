@@ -42,7 +42,7 @@ export function DataTablePagination<TData>({
 
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 sm:flex-nowrap sm:justify-end sm:px-2 lg:gap-x-8">
-      <div className="order-3 flex w-full flex-none items-center justify-between gap-2 sm:order-none sm:w-auto sm:justify-start">
+      <div className="order-3 flex w-full flex-none items-center justify-between gap-2 sm:order-0 sm:w-auto sm:justify-start">
         <p className="dark:text-polar-500 text-sm text-gray-700">
           Rows per page
         </p>

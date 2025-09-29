@@ -13,6 +13,7 @@
     "@polar-sh/sdk": "^0.35.1",
     "@stripe/react-stripe-js": "^4.0.2",
     "@stripe/stripe-js": "^7.9.0",
+    "@tailwindcss/postcss": "^4.1.13",
     "next": "^14.2.32",
     "next-themes": "^0.4.6",
     "react": "^18.3.1",
@@ -25,7 +26,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.32",
     "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "^4.1.13",
     "typescript": "5.9.2"
   }
 }

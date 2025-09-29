@@ -32,11 +32,11 @@ const TopbarRight = ({
     <>
       {authenticatedUser ? (
         <div>
-          <div className="relative flex w-max flex-shrink-0 flex-row items-center justify-between gap-x-6">
+          <div className="relative flex w-max shrink-0 flex-row items-center justify-between gap-x-6">
             <Popover />
             <PublicProfileDropdown
               authenticatedUser={authenticatedUser}
-              className="flex-shrink-0"
+              className="shrink-0"
             />
           </div>
         </div>

@@ -309,14 +309,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 />
               </div>
               <Input
-                className="w-full rounded-none border-none bg-transparent p-0 !shadow-none ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
+                className="w-full rounded-none border-none bg-transparent p-0 shadow-none! ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
                 placeholder="Search Customers"
                 value={query ?? undefined}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
           </div>
-          <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-50 overflow-y-auto">
+          <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
             {customers.map((customer) => (
               <div
                 key={customer.id}

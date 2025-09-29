@@ -127,7 +127,7 @@ const itemVariants = {
 
 export const Usage = () => {
   const tabsTriggerClassName = useMemo(() => {
-    return '!rounded-full px-4 py-2 data-[state=active]:bg-white hidden md:flex'
+    return 'rounded-full! px-4 py-2 data-[state=active]:bg-white hidden md:flex'
   }, [])
 
   return (
@@ -174,7 +174,7 @@ export const Usage = () => {
                 <div className="flex flex-col justify-center gap-y-8 p-8 md:w-1/2 md:p-16">
                   <div className="flex flex-col gap-y-8">
                     <motion.h2
-                      className="text-2xl !leading-normal md:text-4xl"
+                      className="text-2xl leading-normal! md:text-4xl"
                       variants={itemVariants}
                     >
                       {strategy.name} Strategy
@@ -228,7 +228,7 @@ export const Usage = () => {
                     loading="lazy"
                     alt=""
                   />
-                  <div className="dark:bg-polar-900 z-[1] rounded-lg bg-white p-4">
+                  <div className="dark:bg-polar-900 z-1 rounded-lg bg-white p-4">
                     <SyntaxHighlighterClient
                       lang="typescript"
                       code={strategy.code}

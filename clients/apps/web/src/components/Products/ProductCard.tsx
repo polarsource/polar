@@ -29,7 +29,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           </div>
         </div>
       )}
-      <div className="flex flex-grow flex-col gap-y-1 text-lg">
+      <div className="flex grow flex-col gap-y-1 text-lg">
         <h3 className="line-clamp-1 flex items-center justify-between gap-1 leading-snug text-gray-950 dark:text-white">
           {product.name}
         </h3>

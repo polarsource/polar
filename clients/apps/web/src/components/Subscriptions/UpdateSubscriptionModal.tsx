@@ -129,7 +129,7 @@ const UpdateProduct = ({
   return (
     <Form {...form}>
       <form
-        className="flex flex-grow flex-col justify-between gap-y-6"
+        className="flex grow flex-col justify-between gap-y-6"
         onSubmit={handleSubmit(onSubmit)}
       >
         <div className="flex flex-col gap-y-6">
@@ -267,7 +267,7 @@ const UpdateDiscount = ({
   return (
     <Form {...form}>
       <form
-        className="flex flex-grow flex-col justify-between gap-y-6"
+        className="flex grow flex-col justify-between gap-y-6"
         onSubmit={handleSubmit(onSubmit)}
       >
         <div className="flex flex-col gap-y-6">

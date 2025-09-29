@@ -74,7 +74,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       <Popover>
         <PopoverTrigger
           asChild
-          className="dark:bg-polar-800 !rounded-xl border-gray-200 bg-white shadow-sm"
+          className="dark:bg-polar-800 rounded-xl! shadow-xs border-gray-200 bg-white"
         >
           <Button
             id="date"
@@ -220,7 +220,7 @@ const DateRangeIntervals = ({
           onClick={() => onIntervalChange(int)}
           role="button"
           className={twMerge(
-            'dark:hover:bg-polar-800 dark:text-polar-500 flex w-full items-center justify-between rounded-sm border border-transparent px-2 py-1 text-sm text-gray-500 hover:bg-gray-100',
+            'dark:hover:bg-polar-800 dark:text-polar-500 rounded-xs flex w-full items-center justify-between border border-transparent px-2 py-1 text-sm text-gray-500 hover:bg-gray-100',
             interval?.slug === int.slug &&
               'dark:bg-polar-800 dark:border-polar-700 bg-gray-100 text-black dark:text-white',
           )}

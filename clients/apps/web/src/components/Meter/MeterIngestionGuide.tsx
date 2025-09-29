@@ -21,7 +21,7 @@ export const MeterIngestionGuide = () => {
             <WellHeader>
               <h2 className="text-2xl">Usage Billing with Meters</h2>
             </WellHeader>
-            <WellContent className="flex flex-grow flex-col justify-between gap-6">
+            <WellContent className="flex grow flex-col justify-between gap-6">
               <div className="flex flex-col gap-4">
                 <p className="dark:text-polar-300 text-gray-700">
                   Meters are aggregated filters on ingested events. They are
@@ -42,7 +42,7 @@ export const MeterIngestionGuide = () => {
               </Link>
             </WellContent>
           </div>
-          <Well className="dark:bg-polar-900 flex-1 flex-shrink overflow-auto bg-white p-6 text-sm">
+          <Well className="dark:bg-polar-900 flex-1 shrink overflow-auto bg-white p-6 text-sm">
             <SyntaxHighlighterClient
               lang="typescript"
               code={`import { Polar } from "@polar-sh/sdk";

@@ -171,7 +171,7 @@ export const IntegrateStep = ({ product }: IntegrateStepProps) => {
         </div>
       </div>
       <SyntaxHighlighterProvider>
-        <div className="dark:bg-polar-950 hidden flex-1 flex-grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
+        <div className="dark:bg-polar-950 hidden flex-1 grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
           <div className="dark:bg-polar-900 flex w-full max-w-3xl flex-col gap-y-12 rounded-3xl bg-white p-12">
             <div className="flex flex-col gap-y-6">
               <h2 className="text-lg">1. Install Dependencies</h2>

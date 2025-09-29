@@ -89,7 +89,7 @@ export const NotificationsPopover = () => {
       >
         <PopoverTrigger>
           <BoltOutlined
-            className="!h-5 !w-5"
+            className="[&svg]:size-5!"
             fontSize="medium"
             aria-hidden="true"
           />

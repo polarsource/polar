@@ -130,7 +130,7 @@ const MetricChartBox = forwardRef<HTMLDivElement, MetricChartBoxProps>(
       <ShadowBox
         ref={ref}
         className={twMerge(
-          'dark:bg-polar-800 flex w-full flex-col bg-gray-50 p-2 shadow-sm',
+          'dark:bg-polar-800 shadow-xs flex w-full flex-col bg-gray-50 p-2',
           className,
         )}
       >
@@ -296,7 +296,7 @@ const MetricChartBox = forwardRef<HTMLDivElement, MetricChartBoxProps>(
         </div>
         {shareable && data && (
           <Modal
-            className="lg:!w-fit"
+            className="lg:w-fit!"
             isShown={isModalOpen}
             hide={hideModal}
             modalContent={

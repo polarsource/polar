@@ -18,7 +18,7 @@ export const JobLink = ({
 }: JobLinkProps) => {
   return (
     <Link
-      className="dark:lg:group-hover:text-polar-500 group/link grid grid-cols-1 gap-4 border-gray-300 duration-200 hover:!text-black md:gap-8 md:border-t lg:grid-cols-4 lg:py-12 lg:group-hover:text-gray-500 dark:border-gray-700 dark:hover:!text-white"
+      className="dark:lg:group-hover:text-polar-500 group/link grid grid-cols-1 gap-4 border-gray-300 duration-200 hover:text-black! md:gap-8 md:border-t lg:grid-cols-4 lg:py-12 lg:group-hover:text-gray-500 dark:border-gray-700 dark:hover:text-white!"
       href={link}
       target="_blank"
     >

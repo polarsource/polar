@@ -86,7 +86,7 @@ export const ProductListItem = ({
         router.push(`/dashboard/${organization.slug}/products/${product.id}`),
       )}
     >
-      <div className="flex flex-grow flex-row items-center gap-x-4 text-sm">
+      <div className="flex grow flex-row items-center gap-x-4 text-sm">
         <ProductThumbnail product={product} />
         <div className="flex flex-col">
           <span className="truncate">{product.name}</span>

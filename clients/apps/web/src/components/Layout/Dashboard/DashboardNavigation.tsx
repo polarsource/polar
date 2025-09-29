@@ -48,7 +48,7 @@ export const OrganizationNavigation = ({
               className={twMerge(
                 'flex flex-row items-center rounded-lg border border-transparent px-2 transition-colors dark:border-transparent',
                 route.isActive
-                  ? 'dark:!bg-polar-900 dark:border-polar-800 border-gray-200 !bg-white text-black shadow-sm dark:text-white'
+                  ? 'dark:!bg-polar-900 dark:border-polar-800 bg-white! shadow-xs border-gray-200 text-black dark:text-white'
                   : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
                 isCollapsed && '!dark:text-polar-600',
               )}
@@ -128,7 +128,7 @@ export const AccountNavigation = () => {
               className={twMerge(
                 'flex flex-row items-center rounded-lg border border-transparent px-2 transition-colors dark:border-transparent',
                 route.isActive
-                  ? 'dark:bg-polar-900 dark:border-polar-800 border-gray-200 bg-white text-black shadow-sm dark:text-white'
+                  ? 'dark:bg-polar-900 dark:border-polar-800 shadow-xs border-gray-200 bg-white text-black dark:text-white'
                   : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
                 isCollapsed && '!dark:text-polar-600',
               )}

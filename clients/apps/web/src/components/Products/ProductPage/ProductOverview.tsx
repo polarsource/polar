@@ -127,7 +127,7 @@ export const ProductOverview = ({
                 <DataTableColumnHeader column={column} title="Status" />
               ),
               cell: ({ row: { original: order } }) => (
-                <span className="flex flex-shrink">
+                <span className="flex shrink">
                   <OrderStatus status={order.status} />
                 </span>
               ),

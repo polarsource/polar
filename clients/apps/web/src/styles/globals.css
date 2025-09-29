@@ -1,6 +1,144 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@source '../../../../packages/ui/src';
+@source '../../../../packages/checkout/src';
+
+@plugin '@tailwindcss/forms';
+@plugin 'tailwindcss-radix';
+@plugin '@tailwindcss/typography';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --shadow-md: 0 0px 15px rgba(0 0 0 / 0.04), 0 0px 2px rgba(0 0 0 / 0.06);
+  --shadow-lg: 0 0px 20px rgba(0 0 0 / 0.04), 0 0px 5px rgba(0 0 0 / 0.06);
+  --shadow-xl: 0 0px 30px rgba(0 0 0 / 0.04), 0 0px 10px rgba(0 0 0 / 0.06);
+  --shadow-3xl: 0 0 50px rgba(0 0 0 / 0.02), 0 0 50px rgba(0 0 0 / 0.04);
+
+  --font-sans: 'var(--font-geist)', sans-serif;
+  --font-mono: 'var(--font-geist-mono)', monospace;
+
+  --text-xxs: 0.65rem;
+
+  --color-border: rgb(0 0 0 / 0.07);
+
+  --color-blue: #0062ff;
+  --color-blue-50: #e5efff;
+  --color-blue-100: #cce0ff;
+  --color-blue-200: #99c0ff;
+  --color-blue-300: #66a1ff;
+  --color-blue-400: #3381ff;
+  --color-blue-500: #0062ff;
+  --color-blue-600: #0054db;
+  --color-blue-700: #0047b8;
+  --color-blue-800: #003994;
+  --color-blue-900: #002b70;
+  --color-blue-950: #00245e;
+
+  --color-green-50: #f0faf0;
+  --color-green-100: #e2f6e3;
+  --color-green-200: #c5edc6;
+  --color-green-300: #97de9a;
+  --color-green-400: #62c667;
+  --color-green-500: #3fab44;
+  --color-green-600: #2d8c31;
+  --color-green-700: #266f29;
+  --color-green-800: #235826;
+  --color-green-900: #1e4921;
+  --color-green-950: #0e2f11;
+
+  --color-red-50: #fdf3f3;
+  --color-red-100: #fde3e3;
+  --color-red-200: #fbcdcd;
+  --color-red-300: #f8a9a9;
+  --color-red-400: #f17878;
+  --color-red-500: #e64d4d;
+  --color-red-600: #d32f2f;
+  --color-red-700: #b12424;
+  --color-red-800: #922222;
+  --color-red-900: #6f1f1f;
+  --color-red-950: #420d0d;
+
+  --color-gray-50: hsl(231, 10%, 98%);
+  --color-gray-100: hsl(233, 10%, 96.5%);
+  --color-gray-200: hsl(231, 10%, 94%);
+  --color-gray-300: hsl(231, 10%, 88%);
+  --color-gray-400: hsl(231, 10%, 60%);
+  --color-gray-500: hsl(233, 10%, 40%);
+  --color-gray-600: hsl(233, 10%, 30%);
+  --color-gray-700: hsl(233, 10%, 20%);
+  --color-gray-800: hsl(233, 10%, 10%);
+  --color-gray-900: hsl(233, 10%, 5%);
+  --color-gray-950: hsl(233, 10%, 0%);
+
+  --color-polar-50: hsl(233, 5%, 85%);
+  --color-polar-100: hsl(233, 5%, 79%);
+  --color-polar-200: hsl(233, 5%, 68%);
+  --color-polar-300: hsl(233, 5%, 62%);
+  --color-polar-400: hsl(233, 5%, 52%);
+  --color-polar-500: hsl(233, 5%, 46%);
+  --color-polar-600: hsl(233, 5%, 24%);
+  --color-polar-700: hsl(233, 5%, 12%);
+  --color-polar-800: hsl(233, 5%, 9.5%);
+  --color-polar-900: hsl(233, 5%, 6.5%);
+  --color-polar-950: hsl(233, 5%, 3%);
+
+  /* shadcn */
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-4xl: 2rem;
+
+  @keyframes accordion-down {
+    0%: {
+      height: 0;
+    }
+    100% {
+      height: 'var(--radix-accordion-content-height)';
+    }
+  }
+
+  @keyframes accordion-up {
+    0% {
+      height: 'var(--radix-accordion-content-height)';
+    }
+    100% {
+      height: 0;
+    }
+  }
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+}
 
 @layer base {
   html {
@@ -9,6 +147,18 @@
 
   html.dark {
     @apply text-gray-200;
+  }
+
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    color: hsl(var(--foreground));
   }
 }
 
@@ -110,7 +260,7 @@
     --radius: 0.6rem;
   }
 
-  .dark {
+  :root.dark {
     --background: 233 5% 9.5%;
     --foreground: 233 10% 36%;
 
@@ -153,15 +303,6 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply text-foreground;
-  }
-}
-
 pre.shiki {
   overflow: auto;
 }
@@ -170,7 +311,6 @@ pre.shiki {
   .shiki,
   .shiki span {
     color: var(--shiki-dark) !important;
-    /* Optional, if you also want font styles */
     font-style: var(--shiki-dark-font-style) !important;
     font-weight: var(--shiki-dark-font-weight) !important;
     text-decoration: var(--shiki-dark-text-decoration) !important;

@@ -81,7 +81,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
         {subscriptionTier.description && (
           <div
             className={twMerge(
-              'prose dark:prose-invert dark:text-polar-500 flex-shrink leading-normal text-gray-500',
+              'prose dark:prose-invert dark:text-polar-500 shrink leading-normal text-gray-500',
             )}
           >
             <Markdown options={markdownOptionsJustText}>

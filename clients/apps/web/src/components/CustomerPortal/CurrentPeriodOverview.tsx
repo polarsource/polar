@@ -145,7 +145,7 @@ export const CurrentPeriodOverview = ({
                   }
                 />
               ) : (
-                <span className="dark:bg-polar-700 animate-pulse rounded-md bg-gray-50 text-gray-500 text-opacity-0 dark:text-gray-400">
+                <span className="dark:bg-polar-700 animate-pulse rounded-md bg-gray-50 text-gray-500/0 dark:text-gray-400">
                   Loading…
                 </span>
               )}

@@ -72,7 +72,7 @@ export const CustomerContextView = ({
 
   return (
     <div className="flex h-full flex-col gap-2 overflow-y-auto">
-      <ShadowBox className="dark:border-polar-800 flex flex-col gap-6 border-gray-200 bg-white p-6 md:shadow-sm lg:rounded-2xl">
+      <ShadowBox className="dark:border-polar-800 md:shadow-xs flex flex-col gap-6 border-gray-200 bg-white p-6 lg:rounded-2xl">
         <Link
           href={`/dashboard/${organization.slug}/customers?customerId=${customer.id}&query=${customer.email}`}
           className="flex flex-row items-center gap-4"
@@ -162,7 +162,7 @@ export const CustomerContextView = ({
           </div>
         )}
       </ShadowBox>
-      <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:gap-0 md:shadow-sm lg:rounded-2xl">
+      <ShadowBox className="dark:border-polar-800 md:shadow-xs flex flex-col gap-4 border-gray-200 bg-white p-6 md:gap-0 lg:rounded-2xl">
         {!customer.deleted_at && (
           <DetailRow
             labelClassName="flex-none md:basis-24"
@@ -191,7 +191,7 @@ export const CustomerContextView = ({
           value={<FormattedDateTime datetime={customer.created_at} />}
         />
       </ShadowBox>
-      <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-sm lg:rounded-2xl">
+      <ShadowBox className="dark:border-polar-800 md:shadow-xs flex flex-col gap-4 border-gray-200 bg-white p-6 lg:rounded-2xl">
         <h4 className="text-lg">Billing Address</h4>
         <div className="flex flex-col gap-4 md:gap-0">
           <DetailRow
@@ -227,7 +227,7 @@ export const CustomerContextView = ({
         </div>
       </ShadowBox>
       {!customer.deleted_at && Object.keys(customer.metadata).length > 0 && (
-        <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-sm lg:rounded-2xl">
+        <ShadowBox className="dark:border-polar-800 md:shadow-xs flex flex-col gap-4 border-gray-200 bg-white p-6 lg:rounded-2xl">
           <div className="flex flex-row items-center justify-between gap-2">
             <h3 className="text-lg">Metadata</h3>
           </div>

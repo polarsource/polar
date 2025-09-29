@@ -41,7 +41,7 @@ const StatusLabel = ({
       {prettyEventDate && (
         <Pill color="gray" className="flex flex-row">
           {icon}
-          <span className="!ml-1">{prettyEventDate}</span>
+          <span className="ml-1!">{prettyEventDate}</span>
         </Pill>
       )}
     </div>

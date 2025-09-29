@@ -9,7 +9,7 @@ export const EntitlementsSection = ({ active }: { active: boolean }) => {
       header={{ index: '02', name: 'Automated Entitlements' }}
       title="Going for features vs. settling for flags."
       context={
-        <div className="flex flex-col gap-y-12 md:max-w-screen-md">
+        <div className="flex flex-col gap-y-12 md:max-w-(--breakpoint-md)">
           <div className="relative flex">
             <div
               className="absolute left-2 top-2 z-0 flex h-full w-full flex-col items-center justify-center text-black md:left-4 md:top-4"
@@ -19,7 +19,7 @@ export const EntitlementsSection = ({ active }: { active: boolean }) => {
               }}
             />
             <Grid
-              className="relative z-10 grid-cols-2 text-xs md:grid-cols-5 [&>*]:aspect-auto"
+              className="relative z-10 grid-cols-2 text-xs md:grid-cols-5 *:aspect-auto"
               items={[
                 <span
                   key="d"

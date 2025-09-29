@@ -2,28 +2,9 @@ import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 
-export const sections = [
-  {
-    title: '00. Index',
-  },
-  {
-    title: '01. Integrate',
-  },
-  {
-    title: '02. Resources',
-  },
-  {
-    title: '03. Blog',
-  },
-  {
-    title: '04. Contribute',
-  },
-  {
-    title: '05. Careers',
-  },
-]
+export const sections = ['00. Company', '01. Careers', '02. Investors']
 
-export const PitchNavigation = ({
+export const Navigation = ({
   activeIndex,
   setIndex,
 }: {
@@ -48,7 +29,7 @@ export const PitchNavigation = ({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.05, repeat: 2 }}
             >
-              {section.title}
+              {section}
             </motion.li>
           ))}
         </AnimatePresence>

@@ -1,9 +1,16 @@
 'use client'
 
+import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
+import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
+import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
+import HiveOutlined from '@mui/icons-material/HiveOutlined'
+import LinkOutlined from '@mui/icons-material/LinkOutlined'
+import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined'
+import { motion } from 'framer-motion'
+import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Console } from '../Vision/Console'
 
 type FeatureCardProps = {
   title: string
@@ -21,7 +28,7 @@ const FeatureCard = ({
   children,
 }: FeatureCardProps) => {
   return (
-    <div className={twMerge('flex flex-col gap-y-6', className)}>
+    <motion.div className={twMerge('flex flex-col gap-y-6', className)}>
       <Link
         href={linkHref}
         target="_blank"
@@ -43,9 +50,34 @@ const FeatureCard = ({
             )}
           </div>
         </div>
+        {children}
+      </Link>
+    </motion.div>
+  )
+}
+
+const CustomerCard = () => {
+  return (
+    <div className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-4 rounded-lg border border-gray-200 bg-gray-100 p-4">
+      <div className="h-12 w-12 overflow-hidden rounded-full">
+        <Image
+          src="/assets/landing/testamonials/emil.jpg"
+          alt="Customer avatar"
+          className="h-full w-full object-cover"
+          width={48}
+          height={48}
+        />
       </div>
-      {children}
-    </Link>
+      <div className="flex flex-col">
+        <span className="font-medium text-black dark:text-white">John Doe</span>
+
+        <span className="dark:text-polar-500 flex flex-row gap-x-2 text-sm text-gray-500">
+          <span>Premium Plan</span>
+          <span>•</span>
+          <span>Monthly</span>
+        </span>
+      </div>
+    </div>
   )
 }
 
@@ -58,25 +90,72 @@ const Features = ({ className }: FeaturesProps) => {
     {
       title: 'Payments, Usage & Billing',
       description:
-        'Create digital products & SaaS billing with flexible pricing models and seamless payment processing.',
+        'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
       linkHref: 'https://polar.sh/docs/features/products',
       children: (
-        <div className="flex flex-col">
+        <div className="grid grid-cols-2 gap-2">
           {[
-            'Subscriptions',
-            'Usage Billing',
-            'Benefits',
-            'Customer Portal',
-            'Checkout Links',
-            'Metrics',
-          ].map((item, index) => (
-            <span
-              className="dark:text-polar-50 text-xs text-gray-950"
-              key={index}
+            {
+              icon: <HiveOutlined className="h-4 w-4" fontSize="inherit" />,
+              text: 'Subscriptions',
+            },
+            {
+              icon: (
+                <DonutLargeOutlined className="h-4 w-4" fontSize="inherit" />
+              ),
+              text: 'Usage Billing',
+            },
+            {
+              icon: <DiamondOutlined className="h-4 w-4" fontSize="inherit" />,
+              text: 'Benefits',
+            },
+            {
+              icon: (
+                <AllInclusiveOutlined className="h-4 w-4" fontSize="inherit" />
+              ),
+              text: 'Customer Portal',
+            },
+            {
+              icon: <LinkOutlined className="h-4 w-4" fontSize="inherit" />,
+              text: 'Checkout Links',
+            },
+            {
+              icon: (
+                <TrendingUpOutlined className="h-4 w-4" fontSize="inherit" />
+              ),
+              text: 'Metrics',
+            },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-3 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2"
             >
-              {`> ${item}`}
-            </span>
+              {item.icon}
+              <span className="dark:text-polar-50 text-xs text-gray-950">
+                {item.text}
+              </span>
+            </div>
           ))}
+        </div>
+      ),
+    },
+
+    {
+      title: 'Customer Management',
+      description:
+        'Streamlined customer lifecycle management with detailed profiles and analytics.',
+      linkHref: 'https://polar.sh/docs/features/customer-management',
+      children: (
+        <div className="relative h-[120px] md:h-[200px]">
+          <div className="absolute bottom-8 left-0 right-0 scale-90 transition-transform hover:-translate-y-1">
+            <CustomerCard />
+          </div>
+          <div className="absolute bottom-4 left-0 right-0 scale-95 transition-transform hover:-translate-y-1">
+            <CustomerCard />
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 transition-transform hover:-translate-y-1">
+            <CustomerCard />
+          </div>
         </div>
       ),
     },
@@ -86,46 +165,44 @@ const Features = ({ className }: FeaturesProps) => {
         'Focus on your passion while we handle all headaches & tax compliance.',
       linkHref: 'https://polar.sh/docs/merchant-of-record/introduction',
       children: (
-        <pre className="text-xs">
-          <table className="w-full">
-            <thead className="dark:text-polar-200">
-              <tr>
-                <th className="text-left font-normal">Tax</th>{' '}
-                <th className="text-right font-normal">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="dark:text-polar-500">
-              <tr>
-                <td>VAT</td>
-                <td className="text-right">€2,450.00</td>
-              </tr>
-              <tr>
-                <td>GST</td>
-                <td className="text-right">£1,230.00</td>
-              </tr>
-              <tr>
-                <td>Sales Tax</td>
-                <td className="text-right">$3,120.00</td>
-              </tr>
-              <tr>
-                <td colSpan={2}>
-                  <hr className="border-polar-600 my-1" />
-                </td>
-              </tr>
-              <tr>
-                <td>Status</td>
-                <td className="text-polar-50 text-right">Submitted</td>
-              </tr>
-            </tbody>
-          </table>
-        </pre>
+        <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-2 rounded-lg border border-gray-200 bg-gray-100 p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-black dark:text-white">
+              Tax Report 2025
+            </span>
+            <span className="text-sm text-emerald-500">Submitted</span>
+          </div>
+          <div className="dark:border-polar-700 flex items-center justify-between border-t border-gray-200 pt-2">
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              VAT (EU)
+            </span>
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              €2,450.00
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              Sales Tax (US)
+            </span>
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              $3,120.00
+            </span>
+          </div>
+        </div>
       ),
     },
   ]
 
   return (
     <section className={className}>
-      <div className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-8">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        transition={{
+          staggerChildren: 0.1,
+        }}
+        className="flex flex-col gap-4 md:gap-8 xl:flex-row"
+      >
         {features.map((feature, index) => (
           <FeatureCard
             key={index}
@@ -136,17 +213,7 @@ const Features = ({ className }: FeaturesProps) => {
             {feature.children}
           </FeatureCard>
         ))}
-        <Console
-          title="nvim"
-          className="col-span-2"
-          code={`import { Checkout } from '@polar-sh/nextjs'
-  
-export const GET = Checkout({
-  accessToken: process.env.POLAR_ACCESS_TOKEN
-})
-  `}
-        />
-      </div>
+      </motion.div>
     </section>
   )
 }

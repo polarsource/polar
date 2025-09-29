@@ -211,7 +211,11 @@ const nextConfig = {
         ],
         permanent: false,
       },
-
+      {
+        source: '/careers',
+        destination: 'https://polar.sh/company',
+        permanent: false,
+      },
       {
         source: '/llms.txt',
         destination: 'https://polar.sh/docs/llms.txt',
@@ -407,10 +411,15 @@ const nextConfig = {
             key: 'X-Frame-Options',
             value: 'DENY',
           },
-          ...(ENVIRONMENT === 'sandbox' ? [{
-            key: 'X-Robots-Tag',
-            value: 'noindex, nofollow, noarchive, nosnippet, noimageindex',
-          }] : []),
+          ...(ENVIRONMENT === 'sandbox'
+            ? [
+                {
+                  key: 'X-Robots-Tag',
+                  value:
+                    'noindex, nofollow, noarchive, nosnippet, noimageindex',
+                },
+              ]
+            : []),
         ],
       },
       {
@@ -424,10 +433,15 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: `payment=*, publickey-credentials-get=*, camera=(), microphone=(), geolocation=()`,
           },
-          ...(ENVIRONMENT === 'sandbox' ? [{
-            key: 'X-Robots-Tag',
-            value: 'noindex, nofollow, noarchive, nosnippet, noimageindex',
-          }] : []),
+          ...(ENVIRONMENT === 'sandbox'
+            ? [
+                {
+                  key: 'X-Robots-Tag',
+                  value:
+                    'noindex, nofollow, noarchive, nosnippet, noimageindex',
+                },
+              ]
+            : []),
         ],
       },
       {
@@ -446,10 +460,15 @@ const nextConfig = {
             key: 'X-Frame-Options',
             value: 'DENY',
           },
-          ...(ENVIRONMENT === 'sandbox' ? [{
-            key: 'X-Robots-Tag',
-            value: 'noindex, nofollow, noarchive, nosnippet, noimageindex',
-          }] : []),
+          ...(ENVIRONMENT === 'sandbox'
+            ? [
+                {
+                  key: 'X-Robots-Tag',
+                  value:
+                    'noindex, nofollow, noarchive, nosnippet, noimageindex',
+                },
+              ]
+            : []),
         ],
       },
     ]

@@ -1,95 +1,14 @@
-import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
-import ArrowOutward from '@mui/icons-material/ArrowOutward'
-import FavoriteBorderOutlined from '@mui/icons-material/FavoriteBorderOutlined'
-import { Metadata } from 'next'
-import { JobSection } from './JobSection'
+import { JobSection } from '../JobSection'
+import { Section } from '../Section'
 
-export const metadata: Metadata = {
-  title: 'Careers',
-  description: 'Help us shape the future.',
-  keywords: [
-    'careers',
-    'join',
-    'team',
-    'polar',
-    'open source',
-    'jobs',
-    'hiring',
-    'positions',
-  ],
-  openGraph: {
-    siteName: 'Polar',
-    type: 'website',
-    images: [
-      {
-        url: 'https://polar.sh/assets/brand/polar_og.jpg',
-        width: 1200,
-        height: 630,
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    images: [
-      {
-        url: 'https://polar.sh/assets/brand/polar_og.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Polar',
-      },
-    ],
-  },
-}
-
-const ValueBox = ({ children }: { children: React.ReactNode }) => {
+export const CareersSection = ({ active }: { active: boolean }) => {
   return (
-    <div className="flex flex-col items-center justify-center gap-y-4 p-12 text-center">
-      {children}
-    </div>
-  )
-}
-
-export default function CareersPage() {
-  return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-16 md:gap-24">
-      <div className="lg:dark:bg-polar-900 flex h-96 flex-col items-center justify-center gap-y-6 text-balance text-center lg:bg-white">
-        <h1 className="w-full max-w-2xl text-center text-3xl leading-tight! md:text-5xl">
-          Help us make software simple to monetize
-        </h1>
-        <p>
-          Craft beautiful & world-class experiences for software entrepreneurs
-        </p>
-      </div>
-      <div className="dark:border-polar-700 dark:divide-polar-700 grid grid-cols-1 divide-y divide-gray-300 border border-gray-300 lg:h-72 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-        <ValueBox>
-          <AllInclusiveOutlined fontSize="small" />
-          <h3 className="text-lg">Momentum is Culture</h3>
-          <p className="dark:text-polar-500 text-balance text-gray-500">
-            We focus on keeping, celebrating and accelerating momentum. Allowing
-            culture to be continuously improved and fluid vs. fixed.
-          </p>
-        </ValueBox>
-        <ValueBox>
-          <ArrowOutward fontSize="small" />
-          <h3 className="text-lg">Ship / Refactor / Scale</h3>
-          <p className="dark:text-polar-500 text-balance text-gray-500">
-            Our #1 focus and drive is shipping and growing great product
-            experiences that solves real problems for developers and their
-            users.
-          </p>
-        </ValueBox>
-        <ValueBox>
-          <FavoriteBorderOutlined fontSize="small" />
-          <h3 className="text-lg">Do your life&apos;s work</h3>
-          <p className="dark:text-polar-500 text-balance text-gray-500">
-            We&apos;re not a 9-5 nor 24/7. We don&apos;t track time nor search
-            for people who count it down. But we continuously push the envelope
-            of our creativity & productivity.
-          </p>
-        </ValueBox>
-      </div>
-      <div className="group flex flex-col gap-24 tracking-tight">
-        <div className="flex flex-col gap-12 lg:gap-24">
+    <Section
+      active={active}
+      header={{ index: '02', name: 'Careers' }}
+      title="Help us shape the future"
+      context={
+        <div className="group flex flex-col gap-16">
           <JobSection
             title="Product & Engineering"
             jobs={[
@@ -201,7 +120,33 @@ export default function CareersPage() {
             ]}
           />
         </div>
+      }
+    >
+      <div className="flex flex-col gap-y-6">
+        <div className="flex flex-col gap-y-1">
+          <h3 className="text-polar-50">Momentum is Culture</h3>
+          <p className="text-polar-500">
+            We focus on keeping, celebrating and accelerating momentum. Allowing
+            culture to be continuously improved and fluid vs. fixed.
+          </p>
+        </div>
+        <div className="flex flex-col gap-y-1">
+          <h3 className="text-polar-50">Ship / Refactor / Scale</h3>
+          <p className="text-polar-500">
+            Our #1 focus and drive is shipping and growing great product
+            experiences that solves real problems for developers and their
+            users.
+          </p>
+        </div>
+        <div className="flex flex-col gap-y-1">
+          <h3 className="text-polar-50">Do your life&apos;s work</h3>
+          <p className="text-polar-500">
+            We&apos;re not a 9-5 nor 24/7. We don&apos;t track time nor search
+            for people who count it down. But we continuously push the envelope
+            of our creativity & productivity.
+          </p>
+        </div>
       </div>
-    </div>
+    </Section>
   )
 }

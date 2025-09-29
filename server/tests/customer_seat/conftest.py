@@ -1,4 +1,5 @@
 import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
@@ -9,7 +10,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.customer_seat import SeatStatus
+from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.subscription import SubscriptionStatus
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -78,8 +79,8 @@ async def user_organization_seat_enabled(
 async def customer_seat_pending(
     save_fixture: SaveFixture,
     subscription_with_seats: Subscription,
-    session,
-):
+    session: AsyncSession,
+) -> CustomerSeat:
     seat = await create_customer_seat(
         save_fixture, subscription=subscription_with_seats
     )
@@ -94,8 +95,8 @@ async def customer_seat_claimed(
     save_fixture: SaveFixture,
     subscription_with_seats: Subscription,
     customer: Customer,
-    session,
-):
+    session: AsyncSession,
+) -> CustomerSeat:
     seat = await create_customer_seat(
         save_fixture,
         subscription=subscription_with_seats,

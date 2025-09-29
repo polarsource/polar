@@ -35,7 +35,7 @@ class TestListSeats:
         subscription_with_seats: Subscription,
         customer_seat_pending: CustomerSeat,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         response = await client.get(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats",
         )
@@ -54,7 +54,7 @@ class TestListSeats:
         self,
         client: AsyncClient,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         import uuid
 
         fake_id = uuid.uuid4()
@@ -71,7 +71,7 @@ class TestListSeats:
         save_fixture: SaveFixture,
         subscription: Subscription,
         user_organization: UserOrganization,
-    ):
+    ) -> None:
         subscription.started_at = datetime.now()
         await save_fixture(subscription)
         subscription.product.organization.feature_settings = {}
@@ -87,7 +87,7 @@ class TestListSeats:
         self,
         client: AsyncClient,
         subscription_with_seats: Subscription,
-    ):
+    ) -> None:
         response = await client.get(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats"
         )
@@ -104,7 +104,7 @@ class TestAssignSeat:
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         await create_customer(
             save_fixture,
             organization=subscription_with_seats.product.organization,
@@ -130,7 +130,7 @@ class TestAssignSeat:
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         await create_customer(
             save_fixture,
             organization=subscription_with_seats.product.organization,
@@ -153,7 +153,7 @@ class TestAssignSeat:
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         await create_customer(
             save_fixture,
             organization=subscription_with_seats.product.organization,
@@ -176,7 +176,7 @@ class TestAssignSeat:
         client: AsyncClient,
         subscription_with_seats: Subscription,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         response = await client.post(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats",
             json={},
@@ -191,7 +191,7 @@ class TestAssignSeat:
         subscription_with_seats: Subscription,
         customer: Customer,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         response = await client.post(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats",
             json={"email": "test@example.com", "customer_id": str(customer.id)},
@@ -206,7 +206,7 @@ class TestAssignSeat:
         save_fixture: SaveFixture,
         subscription_with_seats: Subscription,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         subscription_with_seats.seats = 0
         await save_fixture(subscription_with_seats)
 
@@ -225,7 +225,7 @@ class TestAssignSeat:
         customer_seat_claimed: CustomerSeat,
         customer: Customer,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         response = await client.post(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats",
             json={"customer_id": str(customer.id)},
@@ -238,7 +238,7 @@ class TestAssignSeat:
         self,
         client: AsyncClient,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         fake_id = uuid.uuid4()
         response = await client.post(
             f"/v1/subscriptions/{fake_id}/seats",
@@ -254,7 +254,7 @@ class TestAssignSeat:
         save_fixture: SaveFixture,
         subscription: Subscription,
         user_organization: UserOrganization,
-    ):
+    ) -> None:
         subscription.started_at = datetime.utcnow()
         await save_fixture(subscription)
         subscription.product.organization.feature_settings = {}
@@ -273,7 +273,7 @@ class TestAssignSeat:
         client: AsyncClient,
         subscription_with_seats: Subscription,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         response = await client.post(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats",
             json={"email": "nonexistent@example.com"},
@@ -287,7 +287,7 @@ class TestAssignSeat:
         client: AsyncClient,
         subscription_with_seats: Subscription,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         response = await client.post(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats",
             json={"external_customer_id": "nonexistent123"},
@@ -299,7 +299,7 @@ class TestAssignSeat:
         self,
         client: AsyncClient,
         subscription_with_seats: Subscription,
-    ):
+    ) -> None:
         response = await client.post(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats",
             json={"email": "test@example.com"},
@@ -317,7 +317,7 @@ class TestRevokeSeat:
         subscription_with_seats: Subscription,
         customer_seat_claimed: CustomerSeat,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         response = await client.delete(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats/{customer_seat_claimed.id}",
         )
@@ -335,7 +335,7 @@ class TestRevokeSeat:
         subscription_with_seats: Subscription,
         customer_seat_pending: CustomerSeat,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         response = await client.delete(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats/{customer_seat_pending.id}",
         )
@@ -350,7 +350,7 @@ class TestRevokeSeat:
         client: AsyncClient,
         subscription_with_seats: Subscription,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         import uuid
 
         fake_id = uuid.uuid4()
@@ -368,7 +368,7 @@ class TestRevokeSeat:
         subscription_with_seats: Subscription,
         customer_seat_claimed: CustomerSeat,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         from tests.fixtures.random_objects import create_subscription_with_seats
 
         other_subscription = await create_subscription_with_seats(
@@ -390,7 +390,7 @@ class TestRevokeSeat:
         client: AsyncClient,
         customer_seat_claimed: CustomerSeat,
         user_organization_seat_enabled: UserOrganization,
-    ):
+    ) -> None:
         import uuid
 
         fake_id = uuid.uuid4()
@@ -408,7 +408,7 @@ class TestRevokeSeat:
         subscription: Subscription,
         customer_seat_claimed: CustomerSeat,
         user_organization: UserOrganization,
-    ):
+    ) -> None:
         subscription.started_at = datetime.utcnow()
         await save_fixture(subscription)
         subscription.product.organization.feature_settings = {}
@@ -425,7 +425,7 @@ class TestRevokeSeat:
         client: AsyncClient,
         subscription_with_seats: Subscription,
         customer_seat_claimed: CustomerSeat,
-    ):
+    ) -> None:
         response = await client.delete(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats/{customer_seat_claimed.id}"
         )

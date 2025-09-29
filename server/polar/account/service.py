@@ -72,12 +72,6 @@ class AccountService:
             statement, limit=pagination.limit, page=pagination.page
         )
 
-        # Filter out deleted organizations from the loaded accounts
-        for account in accounts:
-            account.organizations = [
-                org for org in account.organizations if org.deleted_at is None
-            ]
-
         return accounts, count
 
     async def get(
@@ -96,12 +90,6 @@ class AccountService:
             )
         )
         account = await repository.get_one_or_none(statement)
-
-        # Filter out deleted organizations if account exists
-        if account:
-            account.organizations = [
-                org for org in account.organizations if org.deleted_at is None
-            ]
 
         return account
 

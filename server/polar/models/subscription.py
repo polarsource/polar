@@ -108,6 +108,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
         StringEnum(SubscriptionRecurringInterval), nullable=False, index=True
     )
+    recurring_interval_count: Mapped[int] = mapped_column(Integer, nullable=False)
 
     stripe_subscription_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True, default=None

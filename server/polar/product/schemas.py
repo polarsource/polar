@@ -160,9 +160,7 @@ class ProductPriceSeatBasedCreate(ProductPriceCreateBase):
 
     amount_type: Literal[ProductPriceAmountType.seat_based]
     price_currency: PriceCurrency
-    price_per_seat: PriceAmount = Field(
-        description="The price per seat in cents."
-    )
+    price_per_seat: PriceAmount = Field(description="The price per seat in cents.")
 
     def get_model_class(self) -> builtins.type[ProductPriceSeatUnitModel]:
         return ProductPriceSeatUnitModel
@@ -520,7 +518,11 @@ class ProductPriceMeteredUnit(ProductPriceBase):
 
 
 NewProductPrice = Annotated[
-    ProductPriceFixed | ProductPriceCustom | ProductPriceFree | ProductPriceSeatBased | ProductPriceMeteredUnit,
+    ProductPriceFixed
+    | ProductPriceCustom
+    | ProductPriceFree
+    | ProductPriceSeatBased
+    | ProductPriceMeteredUnit,
     Discriminator("amount_type"),
     SetSchemaReference("ProductPrice"),
 ]

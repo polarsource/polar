@@ -27,6 +27,7 @@ from polar.models import (
     CheckoutLinkProduct,
     CheckoutProduct,
     Customer,
+    CustomerSeat,
     CustomField,
     Discount,
     DiscountProduct,
@@ -50,6 +51,7 @@ from polar.models import (
     ProductPriceFixed,
     ProductPriceFree,
     ProductPriceMeteredUnit,
+    ProductPriceSeatUnit,
     Refund,
     Subscription,
     SubscriptionProductPrice,
@@ -76,6 +78,7 @@ from polar.models.custom_field import (
     CustomFieldTextProperties,
     CustomFieldType,
 )
+from polar.models.customer_seat import SeatStatus
 from polar.models.discount import (
     DiscountDuration,
     DiscountFixed,
@@ -498,6 +501,22 @@ async def create_product_price_metered_unit(
         product=product,
     )
     assert price.amount_type == ProductPriceAmountType.metered_unit
+    await save_fixture(price)
+    return price
+
+
+async def create_product_price_seat_unit(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    price_per_seat: int = 1000,
+) -> ProductPriceSeatUnit:
+    price = ProductPriceSeatUnit(
+        price_currency="usd",
+        price_per_seat=price_per_seat,
+        product=product,
+    )
+    assert price.amount_type == ProductPriceAmountType.seat_based
     await save_fixture(price)
     return price
 
@@ -1884,3 +1903,51 @@ async def create_billing_entry(
     )
     await save_fixture(billing_entry)
     return billing_entry
+
+
+async def create_customer_seat(
+    save_fixture: SaveFixture,
+    *,
+    subscription: Subscription,
+    status: SeatStatus = SeatStatus.pending,
+    customer: Customer | None = None,
+    invitation_token: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    claimed_at: datetime | None = None,
+    revoked_at: datetime | None = None,
+) -> CustomerSeat:
+    if invitation_token is None and status == SeatStatus.pending:
+        invitation_token = secrets.token_urlsafe(32)
+
+    seat = CustomerSeat(
+        subscription_id=subscription.id,
+        status=status,
+        customer_id=customer.id if customer else None,
+        invitation_token=invitation_token,
+        claimed_at=claimed_at,
+        revoked_at=revoked_at,
+        seat_metadata=metadata or {},
+    )
+    await save_fixture(seat)
+    return seat
+
+
+async def create_subscription_with_seats(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    customer: Customer,
+    seats: int = 5,
+    **kwargs: Any,
+) -> Subscription:
+    is_seat_based = any(
+        price.amount_type == ProductPriceAmountType.seat_based
+        for price in product.all_prices
+    )
+    assert is_seat_based, "Product must be seat-based"
+    subscription = await create_subscription(
+        save_fixture, product=product, customer=customer, **kwargs
+    )
+    subscription.seats = seats
+    await save_fixture(subscription)
+    return subscription

@@ -10,6 +10,7 @@ from polar.custom_field.endpoints import router as custom_field_router
 from polar.customer.endpoints import router as customer_router
 from polar.customer_meter.endpoints import router as customer_meter_router
 from polar.customer_portal.endpoints import router as customer_portal_router
+from polar.customer_seat.endpoints import router as customer_seat_router
 from polar.customer_session.endpoints import router as customer_session_router
 from polar.discount.endpoints import router as discount_router
 from polar.email_update.endpoints import router as email_update_router
@@ -115,6 +116,8 @@ router.include_router(discount_router)
 router.include_router(customer_router)
 # /customer-portal
 router.include_router(customer_portal_router)
+# /seats
+router.include_router(customer_seat_router)
 # /update-email
 router.include_router(email_update_router)
 # /customer-sessions

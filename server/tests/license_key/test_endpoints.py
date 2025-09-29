@@ -314,3 +314,62 @@ class TestLicenseKeyEndpoints:
         data = activate.json()
         assert "does not support activations" in data["detail"]
         assert "Use the /validate endpoint instead" in data["detail"]
+
+    @pytest.mark.parametrize(
+        "activate_path",
+        [
+            "/v1/customer-portal/license-keys/activate",
+            "/v1/license-keys/activate",
+        ],
+    )
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_activate_expired_license_key_should_fail(
+        self,
+        activate_path: str,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that activating an expired license key should fail."""
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                activations=BenefitLicenseKeyActivationCreateProperties(
+                    limit=2, enable_customer_admin=True
+                ),
+            ),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        lk.expires_at = utc_now() - relativedelta(days=1)
+        session.add(lk)
+        await session.commit()
+
+        activate = await client.post(
+            activate_path,
+            json={
+                "key": lk.key,
+                "organization_id": str(organization.id),
+                "label": "testing activation of expired key",
+            },
+        )
+
+        assert activate.status_code == 403, (
+            f"Expected 403 but got {activate.status_code}. Response: {activate.json()}"
+        )

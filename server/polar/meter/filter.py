@@ -71,9 +71,9 @@ class FilterClause(BaseModel):
             # The property is a number
             (
                 func.jsonb_typeof(attr) == "number",
-                # Compare it with the value if it's an integer
-                self._get_comparison_clause(attr.as_integer(), self._get_number_value())
-                if isinstance(self.value, int)
+                # Compare it with the value if it's a number
+                self._get_comparison_clause(attr.as_float(), self._get_number_value())
+                if isinstance(self.value, int | float)
                 # Otherwise return false
                 else false(),
             ),

@@ -7,22 +7,19 @@ export const sections = [
     title: '00. Index',
   },
   {
-    title: '01. Usage Based Future',
+    title: '01. Integrate',
   },
   {
-    title: '02. Automated Entitlements',
+    title: '02. Resources',
   },
   {
-    title: '03. DX & MoR',
+    title: '03. Blog',
   },
   {
-    title: '04. Open Source',
+    title: '04. Contribute',
   },
   {
-    title: '05. Team',
-  },
-  {
-    title: '06. Investors',
+    title: '05. Careers',
   },
 ]
 

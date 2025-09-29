@@ -4,7 +4,6 @@ import { Footer } from '@/components/Vision/Footer'
 import { DNASection } from '@/components/Vision/sections/DNASection'
 import { EntitlementsSection } from '@/components/Vision/sections/EntitlementsSection'
 import { IndexSection } from '@/components/Vision/sections/IndexSection'
-import { InvestorsSection } from '@/components/Vision/sections/InvestorsSection'
 import { OpenSourceSection } from '@/components/Vision/sections/OpenSourceSection'
 import { TeamSection } from '@/components/Vision/sections/TeamSection'
 import { UsageBasedSection } from '@/components/Vision/sections/UsageBasedSection'
@@ -60,7 +59,6 @@ export default function PitchPage() {
             <DNASection active={index == 3} />
             <OpenSourceSection active={index == 4} />
             <TeamSection active={index == 5} />
-            <InvestorsSection active={index == 6} />
           </motion.div>
         </AnimatePresence>
       </div>

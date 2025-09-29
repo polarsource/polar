@@ -1,4 +1,3 @@
-import Button from '@polar-sh/ui/components/atoms/Button'
 import { Console } from '../Console'
 import { Section } from '../Section'
 
@@ -27,15 +26,16 @@ export const IndexSection = ({ active }: { active: boolean }) => {
         />
       }
     >
-      <p>Turn your software into a business with 6 lines of code</p>
-      <div className="flex flex-row gap-x-2">
-        <Button className="flex-1 rounded-none bg-white text-black">
-          Get Started
-        </Button>
-        <Button className="flex-1 rounded-none" variant="secondary">
-          Why Polar
-        </Button>
+      <p>Turn your software into a business with 4 lines of code.</p>
+      <div className="flex flex-row gap-x-8">
+        <Link className="flex-1" href="/resources/why">
+          Get Started →
+        </Link>
+        <Link className="flex-1" href="/resources/why">
+          Why Polar →
+        </Link>
       </div>
+      <Features />
     </Section>
   )
 }

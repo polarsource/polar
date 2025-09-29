@@ -13,7 +13,10 @@ from polar.models import (
 )
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_subscription_with_seats,
+)
 
 # Auth fixture with the required scopes for seat endpoints
 SEAT_AUTH = AuthSubjectFixture(
@@ -55,8 +58,6 @@ class TestListSeats:
         client: AsyncClient,
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
-        import uuid
-
         fake_id = uuid.uuid4()
         response = await client.get(
             f"/v1/subscriptions/{fake_id}/seats",
@@ -351,8 +352,6 @@ class TestRevokeSeat:
         subscription_with_seats: Subscription,
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
-        import uuid
-
         fake_id = uuid.uuid4()
         response = await client.delete(
             f"/v1/subscriptions/{subscription_with_seats.id}/seats/{fake_id}",
@@ -369,8 +368,6 @@ class TestRevokeSeat:
         customer_seat_claimed: CustomerSeat,
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
-        from tests.fixtures.random_objects import create_subscription_with_seats
-
         other_subscription = await create_subscription_with_seats(
             save_fixture,
             product=subscription_with_seats.product,
@@ -391,8 +388,6 @@ class TestRevokeSeat:
         customer_seat_claimed: CustomerSeat,
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
-        import uuid
-
         fake_id = uuid.uuid4()
         response = await client.delete(
             f"/v1/subscriptions/{fake_id}/seats/{customer_seat_claimed.id}",

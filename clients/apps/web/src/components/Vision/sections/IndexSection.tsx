@@ -1,3 +1,4 @@
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { Console } from '../Console'
 import { Section } from '../Section'
 
@@ -26,17 +27,15 @@ export const IndexSection = ({ active }: { active: boolean }) => {
         />
       }
     >
-      <p>
-        SaaS with entitlements, usage based billing, meters, overages, spend
-        limits, checkout upsales, customer management...
-      </p>
-      <p>Long gone are the days of integrating payments in 7 LOCs.</p>
-      <p>
-        Modern PSPs are like C in programming - stunning low-level abstractions
-        for complete control. But developers deserve a more high-level
-        abstraction focused on iteration velocity.
-      </p>
-      <p>It&apos;s time for the next evolution.</p>
+      <p>Turn your software into a business with 6 lines of code</p>
+      <div className="flex flex-row gap-x-2">
+        <Button className="flex-1 rounded-none bg-white text-black">
+          Get Started
+        </Button>
+        <Button className="flex-1 rounded-none" variant="secondary">
+          Why Polar
+        </Button>
+      </div>
     </Section>
   )
 }

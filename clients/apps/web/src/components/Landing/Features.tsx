@@ -6,7 +6,6 @@ import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined'
-import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
@@ -28,23 +27,17 @@ const FeatureCard = ({
   children,
 }: FeatureCardProps) => {
   return (
-    <motion.div
-      variants={{
-        hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { duration: 2 } },
-      }}
-      className={twMerge('flex flex-col gap-y-6', className)}
-    >
+    <div className={twMerge('flex flex-col gap-y-6', className)}>
       <Link
         href={linkHref}
         target="_blank"
         className={twMerge(
-          'dark:border-polar-700 dark:bg-polar-900 flex h-full flex-col justify-between gap-x-6 gap-y-6 rounded-2xl border border-transparent bg-white p-6! transition-transform hover:translate-y-[-4px] md:p-10 xl:gap-y-0',
+          'dark:border-polar-700 dark:bg-polar-900 p-6! flex h-full flex-col justify-between gap-x-6 gap-y-6 rounded-2xl border border-transparent bg-white transition-transform hover:translate-y-[-4px] md:p-10 xl:gap-y-0',
         )}
       >
         <div className="flex h-full flex-col gap-y-6">
           <div className="flex h-full flex-col gap-y-2 md:gap-y-6">
-            <h3 className="text-pretty text-xl text-black md:text-3xl md:leading-tight! dark:text-white">
+            <h3 className="md:leading-tight! text-pretty text-xl text-black md:text-3xl dark:text-white">
               {title}
             </h3>
             {typeof description === 'string' ? (
@@ -58,14 +51,14 @@ const FeatureCard = ({
         </div>
         {children}
       </Link>
-    </motion.div>
+    </div>
   )
 }
 
 const CustomerCard = () => {
   return (
-    <div className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-4 rounded-lg border border-gray-200 bg-gray-100 p-4">
-      <div className="h-12 w-12 overflow-hidden rounded-full">
+    <div className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-4 border border-gray-200 bg-gray-100 p-4">
+      <div className="h-12 w-12 overflow-hidden">
         <Image
           src="/assets/landing/testamonials/emil.jpg"
           alt="Customer avatar"
@@ -75,7 +68,9 @@ const CustomerCard = () => {
         />
       </div>
       <div className="flex flex-col">
-        <span className="font-medium text-black dark:text-white">John Doe</span>
+        <span className="dark:text-polar-200 font-medium text-black">
+          John Doe
+        </span>
 
         <span className="dark:text-polar-500 flex flex-row gap-x-2 text-sm text-gray-500">
           <span>Premium Plan</span>
@@ -134,7 +129,7 @@ const Features = ({ className }: FeaturesProps) => {
           ].map((item, i) => (
             <div
               key={i}
-              className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-3 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2"
+              className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-3 border border-gray-200 bg-gray-100 px-3 py-2"
             >
               {item.icon}
               <span className="dark:text-polar-50 text-xs text-gray-950">
@@ -171,9 +166,9 @@ const Features = ({ className }: FeaturesProps) => {
         'Focus on your passion while we handle all headaches & tax compliance.',
       linkHref: 'https://polar.sh/docs/merchant-of-record/introduction',
       children: (
-        <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-2 rounded-lg border border-gray-200 bg-gray-100 p-4">
+        <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-2 border border-gray-200 bg-gray-100 p-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-black dark:text-white">
+            <span className="dark:text-polar-200 text-sm text-black">
               Tax Report 2025
             </span>
             <span className="text-sm text-emerald-500">Submitted</span>
@@ -201,14 +196,7 @@ const Features = ({ className }: FeaturesProps) => {
 
   return (
     <section className={className}>
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        transition={{
-          staggerChildren: 0.1,
-        }}
-        className="flex flex-col gap-4 md:gap-8 xl:flex-row"
-      >
+      <div className="flex flex-col gap-4 md:gap-8 xl:flex-row">
         {features.map((feature, index) => (
           <FeatureCard
             key={index}
@@ -219,7 +207,7 @@ const Features = ({ className }: FeaturesProps) => {
             {feature.children}
           </FeatureCard>
         ))}
-      </motion.div>
+      </div>
     </section>
   )
 }

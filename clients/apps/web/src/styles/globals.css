@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 
-/* @layer base {
+@source '../../../../packages/ui/src';
+@source '../../../../packages/checkout/src';
+
+@layer base {
   html {
     @apply text-gray-900;
   }
@@ -8,18 +11,30 @@
   html.dark {
     @apply text-gray-200;
   }
-} */
 
-/* @media (prefers-color-scheme: light) {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border);
+  }
+
+  body {
+    @apply text-(--foreground);
+  }
+}
+
+@media (prefers-color-scheme: light) {
   img[src$='#gh-dark-mode-only'],
   img[src$='#only-dark'] {
     display: none;
   }
-} */
+}
 
 /* Dark mode */
 
-/* #polar-bg-gradient {
+#polar-bg-gradient {
   height: 100vh;
   width: 100vw;
 
@@ -60,7 +75,7 @@
     height: 140vh;
     width: 200vw;
   }
-} */
+}
 
 /* chadcn/ui */
 
@@ -151,16 +166,7 @@
   }
 }
 
-/* @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply text-foreground;
-  }
-} */
-
-/* pre.shiki {
+pre.shiki {
   overflow: auto;
 }
 
@@ -172,4 +178,4 @@
     font-weight: var(--shiki-dark-font-weight) !important;
     text-decoration: var(--shiki-dark-text-decoration) !important;
   }
-} */
+}

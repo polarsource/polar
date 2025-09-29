@@ -3,22 +3,22 @@
 import { useEffect } from 'react'
 
 interface UseArrowFocusProps {
-  onLeft: () => void
-  onRight: () => void
+  onUp: () => void
+  onDown: () => void
   onNumberPress: (number: number) => void
 }
 
 export const useArrowFocus = ({
-  onLeft,
-  onRight,
+  onUp,
+  onDown,
   onNumberPress,
 }: UseArrowFocusProps) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowLeft' || event.key === 'h') {
-        onLeft()
-      } else if (event.key === 'ArrowRight' || event.key === 'l') {
-        onRight()
+      if (event.key === 'ArrowUp' || event.key === 'k') {
+        onUp()
+      } else if (event.key === 'ArrowDown' || event.key === 'j') {
+        onDown()
       }
 
       if (event.key.match(/^\d$/)) {
@@ -31,5 +31,5 @@ export const useArrowFocus = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [onLeft, onRight, onNumberPress])
+  }, [onUp, onDown, onNumberPress])
 }

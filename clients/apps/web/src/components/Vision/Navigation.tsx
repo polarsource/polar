@@ -1,29 +1,21 @@
-import { AnimatePresence, motion } from 'framer-motion'
-import Link from 'next/link'
+import { AnimatePresence } from 'framer-motion'
 import { twMerge } from 'tailwind-merge'
 
 export const sections = [
-  {
-    title: '00. Index',
-  },
-  {
-    title: '01. Usage Based Future',
-  },
-  {
-    title: '02. Automated Entitlements',
-  },
-  {
-    title: '03. DX & MoR',
-  },
-  {
-    title: '04. Open Source',
-  },
-  {
-    title: '05. Team',
-  },
-  {
-    title: '06. Investors',
-  },
+  'index.md',
+  'usage-billing.md',
+  'entitlements.md',
+  'adapters.md',
+  'open-source.md',
+  'team.md',
+  '> blog',
+]
+
+export const branches = [
+  'main',
+  'feat/company',
+  'feat/careers',
+  'feat/resources',
 ]
 
 export const PitchNavigation = ({
@@ -34,28 +26,45 @@ export const PitchNavigation = ({
   setIndex: (index: number) => void
 }) => {
   return (
-    <div className="flex flex-col gap-y-8 text-xs md:flex-row md:gap-x-16">
-      <Link href="/">Polar Software Inc.</Link>
-      <ul className="flex flex-col gap-y-2 md:flex-row md:gap-x-8">
-        <AnimatePresence key={activeIndex}>
-          {sections.map((section, index) => (
-            <motion.li
-              key={index}
-              onClick={() => setIndex(index)}
-              className={twMerge(
-                'hover:bg-polar-200 cursor-default px-1 hover:text-black',
-                index === activeIndex ? 'bg-polar-200 text-black' : '',
-              )}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.05, repeat: 2 }}
-            >
-              {section.title}
-            </motion.li>
-          ))}
-        </AnimatePresence>
-      </ul>
+    <div className="flex w-48 flex-col gap-y-6 p-4 text-xs md:gap-x-16">
+      <div className="flex flex-col gap-y-2">
+        <span className="text-polar-500 px-1">Workspace</span>
+        <ul className="flex flex-col gap-y-2 md:gap-x-8">
+          <AnimatePresence key={activeIndex}>
+            {sections.map((section, index) => (
+              <li
+                key={index}
+                onClick={() => setIndex(index)}
+                className={twMerge(
+                  'hover:bg-polar-200 cursor-default px-1 hover:text-black',
+                  index === activeIndex ? 'bg-polar-200 text-black' : '',
+                )}
+              >
+                {section}
+              </li>
+            ))}
+          </AnimatePresence>
+        </ul>
+      </div>
+
+      <div className="flex flex-col gap-y-2">
+        <span className="text-polar-500 px-1">Branches</span>
+        <ul className="flex flex-col gap-y-2 md:gap-x-8">
+          <AnimatePresence key={activeIndex}>
+            {branches.map((branch, index) => (
+              <li
+                key={index}
+                className={twMerge(
+                  'hover:bg-polar-200 cursor-default px-1 hover:text-black',
+                  index === 0 ? 'bg-polar-200 text-black' : '',
+                )}
+              >
+                {branch}
+              </li>
+            ))}
+          </AnimatePresence>
+        </ul>
+      </div>
     </div>
   )
 }

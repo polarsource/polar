@@ -7,7 +7,7 @@ export const Footer = ({ className }: { className?: string }) => {
   return (
     <div
       className={twMerge(
-        'fixed bottom-0 left-0 right-0 hidden flex-row gap-x-12 p-12 text-xs md:flex',
+        'mt-8 hidden flex-row gap-x-12 text-xs md:flex',
         className,
       )}
     >
@@ -23,10 +23,10 @@ const NavigationLegend = () => {
   return (
     <div className="flex flex-col gap-y-2">
       <div className="flex flex-row gap-x-2">
-        <Button variant="icon">←</Button>
-        <Button variant="icon">→</Button>
-        <Button variant="icon">H</Button>
-        <Button variant="icon">L</Button>
+        <Button variant="icon">↑</Button>
+        <Button variant="icon">↓</Button>
+        <Button variant="icon">K</Button>
+        <Button variant="icon">J</Button>
       </div>
       <span>Navigate</span>
     </div>

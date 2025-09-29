@@ -12,11 +12,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@polar-sh/ui/components/ui/popover'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -204,63 +199,7 @@ const LandingPageDesktopNavigation = () => {
             <NavLink href="/resources">Resources</NavLink>
           </li>
           <li>
-            <Popover open={isResourcesOpen} onOpenChange={setIsResourcesOpen}>
-              <PopoverTrigger
-                className={twMerge(
-                  'dark:text-polar-500 -m-1 flex items-center gap-x-2 p-1 text-gray-500 transition-colors hover:text-black focus:outline-none dark:hover:text-white',
-                  (isResourcesOpen ||
-                    pathname.includes('/company') ||
-                    pathname.includes('/careers')) &&
-                    'text-black dark:text-white',
-                )}
-                onMouseEnter={() => setIsResourcesOpen(true)}
-                onMouseLeave={() => setIsResourcesOpen(false)}
-              >
-                Company
-              </PopoverTrigger>
-              <PopoverContent
-                className="flex max-w-sm flex-col divide-x p-0"
-                sideOffset={0}
-                onMouseEnter={() => setIsResourcesOpen(true)}
-                onMouseLeave={() => setIsResourcesOpen(false)}
-              >
-                <div className="flex flex-col p-2">
-                  <div>
-                    {[
-                      {
-                        href: '/company',
-                        label: 'Company',
-                        subtitle: 'Who we are',
-                      },
-                      {
-                        href: '/careers',
-                        label: 'Careers',
-                        subtitle: "We're hiring",
-                      },
-                      {
-                        href: 'https://polar.sh/assets/brand/polar_brand.zip',
-                        target: '_blank',
-                        label: 'Brand Assets',
-                        subtitle: 'Logotype & Graphics',
-                      },
-                    ].map(({ href, label, subtitle, target }) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        prefetch
-                        target={target}
-                        className="dark:hover:bg-polar-800 flex flex-col rounded-md px-4 py-2 text-sm transition-colors hover:bg-gray-100"
-                      >
-                        <span className="font-medium">{label}</span>
-                        <span className="dark:text-polar-500 text-gray-500">
-                          {subtitle}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <NavLink href="/company">Company</NavLink>
           </li>
           <li>
             <NavLink href="/blog">Blog</NavLink>

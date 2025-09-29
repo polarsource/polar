@@ -6,7 +6,7 @@ import { Section } from '../Section'
 const team = [
   {
     name: 'Birk Jernström',
-    title: 'Founder & Software Engineer',
+    title: 'CEO & Founder',
     image: '/assets/team/birk.png',
   },
   {
@@ -19,6 +19,21 @@ const team = [
     title: 'Design Engineer',
     image: '/assets/team/emil.png',
   },
+  {
+    name: 'Petru Rares Sincraian',
+    title: 'Software Engineer',
+    image: '/assets/team/petru.png',
+  },
+  {
+    name: 'Rishi Raj Jain',
+    title: 'Customer Success Engineer',
+    image: '/assets/team/rishi.png',
+  },
+  {
+    name: 'Pieter Beulque',
+    title: 'Software Engineer',
+    image: '/assets/team/pieter.png',
+  },
 ]
 
 export const TeamSection = ({ active }: { active: boolean }) => {
@@ -29,7 +44,7 @@ export const TeamSection = ({ active }: { active: boolean }) => {
       title="Small team, big ambition"
       context={
         <div className="flex flex-col gap-y-8">
-          <div className="flex flex-col gap-y-12 md:flex-row md:gap-x-8">
+          <div className="grid grid-cols-1 gap-y-12 md:grid-cols-3 md:flex-row md:gap-x-8">
             {team.map((profile) => (
               <Profile key={profile.name} {...profile} />
             ))}
@@ -108,11 +123,6 @@ export const TeamSection = ({ active }: { active: boolean }) => {
       }
     >
       <p>
-        From building startups before to Shop.app, Shop Pay and writing the book
-        on FastAPI or React UI engine in Battlefield. Our team is small and
-        battle scarred.
-      </p>
-      <p>
         Want to build the future of payments for developers? We&apos;re looking
         for a few senior engineers to join the team.
       </p>
@@ -133,7 +143,7 @@ interface ProfileProps {
 
 const Profile = ({ name, title, image }: ProfileProps) => {
   return (
-    <div className="relative flex h-fit w-full flex-col gap-y-4 md:w-[200px]">
+    <div className="relative flex aspect-square h-fit w-full flex-col gap-y-4">
       <Image
         className="w-full"
         src={image}

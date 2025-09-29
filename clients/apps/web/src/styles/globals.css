@@ -1,7 +1,12 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
 @source '../../../../packages/ui/src';
 @source '../../../../packages/checkout/src';
+
+@plugin '@tailwindcss/forms';
+@plugin 'tailwindcss-radix';
+@plugin '@tailwindcss/typography';
 
 @layer base {
   html {

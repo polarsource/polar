@@ -173,10 +173,5 @@ module.exports = {
       // chadcn/ui end
     },
   },
-  plugins: [
-    require('@tailwindcss/forms'),
-    require('tailwindcss-radix')(),
-    require('tailwindcss-animate'),
-    require('@tailwindcss/typography'),
-  ],
+  plugins: [],
 }

@@ -328,11 +328,25 @@ class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
             "Note that the `day` and `week` values are for internal Polar staff use only."
         ),
     )
+    recurring_interval_count: int = Field(
+        default=1,
+        ge=1,
+        le=999,
+        description=(
+            "Number of interval units of the subscription."
+            "If this is set to 1 the charge will happen every interval (e.g. every month),"
+            "if set to 2 it will be every other month, and so on."
+        ),
+    )
 
 
 class ProductCreateOneTime(ProductCreateBase):
     recurring_interval: Literal[None] = Field(
         default=None, description="States that the product is a one-time purchase."
+    )
+    recurring_interval_count: Literal[None] = Field(
+        default=None,
+        description="One-time products don't have a recurring interval count.",
     )
 
 
@@ -371,6 +385,16 @@ class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
             "If `None`, the product is a one-time purchase. "
             "**Can only be set on legacy recurring products. "
             "Once set, it can't be changed.**"
+        ),
+    )
+    recurring_interval_count: int | None = Field(
+        default=None,
+        ge=1,
+        le=999,
+        description=(
+            "Number of interval units of the subscription."
+            "If this is set to 1 the charge will happen every interval (e.g. every month),"
+            "if set to 2 it will be every other month, and so on."
         ),
     )
     is_archived: bool | None = Field(
@@ -637,8 +661,14 @@ class ProductBase(TrialConfigurationOutputMixin, TimestampedSchema, IDSchema):
         description=(
             "The recurring interval of the product. "
             "If `None`, the product is a one-time purchase."
-            ""
-            "Note that the `day` and `week` values are for internal Polar staff use only."
+        )
+    )
+    recurring_interval_count: int | None = Field(
+        description=(
+            "Number of interval units of the subscription."
+            "If this is set to 1 the charge will happen every interval (e.g. every month),"
+            "if set to 2 it will be every other month, and so on. "
+            "None for one-time products."
         )
     )
     is_recurring: bool = Field(description="Whether the product is a subscription.")

@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
@@ -313,6 +313,47 @@ def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
 
 
 class OrderService:
+    async def _is_first_payment_after_trial(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        invoice: stripe_lib.Invoice,
+    ) -> bool:
+        """
+        Check if this invoice represents the first payment after a trial period ended.
+        
+        This is needed to add "TRIAL OVER" to the statement descriptor as required
+        by some payment networks according to Stripe compliance documentation.
+        """
+        # If subscription never had a trial, this can't be first payment after trial
+        if subscription.trial_end is None:
+            return False
+        
+        # If currently in trial, this isn't a post-trial payment
+        if subscription.trialing:
+            return False
+        
+        # Check if this is the first paid invoice after trial_end
+        # We'll use a simple query to find any previous paid orders for this subscription after trial_end
+        from sqlalchemy import and_, func
+        
+        repository = OrderRepository.from_session(session)
+        
+        count_query = select(func.count(Order.id)).where(
+            and_(
+                Order.subscription_id == subscription.id,
+                Order.status == OrderStatus.paid,
+                Order.created_at > subscription.trial_end,
+                Order.created_at < datetime.fromtimestamp(invoice.created, tz=UTC)
+            )
+        )
+        
+        result = await session.execute(count_query)
+        previous_paid_orders_count = result.scalar() or 0
+        
+        # If no previous paid orders exist after trial_end, this is the first payment
+        return previous_paid_orders_count == 0
+
     @asynccontextmanager
     async def acquire_payment_lock(
         self, session: AsyncSession, order: Order, *, release_on_success: bool = True
@@ -1274,9 +1315,21 @@ class OrderService:
             # Stripe doesn't allow to set statement descriptor on the subscription itself,
             # so we need to set it manually on each new invoice.
             assert invoice.id is not None
+            
+            # Check if this is the first payment after trial ends (compliance requirement)
+            is_first_post_trial = await self._is_first_payment_after_trial(
+                session, subscription, invoice
+            )
+            
+            statement_descriptor = (
+                subscription.organization.statement_descriptor_prefixed_with_trial_over()
+                if is_first_post_trial
+                else subscription.organization.statement_descriptor_prefixed
+            )
+            
             await stripe_service.update_invoice(
                 invoice.id,
-                statement_descriptor=subscription.organization.statement_descriptor_prefixed,
+                statement_descriptor=statement_descriptor,
             )
 
         # Determine billing reason

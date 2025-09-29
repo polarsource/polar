@@ -22,6 +22,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams
 from polar.kit.tax import TaxabilityReason, TaxCalculation, TaxID, calculate_tax
+from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
@@ -3630,3 +3631,166 @@ class TestCustomerBalance:
             await order_service.customer_balance(session, customer)
             == setup.expected_balance
         )
+
+
+@pytest.mark.asyncio
+class TestTrialOverStatementDescriptor:
+    async def test_first_payment_after_trial_gets_trial_over_descriptor(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        """Test that the first payment after trial end gets 'TRIAL OVER' in statement descriptor."""
+        # Create a trialing subscription
+        subscription = await create_trialing_subscription(
+            save_fixture, 
+            product=product, 
+            customer=customer,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1
+        )
+        
+        # Set the stripe_subscription_id so the invoice can find the subscription
+        subscription.stripe_subscription_id = "sub_test123"
+        
+        # Simulate trial ending by updating subscription status to active
+        subscription.status = SubscriptionStatus.active
+        # Set trial_end to a past date (1 day ago)
+        from polar.kit.utils import utc_now
+        subscription.trial_end = utc_now() - timedelta(days=1)
+        await save_fixture(subscription)
+        
+        # Create a stripe invoice for the subscription (first payment after trial)
+        stripe_invoice = construct_stripe_invoice(
+            lines=[],
+            subscription_id=subscription.stripe_subscription_id,
+            status="draft",  # Must be draft for statement descriptor update
+            created=int((utc_now()).timestamp()),  # Current time (after trial_end)
+        )
+        
+        # Mock the get_invoice call to return our test invoice
+        stripe_service_mock.get_invoice.return_value = stripe_invoice
+        
+        # Call create_order_from_stripe to trigger statement descriptor logic
+        order = await order_service.create_order_from_stripe(session, stripe_invoice)
+        
+        # Verify that update_invoice was called with the trial-over statement descriptor
+        stripe_service_mock.update_invoice.assert_called_once()
+        args, kwargs = stripe_service_mock.update_invoice.call_args
+        
+        # Check that the statement descriptor includes "TRIAL OVER"
+        statement_descriptor = kwargs.get("statement_descriptor")
+        assert statement_descriptor is not None
+        assert "TRIAL OVER" in statement_descriptor
+        assert statement_descriptor == subscription.organization.statement_descriptor_prefixed_with_trial_over()
+
+    async def test_subsequent_payment_after_trial_gets_normal_descriptor(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        """Test that subsequent payments after trial end get normal statement descriptor."""
+        # Create a trialing subscription
+        subscription = await create_trialing_subscription(
+            save_fixture, 
+            product=product, 
+            customer=customer,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1
+        )
+        
+        # Set the stripe_subscription_id so the invoice can find the subscription
+        subscription.stripe_subscription_id = "sub_test123"
+        
+        # Simulate trial ending
+        subscription.status = SubscriptionStatus.active
+        from polar.kit.utils import utc_now
+        subscription.trial_end = utc_now() - timedelta(days=10)  # 10 days ago
+        await save_fixture(subscription)
+        
+        # Create a previous paid order after trial end (simulating first payment already happened)
+        previous_order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.paid,
+            stripe_invoice_id="prev_invoice_123",  # Different invoice ID to avoid collision
+        )
+        # Set the creation time to be after trial end but before current invoice
+        previous_order.created_at = utc_now() - timedelta(days=5)
+        await save_fixture(previous_order)
+        
+        # Create a stripe invoice for the subscription (second payment after trial)
+        stripe_invoice = construct_stripe_invoice(
+            lines=[],
+            subscription_id=subscription.stripe_subscription_id,
+            status="draft",  # Must be draft for statement descriptor update
+            created=int((utc_now()).timestamp()),  # Current time
+        )
+        
+        # Mock the get_invoice call to return our test invoice
+        stripe_service_mock.get_invoice.return_value = stripe_invoice
+        
+        # Call create_order_from_stripe to trigger statement descriptor logic
+        order = await order_service.create_order_from_stripe(session, stripe_invoice)
+        
+        # Verify that update_invoice was called with the normal statement descriptor
+        stripe_service_mock.update_invoice.assert_called_once()
+        args, kwargs = stripe_service_mock.update_invoice.call_args
+        
+        # Check that the statement descriptor does NOT include "TRIAL OVER"
+        statement_descriptor = kwargs.get("statement_descriptor")
+        assert statement_descriptor is not None
+        assert "TRIAL OVER" not in statement_descriptor
+        assert statement_descriptor == subscription.organization.statement_descriptor_prefixed
+
+    async def test_no_trial_gets_normal_descriptor(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        """Test that subscriptions without trials get normal statement descriptor."""
+        # Create an active subscription without trial
+        subscription = await create_active_subscription(
+            save_fixture, 
+            product=product, 
+            customer=customer
+        )
+        
+        # Set the stripe_subscription_id so the invoice can find the subscription
+        subscription.stripe_subscription_id = "sub_test123"
+        await save_fixture(subscription)
+        
+        # Create a stripe invoice for the subscription
+        stripe_invoice = construct_stripe_invoice(
+            lines=[],
+            subscription_id=subscription.stripe_subscription_id,
+            status="draft",  # Must be draft for statement descriptor update
+        )
+        
+        # Mock the get_invoice call to return our test invoice
+        stripe_service_mock.get_invoice.return_value = stripe_invoice
+        
+        # Call create_order_from_stripe to trigger statement descriptor logic
+        order = await order_service.create_order_from_stripe(session, stripe_invoice)
+        
+        # Verify that update_invoice was called with the normal statement descriptor
+        stripe_service_mock.update_invoice.assert_called_once()
+        args, kwargs = stripe_service_mock.update_invoice.call_args
+        
+        # Check that the statement descriptor does NOT include "TRIAL OVER"
+        statement_descriptor = kwargs.get("statement_descriptor")
+        assert statement_descriptor is not None
+        assert "TRIAL OVER" not in statement_descriptor
+        assert statement_descriptor == subscription.organization.statement_descriptor_prefixed
+

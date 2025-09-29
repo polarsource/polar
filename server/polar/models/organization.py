@@ -274,6 +274,24 @@ class Organization(RateLimitGroupMixin, RecordModel):
         # Cannot use *. Setting separator to # instead.
         return f"{settings.STRIPE_STATEMENT_DESCRIPTOR}# {self.statement_descriptor}"
 
+    def statement_descriptor_prefixed_with_trial_over(self) -> str:
+        """
+        Generate statement descriptor with "TRIAL OVER" suffix for first payment after trial.
+        This is required by some payment networks according to Stripe compliance.
+        """
+        trial_over_suffix = " TRIAL OVER"
+        # Ensure we stay within Stripe's 22-character limit
+        base_descriptor = self.statement_descriptor
+        max_base_length = (
+            settings.stripe_descriptor_suffix_max_length - len(trial_over_suffix)
+        )
+        
+        if len(base_descriptor) > max_base_length:
+            # Truncate the base descriptor to fit "TRIAL OVER"
+            base_descriptor = base_descriptor[:max_base_length]
+        
+        return f"{settings.STRIPE_STATEMENT_DESCRIPTOR}# {base_descriptor}{trial_over_suffix}"
+
     @property
     def email_props(self) -> dict[str, Any]:
         return {

@@ -15,7 +15,7 @@ import {
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ComponentProps, PropsWithChildren, useState } from 'react'
+import { ComponentProps, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
 import { Modal } from '../Modal'
@@ -176,8 +176,6 @@ const LandingPageMobileNavigation = () => {
 const LandingPageDesktopNavigation = () => {
   const posthog = usePostHog()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
-  const [isResourcesOpen, setIsResourcesOpen] = useState(false)
-  const pathname = usePathname()
 
   const onLoginClick = () => {
     posthog.capture('global:user:login:click')

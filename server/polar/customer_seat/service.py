@@ -139,6 +139,7 @@ class SeatService:
         seat.customer_id = customer.id
 
         session.add(seat)
+        await session.flush()
 
         log.info(
             "Seat assigned",

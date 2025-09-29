@@ -1,8 +1,9 @@
+import builtins
 import contextlib
 import uuid
 from collections.abc import Generator
 from datetime import UTC
-from typing import Annotated, Any
+from typing import Annotated, Any, override
 
 import structlog
 from babel.numbers import format_currency
@@ -22,15 +23,21 @@ from polar.account.service import (
     account as account_service,
 )
 from polar.enums import AccountType
+from polar.file.repository import FileRepository
+from polar.file.service import file as file_service
+from polar.file.sorting import FileSortProperty
 from polar.integrations.plain.service import plain as plain_service
 from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import empty_str_to_none
+from polar.kit.sorting import Sorting
 from polar.models import (
     Account,
+    File,
     Organization,
     User,
     UserOrganization,
 )
+from polar.models.file import FileServiceTypes
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -67,6 +74,7 @@ from polar.web_backoffice.organizations.schemas import (
     SetupVerdictData,
 )
 
+from .. import formatters
 from ..components import accordion, button, datatable, description_list, input, modal
 from ..layout import layout
 from ..responses import HXRedirectResponse
@@ -1327,6 +1335,33 @@ async def create_plain_thread(
         )
 
 
+class FileDownloadLinkColumn(datatable.DatatableColumn[File]):
+    """A column that displays a download link for a file."""
+
+    def __init__(self, label: str = "Download"):
+        super().__init__(label)
+
+    def render(self, request: Request, item: File) -> Generator[None]:
+        """Render a download link for the file."""
+        url, _ = file_service.generate_download_url(item)
+        with tag.a(
+            href=url, classes="btn btn-sm", target="_blank", rel="noopener noreferrer"
+        ):
+            with tag.div(classes="icon-download"):
+                pass
+            text("Download")
+        yield
+
+
+class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
+    """A column that displays file size with proper formatting."""
+
+    @override
+    def get_value(self, item: File) -> str | None:
+        raw_value: int | None = self.get_raw_value(item)
+        return formatters.file_size(raw_value) if raw_value is not None else None
+
+
 @router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])
 async def get(
     request: Request,
@@ -1769,6 +1804,32 @@ async def get(
                     with tag.div(classes="card card-border w-full shadow-sm"):
                         with payment_verdict.render():
                             pass
+
+            # Organization Files Section
+            with tag.div(classes="mt-8"):
+                with tag.div(classes="flex items-center gap-4 mb-4"):
+                    with tag.h2(classes="text-2xl font-bold"):
+                        text("Downloadable Files")
+
+                sorting: builtins.list[Sorting[FileSortProperty]] = [
+                    (FileSortProperty.created_at, True)
+                ]
+                file_repository = FileRepository.from_session(session)
+                files = await file_repository.get_all_by_organization(
+                    organization.id,
+                    service=FileServiceTypes.downloadable,
+                    sorting=sorting,
+                )
+
+                with datatable.Datatable[File, FileSortProperty](
+                    datatable.DatatableAttrColumn("name", "Name"),
+                    datatable.DatatableDateTimeColumn("created_at", "Created At"),
+                    datatable.DatatableAttrColumn("mime_type", "MIME Type"),
+                    FileSizeColumn("size", "Size"),
+                    FileDownloadLinkColumn(),
+                    empty_message="No downloadable files found",
+                ).render(request, files, sorting=sorting):
+                    pass
 
 
 @router.get("/{id}/plain_search_url", name="organizations:plain_search_url")

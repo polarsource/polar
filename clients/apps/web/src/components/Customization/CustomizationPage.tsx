@@ -99,13 +99,13 @@ const Customization = ({
         >
           <TabsList className="rounded-full bg-gray-200 dark:bg-transparent">
             <TabsTrigger
-              className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="data-[state=active]:shadow-xs data-[state=active]:bg-white"
               value="storefront"
             >
               Storefront
             </TabsTrigger>
             <TabsTrigger
-              className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              className="data-[state=active]:shadow-xs data-[state=active]:bg-white"
               value="checkout"
             >
               Checkout

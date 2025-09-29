@@ -87,7 +87,7 @@ export default function CancellationsDistributionChart({
 
       <div className="relative px-4 pb-4">
         <div
-          className="dark:bg-polar-600 flex w-full overflow-hidden rounded-sm bg-gray-100"
+          className="dark:bg-polar-600 rounded-xs flex w-full overflow-hidden bg-gray-100"
           style={{ height }}
         >
           {chartData.map((item) => (

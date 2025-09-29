@@ -68,12 +68,12 @@ export const PaymentOnboardingStepper = ({
   if (isLoading) {
     return (
       <div className={twMerge('animate-pulse space-y-4', className)}>
-        <div className="dark:bg-polar-700 h-6 rounded bg-gray-200" />
+        <div className="dark:bg-polar-700 h-6 rounded-sm bg-gray-200" />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="dark:bg-polar-700 h-16 rounded bg-gray-200"
+              className="dark:bg-polar-700 h-16 rounded-sm bg-gray-200"
             />
           ))}
         </div>

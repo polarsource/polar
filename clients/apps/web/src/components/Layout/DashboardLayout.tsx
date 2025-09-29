@@ -185,7 +185,7 @@ export const DashboardBody = ({
       animate="animate"
       exit="exit"
     >
-      <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-sm">
+      <div className="dark:md:bg-polar-900 dark:border-polar-800 md:shadow-xs relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8">
         <div
           className={twMerge(
             'flex h-full w-full flex-col',
@@ -225,7 +225,7 @@ export const DashboardBody = ({
             exit: { opacity: 0, transition: { duration: 0.3 } },
           }}
           className={twMerge(
-            'dark:bg-polar-900 dark:border-polar-800 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white md:max-w-[320px] md:shadow-sm xl:max-w-[440px]',
+            'dark:bg-polar-900 dark:border-polar-800 md:shadow-xs w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white md:max-w-[320px] xl:max-w-[440px]',
             contextViewClassName,
           )}
         >

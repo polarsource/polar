@@ -174,7 +174,7 @@ const StackedChartTooltip = forwardRef<
               >
                 <div className="flex items-center gap-1.5">
                   <div
-                    className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                    className="rounded-xs h-2.5 w-2.5 shrink-0"
                     style={{ backgroundColor: item.color }}
                   />
                   {REASON_LABELS[item.name as keyof typeof REASON_LABELS]}

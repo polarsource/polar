@@ -43,6 +43,9 @@ from polar.models.product_price import (
 from polar.models.product_price import (
     ProductPriceMeteredUnit as ProductPriceMeteredUnitModel,
 )
+from polar.models.product_price import (
+    ProductPriceSeatUnit as ProductPriceSeatUnitModel,
+)
 from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
@@ -150,6 +153,19 @@ class ProductPriceFreeCreate(ProductPriceCreateBase):
         return ProductPriceFreeModel
 
 
+class ProductPriceSeatBasedCreate(ProductPriceCreateBase):
+    """
+    Schema to create a seat-based price.
+    """
+
+    amount_type: Literal[ProductPriceAmountType.seat_based]
+    price_currency: PriceCurrency
+    price_per_seat: PriceAmount = Field(description="The price per seat in cents.")
+
+    def get_model_class(self) -> builtins.type[ProductPriceSeatUnitModel]:
+        return ProductPriceSeatUnitModel
+
+
 class ProductPriceMeteredCreateBase(ProductPriceCreateBase):
     meter_id: UUID4 = Field(description="The ID of the meter associated to the price.")
 
@@ -185,6 +201,7 @@ ProductPriceCreate = (
     ProductPriceFixedCreate
     | ProductPriceCustomCreate
     | ProductPriceFreeCreate
+    | ProductPriceSeatBasedCreate
     | ProductPriceMeteredUnitCreate
 )
 
@@ -378,6 +395,12 @@ class ProductPriceFreeBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.free]
 
 
+class ProductPriceSeatBasedBase(ProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.seat_based]
+    price_currency: str = Field(description="The currency.")
+    price_per_seat: int = Field(description="The price per seat in cents.")
+
+
 class LegacyRecurringProductPriceMixin:
     @computed_field
     def legacy(self) -> Literal[True]:
@@ -462,6 +485,12 @@ class ProductPriceFree(ProductPriceFreeBase):
     """
 
 
+class ProductPriceSeatBased(ProductPriceSeatBasedBase):
+    """
+    A seat-based price for a product.
+    """
+
+
 class ProductPriceMeter(IDSchema):
     """
     A meter associated to a metered price.
@@ -489,7 +518,11 @@ class ProductPriceMeteredUnit(ProductPriceBase):
 
 
 NewProductPrice = Annotated[
-    ProductPriceFixed | ProductPriceCustom | ProductPriceFree | ProductPriceMeteredUnit,
+    ProductPriceFixed
+    | ProductPriceCustom
+    | ProductPriceFree
+    | ProductPriceSeatBased
+    | ProductPriceMeteredUnit,
     Discriminator("amount_type"),
     SetSchemaReference("ProductPrice"),
 ]

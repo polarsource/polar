@@ -767,6 +767,50 @@ export interface paths {
         patch: operations["subscriptions:update"];
         trace?: never;
     };
+    "/v1/subscriptions/{id}/seats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Subscription Seats
+         * @description **Scopes**: `subscriptions:read`
+         */
+        get: operations["subscriptions:subscriptions:list_seats"];
+        put?: never;
+        /**
+         * Assign Seat
+         * @description **Scopes**: `subscriptions:write`
+         */
+        post: operations["subscriptions:subscriptions:assign_seat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscriptions/{id}/seats/{seat_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke Seat
+         * @description **Scopes**: `subscriptions:write`
+         */
+        delete: operations["subscriptions:subscriptions:revoke_seat"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/transactions/search": {
         parameters: {
             query?: never;
@@ -2982,6 +3026,26 @@ export interface paths {
         get: operations["customer_portal:subscriptions:get_charge_preview"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/seats/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim Seat
+         * @description **Scopes**: `customers:read` `customers:write`
+         */
+        post: operations["seats:claim_seat"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10308,6 +10372,56 @@ export interface components {
              */
             medias: components["schemas"]["ProductMediaFileRead"][];
         };
+        /** CustomerSeat */
+        CustomerSeat: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The seat ID
+             */
+            id: string;
+            /**
+             * Subscription Id
+             * Format: uuid
+             * @description The subscription ID
+             */
+            subscription_id: string;
+            /** @description Status of the seat */
+            status: components["schemas"]["SeatStatus"];
+            /**
+             * Customer Id
+             * @description The assigned customer ID
+             */
+            customer_id?: string | null;
+            /**
+             * Claimed At
+             * @description When the seat was claimed
+             */
+            claimed_at?: string | null;
+            /**
+             * Revoked At
+             * @description When the seat was revoked
+             */
+            revoked_at?: string | null;
+            /**
+             * Seat Metadata
+             * @description Additional metadata for the seat
+             */
+            seat_metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
         /**
          * CustomerSession
          * @description A customer session that can be used to authenticate as a customer.
@@ -15127,6 +15241,12 @@ export interface components {
              * @default false
              */
             issue_funding_enabled: boolean;
+            /**
+             * Seat Based Pricing Enabled
+             * @description If this organization has seat-based pricing enabled
+             * @default false
+             */
+            seat_based_pricing_enabled: boolean;
         };
         /** OrganizationMember */
         OrganizationMember: {
@@ -15698,7 +15818,7 @@ export interface components {
              * ProductPriceCreateList
              * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
              */
-            prices: (components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"] | components["schemas"]["ProductPriceMeteredUnitCreate"])[];
+            prices: (components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"] | components["schemas"]["ProductPriceSeatBasedCreate"] | components["schemas"]["ProductPriceMeteredUnitCreate"])[];
             /**
              * Medias
              * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
@@ -15753,7 +15873,7 @@ export interface components {
              * ProductPriceCreateList
              * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
              */
-            prices: (components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"] | components["schemas"]["ProductPriceMeteredUnitCreate"])[];
+            prices: (components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"] | components["schemas"]["ProductPriceSeatBasedCreate"] | components["schemas"]["ProductPriceMeteredUnitCreate"])[];
             /**
              * Medias
              * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
@@ -15892,7 +16012,7 @@ export interface components {
             /** Public Url */
             readonly public_url: string;
         };
-        ProductPrice: components["schemas"]["ProductPriceFixed"] | components["schemas"]["ProductPriceCustom"] | components["schemas"]["ProductPriceFree"] | components["schemas"]["ProductPriceMeteredUnit"];
+        ProductPrice: components["schemas"]["ProductPriceFixed"] | components["schemas"]["ProductPriceCustom"] | components["schemas"]["ProductPriceFree"] | components["schemas"]["ProductPriceSeatBased"] | components["schemas"]["ProductPriceMeteredUnit"];
         /**
          * ProductPriceCustom
          * @description A pay-what-you-want price for a product.
@@ -16234,6 +16354,81 @@ export interface components {
             cap_amount?: number | null;
         };
         /**
+         * ProductPriceSeatBased
+         * @description A seat-based price for a product.
+         */
+        ProductPriceSeatBased: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "seat_based";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /** @deprecated */
+            type: components["schemas"]["ProductPriceType"];
+            /** @deprecated */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
+            /**
+             * Price Currency
+             * @description The currency.
+             */
+            price_currency: string;
+            /**
+             * Price Per Seat
+             * @description The price per seat in cents.
+             */
+            price_per_seat: number;
+        };
+        /**
+         * ProductPriceSeatBasedCreate
+         * @description Schema to create a seat-based price.
+         */
+        ProductPriceSeatBasedCreate: {
+            /**
+             * Amount Type
+             * @constant
+             */
+            amount_type: "seat_based";
+            /**
+             * Price Currency
+             * @description The currency. Currently, only `usd` is supported.
+             * @default usd
+             */
+            price_currency: string;
+            /**
+             * Price Per Seat
+             * @description The price per seat in cents.
+             */
+            price_per_seat: number;
+        };
+        /**
          * ProductPriceType
          * @enum {string}
          */
@@ -16363,7 +16558,7 @@ export interface components {
              * Prices
              * @description List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object.
              */
-            prices?: (components["schemas"]["ExistingProductPrice"] | components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"] | components["schemas"]["ProductPriceMeteredUnitCreate"])[] | null;
+            prices?: (components["schemas"]["ExistingProductPrice"] | components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"] | components["schemas"]["ProductPriceSeatBasedCreate"] | components["schemas"]["ProductPriceMeteredUnitCreate"])[] | null;
             /**
              * Medias
              * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
@@ -16608,6 +16803,62 @@ export interface components {
          * @enum {string}
          */
         Scope: "openid" | "profile" | "email" | "user:read" | "web:read" | "web:write" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "transactions:read" | "transactions:write" | "payouts:read" | "payouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "orders:write" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notifications:read" | "notifications:write" | "notification_recipients:read" | "notification_recipients:write";
+        /** SeatAssign */
+        SeatAssign: {
+            /**
+             * Email
+             * @description Email of the customer to assign the seat to
+             */
+            email?: string | null;
+            /**
+             * External Customer Id
+             * @description External customer ID for the seat assignment
+             */
+            external_customer_id?: string | null;
+            /**
+             * Customer Id
+             * @description Customer ID for the seat assignment
+             */
+            customer_id?: string | null;
+            /**
+             * Metadata
+             * @description Additional metadata for the seat
+             */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** SeatClaim */
+        SeatClaim: {
+            /**
+             * Invitation Token
+             * @description Invitation token to claim the seat
+             */
+            invitation_token: string;
+        };
+        /**
+         * SeatStatus
+         * @enum {string}
+         */
+        SeatStatus: "pending" | "claimed" | "revoked";
+        /** SeatsList */
+        SeatsList: {
+            /**
+             * Seats
+             * @description List of seats
+             */
+            seats: components["schemas"]["CustomerSeat"][];
+            /**
+             * Available Seats
+             * @description Number of available seats
+             */
+            available_seats: number;
+            /**
+             * Total Seats
+             * @description Total number of seats for the subscription
+             */
+            total_seats: number;
+        };
         /**
          * Status
          * @enum {string}
@@ -20136,6 +20387,162 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubscriptionLocked"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "subscriptions:subscriptions:list_seats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeatsList"];
+                };
+            };
+            /** @description Seat-based pricing not enabled for organization */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Subscription not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "subscriptions:subscriptions:assign_seat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeatAssign"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerSeat"];
+                };
+            };
+            /** @description No seats available or customer already has seat */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Seat-based pricing not enabled for organization */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Subscription not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "subscriptions:subscriptions:revoke_seat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription ID. */
+                id: string;
+                seat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerSeat"];
+                };
+            };
+            /** @description Seat-based pricing not enabled for organization */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Subscription not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
                 };
             };
             /** @description Validation Error */
@@ -25543,6 +25950,60 @@ export interface operations {
             };
         };
     };
+    "seats:claim_seat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeatClaim"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerSeat"];
+                };
+            };
+            /** @description Invalid or expired invitation token */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Seat-based pricing not enabled for organization */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Customer not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "email-update:request_email_update": {
         parameters: {
             query?: never;
@@ -27572,6 +28033,7 @@ export const productPriceCustomAmount_typeValues: ReadonlyArray<components["sche
 export const productPriceFixedAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceFixed"]["amount_type"]> = ["fixed"];
 export const productPriceFreeAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceFree"]["amount_type"]> = ["free"];
 export const productPriceMeteredUnitAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceMeteredUnit"]["amount_type"]> = ["metered_unit"];
+export const productPriceSeatBasedAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceSeatBased"]["amount_type"]> = ["seat_based"];
 export const productPriceTypeValues: ReadonlyArray<components["schemas"]["ProductPriceType"]> = ["one_time", "recurring"];
 export const productSortPropertyValues: ReadonlyArray<components["schemas"]["ProductSortProperty"]> = ["created_at", "-created_at", "name", "-name", "price_amount_type", "-price_amount_type", "price_amount", "-price_amount"];
 export const propertyAggregationFuncValues: ReadonlyArray<components["schemas"]["PropertyAggregation"]["func"]> = ["avg", "max", "min", "sum"];
@@ -27579,6 +28041,7 @@ export const refundReasonValues: ReadonlyArray<components["schemas"]["RefundReas
 export const refundSortPropertyValues: ReadonlyArray<components["schemas"]["RefundSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const refundStatusValues: ReadonlyArray<components["schemas"]["RefundStatus"]> = ["pending", "succeeded", "failed", "canceled"];
 export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "web:read", "web:write", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "transactions:read", "transactions:write", "payouts:read", "payouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notifications:read", "notifications:write", "notification_recipients:read", "notification_recipients:write"];
+export const seatStatusValues: ReadonlyArray<components["schemas"]["SeatStatus"]> = ["pending", "claimed", "revoked"];
 export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "denied", "active"];
 export const stripeAccountCountryValues: ReadonlyArray<components["schemas"]["StripeAccountCountry"]> = ["AL", "AG", "AR", "AM", "AU", "AT", "BH", "BE", "BO", "BA", "BG", "KH", "CA", "CL", "CO", "CR", "HR", "CY", "CZ", "CI", "DK", "DO", "EC", "EG", "SV", "EE", "ET", "FI", "FR", "GM", "DE", "GH", "GR", "GT", "GY", "HK", "HU", "IS", "IN", "ID", "IE", "IL", "IT", "JM", "JP", "JO", "KE", "KW", "LV", "LI", "LT", "LU", "MO", "MG", "MY", "MT", "MU", "MX", "MD", "MN", "MA", "NA", "NL", "NZ", "NG", "MK", "NO", "OM", "PA", "PY", "PE", "PH", "PL", "PT", "QA", "RO", "RW", "SA", "SN", "RS", "SG", "SK", "SI", "ZA", "KR", "ES", "LK", "LC", "SE", "CH", "TZ", "TH", "TT", "TN", "TR", "AE", "GB", "US", "UY", "UZ", "VN", "DZ", "AO", "AZ", "BS", "BD", "BJ", "BT", "BW", "BN", "GA", "KZ", "LA", "MC", "MZ", "NE", "PK", "SM", "TW"];
 export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];

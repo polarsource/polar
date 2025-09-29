@@ -73,6 +73,7 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
     is_custom_price,
+    is_fixed_price,
     is_free_price,
     is_static_price,
 )
@@ -1005,7 +1006,11 @@ class SubscriptionService:
             new_static_prices = [p for p in product.prices if is_static_price(p)]
 
             for old_price in old_static_prices:
-                base_amount = old_price.price_amount  # type: ignore
+                # Free prices don't get prorated
+                if not is_fixed_price(old_price):
+                    continue
+
+                base_amount = old_price.price_amount
                 discount_amount = 0
                 if subscription.discount:
                     discount_amount = subscription.discount.get_discount_amount(
@@ -1032,11 +1037,10 @@ class SubscriptionService:
                     ),
                     discount_amount=discount_amount,
                     currency=subscription.currency,
-                    customer_id=subscription.customer_id,
-                    product_price_id=old_price.id,
-                    subscription_id=subscription.id,
-                    event_id=event.id,
-                    order_item_id=None,
+                    customer=subscription.customer,
+                    product_price=old_price,
+                    subscription=subscription,
+                    event=event,
                 )
                 session.add(entry_unused_time)
 
@@ -1045,7 +1049,11 @@ class SubscriptionService:
                 # that means a debit billing entry for the new cycle will be added automatically.
                 # So debit prorations only apply when the cycle interval is the same.
                 for new_price in new_static_prices:
-                    base_amount = new_price.price_amount  # type: ignore
+                    # Free prices don't get prorated
+                    if not is_fixed_price(new_price):
+                        continue
+
+                    base_amount = new_price.price_amount
                     discount_amount = 0
                     if subscription.discount and subscription.discount.is_applicable(
                         new_price.product
@@ -1063,11 +1071,10 @@ class SubscriptionService:
                         ),
                         discount_amount=discount_amount,
                         currency=subscription.currency,
-                        customer_id=subscription.customer_id,
-                        product_price_id=new_price.id,
-                        subscription_id=subscription.id,
-                        event_id=event.id,
-                        order_item_id=None,
+                        customer=subscription.customer,
+                        product_price=new_price,
+                        subscription=subscription,
+                        event=event,
                     )
                     session.add(entry_remaining_time)
 

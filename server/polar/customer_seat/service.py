@@ -139,7 +139,6 @@ class SeatService:
         seat.customer_id = customer.id
 
         session.add(seat)
-        await session.commit()
 
         log.info(
             "Seat assigned",
@@ -176,8 +175,6 @@ class SeatService:
         seat.status = SeatStatus.claimed
         seat.claimed_at = datetime.now(UTC)
 
-        await session.commit()
-
         log.info(
             "Seat claimed",
             seat_id=seat.id,
@@ -199,8 +196,6 @@ class SeatService:
         seat.revoked_at = datetime.now(UTC)
         seat.customer_id = None
         seat.invitation_token = None
-
-        await session.commit()
 
         log.info(
             "Seat revoked",

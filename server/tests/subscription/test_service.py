@@ -683,6 +683,64 @@ class TestCycle:
         assert third_month_billing_entry.discount == discount
         assert fourth_month_billing_entry.discount is None
 
+    @freeze_time("2024-01-15")
+    async def test_nth_month_cycle(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_every_second_month: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_every_second_month,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+
+        first_period_start = subscription.current_period_start
+        first_period_end = subscription.current_period_end
+        assert first_period_start is not None
+        assert first_period_end is not None
+        assert first_period_end == first_period_start.replace(month=3)
+
+        second_cycle_subscription = await subscription_service.cycle(
+            session, subscription
+        )
+        second_period_start = second_cycle_subscription.current_period_start
+        second_period_end = second_cycle_subscription.current_period_end
+        assert second_period_start == first_period_end
+        assert second_period_end is not None
+        assert second_period_end == first_period_end.replace(month=5)
+
+        third_cycle_subscription = await subscription_service.cycle(
+            session, second_cycle_subscription
+        )
+        assert third_cycle_subscription.current_period_start == second_period_end
+        assert third_cycle_subscription.current_period_end is not None
+        assert third_cycle_subscription.current_period_end == second_period_end.replace(
+            month=7
+        )
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 2
+
+        second_cycle_billing_entry, third_cycle_billing_entry = billing_entries
+        assert second_cycle_billing_entry.start_timestamp == second_period_start
+        assert second_cycle_billing_entry.end_timestamp == second_period_end
+        assert (
+            third_cycle_billing_entry.start_timestamp
+            == third_cycle_subscription.current_period_start
+        )
+        assert (
+            third_cycle_billing_entry.end_timestamp
+            == third_cycle_subscription.current_period_end
+        )
+
     async def test_cancel_at_period_end(
         self,
         session: AsyncSession,

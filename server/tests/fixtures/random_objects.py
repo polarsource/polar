@@ -366,6 +366,7 @@ async def create_product(
     *,
     organization: Organization,
     recurring_interval: SubscriptionRecurringInterval | None,
+    recurring_interval_count: int | None = 1,
     name: str = "Product",
     is_archived: bool = False,
     prices: Sequence[PriceFixtureType] = [(1000,)],
@@ -374,11 +375,15 @@ async def create_product(
     trial_interval_count: int | None = None,
     is_tax_applicable: bool = True,
 ) -> Product:
+    recurring_interval_count = (
+        None if recurring_interval is None else recurring_interval_count
+    )
     product = Product(
         name=name,
         description="Description",
         is_tax_applicable=is_tax_applicable,
         recurring_interval=recurring_interval,
+        recurring_interval_count=recurring_interval_count,
         is_archived=is_archived,
         organization=organization,
         stripe_product_id=rstr("PRODUCT_ID"),
@@ -940,16 +945,22 @@ async def create_subscription(
     prices = prices or product.prices
 
     recurring_interval = product.recurring_interval
+    recurring_interval_count = product.recurring_interval_count
     if product.is_legacy_recurring_price:
         recurring_interval = product.prices[0].recurring_interval
+        recurring_interval_count = 0
     if not recurring_interval:
         recurring_interval = SubscriptionRecurringInterval.month
+    if not recurring_interval_count:
+        recurring_interval_count = 1
 
     now = datetime.now(UTC)
     if not current_period_start:
         current_period_start = now
     if not current_period_end:
-        current_period_end = recurring_interval.get_next_period(current_period_start)
+        current_period_end = recurring_interval.get_next_period(
+            current_period_start, recurring_interval_count
+        )
 
     canceled_at = None
     if ends_at is None:
@@ -965,6 +976,7 @@ async def create_subscription(
     subscription = Subscription(
         stripe_subscription_id=stripe_subscription_id,
         recurring_interval=recurring_interval,
+        recurring_interval_count=recurring_interval_count,
         status=status,
         tax_exempted=tax_exempted,
         current_period_start=current_period_start,
@@ -1222,6 +1234,18 @@ async def product_recurring_trial(
         recurring_interval=SubscriptionRecurringInterval.month,
         trial_interval=TrialInterval.month,
         trial_interval_count=1,
+    )
+
+
+@pytest_asyncio.fixture
+async def product_recurring_every_second_month(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        recurring_interval_count=2,
     )
 
 

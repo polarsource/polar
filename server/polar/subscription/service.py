@@ -309,12 +309,16 @@ class SubscriptionService:
 
         prices = product.prices
         recurring_interval: SubscriptionRecurringInterval
+        recurring_interval_count: int
         if product.is_legacy_recurring_price:
             prices = [checkout.product_price]
             recurring_interval = prices[0].recurring_interval
+            recurring_interval_count = 1
         else:
             assert product.recurring_interval is not None
+            assert product.recurring_interval_count is not None
             recurring_interval = product.recurring_interval
+            recurring_interval_count = product.recurring_interval_count
 
         subscription_product_prices: list[SubscriptionProductPrice] = []
         for price in prices:
@@ -339,7 +343,7 @@ class SubscriptionService:
             current_period_end = trial_end
         else:
             current_period_end = recurring_interval.get_next_period(
-                current_period_start
+                current_period_start, recurring_interval_count
             )
 
         # New subscription
@@ -359,6 +363,7 @@ class SubscriptionService:
         subscription.trial_end = trial_end
 
         subscription.recurring_interval = recurring_interval
+        subscription.recurring_interval_count = recurring_interval_count
         subscription.status = status
         subscription.payment_method = payment_method
         subscription.product = product
@@ -560,9 +565,11 @@ class SubscriptionService:
 
         if product.is_legacy_recurring_price:
             subscription.recurring_interval = prices[0].recurring_interval
+            subscription.recurring_interval_count = 0
         else:
             assert product.recurring_interval is not None
             subscription.recurring_interval = product.recurring_interval
+            subscription.recurring_interval_count = product.recurring_interval_count
 
         repository = SubscriptionRepository.from_session(session)
         if new_subscription:
@@ -632,7 +639,9 @@ class SubscriptionService:
                 assert current_period_end is not None
                 subscription.current_period_start = current_period_end
                 subscription.current_period_end = (
-                    subscription.recurring_interval.get_next_period(current_period_end)
+                    subscription.recurring_interval.get_next_period(
+                        current_period_end, subscription.recurring_interval_count
+                    )
                 )
 
             # Check if discount is still applicable
@@ -947,6 +956,7 @@ class SubscriptionService:
             for price in prices
         ]
         subscription.recurring_interval = product.recurring_interval
+        subscription.recurring_interval_count = product.recurring_interval_count
 
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior
@@ -984,7 +994,7 @@ class SubscriptionService:
             # Cycle end can change in the case of e.g. monthly to yearly
             old_cycle_start = subscription.current_period_start
             old_cycle_end = previous_product.recurring_interval.get_next_period(
-                subscription.current_period_start
+                subscription.current_period_start, subscription.recurring_interval_count
             )
 
             if previous_product.recurring_interval != product.recurring_interval:
@@ -994,7 +1004,7 @@ class SubscriptionService:
 
             new_cycle_start = subscription.current_period_start
             new_cycle_end = subscription.recurring_interval.get_next_period(
-                subscription.current_period_start
+                subscription.current_period_start, subscription.recurring_interval_count
             )
 
             old_cycle_remaining_time = (old_cycle_end - now).total_seconds()

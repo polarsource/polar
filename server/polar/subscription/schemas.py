@@ -62,6 +62,13 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
         description="The interval at which the subscription recurs.",
         examples=["month"],
     )
+    recurring_interval_count: int | None = Field(
+        description=(
+            "Number of interval units of the subscription."
+            "If this is set to 1 the charge will happen every interval (e.g. every month),"
+            "if set to 2 it will be every other month, and so on."
+        )
+    )
     status: SubscriptionStatus = Field(
         description="The status of the subscription.", examples=["active"]
     )

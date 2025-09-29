@@ -165,6 +165,50 @@ export const ProductPriceFreeItem: React.FC<ProductPriceFreeItemProps> = () => {
   return <></>
 }
 
+export interface ProductPriceSeatBasedItemProps {
+  index: number
+}
+
+export const ProductPriceSeatBasedItem: React.FC<
+  ProductPriceSeatBasedItemProps
+> = ({ index }) => {
+  const { control, setValue } = useFormContext<ProductFormType>()
+
+  return (
+    <>
+      <FormField
+        control={control}
+        name={`prices.${index}.price_per_seat`}
+        rules={{
+          required: 'This field is required',
+          min: { value: 50, message: 'Price must be greater than 0.5' },
+        }}
+        render={({ field }) => {
+          return (
+            <FormItem className="grow">
+              <div className="flex items-center gap-2">
+                <FormControl>
+                  <MoneyInput
+                    name={field.name}
+                    value={field.value}
+                    onChange={(v) => {
+                      field.onChange(v)
+                      setValue(`prices.${index}.id`, '')
+                    }}
+                    placeholder={0}
+                  />
+                </FormControl>
+              </div>
+              <FormDescription>Price per seat</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+    </>
+  )
+}
+
 export interface ProductPriceMeteredUnitItemProps {
   organization: schemas['Organization']
   index: number
@@ -411,6 +455,12 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         replace({
           amount_type: 'free',
         })
+      } else if (amountType === 'seat_based') {
+        replace({
+          amount_type: 'seat_based',
+          price_currency: 'usd',
+          price_per_seat: 0,
+        })
       } else if (amountType === 'metered_unit') {
         replace({
           amount_type: 'metered_unit',
@@ -452,6 +502,10 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       <SelectItem value="fixed">Fixed price</SelectItem>
                       <SelectItem value="custom">Pay what you want</SelectItem>
                       <SelectItem value="free">Free</SelectItem>
+                      {organization.feature_settings
+                        ?.seat_based_pricing_enabled && (
+                        <SelectItem value="seat_based">Seat-based</SelectItem>
+                      )}
                       {recurringInterval !== null && (
                         <SelectItem value="metered_unit">
                           Metered price
@@ -481,6 +535,9 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       {amountType === 'fixed' && <ProductPriceFixedItem index={index} />}
       {amountType === 'custom' && <ProductPriceCustomItem index={index} />}
       {amountType === 'free' && <ProductPriceFreeItem index={index} />}
+      {amountType === 'seat_based' && (
+        <ProductPriceSeatBasedItem index={index} />
+      )}
       {amountType === 'metered_unit' && (
         <ProductPriceMeteredUnitItem
           organization={organization}
@@ -532,11 +589,10 @@ export const ProductPricingSection = ({
     replace([
       {
         ...price,
-        // @ts-ignore
         id: null,
         type: null,
         recurring_interval: null,
-      },
+      } as any,
     ])
   }, [prices, replace, setValue])
 

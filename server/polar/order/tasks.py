@@ -64,7 +64,9 @@ class PaymentMethodDoesNotExist(OrderTaskError):
 
 @actor(actor_name="order.create_subscription_order", priority=TaskPriority.LOW)
 async def create_subscription_order(
-    subscription_id: uuid.UUID, order_reason: OrderBillingReason
+    subscription_id: uuid.UUID, 
+    order_reason: OrderBillingReason,
+    statement_descriptor: str,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
@@ -76,7 +78,7 @@ async def create_subscription_order(
 
         try:
             await order_service.create_subscription_order(
-                session, subscription, order_reason
+                session, subscription, order_reason, statement_descriptor
             )
         except NoPendingBillingEntries:
             # Skip creating an order if there are no pending billing entries.

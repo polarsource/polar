@@ -205,6 +205,30 @@ def _from_timestamp(t: int | None) -> datetime | None:
 
 
 class SubscriptionService:
+    def _generate_statement_descriptor(
+        self, subscription: Subscription, is_first_after_trial: bool = False
+    ) -> str:
+        """
+        Generate statement descriptor for a subscription order.
+        
+        For normal orders: POLAR# + organization.slug (truncated to fit 22 chars)
+        For first payment after trial: POLAR# + organization.slug + " TRIAL OVER" (truncated to fit 22 chars)
+        """
+        base_prefix = settings.STRIPE_STATEMENT_DESCRIPTOR + "# "
+        organization_slug = subscription.customer.organization.slug
+        
+        if is_first_after_trial:
+            trial_over_suffix = " TRIAL OVER"
+            # Calculate max length for organization slug to fit everything in 22 chars
+            max_slug_length = 22 - len(base_prefix) - len(trial_over_suffix)
+            truncated_slug = organization_slug[:max_slug_length] if len(organization_slug) > max_slug_length else organization_slug
+            return base_prefix + truncated_slug + trial_over_suffix
+        else:
+            # Calculate max length for organization slug to fit in 22 chars
+            max_slug_length = 22 - len(base_prefix)
+            truncated_slug = organization_slug[:max_slug_length] if len(organization_slug) > max_slug_length else organization_slug
+            return base_prefix + truncated_slug
+
     async def list(
         self,
         session: AsyncReadSession,
@@ -671,7 +695,8 @@ class SubscriptionService:
                     )
 
         previous_status = subscription.status
-        if previous_status == SubscriptionStatus.trialing:
+        is_first_after_trial = previous_status == SubscriptionStatus.trialing
+        if is_first_after_trial:
             subscription.status = SubscriptionStatus.active
 
         repository = SubscriptionRepository.from_session(session)
@@ -679,10 +704,14 @@ class SubscriptionService:
             subscription, update_dict={"scheduler_locked_at": None}
         )
 
+        statement_descriptor = self._generate_statement_descriptor(
+            subscription, is_first_after_trial
+        )
         enqueue_job(
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReason.subscription_cycle,
+            statement_descriptor,
         )
 
         await self.send_cycled_email(session, subscription)
@@ -1086,10 +1115,12 @@ class SubscriptionService:
                 await self.cycle(session, subscription, update_cycle_dates=False)
             elif proration_behavior == SubscriptionProrationBehavior.invoice:
                 # Invoice immediately
+                statement_descriptor = self._generate_statement_descriptor(subscription)
                 enqueue_job(
                     "order.create_subscription_order",
                     subscription.id,
                     OrderBillingReason.subscription_update,
+                    statement_descriptor,
                 )
             elif proration_behavior == SubscriptionProrationBehavior.prorate:
                 # Add prorations to next invoice

@@ -122,6 +122,8 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         String, nullable=True, default=None
     )
 
+    statement_descriptor: Mapped[str] = mapped_column(String, nullable=False)
+
     next_payment_attempt_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )

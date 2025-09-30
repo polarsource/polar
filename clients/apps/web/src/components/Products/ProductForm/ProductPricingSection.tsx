@@ -4,7 +4,6 @@ import CreateMeterModalContent from '@/components/Meter/CreateMeterModalContent'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
-import { useAuth } from '@/hooks/auth'
 import { useMeters } from '@/hooks/queries/meters'
 import {
   isLegacyRecurringPrice,
@@ -804,6 +803,7 @@ export const ProductPricingSection = ({
   const { fields: prices, replace, append, remove } = pricesFieldArray
 
   const recurringInterval = watch('recurring_interval')
+  const recurringIntervalCount = watch('recurring_interval_count')
 
   const isLegacyRecurringProduct = useMemo(
     () => (prices as schemas['ProductPrice'][]).some(isLegacyRecurringPrice),
@@ -827,16 +827,26 @@ export const ProductPricingSection = ({
 
   useEffect(() => {
     if (recurringInterval !== null) {
+      if (!recurringIntervalCount) {
+        setValue('recurring_interval_count', 1)
+      }
       return
     }
+
+    setValue('recurring_interval_count', null)
     prices.forEach((price, index) => {
       if (isMeteredPrice(price as schemas['ProductPrice'])) {
         remove(index)
       }
     })
-  }, [recurringInterval, prices, remove])
-
-  const { currentUser } = useAuth()
+  }, [
+    recurringInterval,
+    recurringIntervalCount,
+    prices,
+    remove,
+    setValue,
+    watch,
+  ])
 
   return (
     <Section
@@ -887,12 +897,8 @@ export const ProductPricingSection = ({
                             One-time purchase
                           </SelectItem>
                         )}
-                        {currentUser && currentUser.is_admin && (
-                          <>
-                            <SelectItem value="day">Daily</SelectItem>
-                            <SelectItem value="week">Weekly</SelectItem>
-                          </>
-                        )}
+                        <SelectItem value="day">Daily</SelectItem>
+                        <SelectItem value="week">Weekly</SelectItem>
                         <SelectItem value="month">Monthly</SelectItem>
                         <SelectItem value="year">Yearly</SelectItem>
                       </SelectContent>
@@ -903,6 +909,54 @@ export const ProductPricingSection = ({
               )
             }}
           />
+          {recurringInterval !== null && (
+            <FormField
+              control={control}
+              name="recurring_interval_count"
+              rules={{
+                required: 'This field is required when billing cycle is set',
+                min: { value: 1, message: 'Interval count must be at least 1' },
+                max: {
+                  value: 999,
+                  message: 'Interval count cannot exceed 999',
+                },
+              }}
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Billing frequency</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">Every</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="999"
+                          className="w-20 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          value={field.value || 1}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 1
+                            field.onChange(value)
+                          }}
+                        />
+                        <span className="text-sm text-gray-600">
+                          {field.value === 1 || !field.value
+                            ? recurringInterval
+                            : `${recurringInterval}s`}
+                        </span>
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Set how often customers are billed (e.g., &quot;every 2
+                      months&quot;)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+          )}
+
           {prices.map((price, index) => (
             <ProductPriceItemWrapper
               prices={prices as schemas['ProductPrice'][]}

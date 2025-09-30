@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     String,
     Uuid,
+    func,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -84,7 +85,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     subtotal_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     discount_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    from_balance_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    applied_balance_amount: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     billing_reason: Mapped[OrderBillingReason] = mapped_column(
         String, nullable=False, index=True
@@ -225,6 +228,15 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @classmethod
     def _total_amount_expression(cls) -> ColumnElement[int]:
         return cls.net_amount + cls.tax_amount
+
+    @hybrid_property
+    def due_amount(self) -> int:
+        return max(0, self.total_amount + self.applied_balance_amount)
+
+    @due_amount.inplace.expression
+    @classmethod
+    def _due_amount_expression(cls) -> ColumnElement[int]:
+        return func.greatest(0, cls.total_amount + cls.applied_balance_amount)
 
     @hybrid_property
     def payout_amount(self) -> int:

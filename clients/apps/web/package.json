@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000 --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev --port 3000",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "exit 0",
     "typecheck": "tsc --noEmit",
-    "analyze": "ANALYZE=true next build --turbopack"
+    "analyze": "ANALYZE=true next build"
   },
   "engines": {
     "node": "=22"

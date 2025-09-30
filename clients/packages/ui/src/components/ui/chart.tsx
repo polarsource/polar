@@ -43,13 +43,10 @@ const ChartContainer = ({
   ...props
 }: {
   config: ChartConfig
-  ref?: React.RefObject<HTMLDivElement>
-  id?: string
-  className?: string
   children: React.ComponentProps<
     typeof RechartsPrimitive.ResponsiveContainer
   >['children']
-}) => {
+} & Omit<React.ComponentProps<'div'>, 'children'>) => {
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, '')}`
 
@@ -130,9 +127,9 @@ const ChartTooltipContent = ({
   indicator?: 'line' | 'dot' | 'dashed'
   hideLabel?: boolean
   hideIndicator?: boolean
-  color: string
-  nameKey: string
-  labelKey: string
+  color?: string
+  nameKey?: string
+  labelKey?: string
 }) => {
   const { config } = useChart()
 

@@ -56,7 +56,7 @@ const CountryPicker = ({
         />
       </SelectTrigger>
       <SelectContent className={contentClassName}>
-        {countryMap.map(({ code, country, emoji }) => (
+        {countryMap.map(({ code, country }) => (
           <SelectItem
             key={code}
             value={code}
@@ -65,9 +65,7 @@ const CountryPicker = ({
           >
             {/* Wrap in div to workaround an issue with browser automatic translation
               https://github.com/shadcn-ui/ui/issues/852 */}
-            <div>
-              {emoji} {country.name}
-            </div>
+            <div>{country.name}</div>
           </SelectItem>
         ))}
       </SelectContent>

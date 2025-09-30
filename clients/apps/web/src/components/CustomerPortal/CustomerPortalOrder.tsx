@@ -138,29 +138,25 @@ const CustomerPortalOrder = ({
               value={<span>{formatCurrencyAndAmount(order.total_amount)}</span>}
               valueClassName="justify-end"
             />
-            {order.from_balance_amount > 0 && (
-              <DetailRow
-                label="From customer balance"
-                value={
-                  <span>
-                    {formatCurrencyAndAmount(-order.from_balance_amount)}
-                  </span>
-                }
-                valueClassName="justify-end"
-              />
-            )}
-            {order.from_balance_amount > 0 && (
-              <DetailRow
-                label="To be paid"
-                value={
-                  <span>
-                    {formatCurrencyAndAmount(
-                      order.total_amount - order.from_balance_amount,
-                    )}
-                  </span>
-                }
-                valueClassName="justify-end"
-              />
+            {order.applied_balance_amount !== 0 && (
+              <>
+                <DetailRow
+                  label="Applied balance"
+                  value={
+                    <span>
+                      {formatCurrencyAndAmount(order.applied_balance_amount)}
+                    </span>
+                  }
+                  valueClassName="justify-end"
+                />
+                <DetailRow
+                  label="To be paid"
+                  value={
+                    <span>{formatCurrencyAndAmount(order.due_amount)}</span>
+                  }
+                  valueClassName="justify-end"
+                />
+              </>
             )}
 
             {isPartiallyOrFullyRefunded && (

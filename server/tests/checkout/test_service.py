@@ -66,6 +66,7 @@ from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceFree,
+    ProductPriceSeatUnit,
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
@@ -84,6 +85,7 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_product,
     create_product_price_fixed,
+    create_product_price_seat_unit,
     create_subscription,
 )
 
@@ -292,6 +294,30 @@ async def product_custom_price_no_amounts(
         recurring_interval=None,
         prices=[(None, None, None)],
     )
+
+
+@pytest_asyncio.fixture
+async def product_seat_based(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[],
+    )
+    price = await create_product_price_seat_unit(
+        save_fixture, product=product, price_per_seat=1000
+    )
+    product.prices = [price]
+    return product
+
+
+@pytest_asyncio.fixture
+async def checkout_seat_based(
+    save_fixture: SaveFixture, product_seat_based: Product
+) -> Checkout:
+    return await create_checkout(save_fixture, products=[product_seat_based], seats=5)
 
 
 @pytest.mark.asyncio
@@ -1480,6 +1506,145 @@ class TestCreate:
         assert checkout.is_payment_required is True
         assert checkout.is_payment_setup_required is False
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_seat_based_price_with_seats(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_seat_based: Product,
+    ) -> None:
+        price = product_seat_based.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=price.id,
+                seats=10,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.product_price == price
+        assert checkout.product == product_seat_based
+        assert checkout.seats == 10
+        assert checkout.amount == price.price_per_seat * 10
+        assert checkout.currency == price.price_currency
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_seat_based_price_without_seats(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_seat_based: Product,
+    ) -> None:
+        price = product_seat_based.prices[0]
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.create(
+                session,
+                CheckoutPriceCreate(
+                    product_price_id=price.id,
+                ),
+                auth_subject,
+            )
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "required" in errors[0]["msg"].lower()
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_seat_based_price_with_zero_seats(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_seat_based: Product,
+    ) -> None:
+        price = product_seat_based.prices[0]
+
+        with pytest.raises(ValidationError) as e:
+            await checkout_service.create(
+                session,
+                CheckoutPriceCreate(
+                    product_price_id=price.id,
+                    seats=0,
+                ),
+                auth_subject,
+            )
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("seats",)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_non_seat_based_price_with_seats(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.create(
+                session,
+                CheckoutPriceCreate(
+                    product_price_id=price.id,
+                    seats=5,
+                ),
+                auth_subject,
+            )
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "seat-based" in errors[0]["msg"].lower()
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    @pytest.mark.parametrize("seats", [1, 5, 10, 100])
+    async def test_seat_based_amount_calculation(
+        self,
+        seats: int,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_seat_based: Product,
+    ) -> None:
+        price = product_seat_based.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=price.id,
+                seats=seats,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.seats == seats
+        assert checkout.amount == price.price_per_seat * seats
+
 
 @pytest.mark.asyncio
 class TestClientCreate:
@@ -1607,6 +1772,65 @@ class TestClientCreate:
         assert checkout.trial_interval is None
         assert checkout.trial_interval_count is None
         assert checkout.trial_end is not None
+
+    async def test_valid_seat_based_price(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        product_seat_based: Product,
+    ) -> None:
+        price = product_seat_based.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        checkout = await checkout_service.client_create(
+            session,
+            CheckoutCreatePublic(product_id=product_seat_based.id, seats=7),
+            auth_subject,
+        )
+
+        assert checkout.product_price == price
+        assert checkout.product == product_seat_based
+        assert checkout.seats == 7
+        assert checkout.amount == price.price_per_seat * 7
+        assert checkout.currency == price.price_currency
+
+    async def test_seat_based_price_without_seats(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        product_seat_based: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.client_create(
+                session,
+                CheckoutCreatePublic(product_id=product_seat_based.id),
+                auth_subject,
+            )
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "required" in errors[0]["msg"].lower()
+
+    @pytest.mark.parametrize("seats", [1, 3, 15])
+    async def test_seat_based_price_amount_calculation(
+        self,
+        seats: int,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        product_seat_based: Product,
+    ) -> None:
+        price = product_seat_based.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        checkout = await checkout_service.client_create(
+            session,
+            CheckoutCreatePublic(product_id=product_seat_based.id, seats=seats),
+            auth_subject,
+        )
+
+        assert checkout.seats == seats
+        assert checkout.amount == price.price_per_seat * seats
 
 
 @pytest.mark.asyncio
@@ -2586,6 +2810,85 @@ class TestUpdate:
         with pytest.raises(AlreadyActiveSubscriptionError):
             await checkout_service.update(
                 session, locker, checkout_recurring_fixed, CheckoutUpdate()
+            )
+
+    async def test_update_seats_on_seat_based_price(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_seat_based: Checkout,
+    ) -> None:
+        price = checkout_seat_based.product_price
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        initial_seats = checkout_seat_based.seats
+        assert initial_seats == 5
+
+        checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout_seat_based,
+            CheckoutUpdate(seats=12),
+        )
+
+        assert checkout.seats == 12
+        assert checkout.amount == price.price_per_seat * 12
+
+    async def test_update_seats_amount_recalculation(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_seat_based: Checkout,
+    ) -> None:
+        price = checkout_seat_based.product_price
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        # Initial amount
+        initial_amount = checkout_seat_based.amount
+        assert initial_amount == price.price_per_seat * 5
+
+        # Update seats to 3
+        checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout_seat_based,
+            CheckoutUpdate(seats=3),
+        )
+
+        assert checkout.seats == 3
+        assert checkout.amount == price.price_per_seat * 3
+        assert checkout.amount != initial_amount
+
+    async def test_update_seats_on_non_seat_based(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.update(
+                session,
+                locker,
+                checkout_one_time_fixed,
+                CheckoutUpdate(seats=5),
+            )
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "seats")
+
+    async def test_update_seats_to_zero(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_seat_based: Checkout,
+    ) -> None:
+        with pytest.raises(ValidationError):
+            await checkout_service.update(
+                session,
+                locker,
+                checkout_seat_based,
+                CheckoutUpdate(seats=0),
             )
 
 

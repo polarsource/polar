@@ -317,7 +317,9 @@ class SubscriptionService:
         subscription_product_prices: list[SubscriptionProductPrice] = []
         for price in prices:
             subscription_product_prices.append(
-                SubscriptionProductPrice.from_price(price, checkout.amount)
+                SubscriptionProductPrice.from_price(
+                    price, checkout.amount, checkout.seats
+                )
             )
 
         subscription = checkout.subscription
@@ -459,7 +461,9 @@ class SubscriptionService:
                 )
                 stripe_price_ids.append(ad_hoc_price.id)
                 subscription_product_prices.append(
-                    SubscriptionProductPrice.from_price(price, checkout.amount)
+                    SubscriptionProductPrice.from_price(
+                        price, checkout.amount, checkout.seats
+                    )
                 )
                 free_pricing = False
             else:
@@ -468,7 +472,7 @@ class SubscriptionService:
                 if not is_free_price(price):
                     free_pricing = False
                 subscription_product_prices.append(
-                    SubscriptionProductPrice.from_price(price)
+                    SubscriptionProductPrice.from_price(price, seats=checkout.seats)
                 )
 
         # We always need at least one price to create a subscription on Stripe
@@ -929,7 +933,8 @@ class SubscriptionService:
 
         subscription.product = product
         subscription.subscription_product_prices = [
-            SubscriptionProductPrice.from_price(price) for price in prices
+            SubscriptionProductPrice.from_price(price, seats=subscription.seats)
+            for price in prices
         ]
         subscription.recurring_interval = product.recurring_interval
 

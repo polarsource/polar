@@ -10997,10 +10997,15 @@ export interface components {
        */
       total_amount: number
       /**
-       * From Balance Amount
-       * @description How much of this invoice was paid using the customer's balance. Amount in cents.
+       * Applied Balance Amount
+       * @description Customer's balance amount applied to this invoice. Can increase the total amount paid, if the customer has a negative balance,  or decrease it, if the customer has a positive balance.Amount in cents.
        */
-      from_balance_amount: number
+      applied_balance_amount: number
+      /**
+       * Due Amount
+       * @description Amount in cents that is due for this order.
+       */
+      due_amount: number
       /**
        * Refunded Amount
        * @description Amount refunded in cents.
@@ -15849,10 +15854,15 @@ export interface components {
        */
       total_amount: number
       /**
-       * From Balance Amount
-       * @description How much of this invoice was paid using the customer's balance. Amount in cents.
+       * Applied Balance Amount
+       * @description Customer's balance amount applied to this invoice. Can increase the total amount paid, if the customer has a negative balance,  or decrease it, if the customer has a positive balance.Amount in cents.
        */
-      from_balance_amount: number
+      applied_balance_amount: number
+      /**
+       * Due Amount
+       * @description Amount in cents that is due for this order.
+       */
+      due_amount: number
       /**
        * Refunded Amount
        * @description Amount refunded in cents.

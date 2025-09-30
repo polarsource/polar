@@ -7,6 +7,7 @@
     "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN",
     "GITHUB_TOKEN",
     "NODE_ENV",
+    "NEXT_PHASE",
     "NEXT_RUNTIME",
     "NEXT_PUBLIC_ENVIRONMENT",
     "NEXT_PUBLIC_API_URL",
@@ -46,6 +47,7 @@
     },
     "lint": {},
     "test": {},
+    "typecheck": {},
     "dev": {
       "dependsOn": ["^build"],
       "cache": false,

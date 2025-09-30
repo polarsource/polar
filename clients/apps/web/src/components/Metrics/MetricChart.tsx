@@ -11,6 +11,7 @@ import {
   XAxis,
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
+import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface MetricChartProps {
@@ -41,40 +42,87 @@ const MetricChart = ({
 }) => {
   const { resolvedTheme } = useTheme()
 
-  const mergedData = data.map((period, index) => ({
-    timestamp: period.timestamp,
-    current: period[metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>],
-    ...(previousData && previousData[index]
-      ? {
-          previous:
-            previousData[index][
-              metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>
-            ],
-        }
-      : {}),
-  }))
+  const mergedData = useMemo(
+    () =>
+      data.map((period, index) => ({
+        timestamp: period.timestamp,
+        current:
+          period[metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>],
+        ...(previousData && previousData[index]
+          ? {
+              previous:
+                previousData[index][
+                  metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>
+                ],
+            }
+          : {}),
+      })),
+    [data, previousData, metric.slug],
+  )
 
   const isDark = resolvedTheme === 'dark'
 
-  const timestampFormatter = getTimestampFormatter(interval)
+  const timestampFormatter = useMemo(
+    () => getTimestampFormatter(interval),
+    [interval],
+  )
+
+  const config = useMemo(
+    () => ({
+      current: {
+        label: 'Current Period',
+        color: '#2563eb',
+      },
+      previous: {
+        label: 'Previous Period',
+        color: isDark ? '#383942' : '#ccc',
+      },
+      metric: {
+        label: metric.display_name,
+      },
+    }),
+    [isDark, metric.display_name],
+  )
+
+  const ticks = useMemo(
+    () =>
+      simple
+        ? [
+            mergedData[0]?.timestamp,
+            mergedData[mergedData.length - 1]?.timestamp,
+          ]
+        : undefined,
+    [simple, mergedData],
+  )
+
+  const formatter = useCallback(
+    (value: number, name: string, item: { color: string }) => {
+      const formattedValue = getFormattedMetricValue(metric, value as number)
+      return (
+        <div className="flex w-40 flex-row justify-between gap-x-8">
+          <div className="flex flex-row items-center gap-x-2">
+            <span
+              className={twMerge('h-2 w-2 rounded-full')}
+              style={{
+                backgroundColor: item?.color,
+              }}
+            />
+            <span className="capitalize">
+              {name.toString().split('_').join(' ')}
+            </span>
+          </div>
+          <span>{formattedValue}</span>
+        </div>
+      )
+    },
+    [metric],
+  )
 
   return (
     <ChartContainer
       ref={ref}
       style={{ height: _height, width: _width || '100%' }}
-      config={{
-        current: {
-          label: 'Current Period',
-          color: '#2563eb',
-        },
-        previous: {
-          label: 'Previous Period',
-          color: isDark ? '#383942' : '#ccc',
-        },
-        metric: {
-          label: metric.display_name,
-        },
-      }}
+      config={config}
     >
       <LineChart
         accessibilityLayer
@@ -86,7 +134,8 @@ const MetricChart = ({
         }}
         onMouseMove={(state) => {
           if (onDataIndexHover) {
-            onDataIndexHover(state.activeTooltipIndex)
+            const index = state.activeTooltipIndex
+            onDataIndexHover(typeof index === 'number' ? index : undefined)
           }
         }}
         onMouseLeave={() => {
@@ -109,14 +158,7 @@ const MetricChart = ({
           axisLine={false}
           tickMargin={8}
           interval="equidistantPreserveStart"
-          ticks={
-            simple
-              ? [
-                  mergedData[0].timestamp,
-                  mergedData[mergedData.length - 1].timestamp,
-                ]
-              : undefined
-          }
+          ticks={ticks}
           tickFormatter={timestampFormatter}
         />
         <ChartTooltip
@@ -126,28 +168,7 @@ const MetricChart = ({
               className="text-black dark:text-white"
               indicator="dot"
               labelKey="metric"
-              formatter={(value, name, item) => {
-                const formattedValue = getFormattedMetricValue(
-                  metric,
-                  value as number,
-                )
-                return (
-                  <div className="flex w-40 flex-row justify-between gap-x-8">
-                    <div className="flex flex-row items-center gap-x-2">
-                      <span
-                        className={twMerge('h-2 w-2 rounded-full')}
-                        style={{
-                          backgroundColor: item?.color,
-                        }}
-                      />
-                      <span className="capitalize">
-                        {name.toString().split('_').join(' ')}
-                      </span>
-                    </div>
-                    <span>{formattedValue}</span>
-                  </div>
-                )
-              }}
+              formatter={formatter}
             />
           }
         />

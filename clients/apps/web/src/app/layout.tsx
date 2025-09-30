@@ -95,7 +95,7 @@ export default async function RootLayout({
     userOrganizations = await getUserOrganizations(api)
   } catch (e) {
     // Silently swallow errors during build, typically when rendering static pages
-    // eslint-disable-next-line turbo/no-undeclared-env-vars
+     
     if (process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) {
       throw e
     }

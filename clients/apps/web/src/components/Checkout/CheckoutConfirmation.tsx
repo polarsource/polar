@@ -158,7 +158,7 @@ export const CheckoutConfirmation = ({
     if (checkout.status === 'open' || checkout.status === 'succeeded') {
       return
     }
-    let intervalId = setInterval(() => updateCheckout(), maxWaitingTimeMs)
+    const intervalId = setInterval(() => updateCheckout(), maxWaitingTimeMs)
     return () => clearInterval(intervalId)
   }, [checkout.status, maxWaitingTimeMs, updateCheckout])
 

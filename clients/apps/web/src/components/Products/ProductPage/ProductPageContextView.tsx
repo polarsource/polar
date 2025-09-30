@@ -82,7 +82,13 @@ export const ProductPageContextView = ({
 
       const newBenefitSet = new Set(enabledBenefitIds)
       const oldBenefitSet = new Set(product.benefits.map((b) => b.id))
-      if (newBenefitSet.symmetricDifference(oldBenefitSet).size > 0) {
+      const hasAddedBenefits = [...newBenefitSet].some(
+        (id) => !oldBenefitSet.has(id),
+      )
+      const hasRemovedBenefits = [...oldBenefitSet].some(
+        (id) => !newBenefitSet.has(id),
+      )
+      if (hasAddedBenefits || hasRemovedBenefits) {
         await updateBenefits.mutateAsync({
           id: product.id,
           body: {

@@ -50,7 +50,7 @@ export default async function Page(props: {
 }) {
   const searchParams = await props.searchParams
   const params = await props.params
-  const api = getServerSideAPI(searchParams.customer_session_token)
+  const api = await getServerSideAPI(searchParams.customer_session_token)
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,

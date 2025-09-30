@@ -230,6 +230,10 @@ class LicenseKeyService:
                 "This license key can not be activated."
             )
 
+        if license_key.expires_at:
+            if utc_now() >= license_key.expires_at:
+                raise NotPermitted("License key has expired.")
+
         if not license_key.limit_activations:
             raise NotPermitted(
                 "This license key does not support activations. "

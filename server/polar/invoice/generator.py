@@ -1,13 +1,12 @@
 from datetime import date, datetime
 from pathlib import Path
-from typing import Self
+from typing import ClassVar, Self
 
 import pycountry
 from babel.dates import format_date as _format_date
 from babel.numbers import format_currency as _format_currency
 from babel.numbers import format_decimal as _format_decimal
 from babel.numbers import format_percent as _format_percent
-from fontTools.misc.configTools import ClassVar
 from fpdf import FPDF
 from fpdf.enums import Align, TableBordersLayout, XPos, YPos
 from fpdf.fonts import FontFace
@@ -64,7 +63,7 @@ class Invoice(BaseModel):
     customer_address: Address
     customer_additional_info: str | None = None
     subtotal_amount: int
-    from_balance_amount: int | None = None
+    applied_balance_amount: int | None = None
     discount_amount: int
     taxability_reason: TaxabilityReason | None
     tax_amount: int
@@ -92,17 +91,17 @@ class Invoice(BaseModel):
         return format_currency(total, self.currency)
 
     @property
-    def formatted_from_balance_amount(self) -> str | None:
-        if self.from_balance_amount:
-            return format_currency(self.from_balance_amount, self.currency)
+    def formatted_applied_balance_amount(self) -> str | None:
+        if self.applied_balance_amount:
+            return format_currency(self.applied_balance_amount, self.currency)
         else:
             return None
 
     @property
-    def formatted_to_be_paid_amount(self) -> str | None:
+    def formatted_due_amount(self) -> str | None:
         total = self.subtotal_amount - self.discount_amount + self.tax_amount
-        if self.from_balance_amount:
-            return format_currency(total - self.from_balance_amount, self.currency)
+        if self.applied_balance_amount:
+            return format_currency(total + self.applied_balance_amount, self.currency)
         else:
             return None
 
@@ -157,7 +156,7 @@ class Invoice(BaseModel):
             customer_additional_info=order.tax_id[0] if order.tax_id else None,
             customer_address=order.billing_address,
             subtotal_amount=order.subtotal_amount,
-            from_balance_amount=order.from_balance_amount,
+            applied_balance_amount=order.applied_balance_amount,
             discount_amount=order.discount_amount,
             taxability_reason=order.taxability_reason,
             tax_amount=order.tax_amount,
@@ -420,20 +419,20 @@ class InvoiceGenerator(FPDF):
             total_row.cell(self.data.formatted_total_amount)
 
             if (
-                self.data.formatted_from_balance_amount
-                and self.data.formatted_to_be_paid_amount
+                self.data.formatted_applied_balance_amount
+                and self.data.formatted_due_amount
             ):
                 # Applied balance row
                 self.set_font(style="B")
                 total_row = totals_table.row()
                 total_row.cell("Applied balance")
-                total_row.cell(self.data.formatted_from_balance_amount)
+                total_row.cell(self.data.formatted_applied_balance_amount)
 
                 # To be paid row
                 self.set_font(style="B")
                 total_row = totals_table.row()
                 total_row.cell("To be paid")
-                total_row.cell(self.data.formatted_to_be_paid_amount)
+                total_row.cell(self.data.formatted_due_amount)
 
         # Add notes section
         self.set_font(style="")

@@ -39,9 +39,15 @@ class OrderBase(TimestampedSchema, IDSchema):
 
     tax_amount: int = Field(description="Sales tax amount in cents.")
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
-    from_balance_amount: int = Field(
-        description="How much of this invoice was paid using the customer's balance. Amount in cents."
+    applied_balance_amount: int = Field(
+        description=(
+            "Customer's balance amount applied to this invoice. "
+            "Can increase the total amount paid, if the customer has a negative balance, "
+            " or decrease it, if the customer has a positive balance."
+            "Amount in cents."
+        )
     )
+    due_amount: int = Field(description="Amount in cents that is due for this order.")
     refunded_amount: int = Field(description="Amount refunded in cents.")
     refunded_tax_amount: int = Field(description="Sales tax refunded in cents.")
     currency: str

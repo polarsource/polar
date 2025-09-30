@@ -722,15 +722,13 @@ class OrderService:
         )
 
         total_amount = subtotal_amount - discount_amount + tax_amount
-        customer_balance = await self.customer_balance(session, subscription.customer)
-        from_balance_amount = 0
-        if total_amount > 0 and customer_balance > 0:
-            # Ensure that the remaining amount to be paid is at least 0.5 (50 cents)
-            # If using all customer balance would leave less than 0.5 to pay, limit the balance usage
-            max_balance_usage = total_amount - 50  # 50 cents minimum
-            if max_balance_usage > 0:
-                from_balance_amount = min(customer_balance, max_balance_usage)
-            # If total_amount <= 50 cents, don't use any balance to ensure minimum payment amount
+        customer_balance = await self.customer_balance(session, customer)
+        applied_balance_amount = 0
+        if total_amount < 0:
+            if customer_balance < 0:
+                applied_balance_amount = -max(total_amount, customer_balance)
+        else:
+            applied_balance_amount = -min(total_amount, customer_balance)
 
         repository = OrderRepository.from_session(session)
         order = await repository.create(
@@ -740,7 +738,7 @@ class OrderService:
                 subtotal_amount=subtotal_amount,
                 discount_amount=discount_amount,
                 tax_amount=tax_amount,
-                from_balance_amount=from_balance_amount,
+                applied_balance_amount=applied_balance_amount,
                 currency=subscription.currency,
                 billing_reason=billing_reason,
                 billing_name=customer.billing_name,
@@ -769,8 +767,8 @@ class OrderService:
         }:
             await subscription_service.reset_meters(session, subscription)
 
-        # If the order total amount is zero, mark it as paid immediately
-        if order.total_amount <= 0:
+        # If the due amount is less or equal than zero, mark it as paid immediately
+        if order.due_amount <= 0:
             order = await repository.update(
                 order, update_dict={"status": OrderStatus.paid}
             )
@@ -855,12 +853,23 @@ class OrderService:
             log.warn("Payment already in progress", order_id=order.id)
             raise PaymentAlreadyInProgress(order)
 
+        if (
+            payment_method.processor == PaymentProcessor.stripe
+            and order.due_amount < 50
+        ):
+            # Stripe requires a minimum amount of 50 cents, mark it as paid
+            # The amount will be added on the customer's balance
+            repository = OrderRepository.from_session(session)
+            previous_status = order.status
+            order = await repository.update(
+                order, update_dict={"status": OrderStatus.paid}
+            )
+            await self._on_order_updated(session, order, previous_status)
+            return
+
         async with self.acquire_payment_lock(session, order, release_on_success=False):
             if payment_method.processor == PaymentProcessor.stripe:
                 metadata: dict[str, Any] = {"order_id": str(order.id)}
-
-                to_be_paid_amount = order.total_amount - order.from_balance_amount
-                assert to_be_paid_amount > 0
 
                 if order.tax_rate is not None:
                     metadata["tax_amount"] = order.tax_amount
@@ -872,7 +881,7 @@ class OrderService:
 
                 try:
                     await stripe_service.create_payment_intent(
-                        amount=to_be_paid_amount,
+                        amount=order.due_amount,
                         currency=order.currency,
                         payment_method=payment_method.processor_id,
                         customer=stripe_customer_id,

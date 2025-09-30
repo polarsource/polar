@@ -48,6 +48,14 @@ jobs:
             next-${{ hashFiles('./clients/pnpm-lock.yaml') }}-
             next-
 
+      - name: Lint
+        working-directory: ./clients
+        run: pnpm run lint
+
+      - name: Typecheck
+        working-directory: ./clients
+        run: pnpm run typecheck
+
       - name: Build
         working-directory: ./clients
         run: pnpm build

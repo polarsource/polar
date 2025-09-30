@@ -108,9 +108,11 @@ export const AccountNavigation = () => {
         <SidebarMenuButton tooltip="Back to Dashboard" asChild>
           <Link
             href="/dashboard"
-            className="flex flex-row items-center gap-4 text-black dark:text-white"
+            className="flex flex-row items-center gap-4 border border-transparent text-black dark:text-white"
           >
-            <ArrowBack fontSize="inherit" />
+            <span className="flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]">
+              <ArrowBack fontSize="inherit" />
+            </span>
             <span>Account Settings</span>
           </Link>
         </SidebarMenuButton>

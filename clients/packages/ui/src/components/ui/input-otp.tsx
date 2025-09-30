@@ -11,9 +11,7 @@ const InputOTP = ({
   className,
   containerClassName,
   ...props
-}: React.ComponentPropsWithoutRef<typeof OTPInput> & {
-  ref: React.RefObject<React.ElementRef<typeof OTPInput>>
-}) => (
+}: React.ComponentProps<typeof OTPInput>) => (
   <OTPInput
     ref={ref}
     containerClassName={cn(
@@ -30,14 +28,20 @@ const InputOTPGroup = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<'div'> & {
-  ref: React.RefObject<React.ElementRef<'div'>>
-}) => (
+}: React.ComponentProps<'div'>) => (
   <div ref={ref} className={cn('flex items-center', className)} {...props} />
 )
 InputOTPGroup.displayName = 'InputOTPGroup'
 
-const InputOTPSlot = ({ ref, index, className, ...props }) => {
+const InputOTPSlot = ({
+  ref,
+  index,
+  className,
+  ...props
+}: {
+  index: number
+  className?: string
+} & React.ComponentProps<'div'>) => {
   const inputOTPContext = React.useContext(OTPInputContext)
   const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index]
 
@@ -62,12 +66,7 @@ const InputOTPSlot = ({ ref, index, className, ...props }) => {
 }
 InputOTPSlot.displayName = 'InputOTPSlot'
 
-const InputOTPSeparator = ({
-  ref,
-  ...props
-}: React.ComponentPropsWithoutRef<'div'> & {
-  ref: React.RefObject<React.ElementRef<'div'>>
-}) => (
+const InputOTPSeparator = ({ ref, ...props }: React.ComponentProps<'div'>) => (
   <div ref={ref} role="separator" {...props}>
     <Dot />
   </div>

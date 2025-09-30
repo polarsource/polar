@@ -19,9 +19,7 @@ const SheetOverlay = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay> & {
-  ref: React.RefObject<React.ElementRef<typeof SheetPrimitive.Overlay>>
-}) => (
+}: React.ComponentProps<typeof SheetPrimitive.Overlay>) => (
   <SheetPrimitive.Overlay
     className={cn(
       'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80',
@@ -63,7 +61,7 @@ const SheetContent = ({
   children,
   ...props
 }: SheetContentProps & {
-  ref: React.RefObject<React.ElementRef<typeof SheetPrimitive.Content>>
+  ref?: React.Ref<React.ComponentRef<typeof SheetPrimitive.Content>>
 }) => (
   <SheetPortal>
     <SheetOverlay />
@@ -114,9 +112,7 @@ const SheetTitle = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof SheetPrimitive.Title> & {
-  ref: React.RefObject<React.ElementRef<typeof SheetPrimitive.Title>>
-}) => (
+}: React.ComponentProps<typeof SheetPrimitive.Title>) => (
   <SheetPrimitive.Title
     ref={ref}
     className={cn('text-foreground text-lg font-semibold', className)}
@@ -129,9 +125,7 @@ const SheetDescription = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof SheetPrimitive.Description> & {
-  ref: React.RefObject<React.ElementRef<typeof SheetPrimitive.Description>>
-}) => (
+}: React.ComponentProps<typeof SheetPrimitive.Description>) => (
   <SheetPrimitive.Description
     ref={ref}
     className={cn('text-muted-foreground text-sm', className)}

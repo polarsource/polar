@@ -48,6 +48,11 @@ const Button = ({
   children,
   type = 'button',
   ...props
+}: ButtonProps & {
+  ref?: React.RefObject<HTMLButtonElement>
+  wrapperClassNames?: string
+  loading?: boolean
+  fullWidth?: boolean
 }) => {
   return (
     <ShadcnButton
@@ -126,7 +131,7 @@ export const RawButton = ({
   children,
   ...props
 }: ButtonProps & {
-  ref: React.RefObject<HTMLButtonElement>
+  ref?: React.RefObject<HTMLButtonElement>
 }) => {
   return (
     <ShadcnButton

@@ -14,9 +14,7 @@ const Card = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof CardPrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof CardPrimitive>>
-}) => (
+}: React.ComponentProps<typeof CardPrimitive>) => (
   <CardPrimitive
     ref={ref}
     className={twMerge(
@@ -32,9 +30,7 @@ const CardHeader = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof CardHeaderPrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof CardHeaderPrimitive>>
-}) => (
+}: React.ComponentProps<typeof CardHeaderPrimitive>) => (
   <CardHeaderPrimitive
     ref={ref}
     className={twMerge('', className)}
@@ -47,9 +43,7 @@ const CardTitle = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof CardTitlePrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof CardTitlePrimitive>>
-}) => (
+}: React.ComponentProps<typeof CardTitlePrimitive>) => (
   <CardTitlePrimitive ref={ref} className={twMerge('', className)} {...props} />
 )
 CardTitle.displayName = 'CardTitle'
@@ -58,9 +52,7 @@ const CardDescription = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof CardDescriptionPrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof CardDescriptionPrimitive>>
-}) => (
+}: React.ComponentProps<typeof CardDescriptionPrimitive>) => (
   <CardDescriptionPrimitive
     ref={ref}
     className={twMerge('dark:text-polar-400 text-sm text-gray-400', className)}
@@ -73,9 +65,7 @@ const CardContent = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof CardContentPrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof CardContentPrimitive>>
-}) => (
+}: React.ComponentProps<typeof CardContentPrimitive>) => (
   <CardContentPrimitive
     ref={ref}
     className={twMerge('', className)}
@@ -88,9 +78,7 @@ const CardFooter = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof CardFooterPrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof CardFooterPrimitive>>
-}) => (
+}: React.ComponentProps<typeof CardFooterPrimitive>) => (
   <CardFooterPrimitive
     ref={ref}
     className={twMerge('', className)}

@@ -16,9 +16,7 @@ const AccordionItem = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof ShadAccordionItem> & {
-  ref: React.RefObject<React.ElementRef<typeof ShadAccordionItem>>
-}) => (
+}: React.ComponentProps<typeof ShadAccordionItem>) => (
   <ShadAccordionItem
     ref={ref}
     className={cn('rounded-2xl! px-3', className)}
@@ -32,9 +30,7 @@ const AccordionTrigger = ({
   className,
   children,
   ...props
-}: React.ComponentPropsWithoutRef<typeof ShadAccordionTrigger> & {
-  ref: React.RefObject<React.ElementRef<typeof ShadAccordionTrigger>>
-}) => (
+}: React.ComponentProps<typeof ShadAccordionTrigger>) => (
   <ShadAccordionTrigger
     ref={ref}
     className={cn('text-sm', className)}
@@ -49,9 +45,7 @@ const AccordionContent = ({
   ref,
   children,
   ...props
-}: React.ComponentPropsWithoutRef<typeof ShadAccordionContent> & {
-  ref: React.RefObject<React.ElementRef<typeof ShadAccordionContent>>
-}) => (
+}: React.ComponentProps<typeof ShadAccordionContent>) => (
   <ShadAccordionContent ref={ref} {...props}>
     {children}
   </ShadAccordionContent>

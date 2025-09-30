@@ -14,7 +14,7 @@ import { useTheme } from 'next-themes'
 import { twMerge } from 'tailwind-merge'
 
 interface MetricChartProps {
-  ref: React.RefObject<HTMLDivElement | null>
+  ref?: React.RefObject<HTMLDivElement | null>
   data: ParsedMetricPeriod[]
   previousData?: ParsedMetricPeriod[]
   interval: schemas['TimeInterval']
@@ -37,7 +37,7 @@ const MetricChart = ({
   onDataIndexHover,
   simple = false,
 }: MetricChartProps & {
-  ref: React.RefObject<HTMLDivElement>
+  ref?: React.RefObject<HTMLDivElement>
 }) => {
   const { resolvedTheme } = useTheme()
 

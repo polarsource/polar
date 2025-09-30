@@ -14,7 +14,7 @@ const Input = ({
   className,
   ...props
 }: InputProps & {
-  ref: React.RefObject<HTMLInputElement>
+  ref?: React.RefObject<HTMLInputElement>
 }) => {
   return (
     <div className="relative flex flex-1 flex-row rounded-full">

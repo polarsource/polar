@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  countries,
-  getCountryData,
-  getEmojiFlag,
-  TCountryCode,
-} from 'countries-list'
+import { getCountryData, getEmojiFlag, TCountryCode } from 'countries-list'
 
 import {
   Select,
@@ -24,8 +19,6 @@ const getCountryList = (codes: TCountryCode[]) => {
     }))
     .sort((a, b) => a.country.name.localeCompare(b.country.name))
 }
-
-const countryCodes = Object.keys(countries) as TCountryCode[]
 
 const CountryPicker = ({
   allowedCountries,

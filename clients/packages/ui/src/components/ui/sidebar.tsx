@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/tooltip'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
+import { ComponentProps } from 'react'
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -56,7 +57,15 @@ const SidebarProvider = ({
   style,
   children,
   ...props
-}) => {
+}: {
+  ref?: React.RefObject<HTMLDivElement>
+  defaultOpen?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  className?: string
+  style?: React.CSSProperties
+  children: React.ReactNode
+} & React.ComponentProps<'div'>) => {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
@@ -151,7 +160,14 @@ const Sidebar = ({
   className,
   children,
   ...props
-}) => {
+}: {
+  ref?: React.RefObject<HTMLDivElement>
+  side?: ComponentProps<typeof SheetContent>['side']
+  variant?: 'sidebar' | 'floating' | 'inset'
+  collapsible?: 'none' | 'offcanvas'
+  className?: string
+  children: React.ReactNode
+} & React.ComponentProps<typeof Sheet>) => {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
   if (collapsible === 'none') {
@@ -240,9 +256,7 @@ const SidebarTrigger = ({
   className,
   onClick,
   ...props
-}: React.ComponentProps<typeof Button> & {
-  ref: React.RefObject<React.ElementRef<typeof Button>>
-}) => {
+}: React.ComponentProps<typeof Button>) => {
   const { toggleSidebar } = useSidebar()
 
   return (
@@ -269,9 +283,7 @@ const SidebarRail = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<'button'> & {
-  ref: React.RefObject<HTMLButtonElement>
-}) => {
+}: React.ComponentProps<'button'>) => {
   const { toggleSidebar } = useSidebar()
 
   return (
@@ -301,9 +313,7 @@ const SidebarInset = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<'main'> & {
-  ref: React.RefObject<HTMLDivElement>
-}) => {
+}: React.ComponentProps<'main'>) => {
   return (
     <main
       ref={ref}
@@ -322,9 +332,7 @@ const SidebarInput = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<typeof Input> & {
-  ref: React.RefObject<React.ElementRef<typeof Input>>
-}) => {
+}: React.ComponentProps<typeof Input>) => {
   return (
     <Input
       ref={ref}
@@ -343,9 +351,7 @@ const SidebarHeader = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<'div'> & {
-  ref: React.RefObject<HTMLDivElement>
-}) => {
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       ref={ref}
@@ -361,9 +367,7 @@ const SidebarFooter = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<'div'> & {
-  ref: React.RefObject<HTMLDivElement>
-}) => {
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       ref={ref}
@@ -379,9 +383,7 @@ const SidebarSeparator = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<typeof Separator> & {
-  ref: React.RefObject<React.ElementRef<typeof Separator>>
-}) => {
+}: React.ComponentProps<typeof Separator>) => {
   return (
     <Separator
       ref={ref}
@@ -397,9 +399,7 @@ const SidebarContent = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<'div'> & {
-  ref: React.RefObject<HTMLDivElement>
-}) => {
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       ref={ref}
@@ -418,9 +418,7 @@ const SidebarGroup = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<'div'> & {
-  ref: React.RefObject<HTMLDivElement>
-}) => {
+}: React.ComponentProps<'div'>) => {
   return (
     <div
       ref={ref}
@@ -432,7 +430,14 @@ const SidebarGroup = ({
 }
 SidebarGroup.displayName = 'SidebarGroup'
 
-const SidebarGroupLabel = ({ ref, className, asChild = false, ...props }) => {
+const SidebarGroupLabel = ({
+  ref,
+  className,
+  asChild = false,
+  ...props
+}: {
+  asChild?: boolean
+} & React.ComponentProps<'div'>) => {
   const Comp = asChild ? Slot : 'div'
 
   return (
@@ -450,7 +455,14 @@ const SidebarGroupLabel = ({ ref, className, asChild = false, ...props }) => {
 }
 SidebarGroupLabel.displayName = 'SidebarGroupLabel'
 
-const SidebarGroupAction = ({ ref, className, asChild = false, ...props }) => {
+const SidebarGroupAction = ({
+  ref,
+  className,
+  asChild = false,
+  ...props
+}: {
+  asChild?: boolean
+} & React.ComponentProps<'button'>) => {
   const Comp = asChild ? Slot : 'button'
 
   return (
@@ -474,9 +486,7 @@ const SidebarGroupContent = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<'div'> & {
-  ref: React.RefObject<HTMLDivElement>
-}) => (
+}: React.ComponentProps<'div'>) => (
   <div
     ref={ref}
     data-sidebar="group-content"
@@ -490,9 +500,7 @@ const SidebarMenu = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<'ul'> & {
-  ref: React.RefObject<HTMLUListElement>
-}) => (
+}: React.ComponentProps<'ul'>) => (
   <ul
     ref={ref}
     data-sidebar="menu"
@@ -507,7 +515,7 @@ const SidebarMenuItem = ({
   className,
   ...props
 }: React.ComponentProps<'li'> & {
-  ref: React.RefObject<HTMLLIElement>
+  ref?: React.RefObject<HTMLLIElement>
 }) => (
   <li
     ref={ref}
@@ -550,7 +558,13 @@ const SidebarMenuButton = ({
   tooltip,
   className,
   ...props
-}) => {
+}: {
+  asChild?: boolean
+  isActive?: boolean
+  variant?: 'default' | 'outline'
+  size?: 'default' | 'sm' | 'lg'
+  tooltip?: string | { children: string }
+} & React.ComponentProps<'button'>) => {
   const Comp = asChild ? Slot : 'button'
   const { isMobile, state } = useSidebar()
 
@@ -595,7 +609,10 @@ const SidebarMenuAction = ({
   asChild = false,
   showOnHover = false,
   ...props
-}) => {
+}: {
+  asChild?: boolean
+  showOnHover?: boolean
+} & React.ComponentProps<'button'>) => {
   const Comp = asChild ? Slot : 'button'
 
   return (
@@ -624,9 +641,7 @@ const SidebarMenuBadge = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<'div'> & {
-  ref: React.RefObject<HTMLDivElement>
-}) => (
+}: React.ComponentProps<'div'>) => (
   <div
     ref={ref}
     data-sidebar="menu-badge"
@@ -649,7 +664,9 @@ const SidebarMenuSkeleton = ({
   className,
   showIcon = false,
   ...props
-}) => {
+}: {
+  showIcon?: boolean
+} & React.ComponentProps<'div'>) => {
   // Random width between 50 to 90%.
   const width = React.useMemo(() => {
     return `${Math.floor(Math.random() * 40) + 50}%`
@@ -686,9 +703,7 @@ const SidebarMenuSub = ({
   ref,
   className,
   ...props
-}: React.ComponentProps<'ul'> & {
-  ref: React.RefObject<HTMLUListElement>
-}) => (
+}: React.ComponentProps<'ul'>) => (
   <ul
     ref={ref}
     data-sidebar="menu-sub"
@@ -702,12 +717,9 @@ const SidebarMenuSub = ({
 )
 SidebarMenuSub.displayName = 'SidebarMenuSub'
 
-const SidebarMenuSubItem = ({
-  ref,
-  ...props
-}: React.ComponentProps<'li'> & {
-  ref: React.RefObject<HTMLLIElement>
-}) => <li ref={ref} {...props} />
+const SidebarMenuSubItem = ({ ref, ...props }: React.ComponentProps<'li'>) => (
+  <li ref={ref} {...props} />
+)
 SidebarMenuSubItem.displayName = 'SidebarMenuSubItem'
 
 const SidebarMenuSubButton = ({
@@ -717,7 +729,11 @@ const SidebarMenuSubButton = ({
   isActive,
   className,
   ...props
-}) => {
+}: {
+  asChild?: boolean
+  size?: 'sm' | 'md'
+  isActive?: boolean
+} & React.ComponentProps<'a'>) => {
   const Comp = asChild ? Slot : 'a'
 
   return (

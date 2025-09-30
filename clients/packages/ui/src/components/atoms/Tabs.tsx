@@ -9,7 +9,12 @@ import { twMerge } from 'tailwind-merge'
 
 const Tabs = TabsPrimitive
 
-const TabsList = ({ ref, className, vertical, ...props }) => (
+const TabsList = ({
+  ref,
+  className,
+  vertical,
+  ...props
+}: React.ComponentProps<typeof TabsListPrimitive> & { vertical?: boolean }) => (
   <TabsListPrimitive
     ref={ref}
     className={twMerge(
@@ -24,12 +29,16 @@ const TabsList = ({ ref, className, vertical, ...props }) => (
 )
 TabsList.displayName = TabsListPrimitive.displayName
 
-const TabsTrigger = ({ ref, className, size = 'default', ...props }) => (
+const TabsTrigger = ({
+  ref,
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsTriggerPrimitive>) => (
   <TabsTriggerPrimitive
     ref={ref}
     className={twMerge(
       'dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 dark:text-polar-500 px-4 text-gray-400 hover:text-black data-[state=active]:rounded-xl data-[state=active]:bg-gray-100 data-[state=active]:text-black data-[state=active]:shadow-none dark:data-[state=active]:text-white',
-      size === 'default' ? 'text-sm' : 'text-xs',
+      'text-sm',
       className,
     )}
     {...props}
@@ -41,9 +50,7 @@ const TabsContent = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof TabsContentPrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof TabsContentPrimitive>>
-}) => (
+}: React.ComponentProps<typeof TabsContentPrimitive>) => (
   <TabsContentPrimitive ref={ref} className={twMerge(className)} {...props} />
 )
 TabsContent.displayName = TabsContentPrimitive.displayName

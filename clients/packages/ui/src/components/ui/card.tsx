@@ -7,7 +7,7 @@ const Card = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
-  ref: React.RefObject<HTMLDivElement>
+  ref?: React.RefObject<HTMLDivElement>
 }) => (
   <div
     ref={ref}
@@ -25,7 +25,7 @@ const CardHeader = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
-  ref: React.RefObject<HTMLDivElement>
+  ref?: React.RefObject<HTMLDivElement>
 }) => (
   <div
     ref={ref}
@@ -40,7 +40,7 @@ const CardTitle = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
-  ref: React.RefObject<HTMLDivElement>
+  ref?: React.RefObject<HTMLDivElement>
 }) => (
   <div
     ref={ref}
@@ -58,7 +58,7 @@ const CardDescription = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
-  ref: React.RefObject<HTMLDivElement>
+  ref?: React.RefObject<HTMLDivElement>
 }) => (
   <div
     ref={ref}
@@ -73,7 +73,7 @@ const CardContent = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
-  ref: React.RefObject<HTMLDivElement>
+  ref?: React.RefObject<HTMLDivElement>
 }) => <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
 CardContent.displayName = 'CardContent'
 
@@ -82,7 +82,7 @@ const CardFooter = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
-  ref: React.RefObject<HTMLDivElement>
+  ref?: React.RefObject<HTMLDivElement>
 }) => (
   <div
     ref={ref}

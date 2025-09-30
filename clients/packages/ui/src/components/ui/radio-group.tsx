@@ -10,9 +10,7 @@ const RadioGroup = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root> & {
-  ref: React.RefObject<React.ElementRef<typeof RadioGroupPrimitive.Root>>
-}) => {
+}: React.ComponentProps<typeof RadioGroupPrimitive.Root>) => {
   return (
     <RadioGroupPrimitive.Root
       className={cn('grid gap-2', className)}
@@ -27,9 +25,7 @@ const RadioGroupItem = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item> & {
-  ref: React.RefObject<React.ElementRef<typeof RadioGroupPrimitive.Item>>
-}) => {
+}: React.ComponentProps<typeof RadioGroupPrimitive.Item>) => {
   return (
     <RadioGroupPrimitive.Item
       ref={ref}

@@ -58,7 +58,7 @@ const MetricChartBox = ({
   shareable = true,
   simple = false,
 }: MetricChartBoxProps & {
-  ref: React.RefObject<HTMLDivElement>
+  ref?: React.RefObject<HTMLDivElement>
 }) => {
   const { isShown: isModalOpen, show: showModal, hide: hideModal } = useModal()
 

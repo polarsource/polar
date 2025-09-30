@@ -26,9 +26,7 @@ const SelectTrigger = ({
   className,
   children,
   ...props
-}: React.ComponentPropsWithoutRef<typeof SelectTriggerPrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof SelectTriggerPrimitive>>
-}) => (
+}: React.ComponentProps<typeof SelectTriggerPrimitive>) => (
   <SelectTriggerPrimitive
     ref={ref}
     className={twMerge(
@@ -48,9 +46,7 @@ const SelectContent = ({
   children,
   position = 'popper',
   ...props
-}: React.ComponentPropsWithoutRef<typeof SelectContentPrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof SelectContentPrimitive>>
-}) => (
+}: React.ComponentProps<typeof SelectContentPrimitive>) => (
   <SelectContentPrimitive
     ref={ref}
     className={twMerge('dark:bg-polar-800 rounded-xl border-none', className)}
@@ -65,9 +61,9 @@ const SelectLabel = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof SelectLabelPrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof SelectLabelPrimitive>>
-}) => <SelectLabelPrimitive ref={ref} className={className} {...props} />
+}: React.ComponentProps<typeof SelectLabelPrimitive>) => (
+  <SelectLabelPrimitive ref={ref} className={className} {...props} />
+)
 SelectLabel.displayName = SelectLabelPrimitive.displayName
 
 const SelectItem = ({
@@ -75,9 +71,7 @@ const SelectItem = ({
   className,
   children,
   ...props
-}: React.ComponentPropsWithoutRef<typeof SelectItemPrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof SelectItemPrimitive>>
-}) => (
+}: React.ComponentProps<typeof SelectItemPrimitive>) => (
   <SelectItemPrimitive
     ref={ref}
     className={twMerge(className, 'rounded-lg')}
@@ -92,9 +86,7 @@ const SelectSeparator = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof SelectSeparatorPrimitive> & {
-  ref: React.RefObject<React.ElementRef<typeof SelectSeparatorPrimitive>>
-}) => (
+}: React.ComponentProps<typeof SelectSeparatorPrimitive>) => (
   <SelectSeparatorPrimitive
     ref={ref}
     className={twMerge('', className)}

@@ -6,7 +6,7 @@ const ShadowBox = ({
   ref,
   ...props
 }: PropsWithChildren<{ className?: string }> & {
-  ref: React.RefObject<HTMLDivElement>
+  ref?: React.RefObject<HTMLDivElement>
 }) => (
   <div
     ref={ref}

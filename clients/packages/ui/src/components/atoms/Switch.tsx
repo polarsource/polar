@@ -8,9 +8,7 @@ const Switch = ({
   ref,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> & {
-  ref: React.RefObject<React.ElementRef<typeof SwitchPrimitives.Root>>
-}) => (
+}: React.ComponentProps<typeof SwitchPrimitives.Root>) => (
   <SwitchPrimitives.Root
     className={twMerge(
       'focus-visible:ring-ring focus-visible:ring-offset-background data-[state=checked]:bg-primary dark:data-[state=unchecked]:bg-polar-700 peer inline-flex h-[18px] w-[37px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=unchecked]:bg-gray-200',

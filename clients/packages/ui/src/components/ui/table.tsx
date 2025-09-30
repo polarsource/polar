@@ -7,7 +7,7 @@ const Table = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableElement> & {
-  ref: React.RefObject<HTMLTableElement>
+  ref?: React.RefObject<HTMLTableElement>
 }) => (
   <div className="relative w-full overflow-auto">
     <table
@@ -24,7 +24,7 @@ const TableHeader = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableSectionElement> & {
-  ref: React.RefObject<HTMLTableSectionElement>
+  ref?: React.RefObject<HTMLTableSectionElement>
 }) => (
   <thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />
 )
@@ -35,7 +35,7 @@ const TableBody = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableSectionElement> & {
-  ref: React.RefObject<HTMLTableSectionElement>
+  ref?: React.RefObject<HTMLTableSectionElement>
 }) => (
   <tbody
     ref={ref}
@@ -50,7 +50,7 @@ const TableFooter = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableSectionElement> & {
-  ref: React.RefObject<HTMLTableSectionElement>
+  ref?: React.RefObject<HTMLTableSectionElement>
 }) => (
   <tfoot
     ref={ref}
@@ -68,7 +68,7 @@ const TableRow = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableRowElement> & {
-  ref: React.RefObject<HTMLTableRowElement>
+  ref?: React.RefObject<HTMLTableRowElement>
 }) => (
   <tr
     ref={ref}
@@ -86,7 +86,7 @@ const TableHead = ({
   className,
   ...props
 }: React.ThHTMLAttributes<HTMLTableCellElement> & {
-  ref: React.RefObject<HTMLTableCellElement>
+  ref?: React.RefObject<HTMLTableCellElement>
 }) => (
   <th
     ref={ref}
@@ -104,7 +104,7 @@ const TableCell = ({
   className,
   ...props
 }: React.TdHTMLAttributes<HTMLTableCellElement> & {
-  ref: React.RefObject<HTMLTableCellElement>
+  ref?: React.RefObject<HTMLTableCellElement>
 }) => (
   <td
     ref={ref}
@@ -119,7 +119,7 @@ const TableCaption = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableCaptionElement> & {
-  ref: React.RefObject<HTMLTableCaptionElement>
+  ref?: React.RefObject<HTMLTableCaptionElement>
 }) => (
   <caption
     ref={ref}

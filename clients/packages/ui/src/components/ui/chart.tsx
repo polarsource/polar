@@ -34,7 +34,22 @@ function useChart() {
   return context
 }
 
-const ChartContainer = ({ ref, id, className, children, config, ...props }) => {
+const ChartContainer = ({
+  ref,
+  id,
+  className,
+  children,
+  config,
+  ...props
+}: {
+  config: ChartConfig
+  ref?: React.RefObject<HTMLDivElement>
+  id?: string
+  className?: string
+  children: React.ComponentProps<
+    typeof RechartsPrimitive.ResponsiveContainer
+  >['children']
+}) => {
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, '')}`
 
@@ -109,6 +124,15 @@ const ChartTooltipContent = ({
   color,
   nameKey,
   labelKey,
+}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> & {
+  ref?: React.RefObject<HTMLDivElement>
+  className?: string
+  indicator?: 'line' | 'dot' | 'dashed'
+  hideLabel?: boolean
+  hideIndicator?: boolean
+  color: string
+  nameKey: string
+  labelKey: string
 }) => {
   const { config } = useChart()
 
@@ -243,6 +267,10 @@ const ChartLegendContent = ({
   payload,
   verticalAlign = 'bottom',
   nameKey,
+}: React.ComponentProps<typeof RechartsPrimitive.Legend> & {
+  ref?: React.RefObject<HTMLDivElement>
+  hideIcon?: boolean
+  nameKey?: string
 }) => {
   const { config } = useChart()
 

@@ -4227,6 +4227,9 @@ export interface components {
       state?: string | null
       /**
        * CountryAlpha2
+       * @example US
+       * @example SE
+       * @example FR
        * @enum {string}
        */
       country:
@@ -4494,6 +4497,9 @@ export interface components {
       state?: string | null
       /**
        * CountryAlpha2Input
+       * @example US
+       * @example SE
+       * @example FR
        * @enum {string}
        */
       country:
@@ -4751,6 +4757,7 @@ export interface components {
     AlreadyActiveSubscriptionError: {
       /**
        * Error
+       * @example AlreadyActiveSubscriptionError
        * @constant
        */
       error: 'AlreadyActiveSubscriptionError'
@@ -4761,6 +4768,7 @@ export interface components {
     AlreadyCanceledSubscription: {
       /**
        * Error
+       * @example AlreadyCanceledSubscription
        * @constant
        */
       error: 'AlreadyCanceledSubscription'
@@ -5168,6 +5176,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -5722,11 +5731,13 @@ export interface components {
       /**
        * Repository Owner
        * @description The owner of the repository.
+       * @example polarsource
        */
       repository_owner: string
       /**
        * Repository Name
        * @description The name of the repository.
+       * @example private_repo
        */
       repository_name: string
       /**
@@ -5744,11 +5755,13 @@ export interface components {
       /**
        * Repository Owner
        * @description The owner of the repository.
+       * @example polarsource
        */
       repository_owner: string
       /**
        * Repository Name
        * @description The name of the repository.
+       * @example private_repo
        */
       repository_name: string
       /**
@@ -5818,11 +5831,13 @@ export interface components {
       /**
        * Repository Owner
        * @description The owner of the repository.
+       * @example polarsource
        */
       repository_owner: string
       /**
        * Repository Name
        * @description The name of the repository.
+       * @example private_repo
        */
       repository_name: string
     }
@@ -6459,6 +6474,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -7010,6 +7026,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -7080,6 +7097,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -7152,50 +7170,64 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** @description The payment processor. */
+      /**
+       * @description The payment processor.
+       * @example stripe
+       */
       processor: components['schemas']['PaymentProcessor']
-      /** @description The payment status. */
+      /**
+       * @description The payment status.
+       * @example succeeded
+       */
       status: components['schemas']['PaymentStatus']
       /**
        * Amount
        * @description The payment amount in cents.
+       * @example 1000
        */
       amount: number
       /**
        * Currency
        * @description The payment currency. Currently, only `usd` is supported.
+       * @example usd
        */
       currency: string
       /**
        * Method
        * @description The payment method used.
+       * @example card
        * @constant
        */
       method: 'card'
       /**
        * Decline Reason
        * @description Error code, if the payment was declined.
+       * @example insufficient_funds
        */
       decline_reason: string | null
       /**
        * Decline Message
        * @description Human-reasable error message, if the payment was declined.
+       * @example Your card has insufficient funds.
        */
       decline_message: string | null
       /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization that owns the payment.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
        * Checkout Id
        * @description The ID of the checkout session associated with this payment.
+       * @example e4b478fa-cd25-4253-9f1f-8a41e6370ede
        */
       checkout_id: string | null
       /**
        * Order Id
        * @description The ID of the order associated with this payment.
+       * @example e4b478fa-cd25-4253-9f1f-8a41e6370ede
        */
       order_id: string | null
       /**
@@ -7216,11 +7248,14 @@ export interface components {
       /**
        * Brand
        * @description The brand of the card used for the payment.
+       * @example visa
+       * @example amex
        */
       brand: string
       /**
        * Last4
        * @description The last 4 digits of the card number.
+       * @example 4242
        */
       last4: string
     }
@@ -7740,6 +7775,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /** Products */
@@ -9521,6 +9557,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the custom field.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       properties: components['schemas']['CustomFieldCheckboxProperties']
@@ -9805,6 +9842,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the custom field.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       properties: components['schemas']['CustomFieldDateProperties']
@@ -9867,6 +9905,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the custom field.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       properties: components['schemas']['CustomFieldNumberProperties']
@@ -9929,6 +9968,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the custom field.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       properties: components['schemas']['CustomFieldSelectProperties']
@@ -10009,6 +10049,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the custom field.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       properties: components['schemas']['CustomFieldTextProperties']
@@ -10213,6 +10254,7 @@ export interface components {
        * Id
        * Format: uuid4
        * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
        */
       id: string
       /**
@@ -10233,21 +10275,25 @@ export interface components {
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
        */
       external_id: string | null
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
        */
       email: string
       /**
        * Email Verified
        * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
        */
       email_verified: boolean
       /**
        * Name
        * @description The name of the customer.
+       * @example John Doe
        */
       name: string | null
       billing_address: components['schemas']['Address'] | null
@@ -10257,6 +10303,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -10264,7 +10311,10 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Avatar Url */
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
       readonly avatar_url: string
     }
     /**
@@ -10280,6 +10330,7 @@ export interface components {
       /**
        * Currency
        * @description The currency code (ISO 4217) for the balance amount.
+       * @example USD
        */
       currency: string
     }
@@ -10673,17 +10724,20 @@ export interface components {
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
        */
       external_id?: string | null
       /**
        * Email
        * Format: email
        * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
        */
       email: string
       /**
        * Name
        * @description The name of the customer.
+       * @example John Doe
        */
       name?: string | null
       billing_address?: components['schemas']['AddressInput'] | null
@@ -10718,27 +10772,32 @@ export interface components {
        * Customer Id
        * Format: uuid4
        * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
        */
       customer_id: string
       /**
        * Meter Id
        * Format: uuid4
        * @description The ID of the meter.
+       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
        */
       meter_id: string
       /**
        * Consumed Units
        * @description The number of consumed units.
+       * @example 25
        */
       consumed_units: number
       /**
        * Credited Units
        * @description The number of credited units.
+       * @example 100
        */
       credited_units: number
       /**
        * Balance
        * @description The balance of the meter, i.e. the difference between credited and consumed units.
+       * @example 75
        */
       balance: number
       meter: components['schemas']['CustomerCustomerMeterMeter']
@@ -10813,27 +10872,32 @@ export interface components {
        * Customer Id
        * Format: uuid4
        * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
        */
       customer_id: string
       /**
        * Meter Id
        * Format: uuid4
        * @description The ID of the meter.
+       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
        */
       meter_id: string
       /**
        * Consumed Units
        * @description The number of consumed units.
+       * @example 25
        */
       consumed_units: number
       /**
        * Credited Units
        * @description The number of credited units.
+       * @example 100
        */
       credited_units: number
       /**
        * Balance
        * @description The balance of the meter, i.e. the difference between credited and consumed units.
+       * @example 75
        */
       balance: number
       /** @description The customer associated with this meter. */
@@ -10868,6 +10932,7 @@ export interface components {
     CustomerNotReady: {
       /**
        * Error
+       * @example CustomerNotReady
        * @constant
        */
       error: 'CustomerNotReady'
@@ -10898,10 +10963,12 @@ export interface components {
        * @description Last modification timestamp of the object.
        */
       modified_at: string | null
+      /** @example paid */
       status: components['schemas']['OrderStatus']
       /**
        * Paid
        * @description Whether the order has been paid for.
+       * @example true
        */
       paid: boolean
       /**
@@ -11614,6 +11681,7 @@ export interface components {
        * Id
        * Format: uuid4
        * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
        */
       id: string
       /**
@@ -11634,21 +11702,25 @@ export interface components {
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
        */
       external_id: string | null
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
        */
       email: string
       /**
        * Email Verified
        * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
        */
       email_verified: boolean
       /**
        * Name
        * @description The name of the customer.
+       * @example John Doe
        */
       name: string | null
       billing_address: components['schemas']['Address'] | null
@@ -11658,6 +11730,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -11680,7 +11753,10 @@ export interface components {
        * @description The customer's active meters.
        */
       active_meters: components['schemas']['CustomerStateMeter'][]
-      /** Avatar Url */
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
       readonly avatar_url: string
     }
     /**
@@ -11692,6 +11768,7 @@ export interface components {
        * Id
        * Format: uuid4
        * @description The ID of the grant.
+       * @example d322132c-a9d0-4e0d-b8d3-d81ad021a3a9
        */
       id: string
       /**
@@ -11709,19 +11786,27 @@ export interface components {
        * Granted At
        * Format: date-time
        * @description The timestamp when the benefit was granted.
+       * @example 2025-01-03T13:37:00Z
        */
       granted_at: string
       /**
        * Benefit Id
        * Format: uuid4
        * @description The ID of the benefit concerned by this grant.
+       * @example 397a17aa-15cf-4cb4-9333-18040203cf98
        */
       benefit_id: string
-      /** @description The type of the benefit concerned by this grant. */
+      /**
+       * @description The type of the benefit concerned by this grant.
+       * @example custom
+       */
       benefit_type: components['schemas']['BenefitType']
       /**
        * Benefit Metadata
        * @description The metadata of the benefit concerned by this grant.
+       * @example {
+       *       "key": "value"
+       *     }
        */
       benefit_metadata: {
         [key: string]: string | number | boolean
@@ -11760,21 +11845,25 @@ export interface components {
        * Meter Id
        * Format: uuid4
        * @description The ID of the meter.
+       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
        */
       meter_id: string
       /**
        * Consumed Units
        * @description The number of consumed units.
+       * @example 25
        */
       consumed_units: number
       /**
        * Credited Units
        * @description The number of credited units.
+       * @example 100
        */
       credited_units: number
       /**
        * Balance
        * @description The balance of the meter, i.e. the difference between credited and consumed units.
+       * @example 75
        */
       balance: number
     }
@@ -11787,6 +11876,7 @@ export interface components {
        * Id
        * Format: uuid4
        * @description The ID of the subscription.
+       * @example e5149aae-e521-42b9-b24c-abb3d71eea2e
        */
       id: string
       /**
@@ -11813,17 +11903,21 @@ export interface components {
       }
       /**
        * Status
+       * @example active
+       * @example trialing
        * @enum {string}
        */
       status: 'active' | 'trialing'
       /**
        * Amount
        * @description The amount of the subscription.
+       * @example 1000
        */
       amount: number
       /**
        * Currency
        * @description The currency of the subscription.
+       * @example usd
        */
       currency: string
       /** @description The interval at which the subscription recurs. */
@@ -11832,52 +11926,62 @@ export interface components {
        * Current Period Start
        * Format: date-time
        * @description The start timestamp of the current billing period.
+       * @example 2025-02-03T13:37:00Z
        */
       current_period_start: string
       /**
        * Current Period End
        * @description The end timestamp of the current billing period.
+       * @example 2025-03-03T13:37:00Z
        */
       current_period_end: string | null
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
+       * @example 2025-02-03T13:37:00Z
        */
       trial_start: string | null
       /**
        * Trial End
        * @description The end timestamp of the trial period, if any.
+       * @example 2025-03-03T13:37:00Z
        */
       trial_end: string | null
       /**
        * Cancel At Period End
        * @description Whether the subscription will be canceled at the end of the current period.
+       * @example false
        */
       cancel_at_period_end: boolean
       /**
        * Canceled At
        * @description The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`.
+       * @example null
        */
       canceled_at: string | null
       /**
        * Started At
        * @description The timestamp when the subscription started.
+       * @example 2025-01-03T13:37:00Z
        */
       started_at: string | null
       /**
        * Ends At
        * @description The timestamp when the subscription will end.
+       * @example null
        */
       ends_at: string | null
       /**
        * Product Id
        * Format: uuid4
        * @description The ID of the subscribed product.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
       /**
        * Discount Id
        * @description The ID of the applied discount, if any.
+       * @example null
        */
       discount_id: string | null
       /**
@@ -11911,22 +12015,26 @@ export interface components {
       /**
        * Consumed Units
        * @description The number of consumed units so far in this billing period.
+       * @example 25
        */
       consumed_units: number
       /**
        * Credited Units
        * @description The number of credited units so far in this billing period.
+       * @example 100
        */
       credited_units: number
       /**
        * Amount
        * @description The amount due in cents so far in this billing period.
+       * @example 0
        */
       amount: number
       /**
        * Meter Id
        * Format: uuid4
        * @description The ID of the meter.
+       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
        */
       meter_id: string
     }
@@ -12103,22 +12211,26 @@ export interface components {
       /**
        * Consumed Units
        * @description The number of consumed units so far in this billing period.
+       * @example 25
        */
       consumed_units: number
       /**
        * Credited Units
        * @description The number of credited units so far in this billing period.
+       * @example 100
        */
       credited_units: number
       /**
        * Amount
        * @description The amount due in cents so far in this billing period.
+       * @example 0
        */
       amount: number
       /**
        * Meter Id
        * Format: uuid4
        * @description The ID of the meter.
+       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
        */
       meter_id: string
       meter: components['schemas']['CustomerSubscriptionMeterMeter']
@@ -12273,11 +12385,13 @@ export interface components {
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
        */
       email?: string | null
       /**
        * Name
        * @description The name of the customer.
+       * @example John Doe
        */
       name?: string | null
       billing_address?: components['schemas']['AddressInput'] | null
@@ -12286,6 +12400,7 @@ export interface components {
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
        */
       external_id?: string | null
     }
@@ -12311,11 +12426,13 @@ export interface components {
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
        */
       email?: string | null
       /**
        * Name
        * @description The name of the customer.
+       * @example John Doe
        */
       name?: string | null
       billing_address?: components['schemas']['AddressInput'] | null
@@ -12426,6 +12543,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /** Products */
@@ -12494,6 +12612,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
     }
@@ -12635,6 +12754,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /** Products */
@@ -12705,6 +12825,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
     }
@@ -12850,6 +12971,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /** Products */
@@ -12916,6 +13038,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
     }
@@ -13052,6 +13175,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /** Products */
@@ -13120,6 +13244,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
     }
@@ -13596,6 +13721,7 @@ export interface components {
     ExpiredCheckoutError: {
       /**
        * Error
+       * @example ExpiredCheckoutError
        * @constant
        */
       error: 'ExpiredCheckoutError'
@@ -13767,49 +13893,63 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** @description The payment processor. */
+      /**
+       * @description The payment processor.
+       * @example stripe
+       */
       processor: components['schemas']['PaymentProcessor']
-      /** @description The payment status. */
+      /**
+       * @description The payment status.
+       * @example succeeded
+       */
       status: components['schemas']['PaymentStatus']
       /**
        * Amount
        * @description The payment amount in cents.
+       * @example 1000
        */
       amount: number
       /**
        * Currency
        * @description The payment currency. Currently, only `usd` is supported.
+       * @example usd
        */
       currency: string
       /**
        * Method
        * @description The payment method used.
+       * @example card
        */
       method: string
       /**
        * Decline Reason
        * @description Error code, if the payment was declined.
+       * @example insufficient_funds
        */
       decline_reason: string | null
       /**
        * Decline Message
        * @description Human-reasable error message, if the payment was declined.
+       * @example Your card has insufficient funds.
        */
       decline_message: string | null
       /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization that owns the payment.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
        * Checkout Id
        * @description The ID of the checkout session associated with this payment.
+       * @example e4b478fa-cd25-4253-9f1f-8a41e6370ede
        */
       checkout_id: string | null
       /**
        * Order Id
        * @description The ID of the order associated with this payment.
+       * @example e4b478fa-cd25-4253-9f1f-8a41e6370ede
        */
       order_id: string | null
       /**
@@ -13884,6 +14024,7 @@ export interface components {
     InvoiceAlreadyExists: {
       /**
        * Error
+       * @example InvoiceAlreadyExists
        * @constant
        */
       error: 'InvoiceAlreadyExists'
@@ -14191,6 +14332,7 @@ export interface components {
        * Id
        * Format: uuid4
        * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
        */
       id: string
       /**
@@ -14211,21 +14353,25 @@ export interface components {
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
        */
       external_id: string | null
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
        */
       email: string
       /**
        * Email Verified
        * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
        */
       email_verified: boolean
       /**
        * Name
        * @description The name of the customer.
+       * @example John Doe
        */
       name: string | null
       billing_address: components['schemas']['Address'] | null
@@ -14235,6 +14381,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -14242,7 +14389,10 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Avatar Url */
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
       readonly avatar_url: string
     }
     /** LicenseKeyDeactivate */
@@ -14915,6 +15065,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -14958,6 +15109,7 @@ export interface components {
       /**
        * Total
        * @description The total quantity for the period.
+       * @example 100
        */
       total: number
     }
@@ -14972,6 +15124,7 @@ export interface components {
       /**
        * Quantity
        * @description The quantity for the current period.
+       * @example 10
        */
       quantity: number
     }
@@ -14996,6 +15149,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -15329,6 +15483,7 @@ export interface components {
     MissingInvoiceBillingDetails: {
       /**
        * Error
+       * @example MissingInvoiceBillingDetails
        * @constant
        */
       error: 'MissingInvoiceBillingDetails'
@@ -15339,6 +15494,7 @@ export interface components {
     NotOpenCheckout: {
       /**
        * Error
+       * @example NotOpenCheckout
        * @constant
        */
       error: 'NotOpenCheckout'
@@ -15349,6 +15505,7 @@ export interface components {
     NotPaidOrder: {
       /**
        * Error
+       * @example NotPaidOrder
        * @constant
        */
       error: 'NotPaidOrder'
@@ -15359,6 +15516,7 @@ export interface components {
     NotPermitted: {
       /**
        * Error
+       * @example NotPermitted
        * @constant
        */
       error: 'NotPermitted'
@@ -15657,10 +15815,12 @@ export interface components {
        * @description Last modification timestamp of the object.
        */
       modified_at: string | null
+      /** @example paid */
       status: components['schemas']['OrderStatus']
       /**
        * Paid
        * @description Whether the order has been paid for.
+       * @example true
        */
       paid: boolean
       /**
@@ -15788,6 +15948,7 @@ export interface components {
        * Id
        * Format: uuid4
        * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
        */
       id: string
       /**
@@ -15808,21 +15969,25 @@ export interface components {
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
        */
       external_id: string | null
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
        */
       email: string
       /**
        * Email Verified
        * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
        */
       email_verified: boolean
       /**
        * Name
        * @description The name of the customer.
+       * @example John Doe
        */
       name: string | null
       billing_address: components['schemas']['Address'] | null
@@ -15832,6 +15997,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -15839,7 +16005,10 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Avatar Url */
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
       readonly avatar_url: string
     }
     /**
@@ -15905,6 +16074,7 @@ export interface components {
     OrderNotEligibleForRetry: {
       /**
        * Error
+       * @example OrderNotEligibleForRetry
        * @constant
        */
       error: 'OrderNotEligibleForRetry'
@@ -16154,6 +16324,7 @@ export interface components {
        * Id
        * Format: uuid4
        * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       id: string
       /**
@@ -16232,6 +16403,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
     }
@@ -16684,6 +16856,7 @@ export interface components {
     PaymentAlreadyInProgress: {
       /**
        * Error
+       * @example PaymentAlreadyInProgress
        * @constant
        */
       error: 'PaymentAlreadyInProgress'
@@ -16694,6 +16867,7 @@ export interface components {
     PaymentError: {
       /**
        * Error
+       * @example PaymentError
        * @constant
        */
       error: 'PaymentError'
@@ -16777,6 +16951,7 @@ export interface components {
     PaymentMethodInUseByActiveSubscription: {
       /**
        * Error
+       * @example PaymentMethodInUseByActiveSubscription
        * @constant
        */
       error: 'PaymentMethodInUseByActiveSubscription'
@@ -16787,6 +16962,7 @@ export interface components {
     PaymentNotReady: {
       /**
        * Error
+       * @example PaymentNotReady
        * @constant
        */
       error: 'PaymentNotReady'
@@ -17992,6 +18168,7 @@ export interface components {
     RefundAmountTooHigh: {
       /**
        * Error
+       * @example RefundAmountTooHigh
        * @constant
        */
       error: 'RefundAmountTooHigh'
@@ -18070,6 +18247,7 @@ export interface components {
     RefundedAlready: {
       /**
        * Error
+       * @example RefundedAlready
        * @constant
        */
       error: 'RefundedAlready'
@@ -18080,6 +18258,7 @@ export interface components {
     ResourceNotFound: {
       /**
        * Error
+       * @example ResourceNotFound
        * @constant
        */
       error: 'ResourceNotFound'
@@ -18647,6 +18826,7 @@ export interface components {
        * Id
        * Format: uuid4
        * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
        */
       id: string
       /**
@@ -18667,21 +18847,25 @@ export interface components {
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
        */
       external_id: string | null
       /**
        * Email
        * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
        */
       email: string
       /**
        * Email Verified
        * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
        */
       email_verified: boolean
       /**
        * Name
        * @description The name of the customer.
+       * @example John Doe
        */
       name: string | null
       billing_address: components['schemas']['Address'] | null
@@ -18691,6 +18875,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -18698,7 +18883,10 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /** Avatar Url */
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
       readonly avatar_url: string
     }
     /**
@@ -18722,6 +18910,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -18758,6 +18947,7 @@ export interface components {
     SubscriptionLocked: {
       /**
        * Error
+       * @example SubscriptionLocked
        * @constant
        */
       error: 'SubscriptionLocked'
@@ -18789,22 +18979,26 @@ export interface components {
       /**
        * Consumed Units
        * @description The number of consumed units so far in this billing period.
+       * @example 25
        */
       consumed_units: number
       /**
        * Credited Units
        * @description The number of credited units so far in this billing period.
+       * @example 100
        */
       credited_units: number
       /**
        * Amount
        * @description The amount due in cents so far in this billing period.
+       * @example 0
        */
       amount: number
       /**
        * Meter Id
        * Format: uuid4
        * @description The ID of the meter.
+       * @example d498a884-e2cd-4d3e-8002-f536468a8b22
        */
       meter_id: string
       /** @description The meter associated with this subscription. */
@@ -18831,6 +19025,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -18940,6 +19135,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -19484,6 +19680,7 @@ export interface components {
     Unauthorized: {
       /**
        * Error
+       * @example Unauthorized
        * @constant
        */
       error: 'Unauthorized'
@@ -19537,6 +19734,7 @@ export interface components {
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
       /**
@@ -19735,6 +19933,7 @@ export interface components {
     WebhookBenefitCreatedPayload: {
       /**
        * Type
+       * @example benefit.created
        * @constant
        */
       type: 'benefit.created'
@@ -19755,6 +19954,7 @@ export interface components {
     WebhookBenefitGrantCreatedPayload: {
       /**
        * Type
+       * @example benefit_grant.created
        * @constant
        */
       type: 'benefit_grant.created'
@@ -19776,6 +19976,7 @@ export interface components {
     WebhookBenefitGrantCycledPayload: {
       /**
        * Type
+       * @example benefit_grant.cycled
        * @constant
        */
       type: 'benefit_grant.cycled'
@@ -19796,6 +19997,7 @@ export interface components {
     WebhookBenefitGrantRevokedPayload: {
       /**
        * Type
+       * @example benefit_grant.revoked
        * @constant
        */
       type: 'benefit_grant.revoked'
@@ -19816,6 +20018,7 @@ export interface components {
     WebhookBenefitGrantUpdatedPayload: {
       /**
        * Type
+       * @example benefit_grant.updated
        * @constant
        */
       type: 'benefit_grant.updated'
@@ -19836,6 +20039,7 @@ export interface components {
     WebhookBenefitUpdatedPayload: {
       /**
        * Type
+       * @example benefit.updated
        * @constant
        */
       type: 'benefit.updated'
@@ -19856,6 +20060,7 @@ export interface components {
     WebhookCheckoutCreatedPayload: {
       /**
        * Type
+       * @example checkout.created
        * @constant
        */
       type: 'checkout.created'
@@ -19875,6 +20080,7 @@ export interface components {
     WebhookCheckoutUpdatedPayload: {
       /**
        * Type
+       * @example checkout.updated
        * @constant
        */
       type: 'checkout.updated'
@@ -19899,6 +20105,7 @@ export interface components {
     WebhookCustomerCreatedPayload: {
       /**
        * Type
+       * @example customer.created
        * @constant
        */
       type: 'customer.created'
@@ -19918,6 +20125,7 @@ export interface components {
     WebhookCustomerDeletedPayload: {
       /**
        * Type
+       * @example customer.deleted
        * @constant
        */
       type: 'customer.deleted'
@@ -19943,6 +20151,7 @@ export interface components {
     WebhookCustomerStateChangedPayload: {
       /**
        * Type
+       * @example customer.state_changed
        * @constant
        */
       type: 'customer.state_changed'
@@ -19966,6 +20175,7 @@ export interface components {
     WebhookCustomerUpdatedPayload: {
       /**
        * Type
+       * @example customer.updated
        * @constant
        */
       type: 'customer.updated'
@@ -20042,6 +20252,7 @@ export interface components {
        * Url
        * Format: uri
        * @description The URL where the webhook events will be sent.
+       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
        */
       url: string
       /** @description The format of the webhook payload. */
@@ -20049,6 +20260,7 @@ export interface components {
       /**
        * Secret
        * @description The secret used to sign the webhook events.
+       * @example polar_whs_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK
        */
       secret: string
       /**
@@ -20072,6 +20284,7 @@ export interface components {
        * Url
        * Format: uri
        * @description The URL where the webhook events will be sent.
+       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
        */
       url: string
       /**
@@ -20214,6 +20427,7 @@ export interface components {
     WebhookOrderCreatedPayload: {
       /**
        * Type
+       * @example order.created
        * @constant
        */
       type: 'order.created'
@@ -20235,6 +20449,7 @@ export interface components {
     WebhookOrderPaidPayload: {
       /**
        * Type
+       * @example order.paid
        * @constant
        */
       type: 'order.paid'
@@ -20254,6 +20469,7 @@ export interface components {
     WebhookOrderRefundedPayload: {
       /**
        * Type
+       * @example order.refunded
        * @constant
        */
       type: 'order.refunded'
@@ -20278,6 +20494,7 @@ export interface components {
     WebhookOrderUpdatedPayload: {
       /**
        * Type
+       * @example order.updated
        * @constant
        */
       type: 'order.updated'
@@ -20297,6 +20514,7 @@ export interface components {
     WebhookOrganizationUpdatedPayload: {
       /**
        * Type
+       * @example organization.updated
        * @constant
        */
       type: 'organization.updated'
@@ -20316,6 +20534,7 @@ export interface components {
     WebhookProductCreatedPayload: {
       /**
        * Type
+       * @example product.created
        * @constant
        */
       type: 'product.created'
@@ -20335,6 +20554,7 @@ export interface components {
     WebhookProductUpdatedPayload: {
       /**
        * Type
+       * @example product.updated
        * @constant
        */
       type: 'product.updated'
@@ -20354,6 +20574,7 @@ export interface components {
     WebhookRefundCreatedPayload: {
       /**
        * Type
+       * @example refund.created
        * @constant
        */
       type: 'refund.created'
@@ -20373,6 +20594,7 @@ export interface components {
     WebhookRefundUpdatedPayload: {
       /**
        * Type
+       * @example refund.updated
        * @constant
        */
       type: 'refund.updated'
@@ -20393,6 +20615,7 @@ export interface components {
     WebhookSubscriptionActivePayload: {
       /**
        * Type
+       * @example subscription.active
        * @constant
        */
       type: 'subscription.active'
@@ -20413,6 +20636,7 @@ export interface components {
     WebhookSubscriptionCanceledPayload: {
       /**
        * Type
+       * @example subscription.canceled
        * @constant
        */
       type: 'subscription.canceled'
@@ -20434,6 +20658,7 @@ export interface components {
     WebhookSubscriptionCreatedPayload: {
       /**
        * Type
+       * @example subscription.created
        * @constant
        */
       type: 'subscription.created'
@@ -20454,6 +20679,7 @@ export interface components {
     WebhookSubscriptionRevokedPayload: {
       /**
        * Type
+       * @example subscription.revoked
        * @constant
        */
       type: 'subscription.revoked'
@@ -20473,6 +20699,7 @@ export interface components {
     WebhookSubscriptionUncanceledPayload: {
       /**
        * Type
+       * @example subscription.uncanceled
        * @constant
        */
       type: 'subscription.uncanceled'
@@ -20496,6 +20723,7 @@ export interface components {
     WebhookSubscriptionUpdatedPayload: {
       /**
        * Type
+       * @example subscription.updated
        * @constant
        */
       type: 'subscription.updated'

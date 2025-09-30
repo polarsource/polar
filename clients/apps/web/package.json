@@ -6,7 +6,7 @@
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "prettier -c . && eslint .",
     "test": "exit 0",
     "typecheck": "tsc --noEmit",
     "analyze": "ANALYZE=true next build"

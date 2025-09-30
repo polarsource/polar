@@ -9,7 +9,8 @@
   "scripts": {
     "generate": "openapi-typescript http://127.0.0.1:8000/openapi.json --enum-values -o ./src/v1.ts && pnpm run build",
     "test:ts": "tsc --noEmit",
-    "build": "rm -rf dist/ && tsup"
+    "build": "rm -rf dist/ && tsup",
+    "lint": "prettier -c ."
   },
   "exports": {
     ".": {

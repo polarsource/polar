@@ -11,7 +11,8 @@
     "directory": "clients/packages/checkout"
   },
   "scripts": {
-    "build": "rm -rf dist/ && tsup"
+    "build": "rm -rf dist/ && tsup",
+    "lint": "prettier -c ."
   },
   "exports": {
     "./embed": {

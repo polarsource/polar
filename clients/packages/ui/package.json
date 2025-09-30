@@ -25,7 +25,8 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && tsup"
+    "build": "rm -rf dist && tsup",
+    "lint": "prettier -c ."
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

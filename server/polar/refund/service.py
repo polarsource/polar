@@ -542,7 +542,7 @@ class RefundService(ResourceServiceReader[Refund]):
             )
 
             # Revert the tax transaction in the tax processor ledger
-            if order.tax_transaction_processor_id:
+            if order.tax_transaction_processor_id and order.tax_amount > 0:
                 if refund.total_amount == order.total_amount:
                     tax_transaction_processor = (
                         await stripe_service.revert_tax_transaction(

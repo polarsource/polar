@@ -1,21 +1,13 @@
 import { Input as ShadInput } from '@/components/ui/input'
+import { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+export type InputProps = ComponentProps<typeof ShadInput> & {
   preSlot?: React.ReactNode
   postSlot?: React.ReactNode
 }
 
-const Input = ({
-  ref,
-  preSlot,
-  postSlot,
-  className,
-  ...props
-}: InputProps & {
-  ref?: React.RefObject<HTMLInputElement>
-}) => {
+const Input = ({ ref, preSlot, postSlot, className, ...props }: InputProps) => {
   return (
     <div className="relative flex flex-1 flex-row rounded-full">
       <ShadInput

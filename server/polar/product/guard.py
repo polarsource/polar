@@ -12,6 +12,7 @@ from polar.models.product_price import (
     ProductPriceFixed,
     ProductPriceFree,
     ProductPriceMeteredUnit,
+    ProductPriceSeatUnit,
 )
 
 StaticPrice: TypeAlias = (
@@ -30,6 +31,8 @@ CustomPrice: TypeAlias = ProductPriceCustom | LegacyRecurringProductPriceCustom
 FreePrice: TypeAlias = ProductPriceFree | LegacyRecurringProductPriceFree
 
 MeteredPrice: TypeAlias = ProductPriceMeteredUnit
+
+SeatPrice: TypeAlias = ProductPriceSeatUnit
 
 LegacyPrice: TypeAlias = (
     LegacyRecurringProductPriceFixed
@@ -73,7 +76,16 @@ def is_metered_price(price: ProductPrice) -> TypeIs[MeteredPrice]:
     return price.is_metered
 
 
+def is_seat_price(price: ProductPrice) -> TypeIs[SeatPrice]:
+    return isinstance(price, ProductPriceSeatUnit)
+
+
 def is_discount_applicable(
     price: ProductPrice,
-) -> TypeIs[FixedPrice | CustomPrice | MeteredPrice]:
-    return is_fixed_price(price) or is_custom_price(price) or is_metered_price(price)
+) -> TypeIs[FixedPrice | CustomPrice | MeteredPrice | SeatPrice]:
+    return (
+        is_fixed_price(price)
+        or is_custom_price(price)
+        or is_metered_price(price)
+        or is_seat_price(price)
+    )

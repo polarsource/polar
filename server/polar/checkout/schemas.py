@@ -168,6 +168,11 @@ class CheckoutCreateBase(
         default=False, description=_require_billing_address_description
     )
     amount: Amount | None = None
+    seats: int | None = Field(
+        default=None,
+        ge=1,
+        description="Number of seats for seat-based pricing. Required for seat-based products.",
+    )
     customer_id: UUID4 | None = Field(
         default=None,
         description=(
@@ -265,6 +270,11 @@ class CheckoutCreatePublic(Schema):
     """Create a new checkout session from a client."""
 
     product_id: UUID4 = Field(description="ID of the product to checkout.")
+    seats: int | None = Field(
+        default=None,
+        ge=1,
+        description="Number of seats for seat-based pricing.",
+    )
     customer_email: CustomerEmail | None = None
     subscription_id: UUID4 | None = Field(
         default=None,
@@ -296,6 +306,11 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
         ),
     )
     amount: Amount | None = None
+    seats: int | None = Field(
+        default=None,
+        ge=1,
+        description="Number of seats for seat-based pricing.",
+    )
     is_business_customer: bool | None = None
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
@@ -388,6 +403,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         "Used as a security measure to send messages only to the embedding page."
     )
     amount: int = Field(description="Amount in cents, before discounts and taxes.")
+    seats: int | None = Field(
+        default=None, description="Number of seats for seat-based pricing."
+    )
     discount_amount: int = Field(description="Discount amount in cents.")
     net_amount: int = Field(
         description="Amount in cents, after discounts but before taxes."

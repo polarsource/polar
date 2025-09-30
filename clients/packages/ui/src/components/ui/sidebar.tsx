@@ -164,7 +164,7 @@ const Sidebar = ({
   ref?: React.RefObject<HTMLDivElement>
   side?: ComponentProps<typeof SheetContent>['side']
   variant?: 'sidebar' | 'floating' | 'inset'
-  collapsible?: 'none' | 'offcanvas'
+  collapsible?: 'none' | 'offcanvas' | 'icon'
   className?: string
   children: React.ReactNode
 } & React.ComponentProps<typeof Sheet>) => {

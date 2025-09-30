@@ -1,13 +1,12 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import * as ToastPrimitives from '@radix-ui/react-toast'
-import { cva } from 'class-variance-authority'
+import { cva, VariantProps } from 'class-variance-authority'
 import * as React from 'react'
 
 const ToastProvider = ToastPrimitives.Provider
 
 const ToastViewport = ({
   ref,
-  className,
   ...props
 }: React.ComponentProps<typeof ToastPrimitives.Viewport>) => (
   <ToastPrimitives.Viewport
@@ -35,7 +34,12 @@ const toastVariants = cva(
   },
 )
 
-const Toast = ({ ref, className, variant, ...props }) => {
+const Toast = ({
+  ref,
+  variant,
+  ...props
+}: React.ComponentProps<typeof ToastPrimitives.Root> &
+  VariantProps<typeof toastVariants>) => {
   return (
     <ToastPrimitives.Root
       ref={ref}
@@ -48,7 +52,6 @@ Toast.displayName = ToastPrimitives.Root.displayName
 
 const ToastAction = ({
   ref,
-  className,
   ...props
 }: React.ComponentProps<typeof ToastPrimitives.Action>) => (
   <ToastPrimitives.Action
@@ -61,7 +64,6 @@ ToastAction.displayName = ToastPrimitives.Action.displayName
 
 const ToastClose = ({
   ref,
-  className,
   ...props
 }: React.ComponentProps<typeof ToastPrimitives.Close>) => (
   <ToastPrimitives.Close
@@ -77,7 +79,6 @@ ToastClose.displayName = ToastPrimitives.Close.displayName
 
 const ToastTitle = ({
   ref,
-  className,
   ...props
 }: React.ComponentProps<typeof ToastPrimitives.Title>) => (
   <ToastPrimitives.Title ref={ref} className="text-sm font-medium" {...props} />
@@ -86,7 +87,6 @@ ToastTitle.displayName = ToastPrimitives.Title.displayName
 
 const ToastDescription = ({
   ref,
-  className,
   ...props
 }: React.ComponentProps<typeof ToastPrimitives.Description>) => (
   <ToastPrimitives.Description

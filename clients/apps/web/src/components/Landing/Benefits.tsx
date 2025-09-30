@@ -133,7 +133,7 @@ export const Benefits = () => {
     >
       <div className="flex flex-1 grow flex-col gap-y-10 p-8 md:p-16">
         <div className="flex flex-col gap-y-4">
-          <h2 className="text-2xl leading-normal! md:text-3xl">
+          <h2 className="leading-normal! text-2xl md:text-3xl">
             Automated Product Benefits
           </h2>
           <p className="dark:text-polar-500 text-lg text-gray-500">

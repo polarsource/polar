@@ -1,5 +1,2 @@
-# chadcn/ui components
-apps/web/src/components/ui/*.tsx
-packages/ui/src/components/ui/*.tsx
-# generated code
-packages/sdk/src/client/**
+**/dist
+**/pnpm-lock.yaml

@@ -7,29 +7,21 @@ import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckou
 import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import { notFound, redirect } from 'next/navigation'
 
-export default async function Page(
-  props: {
-    params: Promise<{ clientSecret: string }>
-    searchParams: Promise<{
-      embed?: string
-      theme?: 'light' | 'dark'
-      customer_session_token?: string
-    }>
-  }
-) {
-  const searchParams = await props.searchParams;
+export default async function Page(props: {
+  params: Promise<{ clientSecret: string }>
+  searchParams: Promise<{
+    embed?: string
+    theme?: 'light' | 'dark'
+    customer_session_token?: string
+  }>
+}) {
+  const searchParams = await props.searchParams
 
-  const {
-    embed,
-    theme,
-    customer_session_token
-  } = searchParams;
+  const { embed, theme, customer_session_token } = searchParams
 
-  const params = await props.params;
+  const params = await props.params
 
-  const {
-    clientSecret
-  } = params;
+  const { clientSecret } = params
 
   const client = new PolarCore({ serverURL: getServerURL() })
   const {

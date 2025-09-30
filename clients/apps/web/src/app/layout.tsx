@@ -2,8 +2,8 @@ import '../styles/globals.css'
 
 import SandboxBanner from '@/components/Sandbox/SandboxBanner'
 import { UserContextProvider } from '@/providers/auth'
-import { CONFIG } from '@/utils/config'
 import { getServerSideAPI } from '@/utils/client/serverside'
+import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import { GeistMono } from 'geist/font/mono'
@@ -95,7 +95,7 @@ export default async function RootLayout({
     userOrganizations = await getUserOrganizations(api)
   } catch (e) {
     // Silently swallow errors during build, typically when rendering static pages
-     
+
     if (process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) {
       throw e
     }

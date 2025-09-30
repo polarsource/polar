@@ -6,7 +6,7 @@ import Input, { InputProps } from '@polar-sh/ui/components/atoms/Input'
 import { twMerge } from 'tailwind-merge'
 import Spinner from '../Shared/Spinner'
 
-import type { JSX } from "react";
+import type { JSX } from 'react'
 
 export interface ContextListItemProps {
   id: string
@@ -56,7 +56,7 @@ export const ContextList = ({
           <Input
             placeholder="Search"
             {...search}
-            className="w-full rounded-none border-none bg-transparent p-0 shadow-none! ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
+            className="shadow-none! w-full rounded-none border-none bg-transparent p-0 ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
           />
         </div>
       )}

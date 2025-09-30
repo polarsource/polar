@@ -4,7 +4,8 @@
   "description": "Polar embedded checkout example",
   "private": true,
   "scripts": {
-    "dev": "http-server . -p 3030"
+    "dev": "http-server . -p 3030",
+    "lint": "prettier -c ."
   },
   "dependencies": {
     "@polar-sh/checkout": "workspace:*",

@@ -11,7 +11,12 @@ import CancelSubscriptionModal from '@/components/Subscriptions/CancelSubscripti
 import SubscriptionDetails from '@/components/Subscriptions/SubscriptionDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
 import { toast } from '@/components/Toast/use-toast'
-import { useCustomFields, useProduct, useSubscription, useUncancelSubscription } from '@/hooks/queries'
+import {
+  useCustomFields,
+  useProduct,
+  useSubscription,
+  useUncancelSubscription,
+} from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List } from '@polar-sh/ui/components/atoms/List'
@@ -43,7 +48,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     show: showUpdateModal,
     isShown: isShownUpdateModal,
   } = useModal()
-  
+
   const uncancelSubscription = useUncancelSubscription(_subscription.id)
 
   const handleUncancel = async () => {
@@ -51,7 +56,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
       await uncancelSubscription.mutateAsync()
       toast({
         title: 'Subscription Uncanceled',
-        description: 'The subscription has been successfully uncanceled and will continue at the next billing cycle.',
+        description:
+          'The subscription has been successfully uncanceled and will continue at the next billing cycle.',
         variant: 'success',
       })
     } catch (error) {
@@ -82,7 +88,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <Button type="button" onClick={showUpdateModal}>
             Update Subscription
           </Button>
-          {subscription.cancel_at_period_end && subscription.status !== 'canceled' ? (
+          {subscription.cancel_at_period_end &&
+          subscription.status !== 'canceled' ? (
             <Button
               type="button"
               variant="secondary"
@@ -113,7 +120,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       <List size="small">
         <ProductListItem organization={organization} product={product} />
       </List>
-      <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
+      <ShadowBox className="dark:divide-polar-700 md:rounded-3xl! flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0">
         <div className="flex flex-col gap-6 p-8">
           <div className="flex flex-col gap-6">
             <SubscriptionDetails subscription={subscription} />

@@ -102,7 +102,7 @@ export const CheckoutLinkForm = ({
   // Watch for selected product IDs to determine if we should show trial configuration
   const selectedProductIds = watch('products') || []
   const { data: selectedProducts } = useSelectedProducts(selectedProductIds)
-  
+
   // Check if any selected products are recurring (subscription products)
   const hasRecurringProducts = useMemo(() => {
     return selectedProducts?.some((product) => product.is_recurring) ?? false

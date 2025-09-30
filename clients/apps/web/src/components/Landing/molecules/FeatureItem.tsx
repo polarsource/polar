@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import React, { PropsWithChildren, type JSX } from 'react';
+import React, { PropsWithChildren, type JSX } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface FeatureItemProps {

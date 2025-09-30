@@ -61,7 +61,10 @@ const PaymentMethod = ({
     } catch (error) {
       toast({
         title: 'Failed to delete payment method',
-        description: error instanceof Error ? error.message : 'An error occurred while deleting the payment method.',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An error occurred while deleting the payment method.',
         variant: 'error',
       })
     }

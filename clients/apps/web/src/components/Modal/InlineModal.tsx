@@ -1,5 +1,12 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import React, { FunctionComponent, MouseEvent, useCallback, useEffect, useRef, type JSX } from 'react';
+import React, {
+  FunctionComponent,
+  MouseEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  type JSX,
+} from 'react'
 import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
 import { twMerge } from 'tailwind-merge'

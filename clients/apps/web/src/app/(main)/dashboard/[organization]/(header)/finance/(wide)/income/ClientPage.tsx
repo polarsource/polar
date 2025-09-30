@@ -1,7 +1,7 @@
 'use client'
 
-import AccountBalance from '@/components/Payouts/AccountBalance'
 import AccessRestricted from '@/components/Finance/AccessRestricted'
+import AccountBalance from '@/components/Payouts/AccountBalance'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useOrganizationAccount, useSearchTransactions } from '@/hooks/queries'
@@ -56,11 +56,14 @@ export default function ClientPage({
     )
   }
 
-  const { data: account, isLoading: accountIsLoading, error: accountError } = useOrganizationAccount(
-    organization.id,
-  )
-  
-  const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
+  const {
+    data: account,
+    isLoading: accountIsLoading,
+    error: accountError,
+  } = useOrganizationAccount(organization.id)
+
+  const isNotAdmin =
+    accountError && (accountError as any)?.response?.status === 403
 
   const balancesHook = useSearchTransactions({
     account_id: account?.id,

@@ -39,7 +39,7 @@ export const PageContent = () => {
         >
           <div className="flex flex-col items-center gap-y-2">
             <h2 className="text-6xl">”</h2>
-            <h2 className="text-2xl leading-relaxed! md:text-4xl">
+            <h2 className="leading-relaxed! text-2xl md:text-4xl">
               The speed at which Polar is executing on the financial
               infrastructure primitives the new world needs is very impressive
             </h2>

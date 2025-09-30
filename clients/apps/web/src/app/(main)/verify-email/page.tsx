@@ -7,17 +7,12 @@ export const metadata: Metadata = {
   title: 'Email Update confirmation',
 }
 
-export default async function Page(
-  props: {
-    searchParams: Promise<{ token: string; return_to?: string }>
-  }
-) {
-  const searchParams = await props.searchParams;
+export default async function Page(props: {
+  searchParams: Promise<{ token: string; return_to?: string }>
+}) {
+  const searchParams = await props.searchParams
 
-  const {
-    token,
-    return_to
-  } = searchParams;
+  const { token, return_to } = searchParams
 
   const urlSearchParams = new URLSearchParams({
     ...(return_to && { return_to }),

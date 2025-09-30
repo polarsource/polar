@@ -32,12 +32,10 @@ const getScopeDisplayNames = async (): Promise<
   return openAPISchema.components.schemas.Scope.enumNames
 }
 
-export default async function Page(
-  props: {
-    searchParams: Promise<Record<string, string>>
-  }
-) {
-  const searchParams = await props.searchParams;
+export default async function Page(props: {
+  searchParams: Promise<Record<string, string>>
+}) {
+  const searchParams = await props.searchParams
   const response = await getAuthorizeResponse(searchParams)
 
   if (response.status >= 300 && response.status < 400) {

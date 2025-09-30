@@ -305,6 +305,11 @@
 
 pre.shiki {
   overflow: auto;
+  background-color: var(--color-gray-100) !important;
+
+  .dark & {
+    background-color: var(--color-polar-800) !important;
+  }
 }
 
 @media (prefers-color-scheme: dark) {

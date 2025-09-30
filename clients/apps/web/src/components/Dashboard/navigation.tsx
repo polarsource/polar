@@ -28,7 +28,7 @@ export type SubRoute = {
 export type Route = {
   readonly id: string
   readonly title: string
-  readonly icon?: React.ReactElement
+  readonly icon?: React.ReactElement<any>
   readonly link: string
   readonly if: boolean | undefined
   readonly subs?: SubRoute[]

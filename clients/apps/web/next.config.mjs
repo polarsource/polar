@@ -1,12 +1,6 @@
 import bundleAnalyzer from '@next/bundle-analyzer'
 import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
-import rehypeShikiFromHighlighter from '@shikijs/rehype/core'
-import rehypeMdxImportMedia from 'rehype-mdx-import-media'
-import rehypeSlug from 'rehype-slug'
-import remarkFlexibleToc from 'remark-flexible-toc'
-import remarkFrontmatter from 'remark-frontmatter'
-import remarkGfm from 'remark-gfm'
 import { createHighlighterCore } from 'shiki/core'
 import { createOnigurumaEngine } from 'shiki/engine/oniguruma'
 
@@ -14,12 +8,7 @@ import langBash from 'shiki/langs/bash.mjs'
 import langJavascript from 'shiki/langs/javascript.mjs'
 import themeCatppuccinLatte from 'shiki/themes/catppuccin-latte.mjs'
 import themePoimandres from 'shiki/themes/poimandres.mjs'
-import {
-  themeConfig,
-  themesList,
-  transformers,
-  USED_LANGUAGES,
-} from './shiki.config.mjs'
+import { themesList, USED_LANGUAGES } from './shiki.config.mjs'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
@@ -79,7 +68,6 @@ const docsCSP = `
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   transpilePackages: ['shiki'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
 
@@ -493,38 +481,38 @@ const createConfig = async () => {
     engine: createOnigurumaEngine(() => import('shiki/wasm')),
   })
   const withMDX = createMDX({
-    options: {
-      remarkPlugins: [
-        remarkFrontmatter,
-        remarkGfm,
-        remarkFlexibleToc,
-        () => (tree, file) => ({
-          ...tree,
-          children: [
-            // Wrap the main content of the MDX file in a BodyWrapper (div) component
-            // so we might position the TOC on the right side of the content
-            {
-              type: 'mdxJsxFlowElement',
-              name: 'BodyWrapper',
-              attributes: [],
-              children: tree.children,
-            },
-          ],
-        }),
-      ],
-      rehypePlugins: [
-        rehypeMdxImportMedia,
-        rehypeSlug,
-        [
-          rehypeShikiFromHighlighter,
-          highlighter,
-          {
-            themes: themeConfig,
-            transformers,
-          },
-        ],
-      ],
-    },
+    // options: {
+    //   remarkPlugins: [
+    //     remarkFrontmatter,
+    //     remarkGfm,
+    //     remarkFlexibleToc,
+    //     // () => (tree, file) => ({
+    //     //   ...tree,
+    //     //   children: [
+    //     //     // Wrap the main content of the MDX file in a BodyWrapper (div) component
+    //     //     // so we might position the TOC on the right side of the content
+    //     //     {
+    //     //       type: 'mdxJsxFlowElement',
+    //     //       name: 'BodyWrapper',
+    //     //       attributes: [],
+    //     //       children: tree.children,
+    //     //     },
+    //     //   ],
+    //     // }),
+    //   ],
+    //   rehypePlugins: [
+    //     rehypeMdxImportMedia,
+    //     rehypeSlug,
+    //     [
+    //       rehypeShikiFromHighlighter,
+    //       highlighter,
+    //       {
+    //         themes: themeConfig,
+    //         transformers,
+    //       },
+    //     ],
+    //   ],
+    // },
   })
 
   let conf = withMDX(nextConfig)

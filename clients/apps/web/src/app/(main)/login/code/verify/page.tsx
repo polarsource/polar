@@ -6,11 +6,12 @@ export const metadata: Metadata = {
   title: 'Enter verification code',
 }
 
-export default function Page({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
+export default async function Page(
+  props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+  }
+) {
+  const searchParams = await props.searchParams;
   const email = searchParams.email as string
   const return_to = searchParams.return_to as string | undefined
   const error = searchParams.error as string | undefined

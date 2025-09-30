@@ -6,13 +6,20 @@ export const metadata: Metadata = {
   title: 'Log in to Polar',
 }
 
-export default async function Page({
-  searchParams: { return_to, ...rest },
-}: {
-  searchParams: {
-    return_to?: string
+export default async function Page(
+  props: {
+    searchParams: Promise<{
+      return_to?: string
+    }>
   }
-}) {
+) {
+  const searchParams = await props.searchParams;
+
+  const {
+    return_to,
+    ...rest
+  } = searchParams;
+
   return (
     <div className="flex h-screen w-full grow items-center justify-center">
       <div className="rounded-4xl dark:bg-polar-900 flex w-full max-w-md flex-col justify-between gap-16 bg-gray-50 p-12">

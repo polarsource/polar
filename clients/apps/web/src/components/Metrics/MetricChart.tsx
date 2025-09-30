@@ -18,7 +18,7 @@ import { forwardRef } from "react";
 import { twMerge } from "tailwind-merge";
 
 interface MetricChartProps {
-	ref: React.RefObject<HTMLDivElement>;
+	ref: React.RefObject<HTMLDivElement | null>;
 	data: ParsedMetricPeriod[];
 	previousData?: ParsedMetricPeriod[];
 	interval: schemas["TimeInterval"];

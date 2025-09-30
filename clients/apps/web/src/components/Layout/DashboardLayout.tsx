@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { PropsWithChildren, useContext, useEffect, useState } from 'react'
+import { PropsWithChildren, useContext, useEffect, useState, type JSX } from 'react';
 import { twMerge } from 'tailwind-merge'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
 import { SubRouteWithActive } from '../Dashboard/navigation'
@@ -149,7 +149,7 @@ export interface DashboardBodyProps {
   className?: string
   wrapperClassName?: string
   title?: JSX.Element | string
-  contextView?: React.ReactElement
+  contextView?: React.ReactElement<any>
   contextViewClassName?: string
   contextViewPlacement?: 'left' | 'right'
   header?: JSX.Element

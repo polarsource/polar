@@ -6,19 +6,21 @@ import { getUserOrganizations } from '@/utils/user'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
-export default async function Page({
-  searchParams: { return_to, ...rest },
-}: {
-  searchParams: {
+export default async function Page(props: {
+  searchParams: Promise<{
     return_to?: string
-  }
+  }>
 }) {
-  const api = getServerSideAPI()
+  const searchParams = await props.searchParams
+
+  const { return_to, ...rest } = searchParams
+
+  const api = await getServerSideAPI()
   const userOrganizations = await getUserOrganizations(api)
 
   if (userOrganizations.length > 0) {
     const org = userOrganizations.find(
-      (org) => org.slug === getLastVisitedOrg(cookies()),
+      async (org) => org.slug === getLastVisitedOrg(await cookies()),
     )
 
     const targetOrg = org?.slug ?? userOrganizations[0].slug

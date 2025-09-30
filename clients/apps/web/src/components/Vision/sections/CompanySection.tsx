@@ -43,7 +43,7 @@ export const CompanySection = ({ active }: { active: boolean }) => {
       title="Small team, big ambitions"
       context={
         <div className="flex flex-col gap-y-8">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-12">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
             {team.map((profile) => (
               <Profile key={profile.name} {...profile} />
             ))}
@@ -69,9 +69,6 @@ export const CompanySection = ({ active }: { active: boolean }) => {
         <Link href="https://x.com/polar_sh" target="_blank" prefetch>
           Join the conversation →
         </Link>
-        <Link href="/assets/brand/polar_brand.zip" target="_self">
-          Brand Assets ↓
-        </Link>
       </div>
     </Section>
   )
@@ -93,7 +90,7 @@ const Profile = ({ name, title, image }: ProfileProps) => {
         width={200}
         height={200}
       />
-      <div className="flex flex-col gap-y-1 text-left">
+      <div className="flex flex-col text-left">
         <h1 className="text-xs">{name}</h1>
         <h1 className="text-polar-500 text-xs">{title}</h1>
       </div>

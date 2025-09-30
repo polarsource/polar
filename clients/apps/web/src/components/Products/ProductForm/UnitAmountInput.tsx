@@ -11,7 +11,7 @@ interface UnitAmountInputProps
 
 const UnitAmountInput: React.ForwardRefExoticComponent<
   UnitAmountInputProps & React.RefAttributes<HTMLInputElement>
-> = React.forwardRef((props, ref) => {
+> = ({ ref, ...props }) => {
   const { value, onValueChange, className, ...rest } = props
   const formatter = useMemo(
     () =>
@@ -83,7 +83,7 @@ const UnitAmountInput: React.ForwardRefExoticComponent<
       preSlot={<DollarSign className="h-4 w-4" />}
     />
   )
-})
+}
 
 UnitAmountInput.displayName = 'UnitAmountInput'
 

@@ -21,10 +21,14 @@ const SelectGroup = SelectGroupPrimitive
 
 const SelectValue = SelectValuePrimitive
 
-const SelectTrigger = React.forwardRef<
-  React.ElementRef<typeof SelectTriggerPrimitive>,
-  React.ComponentPropsWithoutRef<typeof SelectTriggerPrimitive>
->(({ className, children, ...props }, ref) => (
+const SelectTrigger = ({
+  ref,
+  className,
+  children,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectTriggerPrimitive> & {
+  ref: React.RefObject<React.ElementRef<typeof SelectTriggerPrimitive>>
+}) => (
   <SelectTriggerPrimitive
     ref={ref}
     className={twMerge(
@@ -35,13 +39,18 @@ const SelectTrigger = React.forwardRef<
   >
     {children}
   </SelectTriggerPrimitive>
-))
+)
 SelectTrigger.displayName = SelectTriggerPrimitive.displayName
 
-const SelectContent = React.forwardRef<
-  React.ElementRef<typeof SelectContentPrimitive>,
-  React.ComponentPropsWithoutRef<typeof SelectContentPrimitive>
->(({ className, children, position = 'popper', ...props }, ref) => (
+const SelectContent = ({
+  ref,
+  className,
+  children,
+  position = 'popper',
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectContentPrimitive> & {
+  ref: React.RefObject<React.ElementRef<typeof SelectContentPrimitive>>
+}) => (
   <SelectContentPrimitive
     ref={ref}
     className={twMerge('dark:bg-polar-800 rounded-xl border-none', className)}
@@ -49,21 +58,26 @@ const SelectContent = React.forwardRef<
   >
     {children}
   </SelectContentPrimitive>
-))
+)
 SelectContent.displayName = SelectContentPrimitive.displayName
 
-const SelectLabel = React.forwardRef<
-  React.ElementRef<typeof SelectLabelPrimitive>,
-  React.ComponentPropsWithoutRef<typeof SelectLabelPrimitive>
->(({ className, ...props }, ref) => (
-  <SelectLabelPrimitive ref={ref} className={className} {...props} />
-))
+const SelectLabel = ({
+  ref,
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectLabelPrimitive> & {
+  ref: React.RefObject<React.ElementRef<typeof SelectLabelPrimitive>>
+}) => <SelectLabelPrimitive ref={ref} className={className} {...props} />
 SelectLabel.displayName = SelectLabelPrimitive.displayName
 
-const SelectItem = React.forwardRef<
-  React.ElementRef<typeof SelectItemPrimitive>,
-  React.ComponentPropsWithoutRef<typeof SelectItemPrimitive>
->(({ className, children, ...props }, ref) => (
+const SelectItem = ({
+  ref,
+  className,
+  children,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectItemPrimitive> & {
+  ref: React.RefObject<React.ElementRef<typeof SelectItemPrimitive>>
+}) => (
   <SelectItemPrimitive
     ref={ref}
     className={twMerge(className, 'rounded-lg')}
@@ -71,19 +85,22 @@ const SelectItem = React.forwardRef<
   >
     {children}
   </SelectItemPrimitive>
-))
+)
 SelectItem.displayName = SelectItemPrimitive.displayName
 
-const SelectSeparator = React.forwardRef<
-  React.ElementRef<typeof SelectSeparatorPrimitive>,
-  React.ComponentPropsWithoutRef<typeof SelectSeparatorPrimitive>
->(({ className, ...props }, ref) => (
+const SelectSeparator = ({
+  ref,
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectSeparatorPrimitive> & {
+  ref: React.RefObject<React.ElementRef<typeof SelectSeparatorPrimitive>>
+}) => (
   <SelectSeparatorPrimitive
     ref={ref}
     className={twMerge('', className)}
     {...props}
   />
-))
+)
 SelectSeparator.displayName = SelectSeparatorPrimitive.displayName
 
 export {

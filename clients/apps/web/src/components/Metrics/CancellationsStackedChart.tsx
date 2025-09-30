@@ -16,7 +16,7 @@ import {
   YAxis,
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
-import { forwardRef, useMemo } from 'react'
+import { useMemo } from 'react'
 import {
   CANCELLATION_REASONS,
   REASON_COLORS,
@@ -128,67 +128,60 @@ export default function CancellationsStackedChart({
   )
 }
 
-const StackedChartTooltip = forwardRef<
-  HTMLDivElement,
-  TooltipProps<any, string> & { tickFormatter: (timestamp: Date) => string }
->(
-  (
-    {
-      active,
-      label,
-      payload,
-      tickFormatter,
-    }: TooltipProps<any, string> & {
-      tickFormatter: (timestamp: Date) => string
-    },
-    ref,
-  ) => {
-    const formattedLabel = useMemo(() => {
-      if (label) {
-        return tickFormatter(new Date(label))
-      }
-      return ''
-    }, [label, tickFormatter])
-
-    if (!active || !payload?.length) {
-      return null
+const StackedChartTooltip = ({
+  ref,
+  active,
+  label,
+  payload,
+  tickFormatter,
+}: TooltipProps<any, string> & {
+  tickFormatter: (timestamp: Date) => string
+}) => {
+  const formattedLabel = useMemo(() => {
+    if (label) {
+      return tickFormatter(new Date(label))
     }
+    return ''
+  }, [label, tickFormatter])
 
-    const total = payload.reduce((acc, item) => acc + item.value, 0)
+  if (!active || !payload?.length) {
+    return null
+  }
 
-    return (
-      <div
-        ref={ref}
-        className="border-border/50 bg-background grid min-w-32 items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl"
-      >
-        <div className="flex items-center justify-between">
-          <span className="font-medium">{formattedLabel}</span>
-          <span className="font-medium tabular-nums">{total}</span>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          {payload.map((item) => {
-            return (
-              <div
-                key={item.dataKey}
-                className="flex items-center justify-between gap-1.5"
-              >
-                <div className="flex items-center gap-1.5">
-                  <div
-                    className="rounded-xs h-2.5 w-2.5 shrink-0"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  {REASON_LABELS[item.name as keyof typeof REASON_LABELS]}
-                </div>
-                <span className="font-medium tabular-nums">
-                  {item.value.toLocaleString()}
-                </span>
-              </div>
-            )
-          })}
-        </div>
+  const total = payload.reduce((acc, item) => acc + item.value, 0)
+
+  return (
+    <div
+      ref={ref}
+      className="border-border/50 bg-background grid min-w-32 items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl"
+    >
+      <div className="flex items-center justify-between">
+        <span className="font-medium">{formattedLabel}</span>
+        <span className="font-medium tabular-nums">{total}</span>
       </div>
-    )
-  },
-)
+      <div className="flex flex-col gap-1.5">
+        {payload.map((item) => {
+          return (
+            <div
+              key={item.dataKey}
+              className="flex items-center justify-between gap-1.5"
+            >
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="rounded-xs h-2.5 w-2.5 shrink-0"
+                  style={{ backgroundColor: item.color }}
+                />
+                {REASON_LABELS[item.name as keyof typeof REASON_LABELS]}
+              </div>
+              <span className="font-medium tabular-nums">
+                {item.value.toLocaleString()}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 StackedChartTooltip.displayName = 'StackedChartTooltip'

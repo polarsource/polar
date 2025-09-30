@@ -12,22 +12,29 @@ import { cn } from '@/lib/utils'
 
 const Accordion = ShadAccordion
 
-const AccordionItem = React.forwardRef<
-  React.ElementRef<typeof ShadAccordionItem>,
-  React.ComponentPropsWithoutRef<typeof ShadAccordionItem>
->(({ className, ...props }, ref) => (
+const AccordionItem = ({
+  ref,
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof ShadAccordionItem> & {
+  ref: React.RefObject<React.ElementRef<typeof ShadAccordionItem>>
+}) => (
   <ShadAccordionItem
     ref={ref}
     className={cn('rounded-2xl! px-3', className)}
     {...props}
   />
-))
+)
 AccordionItem.displayName = 'AccordionItem'
 
-const AccordionTrigger = React.forwardRef<
-  React.ElementRef<typeof ShadAccordionTrigger>,
-  React.ComponentPropsWithoutRef<typeof ShadAccordionTrigger>
->(({ className, children, ...props }, ref) => (
+const AccordionTrigger = ({
+  ref,
+  className,
+  children,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof ShadAccordionTrigger> & {
+  ref: React.RefObject<React.ElementRef<typeof ShadAccordionTrigger>>
+}) => (
   <ShadAccordionTrigger
     ref={ref}
     className={cn('text-sm', className)}
@@ -35,17 +42,20 @@ const AccordionTrigger = React.forwardRef<
   >
     {children}
   </ShadAccordionTrigger>
-))
+)
 AccordionTrigger.displayName = ShadAccordionTrigger.displayName
 
-const AccordionContent = React.forwardRef<
-  React.ElementRef<typeof ShadAccordionContent>,
-  React.ComponentPropsWithoutRef<typeof ShadAccordionContent>
->(({ children, ...props }, ref) => (
+const AccordionContent = ({
+  ref,
+  children,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof ShadAccordionContent> & {
+  ref: React.RefObject<React.ElementRef<typeof ShadAccordionContent>>
+}) => (
   <ShadAccordionContent ref={ref} {...props}>
     {children}
   </ShadAccordionContent>
-))
+)
 
 AccordionContent.displayName = ShadAccordionContent.displayName
 

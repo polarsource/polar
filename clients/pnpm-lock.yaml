@@ -218,9 +218,6 @@ importers:
       rehype-slug:
         specifier: ^6.0.0
         version: 6.0.0
-      remark-flexible-toc:
-        specifier: ^1.2.1
-        version: 1.2.1(unified@11.0.5)
       remark-frontmatter:
         specifier: ^5.0.0
         version: 5.0.0
@@ -6138,11 +6135,6 @@ packages:
 
   rehype-slug@6.0.0:
     resolution: {integrity: sha512-lWyvf/jwu+oS5+hL5eClVd3hNdmwM1kAC0BUvEGD19pajQMIzcNUd/k9GsfQ+FfECvX+JE+e9/btsKH0EjJT6A==}
-
-  remark-flexible-toc@1.2.1:
-    resolution: {integrity: sha512-0/xmniPRYL/rmPFbOwU5di8zHNH19Vlv+sJUGQAvJYHcLFdC5e7F5tJ+CI3bRoS/sU6QtSqc4pPYtKmRaM4jLw==}
-    peerDependencies:
-      unified: ^11
 
   remark-frontmatter@5.0.0:
     resolution: {integrity: sha512-XTFYvNASMe5iPN0719nPrdItC9aU0ssC4v14mH1BCi1u0n1gAocqcujWUrByftZTbLhRtiKRyjYTSIOcr69UVQ==}
@@ -13285,14 +13277,6 @@ snapshots:
       github-slugger: 2.0.0
       hast-util-heading-rank: 3.0.0
       hast-util-to-string: 3.0.1
-      unist-util-visit: 5.0.0
-
-  remark-flexible-toc@1.2.1(unified@11.0.5):
-    dependencies:
-      '@types/mdast': 4.0.4
-      github-slugger: 2.0.0
-      mdast-util-to-string: 4.0.0
-      unified: 11.0.5
       unist-util-visit: 5.0.0
 
   remark-frontmatter@5.0.0:

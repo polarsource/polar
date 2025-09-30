@@ -74,7 +74,6 @@
     "react-use": "^17.6.0",
     "rehype-mdx-import-media": "^1.2.0",
     "rehype-slug": "^6.0.0",
-    "remark-flexible-toc": "^1.2.1",
     "remark-frontmatter": "^5.0.0",
     "remark-gfm": "^4.0.1",
     "require-in-the-middle": "^7.5.2",

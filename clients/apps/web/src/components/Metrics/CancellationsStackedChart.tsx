@@ -136,6 +136,7 @@ const StackedChartTooltip = ({
   tickFormatter,
 }: TooltipProps<any, string> & {
   tickFormatter: (timestamp: Date) => string
+  ref?: React.RefObject<HTMLDivElement>
 }) => {
   const formattedLabel = useMemo(() => {
     if (label) {

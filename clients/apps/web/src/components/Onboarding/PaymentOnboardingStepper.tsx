@@ -173,7 +173,7 @@ export const PaymentOnboardingStepper = ({
                                 '[organization]',
                                 organization.slug,
                               )}
-                              className="dark:bg-polar-700 flex items-start gap-3 rounded-xl bg-gray-100 p-4 transition-all hover:bg-gray-50 dark:hover:opacity-50"
+                              className="dark:bg-polar-700 dark:hover:bg-polar-700 flex items-start gap-3 rounded-xl bg-gray-100 p-4 transition-all hover:bg-gray-50 dark:hover:opacity-50"
                             >
                               <div className="flex min-w-0 flex-1 flex-col gap-y-1">
                                 <h4 className="text-sm font-medium text-gray-900 dark:text-white">

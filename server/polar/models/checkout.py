@@ -30,7 +30,11 @@ from polar.kit.metadata import MetadataColumn, MetadataMixin
 from polar.kit.tax import TaxID, TaxIDType
 from polar.kit.trial import TrialConfigurationMixin, TrialInterval
 from polar.kit.utils import utc_now
-from polar.product.guard import is_discount_applicable, is_free_price, is_metered_price
+from polar.product.guard import (
+    is_discount_applicable,
+    is_free_price,
+    is_metered_price,
+)
 
 from .customer import Customer
 from .discount import Discount
@@ -116,6 +120,7 @@ class Checkout(
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     tax_processor_id: Mapped[str | None] = mapped_column(

@@ -6674,6 +6674,11 @@ export interface components {
              */
             amount: number;
             /**
+             * Seats
+             * @description Number of seats for seat-based pricing.
+             */
+            seats?: number | null;
+            /**
              * Discount Amount
              * @description Discount amount in cents.
              */
@@ -6870,6 +6875,11 @@ export interface components {
             product_price_id?: string | null;
             /** Amount */
             amount?: number | null;
+            /**
+             * Seats
+             * @description Number of seats for seat-based pricing.
+             */
+            seats?: number | null;
             /** Is Business Customer */
             is_business_customer?: boolean | null;
             /** Customer Name */
@@ -6904,6 +6914,11 @@ export interface components {
              * @description ID of the product to checkout.
              */
             product_id: string;
+            /**
+             * Seats
+             * @description Number of seats for seat-based pricing.
+             */
+            seats?: number | null;
             /** Customer Email */
             customer_email?: string | null;
             /**
@@ -7508,6 +7523,11 @@ export interface components {
             /** Amount */
             amount?: number | null;
             /**
+             * Seats
+             * @description Number of seats for seat-based pricing. Required for seat-based products.
+             */
+            seats?: number | null;
+            /**
              * Customer Id
              * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
              */
@@ -7707,6 +7727,11 @@ export interface components {
             /** Amount */
             amount?: number | null;
             /**
+             * Seats
+             * @description Number of seats for seat-based pricing. Required for seat-based products.
+             */
+            seats?: number | null;
+            /**
              * Customer Id
              * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
              */
@@ -7831,6 +7856,11 @@ export interface components {
             require_billing_address: boolean;
             /** Amount */
             amount?: number | null;
+            /**
+             * Seats
+             * @description Number of seats for seat-based pricing. Required for seat-based products.
+             */
+            seats?: number | null;
             /**
              * Customer Id
              * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
@@ -7968,6 +7998,11 @@ export interface components {
              * @description Amount in cents, before discounts and taxes.
              */
             amount: number;
+            /**
+             * Seats
+             * @description Number of seats for seat-based pricing.
+             */
+            seats?: number | null;
             /**
              * Discount Amount
              * @description Discount amount in cents.
@@ -8176,6 +8211,11 @@ export interface components {
              */
             amount: number;
             /**
+             * Seats
+             * @description Number of seats for seat-based pricing.
+             */
+            seats?: number | null;
+            /**
              * Discount Amount
              * @description Discount amount in cents.
              */
@@ -8349,6 +8389,11 @@ export interface components {
             product_price_id?: string | null;
             /** Amount */
             amount?: number | null;
+            /**
+             * Seats
+             * @description Number of seats for seat-based pricing.
+             */
+            seats?: number | null;
             /** Is Business Customer */
             is_business_customer?: boolean | null;
             /** Customer Name */
@@ -8454,6 +8499,11 @@ export interface components {
             product_price_id?: string | null;
             /** Amount */
             amount?: number | null;
+            /**
+             * Seats
+             * @description Number of seats for seat-based pricing.
+             */
+            seats?: number | null;
             /** Is Business Customer */
             is_business_customer?: boolean | null;
             /** Customer Name */

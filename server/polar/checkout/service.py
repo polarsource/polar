@@ -77,6 +77,7 @@ from polar.product.guard import (
     is_custom_price,
     is_discount_applicable,
     is_fixed_price,
+    is_seat_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service import product as product_service
@@ -353,6 +354,31 @@ class CheckoutService:
                     ]
                 ) from e
 
+        # Validate seats for seat-based pricing
+        if is_seat_price(price):
+            if checkout_create.seats is None or checkout_create.seats < 1:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "seats"),
+                            "msg": "Seats is required for seat-based pricing.",
+                            "input": checkout_create.seats,
+                        }
+                    ]
+                )
+        elif checkout_create.seats is not None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "seats"),
+                        "msg": "Seats can only be set for seat-based pricing.",
+                        "input": checkout_create.seats,
+                    }
+                ]
+            )
+
         product = await self._eager_load_product(session, product)
 
         subscription: Subscription | None = None
@@ -397,6 +423,11 @@ class CheckoutService:
                     or price.minimum_amount
                     or settings.CUSTOM_PRICE_PRESET_FALLBACK
                 )
+        elif is_seat_price(price):
+            # Calculate amount based on seat count
+            seats = checkout_create.seats or 1
+            amount = price.price_per_seat * seats
+            currency = price.price_currency
         else:
             amount = 0
             currency = price.price_currency if is_currency_price(price) else "usd"
@@ -553,6 +584,31 @@ class CheckoutService:
 
         price = product.prices[0]
 
+        # Validate seats for seat-based pricing
+        if is_seat_price(price):
+            if checkout_create.seats is None or checkout_create.seats < 1:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "seats"),
+                            "msg": "Seats is required for seat-based pricing.",
+                            "input": checkout_create.seats,
+                        }
+                    ]
+                )
+        elif checkout_create.seats is not None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "seats"),
+                        "msg": "Seats can only be set for seat-based pricing.",
+                        "input": checkout_create.seats,
+                    }
+                ]
+            )
+
         amount = 0
         currency = "usd"
         if is_fixed_price(price):
@@ -565,6 +621,11 @@ class CheckoutService:
                 or price.minimum_amount
                 or settings.CUSTOM_PRICE_PRESET_FALLBACK
             )
+        elif is_seat_price(price):
+            # Calculate amount based on seat count
+            seats = checkout_create.seats or 1
+            amount = price.price_per_seat * seats
+            currency = price.price_currency
         elif is_currency_price(price):
             currency = price.price_currency
 
@@ -573,6 +634,7 @@ class CheckoutService:
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
+            seats=checkout_create.seats,
             checkout_products=[CheckoutProduct(product=product, order=0)],
             product=product,
             product_price=price,
@@ -1437,6 +1499,11 @@ class CheckoutService:
                     or price.minimum_amount
                     or settings.CUSTOM_PRICE_PRESET_FALLBACK
                 )
+                checkout.currency = price.price_currency
+            elif is_seat_price(price):
+                # Calculate amount based on current seat count
+                seats = checkout.seats or checkout_update.seats or 1
+                checkout.amount = price.price_per_seat * seats
                 checkout.currency = price.price_currency
             elif is_currency_price(price):
                 checkout.currency = price.price_currency

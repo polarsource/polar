@@ -363,6 +363,7 @@ class SubscriptionService:
         subscription.checkout = checkout
         subscription.user_metadata = checkout.user_metadata
         subscription.custom_field_data = checkout.custom_field_data
+        subscription.seats = checkout.seats
 
         repository = SubscriptionRepository.from_session(session)
         if created:
@@ -547,6 +548,7 @@ class SubscriptionService:
         subscription.checkout = checkout
         subscription.user_metadata = checkout.user_metadata
         subscription.custom_field_data = checkout.custom_field_data
+        subscription.seats = checkout.seats
         subscription.set_started_at()
         self.update_cancellation_from_stripe(subscription, stripe_subscription)
 

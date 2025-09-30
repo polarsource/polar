@@ -305,9 +305,13 @@
 
 pre.shiki {
   overflow: auto;
-  background-color: var(--color-gray-100) !important;
+  background-color: transparent !important;
 
-  .dark & {
+  :not(.dark) .prose-pre\:bg-gray-100 & {
+    background-color: var(--color-gray-100) !important;
+  }
+
+  .dark .dark\:prose-pre\:bg-polar-800 & {
     background-color: var(--color-polar-800) !important;
   }
 }

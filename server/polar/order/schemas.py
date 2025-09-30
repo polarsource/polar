@@ -39,6 +39,7 @@ class OrderBase(TimestampedSchema, IDSchema):
 
     tax_amount: int = Field(description="Sales tax amount in cents.")
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
+
     applied_balance_amount: int = Field(
         description=(
             "Customer's balance amount applied to this invoice. "
@@ -88,6 +89,10 @@ class OrderBase(TimestampedSchema, IDSchema):
     )
     def amount(self) -> SkipJsonSchema[int]:
         return self.net_amount
+
+    @computed_field(deprecated="Use `applied_balance_amount`.")
+    def from_balance_amount(self) -> SkipJsonSchema[int]:
+        return self.applied_balance_amount
 
     def get_amount_display(self) -> str:
         return format_currency(

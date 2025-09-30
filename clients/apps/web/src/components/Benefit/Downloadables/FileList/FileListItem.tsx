@@ -260,7 +260,7 @@ export const FileListItem = ({
 
   const isUploading = useMemo(() => file.isUploading, [file])
 
-  let isEnabled = useMemo(() => {
+  const isEnabled = useMemo(() => {
     return archivedFiles ? !archivedFiles[file.id] : true
   }, [archivedFiles, file])
 

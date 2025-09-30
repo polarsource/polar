@@ -85,7 +85,7 @@ export class Upload {
 
       const chunkSha256base64 = await this.getSha256Base64(chunk)
 
-      let part: schemas['S3FileCreatePart'] = {
+      const part: schemas['S3FileCreatePart'] = {
         number: i,
         chunk_start: chunk_start,
         chunk_end: chunk_end,
@@ -135,7 +135,7 @@ export class Upload {
     onProgress: (uploaded: number) => void
   }): Promise<schemas['S3FileUploadCompletedPart']> {
     const data = this.buffer.slice(part.chunk_start, part.chunk_end)
-    let blob = new Blob([data], { type: this.file.type })
+    const blob = new Blob([data], { type: this.file.type })
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest()

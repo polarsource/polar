@@ -24,7 +24,7 @@ export default async function Page(props: {
   const { slug, auto, existing_org } = searchParams
 
   let validationErrors: schemas['ValidationError'][] = []
-  let error: string | undefined = undefined
+  const error: string | undefined = undefined
 
   // Create the organization automatically if the slug is provided and auto is true
   if (auto === 'true' && slug) {

@@ -6,7 +6,7 @@ const stringToNumber = (
   return parseInt(value)
 }
 
-let defaults = {
+const defaults = {
   ENVIRONMENT:
     process.env.NEXT_PUBLIC_ENVIRONMENT ||
     process.env.VERCEL_ENV ||

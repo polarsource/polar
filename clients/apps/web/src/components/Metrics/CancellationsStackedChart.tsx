@@ -11,7 +11,7 @@ import {
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
-  TooltipProps,
+  TooltipContentProps,
   XAxis,
   YAxis,
 } from '@polar-sh/ui/components/ui/chart'
@@ -109,7 +109,12 @@ export default function CancellationsStackedChart({
             domain={[0, maxValue || 'auto']}
           />
           <ChartTooltip
-            content={<StackedChartTooltip tickFormatter={timestampFormatter} />}
+            content={(props) => (
+              <StackedChartTooltip
+                {...props}
+                tickFormatter={timestampFormatter}
+              />
+            )}
           />
           <ChartLegend
             content={<ChartLegendContent className="justify-start" />}
@@ -134,7 +139,7 @@ const StackedChartTooltip = ({
   label,
   payload,
   tickFormatter,
-}: TooltipProps<any, string> & {
+}: TooltipContentProps<any, any> & {
   tickFormatter: (timestamp: Date) => string
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -185,4 +190,4 @@ const StackedChartTooltip = ({
   )
 }
 
-StackedChartTooltip.displayName = 'StackedChartTooltip'
+StackedChartTooltip.displayName = 'ChartTooltip'

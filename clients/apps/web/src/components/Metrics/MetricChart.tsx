@@ -96,7 +96,7 @@ const MetricChart = ({
   )
 
   const formatter = useCallback(
-    (value: number, name: string, item: { color: string }) => {
+    (value: number, name: string, item?: { color?: string }) => {
       const formattedValue = getFormattedMetricValue(metric, value as number)
       return (
         <div className="flex w-40 flex-row justify-between gap-x-8">
@@ -161,16 +161,17 @@ const MetricChart = ({
           ticks={ticks}
           tickFormatter={timestampFormatter}
         />
-        <ChartTooltip
+        <ChartTooltip<number, string>
           cursor={true}
-          content={
+          content={(props) => (
             <ChartTooltipContent
+              {...props}
               className="text-black dark:text-white"
               indicator="dot"
               labelKey="metric"
               formatter={formatter}
             />
-          }
+          )}
         />
         {previousData && (
           <Line

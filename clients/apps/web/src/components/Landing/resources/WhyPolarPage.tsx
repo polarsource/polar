@@ -213,7 +213,7 @@ export const WhyPolarPage = () => {
           <GetStartedButton
             size="lg"
             text="Get Started"
-            className="rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black"
+            className="dark:hover:bg-polar-50 rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black"
           />
         </div>
       </div>

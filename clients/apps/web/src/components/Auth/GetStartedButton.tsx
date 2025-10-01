@@ -56,7 +56,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
     <>
       <Button
         wrapperClassNames={twMerge(
-          'flex flex-row items-center gap-x-2',
+          'flex flex-row items-center gap-x-2 ',
           wrapperClassNames,
         )}
         size={size}

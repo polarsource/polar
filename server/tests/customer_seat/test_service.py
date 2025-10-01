@@ -519,12 +519,11 @@ class TestBenefitGranting:
         """Test that claiming a seat enqueues benefit grants for the customer."""
         assert customer_seat_pending.invitation_token is not None
 
-        with patch("polar.worker.enqueue_job") as mock_enqueue_job:
+        with patch("polar.customer_seat.service.enqueue_job") as mock_enqueue_job:
             seat = await seat_service.claim_seat(
                 session, customer_seat_pending.invitation_token, customer
             )
 
-            # Verify benefit grant job was enqueued
             mock_enqueue_job.assert_called_once_with(
                 "benefit.enqueue_benefits_grants",
                 task="grant",
@@ -541,10 +540,9 @@ class TestBenefitGranting:
         original_customer_id = customer_seat_claimed.customer_id
         assert original_customer_id is not None
 
-        with patch("polar.worker.enqueue_job") as mock_enqueue_job:
+        with patch("polar.customer_seat.service.enqueue_job") as mock_enqueue_job:
             seat = await seat_service.revoke_seat(session, customer_seat_claimed)
 
-            # Verify benefit revocation job was enqueued
             mock_enqueue_job.assert_called_once_with(
                 "benefit.enqueue_benefits_grants",
                 task="revoke",
@@ -558,11 +556,9 @@ class TestBenefitGranting:
         self, session: AsyncSession, customer_seat_pending: CustomerSeat
     ) -> None:
         """Test that revoking a pending seat (no customer) doesn't enqueue revocation."""
-        # Pending seat has no customer_id
         assert customer_seat_pending.customer_id is None
 
-        with patch("polar.worker.enqueue_job") as mock_enqueue_job:
+        with patch("polar.customer_seat.service.enqueue_job") as mock_enqueue_job:
             await seat_service.revoke_seat(session, customer_seat_pending)
 
-            # Verify benefit revocation job was NOT enqueued (no customer assigned)
             mock_enqueue_job.assert_not_called()

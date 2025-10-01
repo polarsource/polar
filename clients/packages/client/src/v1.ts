@@ -3032,7 +3032,27 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/seats/claim': {
+  '/v1/customer-seats': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Assign Seat
+     * @description **Scopes**: `subscriptions:write`
+     */
+    post: operations['customer-seats:assign_seat']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-seats/claim': {
     parameters: {
       query?: never
       header?: never
@@ -3045,7 +3065,7 @@ export interface paths {
      * Claim Seat
      * @description **Scopes**: `customers:read` `customers:write`
      */
-    post: operations['seats:claim_seat']
+    post: operations['customer-seats:claim_seat']
     delete?: never
     options?: never
     head?: never
@@ -18418,6 +18438,16 @@ export interface components {
     /** SeatAssign */
     SeatAssign: {
       /**
+       * Subscription Id
+       * @description Subscription ID. Required if checkout_id is not provided.
+       */
+      subscription_id?: string | null
+      /**
+       * Checkout Id
+       * @description Checkout ID. Used to look up subscription. Required if subscription_id is not provided.
+       */
+      checkout_id?: string | null
+      /**
        * Email
        * @description Email of the customer to assign the seat to
        */
@@ -28551,7 +28581,68 @@ export interface operations {
       }
     }
   }
-  'seats:claim_seat': {
+  'customer-seats:assign_seat': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SeatAssign']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSeat']
+        }
+      }
+      /** @description No available seats or customer already has a seat */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Authentication required for subscription-based assignment */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted or seat-based pricing not enabled */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Subscription, checkout, or customer not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer-seats:claim_seat': {
     parameters: {
       query?: never
       header?: never

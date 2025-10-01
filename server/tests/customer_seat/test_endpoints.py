@@ -3,6 +3,7 @@ from datetime import datetime
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.auth.scope import Scope
 from polar.models import (
@@ -113,8 +114,11 @@ class TestAssignSeat:
         )
 
         response = await client.post(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats",
-            json={"email": "test@example.com"},
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "email": "test@example.com",
+            },
         )
 
         assert response.status_code == 200
@@ -139,8 +143,11 @@ class TestAssignSeat:
         )
 
         response = await client.post(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats",
-            json={"external_customer_id": "ext123"},
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "external_customer_id": "ext123",
+            },
         )
 
         assert response.status_code == 200
@@ -163,8 +170,12 @@ class TestAssignSeat:
 
         metadata = {"role": "admin", "department": "engineering"}
         response = await client.post(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats",
-            json={"email": "test@example.com", "metadata": metadata},
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "email": "test@example.com",
+                "metadata": metadata,
+            },
         )
 
         assert response.status_code == 200
@@ -179,8 +190,8 @@ class TestAssignSeat:
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats",
-            json={},
+            "/v1/customer-seats",
+            json={"subscription_id": str(subscription_with_seats.id)},
         )
 
         assert response.status_code == 422
@@ -194,8 +205,12 @@ class TestAssignSeat:
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats",
-            json={"email": "test@example.com", "customer_id": str(customer.id)},
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "email": "test@example.com",
+                "customer_id": str(customer.id),
+            },
         )
 
         assert response.status_code == 422
@@ -212,8 +227,11 @@ class TestAssignSeat:
         await save_fixture(subscription_with_seats)
 
         response = await client.post(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats",
-            json={"email": "test@example.com"},
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "email": "test@example.com",
+            },
         )
 
         assert response.status_code == 400
@@ -228,8 +246,11 @@ class TestAssignSeat:
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats",
-            json={"customer_id": str(customer.id)},
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "customer_id": str(customer.id),
+            },
         )
 
         assert response.status_code == 400
@@ -242,8 +263,11 @@ class TestAssignSeat:
     ) -> None:
         fake_id = uuid.uuid4()
         response = await client.post(
-            f"/v1/subscriptions/{fake_id}/seats",
-            json={"email": "test@example.com"},
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(fake_id),
+                "email": "test@example.com",
+            },
         )
 
         assert response.status_code == 404
@@ -262,8 +286,11 @@ class TestAssignSeat:
         await save_fixture(subscription.product.organization)
 
         response = await client.post(
-            f"/v1/subscriptions/{subscription.id}/seats",
-            json={"email": "test@example.com"},
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription.id),
+                "email": "test@example.com",
+            },
         )
 
         assert response.status_code == 403
@@ -276,8 +303,11 @@ class TestAssignSeat:
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats",
-            json={"email": "nonexistent@example.com"},
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "email": "nonexistent@example.com",
+            },
         )
 
         assert response.status_code == 404
@@ -290,23 +320,71 @@ class TestAssignSeat:
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats",
-            json={"external_customer_id": "nonexistent123"},
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "external_customer_id": "nonexistent123",
+            },
         )
 
         assert response.status_code == 404
 
-    async def test_assign_seat_unauthorized(
+    async def test_assign_seat_subscription_unauthorized(
         self,
         client: AsyncClient,
         subscription_with_seats: Subscription,
     ) -> None:
         response = await client.post(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats",
-            json={"email": "test@example.com"},
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "email": "test@example.com",
+            },
         )
 
-        assert response.status_code == 401
+        assert response.status_code == 403
+
+    async def test_assign_seat_from_checkout_anonymous(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription_with_seats: Subscription,
+        user_organization_seat_enabled: UserOrganization,
+    ) -> None:
+        from tests.fixtures.random_objects import create_checkout, create_customer
+
+        await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="checkout-user@example.com",
+        )
+
+        await session.refresh(subscription_with_seats.product, ["prices"])
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[subscription_with_seats.product],
+            price=subscription_with_seats.product.prices[0],
+            subscription=subscription_with_seats,
+            seats=5,
+        )
+
+        subscription_with_seats.checkout_id = checkout.id
+        await save_fixture(subscription_with_seats)
+
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                "checkout_id": str(checkout.id),
+                "email": "checkout-user@example.com",
+            },
+        )
+
+        assert response.status_code == 200, f"Error: {response.json()}"
+        data = response.json()
+        assert data["status"] == "pending"
+        assert data["subscription_id"] == str(subscription_with_seats.id)
 
 
 @pytest.mark.asyncio

@@ -9,6 +9,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.sender import send_seat_invitation_email
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Customer, CustomerSeat, Organization, Subscription, User
@@ -147,6 +148,14 @@ class SeatService:
             email=email,
             customer_id=customer.id,
             invitation_token=invitation_token,
+        )
+
+        send_seat_invitation_email(
+            customer_email=customer.email,
+            seat=seat,
+            organization=subscription.product.organization,
+            product_name=subscription.product.name,
+            billing_manager_email=subscription.customer.email,
         )
 
         return seat

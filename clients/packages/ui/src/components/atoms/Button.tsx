@@ -36,60 +36,54 @@ const buttonVariants = cva(
   },
 )
 
-const Button = React.forwardRef<
-  HTMLButtonElement,
-  ButtonProps & {
-    loading?: boolean
-    fullWidth?: boolean
-    wrapperClassNames?: string
-  }
->(
-  (
-    {
-      className,
-      wrapperClassNames,
-      variant,
-      size,
-      loading,
-      fullWidth,
-      disabled,
-      children,
-      type = 'button',
-      ...props
-    },
-    ref,
-  ) => {
-    return (
-      <ShadcnButton
-        className={twMerge(
-          buttonVariants({ variant, size, className }),
-          fullWidth ? 'w-full' : '',
-        )}
-        ref={ref}
-        disabled={disabled || loading}
-        type={type}
-        {...props}
-      >
-        {loading ? (
-          <>
-            <div className="absolute inset-0 flex h-full w-full items-center justify-center">
-              <LoadingSpinner disabled={disabled} size={size} />
-            </div>
-            <span className="flex flex-row items-center opacity-0">
-              {children}
-            </span>
-          </>
-        ) : (
-          <div
-            className={twMerge('flex flex-row items-center', wrapperClassNames)}
-          >
-            {children}
+const Button = ({
+  ref,
+  className,
+  wrapperClassNames,
+  variant,
+  size,
+  loading,
+  fullWidth,
+  disabled,
+  children,
+  type = 'button',
+  ...props
+}: ButtonProps & {
+  ref?: React.RefObject<HTMLButtonElement>
+  wrapperClassNames?: string
+  loading?: boolean
+  fullWidth?: boolean
+}) => {
+  return (
+    <ShadcnButton
+      className={twMerge(
+        buttonVariants({ variant, size, className }),
+        fullWidth ? 'w-full' : '',
+      )}
+      ref={ref}
+      disabled={disabled || loading}
+      type={type}
+      {...props}
+    >
+      {loading ? (
+        <>
+          <div className="absolute inset-0 flex h-full w-full items-center justify-center">
+            <LoadingSpinner disabled={disabled} size={size} />
           </div>
-        )}
-      </ShadcnButton>
-    )
-  },
-)
+          <span className="flex flex-row items-center opacity-0">
+            {children}
+          </span>
+        </>
+      ) : (
+        <div
+          className={twMerge('flex flex-row items-center', wrapperClassNames)}
+        >
+          {children}
+        </div>
+      )}
+    </ShadcnButton>
+  )
+}
 
 Button.displayName = ShadcnButton.displayName
 
@@ -129,19 +123,26 @@ const LoadingSpinner = (props: {
   )
 }
 
-export const RawButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, children, ...props }, ref) => {
-    return (
-      <ShadcnButton
-        className={twMerge(buttonVariants({ variant, size, className }))}
-        ref={ref}
-        {...props}
-      >
-        {children}
-      </ShadcnButton>
-    )
-  },
-)
+export const RawButton = ({
+  ref,
+  className,
+  variant,
+  size,
+  children,
+  ...props
+}: ButtonProps & {
+  ref?: React.RefObject<HTMLButtonElement>
+}) => {
+  return (
+    <ShadcnButton
+      className={twMerge(buttonVariants({ variant, size, className }))}
+      ref={ref}
+      {...props}
+    >
+      {children}
+    </ShadcnButton>
+  )
+}
 
 RawButton.displayName = 'RawButton'
 

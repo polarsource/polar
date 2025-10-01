@@ -12,20 +12,17 @@ export const useAssignSeatFromCheckout = (checkoutId: string) => {
       email: string
       metadata?: Record<string, any>
     }) => {
-      const response = await fetch(
-        `${getServerURL()}/v1/customer-seats`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            checkout_id: checkoutId,
-            email,
-            metadata,
-          }),
+      const response = await fetch(`${getServerURL()}/v1/customer-seats`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      )
+        body: JSON.stringify({
+          checkout_id: checkoutId,
+          email,
+          metadata,
+        }),
+      })
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))

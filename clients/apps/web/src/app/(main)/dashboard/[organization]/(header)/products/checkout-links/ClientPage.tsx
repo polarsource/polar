@@ -90,7 +90,7 @@ export const ClientPage = () => {
         />
       }
       contextViewPlacement="left"
-      title={checkoutLink?.label ?? 'Untitled'}
+      title={checkoutLink ? (checkoutLink.label ?? 'Untitled') : undefined}
       header={
         checkoutLink ? (
           <div className="flex flex-row items-center gap-x-2">

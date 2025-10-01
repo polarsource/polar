@@ -602,7 +602,7 @@ class Datatable[M, PE: StrEnum]:
             If None, no sorting controls are rendered.
         """
         with tag.div(
-            classes="overflow-x-auto rounded-box bg-base-100 border-1 border-gray-600"
+            classes="overflow-x-auto rounded-box bg-base-100 border-1 border-base-200"
         ):
             with tag.table(classes="table table-auto"):
                 with tag.thead():

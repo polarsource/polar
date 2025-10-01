@@ -165,7 +165,7 @@ async def get(
     if request.method == "POST":
         try:
             form_data = await request.form()
-            form = UpdateMyEntityForm.model_validate(form_data)
+            form = UpdateMyEntityForm.model_validate_form(form_data)
 
             # Update entity
             await repository.update(entity, form.model_dump())
@@ -359,7 +359,7 @@ async def get(
     if request.method == "POST":
         try:
             form_data = await request.form()
-            form = UpdateForm.model_validate(form_data)
+            form = UpdateForm.model_validate_form(form_data)
             # Process form
             return success_response
         except ValidationError as e:
@@ -521,7 +521,7 @@ validation_error: ValidationError | None = None
 if request.method == "POST":
     try:
         form_data = await request.form()
-        form = MyForm.model_validate(form_data)
+        form = MyForm.model_validate_form(form_data)
         # Process valid data
     except ValidationError as e:
         validation_error = e

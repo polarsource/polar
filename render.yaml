@@ -26,15 +26,16 @@ services:
       targetCPUPercent: 90
     domains:
       - api.polar.sh
+      - backoffice.polar.sh
     envVars:
       - key: WEB_CONCURRENCY
         value: 2
       - key: FORWARDED_ALLOW_IPS
         value: "*"
       - key: POLAR_ALLOWED_HOSTS
-        value: '["polar.sh"]'
+        value: '["polar.sh", "backoffice.polar.sh"]'
       - key: POLAR_CORS_ORIGINS
-        value: '["https://dashboard.polar.sh", "https://github.com", "https://polar.sh", "https://polar-polar-sh.vercel.app"]'
+        value: '["https://polar.sh", "https://github.com", "https://docs.polar.sh"]'
       - key: POLAR_POSTGRES_DATABASE
         fromDatabase:
           name: db
@@ -209,7 +210,7 @@ services:
       - key: POLAR_ALLOWED_HOSTS
         value: '["sandbox.polar.sh"]'
       - key: POLAR_CORS_ORIGINS
-        value: '["https://sandbox.polar.sh", "https://github.com"]'
+        value: '["https://sandbox.polar.sh", "https://github.com", "https://docs.polar.sh"]'
       - key: POLAR_POSTGRES_DATABASE
         value: polar_sandbox
       - key: POLAR_POSTGRES_HOST

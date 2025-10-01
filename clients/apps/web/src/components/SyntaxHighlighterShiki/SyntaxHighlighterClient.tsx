@@ -10,12 +10,7 @@ import langPython from 'shiki/langs/python.mjs'
 import langTypescript from 'shiki/langs/typescript.mjs'
 import themeCatppuccinLatte from 'shiki/themes/catppuccin-latte.mjs'
 import themePoimandres from 'shiki/themes/poimandres.mjs'
-import {
-  themeConfig,
-  themesList,
-  transformers,
-  USED_LANGUAGES,
-} from '../../../shiki.config'
+import { themeConfig, themesList, USED_LANGUAGES } from '../../../shiki.config'
 
 // Map configuration to actual imports for tree-shaking
 const LANGUAGE_MAP = {
@@ -83,11 +78,13 @@ export const SyntaxHighlighterProvider = ({
       }
 
       if (highlighter.getLoadedLanguages().includes(lang)) {
-        return true;
+        return true
       }
 
       try {
-        await highlighter.loadLanguage(LANGUAGE_MAP[lang as keyof typeof LANGUAGE_MAP])
+        await highlighter.loadLanguage(
+          LANGUAGE_MAP[lang as keyof typeof LANGUAGE_MAP],
+        )
         return true
       } catch (e) {
         return false
@@ -128,7 +125,6 @@ export const SyntaxHighlighterClient = ({
       const highlightedCode = highlighter.codeToHtml(code, {
         lang: success ? lang : 'text',
         themes: customThemeConfig ?? themeConfig,
-        transformers,
       })
       setHighlightedCode(highlightedCode)
     })

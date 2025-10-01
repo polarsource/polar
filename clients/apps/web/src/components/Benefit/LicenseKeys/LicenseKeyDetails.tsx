@@ -15,7 +15,7 @@ export const LicenseKeyDetails = ({
   return (
     <ShadowBox
       className={twMerge(
-        'dark:bg-polar-800 p-6 text-sm lg:rounded-3xl',
+        'dark:bg-polar-800 bg-gray-100 p-6 text-sm lg:rounded-2xl',
         className,
       )}
     >

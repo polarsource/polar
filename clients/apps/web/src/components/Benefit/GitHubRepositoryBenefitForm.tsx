@@ -403,7 +403,7 @@ export const GitHubRepositoryBenefitForm = ({
                 <a
                   href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role"
                   target="_blank"
-                  rel="noopener noreferer"
+                  rel="noopener noreferer noreferrer"
                   className="text-blue-500 underline"
                 >
                   GitHub documentation

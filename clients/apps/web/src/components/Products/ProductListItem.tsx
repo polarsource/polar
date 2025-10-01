@@ -5,7 +5,11 @@ import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import { toast } from '@/components/Toast/use-toast'
 import { useUpdateProduct } from '@/hooks/queries/products'
-import { hasLegacyRecurringPrices, isMeteredPrice, isSeatBasedPrice } from '@/utils/product'
+import {
+  hasLegacyRecurringPrices,
+  isMeteredPrice,
+  isSeatBasedPrice,
+} from '@/utils/product'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'

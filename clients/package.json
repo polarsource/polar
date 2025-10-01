@@ -6,6 +6,7 @@
     "dev": "turbo watch dev",
     "dev-web": "turbo run dev --filter=web",
     "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "generate": "pnpm -C packages/client generate",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
@@ -15,8 +16,6 @@
   "devDependencies": {
     "@changesets/cli": "^2.29.7",
     "@manypkg/cli": "^0.25.1",
-    "eslint": "^8.57.1",
-    "eslint-config-custom": "workspace:*",
     "only-allow": "1.2.1",
     "prettier": "^3.6.2",
     "prettier-plugin-organize-imports": "^4.3.0",

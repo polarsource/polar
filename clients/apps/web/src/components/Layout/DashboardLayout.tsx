@@ -13,7 +13,13 @@ import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { PropsWithChildren, useContext, useEffect, useState, type JSX } from 'react';
+import {
+  PropsWithChildren,
+  useContext,
+  useEffect,
+  useState,
+  type JSX,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
 import { SubRouteWithActive } from '../Dashboard/navigation'

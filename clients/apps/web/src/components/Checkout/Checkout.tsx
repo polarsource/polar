@@ -104,7 +104,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
 
     return (
       <Alert color="red">
-        <div className="flex flex-col gap-y-2">
+        <div className="flex flex-col gap-y-2 p-2">
           <div className="font-medium">Payments are currently unavailable</div>
           <div className="text-sm">
             {isDenied

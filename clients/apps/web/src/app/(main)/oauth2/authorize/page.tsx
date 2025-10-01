@@ -11,7 +11,7 @@ const getAuthorizeResponse = async (
   searchParams: Record<string, string>,
 ): Promise<Response> => {
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
-  let url = `${getServerURL()}/v1/oauth2/authorize?${serializedSearchParams}`
+  const url = `${getServerURL()}/v1/oauth2/authorize?${serializedSearchParams}`
 
   const cookieStore = await cookies()
   return await fetch(url, {
@@ -32,12 +32,10 @@ const getScopeDisplayNames = async (): Promise<
   return openAPISchema.components.schemas.Scope.enumNames
 }
 
-export default async function Page(
-  props: {
-    searchParams: Promise<Record<string, string>>
-  }
-) {
-  const searchParams = await props.searchParams;
+export default async function Page(props: {
+  searchParams: Promise<Record<string, string>>
+}) {
+  const searchParams = await props.searchParams
   const response = await getAuthorizeResponse(searchParams)
 
   if (response.status >= 300 && response.status < 400) {

@@ -241,6 +241,7 @@ export const OrganizationStep = ({
                               href="https://polar.sh/docs/merchant-of-record/acceptable-use"
                               className="text-blue-500 underline dark:text-blue-400"
                               target="_blank"
+                              rel="noreferrer"
                             >
                               prohibited products
                             </a>
@@ -290,6 +291,7 @@ export const OrganizationStep = ({
                                     href="https://polar.sh/docs/merchant-of-record/account-reviews"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
+                                    rel="noreferrer"
                                   >
                                     Account Reviews Policy
                                   </a>
@@ -302,6 +304,7 @@ export const OrganizationStep = ({
                                     href="https://polar.sh/legal/terms"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
+                                    rel="noreferrer"
                                   >
                                     Terms of Service
                                   </a>
@@ -311,6 +314,7 @@ export const OrganizationStep = ({
                                     href="https://polar.sh/legal/privacy"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
+                                    rel="noreferrer"
                                   >
                                     Privacy Policy
                                   </a>

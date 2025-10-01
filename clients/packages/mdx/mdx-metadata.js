@@ -9,82 +9,85 @@ import { parse as parseYaml } from 'yaml'
  * @param options Optional options to configure the output.
  * @returns A unified transformer.
  */
-const remarkMdxFrontmatter = (opengraphImageUrl) => ({
-  name = 'metadata',
-  parsers
-} = {}) => {
-  if (!isIdentifierName(name)) {
-    throw new Error(`Name should be a valid identifier, got: ${JSON.stringify(name)}`)
-  }
-
-  const allParsers = {
-    yaml: parseYaml,
-    toml: parseToml,
-    ...parsers
-  }
-
-  return (ast) => {
-    let data
-    const node = ast.children.find((child) => Object.hasOwn(allParsers, child.type))
-
-    if (node) {
-      const parser = allParsers[node.type]
-
-      const { value } = node
-
-
-      data = {
-        ...parser(value),
-      }
-
-      const openGraph = {
-        type: 'website',
-        ...opengraphImageUrl
-          ? {
-            images: [
-              {
-                url: `${opengraphImageUrl}?${new URLSearchParams(data).toString()}`,
-                width: 1200,
-                height: 630,
-              },
-            ],
-          } : {},
-      }
-
-      data.openGraph = {
-        ...openGraph,
-        ...data.openGraph
-      }
+const remarkMdxFrontmatter =
+  (opengraphImageUrl) =>
+  ({ name = 'metadata', parsers } = {}) => {
+    if (!isIdentifierName(name)) {
+      throw new Error(
+        `Name should be a valid identifier, got: ${JSON.stringify(name)}`,
+      )
     }
 
-    ast.children.unshift({
-      type: 'mdxjsEsm',
-      value: '',
-      data: {
-        estree: {
-          type: 'Program',
-          sourceType: 'module',
-          body: [
-            {
-              type: 'ExportNamedDeclaration',
-              specifiers: [],
-              declaration: {
-                type: 'VariableDeclaration',
-                kind: 'const',
-                declarations: [
+    const allParsers = {
+      yaml: parseYaml,
+      toml: parseToml,
+      ...parsers,
+    }
+
+    return (ast) => {
+      let data
+      const node = ast.children.find((child) =>
+        Object.hasOwn(allParsers, child.type),
+      )
+
+      if (node) {
+        const parser = allParsers[node.type]
+
+        const { value } = node
+
+        data = {
+          ...parser(value),
+        }
+
+        const openGraph = {
+          type: 'website',
+          ...(opengraphImageUrl
+            ? {
+                images: [
                   {
-                    type: 'VariableDeclarator',
-                    id: { type: 'Identifier', name },
-                    init: valueToEstree(data, { preserveReferences: true })
-                  }
-                ]
+                    url: `${opengraphImageUrl}?${new URLSearchParams(data).toString()}`,
+                    width: 1200,
+                    height: 630,
+                  },
+                ],
               }
-            }
-          ]
+            : {}),
+        }
+
+        data.openGraph = {
+          ...openGraph,
+          ...data.openGraph,
         }
       }
-    })
+
+      ast.children.unshift({
+        type: 'mdxjsEsm',
+        value: '',
+        data: {
+          estree: {
+            type: 'Program',
+            sourceType: 'module',
+            body: [
+              {
+                type: 'ExportNamedDeclaration',
+                specifiers: [],
+                declaration: {
+                  type: 'VariableDeclaration',
+                  kind: 'const',
+                  declarations: [
+                    {
+                      type: 'VariableDeclarator',
+                      id: { type: 'Identifier', name },
+                      init: valueToEstree(data, { preserveReferences: true }),
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      })
+    }
   }
-}
 
 export default remarkMdxFrontmatter

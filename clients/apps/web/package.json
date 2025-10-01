@@ -15,6 +15,8 @@
     "node": "=22"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.42",
+    "@ai-sdk/react": "^2.0.59",
     "@date-fns/utc": "^2.1.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -47,6 +49,7 @@
     "@tanstack/react-query-next-experimental": "^5.90.2",
     "@tanstack/react-table": "^8.21.3",
     "@vercel/blob": "^0.23.4",
+    "ai": "^5.0.59",
     "big.js": "^7.0.1",
     "class-variance-authority": "^0.7.1",
     "crawler-user-agents": "^1.21.0",

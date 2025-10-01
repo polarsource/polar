@@ -195,6 +195,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                       amount={original.amount}
                       currency={original.currency}
                       interval={original.recurring_interval}
+                      intervalCount={original.recurring_interval_count}
                     />
                   ) : (
                     <span>—</span>

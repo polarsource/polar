@@ -2,6 +2,10 @@
 
 import * as React from 'react'
 import * as RechartsPrimitive from 'recharts'
+import type {
+  NameType,
+  ValueType,
+} from 'recharts/types/component/DefaultTooltipContent'
 
 import { cn } from '@/lib/utils'
 
@@ -106,7 +110,7 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
-const ChartTooltipContent = ({
+const ChartTooltipContent = <TValue extends ValueType, TName extends NameType>({
   ref,
   active,
   payload,
@@ -121,16 +125,15 @@ const ChartTooltipContent = ({
   color,
   nameKey,
   labelKey,
-}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> & {
-  ref?: React.RefObject<HTMLDivElement>
-  className?: string
-  indicator?: 'line' | 'dot' | 'dashed'
-  hideLabel?: boolean
-  hideIndicator?: boolean
-  color?: string
-  nameKey?: string
-  labelKey?: string
-}) => {
+}: RechartsPrimitive.TooltipContentProps<TValue, TName> &
+  Pick<React.ComponentProps<'div'>, 'ref' | 'className'> & {
+    indicator?: 'line' | 'dot' | 'dashed'
+    hideLabel?: boolean
+    hideIndicator?: boolean
+    color?: string
+    nameKey?: string
+    labelKey?: string
+  }) => {
   const { config } = useChart()
 
   const tooltipLabel = React.useMemo(() => {
@@ -264,11 +267,11 @@ const ChartLegendContent = ({
   payload,
   verticalAlign = 'bottom',
   nameKey,
-}: React.ComponentProps<typeof RechartsPrimitive.Legend> & {
-  ref?: React.RefObject<HTMLDivElement>
-  hideIcon?: boolean
-  nameKey?: string
-}) => {
+}: RechartsPrimitive.DefaultLegendContentProps &
+  Pick<React.ComponentProps<'div'>, 'ref' | 'className'> & {
+    hideIcon?: boolean
+    nameKey?: string
+  }) => {
   const { config } = useChart()
 
   if (!payload?.length) {

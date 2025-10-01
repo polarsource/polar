@@ -4,6 +4,44 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-10-01">
+
+  ## Launched Subscription Trials
+
+<img src="/assets/changelog/2025-10-01/launched-susbcription-trials.jpeg" />
+
+You can now offer [trial periods](/docs/features/trials) for new subscriptions! This highly requested feature allows you to let customers experience your product before their first payment is due. Trials can be configured in both the dashboard and API when creating or updating subscription products.
+
+  ## Always display taxes line item in the checkout
+
+We've improved our checkout experience to always display taxes (vs lazy loading them on country selection), making charges more transparent for your customers regardless of whether taxes apply to their purchase.
+
+  ## Do not calculate taxes on free or zero-amount orders
+
+Orders with a zero amount (such as promotional products) will no longer have taxes calculated, resulting in a clearer and more accurate order summary for your customers.
+
+  ## Add confirmation modal for deleting discounts
+
+When deleting a discount, you'll now see a confirmation modal to help prevent accidental deletions and provide extra clarity on the impact of your actions.
+
+  ## Fix infinite rendering loop with date picker
+
+Resolved a bug where selecting dates in the date picker could cause an infinite rendering loop, improving reliability for date-related forms.
+
+  ## Require opt-in if you will be charged immediately
+
+Users must now explicitly confirm immediate charges or credits when switching subscription intervals, with the UI providing clearer, contextual explanations of invoicing outcomes.
+
+  ## Check for `expires_at` when activating license keys
+
+License key activation now correctly checks the `expires_at` date, ensuring that only valid, non-expired license keys can be activated.
+
+  ## Fix customer state for trialing subscriptions
+
+The [Customer State API](/docs/api-reference/customers/state) now properly handles customers with `trialing` subscriptions, so your integrations and dashboards always show an accurate subscription status.
+
+</Update>
+
 <Update label="2025-09-22">
   ## Improved preview of next invoice in Customer Portal
 

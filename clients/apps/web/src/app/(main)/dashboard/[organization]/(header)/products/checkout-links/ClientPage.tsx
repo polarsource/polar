@@ -10,11 +10,9 @@ import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCheckoutLink, useDeleteCheckoutLink } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import {
-  AddOutlined,
-  LinkOutlined,
-  MoreVertOutlined,
-} from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import LinkOutlined from '@mui/icons-material/LinkOutlined'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DropdownMenu,
@@ -92,7 +90,7 @@ export const ClientPage = () => {
         />
       }
       contextViewPlacement="left"
-      title={checkoutLink?.label ?? ''}
+      title={checkoutLink ? (checkoutLink.label ?? 'Untitled') : undefined}
       header={
         checkoutLink ? (
           <div className="flex flex-row items-center gap-x-2">
@@ -118,7 +116,7 @@ export const ClientPage = () => {
           </div>
         ) : undefined
       }
-      wrapperClassName="!max-w-screen-sm"
+      wrapperClassName="max-w-(--breakpoint-sm)!"
     >
       {checkoutLink ? (
         <>

@@ -25,4 +25,4 @@ export default (
       fill="#fff"
     />
   </g>
-);
+)

@@ -3,7 +3,7 @@
   "tailwindCSS.suggestions": true,
   "tailwindCSS.validate": true,
   "[tailwindcss]": {
-    "editor.defaultFormatter": "bradlc.vscode-tailwindcss",
+    "editor.defaultFormatter": "bradlc.vscode-tailwindcss"
   },
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -20,7 +20,5 @@
     "**/node_modules": true,
     "**/.next": true
   },
-  "editor.rulers": [
-    120
-  ],
+  "editor.rulers": [120]
 }

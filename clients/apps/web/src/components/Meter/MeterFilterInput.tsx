@@ -226,7 +226,7 @@ const MeterFilterInput: React.FC<{
                     {conjunction}
                   </div>
                 )}
-                <ShadowBox className="flex flex-col gap-4 !rounded-2xl p-4">
+                <ShadowBox className="rounded-2xl! flex flex-col gap-4 p-4">
                   <MeterFilterInput
                     prefix={`${prefix}.clauses.${index}`}
                     removeParent={

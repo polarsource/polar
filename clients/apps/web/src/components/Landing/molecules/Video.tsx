@@ -1,6 +1,7 @@
 'use client'
 
-import { VolumeMute, VolumeUp } from '@mui/icons-material'
+import VolumeMute from '@mui/icons-material/VolumeMute'
+import VolumeUp from '@mui/icons-material/VolumeUp'
 import { useEffect, useRef, useState } from 'react'
 
 interface VideoProps {

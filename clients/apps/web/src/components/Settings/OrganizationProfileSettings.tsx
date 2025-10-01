@@ -1,17 +1,15 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  AddOutlined,
-  AddPhotoAlternateOutlined,
-  CloseOutlined,
-  Facebook,
-  GitHub,
-  Instagram,
-  LinkedIn,
-  Public,
-  X,
-  YouTube,
-} from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
+import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import Facebook from '@mui/icons-material/Facebook'
+import GitHub from '@mui/icons-material/GitHub'
+import Instagram from '@mui/icons-material/Instagram'
+import LinkedIn from '@mui/icons-material/LinkedIn'
+import Public from '@mui/icons-material/Public'
+import X from '@mui/icons-material/X'
+import YouTube from '@mui/icons-material/YouTube'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -117,28 +115,24 @@ const OrganizationSocialLinks = () => {
   }
 
   const handleChange = (index: number, value: string) => {
-    if (!value) return
-
-    // Add protocol if missing
-    if (!value.startsWith('https://')) {
+    const currentFieldValue = socials[index]?.url
+    if (currentFieldValue === '') {
       value = 'https://' + value
-    } else if (value.startsWith('http://')) {
-      value = value.replace('http://', 'https://')
     }
 
+    // Infer the platform from the URL
+    let newPlatform: schemas['OrganizationSocialPlatforms'] = 'other'
     try {
       const url = new URL(value)
       const hostname = url.hostname as keyof typeof SOCIAL_PLATFORM_DOMAINS
-      const newPlatform = (SOCIAL_PLATFORM_DOMAINS[hostname] ??
+      newPlatform = (SOCIAL_PLATFORM_DOMAINS[hostname] ??
         'other') as schemas['OrganizationSocialPlatforms']
-
-      const updatedSocials = [...socials]
-      updatedSocials[index] = {
-        platform: newPlatform,
-        url: value,
-      }
-      setValue('socials', updatedSocials, { shouldDirty: true })
     } catch {}
+
+    // Update the socials array
+    const updatedSocials = [...socials]
+    updatedSocials[index] = { platform: newPlatform, url: value }
+    setValue('socials', updatedSocials, { shouldDirty: true })
   }
 
   return (
@@ -365,6 +359,10 @@ export const OrganizationDetailsForm: React.FC<
                     value: 50,
                     message: 'Please provide at least 50 characters',
                   },
+                  maxLength: {
+                    value: 3000,
+                    message: 'Please keep under 3000 characters',
+                  },
                 }}
                 render={({ field }) => (
                   <div>
@@ -375,7 +373,7 @@ export const OrganizationDetailsForm: React.FC<
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
                       <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/50+ characters
+                        {field.value?.length || 0}/3000 characters (min 50)
                       </span>
                     </div>
                   </div>
@@ -400,6 +398,10 @@ export const OrganizationDetailsForm: React.FC<
                     value: 50,
                     message: 'Please provide at least 50 characters',
                   },
+                  maxLength: {
+                    value: 3000,
+                    message: 'Please keep under 3000 characters',
+                  },
                 }}
                 render={({ field }) => (
                   <div>
@@ -410,7 +412,7 @@ export const OrganizationDetailsForm: React.FC<
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
                       <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/50+ characters
+                        {field.value?.length || 0}/3000 characters (min 50)
                       </span>
                     </div>
                   </div>
@@ -435,6 +437,10 @@ export const OrganizationDetailsForm: React.FC<
                     value: 30,
                     message: 'Please provide at least 30 characters',
                   },
+                  maxLength: {
+                    value: 3000,
+                    message: 'Please keep under 3000 characters',
+                  },
                 }}
                 render={({ field }) => (
                   <div>
@@ -445,7 +451,7 @@ export const OrganizationDetailsForm: React.FC<
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
                       <span className="text-xs text-gray-500">
-                        {field.value?.length || 0}/30+ characters
+                        {field.value?.length || 0}/3000 characters (min 30)
                       </span>
                     </div>
                   </div>

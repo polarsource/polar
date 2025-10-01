@@ -75,6 +75,7 @@ class TestOrganizationUnderReview:
         await organization_under_review(organization.id)
 
         send_to_user_mock.assert_called_once()
+        create_account_review_thread_mock.assert_called_once()
         get_admin_user_mock.assert_called_once()
 
     async def test_existing_organization_with_account(

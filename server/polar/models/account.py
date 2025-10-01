@@ -116,8 +116,22 @@ class Account(RecordModel):
         )
 
     @declared_attr
-    def organizations(cls) -> Mapped[list["Organization"]]:
+    def all_organizations(cls) -> Mapped[list["Organization"]]:
         return relationship("Organization", lazy="raise", back_populates="account")
+
+    @declared_attr
+    def organizations(cls) -> Mapped[list["Organization"]]:
+        return relationship(
+            "Organization",
+            lazy="raise",
+            primaryjoin=(
+                "and_("
+                "Organization.account_id == Account.id,"
+                "Organization.deleted_at.is_(None)"
+                ")"
+            ),
+            viewonly=True,
+        )
 
     def is_active(self) -> bool:
         return self.status == Account.Status.ACTIVE

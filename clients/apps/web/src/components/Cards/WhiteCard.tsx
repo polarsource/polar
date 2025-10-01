@@ -4,7 +4,7 @@ import { type CardProperties } from './types'
 
 const WhiteCard = (props: CardProperties) => {
   const className = twMerge(
-    'bg-gray-50 shadow dark:bg-polar-950 dark:ring-1 dark:ring-polar-700',
+    'bg-gray-50 shadow-sm dark:bg-polar-950 dark:ring-1 dark:ring-polar-700',
     props.className || '',
   )
 

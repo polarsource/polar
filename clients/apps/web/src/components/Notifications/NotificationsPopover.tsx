@@ -1,11 +1,9 @@
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import {
-  BoltOutlined,
-  FaceOutlined,
-  InfoOutlined,
-  ShoppingBagOutlined,
-} from '@mui/icons-material'
+import BoltOutlined from '@mui/icons-material/BoltOutlined'
+import FaceOutlined from '@mui/icons-material/FaceOutlined'
+import InfoOutlined from '@mui/icons-material/InfoOutlined'
+import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
@@ -91,7 +89,7 @@ export const NotificationsPopover = () => {
       >
         <PopoverTrigger>
           <BoltOutlined
-            className="!h-5 !w-5"
+            className="[&svg]:size-5!"
             fontSize="medium"
             aria-hidden="true"
           />
@@ -146,7 +144,7 @@ const Item = ({
 }: {
   iconClasses: string
   n: NotificationSchema
-  children: { icon: React.ReactElement; text: React.ReactElement }
+  children: { icon: React.ReactElement<any>; text: React.ReactElement<any> }
 }) => {
   return (
     <div className="flex space-x-2.5 text-sm transition-colors duration-100">
@@ -314,7 +312,7 @@ export const Notification = ({
 
 const InternalLink = (props: {
   href: string
-  children: React.ReactElement
+  children: React.ReactElement<any>
 }) => {
   return (
     <Link className="font-bold hover:underline" href={props.href}>

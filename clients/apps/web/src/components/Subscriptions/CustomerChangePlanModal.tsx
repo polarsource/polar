@@ -9,6 +9,7 @@ import { hasLegacyRecurringPrices } from '@/utils/product'
 import { Client, schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
@@ -93,20 +94,6 @@ const CustomerChangePlanModal = ({
     return !hasPaymentMethod
   }, [selectedProduct, hasPaymentMethod])
 
-  const canChangePlan = useMemo(() => {
-    if (!selectedProduct) return false
-    const isSamePlan = selectedProduct?.id === subscription.product_id
-    if (isSamePlan) return false
-
-    const selectedPlanIsFree = selectedProduct?.prices.some(
-      (p) => p.amount_type === 'free',
-    )
-
-    if (selectedPlanIsFree) return true
-
-    return hasPaymentMethod
-  }, [hasPaymentMethod, selectedProduct, subscription])
-
   const addedBenefits = useMemo(() => {
     if (!selectedProduct) return []
     return selectedProduct.benefits.filter(
@@ -125,15 +112,84 @@ const CustomerChangePlanModal = ({
     () => organization.subscription_settings.proration_behavior,
     [organization],
   )
+
+  const [willTriggerImmediateCycle, nextInvoiceType] = useMemo(():
+    | [false, null]
+    | [true, 'charge' | 'credit'] => {
+    if (!selectedProduct) return [false, null]
+
+    const willTrigger =
+      selectedProduct.recurring_interval !==
+      subscription.product.recurring_interval
+
+    if (!willTrigger) return [false, null]
+
+    const newPrice = selectedProduct.prices.reduce((acc, price) => {
+      if (price.amount_type === 'fixed') {
+        return acc + price.price_amount
+      }
+
+      return acc
+    }, 0)
+
+    const currentPrice = subscription.amount
+
+    const chargeOrCredit = newPrice > currentPrice ? 'charge' : 'credit'
+
+    return [willTrigger, chargeOrCredit]
+  }, [selectedProduct, subscription])
+
   const invoicingMessage = useMemo(() => {
     if (!selectedProduct) return null
 
-    if (prorationBehavior === 'invoice') {
-      return 'An invoice will be issued with a proration for the current month.'
-    } else {
-      return 'On your next invoice, you will be charged for the new plan, plus a proration for the current month.'
+    if (willTriggerImmediateCycle) {
+      const newPeriod =
+        selectedProduct.recurring_interval === 'month' ? 'monthly' : 'yearly'
+
+      if (nextInvoiceType === 'charge') {
+        return `I'll be charged immediately for the new ${newPeriod} plan.`
+      } else {
+        return `My previous payment will appear as a credit on my next invoice.`
+      }
     }
-  }, [selectedProduct, prorationBehavior])
+
+    if (prorationBehavior === 'invoice') {
+      return "I'll be charged immediately with a proration for the current month."
+    } else {
+      return 'Your next invoice will include the new plan plus the proration for the current month.'
+    }
+  }, [
+    selectedProduct,
+    prorationBehavior,
+    willTriggerImmediateCycle,
+    nextInvoiceType,
+  ])
+
+  const willIssueInvoice =
+    willTriggerImmediateCycle || prorationBehavior === 'invoice'
+  const [approveImmediateInvoice, setApproveImmediateInvoice] = useState(false)
+
+  const canChangePlan = useMemo(() => {
+    if (!selectedProduct) return false
+    const isSamePlan = selectedProduct?.id === subscription.product_id
+    if (isSamePlan) return false
+
+    if (willIssueInvoice && !approveImmediateInvoice) return false
+
+    const selectedPlanIsFree = selectedProduct?.prices.some(
+      (p) => p.amount_type === 'free',
+    )
+
+    if (selectedPlanIsFree) return true
+
+    return hasPaymentMethod
+  }, [
+    hasPaymentMethod,
+    selectedProduct,
+    subscription,
+    willIssueInvoice,
+    approveImmediateInvoice,
+  ])
 
   const updateSubscription = useCustomerUpdateSubscription(api)
   const onConfirm = useCallback(async () => {
@@ -250,9 +306,20 @@ const CustomerChangePlanModal = ({
             </div>
           )}
           {invoicingMessage && (
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              {invoicingMessage}
-            </p>
+            <label className="flex flex-row items-center gap-x-2">
+              {willIssueInvoice && (
+                <Checkbox
+                  checked={approveImmediateInvoice}
+                  onCheckedChange={(checked) =>
+                    setApproveImmediateInvoice(checked === true)
+                  }
+                />
+              )}
+
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                {invoicingMessage}
+              </span>
+            </label>
           )}
         </div>
         {needToAddPaymentMethod && (

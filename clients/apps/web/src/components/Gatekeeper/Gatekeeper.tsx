@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks'
 
-const Gatekeeper = (props: { children: React.ReactElement }) => {
+const Gatekeeper = (props: { children: React.ReactElement<any> }) => {
   const { currentUser } = useAuth()
 
   if (!currentUser) {

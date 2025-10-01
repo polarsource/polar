@@ -13,8 +13,8 @@ const BenefitRow = ({
   children: ReactNode
 }) => {
   return (
-    <div className="flex flex-row items-center gap-x-3">
-      <span className="flex h-4 w-4 items-center justify-center text-2xl text-black dark:text-white">
+    <div className="dark:text-polar-100 flex flex-row items-center gap-x-2 text-gray-600">
+      <span className="dark:text-polar-200 flex h-4 w-4 items-center justify-center text-2xl text-gray-600">
         {icon}
       </span>
       <span className="text-sm">{children}</span>
@@ -52,7 +52,7 @@ export const BenefitList = ({
       {shown.map((benefit) => (
         <BenefitRow
           key={benefit.id}
-          icon={resolveBenefitIcon(benefit.type, 'h-3 w-3')}
+          icon={resolveBenefitIcon(benefit.type, 'h-4 w-4')}
         >
           {benefit.description}
         </BenefitRow>
@@ -63,7 +63,7 @@ export const BenefitList = ({
             toggled.map((benefit) => (
               <BenefitRow
                 key={benefit.id}
-                icon={resolveBenefitIcon(benefit.type, 'h-3 w-3')}
+                icon={resolveBenefitIcon(benefit.type, 'h-4 w-4')}
               >
                 {benefit.description}
               </BenefitRow>

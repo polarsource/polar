@@ -1,49 +1,12 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@polar-sh/typescript-config/nextjs.json",
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "strict": true,
+    "outDir": "dist",
     "baseUrl": "src/",
     "paths": {
       "@/*": ["./*"]
-    },
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "allowJs": true,
-    "noEmit": true,
-    "incremental": true,
-    "resolveJsonModule": true,
-    "composite": false,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "inlineSources": false,
-    "isolatedModules": true,
-
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "preserveWatchOutput": true,
-    "skipLibCheck": true,
-
-    "allowUnreachableCode": false,
-
-    // TODO
-    "noUncheckedIndexedAccess": null,
-
-    "target": "ES6",
-    "jsx": "preserve",
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    }
   },
-  "include": [
-    "next-env.d.ts",
-    "next.d.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "sentry.*.config.ts",
-    ".next/types/**/*.ts"
-  ],
+  "include": ["src", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

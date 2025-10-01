@@ -389,7 +389,7 @@ async def cancel(
     if request.method == "POST":
         data = await request.form()
         try:
-            form = CancelForm.model_validate(data)
+            form = CancelForm.model_validate_form(data)
             await subscription_service._perform_cancellation(
                 session,
                 subscription,
@@ -407,7 +407,7 @@ async def cancel(
         with CancelForm.render(
             hx_post=str(request.url_for("subscriptions:cancel", id=id)),
             hx_target="#modal",
-            classes="flex flex-col gap-4",
+            classes="flex flex-col",
             validation_error=validation_error,
         ):
             with tag.div(classes="modal-action"):

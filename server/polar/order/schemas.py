@@ -9,7 +9,7 @@ from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
-from polar.kit.address import Address
+from polar.kit.address import Address, AddressInput
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
 from polar.models.order import OrderBillingReason, OrderStatus
@@ -39,6 +39,16 @@ class OrderBase(TimestampedSchema, IDSchema):
 
     tax_amount: int = Field(description="Sales tax amount in cents.")
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
+
+    applied_balance_amount: int = Field(
+        description=(
+            "Customer's balance amount applied to this invoice. "
+            "Can increase the total amount paid, if the customer has a negative balance, "
+            " or decrease it, if the customer has a positive balance."
+            "Amount in cents."
+        )
+    )
+    due_amount: int = Field(description="Amount in cents that is due for this order.")
     refunded_amount: int = Field(description="Amount refunded in cents.")
     refunded_tax_amount: int = Field(description="Sales tax refunded in cents.")
     currency: str
@@ -47,6 +57,10 @@ class OrderBase(TimestampedSchema, IDSchema):
         description="The name of the customer that should appear on the invoice. "
     )
     billing_address: Address | None
+
+    invoice_number: str = Field(
+        description="The invoice number associated with this order."
+    )
     is_invoice_generated: bool = Field(
         description="Whether an invoice has been generated for this order."
     )
@@ -75,6 +89,10 @@ class OrderBase(TimestampedSchema, IDSchema):
     )
     def amount(self) -> SkipJsonSchema[int]:
         return self.net_amount
+
+    @computed_field(deprecated="Use `applied_balance_amount`.")
+    def from_balance_amount(self) -> SkipJsonSchema[int]:
+        return self.applied_balance_amount
 
     def get_amount_display(self) -> str:
         return format_currency(
@@ -184,7 +202,7 @@ class OrderUpdateBase(Schema):
             "Can't be updated after the invoice is generated."
         )
     )
-    billing_address: Address | None = Field(
+    billing_address: AddressInput | None = Field(
         description=(
             "The address of the customer that should appear on the invoice. "
             "Can't be updated after the invoice is generated."

@@ -4,13 +4,12 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
-from pydantic_extra_types.country import CountryAlpha2
 from pytest_mock import MockerFixture
 
 from polar.config import settings
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
-from polar.kit.address import Address
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import Organization, Transaction, User

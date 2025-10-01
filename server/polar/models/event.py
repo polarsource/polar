@@ -11,10 +11,14 @@ from sqlalchemy import (
     String,
     Uuid,
     and_,
+    case,
     exists,
     extract,
     or_,
     select,
+)
+from sqlalchemy import (
+    cast as sql_cast,
 )
 from sqlalchemy import (
     cast as sqla_cast,
@@ -23,6 +27,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Mapped,
     Relationship,
+    column_property,
     declared_attr,
     mapped_column,
     relationship,
@@ -139,6 +144,13 @@ class Event(Model, MetadataMixin):
             lazy="raise",
             viewonly=True,
         )
+
+    resolved_customer_id: Mapped[UUID | str] = column_property(
+        case(
+            (customer_id.is_not(None), sql_cast(customer_id, String)),
+            else_=external_customer_id,
+        )
+    )
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,

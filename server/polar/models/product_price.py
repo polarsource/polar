@@ -29,6 +29,7 @@ from sqlalchemy.orm import (
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StrEnumType
 from polar.kit.math import polar_round
 
 if TYPE_CHECKING:
@@ -48,6 +49,7 @@ class ProductPriceAmountType(StrEnum):
     custom = "custom"
     free = "free"
     metered_unit = "metered_unit"
+    seat_based = "seat_based"
 
 
 class HasPriceCurrency:
@@ -76,7 +78,10 @@ class ProductPrice(RecordModel):
     # Legacy: recurring is now set on product
     type: Mapped[Any] = mapped_column(String, nullable=True, index=True, default=None)
     recurring_interval: Mapped[Any] = mapped_column(
-        String, nullable=True, index=True, default=None
+        StrEnumType(SubscriptionRecurringInterval),
+        nullable=True,
+        index=True,
+        default=None,
     )
 
     amount_type: Mapped[ProductPriceAmountType] = mapped_column(
@@ -107,6 +112,7 @@ class ProductPrice(RecordModel):
             ProductPriceAmountType.fixed,
             ProductPriceAmountType.free,
             ProductPriceAmountType.custom,
+            ProductPriceAmountType.seat_based,
         }
 
     @is_static.inplace.expression
@@ -117,6 +123,7 @@ class ProductPrice(RecordModel):
                 ProductPriceAmountType.fixed,
                 ProductPriceAmountType.free,
                 ProductPriceAmountType.custom,
+                ProductPriceAmountType.seat_based,
             )
         )
 
@@ -356,6 +363,18 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.metered_unit,
+        "polymorphic_load": "inline",
+    }
+
+
+class ProductPriceSeatUnit(NewProductPrice, HasPriceCurrency, ProductPrice):
+    amount_type: Mapped[Literal[ProductPriceAmountType.seat_based]] = mapped_column(
+        use_existing_column=True, default=ProductPriceAmountType.seat_based
+    )
+    price_per_seat: Mapped[int] = mapped_column(Integer, nullable=True)
+
+    __mapper_args__ = {
+        "polymorphic_identity": ProductPriceAmountType.seat_based,
         "polymorphic_load": "inline",
     }
 

@@ -41,7 +41,7 @@ export const usePatchFile = (
 ) =>
   useMutation({
     mutationFn: ({ name, version }: { name?: string; version?: string }) => {
-      let patch: {
+      const patch: {
         name?: string
         version?: string
       } = {}

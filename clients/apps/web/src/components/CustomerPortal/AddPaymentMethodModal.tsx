@@ -1,4 +1,7 @@
-import { useAddCustomerPaymentMethod } from '@/hooks/queries'
+import {
+  useAddCustomerPaymentMethod,
+  useConfirmCustomerPaymentMethod,
+} from '@/hooks/queries'
 import { type Client } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
@@ -14,12 +17,17 @@ import {
   type StripeElements,
   type StripeError,
 } from '@stripe/stripe-js'
-import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface AddPaymentMethodModalProps {
   api: Client
   onPaymentMethodAdded: () => void
+  setupIntentParams?: {
+    setup_intent_client_secret: string
+    setup_intent: string
+  }
   hide: () => void
   themingPreset: ThemingPresetProps
 }
@@ -27,6 +35,7 @@ export interface AddPaymentMethodModalProps {
 export const AddPaymentMethodModal = ({
   api,
   onPaymentMethodAdded,
+  setupIntentParams,
   hide,
   themingPreset,
 }: AddPaymentMethodModalProps) => {
@@ -35,84 +44,144 @@ export const AddPaymentMethodModal = ({
     [],
   )
   const addPaymentMethod = useAddCustomerPaymentMethod(api)
+  const confirmPaymentMethod = useConfirmCustomerPaymentMethod(api)
   const [error, setError] = useState<string | null>(null)
 
   const [loading, setLoading] = useState(false)
-  const handleSubmit = async (
-    event: React.FormEvent<HTMLFormElement>,
-    stripe: Stripe | null,
-    elements: StripeElements | null,
-  ) => {
-    event.preventDefault()
-    if (!stripe || !elements) {
-      return
-    }
 
-    setError(null)
-    setLoading(true)
-    const { error: submitError } = await elements.submit()
+  const confirm = useCallback(
+    async (setupIntentId: string) => {
+      const { error: validationError } = await confirmPaymentMethod.mutateAsync(
+        {
+          setup_intent_id: setupIntentId,
+          set_default: true,
+        },
+      )
 
-    if (submitError) {
-      if (submitError.message) {
-        setError(submitError.message)
+      if (validationError) {
+        setError('Failed to add payment method, please try again later.')
+        setLoading(false)
+        return
       }
-      setLoading(false)
-      return
-    }
 
-    let confirmationToken: ConfirmationToken | undefined
-    let error: StripeError | undefined
-    try {
-      const confirmationTokenResponse = await stripe.createConfirmationToken({
-        elements,
-        params: {
-          payment_method_data: {
-            // Stripe requires fields to be explicitly set to null if they are not provided
-            billing_details: {
-              name: null,
-              email: null,
-              address: {
-                line1: null,
-                line2: null,
-                postal_code: null,
-                city: null,
-                state: null,
-                country: null,
+      setLoading(false)
+      onPaymentMethodAdded()
+    },
+    [confirmPaymentMethod, onPaymentMethodAdded],
+  )
+
+  const handleSubmit = useCallback(
+    async (
+      event: React.FormEvent<HTMLFormElement>,
+      stripe: Stripe | null,
+      elements: StripeElements | null,
+    ) => {
+      event.preventDefault()
+      if (!stripe || !elements) {
+        return
+      }
+
+      setError(null)
+      setLoading(true)
+      const { error: submitError } = await elements.submit()
+
+      if (submitError) {
+        if (submitError.message) {
+          setError(submitError.message)
+        }
+        setLoading(false)
+        return
+      }
+
+      let confirmationToken: ConfirmationToken | undefined
+      let error: StripeError | undefined
+      try {
+        const confirmationTokenResponse = await stripe.createConfirmationToken({
+          elements,
+          params: {
+            payment_method_data: {
+              // Stripe requires fields to be explicitly set to null if they are not provided
+              billing_details: {
+                name: null,
+                email: null,
+                address: {
+                  line1: null,
+                  line2: null,
+                  postal_code: null,
+                  city: null,
+                  state: null,
+                  country: null,
+                },
+                phone: null,
               },
-              phone: null,
             },
           },
-        },
-      })
-      confirmationToken = confirmationTokenResponse.confirmationToken
-      error = confirmationTokenResponse.error
-    } catch (err) {
-      setLoading(false)
-      setError('Failed to add payment method, please try again later.')
-      return
+        })
+        confirmationToken = confirmationTokenResponse.confirmationToken
+        error = confirmationTokenResponse.error
+      } catch (err) {
+        setLoading(false)
+        setError('Failed to add payment method, please try again later.')
+        return
+      }
+
+      if (!confirmationToken || error) {
+        setLoading(false)
+        setError('Failed to add payment method, please try again later.')
+        return
+      }
+
+      const { error: validationError, data } =
+        await addPaymentMethod.mutateAsync({
+          confirmation_token_id: confirmationToken.id,
+          set_default: true,
+          return_url: window.location.href,
+        })
+
+      if (validationError) {
+        setError('Failed to add payment method, please try again later.')
+        setLoading(false)
+        return
+      }
+
+      if (data.status === 'requires_action') {
+        const { error: actionError, setupIntent } =
+          await stripe.handleNextAction({
+            clientSecret: data.client_secret,
+          })
+        if (actionError || !setupIntent) {
+          setError(
+            (actionError && actionError.message) ||
+              'Failed to handle next action.',
+          )
+          setLoading(false)
+          return
+        }
+        await confirm(setupIntent.id)
+      } else {
+        setLoading(false)
+        onPaymentMethodAdded()
+      }
+    },
+    [addPaymentMethod, confirm, onPaymentMethodAdded],
+  )
+
+  // Handle next action after a redirection
+  const [confirmed, setConfirmed] = useState(false)
+  const router = useRouter()
+  useEffect(() => {
+    if (setupIntentParams && !confirmed) {
+      setConfirmed(true)
+      ;(async () => {
+        await confirm(setupIntentParams.setup_intent)
+        // Remove setup intent params from the URL but keep customer_session_token
+        const searchParams = new URLSearchParams(window.location.search)
+        searchParams.delete('setup_intent_client_secret')
+        searchParams.delete('setup_intent')
+        router.replace(`${window.location.pathname}?${searchParams.toString()}`)
+      })()
     }
-
-    if (!confirmationToken || error) {
-      setLoading(false)
-      setError('Failed to add payment method, please try again later.')
-      return
-    }
-
-    const { error: validationError } = await addPaymentMethod.mutateAsync({
-      confirmation_token_id: confirmationToken.id,
-      set_default: true,
-      return_url: window.location.href,
-    })
-
-    if (validationError) {
-      setError('Failed to add payment method, please try again later.')
-      setLoading(false)
-      return
-    }
-
-    setLoading(false)
-    onPaymentMethodAdded()
-  }
+  }, [setupIntentParams, confirm, confirmed])
 
   return (
     <div className="flex flex-col gap-6 p-8">
@@ -120,6 +189,7 @@ export const AddPaymentMethodModal = ({
       <Elements
         stripe={stripePromise}
         options={{
+          locale: 'en',
           mode: 'setup',
           paymentMethodCreation: 'manual',
           setupFutureUsage: 'off_session',

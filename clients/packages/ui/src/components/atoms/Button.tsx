@@ -4,7 +4,7 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const buttonVariants = cva(
-  'relative font-normal inline-flex items-center font-medium select-none justify-center rounded-xl text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap',
+  'relative font-normal inline-flex items-center cursor-pointer font-medium select-none justify-center rounded-xl text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap',
   {
     variants: {
       variant: {
@@ -17,7 +17,7 @@ const buttonVariants = cva(
         secondary:
           'text-black dark:text-white hover:bg-gray-200 dark:bg-polar-700 dark:hover:bg-polar-600 bg-gray-100 border dark:border-white/5 border-black/4',
         underline:
-          'text-black dark:text-white bg-transparent border-b hover:border-black dark:hover:border-white border-transparent transition-colors duration-300 !p-0 hover:bg-transparent !rounded-none',
+          'text-black dark:text-white bg-transparent border-b hover:border-black dark:hover:border-white border-transparent transition-colors duration-300 p-0! hover:bg-transparent rounded-none!',
         link: 'text-blue-400 underline-offset-4 hover:underline bg-transparent hover:bg-transparent',
         ghost:
           'bg-transparent hover:bg-gray-200 dark:hover:bg-polar-700 dark:bg-transparent text-black dark:text-white',
@@ -36,60 +36,54 @@ const buttonVariants = cva(
   },
 )
 
-const Button = React.forwardRef<
-  HTMLButtonElement,
-  ButtonProps & {
-    loading?: boolean
-    fullWidth?: boolean
-    wrapperClassNames?: string
-  }
->(
-  (
-    {
-      className,
-      wrapperClassNames,
-      variant,
-      size,
-      loading,
-      fullWidth,
-      disabled,
-      children,
-      type = 'button',
-      ...props
-    },
-    ref,
-  ) => {
-    return (
-      <ShadcnButton
-        className={twMerge(
-          buttonVariants({ variant, size, className }),
-          fullWidth ? 'w-full' : '',
-        )}
-        ref={ref}
-        disabled={disabled || loading}
-        type={type}
-        {...props}
-      >
-        {loading ? (
-          <>
-            <div className="absolute inset-0 flex h-full w-full items-center justify-center">
-              <LoadingSpinner disabled={disabled} size={size} />
-            </div>
-            <span className="flex flex-row items-center opacity-0">
-              {children}
-            </span>
-          </>
-        ) : (
-          <div
-            className={twMerge('flex flex-row items-center', wrapperClassNames)}
-          >
-            {children}
+const Button = ({
+  ref,
+  className,
+  wrapperClassNames,
+  variant,
+  size,
+  loading,
+  fullWidth,
+  disabled,
+  children,
+  type = 'button',
+  ...props
+}: ButtonProps & {
+  ref?: React.RefObject<HTMLButtonElement>
+  wrapperClassNames?: string
+  loading?: boolean
+  fullWidth?: boolean
+}) => {
+  return (
+    <ShadcnButton
+      className={twMerge(
+        buttonVariants({ variant, size, className }),
+        fullWidth ? 'w-full' : '',
+      )}
+      ref={ref}
+      disabled={disabled || loading}
+      type={type}
+      {...props}
+    >
+      {loading ? (
+        <>
+          <div className="absolute inset-0 flex h-full w-full items-center justify-center">
+            <LoadingSpinner disabled={disabled} size={size} />
           </div>
-        )}
-      </ShadcnButton>
-    )
-  },
-)
+          <span className="flex flex-row items-center opacity-0">
+            {children}
+          </span>
+        </>
+      ) : (
+        <div
+          className={twMerge('flex flex-row items-center', wrapperClassNames)}
+        >
+          {children}
+        </div>
+      )}
+    </ShadcnButton>
+  )
+}
 
 Button.displayName = ShadcnButton.displayName
 
@@ -129,19 +123,26 @@ const LoadingSpinner = (props: {
   )
 }
 
-export const RawButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, children, ...props }, ref) => {
-    return (
-      <ShadcnButton
-        className={twMerge(buttonVariants({ variant, size, className }))}
-        ref={ref}
-        {...props}
-      >
-        {children}
-      </ShadcnButton>
-    )
-  },
-)
+export const RawButton = ({
+  ref,
+  className,
+  variant,
+  size,
+  children,
+  ...props
+}: ButtonProps & {
+  ref?: React.RefObject<HTMLButtonElement>
+}) => {
+  return (
+    <ShadcnButton
+      className={twMerge(buttonVariants({ variant, size, className }))}
+      ref={ref}
+      {...props}
+    >
+      {children}
+    </ShadcnButton>
+  )
+}
 
 RawButton.displayName = 'RawButton'
 

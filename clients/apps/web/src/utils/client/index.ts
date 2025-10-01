@@ -4,6 +4,8 @@ import {
   Client,
   Middleware,
 } from '@polar-sh/client'
+import { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
+import { NextRequest } from 'next/server'
 
 const errorMiddleware: Middleware = {
   onError: async () => {
@@ -22,14 +24,15 @@ export const createClientSideAPI = (token?: string): Client => {
 
 export const api = createClientSideAPI()
 
-export const createServerSideAPI = (
-  headers: Headers,
-  cookies: any,
+export const createServerSideAPI = async (
+  headers: NextRequest['headers'],
+  cookies: ReadonlyRequestCookies,
   token?: string,
-): Client => {
+): Promise<Client> => {
   let apiHeaders = {}
 
   const xForwardedFor = headers.get('X-Forwarded-For')
+
   if (xForwardedFor) {
     apiHeaders = {
       ...apiHeaders,

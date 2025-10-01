@@ -1,14 +1,67 @@
 from enum import StrEnum
-from typing import Any, NotRequired, Self, TypedDict, cast
+from typing import TYPE_CHECKING, Annotated, Any, NotRequired, Self, TypedDict, cast
 
 import pycountry
-from pydantic import BaseModel, Field, model_validator
-from pydantic_extra_types.country import CountryAlpha2
+from pydantic import BaseModel, BeforeValidator, Field, model_validator
+from pydantic.json_schema import WithJsonSchema
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
 
 from polar.kit.schemas import EmptyStrToNone
+
+
+class CountryData:
+    alpha_2: str
+
+
+_ALL_COUNTRIES: set[str] = {
+    cast(CountryData, country).alpha_2 for country in pycountry.countries
+}
+_SUPPORTED_COUNTRIES: set[str] = _ALL_COUNTRIES - {
+    # US Trade Embargos
+    "CU",
+    "IR",
+    "KP",
+    "SY",
+    "RU",
+}
+ALL_COUNTRIES = sorted(_ALL_COUNTRIES)
+SUPPORTED_COUNTRIES = sorted(_SUPPORTED_COUNTRIES)
+
+if TYPE_CHECKING:
+
+    class CountryAlpha2(StrEnum):
+        pass
+
+    class CountryAlpha2Input(StrEnum):
+        pass
+else:
+    CountryAlpha2 = Annotated[
+        StrEnum("CountryAlpha2", [(country, country) for country in ALL_COUNTRIES]),
+        WithJsonSchema(
+            {
+                "type": "string",
+                "title": "CountryAlpha2",
+                "enum": ALL_COUNTRIES,
+                "x-speakeasy-enums": ALL_COUNTRIES,
+            }
+        ),
+    ]
+    CountryAlpha2Input = Annotated[
+        StrEnum(
+            "CountryAlpha2Input",
+            [(country, country) for country in SUPPORTED_COUNTRIES],
+        ),
+        WithJsonSchema(
+            {
+                "type": "string",
+                "title": "CountryAlpha2Input",
+                "enum": SUPPORTED_COUNTRIES,
+                "x-speakeasy-enums": SUPPORTED_COUNTRIES,
+            }
+        ),
+    ]
 
 
 class USState(StrEnum):
@@ -163,6 +216,12 @@ class Address(BaseModel):
                 lines.append(self.country)
 
         return "\n".join(lines)
+
+
+class AddressInput(Address):
+    country: Annotated[CountryAlpha2Input, BeforeValidator(str.upper)] = Field(  # type: ignore
+        examples=["US", "SE", "FR"]
+    )
 
 
 class AddressType(TypeDecorator[Any]):

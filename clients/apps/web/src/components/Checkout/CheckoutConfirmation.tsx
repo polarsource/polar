@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import LogoType from '../Brand/LogoType'
 import { SpinnerNoMargin } from '../Shared/Spinner'
 import CheckoutBenefits from './CheckoutBenefits'
+import CheckoutSeatInvitations from './CheckoutSeatInvitations'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
@@ -158,7 +159,7 @@ export const CheckoutConfirmation = ({
     if (checkout.status === 'open' || checkout.status === 'succeeded') {
       return
     }
-    let intervalId = setInterval(() => updateCheckout(), maxWaitingTimeMs)
+    const intervalId = setInterval(() => updateCheckout(), maxWaitingTimeMs)
     return () => clearInterval(intervalId)
   }, [checkout.status, maxWaitingTimeMs, updateCheckout])
 
@@ -200,6 +201,7 @@ export const CheckoutConfirmation = ({
         )}
         {status === 'succeeded' && (
           <>
+            <CheckoutSeatInvitations checkout={checkout} />
             <CheckoutBenefits
               checkout={checkout}
               customerSessionToken={customerSessionToken}

@@ -13,7 +13,7 @@ import {
 } from '@/utils/product'
 import { PlusIcon } from '@heroicons/react/20/solid'
 import { ErrorMessage } from '@hookform/error-message'
-import { CloseOutlined } from '@mui/icons-material'
+import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
@@ -163,6 +163,50 @@ export interface ProductPriceFreeItemProps {
 
 export const ProductPriceFreeItem: React.FC<ProductPriceFreeItemProps> = () => {
   return <></>
+}
+
+export interface ProductPriceSeatBasedItemProps {
+  index: number
+}
+
+export const ProductPriceSeatBasedItem: React.FC<
+  ProductPriceSeatBasedItemProps
+> = ({ index }) => {
+  const { control, setValue } = useFormContext<ProductFormType>()
+
+  return (
+    <>
+      <FormField
+        control={control}
+        name={`prices.${index}.price_per_seat`}
+        rules={{
+          required: 'This field is required',
+          min: { value: 50, message: 'Price must be greater than 0.5' },
+        }}
+        render={({ field }) => {
+          return (
+            <FormItem className="grow">
+              <div className="flex items-center gap-2">
+                <FormControl>
+                  <MoneyInput
+                    name={field.name}
+                    value={field.value}
+                    onChange={(v) => {
+                      field.onChange(v)
+                      setValue(`prices.${index}.id`, '')
+                    }}
+                    placeholder={0}
+                  />
+                </FormControl>
+              </div>
+              <FormDescription>Price per seat</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+    </>
+  )
 }
 
 export interface ProductPriceMeteredUnitItemProps {
@@ -411,6 +455,12 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         replace({
           amount_type: 'free',
         })
+      } else if (amountType === 'seat_based') {
+        replace({
+          amount_type: 'seat_based',
+          price_currency: 'usd',
+          price_per_seat: 0,
+        })
       } else if (amountType === 'metered_unit') {
         replace({
           amount_type: 'metered_unit',
@@ -452,6 +502,10 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       <SelectItem value="fixed">Fixed price</SelectItem>
                       <SelectItem value="custom">Pay what you want</SelectItem>
                       <SelectItem value="free">Free</SelectItem>
+                      {organization.feature_settings
+                        ?.seat_based_pricing_enabled && (
+                        <SelectItem value="seat_based">Seat-based</SelectItem>
+                      )}
                       {recurringInterval !== null && (
                         <SelectItem value="metered_unit">
                           Metered price
@@ -481,6 +535,9 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       {amountType === 'fixed' && <ProductPriceFixedItem index={index} />}
       {amountType === 'custom' && <ProductPriceCustomItem index={index} />}
       {amountType === 'free' && <ProductPriceFreeItem index={index} />}
+      {amountType === 'seat_based' && (
+        <ProductPriceSeatBasedItem index={index} />
+      )}
       {amountType === 'metered_unit' && (
         <ProductPriceMeteredUnitItem
           organization={organization}
@@ -532,11 +589,10 @@ export const ProductPricingSection = ({
     replace([
       {
         ...price,
-        // @ts-ignore
         id: null,
         type: null,
         recurring_interval: null,
-      },
+      } as any,
     ])
   }, [prices, replace, setValue])
 
@@ -632,7 +688,7 @@ export const ProductPricingSection = ({
           ))}
 
           {update && recurringInterval && (
-            <ShadowBox className="dark:bg-polar-800 flex flex-col gap-2 !rounded-2xl !border-none p-4">
+            <ShadowBox className="dark:bg-polar-800 rounded-2xl! border-none! flex flex-col gap-2 p-4">
               <h3 className="text-sm font-medium">Updating pricing model</h3>
               <p className="dark:text-polar-500 text-gray-5 00 text-sm">
                 Changing pricing model on subscription products will only affect

@@ -3,8 +3,8 @@ import { cookies, headers } from 'next/headers'
 import { cache } from 'react'
 import { createServerSideAPI } from '.'
 
-const _getServerSideAPI = (token?: string): Client => {
-  return createServerSideAPI(headers(), cookies(), token)
+const _getServerSideAPI = async (token?: string): Promise<Client> => {
+  return createServerSideAPI(await headers(), await cookies(), token)
 }
 
 // Memoize the API instance for the duration of the request

@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import UUID4, Field, computed_field
 
-from polar.kit.address import Address
+from polar.kit.address import Address, AddressInput
 from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -50,7 +50,7 @@ class CustomerCreate(MetadataInputMixin, Schema):
     name: str | None = Field(
         default=None, description=_name_description, examples=[_name_example]
     )
-    billing_address: Address | None = None
+    billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
     organization_id: OrganizationID | None = Field(
         default=None,
@@ -68,7 +68,7 @@ class CustomerUpdateBase(MetadataInputMixin, Schema):
     name: str | None = Field(
         default=None, description=_name_description, examples=[_name_example]
     )
-    billing_address: Address | None = None
+    billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
 
 
@@ -115,6 +115,18 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     def avatar_url(self) -> str:
         email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
         return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
+
+
+class CustomerBalance(Schema):
+    """Customer balance information."""
+
+    balance: int = Field(
+        description="Customer balance in cents. Positive values represent credit (customer is owed money), negative values represent debit (customer owes money)."
+    )
+    currency: str = Field(
+        description="The currency code (ISO 4217) for the balance amount.",
+        examples=["USD"],
+    )
 
 
 class Customer(CustomerBase):

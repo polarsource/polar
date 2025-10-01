@@ -1,5 +1,5 @@
 import { useEventNames } from '@/hooks/queries/events'
-import { ShortTextOutlined } from '@mui/icons-material'
+import ShortTextOutlined from '@mui/icons-material/ShortTextOutlined'
 import {
   Select,
   SelectContent,

@@ -49,7 +49,7 @@ const GithubLoginButton = (props: {
       >
         <svg
           className={twMerge(
-            'flex-shrink-0',
+            'shrink-0',
             props.size === 'large' ? 'h-5 w-5' : 'h-4 w-4',
           )}
           aria-hidden="true"

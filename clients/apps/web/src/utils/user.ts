@@ -7,7 +7,7 @@ const _getAuthenticatedUser = async (): Promise<
   schemas['UserRead'] | undefined
 > => {
   // Middleware set this header for authenticated requests
-  const userData = headers().get('x-polar-user')
+  const userData = (await headers()).get('x-polar-user')
   if (userData) {
     return JSON.parse(userData)
   }
@@ -56,10 +56,14 @@ const _getUserOrganizations = async (
 }
 
 // Create a cached version that doesn't bypass cache by default
-const _getUserOrganizationsCached = (api: Client) => _getUserOrganizations(api, false)
+const _getUserOrganizationsCached = (api: Client) =>
+  _getUserOrganizations(api, false)
 
 // ...but tell React to memoize it for the duration of the request
-export const getUserOrganizations = (api: Client, bypassCache: boolean = false) => {
+export const getUserOrganizations = (
+  api: Client,
+  bypassCache: boolean = false,
+) => {
   if (bypassCache) {
     return _getUserOrganizations(api, true)
   }

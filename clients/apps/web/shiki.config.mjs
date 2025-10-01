@@ -1,15 +1,9 @@
-export const themesList = ['catppuccin-latte', 'poimandres']
+// Only load languages that are actually used in the codebase
+export const USED_LANGUAGES = ['javascript', 'bash']
+
 export const themeConfig = {
   light: 'catppuccin-latte',
   dark: 'poimandres',
 }
 
-export const transformers = [
-  {
-    pre(node) {
-      node.properties.style = node.properties.style
-        ?.toString()
-        .replace(/background-color:#\w+;/, '')
-    },
-  },
-]
+export const themesList = Object.values(themeConfig)

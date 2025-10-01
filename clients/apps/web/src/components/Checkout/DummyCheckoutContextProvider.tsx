@@ -1,5 +1,6 @@
 'use client'
 
+import type { AddressInput } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
@@ -22,7 +23,13 @@ const DummyCheckoutContextProvider = ({
   embed?: boolean
   theme?: 'light' | 'dark'
 }>) => {
-  const form = useForm<CheckoutUpdatePublic>({ defaultValues: checkout })
+  const form = useForm<CheckoutUpdatePublic>({
+    defaultValues: {
+      ...checkout,
+      customerBillingAddress:
+        checkout.customerBillingAddress as AddressInput | null,
+    },
+  })
 
   const embed = _embed === true
 

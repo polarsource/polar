@@ -1,5 +1,5 @@
 import { useMeters } from '@/hooks/queries/meters'
-import { DonutLargeOutlined } from '@mui/icons-material'
+import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import {
   Select,
   SelectContent,

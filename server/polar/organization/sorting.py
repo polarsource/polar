@@ -12,6 +12,8 @@ class OrganizationSortProperty(StrEnum):
     organization_name = (
         "name"  # `name` is a reserved word, so we use `organization_name`
     )
+    next_review_threshold = "next_review_threshold"
+    days_in_status = "days_in_status"
 
 
 ListSorting = Annotated[

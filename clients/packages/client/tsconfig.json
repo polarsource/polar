@@ -1,10 +1,8 @@
 {
-  "extends": "tsconfig/base.json",
+  "extends": "@polar-sh/typescript-config/bundled.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "noUncheckedIndexedAccess": true,
-    "lib": ["esnext", "DOM"],
+    "rootDir": "src"
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

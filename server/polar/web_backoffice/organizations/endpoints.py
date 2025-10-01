@@ -1,15 +1,19 @@
+import builtins
 import contextlib
 import uuid
 from collections.abc import Generator
-from typing import Annotated, Any
+from datetime import UTC
+from typing import Annotated, Any, override
 
+import structlog
 from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import UUID4, BeforeValidator, ValidationError
 from pydantic_core import PydanticCustomError
 from sqlalchemy import or_, select
 from sqlalchemy.orm import contains_eager, joinedload
-from tagflow import classes, tag, text
+from tagflow import classes, document, tag, text
 
 from polar.account.service import (
     CannotChangeAdminError,
@@ -19,14 +23,22 @@ from polar.account.service import (
     account as account_service,
 )
 from polar.enums import AccountType
-from polar.kit.pagination import PaginationParamsQuery
+from polar.file.repository import FileRepository
+from polar.file.service import file as file_service
+from polar.file.sorting import FileSortProperty
+from polar.integrations.plain.service import plain as plain_service
+from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import empty_str_to_none
+from polar.kit.sorting import Sorting
 from polar.models import (
     Account,
+    File,
     Organization,
     User,
     UserOrganization,
 )
+from polar.models.file import FileServiceTypes
+from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.organization import sorting
@@ -62,6 +74,7 @@ from polar.web_backoffice.organizations.schemas import (
     SetupVerdictData,
 )
 
+from .. import formatters
 from ..components import accordion, button, datatable, description_list, input, modal
 from ..layout import layout
 from ..responses import HXRedirectResponse
@@ -73,6 +86,27 @@ from .forms import (
 )
 
 router = APIRouter()
+
+logger = structlog.getLogger(__name__)
+
+
+def empty_str_to_none_before_enum(value: Any) -> Any:
+    """Convert empty strings to None before enum parsing."""
+    if isinstance(value, str) and value.strip() == "":
+        return None
+    return value
+
+
+def empty_str_to_none_before_bool(value: Any) -> Any:
+    """Convert empty strings to None before boolean parsing."""
+    if isinstance(value, str) and value.strip() == "":
+        return None
+    if isinstance(value, str):
+        if value.lower() in ("true", "1", "yes", "on"):
+            return True
+        elif value.lower() in ("false", "0", "no", "off"):
+            return False
+    return value
 
 
 @contextlib.contextmanager
@@ -97,6 +131,36 @@ class OrganizationStatusColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
         with organization_badge(item):
             pass
+        return None
+
+
+class NextReviewThresholdColumn(
+    datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
+):
+    def render(self, request: Request, item: Organization) -> Generator[None] | None:
+        from babel.numbers import format_currency
+
+        text(format_currency(item.next_review_threshold / 100, "USD", locale="en_US"))
+        return None
+
+
+class DaysInStatusColumn(
+    datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
+):
+    def render(self, request: Request, item: Organization) -> Generator[None] | None:
+        from datetime import datetime
+
+        if item.status_updated_at:
+            delta = datetime.now(UTC) - item.status_updated_at
+            days = delta.days
+        else:
+            delta = datetime.now(UTC) - item.created_at
+            days = delta.days
+
+        if item.status == Organization.Status.UNDER_REVIEW:
+            text(f"{days} days in review")
+        else:
+            text(f"{days} days since review")
         return None
 
 
@@ -241,14 +305,25 @@ async def get_setup_verdict_data(
 @router.get("/", name="organizations:list")
 async def list(
     request: Request,
-    pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
+    session: AsyncSession = Depends(get_db_session),
+    page: int = Query(1, description="Page number, defaults to 1.", gt=0),
+    limit: int = Query(100, description="Size of a page, defaults to 100.", gt=0),
     query: str | None = Query(None),
     organization_status: Annotated[
-        Organization.Status | None, BeforeValidator(empty_str_to_none), Query()
+        Organization.Status | None,
+        BeforeValidator(empty_str_to_none_before_enum),
+        Query(),
     ] = None,
-    session: AsyncSession = Depends(get_db_session),
+    has_appealed: Annotated[
+        bool | None, BeforeValidator(empty_str_to_none_before_bool), Query()
+    ] = None,
+    review_cycle: Annotated[
+        str | None, BeforeValidator(empty_str_to_none), Query()
+    ] = None,  # "first" or "subsequent"
 ) -> None:
+    # Create custom pagination with default limit of 100
+    pagination = PaginationParams(page, min(100, limit))
     repository = OrganizationRepository.from_session(session)
     statement = (
         repository.get_base_statement()
@@ -265,10 +340,42 @@ async def list(
                 or_(
                     Organization.name.ilike(f"%{query}%"),
                     Organization.slug.ilike(f"%{query}%"),
+                    Organization.website.ilike(f"%{query}%"),
                 )
             )
     if organization_status:
         statement = statement.where(Organization.status == organization_status)
+
+    # Add appeal filter
+    if has_appealed is not None:
+        if has_appealed:
+            statement = statement.join(
+                OrganizationReview,
+                Organization.id == OrganizationReview.organization_id,
+            ).where(OrganizationReview.appeal_submitted_at.is_not(None))
+        else:
+            statement = statement.outerjoin(
+                OrganizationReview,
+                Organization.id == OrganizationReview.organization_id,
+            ).where(
+                or_(
+                    OrganizationReview.id.is_(None),
+                    OrganizationReview.appeal_submitted_at.is_(None),
+                )
+            )
+
+    # Add review cycle filter
+    if review_cycle:
+        if review_cycle == "first":
+            statement = statement.where(
+                Organization.status == Organization.Status.UNDER_REVIEW,
+                Organization.next_review_threshold == 0,
+            )
+        elif review_cycle == "subsequent":
+            statement = statement.where(
+                Organization.status == Organization.Status.UNDER_REVIEW,
+                Organization.next_review_threshold > 0,
+            )
 
     statement = repository.apply_sorting(statement, sorting)
     items, count = await repository.paginate(
@@ -285,23 +392,57 @@ async def list(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text("Organizations")
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
-                with input.search("query", query):
-                    pass
-                with input.select(
-                    [
-                        ("All Organization Statuses", ""),
-                        *[
-                            (status.get_display_name(), status.value)
-                            for status in Organization.Status
+            with tag.form(method="GET", classes="w-full flex flex-col gap-4"):
+                with tag.div(classes="flex flex-row gap-2"):
+                    with input.search("query", query):
+                        pass
+                    with input.select(
+                        [
+                            ("All Organization Statuses", ""),
+                            *[
+                                (status.get_display_name(), status.value)
+                                for status in Organization.Status
+                            ],
                         ],
-                    ],
-                    organization_status.value if organization_status else "",
-                    name="organization_status",
-                ):
-                    pass
-                with button(type="submit"):
-                    text("Filter")
+                        organization_status.value if organization_status else "",
+                        name="organization_status",
+                    ):
+                        pass
+                    with input.select(
+                        [
+                            ("All Appeal Statuses", ""),
+                            ("Has Appealed", "true"),
+                            ("Has Not Appealed", "false"),
+                        ],
+                        "true"
+                        if has_appealed is True
+                        else ("false" if has_appealed is False else ""),
+                        name="has_appealed",
+                    ):
+                        pass
+                    with input.select(
+                        [
+                            ("All Review Cycles", ""),
+                            ("First Review", "first"),
+                            ("Subsequent Review", "subsequent"),
+                        ],
+                        review_cycle or "",
+                        name="review_cycle",
+                    ):
+                        pass
+                with tag.div(classes="flex flex-row gap-2"):
+                    with input.select(
+                        [
+                            ("25 per page", "25"),
+                            ("50 per page", "50"),
+                            ("100 per page", "100"),
+                        ],
+                        str(limit),
+                        name="limit",
+                    ):
+                        pass
+                    with button(type="submit"):
+                        text("Filter")
             with datatable.Datatable[Organization, OrganizationSortProperty](
                 datatable.DatatableAttrColumn(
                     "id", "ID", href_route_name="organizations:get", clipboard=True
@@ -322,6 +463,16 @@ async def list(
                     "Slug",
                     sorting=OrganizationSortProperty.slug,
                     clipboard=True,
+                ),
+                NextReviewThresholdColumn(
+                    "next_review_threshold",
+                    "Next Review Threshold",
+                    sorting=OrganizationSortProperty.next_review_threshold,
+                ),
+                DaysInStatusColumn(
+                    "status_updated_at",
+                    "Days in Status",
+                    sorting=OrganizationSortProperty.days_in_status,
                 ),
             ).render(request, items, sorting=sorting):
                 pass
@@ -345,7 +496,7 @@ async def update(
     if request.method == "POST":
         data = await request.form()
         try:
-            form = UpdateOrganizationForm.model_validate(data)
+            form = UpdateOrganizationForm.model_validate_form(data)
             if form.slug != organization.slug:
                 existing_slug = await org_repo.get_by_slug(form.slug)
                 if existing_slug is not None:
@@ -409,49 +560,10 @@ async def update_details(
     if request.method == "POST":
         data = await request.form()
         try:
-            # Get form values with proper type checking
-            website_value = data.get("website")
-            about_value = data.get("about")
-            product_description_value = data.get("product_description")
-            intended_use_value = data.get("intended_use")
-
-            website = str(website_value).strip() if website_value is not None else None
-            website = website if website else None
-
-            about = str(about_value).strip() if about_value is not None else ""
-            product_description = (
-                str(product_description_value).strip()
-                if product_description_value is not None
-                else ""
+            form = UpdateOrganizationDetailsForm.model_validate_form(data)
+            organization = await org_repo.update(
+                organization, update_dict=form.model_dump(exclude_none=True)
             )
-            intended_use = (
-                str(intended_use_value).strip()
-                if intended_use_value is not None
-                else ""
-            )
-
-            form_data = {
-                "website": website,
-                "about": about,
-                "product_description": product_description,
-                "intended_use": intended_use,
-            }
-            form = UpdateOrganizationDetailsForm.model_validate(form_data)
-
-            existing_details = organization.details.copy()
-            existing_details.update(
-                {
-                    "about": form.about,
-                    "product_description": form.product_description,
-                    "intended_use": form.intended_use,
-                }
-            )
-
-            update_dict = {
-                "website": str(form.website) if form.website else None,
-                "details": existing_details,
-            }
-            organization = await org_repo.update(organization, update_dict=update_dict)
             return HXRedirectResponse(
                 request, str(request.url_for("organizations:get", id=id)), 303
             )
@@ -459,129 +571,27 @@ async def update_details(
         except ValidationError as e:
             validation_error = e
 
-    with modal("Update Organization Details", open=True):
-        with tag.div(classes="max-h-[85vh] overflow-y-auto px-2"):
-            with tag.form(
-                method="POST",
-                action=str(request.url_for("organizations:update_details", id=id)),
-                classes="space-y-6",
-            ):
-                # Business Information Section
-                with tag.div(
-                    classes="bg-base-50 rounded-lg p-6 border border-base-200"
+    with modal("Edit Business Information", open=True):
+        with tag.p(classes="text-sm text-base-content-secondary"):
+            text("Update the key information about your business and products")
+
+        with UpdateOrganizationDetailsForm.render(
+            data=organization,
+            validation_error=validation_error,
+            hx_post=str(request.url_for("organizations:update_details", id=id)),
+            hx_target="#modal",
+            classes="space-y-6",
+        ):
+            # Action buttons
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
                 ):
-                    with tag.div(classes="mb-6"):
-                        with tag.h3(
-                            classes="text-lg font-semibold text-base-content mb-2"
-                        ):
-                            text("Edit Business Information")
-                        with tag.p(classes="text-sm text-base-content-secondary"):
-                            text(
-                                "Update the key information about your business and products"
-                            )
-
-                    with tag.div(classes="space-y-6"):
-                        # Website field
-                        with tag.div(classes="form-control w-full"):
-                            with tag.label(classes="label"):
-                                with tag.span(classes="label-text font-semibold"):
-                                    text("Website")
-                            with tag.input(
-                                id="website",
-                                name="website",
-                                type="url",
-                                classes="input input-bordered w-full",
-                                placeholder="https://example.com",
-                                value=organization.website or "",
-                            ):
-                                pass
-
-                        # About field
-                        with tag.div(classes="form-control w-full"):
-                            with tag.label(classes="label"):
-                                with tag.span(classes="label-text font-semibold"):
-                                    text("About")
-                                    with tag.span(classes="text-error ml-1"):
-                                        text("*")
-                            with tag.textarea(
-                                id="about",
-                                name="about",
-                                rows=4,
-                                required=True,
-                                classes="textarea textarea-bordered w-full resize-none",
-                                placeholder="Brief information about you and your business",
-                            ):
-                                text(organization.details.get("about", ""))
-
-                        # Product Description field
-                        with tag.div(classes="form-control w-full"):
-                            with tag.label(classes="label"):
-                                with tag.span(classes="label-text font-semibold"):
-                                    text("Product Description")
-                                    with tag.span(classes="text-error ml-1"):
-                                        text("*")
-                            with tag.textarea(
-                                id="product_description",
-                                name="product_description",
-                                rows=4,
-                                required=True,
-                                classes="textarea textarea-bordered w-full resize-none",
-                                placeholder="Description of digital products being sold",
-                            ):
-                                text(
-                                    organization.details.get("product_description", "")
-                                )
-
-                        # Intended Use field
-                        with tag.div(classes="form-control w-full"):
-                            with tag.label(classes="label"):
-                                with tag.span(classes="label-text font-semibold"):
-                                    text("Intended Use")
-                                    with tag.span(classes="text-error ml-1"):
-                                        text("*")
-                            with tag.textarea(
-                                id="intended_use",
-                                name="intended_use",
-                                rows=3,
-                                required=True,
-                                classes="textarea textarea-bordered w-full resize-none",
-                                placeholder="How the organization will integrate and use Polar",
-                            ):
-                                text(organization.details.get("intended_use", ""))
-
-                # Display validation errors
-                if validation_error:
-                    with tag.div(classes="alert alert-error mt-6"):
-                        with tag.svg(
-                            classes="stroke-current shrink-0 h-6 w-6",
-                            fill="none",
-                            viewBox="0 0 24 24",
-                        ):
-                            with tag.path(
-                                stroke_linecap="round",
-                                stroke_linejoin="round",
-                                stroke_width="2",
-                                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
-                            ):
-                                pass
-                        with tag.div():
-                            with tag.span(classes="font-medium"):
-                                text("Please fix the following errors:")
-                            with tag.ul(classes="list-disc list-inside mt-2"):
-                                for error in validation_error.errors():
-                                    with tag.li():
-                                        text(f"{error['loc'][0]}: {error['msg']}")
-
-                # Action buttons
-                with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                    with tag.form(method="dialog"):
-                        with button(ghost=True):
-                            text("Cancel")
-                    with button(
-                        type="submit",
-                        variant="primary",
-                    ):
-                        text("Update Details")
+                    text("Update Details")
 
 
 @router.api_route("/{id}/delete", name="organizations:delete", methods=["GET", "POST"])
@@ -1025,9 +1035,7 @@ async def setup_manual_payout(
         )
 
     with modal("Setup Manual Payout", open=True):
-        with tag.form(
-            method="POST", action=str(request.url), classes="flex flex-col gap-4"
-        ):
+        with tag.form(method="POST", action=str(request.url), classes="flex flex-col"):
             # Warning message
             with tag.div(classes="alert alert-warning"):
                 with tag.svg(
@@ -1079,6 +1087,136 @@ async def setup_manual_payout(
                     variant="primary",
                 ):
                     text("Create Manual Account")
+
+
+@router.post(
+    "/{id}/create_plain_thread",
+    name="organizations:create_plain_thread",
+)
+async def create_plain_thread(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    """Create a Plain thread for this organization."""
+    try:
+        form = await request.form()
+        logger.info(f"Form data received: {dict(form)}")
+        title_field = form.get("title", "")
+        title = title_field.strip() if isinstance(title_field, str) else ""
+        logger.info(f"Extracted title: '{title}'")
+        if not title:
+            await add_toast(
+                request,
+                "Thread title is required",
+                "error",
+            )
+            return RedirectResponse(
+                url=request.url_for("organizations:get_organization", id=id),
+                status_code=302,
+            )
+
+        org_repo = OrganizationRepository.from_session(session)
+        organization = await org_repo.get_by_id(id)
+        if not organization:
+            raise HTTPException(status_code=404)
+
+        admin_user = await org_repo.get_admin_user(session, organization)
+        if not admin_user:
+            raise HTTPException(status_code=404, detail="No admin user found")
+
+        thread_id = await plain_service.create_manual_organization_thread(
+            session, organization, admin_user, title
+        )
+        logger.info(
+            f"Created Plain thread {thread_id} for organization {organization.id}"
+        )
+
+        thread_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/thread/{thread_id}"
+
+        with document() as doc:
+            with tag.div(id="modal"):
+                with tag.dialog(classes="modal modal-open"):
+                    with tag.div(classes="modal-box"):
+                        with tag.h3(classes="font-bold text-lg text-success"):
+                            text("✅ Thread Created Successfully!")
+
+                        with tag.p(classes="py-4"):
+                            text(
+                                "Your Plain thread has been created. Click the link below to open it:"
+                            )
+
+                        with tag.div(classes="modal-action"):
+                            with tag.a(
+                                href=thread_url,
+                                target="_blank",
+                                classes="btn btn-primary",
+                            ):
+                                text("🔗 Open Plain Thread")
+                            with tag.button(
+                                type="button",
+                                classes="btn",
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:clear_modal",
+                                        id=organization.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Close")
+
+                    with tag.div(
+                        classes="modal-backdrop",
+                        hx_get=str(
+                            request.url_for(
+                                "organizations:clear_modal", id=organization.id
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        pass
+
+        return HTMLResponse(str(doc))
+
+    except Exception as e:
+        logger.error(f"Error in create_plain_thread: {str(e)}", exc_info=True)
+        await add_toast(
+            request,
+            f"Failed to create Plain thread: {str(e)}",
+            "error",
+        )
+
+        return HXRedirectResponse(
+            request, str(request.url_for("organizations:get", id=id)), 303
+        )
+
+
+class FileDownloadLinkColumn(datatable.DatatableColumn[File]):
+    """A column that displays a download link for a file."""
+
+    def __init__(self, label: str = "Download"):
+        super().__init__(label)
+
+    def render(self, request: Request, item: File) -> Generator[None]:
+        """Render a download link for the file."""
+        url, _ = file_service.generate_download_url(item)
+        with tag.a(
+            href=url, classes="btn btn-sm", target="_blank", rel="noopener noreferrer"
+        ):
+            with tag.div(classes="icon-download"):
+                pass
+            text("Download")
+        yield
+
+
+class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
+    """A column that displays file size with proper formatting."""
+
+    @override
+    def get_value(self, item: File) -> str | None:
+        raw_value: int | None = self.get_raw_value(item)
+        return formatters.file_size(raw_value) if raw_value is not None else None
 
 
 @router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])
@@ -1162,7 +1300,35 @@ async def get(
                 with tag.h1(classes="text-4xl"):
                     text(organization.name)
                 with tag.div(classes="flex gap-2"):
+                    # Plain Actions
+                    with tag.a(
+                        classes="btn",
+                        href=str(
+                            request.url_for(
+                                "organizations:plain_search_url", id=organization.id
+                            )
+                        ),
+                        title="Search in Plain",
+                        target="_blank",
+                    ):
+                        with tag.div(classes="icon-search"):
+                            pass
+                        text("Search in Plain")
+                    with tag.button(
+                        classes="btn",
+                        hx_get=str(
+                            request.url_for(
+                                "organizations:create_thread_modal", id=organization.id
+                            )
+                        ),
+                        hx_target="#modal",
+                        title="Create Thread in Plain",
+                    ):
+                        with tag.div(classes="icon-message-square-more"):
+                            pass
+                        text("Create Thread")
                     with button(
+                        variant="primary",
                         hx_get=str(
                             request.url_for("organizations:update", id=organization.id)
                         ),
@@ -1189,6 +1355,7 @@ async def get(
                     description_list.DescriptionListAttrItem(
                         "email", "Support email", clipboard=True
                     ),
+                    description_list.DescriptionListSocialsItem("Social Links"),
                 ).render(request, organization):
                     pass
                 # Simple users table
@@ -1494,3 +1661,134 @@ async def get(
                     with tag.div(classes="card card-border w-full shadow-sm"):
                         with payment_verdict.render():
                             pass
+
+            # Organization Files Section
+            with tag.div(classes="mt-8"):
+                with tag.div(classes="flex items-center gap-4 mb-4"):
+                    with tag.h2(classes="text-2xl font-bold"):
+                        text("Downloadable Files")
+
+                sorting: builtins.list[Sorting[FileSortProperty]] = [
+                    (FileSortProperty.created_at, True)
+                ]
+                file_repository = FileRepository.from_session(session)
+                files = await file_repository.get_all_by_organization(
+                    organization.id,
+                    service=FileServiceTypes.downloadable,
+                    sorting=sorting,
+                )
+
+                with datatable.Datatable[File, FileSortProperty](
+                    datatable.DatatableAttrColumn("name", "Name"),
+                    datatable.DatatableDateTimeColumn("created_at", "Created At"),
+                    datatable.DatatableAttrColumn("mime_type", "MIME Type"),
+                    FileSizeColumn("size", "Size"),
+                    FileDownloadLinkColumn(),
+                    empty_message="No downloadable files found",
+                ).render(request, files, sorting=sorting):
+                    pass
+
+
+@router.get("/{id}/plain_search_url", name="organizations:plain_search_url")
+async def get_plain_search_url(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    """Get the Plain search URL for this organization's admin."""
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(id)
+    if not organization:
+        raise HTTPException(status_code=404)
+
+    admin_user = await org_repo.get_admin_user(session, organization)
+    if not admin_user:
+        raise HTTPException(status_code=404, detail="No admin user found")
+
+    search_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={admin_user.email}"
+
+    return RedirectResponse(url=search_url, status_code=302)
+
+
+@router.get("/{id}/create_thread_modal", name="organizations:create_thread_modal")
+async def get_create_thread_modal(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    """Get the create thread modal HTML."""
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(id)
+    if not organization:
+        raise HTTPException(status_code=404)
+
+    with document() as doc:
+        with tag.div(id="modal"):
+            with tag.dialog(classes="modal modal-open"):
+                with tag.div(classes="modal-box"):
+                    with tag.form(method="dialog"):
+                        with tag.button(
+                            classes="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                        ):
+                            text("✕")
+
+                    with tag.h3(classes="font-bold text-lg"):
+                        text("Create Plain Thread")
+
+                    with tag.form(
+                        id="create-thread-form",
+                        hx_post=str(
+                            request.url_for(
+                                "organizations:create_plain_thread", id=organization.id
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        with tag.div(classes="form-control w-full mt-4"):
+                            with tag.label(classes="label"):
+                                with tag.span(classes="label-text"):
+                                    text("Thread Title")
+                            with tag.input(
+                                type="text",
+                                name="title",
+                                placeholder="Enter thread title...",
+                                classes="input input-bordered w-full",
+                                required=True,
+                                autofocus=True,
+                            ):
+                                pass
+
+                        with tag.div(classes="modal-action"):
+                            with tag.button(
+                                type="button",
+                                classes="btn",
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:clear_modal", id=organization.id
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Cancel")
+                            with tag.button(
+                                type="submit",
+                                classes="btn btn-primary",
+                            ):
+                                text("Create Thread")
+
+                with tag.div(
+                    classes="modal-backdrop",
+                    hx_get=str(
+                        request.url_for("organizations:clear_modal", id=organization.id)
+                    ),
+                    hx_target="#modal",
+                ):
+                    pass
+
+    return HTMLResponse(str(doc))
+
+
+@router.get("/{id}/clear_modal", name="organizations:clear_modal")
+async def clear_modal(id: UUID4) -> Any:
+    """Clear the modal content."""
+    return HTMLResponse('<div id="modal"></div>')

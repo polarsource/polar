@@ -10,15 +10,16 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function Page({
-  params,
-}: {
-  params: { organization: string }
-  searchParams: DataTableSearchParams & {
-    product_id?: string[] | string
-  }
+export default async function Page(props: {
+  params: Promise<{ organization: string }>
+  searchParams: Promise<
+    DataTableSearchParams & {
+      product_id?: string[] | string
+    }
+  >
 }) {
-  const api = getServerSideAPI()
+  const params = await props.params
+  const api = await getServerSideAPI()
   await getOrganizationBySlugOrNotFound(api, params.organization)
 
   return <ClientPage />

@@ -1,6 +1,7 @@
 import { useMetrics } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
+import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
 import {
   Tooltip,
@@ -122,7 +123,7 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                     <Tooltip>
                       <TooltipTrigger
                         className={twMerge(
-                          'flex flex-row items-center gap-x-1 rounded-sm p-0.5 text-xs',
+                          'rounded-xs flex flex-row items-center gap-x-1 p-0.5 text-xs',
                           isTrendingUp
                             ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
                             : 'bg-red-100 text-red-500 dark:bg-red-950',

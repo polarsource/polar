@@ -93,7 +93,7 @@ async def enqueue(request: Request, task: str | None = Query(None)) -> Any:
     if request.method == "POST":
         data = await request.form()
         try:
-            enqueue_task_payload = form_class.model_validate(data)
+            enqueue_task_payload = form_class.model_validate_form(data)
             enqueue_job(
                 enqueue_task_payload.task,
                 **enqueue_task_payload.model_dump(exclude={"task"}),
@@ -107,7 +107,7 @@ async def enqueue(request: Request, task: str | None = Query(None)) -> Any:
         with form_class.render(
             {"task": task},
             method="POST",
-            classes="flex flex-col gap-4",
+            classes="flex flex-col",
             validation_error=validation_error,
         ):
             with tag.div(classes="modal-action"):

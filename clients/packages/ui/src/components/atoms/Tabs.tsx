@@ -9,12 +9,12 @@ import { twMerge } from 'tailwind-merge'
 
 const Tabs = TabsPrimitive
 
-const TabsList = React.forwardRef<
-  React.ElementRef<typeof TabsListPrimitive>,
-  React.ComponentPropsWithoutRef<typeof TabsListPrimitive> & {
-    vertical?: boolean
-  }
->(({ className, vertical, ...props }, ref) => (
+const TabsList = ({
+  ref,
+  className,
+  vertical,
+  ...props
+}: React.ComponentProps<typeof TabsListPrimitive> & { vertical?: boolean }) => (
   <TabsListPrimitive
     ref={ref}
     className={twMerge(
@@ -26,33 +26,36 @@ const TabsList = React.forwardRef<
     )}
     {...props}
   />
-))
+)
 TabsList.displayName = TabsListPrimitive.displayName
 
-const TabsTrigger = React.forwardRef<
-  React.ElementRef<typeof TabsTriggerPrimitive>,
-  React.ComponentPropsWithoutRef<typeof TabsTriggerPrimitive> & {
-    size?: 'small' | 'default'
-  }
->(({ className, size = 'default', ...props }, ref) => (
+const TabsTrigger = ({
+  ref,
+  className,
+  size = 'default',
+  ...props
+}: React.ComponentProps<typeof TabsTriggerPrimitive> & {
+  size?: 'default' | 'small'
+}) => (
   <TabsTriggerPrimitive
     ref={ref}
     className={twMerge(
-      'dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 dark:text-polar-500 px-4 text-gray-400 hover:text-black data-[state=active]:rounded-xl data-[state=active]:bg-gray-100 data-[state=active]:text-black data-[state=active]:shadow-none dark:data-[state=active]:text-white',
+      'dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 dark:text-polar-500 cursor-pointer px-4 text-gray-400 hover:text-black data-[state=active]:rounded-xl data-[state=active]:bg-gray-100 data-[state=active]:text-black data-[state=active]:shadow-none dark:data-[state=active]:text-white',
       size === 'default' ? 'text-sm' : 'text-xs',
       className,
     )}
     {...props}
   />
-))
+)
 TabsTrigger.displayName = TabsTriggerPrimitive.displayName
 
-const TabsContent = React.forwardRef<
-  React.ElementRef<typeof TabsContentPrimitive>,
-  React.ComponentPropsWithoutRef<typeof TabsContentPrimitive>
->(({ className, ...props }, ref) => (
+const TabsContent = ({
+  ref,
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsContentPrimitive>) => (
   <TabsContentPrimitive ref={ref} className={twMerge(className)} {...props} />
-))
+)
 TabsContent.displayName = TabsContentPrimitive.displayName
 
 export { Tabs, TabsContent, TabsList, TabsTrigger }

@@ -96,6 +96,6 @@ export const isValidationError = (
 
 export type { Middleware } from 'openapi-fetch'
 export * as enums from './enums'
-export type { components, operations } from './v1'
+export type { components, operations, paths } from './v1'
 export type schemas = components['schemas']
 export type Client = ReturnType<typeof createClient>

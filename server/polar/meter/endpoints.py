@@ -7,6 +7,7 @@ from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import MIN_DATETIME, TimeInterval, is_under_limits
+from polar.meter.aggregation import AggregationFunction
 from polar.models import Meter
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -115,6 +116,14 @@ async def quantities(
         title="ExternalCustomerID Filter",
         description="Filter by external customer ID.",
     ),
+    customer_aggregation_function: AggregationFunction | None = Query(
+        None,
+        description=(
+            "If set, will first compute the quantities per customer before aggregating "
+            "them using the given function. "
+            "If not set, the quantities will be aggregated across all events."
+        ),
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> MeterQuantities:
     """Get quantities of a meter over a time period."""
@@ -147,6 +156,7 @@ async def quantities(
         customer_id=customer_id,
         external_customer_id=external_customer_id,
         metadata=metadata,
+        customer_aggregation_function=customer_aggregation_function,
     )
 
 

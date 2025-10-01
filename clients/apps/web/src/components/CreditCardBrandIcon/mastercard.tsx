@@ -8,4 +8,4 @@ export default (
       fill="#ff5f00"
     />
   </g>
-);
+)

@@ -1,6 +1,7 @@
 'use client'
 
-import { ArrowForward, KeyboardArrowRight } from '@mui/icons-material'
+import ArrowForward from '@mui/icons-material/ArrowForward'
+import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 
@@ -33,7 +34,7 @@ export const GetStarted = () => {
             </li>
           </ul>
         </div>
-        <Link href="https://docs.polar.sh/documentation/integration-guides/nextjs">
+        <Link href="https://polar.sh/docs/documentation/integration-guides/nextjs">
           <Button
             size="lg"
             fullWidth

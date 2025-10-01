@@ -1,18 +1,8 @@
 {
-  "extends": "tsconfig/base.json",
+  "extends": "@polar-sh/typescript-config/react-library.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "lib": ["esnext", "dom"],
-    "target": "es6",
-    "jsx": "react-jsx",
-    "paths": {
-      // To get chadcns import paths to work here as well.
-      // When using regular polarkit components, refer to "polarkit" instead of "@polarkit"
-      "@polarkit/lib/*": [
-        "../polarkit/src/lib/*"
-      ]
-    },
+    "rootDir": "src"
   },
   "include": ["src", "../ui/src/hooks/theming.ts"],
   "exclude": ["node_modules", "dist"]

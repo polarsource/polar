@@ -3,11 +3,9 @@
 import { useListOrganizations } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import {
-  Face,
-  LogoutOutlined,
-  SpaceDashboardOutlined,
-} from '@mui/icons-material'
+import Face from '@mui/icons-material/Face'
+import LogoutOutlined from '@mui/icons-material/LogoutOutlined'
+import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
@@ -48,7 +46,7 @@ const PublicProfileDropdown = ({
       <div className={classNames}>
         <div
           className={twMerge(
-            'dark:border-polar-800 dark:hover:border-polar-700 relative flex flex-shrink-0 cursor-pointer flex-row items-center rounded-full border-2 border-gray-50 shadow-sm transition-colors hover:border-blue-100',
+            'dark:border-polar-800 dark:hover:border-polar-700 shadow-xs relative flex shrink-0 cursor-pointer flex-row items-center rounded-full border-2 border-gray-50 transition-colors hover:border-blue-100',
           )}
           onClick={() => setOpen(true)}
         >

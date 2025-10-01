@@ -15,7 +15,7 @@ export default function ClientPage({
 }) {
   return (
     <DashboardBody
-      wrapperClassName="!max-w-screen-sm"
+      wrapperClassName="max-w-(--breakpoint-sm)!"
       title="Organization Settings"
     >
       <div className="flex flex-col gap-y-12">

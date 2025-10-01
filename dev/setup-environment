@@ -266,6 +266,7 @@ def _write_apps_web_env_file(github_app: dict[str, typing.Any] | None = None) ->
             **replacements,
             "NEXT_PUBLIC_API_URL": f"https://{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}",
             "NEXT_PUBLIC_FRONTEND_BASE_URL": f"https://{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}",
+            "NEXT_PUBLIC_BACKOFFICE_URL": f"https://{os.environ['CODESPACE_NAME']}-8080.{os.environ['GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN']}/backoffice",
         }
     if github_app is not None:
         replacements = {

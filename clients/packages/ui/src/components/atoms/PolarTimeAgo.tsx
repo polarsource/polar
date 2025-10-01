@@ -4,7 +4,7 @@ const PolarTimeAgo = (props: { date: Date; suffix?: string }) => {
   return (
     <TimeAgo
       date={props.date}
-      formatter={(value, unit, suffix) => {
+      formatter={(value: number, unit: string, suffix: string) => {
         if (unit === 'second') {
           return 'just now'
         }

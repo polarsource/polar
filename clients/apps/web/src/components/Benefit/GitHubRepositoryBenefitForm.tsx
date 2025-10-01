@@ -4,7 +4,7 @@ import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from '@/ho
 import { useUserSSE } from '@/hooks/sse'
 import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
-import { RefreshOutlined } from '@mui/icons-material'
+import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
 import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -403,7 +403,7 @@ export const GitHubRepositoryBenefitForm = ({
                 <a
                   href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role"
                   target="_blank"
-                  rel="noopener noreferer"
+                  rel="noopener noreferer noreferrer"
                   className="text-blue-500 underline"
                 >
                   GitHub documentation

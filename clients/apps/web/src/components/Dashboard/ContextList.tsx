@@ -1,9 +1,12 @@
 import { useInViewport } from '@/hooks/utils'
-import { AddOutlined, Search } from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import Search from '@mui/icons-material/Search'
 import Button, { ButtonProps } from '@polar-sh/ui/components/atoms/Button'
 import Input, { InputProps } from '@polar-sh/ui/components/atoms/Input'
 import { twMerge } from 'tailwind-merge'
 import Spinner from '../Shared/Spinner'
+
+import type { JSX } from 'react'
 
 export interface ContextListItemProps {
   id: string
@@ -53,11 +56,11 @@ export const ContextList = ({
           <Input
             placeholder="Search"
             {...search}
-            className="w-full rounded-none border-none bg-transparent p-0 !shadow-none ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
+            className="shadow-none! w-full rounded-none border-none bg-transparent p-0 ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
           />
         </div>
       )}
-      <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-50 overflow-y-auto">
+      <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
         {items.map((item) => (
           <div
             key={item.id}

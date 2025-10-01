@@ -531,20 +531,21 @@ class DatatableActionsColumn[M](DatatableColumn[M]):
         if not displayed_actions:
             return None
 
-        popover_id = "".join(random.choice(string.ascii_letters) for i in range(6))
+        popover_id = "".join(random.choice(string.ascii_letters) for _ in range(8))
         with tag.button(
+            type="button",
             classes="btn btn-ghost m-1",
-            style=f"anchor-name:--anchor-{popover_id}",
             popovertarget=f"popover-{popover_id}",
+            style=f"anchor-name:--anchor-{popover_id}",
         ):
             with tag.div(classes="font-normal icon-ellipsis-vertical"):
                 pass
 
         with tag.ul(
-            classes="dropdown menu w-52 rounded-box bg-base-100 shadow-sm",
+            classes="dropdown menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm",
             popover=True,
             id=f"popover-{popover_id}",
-            style=f"position-anchor:--anchor-{popover_id}; position-try: flip-inline flip-block",
+            style=f"position-anchor:--anchor-{popover_id}",
         ):
             for action in displayed_actions:
                 with tag.li():
@@ -601,7 +602,7 @@ class Datatable[M, PE: StrEnum]:
             If None, no sorting controls are rendered.
         """
         with tag.div(
-            classes="overflow-x-auto rounded-box bg-base-100 border-1 border-gray-600"
+            classes="overflow-x-auto rounded-box bg-base-100 border-1 border-base-200"
         ):
             with tag.table(classes="table table-auto"):
                 with tag.thead():

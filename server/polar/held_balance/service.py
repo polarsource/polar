@@ -2,6 +2,7 @@ import structlog
 from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload
 
+from polar.config import settings
 from polar.exceptions import PolarError
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
@@ -63,7 +64,10 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 joinedload(HeldBalance.issue_reward),
             )
         )
-        held_balances = await session.stream_scalars(statement)
+        held_balances = await session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
 
         balance_transactions_list: list[tuple[Transaction, Transaction]] = []
         async for held_balance in held_balances:

@@ -1,11 +1,9 @@
 import { useDeleteBenefit } from '@/hooks/queries'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
-import {
-  AddOutlined,
-  CheckOutlined,
-  MoreVertOutlined,
-  RemoveOutlined,
-} from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import RemoveOutlined from '@mui/icons-material/RemoveOutlined'
 import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Switch from '@polar-sh/ui/components/atoms/Switch'

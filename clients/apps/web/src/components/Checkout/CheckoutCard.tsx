@@ -1,7 +1,10 @@
 'use client'
 
 import { BenefitList } from '@/components/Products/BenefitList'
-import { CheckoutPricing } from '@polar-sh/checkout/components'
+import {
+  CheckoutPricing,
+  CheckoutSeatSelector,
+} from '@polar-sh/checkout/components'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -20,7 +23,8 @@ export const CheckoutCard = ({
   disabled,
   themePreset,
 }: CheckoutCardProps) => {
-  const { product } = checkout
+  const { product, productPrice } = checkout
+  const isSeatBased = productPrice && productPrice.amountType === 'seat_based'
 
   return (
     <ShadowBox
@@ -29,17 +33,19 @@ export const CheckoutCard = ({
         'hidden flex-col gap-6 md:flex',
       )}
     >
-      <CheckoutPricing
-        checkout={checkout}
-        update={update}
-        disabled={disabled}
-      />
+      {isSeatBased && update ? (
+        <CheckoutSeatSelector checkout={checkout} update={update} />
+      ) : (
+        <CheckoutPricing
+          checkout={checkout}
+          update={update}
+          disabled={disabled}
+        />
+      )}
 
       {product.benefits.length > 0 ? (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <h1 className="font-medium dark:text-white">Included</h1>
-          </div>
+        <div className="flex flex-col gap-2">
+          <h1 className="font-medium dark:text-white">Included</h1>
           <div className="flex flex-col gap-y-2">
             {/* @ts-ignore */}
             <BenefitList benefits={product.benefits} toggle={true} />

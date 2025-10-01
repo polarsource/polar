@@ -21,7 +21,7 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/docs">Docs</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<a href="https://docs.polar.sh/api-reference">API Reference</a>
+<a href="https://polar.sh/docs/api-reference">API Reference</a>
 
 <p align="center">
   <a href="https://discord.gg/Pnhfz3UThd">
@@ -50,7 +50,7 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 - 4% + 40¢
 - No fixed monthly costs
-- Additional fees may apply. [Read more](https://docs.polar.sh/documentation/polar-as-merchant-of-record/fees)
+- Additional fees may apply. [Read more](https://polar.sh/docs/documentation/polar-as-merchant-of-record/fees)
 
 ## Roadmap, Issues & Feature Requests
 
@@ -64,7 +64,7 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 ### Polar API & SDK
 
-You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api-reference) and [Webhook API](https://docs.polar.sh/developers/webhooks).
+You can integrate Polar on your docs, sites or services using our [Public API](https://polar.sh/docs/api-reference) and [Webhook API](https://polar.sh/docs/integrate/webhooks/endpointsendpoints).
 
 We also maintain SDKs for the following languages:
 
@@ -94,7 +94,7 @@ Our [`DEVELOPMENT.md`](./DEVELOPMENT.md) file contains everything you need to kn
     - [polarkit](./clients/packages/polarkit) - Shared React components
 
 <sub>♥️🙏 To our `pyproject.toml` friends: [FastAPI](https://github.com/tiangolo/fastapi), [Pydantic](https://github.com/pydantic/pydantic), [Dramatiq](https://github.com/Bogdanp/dramatiq), [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy), [Githubkit](https://github.com/yanyongyu/githubkit), [sse-starlette](https://github.com/sysid/sse-starlette), [Uvicorn](https://github.com/encode/uvicorn), [httpx-oauth](https://github.com/frankie567/httpx-oauth), [jinja](https://github.com/pallets/jinja), [blinker](https://github.com/pallets-eco/blinker), [pyjwt](https://github.com/jpadilla/pyjwt), [Sentry](https://github.com/getsentry/sentry) + more</sub><br />
-<sub>♥️🙏 To our `package.json` friends: [Next.js](https://github.com/vercel/next.js/), [TanStack Query](https://github.com/TanStack/query), [tailwindcss](https://github.com/tailwindlabs/tailwindcss), [zustand](https://github.com/pmndrs/zustand), [openapi-typescript-codegen](https://github.com/ferdikoomen/openapi-typescript-codegen), [axios](https://github.com/axios/axios), [radix-ui](https://github.com/radix-ui/primitives), [cmdk](https://github.com/pacocoursey/cmdk), [framer-motion](https://github.com/framer/motion) + more</sub><br />
+<sub>♥️🙏 To our `package.json` friends: [Next.js](https://github.com/vercel/next.js/), [TanStack Query](https://github.com/TanStack/query), [tailwindcss](https://github.com/tailwindlabs/tailwindcss), [openapi-typescript-codegen](https://github.com/ferdikoomen/openapi-typescript-codegen), [axios](https://github.com/axios/axios), [radix-ui](https://github.com/radix-ui/primitives), [cmdk](https://github.com/pacocoursey/cmdk), [framer-motion](https://github.com/framer/motion) + more</sub><br />
 <sub>♥️🙏 To [IPinfo](https://ipinfo.io) that provides IP address data to help us geolocate customers during checkout.</sub>
 
 ## License

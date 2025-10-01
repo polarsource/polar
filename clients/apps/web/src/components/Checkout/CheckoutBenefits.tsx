@@ -36,7 +36,7 @@ const CheckoutBenefits = ({
     if (benefitGrants && benefitGrants.items.length >= expectedBenefits) {
       return
     }
-    let intervalId = setInterval(() => {
+    const intervalId = setInterval(() => {
       refetch()
     }, maxWaitingTimeMs)
     return () => clearInterval(intervalId)

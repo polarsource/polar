@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.repository import (
@@ -83,6 +83,20 @@ class OrganizationRepository(
                 return self.model.slug
             case OrganizationSortProperty.organization_name:
                 return self.model.name
+            case OrganizationSortProperty.next_review_threshold:
+                return self.model.next_review_threshold
+            case OrganizationSortProperty.days_in_status:
+                # Calculate days since status was last updated
+                return (
+                    func.extract(
+                        "epoch",
+                        func.now()
+                        - func.coalesce(
+                            self.model.status_updated_at, self.model.modified_at
+                        ),
+                    )
+                    / 86400
+                )
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

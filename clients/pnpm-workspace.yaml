@@ -2,5 +2,11 @@ packages:
   - apps/*
   - packages/*
   - examples/*
+
 onlyBuiltDependencies:
   - '@sentry/cli'
+  - '@tailwindcss/oxide'
+  - core-js-pure
+  - esbuild
+  - sharp
+  - unrs-resolver

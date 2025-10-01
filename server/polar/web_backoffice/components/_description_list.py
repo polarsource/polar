@@ -258,6 +258,91 @@ class DescriptionListCurrencyItem[M](DescriptionListAttrItem[M]):
         return getattr(item, "currency", "usd")
 
 
+class DescriptionListSocialsItem[M](DescriptionListItem[M]):
+    """A description list item that displays social links with platform icons.
+
+    This item displays social links from the model, including both the socials
+    list and twitter_username field, with appropriate formatting and icons.
+
+    Args:
+        M: Type parameter for the model type.
+    """
+
+    def render(self, request: Request, item: M) -> Generator[None] | None:
+        """Render social links with platform icons and external links.
+
+        Args:
+            request: The FastAPI request object.
+            item: The data object to render social links from.
+        """
+        socials = getattr(item, "socials", [])
+        twitter_username = getattr(item, "twitter_username", None)
+
+        with tag.div(classes="flex flex-col gap-2"):
+            # Display Twitter/X username if available
+            if twitter_username:
+                with tag.div(classes="flex items-center gap-2"):
+                    with tag.span(classes="text-sm font-medium"):
+                        text("𝕏 (Twitter):")
+                    with tag.a(
+                        href=f"https://twitter.com/{twitter_username}",
+                        classes="link flex items-center gap-1",
+                        target="_blank",
+                        rel="noopener noreferrer",
+                    ):
+                        text(f"@{twitter_username}")
+                        with tag.div(classes="icon-external-link"):
+                            pass
+
+            # Display social links from socials field
+            if socials:
+                for social in socials:
+                    platform = social.get("platform", "")
+                    url = social.get("url", "")
+                    if platform and url:
+                        with tag.div(classes="flex items-center gap-2"):
+                            with tag.span(classes="text-sm font-medium"):
+                                # Add platform-specific icons/emojis
+                                if platform.lower() in ["twitter", "x"]:
+                                    text("𝕏:")
+                                elif platform.lower() == "github":
+                                    text("GitHub:")
+                                elif platform.lower() == "linkedin":
+                                    text("LinkedIn:")
+                                elif platform.lower() == "youtube":
+                                    text("YouTube:")
+                                elif platform.lower() == "instagram":
+                                    text("Instagram:")
+                                elif platform.lower() == "facebook":
+                                    text("Facebook:")
+                                elif platform.lower() == "discord":
+                                    text("Discord:")
+                                else:
+                                    text(f"{platform.title()}:")
+                            with tag.a(
+                                href=url,
+                                classes="link flex items-center gap-1",
+                                target="_blank",
+                                rel="noopener noreferrer",
+                            ):
+                                # Display the URL or just the platform name
+                                display_text = url
+                                if url.startswith("https://"):
+                                    display_text = url[8:]  # Remove https://
+                                elif url.startswith("http://"):
+                                    display_text = url[7:]  # Remove http://
+                                text(display_text)
+                                with tag.div(classes="icon-external-link"):
+                                    pass
+
+            # Show message if no social links
+            if not socials and not twitter_username:
+                with tag.span(classes="text-gray-500 italic"):
+                    text("No social links available")
+
+        return None
+
+
 class DescriptionList[M]:
     """A complete description list component for displaying structured data.
 

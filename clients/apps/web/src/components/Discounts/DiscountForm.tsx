@@ -1,4 +1,4 @@
-import { AutorenewOutlined } from '@mui/icons-material'
+import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
 import {
   Accordion,
   AccordionContent,
@@ -137,13 +137,13 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
         >
           <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">
             <TabsTrigger
-              className="dark:data-[state=active]:bg-polar-800 flex-grow !rounded-full data-[state=active]:bg-white"
+              className="dark:data-[state=active]:bg-polar-800 rounded-full! grow data-[state=active]:bg-white"
               value="percentage"
             >
               Percentage discount
             </TabsTrigger>
             <TabsTrigger
-              className="dark:data-[state=active]:bg-polar-800 flex-grow !rounded-full data-[state=active]:bg-white"
+              className="dark:data-[state=active]:bg-polar-800 rounded-full! grow data-[state=active]:bg-white"
               value="fixed"
             >
               Fixed amount discount

@@ -12,12 +12,11 @@ import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { organization: string; productId: string }
+export async function generateMetadata(props: {
+  params: Promise<{ organization: string; productId: string }>
 }): Promise<Metadata> {
-  const api = getServerSideAPI()
+  const params = await props.params
+  const api = await getServerSideAPI()
   const { organization, products } = await getStorefrontOrNotFound(
     api,
     params.organization,
@@ -63,12 +62,11 @@ export async function generateMetadata({
   }
 }
 
-export default async function Page({
-  params,
-}: {
-  params: { organization: string; productId: string }
+export default async function Page(props: {
+  params: Promise<{ organization: string; productId: string }>
 }) {
-  const api = getServerSideAPI()
+  const params = await props.params
+  const api = await getServerSideAPI()
   const { products } = await getStorefrontOrNotFound(api, params.organization)
   const product = products.find((p) => p.id === params.productId)
 
@@ -77,7 +75,7 @@ export default async function Page({
   }
 
   /* Avoid creating a checkout for crawlers */
-  const headersList = headers()
+  const headersList = await headers()
   const userAgent = headersList.get('user-agent')
   if (userAgent && isCrawler(userAgent)) {
     return <></>

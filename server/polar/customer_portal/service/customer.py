@@ -6,7 +6,7 @@ import stripe as stripe_lib
 
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
-from polar.exceptions import PolarRequestValidationError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.pagination import PaginationParams
@@ -16,7 +16,23 @@ from polar.payment_method.service import payment_method as payment_method_servic
 from polar.postgres import AsyncSession
 
 from ..repository.payment_method import CustomerPaymentMethodRepository
-from ..schemas.customer import CustomerPaymentMethodCreate, CustomerPortalCustomerUpdate
+from ..schemas.customer import (
+    CustomerPaymentMethodConfirm,
+    CustomerPaymentMethodCreate,
+    CustomerPaymentMethodCreateRequiresActionResponse,
+    CustomerPaymentMethodCreateResponse,
+    CustomerPaymentMethodCreateSucceededResponse,
+    CustomerPortalCustomerUpdate,
+)
+
+
+class CustomerError(PolarError): ...
+
+
+class CustomerNotReady(CustomerError):
+    def __init__(self, customer: Customer) -> None:
+        self.customer = customer
+        super().__init__("Customer is not ready for this operation.", 403)
 
 
 class CustomerService:
@@ -118,7 +134,7 @@ class CustomerService:
         session: AsyncSession,
         customer: Customer,
         payment_method_create: CustomerPaymentMethodCreate,
-    ) -> PaymentMethod:
+    ) -> CustomerPaymentMethodCreateResponse:
         if customer.stripe_customer_id is None:
             params: stripe_lib.Customer.CreateParams = {
                 "email": customer.email,
@@ -146,10 +162,84 @@ class CustomerService:
             },
             return_url=payment_method_create.return_url,
             expand=["payment_method"],
+            payment_method_options={  # type: ignore
+                "klarna": {"currency": "usd"},
+            },
         )
-        assert setup_intent.payment_method is not None
 
-        if payment_method_create.set_default:
+        return await self._save_payment_method(
+            session,
+            customer,
+            setup_intent,
+            set_default=payment_method_create.set_default,
+        )
+
+    async def confirm_payment_method(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        payment_method_confirm: CustomerPaymentMethodConfirm,
+    ) -> CustomerPaymentMethodCreateResponse:
+        if customer.stripe_customer_id is None:
+            raise CustomerNotReady(customer)
+
+        try:
+            setup_intent = await stripe_service.get_setup_intent(
+                payment_method_confirm.setup_intent_id,
+                expand=["payment_method"],
+            )
+        except stripe_lib.InvalidRequestError as e:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "invalid",
+                        "loc": ("body", "setup_intent_id"),
+                        "msg": "Invalid setup_intent_id.",
+                        "input": payment_method_confirm.setup_intent_id,
+                    }
+                ]
+            ) from e
+
+        if (
+            setup_intent.customer is None
+            or get_expandable_id(setup_intent.customer) != customer.stripe_customer_id
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "invalid",
+                        "loc": ("body", "setup_intent_id"),
+                        "msg": "Invalid setup_intent_id.",
+                        "input": payment_method_confirm.setup_intent_id,
+                    }
+                ]
+            )
+
+        return await self._save_payment_method(
+            session,
+            customer,
+            setup_intent,
+            set_default=payment_method_confirm.set_default,
+        )
+
+    async def _save_payment_method(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        setup_intent: stripe_lib.SetupIntent,
+        set_default: bool,
+    ) -> CustomerPaymentMethodCreateResponse:
+        assert customer.stripe_customer_id is not None
+
+        if setup_intent.status == "requires_action":
+            assert setup_intent.client_secret is not None
+            return CustomerPaymentMethodCreateRequiresActionResponse(
+                status="requires_action",
+                client_secret=setup_intent.client_secret,
+            )
+
+        if set_default:
+            assert setup_intent.payment_method is not None
             await stripe_service.update_customer(
                 customer.stripe_customer_id,
                 invoice_settings={
@@ -165,13 +255,18 @@ class CustomerService:
             cast(stripe_lib.PaymentMethod, setup_intent.payment_method),
             flush=True,
         )
-        if payment_method_create.set_default:
+        if set_default:
             repository = CustomerRepository.from_session(session)
             customer = await repository.update(
                 customer, update_dict={"default_payment_method": payment_method}
             )
 
-        return payment_method
+        return CustomerPaymentMethodCreateSucceededResponse.model_validate(
+            {
+                "status": "succeeded",
+                "payment_method": payment_method,
+            }
+        )
 
     async def delete_payment_method(
         self, session: AsyncSession, payment_method: PaymentMethod

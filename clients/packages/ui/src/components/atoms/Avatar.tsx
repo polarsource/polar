@@ -61,7 +61,7 @@ const Avatar = ({
   return (
     <div
       className={cn(
-        'dark:bg-polar-900 dark:border-polar-700 relative z-[2] flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-50 text-sm',
+        'dark:bg-polar-900 dark:border-polar-700 z-2 relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-50 text-sm',
         className,
       )}
     >
@@ -82,7 +82,7 @@ const Avatar = ({
             onLoad={onLoad}
             onError={onError}
             className={cn(
-              'z-[1] aspect-square rounded-full object-cover',
+              'z-1 aspect-square rounded-full object-cover',
               hasLoaded ? 'opacity-100' : 'opacity-0',
             )}
           />

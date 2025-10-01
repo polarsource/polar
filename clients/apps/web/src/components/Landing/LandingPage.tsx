@@ -13,8 +13,6 @@ import Features from './Features'
 import { Pricing } from './Pricing'
 import SDKs from './SDKs'
 import { Section } from './Section'
-import { Tools } from './Tools'
-import { Upsell } from './Upsell'
 import { Usage } from './Usage'
 
 export default function Page() {
@@ -41,7 +39,7 @@ export const PageContent = () => {
         >
           <div className="flex flex-col items-center gap-y-2">
             <h2 className="text-6xl">”</h2>
-            <h2 className="text-2xl !leading-relaxed md:text-4xl">
+            <h2 className="leading-relaxed! text-2xl md:text-4xl">
               The speed at which Polar is executing on the financial
               infrastructure primitives the new world needs is very impressive
             </h2>
@@ -65,15 +63,13 @@ export const PageContent = () => {
           </div>
         </Link>
       </Section>
-      <Testimonials />
       <Section className="flex flex-col gap-y-24">
         <Checkout />
         <MerchantOfRecord />
         <Benefits />
-        <Upsell />
+        <Testimonials />
       </Section>
       <Section className="flex flex-col gap-y-24">
-        <Tools />
         <Pricing />
       </Section>
     </>

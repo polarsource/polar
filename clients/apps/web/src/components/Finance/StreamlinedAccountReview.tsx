@@ -3,17 +3,18 @@
 import AIValidationResult from '@/components/Organization/AIValidationResult'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { Card } from '@polar-sh/ui/components/ui/card'
 import {
-  ArrowRight,
   Check,
   CheckCircle,
+  Clock,
   Shield,
   ShieldCheck,
   UserCheck,
+  XCircle,
 } from 'lucide-react'
 import React, { useState } from 'react'
+import AccountStep from './Steps/AccountStep'
+import IdentityStep from './Steps/IdentityStep'
 
 type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
 
@@ -48,9 +49,29 @@ interface StreamlinedAccountReviewProps {
   onStartIdentityVerification: () => void
   onSkipAccountSetup?: () => void
   onAppealApproved?: () => void
+  onAppealSubmitted?: () => void
+  onNavigateToStep?: (step: Step) => void
 }
 
-const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
+const ProgressIndicator = ({
+  steps,
+  onStepClick,
+  organizationReviewStatus,
+  isReviewCompleted,
+  isValidationCompleted,
+  isAccountCompleted,
+  isNotAdmin,
+  isAppealSubmitted,
+}: {
+  steps: StepConfig[]
+  onStepClick?: (stepId: Step) => void
+  organizationReviewStatus?: schemas['OrganizationReviewStatus']
+  isReviewCompleted: boolean
+  isValidationCompleted: boolean
+  isAccountCompleted: boolean
+  isNotAdmin: boolean
+  isAppealSubmitted: boolean
+}) => {
   // Calculate progress based on completed steps
   const calculateProgress = () => {
     if (steps.length <= 1) {
@@ -95,6 +116,16 @@ const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
           const isPending = step.status === 'in_progress'
           const isFailed = step.status === 'failed'
 
+          const isClickable =
+            onStepClick &&
+            ((step.id === 'review' && isReviewCompleted) ||
+              (step.id === 'validation' &&
+                isReviewCompleted &&
+                organizationReviewStatus) ||
+              (step.id === 'account' &&
+                (isValidationCompleted || isAppealSubmitted || isNotAdmin)) ||
+              (step.id === 'identity' && isAccountCompleted))
+
           return (
             <div key={step.id} className="relative flex flex-col items-center">
               <div
@@ -110,7 +141,8 @@ const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
                           : isBlocked
                             ? 'border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gray-800'
                             : 'border-gray-300 bg-white text-gray-400 dark:border-gray-600 dark:bg-gray-900'
-                } `}
+                } ${isClickable ? 'cursor-pointer hover:border-gray-400 hover:bg-gray-400' : ''}`}
+                onClick={() => isClickable && onStepClick(step.id)}
               >
                 {isCompleted ? (
                   <Check className="h-5 w-5" />
@@ -168,14 +200,6 @@ const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
   )
 }
 
-const StepCard = ({
-  children,
-  className = '',
-}: {
-  children: React.ReactNode
-  className?: string
-}) => <Card className={`p-6 ${className}`}>{children}</Card>
-
 export default function StreamlinedAccountReview({
   organization,
   currentStep,
@@ -191,6 +215,8 @@ export default function StreamlinedAccountReview({
   onStartIdentityVerification,
   onSkipAccountSetup,
   onAppealApproved,
+  onAppealSubmitted,
+  onNavigateToStep,
 }: StreamlinedAccountReviewProps) {
   const [validationCompleted, setValidationCompleted] = useState(false)
 
@@ -203,13 +229,60 @@ export default function StreamlinedAccountReview({
     onValidationCompleted()
   }
 
+  const handleStepClick = (stepId: Step) => {
+    if (onNavigateToStep) {
+      onNavigateToStep(stepId)
+    }
+  }
+
+  const getValidationIcon = () => {
+    console.log('organizationReviewStatus', organizationReviewStatus)
+    if (!organizationReviewStatus) {
+      return <ShieldCheck className="h-5 w-5" />
+    }
+
+    // AI validation passed
+    if (organizationReviewStatus.verdict === 'PASS') {
+      return <CheckCircle className="h-5 w-5" />
+    }
+
+    // Appeal approved
+    if (organizationReviewStatus.appeal_decision === 'approved') {
+      return <CheckCircle className="h-5 w-5" />
+    }
+
+    // Appeal denied
+    if (organizationReviewStatus.appeal_decision === 'rejected') {
+      return <XCircle className="h-5 w-5" />
+    }
+
+    // Appeal under review
+    if (
+      organizationReviewStatus.appeal_submitted_at &&
+      !organizationReviewStatus.appeal_decision
+    ) {
+      return <Clock className="h-5 w-5" />
+    }
+
+    // AI validation failed (no appeal submitted)
+    if (
+      organizationReviewStatus.verdict === 'FAIL' ||
+      organizationReviewStatus.verdict === 'UNCERTAIN'
+    ) {
+      return <XCircle className="h-5 w-5" />
+    }
+
+    return <ShieldCheck className="h-5 w-5" />
+  }
+
   // Determine completion status for each step
-  const isReviewCompleted = !!organization.details_submitted_at
+  const isReviewCompleted = organization.details_submitted_at !== null
 
   // Check if validation is completed through AI result PASS or approved appeal
   const isAIValidationPassed = organizationReviewStatus?.verdict === 'PASS'
   const isAppealApproved =
     organizationReviewStatus?.appeal_decision === 'approved'
+  const isAppealSubmitted = organizationReviewStatus?.appeal_submitted_at
   const isValidationCompleted =
     validationCompleted || isAIValidationPassed || isAppealApproved
   const isAccountCompleted =
@@ -240,10 +313,55 @@ export default function StreamlinedAccountReview({
           return 'failed'
         }
       }
+      if (stepId === 'validation') {
+        // Handle validation step status based on AI validation and appeal status
+        if (organizationReviewStatus?.verdict === 'PASS') {
+          return 'completed'
+        } else if (
+          organizationReviewStatus?.verdict === 'FAIL' ||
+          organizationReviewStatus?.verdict === 'UNCERTAIN'
+        ) {
+          if (organizationReviewStatus?.appeal_decision === 'approved') {
+            return 'completed'
+          } else if (organizationReviewStatus?.appeal_decision === 'rejected') {
+            return 'failed'
+          } else if (organizationReviewStatus?.appeal_submitted_at) {
+            return 'in_progress'
+          }
+          return 'failed'
+        }
+      }
       return 'current'
     }
+
+    // Special handling for validation step when not current
+    if (stepId === 'validation' && organizationReviewStatus) {
+      if (
+        organizationReviewStatus.verdict === 'PASS' ||
+        organizationReviewStatus.appeal_decision === 'approved'
+      ) {
+        return 'completed'
+      } else if (organizationReviewStatus.appeal_decision === 'rejected') {
+        return 'failed'
+      } else if (organizationReviewStatus.appeal_submitted_at) {
+        return 'in_progress'
+      } else if (
+        organizationReviewStatus.verdict === 'FAIL' ||
+        organizationReviewStatus.verdict === 'UNCERTAIN'
+      ) {
+        return 'failed'
+      }
+    }
+
     return 'pending'
   }
+
+  const validationStepStatus = getStepStatus(
+    'validation',
+    isValidationCompleted,
+    currentStep,
+    isReviewCompleted,
+  )
 
   const steps: StepConfig[] = [
     {
@@ -257,13 +375,8 @@ export default function StreamlinedAccountReview({
       id: 'validation' as Step,
       title: 'Validation',
       description: 'Compliance check',
-      icon: <ShieldCheck className="h-5 w-5" />,
-      status: getStepStatus(
-        'validation',
-        isValidationCompleted,
-        currentStep,
-        isReviewCompleted,
-      ),
+      icon: getValidationIcon(),
+      status: validationStepStatus,
     },
     {
       id: 'account' as Step,
@@ -274,7 +387,7 @@ export default function StreamlinedAccountReview({
         'account',
         isAccountCompleted,
         currentStep,
-        isValidationCompleted,
+        isValidationCompleted || !!isAppealSubmitted,
       ),
     },
     {
@@ -310,12 +423,21 @@ export default function StreamlinedAccountReview({
 
       {/* Progress indicator */}
       <div className="px-8">
-        <ProgressIndicator steps={steps} />
+        <ProgressIndicator
+          steps={steps}
+          onStepClick={handleStepClick}
+          organizationReviewStatus={organizationReviewStatus}
+          isReviewCompleted={isReviewCompleted}
+          isValidationCompleted={isValidationCompleted}
+          isAccountCompleted={isAccountCompleted}
+          isNotAdmin={isNotAdmin}
+          isAppealSubmitted={!!isAppealSubmitted}
+        />
       </div>
 
       {/* Current step content */}
       <div className="space-y-6">
-        {currentStep === 'review' && requireDetails && (
+        {currentStep === 'review' && (
           <div className="space-y-8">
             {/* Header */}
             <div className="space-y-3 text-center">
@@ -323,17 +445,31 @@ export default function StreamlinedAccountReview({
                 <h1 className="text-2xl font-semibold">Organization Details</h1>
               </div>
               <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-                Tell us about your organization so we can review if it&apos;s an
-                acceptable use case for Polar.
+                {requireDetails
+                  ? "Tell us about your organization so we can review if it's an acceptable use case for Polar."
+                  : 'Review your submitted organization details below.'}
               </p>
             </div>
 
-            {/* Use the consolidated OrganizationProfileSettings with KYC mode */}
-            <OrganizationProfileSettings
-              organization={organization}
-              kyc={true}
-              onSubmitted={handleDetailsSubmitted}
-            />
+            {requireDetails ? (
+              /* Use the consolidated OrganizationProfileSettings with KYC mode */
+              <OrganizationProfileSettings
+                organization={organization}
+                kyc={true}
+                onSubmitted={handleDetailsSubmitted}
+              />
+            ) : (
+              /* Show disabled form for viewing all submitted information */
+              <div className="flex justify-center">
+                <div className="pointer-events-none w-full max-w-2xl opacity-75">
+                  <OrganizationProfileSettings
+                    organization={organization}
+                    kyc={true}
+                    onSubmitted={() => {}} // No-op since it's disabled
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -345,146 +481,36 @@ export default function StreamlinedAccountReview({
                 <h1 className="text-2xl font-semibold">Compliance Check</h1>
               </div>
               <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-                Our AI is reviewing your organization details against our
-                acceptable use policy.
+                {organizationReviewStatus?.verdict
+                  ? 'Review your validation results and appeal status below.'
+                  : 'Our AI is reviewing your organization details against our acceptable use policy.'}
               </p>
             </div>
 
             {/* AI Validation Results */}
             <AIValidationResult
               organization={organization}
-              autoValidate={true}
               onValidationCompleted={handleValidationCompleted}
               onAppealApproved={onAppealApproved}
+              onAppealSubmitted={onAppealSubmitted}
             />
           </div>
         )}
 
         {currentStep === 'account' && (
-          <StepCard
-            className={isNotAdmin ? 'border-gray-300 dark:border-gray-600' : ''}
-          >
-            {isNotAdmin ? (
-              <div className="space-y-4">
-                <div className="space-y-4 text-center">
-                  <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8 dark:border-gray-600 dark:bg-gray-800">
-                    <div className="mb-4 flex justify-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
-                        <UserCheck className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                      </div>
-                    </div>
-                    <h4 className="mb-2 font-medium text-gray-600 dark:text-gray-400">
-                      Account Setup Restricted
-                    </h4>
-                    <p className="mx-auto mb-4 max-w-md text-sm text-gray-500 dark:text-gray-500">
-                      You are not the admin of the account. Only the account
-                      admin can set up payout accounts.
-                    </p>
-                    <Button
-                      onClick={onSkipAccountSetup}
-                      variant="default"
-                      className="w-auto"
-                    >
-                      Skip & Continue to Identity Verification
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                    <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                      The account admin will need to complete this step
-                      separately
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-4 text-center">
-                  <div className="rounded-lg bg-gray-50 p-8 dark:bg-gray-800">
-                    <h4 className="mb-2 font-medium">Create Payout Account</h4>
-                    <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
-                      Connect or create a Stripe account to receive payments
-                      from your customers.
-                    </p>
-                    <Button onClick={onStartAccountSetup} className="w-auto">
-                      Continue with Account Setup
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </StepCard>
+          <AccountStep
+            organizationAccount={organizationAccount}
+            isNotAdmin={isNotAdmin}
+            onStartAccountSetup={onStartAccountSetup}
+            onSkipAccountSetup={onSkipAccountSetup}
+          />
         )}
 
         {currentStep === 'identity' && (
-          <StepCard>
-            <div className="space-y-4">
-              <div className="space-y-4 text-center">
-                <div className="rounded-lg bg-gray-50 p-8 dark:bg-gray-800">
-                  {identityVerificationStatus === 'pending' ? (
-                    <>
-                      <h4 className="mb-2 font-medium">
-                        Identity Verification Pending
-                      </h4>
-                      <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
-                        Your identity verification is being processed. This
-                        usually takes a few minutes but can take up to 24 hours.
-                      </p>
-                      <div className="text-xs text-gray-500">
-                        We&apos;ll notify you once verification is complete.
-                      </div>
-                    </>
-                  ) : identityVerificationStatus === 'verified' ? (
-                    <>
-                      <h4 className="mb-2 font-medium">Identity Verified</h4>
-                      <p className="mx-auto text-sm text-gray-600 dark:text-gray-400">
-                        Your identity has been successfully verified.
-                      </p>
-                    </>
-                  ) : identityVerificationStatus === 'failed' ? (
-                    <>
-                      <h4 className="mb-2 font-medium text-red-600 dark:text-red-400">
-                        Identity Verification Failed
-                      </h4>
-                      <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
-                        We were unable to verify your identity. This could be
-                        due to document quality or information mismatch. Please
-                        try again.
-                      </p>
-                      <Button
-                        onClick={onStartIdentityVerification}
-                        className="w-auto"
-                        variant="default"
-                      >
-                        Try Again
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="mb-4 flex justify-center">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900/30">
-                          <CheckCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        </div>
-                      </div>
-                      <h4 className="mb-2 font-medium">Verify Your Identity</h4>
-                      <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
-                        To comply with financial regulations and secure your
-                        account, we need to verify your identity using a
-                        government-issued ID.
-                      </p>
-                      <Button
-                        onClick={onStartIdentityVerification}
-                        className="w-auto"
-                      >
-                        Start Identity Verification
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </StepCard>
+          <IdentityStep
+            identityVerificationStatus={identityVerificationStatus}
+            onStartIdentityVerification={onStartIdentityVerification}
+          />
         )}
       </div>
 

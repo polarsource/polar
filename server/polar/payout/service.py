@@ -505,7 +505,10 @@ class PayoutService:
         # garbage collection problems.
         # We create a new session to avoid this.
         async with sessionmaker() as sub_session:
-            transactions = await sub_session.stream_scalars(statement)
+            transactions = await sub_session.stream_scalars(
+                statement,
+                execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+            )
             async for transaction in transactions:
                 description = ""
                 if transaction.platform_fee_type is not None:

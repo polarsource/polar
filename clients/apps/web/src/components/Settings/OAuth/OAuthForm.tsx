@@ -18,7 +18,8 @@ import {
 import { type MouseEvent } from 'react'
 
 import ImageUpload from '@/components/Form/ImageUpload'
-import { AddOutlined, ClearOutlined } from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { enums } from '@polar-sh/client'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import Link from 'next/link'
@@ -84,7 +85,7 @@ export const FieldClientType = () => {
             <em>Confidential Client</em>.{' '}
             <Link
               className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-              href="https://docs.polar.sh/documentation/integration-guides/authenticating-with-polar"
+              href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -131,7 +132,7 @@ export const FieldClientSecret = ({
         SPA or mobile app.{' '}
         <Link
           className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-          href="https://docs.polar.sh/documentation/integration-guides/authenticating-with-polar"
+          href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar"
           target="_blank"
           rel="noopener noreferrer"
         >

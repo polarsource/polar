@@ -40,12 +40,14 @@ export default function ClientPage({
   const identityVerificationStatus = currentUser?.identity_verification_status
   const identityVerified = identityVerificationStatus === 'verified'
 
-  const { data: organizationAccount, error: accountError } = useOrganizationAccount(organization.id)
+  const { data: organizationAccount, error: accountError } =
+    useOrganizationAccount(organization.id)
   const { data: reviewStatus } = useOrganizationReviewStatus(organization.id)
 
   const [validationCompleted, setValidationCompleted] = useState(false)
 
-  const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
+  const isNotAdmin =
+    accountError && (accountError as any)?.response?.status === 403
 
   type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
 
@@ -53,16 +55,21 @@ export default function ClientPage({
     if (!organization.details_submitted_at) {
       return 'review'
     }
-    
-    // Skip validation if AI validation passed or appeal is approved
+
+    // Skip validation if AI validation passed, appeal is approved, or appeal is submitted
     const aiValidationPassed = reviewStatus?.verdict === 'PASS'
     const appealApproved = reviewStatus?.appeal_decision === 'approved'
-    const skipValidation = aiValidationPassed || appealApproved || validationCompleted
-    
+    const appealSubmitted = reviewStatus?.appeal_submitted_at
+    const skipValidation =
+      aiValidationPassed ||
+      appealApproved ||
+      appealSubmitted ||
+      validationCompleted
+
     if (!skipValidation) {
       return 'validation'
     }
-    
+
     if (
       organizationAccount === undefined ||
       !organizationAccount.stripe_id ||
@@ -130,12 +137,17 @@ export default function ClientPage({
     await reloadUser()
   }, [createIdentityVerification, stripePromise, reloadUser])
 
-  // Auto-advance to next step when details are submitted or appeal is approved
+  // Auto-advance to next step when details are submitted, appeal is approved, or appeal is submitted
   React.useEffect(() => {
     if (organization.details_submitted_at) {
       const aiValidationPassed = reviewStatus?.verdict === 'PASS'
       const appealApproved = reviewStatus?.appeal_decision === 'approved'
-      const skipValidation = aiValidationPassed || appealApproved || validationCompleted
+      const appealSubmitted = reviewStatus?.appeal_submitted_at
+      const skipValidation =
+        aiValidationPassed ||
+        appealApproved ||
+        appealSubmitted ||
+        validationCompleted
 
       if (!skipValidation) {
         setStep('validation')
@@ -158,6 +170,7 @@ export default function ClientPage({
     organizationAccount,
     identityVerified,
     reviewStatus?.appeal_decision,
+    reviewStatus?.appeal_submitted_at,
     reviewStatus?.verdict,
     isNotAdmin,
   ])
@@ -227,6 +240,38 @@ export default function ClientPage({
     }
   }, [identityVerified])
 
+  const handleAppealSubmitted = useCallback(() => {
+    setStep('account')
+    return
+  }, [organizationAccount, identityVerified])
+
+  const handleNavigateToStep = useCallback(
+    (targetStep: Step) => {
+      // Allow navigation to any step that has been completed or is accessible
+      const canNavigate =
+        (targetStep === 'review' && organization.details_submitted_at) ||
+        (targetStep === 'validation' && reviewStatus) ||
+        (targetStep === 'account' &&
+          (validationCompleted ||
+            reviewStatus?.verdict === 'PASS' ||
+            reviewStatus?.appeal_decision === 'approved' ||
+            reviewStatus?.appeal_submitted_at)) ||
+        (targetStep === 'identity' &&
+          (organizationAccount?.is_details_submitted || isNotAdmin))
+
+      if (canNavigate) {
+        setStep(targetStep)
+      }
+    },
+    [
+      organization.details_submitted_at,
+      reviewStatus,
+      validationCompleted,
+      organizationAccount,
+      isNotAdmin,
+    ],
+  )
+
   return (
     <DashboardBody>
       <div className="flex flex-col gap-y-6">
@@ -245,6 +290,8 @@ export default function ClientPage({
           onStartIdentityVerification={handleStartIdentityVerification}
           onSkipAccountSetup={handleSkipAccountSetup}
           onAppealApproved={handleAppealApproved}
+          onAppealSubmitted={handleAppealSubmitted}
+          onNavigateToStep={handleNavigateToStep}
         />
 
         {accounts?.items && accounts.items.length > 0 ? (

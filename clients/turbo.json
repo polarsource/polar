@@ -7,9 +7,11 @@
     "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN",
     "GITHUB_TOKEN",
     "NODE_ENV",
+    "NEXT_PHASE",
     "NEXT_RUNTIME",
     "NEXT_PUBLIC_ENVIRONMENT",
     "NEXT_PUBLIC_API_URL",
+    "NEXT_PUBLIC_BACKOFFICE_URL",
     "NEXT_PUBLIC_STRIPE_KEY",
     "NEXT_PUBLIC_CODESPACE_NAME",
     "NEXT_PUBLIC_FRONTEND_BASE_URL",
@@ -20,8 +22,6 @@
     "NEXT_PUBLIC_VERCEL_ENV",
     "NEXT_PUBLIC_LOGIN_PATH",
     "NEXT_PUBLIC_GITHUB_APP_NAMESPACE",
-    "NEXT_PUBLIC_LOCALSTORAGE_PERSIST_KEY",
-    "NEXT_PUBLIC_LOCALSTORAGE_PERSIST_VERSION",
     "NEXT_PUBLIC_GITHUB_BADGE_EMBED_DEFAULT_LABEL",
     "NEXT_PUBLIC_SENTRY_DSN",
     "NEXT_PUBLIC_POSTHOG_TOKEN",
@@ -44,21 +44,14 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "storybook-static/**",
-        "dist/**"
-      ]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "lint": {},
     "test": {},
-    "dev": {
-      "dependsOn": ["^build"],
-      "cache": false,
-      "persistent": true
+    "typecheck": {
+      "dependsOn": ["^build"]
     },
-    "storybook": {
+    "dev": {
       "dependsOn": ["^build"],
       "cache": false,
       "persistent": true

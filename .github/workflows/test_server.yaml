@@ -73,7 +73,7 @@ jobs:
           - 5432:5432
 
       minio:
-        image: bitnami/minio:2024.5.28
+        image: bitnamilegacy/minio:2024.5.28
         ports:
           - 9000:9000
           - 9001:9001

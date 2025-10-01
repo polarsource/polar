@@ -153,9 +153,11 @@ async def end_impersonation(
         )
 
     if impersonated_user_id:
-        response = RedirectResponse(f"/backoffice/users/{impersonated_user_id}")
+        response = RedirectResponse(
+            settings.generate_backoffice_url(f"/users/{impersonated_user_id}")
+        )
     else:
-        response = RedirectResponse(url="/backoffice")
+        response = RedirectResponse(settings.generate_backoffice_url("/"))
 
     # Restore admin session
     response.set_cookie(

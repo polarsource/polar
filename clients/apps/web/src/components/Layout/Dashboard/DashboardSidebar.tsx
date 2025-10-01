@@ -2,7 +2,7 @@ import LogoIcon from '@/components/Brand/LogoIcon'
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
-import { ArrowOutwardOutlined } from '@mui/icons-material'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -29,7 +29,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { BrandingMenu } from '../Public/BrandingMenu'
+import { PolarLogotype } from '../Public/PolarLogotype'
 import {
   AccountNavigation,
   OrganizationNavigation,
@@ -71,7 +71,7 @@ export const DashboardSidebar = ({
             : 'flex-row items-center justify-between',
         )}
       >
-        <BrandingMenu size={32} />
+        <PolarLogotype size={32} />
         <motion.div
           key={isCollapsed ? 'header-collapsed' : 'header-expanded'}
           className={`flex ${isCollapsed ? 'flex-row md:flex-col-reverse' : 'flex-row'} items-center gap-2`}
@@ -115,7 +115,7 @@ export const DashboardSidebar = ({
                   <Link
                     href="https://testflight.apple.com/join/CwVdc1Jt"
                     target="_blank"
-                    className="dark:bg-polar-800 dark:hover:bg-polar-700 self-start rounded-sm bg-gray-100 p-1 text-xs transition-colors hover:bg-gray-200"
+                    className="dark:bg-polar-800 dark:hover:bg-polar-700 rounded-xs self-start bg-gray-100 p-1 text-xs transition-colors hover:bg-gray-200"
                   >
                     <span>Join Beta</span>
                     <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
@@ -149,7 +149,7 @@ export const DashboardSidebar = ({
                 <DropdownMenuContent
                   side="top"
                   align={isCollapsed ? 'start' : 'center'}
-                  className="w-[--radix-popper-anchor-width] min-w-[200px]"
+                  className="w-(--radix-popper-anchor-width) min-w-[200px]"
                 >
                   {organizations.map((org) => (
                     <DropdownMenuItem

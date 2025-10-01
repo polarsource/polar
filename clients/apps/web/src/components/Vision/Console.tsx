@@ -26,7 +26,6 @@ export const Console = ({
         className,
       )}
     >
-      <div className="border-polar-600 absolute left-2 top-2 h-full w-full transform border md:left-4 md:top-4" />
       <div className="border-polar-200 bg-polar-900 relative w-full border-2">
         <div className="bg-polar-200 flex flex-row justify-between px-2 py-1 text-xs text-black">
           <span className="font-bold">{title ?? 'Terminal'}</span>

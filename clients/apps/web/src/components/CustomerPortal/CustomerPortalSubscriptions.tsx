@@ -122,10 +122,14 @@ export const InactiveSubscriptionsOverview = ({
   })
 
   const pastDueOrder = useMemo(() => {
-    if (!retryPaymentSubscription || retryPaymentSubscription.status !== 'past_due' || !orders?.items) {
+    if (
+      !retryPaymentSubscription ||
+      retryPaymentSubscription.status !== 'past_due' ||
+      !orders?.items
+    ) {
       return null
     }
-    return orders.items.find(order => order.status === 'pending')
+    return orders.items.find((order) => order.status === 'pending')
   }, [retryPaymentSubscription, orders?.items])
 
   return (
@@ -169,15 +173,16 @@ export const InactiveSubscriptionsOverview = ({
             header: '',
             cell: ({ row }) => (
               <span className="flex justify-end gap-2">
-                {row.original.status === 'past_due' && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => openRetryPaymentModal(row.original)}
-                  >
-                    Retry Payment
-                  </Button>
-                )}
+                {row.original.status === 'past_due' &&
+                  row.original.is_polar_managed && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => openRetryPaymentModal(row.original)}
+                    >
+                      Retry Payment
+                    </Button>
+                  )}
                 <Button
                   variant="secondary"
                   size="sm"

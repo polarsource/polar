@@ -1,4 +1,5 @@
-import { LoopOutlined, ShoppingCartOutlined } from '@mui/icons-material'
+import LoopOutlined from '@mui/icons-material/LoopOutlined'
+import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined'
 import { schemas } from '@polar-sh/client'
 import React from 'react'
 

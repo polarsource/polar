@@ -9,15 +9,13 @@ import { useToast } from '@/components/Toast/use-toast'
 import { useMetersInfinite, useUpdateMeter } from '@/hooks/queries/meters'
 import { useInViewport } from '@/hooks/utils'
 import { apiErrorToast } from '@/utils/api/errors'
-import {
-  AddOutlined,
-  ArrowDownward,
-  ArrowUpward,
-  CheckOutlined,
-  FilterList,
-  MoreVertOutlined,
-  Search,
-} from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import ArrowDownward from '@mui/icons-material/ArrowDownward'
+import ArrowUpward from '@mui/icons-material/ArrowUpward'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import FilterList from '@mui/icons-material/FilterList'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -272,13 +270,13 @@ const ClientPage = ({
               />
             </div>
             <Input
-              className="w-full rounded-none border-none bg-transparent p-0 !shadow-none ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
+              className="shadow-none! w-full rounded-none border-none bg-transparent p-0 ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
               placeholder="Search Meters"
               value={query ?? undefined}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-50 overflow-y-auto">
+          <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
             {meters.map((meter) => (
               <div
                 key={meter.id}

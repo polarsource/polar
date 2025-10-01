@@ -57,7 +57,9 @@ async def resolve_order(
             raise OrderDoesNotExist(order_id)
         return order
 
-    if object.OBJECT_NAME == "charge" and object.invoice is not None:
+    if (
+        object.OBJECT_NAME == "charge" or object.OBJECT_NAME == "payment_intent"
+    ) and object.invoice is not None:
         invoice_id = get_expandable_id(object.invoice)
         order = await order_repository.get_by_stripe_invoice_id(
             invoice_id, options=order_repository.get_eager_options()

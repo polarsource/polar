@@ -1,13 +1,13 @@
 import { schemas } from '@polar-sh/client'
 
 export function addDays(date: Date, days: number) {
-  var result = new Date(date)
+  const result = new Date(date)
   result.setDate(result.getDate() + days)
   return result
 }
 
 export function addHours(date: Date, hours: number) {
-  var result = new Date(date)
+  const result = new Date(date)
   result.setHours(result.getHours() + hours)
   return result
 }
@@ -25,6 +25,7 @@ export const org: schemas['Organization'] = {
   details_submitted_at: null,
   feature_settings: {
     issue_funding_enabled: false,
+    seat_based_pricing_enabled: false,
   },
   email: null,
   subscription_settings: {

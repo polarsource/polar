@@ -1,6 +1,6 @@
 import { FormField } from '@polar-sh/ui/components/ui/form'
 
-import { ClearOutlined } from '@mui/icons-material'
+import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {

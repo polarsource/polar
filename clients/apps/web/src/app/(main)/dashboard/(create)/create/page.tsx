@@ -12,17 +12,23 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function Page({
-  searchParams: { slug, auto, existing_org },
-}: {
-  searchParams: { slug?: string; auto?: string; existing_org?: boolean }
+export default async function Page(props: {
+  searchParams: Promise<{
+    slug?: string
+    auto?: string
+    existing_org?: boolean
+  }>
 }) {
+  const searchParams = await props.searchParams
+
+  const { slug, auto, existing_org } = searchParams
+
   let validationErrors: schemas['ValidationError'][] = []
-  let error: string | undefined = undefined
+  const error: string | undefined = undefined
 
   // Create the organization automatically if the slug is provided and auto is true
   if (auto === 'true' && slug) {
-    const api = getServerSideAPI()
+    const api = await getServerSideAPI()
     const { data: organization, error } = await api.POST('/v1/organizations/', {
       body: {
         name: slug,

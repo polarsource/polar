@@ -1,0 +1,115 @@
+---
+title: "How to create product variants"
+sidebarTitle: "Create product variants"
+description: "Learn how create product variants in Polar and how customers can easily switch between them in the customer portal."
+---
+
+## Creating product variants (3 subscription products)
+
+<Steps>
+    <Step title="Go to Products Catalogue">
+
+        In the Polar dashboard sidebar, navigate to **Products** > **Catalogue** for your organization.
+        You can also go directly to:  
+        `https://polar.sh/dashboard/${org_slug}/products`
+
+        <img height="200" src="/assets/guides/variants/product-catalogue.png" />
+
+    </Step>
+    <Step title="Create a product">
+
+        Click on **New Product** and fill the product information. Here, we are creating a monthly subscription product **Basic version** with cost $20.
+        <img height="200" src="/assets/guides/variants/basic-version.png" />
+        <img height="200" src="/assets/guides/variants/basic-version2.png" />
+
+        Your product catalogue should now show this product as follows:  
+        <img height="200" src="/assets/guides/variants/catalogue-basic.png" />
+
+    </Step>
+    <Step title="Similarly, create two more products">
+        Click on **New Product** and create two more subscription products one by one.
+        - **Mid version**: Fill the product information. We create a monthly subscription product named **Mid version** with cost $30.
+        <img height="200" src="/assets/guides/variants/mid-version.png" />
+        <img height="200" src="/assets/guides/variants/mid-version2.png" />
+
+        - **Advanced version**: We create a monthly subscription product named **Advanced version** with cost $40.
+        <img height="200" src="/assets/guides/variants/advanced-version.png" />
+        <img height="200" src="/assets/guides/variants/advanced-version2.png" />
+        
+        - **Product Catalogue**: You should be able to see all your products on Product Catalogue.
+        <img height="200" src="/assets/guides/variants/catalogue-with-3-products.png" />
+    </Step>
+</Steps>
+
+## Creating checkout links with variants
+
+<Steps>
+    <Step title = "Navigate to Checkout Links in the dashboard">
+        In the Polar dashboard sidebar, navigate to **Products** > **Checkout Links**.
+        You can also go directly to:  
+        `https://polar.sh/dashboard/${org_slug}/products/checkout-links`
+        
+        <img height="200" src="/assets/guides/variants/checkout-links.png" />
+    </Step>
+    <Step title = "Create a Checkout Link">
+        Click on **New Link** and select all your products which you want to offer as variants. 
+        <img height="200" src="/assets/guides/variants/create-checkout-links.png" />
+        At this step, you may add a label, success URL and metadata. You may also configure whether discount codes are allowed and whether billing address is required from customers.
+        Click on **Create Link** after adding your configurations.
+    </Step>
+    <Step title = "Accessing the checkout link">
+        You should be able to see your label name in **Checkout Links**. In our case, **3 products** is the default label name assigned by the system.
+        <img height="200" src="/assets/guides/variants/link-created.png" />
+        Click on your label to see the checkout link.
+        <img height="200" src="/assets/guides/variants/access-link.png" />
+        You can copy this link and share to your customers for them to purchase a variant.
+    </Step>
+</Steps>
+
+## Purchasing from variants
+
+<Steps>
+    <Step title = "Purchasing a product">
+        On opening the checkout link, the customer will need to select the variant they want to purchase and fill their email address and card details.
+        <img height="200" src="/assets/guides/variants/full-page-checkout-page.png" />
+    </Step>
+    <Step title = "Access email for upgrade/downgrade link">
+        Once the customer has purchased the subscription, they will receive an email containing the link to access their purchase.
+        <img height="200" src="/assets/guides/variants/customer-mail-2.png" />
+    </Step>
+</Steps>
+
+## Downgrading to another product variant
+
+<Steps>
+    <Step title = "Open Customer Portal and click on Change Plan">
+        On opening the link from the email received, the customer needs to click on **Change Plan**.
+        <img height="200" src="/assets/guides/variants/customer-portal-1.png" />
+    </Step>
+    <Step title = "Select the desired plan">
+        Then, they can select the plan they want to downgrade to and click on **Change Plan**.
+        <img height="200" src="/assets/guides/variants/customer-portal-3.png" />
+    </Step>
+    <Step title = "Downgraded successfully">
+        Now, the product is changed to **Basic version** instead of **Mid version** on the portal.
+         <img height="200" src="/assets/guides/variants/customer-portal-4.png" />
+    </Step>
+</Steps>
+
+## Upgrading to another product variant
+
+<Steps>
+    <Step title = "Open Customer Portal and click on Change Plan">
+        On opening the link from the email received, the customer needs to click on **Change Plan**.
+        <img height="200" src="/assets/guides/variants/customer-portal-1.png" />
+    </Step>        
+    <Step title = "Select the desired plan">
+    Then, they need to select the variant they want to upgrade to, **Advanced version** and click on **Change Plan**.
+        <img height="200" src="/assets/guides/variants/customer-portal-5.png" />
+    </Step>
+    <Step title = "Upgraded successfully">
+        Now, the product is changed to **Advanced version** on the portal.
+         <img height="200" src="/assets/guides/variants/customer-portal-6.png" />
+    </Step>
+    
+</Steps>

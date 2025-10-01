@@ -22,12 +22,27 @@ class AggregationFunction(StrEnum):
     avg = "avg"
     unique = "unique"
 
+    def get_sql_function(self, attr: Any) -> Any:
+        match self:
+            case AggregationFunction.cnt:
+                return func.count(attr)
+            case AggregationFunction.sum:
+                return func.sum(attr)
+            case AggregationFunction.max:
+                return func.max(attr)
+            case AggregationFunction.min:
+                return func.min(attr)
+            case AggregationFunction.avg:
+                return func.avg(attr)
+            case AggregationFunction.unique:
+                return func.count(func.distinct(attr))
+
 
 class CountAggregation(BaseModel):
     func: Literal[AggregationFunction.cnt] = AggregationFunction.cnt
 
     def get_sql_column(self, model: type[Any]) -> Any:
-        return func.count(model.id)
+        return self.func.get_sql_function(model.id)
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         return true()
@@ -54,15 +69,7 @@ class PropertyAggregation(BaseModel):
         else:
             attr = model.user_metadata[self.property].as_float()
 
-        match self.func:
-            case AggregationFunction.sum:
-                return func.sum(attr)
-            case AggregationFunction.max:
-                return func.max(attr)
-            case AggregationFunction.min:
-                return func.min(attr)
-            case AggregationFunction.avg:
-                return func.avg(attr)
+        return self.func.get_sql_function(attr)
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         if self.property in model._filterable_fields:
@@ -78,7 +85,7 @@ class UniqueAggregation(BaseModel):
 
     def get_sql_column(self, model: type[Any]) -> Any:
         attr = model.user_metadata[self.property]
-        return func.count(func.distinct(attr))
+        return self.func.get_sql_function(attr)
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         return true()

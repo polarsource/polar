@@ -32,10 +32,19 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
     }
   }, [interval])
 
+  const minimumFractionDigits = useMemo(
+    // Show 0 decimals if a round number, show default decimals (2 for USD) otherwise
+    // This will trip when we add multi-currency (e.g. for JPY etc)
+    () => (amount % 100 === 0 ? 0 : 2),
+    [amount],
+  )
+
   return (
-    <div className="flex flex-row items-baseline">
-      {formatCurrencyNumber(amount, currency, 0)}
-      <span className="text-[0.5em]">{intervalDisplay}</span>
+    <div className="flex flex-row items-baseline gap-x-1">
+      {formatCurrencyNumber(amount, currency, minimumFractionDigits)}
+      {intervalDisplay ? (
+        <span className="text-[max(12px,0.5em)]">{intervalDisplay}</span>
+      ) : null}
     </div>
   )
 }

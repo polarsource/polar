@@ -31,7 +31,7 @@ const links = (organization: schemas['Organization']) => [
   },
   {
     href: `/${organization.slug}/portal/settings`,
-    label: 'Settings',
+    label: 'Billing',
     isActive: (path: string) => path.includes('/settings'),
   },
 ]
@@ -47,6 +47,15 @@ export const Navigation = ({
   const currentPath = usePathname()
   const searchParams = useSearchParams()
 
+  // Hide navigation on routes where portal access is being requested or authenticated
+  const hideNav =
+    currentPath.endsWith('/portal/request') ||
+    currentPath.endsWith('/portal/authenticate')
+
+  if (hideNav) {
+    return null
+  }
+
   const buildPath = (path: string) => {
     return `${path}?${searchParams.toString()}`
   }
@@ -55,7 +64,7 @@ export const Navigation = ({
 
   return (
     <>
-      <nav className="sticky top-0 hidden h-fit w-64 flex-col gap-y-1 py-12 md:flex">
+      <nav className="sticky top-0 hidden h-fit w-40 flex-none flex-col gap-y-1 py-12 md:flex lg:w-64">
         {filteredLinks.map((link) => (
           <Link
             key={link.href}

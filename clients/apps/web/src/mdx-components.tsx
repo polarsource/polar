@@ -17,7 +17,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     ...components,
     BodyWrapper(props) {
       return (
-        <ProseWrapper className="flex w-full flex-col items-center md:!max-w-7xl">
+        <ProseWrapper className="md:max-w-7xl! flex w-full flex-col items-center">
           {props.children}
         </ProseWrapper>
       )

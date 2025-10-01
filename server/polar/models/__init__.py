@@ -12,6 +12,7 @@ from .checkout_product import CheckoutProduct
 from .custom_field import CustomField
 from .customer import Customer
 from .customer_meter import CustomerMeter
+from .customer_seat import CustomerSeat, SeatStatus
 from .customer_session import CustomerSession
 from .customer_session_code import CustomerSessionCode
 from .discount import Discount
@@ -59,6 +60,7 @@ from .product_price import (
     ProductPriceFixed,
     ProductPriceFree,
     ProductPriceMeteredUnit,
+    ProductPriceSeatUnit,
 )
 from .refund import Refund
 from .subscription import Subscription
@@ -87,6 +89,7 @@ __all__ = [
     "CheckoutProduct",
     "Customer",
     "CustomerMeter",
+    "CustomerSeat",
     "CustomerSession",
     "CustomerSessionCode",
     "CustomField",
@@ -132,10 +135,12 @@ __all__ = [
     "ProductPriceFixed",
     "ProductPriceFree",
     "ProductPriceMeteredUnit",
+    "ProductPriceSeatUnit",
     "LegacyRecurringProductPriceFree",
     "LegacyRecurringProductPriceFixed",
     "LegacyRecurringProductPriceCustom",
     "Refund",
+    "SeatStatus",
     "Subscription",
     "SubscriptionMeter",
     "SubscriptionProductPrice",

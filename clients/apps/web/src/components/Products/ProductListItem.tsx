@@ -5,8 +5,12 @@ import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import { toast } from '@/components/Toast/use-toast'
 import { useUpdateProduct } from '@/hooks/queries/products'
-import { hasLegacyRecurringPrices, isMeteredPrice } from '@/utils/product'
-import { MoreVertOutlined } from '@mui/icons-material'
+import {
+  hasLegacyRecurringPrices,
+  isMeteredPrice,
+  isSeatBasedPrice,
+} from '@/utils/product'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -79,6 +83,10 @@ export const ProductListItem = ({
     isMeteredPrice(price),
   )
 
+  const isSeatBasedProduct = product.prices.some((price) =>
+    isSeatBasedPrice(price),
+  )
+
   return (
     <ListItem
       className="flex flex-row items-center justify-between gap-x-6"
@@ -86,7 +94,7 @@ export const ProductListItem = ({
         router.push(`/dashboard/${organization.slug}/products/${product.id}`),
       )}
     >
-      <div className="flex flex-grow flex-row items-center gap-x-4 text-sm">
+      <div className="flex grow flex-row items-center gap-x-4 text-sm">
         <ProductThumbnail product={product} />
         <div className="flex flex-col">
           <span className="truncate">{product.name}</span>
@@ -110,6 +118,11 @@ export const ProductListItem = ({
             {isUsageBasedProduct && (
               <Pill color="green" className="px-3 py-1 text-xs">
                 Metered Pricing
+              </Pill>
+            )}
+            {isSeatBasedProduct && (
+              <Pill color="blue" className="px-3 py-1 text-xs">
+                Seat-based Pricing
               </Pill>
             )}
             <span className="text-sm leading-snug">

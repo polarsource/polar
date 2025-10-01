@@ -1,5 +1,5 @@
 import { ParsedMetricsResponse } from '@/hooks/queries/metrics'
-import { Close } from '@mui/icons-material'
+import Close from '@mui/icons-material/Close'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {

@@ -17,6 +17,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import (
     BenefitPublicList,
@@ -55,7 +56,7 @@ _discount_id_description = (
 )
 
 
-class CheckoutLinkCreateBase(MetadataInputMixin, Schema):
+class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
     payment_processor: Literal[PaymentProcessor.stripe] = Field(
         description="Payment processor to use. Currently only Stripe is supported."
     )
@@ -111,7 +112,7 @@ CheckoutLinkCreate = Annotated[
 ]
 
 
-class CheckoutLinkUpdate(MetadataInputMixin):
+class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):
     """Schema to update an existing checkout link."""
 
     products: list[UUID4] | None = Field(
@@ -132,7 +133,9 @@ class CheckoutLinkUpdate(MetadataInputMixin):
     success_url: SuccessURL = None
 
 
-class CheckoutLinkBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
+class CheckoutLinkBase(
+    MetadataOutputMixin, TrialConfigurationOutputMixin, TimestampedSchema, IDSchema
+):
     payment_processor: PaymentProcessor = Field(description="Payment processor used.")
     client_secret: str = Field(
         description="Client secret used to access the checkout link."

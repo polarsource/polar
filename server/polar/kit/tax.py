@@ -6,6 +6,7 @@ from enum import StrEnum
 from typing import Annotated, Any, Literal, LiteralString, Protocol, TypedDict
 
 import stdnum.ca.bn
+import stdnum.cl.rut
 import stdnum.exceptions
 import stripe as stripe_lib
 from pydantic import Field
@@ -241,10 +242,23 @@ class CAGSTHSTValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class CLTINValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.cl.rut.compact(number)
+        try:
+            return stdnum.cl.rut.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
-    if tax_id_type == TaxIDFormat.ca_gst_hst:
-        return CAGSTHSTValidator()
-    return StdNumValidator(tax_id_type)
+    match tax_id_type:
+        case TaxIDFormat.ca_gst_hst:
+            return CAGSTHSTValidator()
+        case TaxIDFormat.cl_tin:
+            return CLTINValidator()
+        case _:
+            return StdNumValidator(tax_id_type)
 
 
 def validate_tax_id(number: str, country: str) -> TaxID:

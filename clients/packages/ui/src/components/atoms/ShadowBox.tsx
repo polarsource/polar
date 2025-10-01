@@ -1,11 +1,13 @@
-import { forwardRef, PropsWithChildren } from 'react'
+import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ShadowBoxOnMd from './ShadowBoxOnMd'
 
-const ShadowBox = forwardRef<
-  HTMLDivElement,
-  PropsWithChildren<{ className?: string }>
->((props, ref) => (
+const ShadowBox = ({
+  ref,
+  ...props
+}: PropsWithChildren<{ className?: string }> & {
+  ref?: React.RefObject<HTMLDivElement>
+}) => (
   <div
     ref={ref}
     className={twMerge(
@@ -15,7 +17,7 @@ const ShadowBox = forwardRef<
   >
     {props.children}
   </div>
-))
+)
 
 ShadowBox.displayName = 'ShadowBox'
 

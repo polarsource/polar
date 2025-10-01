@@ -10,10 +10,11 @@ import {
 } from '@/components/ui/card'
 import { twMerge } from 'tailwind-merge'
 
-const Card = React.forwardRef<
-  React.ElementRef<typeof CardPrimitive>,
-  React.ComponentPropsWithoutRef<typeof CardPrimitive>
->(({ className, ...props }, ref) => (
+const Card = ({
+  ref,
+  className,
+  ...props
+}: React.ComponentProps<typeof CardPrimitive>) => (
   <CardPrimitive
     ref={ref}
     className={twMerge(
@@ -22,63 +23,68 @@ const Card = React.forwardRef<
     )}
     {...props}
   />
-))
+)
 Card.displayName = CardPrimitive.displayName
 
-const CardHeader = React.forwardRef<
-  React.ElementRef<typeof CardHeaderPrimitive>,
-  React.ComponentPropsWithoutRef<typeof CardHeaderPrimitive>
->(({ className, ...props }, ref) => (
+const CardHeader = ({
+  ref,
+  className,
+  ...props
+}: React.ComponentProps<typeof CardHeaderPrimitive>) => (
   <CardHeaderPrimitive
     ref={ref}
     className={twMerge('', className)}
     {...props}
   />
-))
+)
 CardHeader.displayName = CardHeaderPrimitive.displayName
 
-const CardTitle = React.forwardRef<
-  React.ElementRef<typeof CardTitlePrimitive>,
-  React.ComponentPropsWithoutRef<typeof CardTitlePrimitive>
->(({ className, ...props }, ref) => (
+const CardTitle = ({
+  ref,
+  className,
+  ...props
+}: React.ComponentProps<typeof CardTitlePrimitive>) => (
   <CardTitlePrimitive ref={ref} className={twMerge('', className)} {...props} />
-))
+)
 CardTitle.displayName = 'CardTitle'
 
-const CardDescription = React.forwardRef<
-  React.ElementRef<typeof CardDescriptionPrimitive>,
-  React.ComponentPropsWithoutRef<typeof CardDescriptionPrimitive>
->(({ className, ...props }, ref) => (
+const CardDescription = ({
+  ref,
+  className,
+  ...props
+}: React.ComponentProps<typeof CardDescriptionPrimitive>) => (
   <CardDescriptionPrimitive
     ref={ref}
     className={twMerge('dark:text-polar-400 text-sm text-gray-400', className)}
     {...props}
   />
-))
+)
 CardDescription.displayName = CardDescriptionPrimitive.displayName
 
-const CardContent = React.forwardRef<
-  React.ElementRef<typeof CardContentPrimitive>,
-  React.ComponentPropsWithoutRef<typeof CardContentPrimitive>
->(({ className, ...props }, ref) => (
+const CardContent = ({
+  ref,
+  className,
+  ...props
+}: React.ComponentProps<typeof CardContentPrimitive>) => (
   <CardContentPrimitive
     ref={ref}
     className={twMerge('', className)}
     {...props}
   />
-))
+)
 CardContent.displayName = CardContentPrimitive.displayName
 
-const CardFooter = React.forwardRef<
-  React.ElementRef<typeof CardFooterPrimitive>,
-  React.ComponentPropsWithoutRef<typeof CardFooterPrimitive>
->(({ className, ...props }, ref) => (
+const CardFooter = ({
+  ref,
+  className,
+  ...props
+}: React.ComponentProps<typeof CardFooterPrimitive>) => (
   <CardFooterPrimitive
     ref={ref}
     className={twMerge('', className)}
     {...props}
   />
-))
+)
 CardFooter.displayName = CardFooterPrimitive.displayName
 
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }

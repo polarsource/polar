@@ -166,7 +166,7 @@ Now the user model will have access to the methods provided by the package. You 
 
 ### Polar Script
 
-Polar includes a JavaScript script that you can use to initialize the [Polar Embedded Checkout](https://docs.polar.sh/features/checkout/embed). If you going to use this functionality, you can use the `@polarEmbedScript` directive to include the script in your views inside the `<head>` tag.
+Polar includes a JavaScript script that you can use to initialize the [Polar Embedded Checkout](https://polar.sh/docs/features/checkout/embed). If you going to use this functionality, you can use the `@polarEmbedScript` directive to include the script in your views inside the `<head>` tag.
 
 ```blade
 <head>
@@ -334,7 +334,7 @@ Using any of these will result in an exception being thrown.
 
 #### Customer Portal
 
-Customers can update their personal information (e.g., name, email address) by accessing their [self-service customer portal](https://docs.polar.sh/features/customer-portal). To redirect customers to this portal, call the `redirectToCustomerPortal()` method on your billable model (e.g., the User model).
+Customers can update their personal information (e.g., name, email address) by accessing their [self-service customer portal](https://polar.sh/docs/features/customer-portal). To redirect customers to this portal, call the `redirectToCustomerPortal()` method on your billable model (e.g., the User model).
 
 ```php
 use Illuminate\Http\Request;
@@ -626,11 +626,6 @@ $user->subscription()->resume();
 
 When a cancelled subscription approaches the end of its grace period, it becomes expired and cannot be resumed.
 
-#### Subscription Trials
-
-> [!NOTE]
-> Coming soon.
-
 ### Handling Webhooks
 
 Polar can send webhooks to your app, allowing you to react. By default, this package handles the majority of the work for you. If you have properly configured webhooks, it will listen for incoming events and update your database accordingly. We recommend activating all event kinds so you may easily upgrade in the future.
@@ -673,7 +668,7 @@ class PolarEventListener
 }
 ```
 
-The [Polar documentation](https://docs.polar.sh/integrate/webhooks/events) includes an example payload.
+The [Polar documentation](https://polar.sh/docs/integrate/webhooks/events) includes an example payload.
 
 Laravel v11 and up will automatically discover the listener. If you're using Laravel v10 or lower, you should configure it in your app's `EventServiceProvider`:
 
@@ -695,11 +690,6 @@ class EventServiceProvider extends ServiceProvider
     ];
 }
 ```
-
-## Roadmap
-
-- [ ] Add support for trials
-      Polar itself doesn't support trials, but we can manage them by ourselves.
 
 ## Testing
 

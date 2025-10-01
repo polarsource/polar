@@ -11,16 +11,17 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function Page({
-  params,
-  searchParams,
-}: {
-  params: { organization: string }
-  searchParams: DataTableSearchParams & {
-    type?: schemas['CustomFieldType']
-  }
+export default async function Page(props: {
+  params: Promise<{ organization: string }>
+  searchParams: Promise<
+    DataTableSearchParams & {
+      type?: schemas['CustomFieldType']
+    }
+  >
 }) {
-  const api = getServerSideAPI()
+  const searchParams = await props.searchParams
+  const params = await props.params
+  const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,

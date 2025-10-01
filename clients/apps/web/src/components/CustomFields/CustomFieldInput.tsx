@@ -102,7 +102,7 @@ const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
   return (
     <Input
       {...field}
-      className="bg-white shadow-sm"
+      className="shadow-xs bg-white"
       type="text"
       placeholder={customField.properties.form_placeholder}
       required={required}
@@ -127,7 +127,7 @@ const CustomFieldNumberInput: React.FC<CustomFieldNumberInputProps> = ({
     <Input
       {...field}
       type="number"
-      className="bg-white shadow-sm"
+      className="shadow-xs bg-white"
       placeholder={customField.properties.form_placeholder}
       required={required}
       min={customField.properties.ge}
@@ -155,7 +155,7 @@ const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
     <Input
       {...field}
       type={'date'}
-      className="bg-white shadow-sm"
+      className="shadow-xs bg-white"
       placeholder={customField.properties.form_placeholder}
       required={required}
       min={min}

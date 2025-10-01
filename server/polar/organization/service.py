@@ -396,6 +396,7 @@ class OrganizationService:
             and transfers_sum >= organization.next_review_threshold
         ):
             organization.status = Organization.Status.UNDER_REVIEW
+            organization.status_updated_at = datetime.now(UTC)
             await self._sync_account_status(session, organization)
             session.add(organization)
 
@@ -410,6 +411,7 @@ class OrganizationService:
         next_review_threshold: int,
     ) -> Organization:
         organization.status = Organization.Status.ACTIVE
+        organization.status_updated_at = datetime.now(UTC)
         organization.next_review_threshold = next_review_threshold
         await self._sync_account_status(session, organization)
         session.add(organization)
@@ -429,6 +431,7 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
         organization.status = Organization.Status.DENIED
+        organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
 
@@ -446,6 +449,7 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
         organization.status = Organization.Status.UNDER_REVIEW
+        organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
         enqueue_job("organization.under_review", organization_id=organization.id)
@@ -475,6 +479,7 @@ class OrganizationService:
                 )
             ):
                 organization.status = Organization.Status.ACTIVE
+                organization.status_updated_at = datetime.now(UTC)
 
             # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
             if any(
@@ -485,6 +490,7 @@ class OrganizationService:
                 )
             ):
                 organization.status = Organization.Status.ONBOARDING_STARTED
+                organization.status_updated_at = datetime.now(UTC)
 
             await self._sync_account_status(session, organization)
             session.add(organization)
@@ -709,16 +715,7 @@ class OrganizationService:
 
         session.add(review)
 
-        try:
-            await plain_service.create_appeal_review_thread(
-                session, organization, review
-            )
-        except Exception as e:
-            log.error(
-                "Failed to create Plain ticket for appeal",
-                organization_id=str(organization.id),
-                error=str(e),
-            )
+        await plain_service.create_appeal_review_thread(session, organization, review)
 
         await session.commit()
 
@@ -742,6 +739,7 @@ class OrganizationService:
             raise ValueError("Appeal has already been reviewed")
 
         organization.status = Organization.Status.ACTIVE
+        organization.status_updated_at = datetime.now(UTC)
         review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
         review.appeal_reviewed_at = datetime.now(UTC)
 

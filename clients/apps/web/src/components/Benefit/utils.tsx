@@ -33,25 +33,6 @@ export const resolveBenefitIcon = (
   return resolveBenefitCategoryIcon(type, className)
 }
 
-export const resolveBenefitTypeDisplayName = (
-  type: schemas['BenefitType'] | 'usage',
-) => {
-  switch (type) {
-    case 'usage':
-      return 'Usage'
-    case 'discord':
-      return 'Discord Server Invite'
-    case 'github_repository':
-      return 'GitHub Repository Access'
-    case 'downloadables':
-      return 'Downloadable Files'
-    case 'license_keys':
-      return 'License Keys'
-    default:
-      return 'Custom'
-  }
-}
-
 export const DiscordIcon = ({
   className,
   size = 16,

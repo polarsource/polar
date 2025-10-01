@@ -41,6 +41,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     confirm: _confirm,
     loading: confirmLoading,
     loadingLabel,
+    isUpdatePending,
   } = useCheckoutForm()
   const embed = _embed === true
   const { resolvedTheme } = useTheme()
@@ -103,7 +104,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
 
     return (
       <Alert color="red">
-        <div className="flex flex-col gap-y-2">
+        <div className="flex flex-col gap-y-2 p-2">
           <div className="font-medium">Payments are currently unavailable</div>
           <div className="text-sm">
             {isDenied
@@ -208,6 +209,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           theme={theme}
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
+          isUpdatePending={isUpdatePending}
         />
       </ShadowBox>
     )
@@ -217,7 +219,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     <ShadowBoxOnMd
       className={twMerge(
         themePreset.polar.checkoutInnerWrapper,
-        'md:dark:border-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:p-0 md:shadow-sm',
+        'md:dark:border-polar-700 md:shadow-xs grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:p-0',
       )}
     >
       <div
@@ -261,6 +263,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           theme={theme}
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
+          isUpdatePending={isUpdatePending}
         />
       </div>
     </ShadowBoxOnMd>

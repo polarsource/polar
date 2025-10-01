@@ -33,9 +33,9 @@ const getEmbed = async (
   if (productPriceId) {
     path += `?price_id=${productPriceId}`
   }
-  let url = getServerURL(path)
+  const url = getServerURL(path)
 
-  let headers: Record<string, string> = {}
+  const headers: Record<string, string> = {}
   if (cachedEtag) {
     headers['If-None-Match'] = cachedEtag
   }

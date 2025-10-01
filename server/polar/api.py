@@ -3,12 +3,14 @@ from fastapi import APIRouter
 from polar.account.endpoints import router as accounts_router
 from polar.auth.endpoints import router as auth_router
 from polar.benefit.endpoints import router as benefits_router
+from polar.benefit.grant.endpoints import router as benefit_grants_router
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.customer.endpoints import router as customer_router
 from polar.customer_meter.endpoints import router as customer_meter_router
 from polar.customer_portal.endpoints import router as customer_portal_router
+from polar.customer_seat.endpoints import router as customer_seat_router
 from polar.customer_session.endpoints import router as customer_session_router
 from polar.discount.endpoints import router as discount_router
 from polar.email_update.endpoints import router as email_update_router
@@ -80,6 +82,8 @@ router.include_router(auth_router)
 router.include_router(oauth2_router)
 # /benefits
 router.include_router(benefits_router)
+# /benefit-grants
+router.include_router(benefit_grants_router)
 # /webhooks
 router.include_router(webhook_router)
 # /products
@@ -112,6 +116,8 @@ router.include_router(discount_router)
 router.include_router(customer_router)
 # /customer-portal
 router.include_router(customer_portal_router)
+# /seats
+router.include_router(customer_seat_router)
 # /update-email
 router.include_router(email_update_router)
 # /customer-sessions

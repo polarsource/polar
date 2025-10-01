@@ -41,7 +41,9 @@ class CustomerStateSubscription(
     id: UUID4 = Field(
         description="The ID of the subscription.", examples=[SUBSCRIPTION_ID_EXAMPLE]
     )
-    status: Literal[SubscriptionStatus.active] = Field(examples=["active"])
+    status: Literal[SubscriptionStatus.active, SubscriptionStatus.trialing] = Field(
+        examples=["active", "trialing"]
+    )
     amount: int = Field(description="The amount of the subscription.", examples=[1000])
     currency: str = Field(
         description="The currency of the subscription.", examples=["usd"]
@@ -55,6 +57,14 @@ class CustomerStateSubscription(
     )
     current_period_end: datetime | None = Field(
         description="The end timestamp of the current billing period.",
+        examples=["2025-03-03T13:37:00Z"],
+    )
+    trial_start: datetime | None = Field(
+        description="The start timestamp of the trial period, if any.",
+        examples=["2025-02-03T13:37:00Z"],
+    )
+    trial_end: datetime | None = Field(
+        description="The end timestamp of the trial period, if any.",
         examples=["2025-03-03T13:37:00Z"],
     )
     cancel_at_period_end: bool = Field(

@@ -24,6 +24,7 @@ from polar.models.order import OrderBillingReason
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_fixed_price,
+    is_free_price,
 )
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
@@ -439,6 +440,124 @@ class TestUpdateProductProrations:
                 assert len(calls) == 1
             else:
                 assert len(calls) == 0
+
+    async def test_fixed_to_free_price(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00,)],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None,)],
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=old_product,
+            customer=customer,
+            stripe_subscription_id=None,
+            current_period_start=datetime(2025, 6, 1, tzinfo=UTC),
+            current_period_end=datetime(2025, 7, 1, tzinfo=UTC),
+        )
+        previous_period_end = subscription.current_period_end
+
+        update_time = datetime(2025, 6, 16, tzinfo=UTC)
+        with freezegun.freeze_time(update_time):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=new_product.id,
+            )
+
+            old_price = old_product.prices[0]
+            new_price = new_product.prices[0]
+            assert is_fixed_price(old_price)
+            assert is_free_price(new_price)
+            billing_entry_repository = BillingEntryRepository.from_session(session)
+            billing_entries = (
+                await billing_entry_repository.get_pending_by_subscription(
+                    subscription.id
+                )
+            )
+            assert len(billing_entries) == 1
+
+            billing_entry = billing_entries[0]
+            assert billing_entry.start_timestamp == update_time
+            assert billing_entry.end_timestamp == previous_period_end
+            assert billing_entry.direction == BillingEntryDirection.credit
+            assert billing_entry.amount == 50_00
+            assert billing_entry.currency == old_price.price_currency
+            assert billing_entry.customer_id == customer.id
+            assert billing_entry.product_price_id == old_price.id
+
+    async def test_free_to_fixed_price(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(None,)],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00,)],
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=old_product,
+            customer=customer,
+            stripe_subscription_id=None,
+            current_period_start=datetime(2025, 6, 1, tzinfo=UTC),
+            current_period_end=datetime(2025, 7, 1, tzinfo=UTC),
+        )
+        previous_period_end = subscription.current_period_end
+
+        update_time = datetime(2025, 6, 16, tzinfo=UTC)
+        with freezegun.freeze_time(update_time):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=new_product.id,
+            )
+
+            old_price = old_product.prices[0]
+            new_price = new_product.prices[0]
+            assert is_free_price(old_price)
+            assert is_fixed_price(new_price)
+            billing_entry_repository = BillingEntryRepository.from_session(session)
+            billing_entries = (
+                await billing_entry_repository.get_pending_by_subscription(
+                    subscription.id
+                )
+            )
+            assert len(billing_entries) == 1
+
+            billing_entry = billing_entries[0]
+            assert billing_entry.start_timestamp == update_time
+            assert billing_entry.end_timestamp == previous_period_end
+            assert billing_entry.direction == BillingEntryDirection.debit
+            assert billing_entry.amount == 50_00
+            assert billing_entry.currency == new_price.price_currency
+            assert billing_entry.customer_id == customer.id
+            assert billing_entry.product_price_id == new_price.id
 
     @pytest.mark.parametrize(
         "proration_behavior",

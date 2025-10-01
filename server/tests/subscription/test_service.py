@@ -1,7 +1,7 @@
 import uuid
 from collections import namedtuple
 from collections.abc import Generator
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, call
 
@@ -30,6 +30,7 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
+from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
@@ -66,6 +67,7 @@ from polar.subscription.service import (
     MissingCheckoutCustomer,
     NotARecurringProduct,
     SubscriptionDoesNotExist,
+    TrialingSubscription,
 )
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.auth import AuthSubjectFixture
@@ -79,6 +81,7 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_product,
     create_subscription,
+    create_trialing_subscription,
     set_product_benefits,
 )
 from tests.fixtures.stripe import (
@@ -465,6 +468,52 @@ class TestCreateOrUpdateFromCheckout:
             session, updated_subscription
         )
 
+    async def test_trial(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            trial_interval=TrialInterval.month,
+            trial_interval_count=1,
+        )
+
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
+        )
+
+        assert created is True
+
+        assert subscription.status == SubscriptionStatus.trialing
+        assert subscription.prices == product.prices
+        assert subscription.amount == checkout.total_amount
+        assert subscription.payment_method == payment_method
+
+        assert subscription.started_at is not None
+        assert subscription.current_period_start is not None
+        assert subscription.current_period_end is not None
+        assert subscription.started_at == subscription.current_period_start
+        assert subscription.current_period_end > subscription.current_period_start
+        assert subscription.current_period_end == checkout.trial_end
+        assert subscription.trial_start == subscription.current_period_start
+
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+
 
 @pytest.mark.asyncio
 class TestCycle:
@@ -676,6 +725,42 @@ class TestCycle:
             product_id=product.id,
             subscription_id=subscription.id,
         )
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReason.subscription_cycle,
+        )
+
+    async def test_trial_end(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        previous_trial_start = subscription.trial_start
+        previous_trial_end = subscription.trial_end
+        previous_current_period_end = subscription.current_period_end
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.current_period_end is not None
+        assert previous_current_period_end is not None
+        assert updated_subscription.current_period_end > previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.trial_start == previous_trial_start
+        assert updated_subscription.trial_end == previous_trial_end
+
         enqueue_job_mock.assert_any_call(
             "order.create_subscription_order",
             subscription.id,
@@ -1546,6 +1631,22 @@ class TestList:
 
 @pytest.mark.asyncio
 class TestUpdateProduct:
+    async def test_trialing_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(TrialingSubscription):
+            await subscription_service.update_product(
+                session, subscription, product_id=uuid.uuid4()
+            )
+
     async def test_meters(
         self,
         session: AsyncSession,
@@ -1771,6 +1872,138 @@ class TestUpdateDiscount:
             discount_percentage_50.stripe_coupon_id,
             discount_percentage_100.stripe_coupon_id,
         )
+
+
+@pytest.mark.asyncio
+class TestUpdateTrial:
+    async def test_trialing_subscription_ending_now(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        assert subscription.trial_end is not None
+        original_trial_end = subscription.trial_end
+
+        updated_subscription = await subscription_service.update_trial(
+            session, subscription, trial_end="now"
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.trial_end is not None
+        assert updated_subscription.trial_end == updated_subscription.current_period_end
+        assert updated_subscription.trial_end < original_trial_end
+
+    async def test_trialing_subscription_extending(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        assert subscription.trial_end is not None
+        original_trial_end = subscription.trial_end
+
+        new_trial_end = original_trial_end + timedelta(days=30)
+
+        updated_subscription = await subscription_service.update_trial(
+            session, subscription, trial_end=new_trial_end
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.trialing
+        assert updated_subscription.current_period_end == new_trial_end
+        assert updated_subscription.trial_end == new_trial_end
+        assert updated_subscription.trial_end is not None
+        assert updated_subscription.trial_end > original_trial_end
+
+    async def test_active_subscription_ending_now_validation_error(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.update_trial(
+                session, subscription, trial_end="now"
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == "value_error"
+        assert errors[0]["loc"] == ("body", "trial_end")
+        assert "not currently trialing" in errors[0]["msg"]
+
+    async def test_active_subscription_adding_trial(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        assert subscription.current_period_end is not None
+
+        trial_end = subscription.current_period_end + timedelta(days=14)
+
+        updated_subscription = await subscription_service.update_trial(
+            session, subscription, trial_end=trial_end
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.trialing
+        assert updated_subscription.trial_end == trial_end
+        assert updated_subscription.current_period_end == trial_end
+        assert updated_subscription.trialing
+
+    async def test_active_subscription_adding_trial_before_current_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        assert subscription.current_period_end is not None
+        trial_end_before_period = subscription.current_period_end - timedelta(days=1)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.update_trial(
+                session, subscription, trial_end=trial_end_before_period
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["type"] == "value_error"
+        assert errors[0]["loc"] == ("body", "trial_end")
+        assert "Trial end must be after the current period end" in errors[0]["msg"]
 
 
 @pytest.mark.asyncio

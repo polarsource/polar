@@ -3,12 +3,10 @@ import Spinner from '@/components/Shared/Spinner'
 import { useCheckoutLinks } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import {
-  AddOutlined,
-  ArrowDownward,
-  ArrowUpward,
-  LinkOutlined,
-} from '@mui/icons-material'
+import AddOutlined from '@mui/icons-material/AddOutlined'
+import ArrowDownward from '@mui/icons-material/ArrowDownward'
+import ArrowUpward from '@mui/icons-material/ArrowUpward'
+import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useContext, useEffect, useMemo } from 'react'
@@ -100,7 +98,7 @@ export const CheckoutLinkList = ({
           onChange={(productIds) => setProductIds(productIds)}
         />
       </div>
-      <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-50 overflow-y-auto">
+      <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
         {checkoutLinks.map((checkoutLink) => {
           const productLabel =
             checkoutLink.products.length === 1
@@ -120,7 +118,7 @@ export const CheckoutLinkList = ({
               <div className="flex flex-row items-center gap-3 px-4 py-3">
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="w-full truncate text-sm">
-                    {checkoutLink.label ?? '—'}
+                    {checkoutLink.label ?? 'Untitled'}
                   </div>
                   <div>
                     <div className="w-full truncate text-sm text-gray-500 dark:text-gray-500">

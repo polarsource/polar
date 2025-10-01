@@ -1,4 +1,4 @@
-import { AnalyticsPage } from '@/components/Landing/AnalyticsPage'
+import { AnalyticsPage } from '@/components/Landing/features/AnalyticsPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {

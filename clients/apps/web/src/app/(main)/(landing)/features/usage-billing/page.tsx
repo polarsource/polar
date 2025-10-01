@@ -1,4 +1,4 @@
-import { UsageBillingPage } from '@/components/Landing/UsageBillingPage'
+import { UsageBillingPage } from '@/components/Landing/features/UsageBillingPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {

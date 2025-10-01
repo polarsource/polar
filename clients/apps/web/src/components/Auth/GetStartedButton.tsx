@@ -62,6 +62,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
         size={size}
         onClick={onClick}
         onSubmit={onSubmit}
+        className="dark:hover:bg-polar-50 rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black"
         {...props}
       >
         <div>{text}</div>

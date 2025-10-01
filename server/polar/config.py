@@ -71,6 +71,7 @@ class Settings(BaseSettings):
     # Base URL for the backend. Used by generate_external_url to
     # generate URLs to the backend accessible from the outside.
     BASE_URL: str = "http://127.0.0.1:8000"
+    BACKOFFICE_HOST: str | None = None
 
     # URL to frontend app.
     # Update to ngrok domain or similar in case you want
@@ -365,6 +366,11 @@ class Settings(BaseSettings):
 
     def generate_frontend_url(self, path: str) -> str:
         return f"{self.FRONTEND_BASE_URL}{path}"
+
+    def generate_backoffice_url(self, path: str) -> str:
+        if self.BACKOFFICE_HOST is None:
+            return self.generate_external_url(f"/backoffice{path}")
+        return f"https://{self.BACKOFFICE_HOST}{path}"
 
     @property
     def stripe_descriptor_suffix_max_length(self) -> int:

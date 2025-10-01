@@ -371,6 +371,8 @@ envVarGroups:
         value: polar.sh
       - key: POLAR_BASE_URL
         value: https://api.polar.sh
+      - key: POLAR_BACKOFFICE_HOST
+        value: backoffice.polar.sh
       - key: POLAR_CURRENT_JWK_KID
         sync: false
       - key: POLAR_DEBUG

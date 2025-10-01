@@ -118,7 +118,7 @@ export const CheckoutLinkList = ({
               <div className="flex flex-row items-center gap-3 px-4 py-3">
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="w-full truncate text-sm">
-                    {checkoutLink.label ?? '—'}
+                    {checkoutLink.label ?? 'Untitled'}
                   </div>
                   <div>
                     <div className="w-full truncate text-sm text-gray-500 dark:text-gray-500">

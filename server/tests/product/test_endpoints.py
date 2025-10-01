@@ -231,6 +231,32 @@ class TestCreateProduct:
             ),
             pytest.param(
                 {
+                    "recurring_interval": "day",
+                    "prices": [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="Recurring daily fixed",
+            ),
+            pytest.param(
+                {
+                    "recurring_interval": "week",
+                    "prices": [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="Recurring weekly fixed",
+            ),
+            pytest.param(
+                {
                     "recurring_interval": "month",
                     "prices": [
                         {
@@ -240,7 +266,20 @@ class TestCreateProduct:
                         }
                     ],
                 },
-                id="Recurring fixed",
+                id="Recurring monthly fixed",
+            ),
+            pytest.param(
+                {
+                    "recurring_interval": "year",
+                    "prices": [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="Recurring yearly fixed",
             ),
             pytest.param(
                 {
@@ -266,6 +305,20 @@ class TestCreateProduct:
                     ],
                 },
                 id="Recurring free",
+            ),
+            pytest.param(
+                {
+                    "recurring_interval": "month",
+                    "recurring_interval_count": 3,
+                    "prices": [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="Recurring with interval count",
             ),
         ),
     )

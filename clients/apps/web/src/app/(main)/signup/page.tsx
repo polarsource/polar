@@ -65,11 +65,11 @@ export default async function Page(props: {
           <picture className="flex h-full">
             <source
               media="(prefers-color-scheme: dark)"
-              srcSet={`/assets/landing/overview_dark.png`}
+              srcSet={`/assets/landing/transactions_dark.png`}
             />
             <img
               className="flex h-full flex-1 object-cover object-left"
-              src="/assets/landing/overview.png"
+              src="/assets/landing/transactions.png"
               alt="Dashboard Home"
             />
           </picture>

@@ -205,6 +205,8 @@ class Checkout(
     )
     customer_metadata: Mapped[MetadataColumn]
 
+    # Only set when a checkout is attached to an existing subscription (free-to-paid upgrades).
+    # For subscriptions created by the checkout itself, see `Subscription.checkout_id`.
     subscription_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("subscriptions.id", ondelete="set null"), nullable=True
     )

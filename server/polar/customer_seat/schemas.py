@@ -9,6 +9,14 @@ from polar.models.customer_seat import SeatStatus
 
 
 class SeatAssign(Schema):
+    subscription_id: UUID | None = Field(
+        None,
+        description="Subscription ID. Required if checkout_id is not provided.",
+    )
+    checkout_id: UUID | None = Field(
+        None,
+        description="Checkout ID. Used to look up subscription. Required if subscription_id is not provided.",
+    )
     email: str | None = Field(
         None, description="Email of the customer to assign the seat to"
     )
@@ -24,10 +32,22 @@ class SeatAssign(Schema):
 
     @model_validator(mode="after")
     def validate_identifiers(self) -> "SeatAssign":
-        identifiers = [self.email, self.external_customer_id, self.customer_id]
-        non_null_count = sum(1 for identifier in identifiers if identifier is not None)
+        subscription_identifiers = [self.subscription_id, self.checkout_id]
+        subscription_count = sum(
+            1 for identifier in subscription_identifiers if identifier is not None
+        )
 
-        if non_null_count != 1:
+        if subscription_count != 1:
+            raise ValueError(
+                "Exactly one of subscription_id or checkout_id must be provided"
+            )
+
+        customer_identifiers = [self.email, self.external_customer_id, self.customer_id]
+        customer_count = sum(
+            1 for identifier in customer_identifiers if identifier is not None
+        )
+
+        if customer_count != 1:
             raise ValueError(
                 "Exactly one of email, external_customer_id, or customer_id must be provided"
             )

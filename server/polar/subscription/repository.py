@@ -74,6 +74,17 @@ class SubscriptionRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_checkout_id(
+        self, checkout_id: UUID, *, options: Options = ()
+    ) -> Subscription | None:
+        statement = (
+            self.get_base_statement()
+            .where(Subscription.checkout_id == checkout_id)
+            .options(*options)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def get_by_stripe_subscription_id(
         self, stripe_subscription_id: str, *, options: Options = ()
     ) -> Subscription | None:

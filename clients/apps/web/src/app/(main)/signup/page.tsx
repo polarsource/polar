@@ -69,7 +69,7 @@ export default async function Page(props: {
             />
             <img
               className="flex h-full flex-1 object-cover object-left"
-              src="/assets/landing/transactions.png"
+              src="/assets/landing/transactions_light.png"
               alt="Dashboard Home"
             />
           </picture>

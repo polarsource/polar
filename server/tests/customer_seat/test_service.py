@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 
@@ -503,3 +504,65 @@ class TestGetSeat:
 
         with pytest.raises(FeatureNotEnabled):
             await seat_service.get_seat(session, auth_subject, customer_seat_claimed.id)
+
+
+class TestBenefitGranting:
+    """Tests for benefit granting when claiming and revoking seats."""
+
+    @pytest.mark.asyncio
+    async def test_claim_seat_enqueues_benefit_grants(
+        self,
+        session: AsyncSession,
+        customer_seat_pending: CustomerSeat,
+        customer: Customer,
+    ) -> None:
+        """Test that claiming a seat enqueues benefit grants for the customer."""
+        assert customer_seat_pending.invitation_token is not None
+
+        with patch("polar.worker.enqueue_job") as mock_enqueue_job:
+            seat = await seat_service.claim_seat(
+                session, customer_seat_pending.invitation_token, customer
+            )
+
+            # Verify benefit grant job was enqueued
+            mock_enqueue_job.assert_called_once_with(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                customer_id=customer.id,
+                product_id=seat.subscription.product_id,
+                subscription_id=seat.subscription_id,
+            )
+
+    @pytest.mark.asyncio
+    async def test_revoke_seat_enqueues_benefit_revocation(
+        self, session: AsyncSession, customer_seat_claimed: CustomerSeat
+    ) -> None:
+        """Test that revoking a seat enqueues benefit revocation."""
+        original_customer_id = customer_seat_claimed.customer_id
+        assert original_customer_id is not None
+
+        with patch("polar.worker.enqueue_job") as mock_enqueue_job:
+            seat = await seat_service.revoke_seat(session, customer_seat_claimed)
+
+            # Verify benefit revocation job was enqueued
+            mock_enqueue_job.assert_called_once_with(
+                "benefit.enqueue_benefits_grants",
+                task="revoke",
+                customer_id=original_customer_id,
+                product_id=seat.subscription.product_id,
+                subscription_id=seat.subscription_id,
+            )
+
+    @pytest.mark.asyncio
+    async def test_revoke_pending_seat_does_not_enqueue_revocation(
+        self, session: AsyncSession, customer_seat_pending: CustomerSeat
+    ) -> None:
+        """Test that revoking a pending seat (no customer) doesn't enqueue revocation."""
+        # Pending seat has no customer_id
+        assert customer_seat_pending.customer_id is None
+
+        with patch("polar.worker.enqueue_job") as mock_enqueue_job:
+            await seat_service.revoke_seat(session, customer_seat_pending)
+
+            # Verify benefit revocation job was NOT enqueued (no customer assigned)
+            mock_enqueue_job.assert_not_called()

@@ -49,6 +49,7 @@ from tests.fixtures.random_objects import (
     create_benefit,
     create_checkout_link,
     create_product,
+    create_product_price_seat_unit,
     set_product_benefits,
 )
 
@@ -1807,3 +1808,33 @@ class TestUpdateBenefits:
                 call("order.update_product_benefits_grants", product.id),
             ]
         )
+
+
+@pytest.mark.asyncio
+class TestProductProperties:
+    async def test_has_seat_based_price(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product_with_seats = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        await create_product_price_seat_unit(
+            save_fixture,
+            product=product_with_seats,
+            price_per_seat=1000,
+        )
+        await session.refresh(product_with_seats)
+
+        product_without_seats = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        assert product_with_seats.has_seat_based_price is True
+        assert product_without_seats.has_seat_based_price is False

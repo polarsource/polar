@@ -1720,6 +1720,11 @@ class SubscriptionService:
         if subscription.is_incomplete():
             return
 
+        # Skip automatic benefit grants for seat-based products
+        # Benefits will be granted when individual seats are claimed
+        if product.has_seat_based_price:
+            return
+
         task = "grant" if subscription.active else "revoke"
 
         enqueue_job(

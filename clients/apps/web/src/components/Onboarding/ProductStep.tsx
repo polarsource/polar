@@ -78,7 +78,7 @@ export const ProductStep = () => {
           (acc, { key, value }) => ({ ...acc, [key]: value }),
           {},
         ),
-      })
+      } as schemas['ProductCreate'])
       if (error) {
         if (error.detail) {
           setValidationErrors(error.detail, setError)

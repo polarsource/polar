@@ -1,5 +1,13 @@
 import { openai } from '@ai-sdk/openai'
-import { convertToModelMessages, streamText, UIMessage } from 'ai'
+import {
+  convertToModelMessages,
+  smoothStream,
+  stepCountIs,
+  streamText,
+  tool,
+  UIMessage,
+} from 'ai'
+import { z } from 'zod'
 
 export const maxDuration = 30
 
@@ -55,13 +63,22 @@ Polar has these benefit types:
  - Meter credits: allows you to credit a customer's Usage Meter balance
  - Custom benefit: a catch-all benefit that allows you to optionally attach a custom Markdown note which is made available to your customers when they purchase your product
 
+### Unsupported benefit types
+
+While Polar fully supports these benefits, your chat capabilities are limited.
+You will not be able to configure Discord invites or GitHub repository access for now, since the user has to
+authenticate with these third party services before being able to set up a benefit. That's impossible from this chat.
+
+If so, you can use the "redirect_to_manual_setup" tool to redirect the user to the manual setup page.
+
 ### Setting up subscriptions for software businesses
 
-For software subscriptions, it's considered best practice to use a Custom benefit, e.g. "Pro Access", and use
+For software subscriptions, it's considered best practice to use a Custom benefit, e.g. "{Product} Access", and use
 that benefit in the software to verify if the authenticated user should have access to a specific feature.
+If the requested pricing appears to be for a software subscription, take this approach.
 
-If the requested pricing appears to be for a software subscription, take this approach. You do not have to explicitly
-explain all this to the user, just do it.
+Do not explicitly mention this benefit creation to the user. Just configure it like that. They will
+get implementation instructions later, so explaining it proactively is not needed.
  
 ## Products
 
@@ -99,7 +116,8 @@ So, in general, you should follow this order:
 
 # Rules
 - Prices will always be in USD. If you are prompted about a different currency, mention that this is not supported yet,
-  and ask them to specify their prices in USD. If no currency is mentioned, assume USD. Never ask to confirm the currency.
+  and ask them to specify their prices in USD. If no currency is mentioned, assume USD. Never ask to confirm the currency,
+  nor mention this limitation proactively. Use only a dollar sign ($), no need to repeat USD.
 - You are capable of creating multiple products at the same time, so you should hold all of them in context, and don't
   ask the user which one they would like to configure first. If a follow-up instruction is ambigue, ask what product
   to apply it to, but keep all products in mind until your final tool call or when asked for the configuration.
@@ -114,6 +132,8 @@ So, in general, you should follow this order:
 - If a recurring price is mentioned without product specifics, assume it's a software subscription.
 - If a price is mentioned without a recurring interval, it's a one-time purchase and you should try to determine whether it's a specific benefit or a generic access through a custom benefit
 - If the request is not relevant to the configuration of a product, gently decline the request and mention that you're only able to configure the user's Polar account.
+- Do not ask for extra benefits, you're just converting a user's description into a configuration.
+- Be eager to resolve the request as quickly as possible.
 
 The user will now describe their product and you will start the configuration assistant.
 `
@@ -121,10 +141,36 @@ The user will now describe their product and you will start the configuration as
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json()
 
+  const redirectToManualSetup = tool({
+    description: 'Request the user to manually configure the product instead',
+    inputSchema: z.object({
+      reason: z
+        .string()
+        .describe(
+          'The reason why the user should manually configure the product',
+        ),
+    }),
+  })
+
+  const requestConfirmation = tool({
+    description: 'Request the user to confirm the configuration',
+    inputSchema: z.object({
+      reason: z
+        .string()
+        .describe('Whether the user confirms the configuration'),
+    }),
+  })
+
   const result = streamText({
     model: openai('gpt-5-mini'),
     system: systemPrompt,
+    tools: {
+      redirectToManualSetup,
+      requestConfirmation,
+    },
     messages: convertToModelMessages(messages),
+    stopWhen: stepCountIs(10),
+    experimental_transform: smoothStream(),
   })
 
   return result.toUIMessageStreamResponse()

@@ -13,7 +13,6 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
-    NotPermitted,
     PolarError,
     PolarRequestValidationError,
     ValidationError,
@@ -220,17 +219,6 @@ class ProductService:
         )
 
         errors: list[ValidationError] = []
-
-        if create_schema.recurring_interval not in (
-            SubscriptionRecurringInterval.month,
-            SubscriptionRecurringInterval.year,
-            None,
-        ):
-            if not is_user(auth_subject) or not auth_subject.subject.is_admin:
-                raise NotPermitted(
-                    "Recurring intervals `day` and `week` are only accessible to Polar staff"
-                )
-
         prices, _, _, prices_errors = await self._get_validated_prices(
             session,
             create_schema.prices,
@@ -340,16 +328,6 @@ class ProductService:
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
         errors: list[ValidationError] = []
-
-        if update_schema.recurring_interval not in (
-            SubscriptionRecurringInterval.month,
-            SubscriptionRecurringInterval.year,
-            None,
-        ):
-            if not is_user(auth_subject) or not auth_subject.subject.is_admin:
-                raise NotPermitted(
-                    "Recurring intervals `day` and `week` are only accessible to Polar staff"
-                )
 
         # Prevent non-legacy products from changing their recurring interval
         if (

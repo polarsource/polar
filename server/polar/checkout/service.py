@@ -708,6 +708,7 @@ class CheckoutService:
 
         amount = 0
         currency = "usd"
+        seats = None
         if is_fixed_price(price):
             amount = price.price_amount
             currency = price.price_currency
@@ -718,6 +719,11 @@ class CheckoutService:
                 or price.minimum_amount
                 or settings.CUSTOM_PRICE_PRESET_FALLBACK
             )
+        elif is_seat_price(price):
+            # Default to 1 seat for checkout links with seat-based pricing
+            seats = 1
+            amount = price.price_per_seat * seats
+            currency = price.price_currency
         elif is_currency_price(price):
             currency = price.price_currency
 
@@ -735,6 +741,7 @@ class CheckoutService:
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
+            seats=seats,
             trial_interval=checkout_link.trial_interval,
             trial_interval_count=checkout_link.trial_interval_count,
             allow_discount_codes=checkout_link.allow_discount_codes,
@@ -1548,6 +1555,23 @@ class CheckoutService:
                 )
 
             checkout.amount = checkout_update.amount
+
+        # Handle seat updates for seat-based pricing
+        if checkout_update.seats is not None and is_seat_price(price):
+            checkout.seats = checkout_update.seats
+            checkout.amount = price.price_per_seat * checkout_update.seats
+        elif checkout_update.seats is not None:
+            # Seats provided for non-seat-based pricing
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "seats"),
+                        "msg": "Seats can only be set for seat-based pricing.",
+                        "input": checkout_update.seats,
+                    }
+                ]
+            )
 
         if isinstance(checkout_update, CheckoutUpdate):
             if checkout_update.discount_id is not None:

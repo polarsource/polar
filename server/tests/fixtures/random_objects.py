@@ -1254,6 +1254,7 @@ async def create_checkout(
     discount: Discount | None = None,
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
+    seats: int | None = None,
 ) -> Checkout:
     product = product or products[0]
     price = price or product.prices[0]
@@ -1263,6 +1264,10 @@ async def create_checkout(
         currency = price.price_currency
     elif isinstance(price, ProductPriceCustom):
         amount = amount or 10_00
+        currency = price.price_currency
+    elif isinstance(price, ProductPriceSeatUnit):
+        seat_count = seats or 1
+        amount = price.price_per_seat * seat_count
         currency = price.price_currency
     else:
         amount = 0
@@ -1298,6 +1303,7 @@ async def create_checkout(
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
         trial_end=trial_end,
+        seats=seats,
     )
     await save_fixture(checkout)
     return checkout

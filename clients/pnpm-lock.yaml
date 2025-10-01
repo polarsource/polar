@@ -84,8 +84,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/mdx
       '@polar-sh/sdk':
-        specifier: ^0.35.3
-        version: 0.35.3
+        specifier: ^0.35.4
+        version: 0.35.4
       '@polar-sh/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -337,8 +337,8 @@ importers:
   packages/checkout:
     dependencies:
       '@polar-sh/sdk':
-        specifier: ^0.35.3
-        version: 0.35.3
+        specifier: ^0.35.4
+        version: 0.35.4
       '@polar-sh/ui':
         specifier: workspace:^
         version: link:../ui
@@ -1697,8 +1697,8 @@ packages:
     resolution: {integrity: sha512-c83qWb22rNRuB0UaVCI0uRPNRr8Z0FWnEIvT47jiHAmOIUHbBOg5XvV7pM5x+rKn9HRpjxquDbXYSXr3fAKFcw==}
     engines: {node: '>=12'}
 
-  '@polar-sh/sdk@0.35.3':
-    resolution: {integrity: sha512-oL/BlxfiHJTonM2yoLH2Hknqjis8nKyLVb981Wwy3uSSz2Qny6UMBZIPO6+k8Hcy+sv06U7ZBLD0UYJYfaghfQ==}
+  '@polar-sh/sdk@0.35.4':
+    resolution: {integrity: sha512-vv4Ptl5jNsHIZoLvzKr0wR+dGXJOpz8VWOOTEGqaiYx6YJvzIvrayg52qp8ZtBjsRBkySLZS2EVTV3wDHTACwA==}
     hasBin: true
     peerDependencies:
       '@modelcontextprotocol/sdk': '>=1.5.0 <1.10.0'
@@ -7845,7 +7845,7 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
-  '@polar-sh/sdk@0.35.3':
+  '@polar-sh/sdk@0.35.4':
     dependencies:
       standardwebhooks: 1.0.0
       zod: 3.25.76

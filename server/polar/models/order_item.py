@@ -16,6 +16,7 @@ from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceFree,
+    ProductPriceSeatUnit,
 )
 
 if TYPE_CHECKING:
@@ -58,7 +59,11 @@ class OrderItem(RecordModel):
 
     @classmethod
     def from_price(
-        cls, price: ProductPrice, tax_amount: int, amount: int | None = None
+        cls,
+        price: ProductPrice,
+        tax_amount: int,
+        amount: int | None = None,
+        seats: int | None = None,
     ) -> Self:
         if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
             amount = price.price_amount
@@ -66,6 +71,9 @@ class OrderItem(RecordModel):
             assert amount is not None, "amount must be provided for custom prices"
         elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
             amount = 0
+        elif isinstance(price, ProductPriceSeatUnit):
+            assert seats is not None, "seats must be provided for seat-based prices"
+            amount = price.price_per_seat * seats
         return cls(
             label=price.product.name,
             amount=amount,

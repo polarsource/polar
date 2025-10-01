@@ -567,7 +567,7 @@ class OrderService:
             if is_custom_price(price):
                 item = OrderItem.from_price(price, 0, checkout.amount)
             else:
-                item = OrderItem.from_price(price, 0)
+                item = OrderItem.from_price(price, 0, seats=checkout.seats)
             items.append(item)
 
         discount_amount = checkout.discount_amount

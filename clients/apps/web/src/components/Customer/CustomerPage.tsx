@@ -30,6 +30,7 @@ import React, { useMemo } from 'react'
 import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
+import { CustomerStatBox } from './CustomerStatBox'
 
 interface CustomerPageProps {
   organization: schemas['Organization']
@@ -130,7 +131,31 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <TabsTrigger value="events">Events</TabsTrigger>
         <TabsTrigger value="usage">Usage</TabsTrigger>
       </TabsList>
-      <TabsContent value="overview" className="flex flex-col gap-y-12">
+      <TabsContent value="overview" className="flex flex-col gap-y-8">
+        <div className="flex flex-col gap-4 md:flex-row md:gap-6">
+          <CustomerStatBox title="Cumulative Revenue" size="lg">
+            {typeof metricsData?.totals.cumulative_revenue === 'number' ? (
+              <AmountLabel
+                amount={metricsData?.totals.cumulative_revenue ?? 0}
+                currency="USD"
+              />
+            ) : (
+              '—'
+            )}
+          </CustomerStatBox>
+          <CustomerStatBox title="Orders" size="lg">
+            {typeof metricsData?.totals.orders === 'number'
+              ? metricsData.totals.orders
+              : '—'}
+          </CustomerStatBox>
+          <CustomerStatBox title="Customer Balance" size="lg">
+            <AmountLabel
+              amount={customerBalance?.balance ?? 0}
+              currency="USD"
+            />
+          </CustomerStatBox>
+        </div>
+
         <MetricChartBox
           metric={selectedMetric}
           onMetricChange={setSelectedMetric}
@@ -323,51 +348,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           />
         </div>
 
-        <div className="flex flex-col gap-4">
-          <h3 className="text-lg">Customer Balance</h3>
-          <ShadowBox className="flex flex-col gap-4">
-            {balanceLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-sm text-gray-500">Loading balance...</div>
-              </div>
-            ) : customerBalance ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Current Balance
-                  </span>
-                  <div
-                    className={
-                      customerBalance.balance < 0
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-gray-600 dark:text-gray-400'
-                    }
-                  >
-                    <AmountLabel
-                      amount={customerBalance.balance}
-                      currency={customerBalance.currency}
-                    />
-                  </div>
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {customerBalance.balance > 0
-                    ? 'Customer has credit on their account'
-                    : customerBalance.balance < 0
-                      ? 'Customer owes money'
-                      : 'No outstanding balance'}
-                </div>
-              </div>
-            ) : (
-              <div className="text-sm text-gray-500">
-                Balance information unavailable
-              </div>
-            )}
-          </ShadowBox>
-        </div>
-
         <ShadowBox className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">
-            <h2 className="text-xl">Customer Details</h2>
+            <h2 className="text-lg">Customer Details</h2>
             <div className="flex flex-col">
               <DetailRow label="ID" value={customer.id} />
               <DetailRow label="External ID" value={customer.external_id} />

@@ -113,6 +113,7 @@ So, in general, you should follow this order:
 - If a user mentions "$x per month" for a yearly plan, or vice versa, do the math for them.
 - If a recurring price is mentioned without product specifics, assume it's a software subscription.
 - If a price is mentioned without a recurring interval, it's a one-time purchase and you should try to determine whether it's a specific benefit or a generic access through a custom benefit
+- If the request is not relevant to the configuration of a product, gently decline the request and mention that you're only able to configure the user's Polar account.
 
 The user will now describe their product and you will start the configuration assistant.
 `

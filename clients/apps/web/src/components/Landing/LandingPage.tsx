@@ -4,8 +4,10 @@ import { Hero } from '@/components/Landing/Hero/Hero'
 import { MerchantOfRecord } from '@/components/Landing/MOR'
 import { Testimonials } from '@/components/Landing/Testimonials'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import Image from 'next/image'
 import Link from 'next/link'
+import GetStartedButton from '../Auth/GetStartedButton'
 import { Adapters } from './Adapters'
 import { Benefits } from './Benefits'
 import { Checkout } from './Checkout'
@@ -27,7 +29,25 @@ export const PageContent = () => {
   return (
     <>
       <Section className="flex flex-col gap-y-32 pt-0 md:pt-0">
-        <Hero />
+        <Hero
+          title="Monetize your software"
+          description="Turn your software into a business with 6 lines of code"
+        >
+          <GetStartedButton size="lg" text="Get Started" />
+          <Link
+            href="/resources/why"
+            prefetch
+            className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <Button
+              variant="secondary"
+              size="lg"
+              className="dark:bg-polar-800 rounded-full border-none bg-white"
+            >
+              Why Polar
+            </Button>
+          </Link>
+        </Hero>
         <Features />
         <Adapters />
         <SDKs />

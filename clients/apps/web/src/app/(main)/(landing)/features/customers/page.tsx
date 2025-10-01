@@ -1,4 +1,4 @@
-import { CustomersPage } from '@/components/Landing/CustomersPage'
+import { CustomersPage } from '@/components/Landing/features/CustomersPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {

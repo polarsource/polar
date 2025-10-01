@@ -189,7 +189,12 @@ const LandingPageDesktopNavigation = () => {
 
         <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-8 font-medium">
           <li>
-            <NavLink href="/" isActive={(pathname) => pathname === '/'}>
+            <NavLink
+              href="/"
+              isActive={(pathname) =>
+                pathname === '/' || pathname.startsWith('/features')
+              }
+            >
               Features
             </NavLink>
           </li>

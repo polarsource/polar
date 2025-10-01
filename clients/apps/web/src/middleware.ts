@@ -12,7 +12,6 @@ const AUTHENTICATED_ROUTES = [
   new RegExp('^/dashboard(/.*)?'),
   new RegExp('^/finance(/.*)?'),
   new RegExp('^/settings(/.*)?'),
-  new RegExp('^/backoffice(/.*)?'),
 ]
 
 const requiresAuthentication = (request: NextRequest): boolean => {

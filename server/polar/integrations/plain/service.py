@@ -194,8 +194,8 @@ class PlainService:
                         ),
                         ComponentInput(
                             component_link_button=ComponentLinkButtonInput(
-                                link_button_url=settings.generate_external_url(
-                                    f"/backoffice/organizations/{organization.id}"
+                                link_button_url=settings.generate_backoffice_url(
+                                    f"/organizations/{organization.id}"
                                 ),
                                 link_button_label="Review account ↗",
                             )
@@ -309,8 +309,8 @@ class PlainService:
                                     # Backoffice Link
                                     ComponentContainerContentInput(
                                         component_link_button=ComponentLinkButtonInput(
-                                            link_button_url=settings.generate_external_url(
-                                                f"/backoffice/organizations/{organization.id}"
+                                            link_button_url=settings.generate_backoffice_url(
+                                                f"/organizations/{organization.id}"
                                             ),
                                             link_button_label="View in Backoffice",
                                         )
@@ -355,8 +355,8 @@ class PlainService:
                                     ComponentRowContentInput(
                                         component_link_button=ComponentLinkButtonInput(
                                             link_button_label="Backoffice ↗",
-                                            link_button_url=settings.generate_external_url(
-                                                f"/backoffice/users/{user.id}"
+                                            link_button_url=settings.generate_backoffice_url(
+                                                f"/users/{user.id}"
                                             ),
                                         )
                                     )
@@ -525,8 +525,8 @@ class PlainService:
                             ComponentRowContentInput(
                                 component_link_button=ComponentLinkButtonInput(
                                     link_button_label="Backoffice ↗",
-                                    link_button_url=settings.generate_external_url(
-                                        f"/backoffice/organizations/{organization.id}"
+                                    link_button_url=settings.generate_backoffice_url(
+                                        f"/organizations/{organization.id}"
                                     ),
                                 )
                             )
@@ -855,8 +855,8 @@ class PlainService:
                                 ComponentRowContentInput(
                                     component_link_button=ComponentLinkButtonInput(
                                         link_button_label="Backoffice ↗",
-                                        link_button_url=settings.generate_external_url(
-                                            f"/backoffice/orders/{order.id}"
+                                        link_button_url=settings.generate_backoffice_url(
+                                            f"/orders/{order.id}"
                                         ),
                                     )
                                 )
@@ -888,8 +888,8 @@ class PlainService:
                                 ComponentRowContentInput(
                                     component_link_button=ComponentLinkButtonInput(
                                         link_button_label="Backoffice ↗",
-                                        link_button_url=settings.generate_external_url(
-                                            f"/backoffice/organizations/{organization.id}"
+                                        link_button_url=settings.generate_backoffice_url(
+                                            f"/organizations/{organization.id}"
                                         ),
                                     )
                                 )
@@ -1365,8 +1365,8 @@ class PlainService:
                                     # Backoffice Link
                                     ComponentContainerContentInput(
                                         component_link_button=ComponentLinkButtonInput(
-                                            link_button_url=settings.generate_external_url(
-                                                f"/backoffice/organizations/{organization.id}"
+                                            link_button_url=settings.generate_backoffice_url(
+                                                f"/organizations/{organization.id}"
                                             ),
                                             link_button_label="View in Backoffice",
                                         )

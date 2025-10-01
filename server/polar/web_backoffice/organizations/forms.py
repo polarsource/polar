@@ -55,18 +55,7 @@ class UpdateOrganizationForm(forms.BaseForm):
     slug: SlugInput
 
 
-class UpdateOrganizationDetailsForm(forms.BaseForm):
-    """Simplified form for editing organization detail fields and website."""
-
-    website: Annotated[
-        HttpUrlToStr | None,
-        forms.InputField(type="url", placeholder="https://example.com"),
-        Field(
-            None,
-            title="Website",
-            description="Official website of the organization",
-        ),
-    ]
+class UpdateOrganizationDetailsDataForm(forms.BaseForm):
     about: Annotated[
         str,
         forms.TextAreaField(rows=4),
@@ -94,3 +83,16 @@ class UpdateOrganizationDetailsForm(forms.BaseForm):
             description="How the organization will integrate and use Polar",
         ),
     ]
+
+
+class UpdateOrganizationDetailsForm(forms.BaseForm):
+    website: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://example.com"),
+        Field(
+            None,
+            title="Website",
+            description="Official website of the organization",
+        ),
+    ]
+    details: Annotated[UpdateOrganizationDetailsDataForm, Field(title="Details")]

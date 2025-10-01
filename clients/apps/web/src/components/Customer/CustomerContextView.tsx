@@ -9,25 +9,14 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
-import { PropsWithChildren, useCallback, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import AmountLabel from '../Shared/AmountLabel'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
+import { CustomerStatBox } from './CustomerStatBox'
 import { EditCustomerModal } from './EditCustomerModal'
-
-const CustomerStatBox = ({
-  title,
-  children,
-}: PropsWithChildren<{ title: string }>) => {
-  return (
-    <div className="dark:bg-polar-800 flex flex-1 flex-col gap-1 rounded-lg bg-gray-100 px-4 py-3 text-sm">
-      <span className="dark:text-polar-500 text-gray-500">{title}</span>
-      {children}
-    </div>
-  )
-}
 
 interface CustomerContextViewProps {
   organization: schemas['Organization']

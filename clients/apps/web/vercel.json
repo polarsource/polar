@@ -8,8 +8,8 @@
   },
   "rewrites": [
     {
-      "source": "/_mintlify/api/:path",
-      "destination": "https://polar.mintlify.app/_mintlify/api/:path"
+      "source": "/_mintlify/api/:path+",
+      "destination": "https://polar.mintlify.app/_mintlify/api/:path+"
     },
     {
       "source": "/api/request",

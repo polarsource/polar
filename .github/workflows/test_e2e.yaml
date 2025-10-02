@@ -103,6 +103,10 @@ jobs:
         working-directory: ./server
         run: uv run task db_migrate
 
+      - name: Run server test
+        working-directory: ./server
+        run: uv run task api
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:

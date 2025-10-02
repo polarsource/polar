@@ -127,6 +127,7 @@ jobs:
             uv run task api
           wait-on: |
             http://127.0.0.1:8000/healthz
+          log-output-if: failure
 
       - name: Run frontend server
         uses: JarvusInnovations/background-action@v1
@@ -136,6 +137,7 @@ jobs:
             pnpm dev
           wait-on: |
             http://127.0.0.1:3000
+          log-output-if: failure
 
       - name: Run e2e tests
         working-directory: e2e

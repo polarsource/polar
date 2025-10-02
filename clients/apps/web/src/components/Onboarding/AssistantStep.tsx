@@ -6,6 +6,7 @@ import { useChat } from '@ai-sdk/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DefaultChatTransport } from 'ai'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { FadeUp } from '../Animated/FadeUp'
 import LogoIcon from '../Brand/LogoIcon'
@@ -86,15 +87,88 @@ export const AssistantStep = () => {
                             )
                           }
 
-                          if (part.type === 'tool-redirectToManualSetup') {
+                          if (part.type === 'dynamic-tool') {
+                            const labels = {
+                              polar_dev_pieter_products_create: {
+                                input: 'Creating product…',
+                                output: 'Product created.',
+                                error: 'Error creating product.',
+                              },
+                              polar_dev_pieter_products_update_benefits: {
+                                input: 'Updating product benefits…',
+                                output: 'Product benefits updated.',
+                                error: 'Error updating product benefits.',
+                              },
+                              polar_dev_pieter_benefits_create: {
+                                input: 'Creating benefit…',
+                                output: 'Benefit created.',
+                                error: 'Error creating benefit.',
+                              },
+                              polar_dev_pieter_meters_create: {
+                                input: 'Creating meter…',
+                                output: 'Meter created.',
+                                error: 'Error creating meter.',
+                              },
+                            }
+
                             switch (part.state) {
-                              case 'output-available':
+                              case 'input-streaming':
+                              case 'input-available':
                                 return (
-                                  <p>
-                                    This configuration needs manual input.
-                                    Please configure the product manually.
+                                  <p className="opacity-40">
+                                    {labels[
+                                      part.toolName as keyof typeof labels
+                                    ]?.input ?? 'Configuring Polar…'}
                                   </p>
                                 )
+                              case 'output-available':
+                                return (
+                                  <p className="opacity-40">
+                                    {labels[
+                                      part.toolName as keyof typeof labels
+                                    ]?.output ?? 'Configured Polar.'}
+                                  </p>
+                                )
+                              case 'output-error':
+                                return (
+                                  <p className="opacity-40">
+                                    {labels[
+                                      part.toolName as keyof typeof labels
+                                    ]?.error ?? 'Something went wrong.'}
+                                  </p>
+                                )
+                              default:
+                                return null
+                            }
+                          }
+
+                          if (part.type === 'tool-redirectToManualSetup') {
+                            switch (part.state) {
+                              case 'input-available':
+                              case 'output-available':
+                                switch (part.input.data.reason) {
+                                  case 'unsupported_benefit_type':
+                                    return (
+                                      <p className="">
+                                        Sorry, but this configuration needs
+                                        manual input.
+                                        <Link href="./product">
+                                          Please configure the product manually.
+                                        </Link>
+                                      </p>
+                                    )
+                                  case 'tool_call_error':
+                                    return (
+                                      <p className="">
+                                        Something went wrong configuring Polar.
+                                        <Link href="./product">
+                                          Please try manually.
+                                        </Link>
+                                      </p>
+                                    )
+                                  default:
+                                    return null
+                                }
                               default:
                                 return null
                             }
@@ -263,7 +337,7 @@ export const AssistantStep = () => {
                   placeholder={
                     messages.length === 0
                       ? 'Describe your product and how you want to sell it…'
-                      : 'Reply to Polar'
+                      : 'Reply…'
                   }
                   rows={1}
                   className="dark:bg-polar-800 pt-6.5 min-h-[72px] flex-1 resize-none border-none px-4 pb-6 text-sm/5 focus:outline-none focus:ring-0 disabled:opacity-50"
@@ -272,7 +346,7 @@ export const AssistantStep = () => {
                   <Button
                     type="submit"
                     disabled={status !== 'ready' || !input.trim()}
-                    loading={status === 'streaming'}
+                    loading={status === 'submitted' || status === 'streaming'}
                   >
                     {messages.length === 0 ? 'Start selling' : 'Send'}
                   </Button>

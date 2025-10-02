@@ -1,6 +1,8 @@
 import { openai } from '@ai-sdk/openai'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import {
   convertToModelMessages,
+  experimental_createMCPClient,
   smoothStream,
   stepCountIs,
   streamText,
@@ -142,14 +144,63 @@ So, in general, you should follow this order:
 The user will now describe their product and you will start the configuration assistant.
 `
 
+// Create MCP client instance (cached)
+let mcpClient: Awaited<ReturnType<typeof experimental_createMCPClient>> | null =
+  null
+
+async function getMCPClient() {
+  if (!mcpClient) {
+    try {
+      console.log('Attempting to connect to MCP server:', process.env.GRAM_URL)
+      console.log(
+        'Using API key:',
+        process.env.GRAM_API_KEY?.substring(0, 20) + '...',
+      )
+      console.log(
+        'Using OAT:',
+        'polar_oat_rGO4HuyYkkzbp0DDSKG309tfsKlBHaXb9hw1q20vG2c'.substring(
+          0,
+          20,
+        ) + '...',
+      )
+
+      const httpTransport = new StreamableHTTPClientTransport(
+        new URL(process.env.GRAM_URL!),
+        {
+          requestInit: {
+            headers: {
+              Authorization: `Bearer ${process.env.GRAM_API_KEY}`,
+              'MCP-POLAR-DEV-PIETER-ACCESS-TOKEN':
+                'polar_oat_rGO4HuyYkkzbp0DDSKG309tfsKlBHaXb9hw1q20vG2c',
+            },
+          },
+        },
+      )
+
+      mcpClient = await experimental_createMCPClient({
+        transport: httpTransport,
+      })
+
+      console.log('MCP client created successfully')
+    } catch (error) {
+      console.error('Failed to create MCP client:', error)
+      throw error
+    }
+  }
+  return mcpClient
+}
+
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json()
+
+  const mcpClient = await getMCPClient()
+  const tools = await mcpClient.tools()
 
   const redirectToManualSetup = tool({
     description: 'Request the user to manually configure the product instead',
     inputSchema: z.object({
       reason: z
-        .string()
+        .enum(['unsupported_benefit_type', 'tool_call_error'])
         .describe(
           'The reason why the user should manually configure the product',
         ),
@@ -229,6 +280,7 @@ export async function POST(req: Request) {
     tools: {
       redirectToManualSetup,
       renderProductsPreview,
+      ...tools,
     },
     messages: convertToModelMessages(messages),
     stopWhen: stepCountIs(10),

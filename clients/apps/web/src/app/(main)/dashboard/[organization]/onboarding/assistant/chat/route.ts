@@ -118,6 +118,8 @@ So, in general, you should follow this order:
 - Prices will always be in USD. If you are prompted about a different currency, mention that this is not supported yet,
   and ask them to specify their prices in USD. If no currency is mentioned, assume USD. Never ask to confirm the currency,
   nor mention this limitation proactively. Use only a dollar sign ($), no need to repeat USD.
+- The product name is not that important, and can be renamed, so if a user says "A premium plan" just use "Premium" as the name.
+- Do not include the word "plan" in the product name except if it's explictly phrased as such.
 - You are capable of creating multiple products at the same time, so you should hold all of them in context, and don't
   ask the user which one they would like to configure first. If a follow-up instruction is ambigue, ask what product
   to apply it to, but keep all products in mind until your final tool call or when asked for the configuration.
@@ -126,14 +128,16 @@ So, in general, you should follow this order:
 - Do not ask for any additional pages (privacy policy, terms of service, refund policies, …) to be created as this is out of your scope.
 - The goal is to get the user to a minimal configuration fast, so once there is reasonable confidence that you have all the information you need,
   do not ask for more information. Users will always be able to add more products, descriptions, and details later.
-- If only a monthly recurring price is mentioned, ask if they also want to offer the same product at a yearly recurring price.
-- If only a yearly recurring price is mentioned, ask if they also want to offer the same product at a monthly recurring price.
+- If only a monthly recurring price is mentioned, ask if they also want to offer the same product at a yearly recurring price. However, continue with the preview already if relevant.
+- If only a yearly recurring price is mentioned, ask if they also want to offer the same product at a monthly recurring price. However, continue with the preview already if relevant.
 - If a user mentions "$x per month" for a yearly plan, or vice versa, do the math for them.
 - If a recurring price is mentioned without product specifics, assume it's a software subscription.
 - If a price is mentioned without a recurring interval, it's a one-time purchase and you should try to determine whether it's a specific benefit or a generic access through a custom benefit
 - If the request is not relevant to the configuration of a product, gently decline the request and mention that you're only able to configure the user's Polar account.
 - Do not ask for extra benefits, you're just converting a user's description into a configuration.
+- Do not ask explicitly if they also want to include a trial. You support trials when asked, but do not propose it yourself.
 - Be eager to resolve the request as quickly as possible.
+- If you use the "renderProductsPreview" tool, do not repeat the preview in the text response after that.
 
 The user will now describe their product and you will start the configuration assistant.
 `
@@ -152,13 +156,71 @@ export async function POST(req: Request) {
     }),
   })
 
-  const requestConfirmation = tool({
-    description: 'Request the user to confirm the configuration',
+  const renderProductsPreview = tool({
+    description:
+      'Render a preview of the product you are about to configure. This will render the product preview in the UI and is cleaner than a text description.',
     inputSchema: z.object({
-      reason: z
-        .string()
-        .describe('Whether the user confirms the configuration'),
+      products: z.array(
+        z.object({
+          name: z.string().describe('The name of the product'),
+          description: z
+            .string()
+            .optional()
+            .describe(
+              'The description of the product. Only include if explicitly included, probably not needed.',
+            ),
+          priceInCents: z
+            .number()
+            .describe('The price of the product in cents in USD'),
+          priceType: z
+            .enum(['one_time', 'recurring_monthly', 'recurring_yearly'])
+            .describe('The type of the price'),
+          trialInterval: z
+            .enum(['day', 'week', 'month', 'year'])
+            .optional()
+            .describe('The trial interval'),
+          trialIntervalCount: z
+            .number()
+            .optional()
+            .describe('The trial interval count'),
+          benefits: z.array(
+            z.object({
+              type: z
+                .enum([
+                  'license_key',
+                  'file_download',
+                  'github_repository_access',
+                  'discord_server_access',
+                  'meter_credit',
+                  'custom',
+                ])
+                .describe('The type of the benefit'),
+              name: z
+                .string()
+                .optional()
+                .describe('The description of the benefit'),
+            }),
+          ),
+          usageBasedBilling: z.array(
+            z.object({
+              meterName: z.string().describe('The name of the meter'),
+              unitAmount: z
+                .number()
+                .describe('The unit amount in cents in USD'),
+              capAmount: z
+                .number()
+                .optional()
+                .describe('The cap amount in cents in USD'),
+            }),
+          ),
+        }),
+      ),
     }),
+    execute: () => {
+      return {
+        shown: true,
+      }
+    },
   })
 
   const result = streamText({
@@ -166,7 +228,7 @@ export async function POST(req: Request) {
     system: systemPrompt,
     tools: {
       redirectToManualSetup,
-      requestConfirmation,
+      renderProductsPreview,
     },
     messages: convertToModelMessages(messages),
     stopWhen: stepCountIs(10),

@@ -39,15 +39,6 @@ jobs:
         working-directory: ./clients
         run: pnpm install
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ./clients/apps/web/.next
-          key: next-${{ hashFiles('./clients/pnpm-lock.yaml') }}-${{ github.sha }}
-          restore-keys: |
-            next-${{ hashFiles('./clients/pnpm-lock.yaml') }}-
-            next-
-
       - name: Lint
         working-directory: ./clients
         run: pnpm run lint

@@ -5,12 +5,15 @@ import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
 } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
-import SpeedOutlined from '@mui/icons-material/SpeedOutlined'
-import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined'
+import ElectricMeterOutlined from '@mui/icons-material/ElectricMeterOutlined'
+import KeyboardDoubleArrowRightOutlined from '@mui/icons-material/KeyboardDoubleArrowRightOutlined'
+import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Hero } from '../Hero/Hero'
 import { Section } from '../Section'
 
@@ -64,16 +67,22 @@ export const UsageBillingPage = () => {
             description="Leverage our Event Ingestion Strategies to track any usage with precision"
           >
             <GetStartedButton size="lg" text="Get Started" />
+            <Link href="/docs/features/usage-based-billing/introduction">
+              <Button variant="secondary" className="rounded-full" size="lg">
+                View Documentation
+                <ArrowOutwardOutlined className="ml-2" />
+              </Button>
+            </Link>
           </Hero>
 
           <motion.div
-            className="dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row-reverse md:items-stretch"
+            className="dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white xl:flex-row-reverse"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={containerVariants}
           >
-            <div className="flex flex-1 grow flex-col gap-y-10 p-8 md:p-16">
+            <div className="flex flex-1 grow flex-col gap-y-10 p-8 xl:p-16">
               <div className="flex flex-col gap-y-4">
                 <div className="flex items-center gap-x-3">
                   <h2 className="leading-normal! text-2xl md:text-3xl">
@@ -109,43 +118,43 @@ export const UsageBillingPage = () => {
                 ))}
               </motion.ul>
             </div>
-            <div className="dark:bg-polar-800 relative flex flex-1 items-center justify-center bg-gray-100 p-8 md:p-16">
+            <div className="dark:bg-polar-800 relative flex h-full bg-gray-100 p-4 md:p-8 xl:items-center xl:justify-center xl:p-16">
               <Image
                 className="absolute inset-0 h-full w-full object-cover"
                 src="/assets/landing/abstract_02.jpg"
                 alt="Usage Billing"
-                width={500}
-                height={500}
+                width={1500}
+                height={1500}
               />
-              <div className="dark:bg-polar-900 z-10 rounded-lg bg-white p-4 text-sm">
+              <div className="dark:bg-polar-900 z-10 w-full rounded-lg bg-white p-4 text-sm">
                 <SyntaxHighlighterClient lang="typescript" code={llmCode} />
               </div>
             </div>
           </motion.div>
 
           <Hero
-            title="Flexible pricing models"
-            description="From simple per-unit pricing to complex tiered and volume-based models"
+            title="Flexible usage billing"
+            description="All the tools you need to integrate flexible usage billing into your application"
           >
             <div className="grid flex-1 grid-cols-1 gap-8 md:grid-cols-3">
               {[
                 {
-                  icon: <TrendingUpOutlined fontSize="large" />,
-                  title: 'Tiered Pricing',
+                  icon: <KeyboardDoubleArrowRightOutlined fontSize="large" />,
+                  title: 'Event Ingestion',
                   description:
-                    'Charge different rates based on usage tiers. Perfect for encouraging growth.',
+                    'Ingest events from your application to track usage.',
                 },
                 {
-                  icon: <SpeedOutlined fontSize="large" />,
-                  title: 'Volume Pricing',
+                  icon: <ElectricMeterOutlined fontSize="large" />,
+                  title: 'Customer Meters',
                   description:
-                    'Apply discounts based on total volume. Incentivize higher usage automatically.',
+                    'Aggregate events into meters to track usage by customer.',
                 },
                 {
-                  icon: <DonutLargeOutlined fontSize="large" />,
-                  title: 'Hybrid Models',
+                  icon: <ReceiptLongOutlined fontSize="large" />,
+                  title: 'Billing',
                   description:
-                    'Combine subscription fees with usage charges for predictable revenue.',
+                    'Invoice your customers for their usage on a monthly basis.',
                 },
               ].map((feature, i) => (
                 <div

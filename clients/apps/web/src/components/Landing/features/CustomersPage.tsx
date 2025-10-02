@@ -2,11 +2,14 @@
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Hero } from '../Hero/Hero'
 import { Section } from '../Section'
 
@@ -34,6 +37,12 @@ export const CustomersPage = () => {
           description="Detailed customer profiles, subscription handling, and powerful analytics."
         >
           <GetStartedButton size="lg" text="Get Started" />
+          <Link href="/docs/features/customers">
+            <Button variant="secondary" className="rounded-full" size="lg">
+              View Documentation
+              <ArrowOutwardOutlined className="ml-2" />
+            </Button>
+          </Link>
         </Hero>
 
         <motion.div

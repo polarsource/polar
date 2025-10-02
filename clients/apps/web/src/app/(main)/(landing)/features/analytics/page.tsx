@@ -2,7 +2,7 @@ import { AnalyticsPage } from '@/components/Landing/features/AnalyticsPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Analytics and insights for SaaS metrics — Polar',
+  title: 'Analytics and Insights — Polar',
   description:
     'Comprehensive analytics dashboard with revenue metrics, customer insights, and growth tracking for your SaaS business.',
   keywords:

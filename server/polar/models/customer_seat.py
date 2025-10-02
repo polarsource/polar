@@ -45,6 +45,10 @@ class CustomerSeat(RecordModel):
         String, nullable=True, default=None, index=True
     )
 
+    invitation_token_expires_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+
     claimed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )

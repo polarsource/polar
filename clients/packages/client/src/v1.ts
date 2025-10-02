@@ -3032,6 +3032,27 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-seats/claim/{invitation_token}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Claim Info
+     * @description Get seat claim information - READ ONLY.
+     *     Safe for email scanners to hit - no side effects.
+     */
+    get: operations['customer-seats:get_claim_info']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-seats/claim': {
     parameters: {
       query?: never
@@ -3043,7 +3064,9 @@ export interface paths {
     put?: never
     /**
      * Claim Seat
-     * @description **Scopes**: `customers:read` `customers:write`
+     * @description Claim a seat using invitation token.
+     *     No authentication required - token is proof of authorization.
+     *     Returns customer session token for immediate portal access.
      */
     post: operations['customer-seats:claim_seat']
     delete?: never
@@ -11579,6 +11602,19 @@ export interface components {
       } | null
     }
     /**
+     * CustomerSeatClaimResponse
+     * @description Response after successfully claiming a seat.
+     */
+    CustomerSeatClaimResponse: {
+      /** @description The claimed seat */
+      seat: components['schemas']['CustomerSeat']
+      /**
+       * Customer Session Token
+       * @description Session token for immediate customer portal access
+       */
+      customer_session_token: string
+    }
+    /**
      * CustomerSession
      * @description A customer session that can be used to authenticate as a customer.
      */
@@ -18423,6 +18459,44 @@ export interface components {
        * @description Invitation token to claim the seat
        */
       invitation_token: string
+    }
+    /**
+     * SeatClaimInfo
+     * @description Read-only information about a seat claim invitation.
+     *     Safe for email scanners - no side effects when fetched.
+     */
+    SeatClaimInfo: {
+      /**
+       * Product Name
+       * @description Name of the product
+       */
+      product_name: string
+      /**
+       * Product Id
+       * Format: uuid
+       * @description ID of the product
+       */
+      product_id: string
+      /**
+       * Organization Name
+       * @description Name of the organization
+       */
+      organization_name: string
+      /**
+       * Organization Slug
+       * @description Slug of the organization
+       */
+      organization_slug: string
+      /**
+       * Customer Email
+       * @description Email of the customer assigned to this seat
+       */
+      customer_email: string
+      /**
+       * Can Claim
+       * @description Whether the seat can be claimed
+       */
+      can_claim: boolean
     }
     /**
      * SeatStatus
@@ -28555,6 +28629,51 @@ export interface operations {
       }
     }
   }
+  'customer-seats:get_claim_info': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        invitation_token: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SeatClaimInfo']
+        }
+      }
+      /** @description Invalid or expired invitation token */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Seat not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer-seats:claim_seat': {
     parameters: {
       query?: never
@@ -28574,10 +28693,10 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerSeat']
+          'application/json': components['schemas']['CustomerSeatClaimResponse']
         }
       }
-      /** @description Invalid or expired invitation token */
+      /** @description Invalid, expired, or already claimed token */
       400: {
         headers: {
           [name: string]: unknown
@@ -28586,13 +28705,6 @@ export interface operations {
       }
       /** @description Seat-based pricing not enabled for organization */
       403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Customer not found */
-      404: {
         headers: {
           [name: string]: unknown
         }

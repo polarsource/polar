@@ -28,7 +28,7 @@ def send_seat_invitation_email(
         return
 
     claim_url = (
-        f"{settings.FRONTEND_BASE_URL}/{organization.slug}/portal/seats/claim"
+        f"{settings.FRONTEND_BASE_URL}/{organization.slug}/portal/claim"
         f"?token={seat.invitation_token}"
     )
 

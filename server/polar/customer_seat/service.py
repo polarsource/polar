@@ -1,15 +1,18 @@
 import secrets
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
-from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer_seat.sender import send_seat_invitation_email
+from polar.customer_session.service import (
+    customer_session as customer_session_service,
+)
+from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Customer, CustomerSeat, Organization, Subscription, User
@@ -111,16 +114,13 @@ class SeatService:
         if available_seats <= 0:
             raise SeatNotAvailable(subscription.id)
 
-        customer = await self._find_customer(
+        customer = await self._find__or_create_customer(
             session,
             subscription.product.organization_id,
             email,
             external_customer_id,
             customer_id,
         )
-
-        if not customer:
-            raise CustomerNotFound(email or external_customer_id or str(customer_id))
 
         existing_seat = await repository.get_by_subscription_and_customer(
             subscription.id, customer.id
@@ -130,15 +130,16 @@ class SeatService:
             raise SeatAlreadyAssigned(identifier)
 
         invitation_token = secrets.token_urlsafe(32)
+        token_expires_at = datetime.now(UTC) + timedelta(days=1)
 
         seat = CustomerSeat(
             subscription_id=subscription.id,
             status=SeatStatus.pending,
             invitation_token=invitation_token,
+            invitation_token_expires_at=token_expires_at,
+            customer_id=customer.id,
             seat_metadata=metadata or {},
         )
-
-        seat.customer_id = customer.id
 
         session.add(seat)
         await session.flush()
@@ -161,51 +162,102 @@ class SeatService:
 
         return seat
 
+    async def get_seat_by_token(
+        self,
+        session: AsyncReadSession,
+        invitation_token: str,
+    ) -> CustomerSeat | None:
+        repository = CustomerSeatRepository.from_session(session)
+        seat = await repository.get_by_invitation_token(
+            invitation_token,
+            options=repository.get_eager_options(),
+        )
+
+        if not seat or seat.is_revoked() or seat.is_claimed():
+            return None
+
+        if (
+            seat.invitation_token_expires_at
+            and seat.invitation_token_expires_at < datetime.now(UTC)
+        ):
+            return None
+
+        return seat
+
     async def claim_seat(
         self,
         session: AsyncSession,
         invitation_token: str,
-        customer: Customer,
-    ) -> CustomerSeat:
+        request_metadata: dict[str, Any] | None = None,
+    ) -> tuple[CustomerSeat, str]:
         repository = CustomerSeatRepository.from_session(session)
 
         seat = await repository.get_by_invitation_token(
             invitation_token,
-            options=(
-                joinedload(CustomerSeat.subscription).joinedload(Subscription.product),
-            ),
+            options=repository.get_eager_options(),
         )
 
         if not seat or seat.is_revoked():
             raise InvalidInvitationToken(invitation_token)
 
+        if (
+            seat.invitation_token_expires_at
+            and seat.invitation_token_expires_at < datetime.now(UTC)
+        ):
+            raise InvalidInvitationToken(invitation_token)
+
+        if seat.is_claimed():
+            if not seat.customer:
+                raise InvalidInvitationToken(invitation_token)
+
+            session_token, _ = await customer_session_service.create_customer_session(
+                session, seat.customer
+            )
+            return seat, session_token
+
         self.check_seat_feature_enabled(seat.subscription.product.organization)
 
-        # Update seat status
-        seat.customer_id = customer.id
+        if not seat.customer_id or not seat.customer:
+            raise InvalidInvitationToken(invitation_token)
+
         seat.status = SeatStatus.claimed
         seat.claimed_at = datetime.now(UTC)
+        seat.invitation_token = None  # Single-use token
 
-        # Flush to ensure database consistency before enqueuing job
         await session.flush()
 
-        # Grant benefits to the customer who claimed the seat
+        await eventstream_publish(
+            "customer_seat.claimed",
+            {
+                "seat_id": str(seat.id),
+                "subscription_id": str(seat.subscription_id),
+                "product_id": str(seat.subscription.product_id),
+            },
+            customer_id=seat.customer_id,
+        )
+
+        # Grant benefits to the assigned customer
         enqueue_job(
             "benefit.enqueue_benefits_grants",
             task="grant",
-            customer_id=customer.id,
+            customer_id=seat.customer_id,
             product_id=seat.subscription.product_id,
             subscription_id=seat.subscription_id,
+        )
+
+        session_token, _ = await customer_session_service.create_customer_session(
+            session, seat.customer
         )
 
         log.info(
             "Seat claimed",
             seat_id=seat.id,
-            customer_id=customer.id,
+            customer_id=seat.customer_id,
             subscription_id=seat.subscription_id,
+            **(request_metadata or {}),
         )
 
-        return seat
+        return seat, session_token
 
     async def revoke_seat(
         self,
@@ -268,14 +320,14 @@ class SeatService:
         self.check_seat_feature_enabled(seat.subscription.product.organization)
         return seat
 
-    async def _find_customer(
+    async def _find__or_create_customer(
         self,
         session: AsyncSession,
         organization_id: uuid.UUID,
         email: str | None,
         external_customer_id: str | None,
         customer_id: uuid.UUID | None,
-    ) -> Customer | None:
+    ) -> Customer:
         # Validate that exactly one identifier is provided
         provided_identifiers = [email, external_customer_id, customer_id]
         non_null_count = sum(
@@ -301,6 +353,16 @@ class SeatService:
             customer = await customer_repository.get_by_id_and_organization(
                 customer_id, organization_id
             )
+
+        if not customer and not email:
+            raise CustomerNotFound(external_customer_id or str(customer_id))
+        elif not customer:
+            customer = Customer(
+                organization_id=organization_id,
+                email=email,
+            )
+            session.add(customer)
+            await session.flush()
         return customer
 
 

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.kit.repository import RepositoryBase
-from polar.models import CustomerSeat, Subscription
+from polar.models import CustomerSeat, Product, Subscription
 
 if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
@@ -85,6 +85,8 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
     def get_eager_options(self) -> tuple["_AbstractLoad", ...]:
         return (
-            joinedload(CustomerSeat.subscription).joinedload(Subscription.product),
+            joinedload(CustomerSeat.subscription)
+            .joinedload(Subscription.product)
+            .joinedload(Product.organization),
             joinedload(CustomerSeat.customer),
         )

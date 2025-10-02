@@ -1,0 +1,18 @@
+[project]
+name = "e2e"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pytest-playwright>=0.7.1",
+]
+
+[tool.pytest.ini_options]
+base_url = "http://127.0.0.1:3000"
+
+[tool.basedpyright]
+reportUnusedCallResult = 'none'
+reportUnusedParameter = 'none'
+reportAny = 'none'
+reportExplicitAny = 'none'

@@ -1,0 +1,144 @@
+name: E2E
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    types: [opened, synchronize, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
+
+    services:
+      postgres:
+        image: postgres:15.1-bullseye
+        env:
+          POSTGRES_USER: polar
+          POSTGRES_PASSWORD: polar
+          POSTGRES_DB: polar_test
+          POSTGRES_PORT: 5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+
+      minio:
+        image: bitnamilegacy/minio:2024.5.28
+        ports:
+          - 9000:9000
+          - 9001:9001
+        env:
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+        options: >-
+          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: 💿 MinIO Setup
+        working-directory: ./server/.minio
+        env:
+          MINIO_HOST: 127.0.0.1
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+          ACCESS_KEY: polar-development
+          SECRET_ACCESS_KEY: polar123456789
+          BUCKET_NAME: polar-s3
+          BUCKET_TESTING_NAME: testing-polar-s3
+          POLICY_FILE: policy.json
+        run: bash github.sh
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: server/emails/package.json
+
+      - name: 📬 Setup Node.js environment for server/emails
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: server/emails/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: 📬 Build server/emails
+        working-directory: server/emails
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: 🔧 uv install
+        working-directory: ./server
+        run: |
+          uv sync --dev
+          uv run task generate_dev_jwks
+
+      - name: ⚗️ alembic migrate
+        working-directory: ./server
+        run: uv run task db_migrate
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run backend server
+        uses: JarvusInnovations/background-action@v1
+        with:
+          working-directory: server
+          run: |
+            uv run task api
+          wait-on: |
+            http://127.0.0.1:8000/healthz
+
+      - name: Run frontend server
+        uses: JarvusInnovations/background-action@v1
+        with:
+          working-directory: clients
+          run: |
+            pnpm dev
+          wait-on: |
+            http://127.0.0.1:3000
+
+      - name: Run e2e tests
+        working-directory: e2e
+        run: |
+          uv sync --dev
+          uv run playwright install
+          uv run pytest

@@ -1,5 +1,5 @@
 {
-  "include": ["server"],
+  "include": ["server", "e2e"],
   "executionEnvironments": [
     {
       "root": "server"

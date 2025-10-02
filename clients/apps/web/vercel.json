@@ -8,12 +8,40 @@
   },
   "rewrites": [
     {
-      "source": "/docs",
-      "destination": "https://polar.mintlify.dev/docs"
+      "source": "/_mintlify/api/:path",
+      "destination": "https://polar.mintlify.app/_mintlify/api/:path"
     },
     {
-      "source": "/docs/:match*",
-      "destination": "https://polar.mintlify.dev/docs/:match*"
+      "source": "/api/request",
+      "destination": "https://polar.mintlify.app/_mintlify/api/request"
+    },
+    {
+      "source": "/docs",
+      "destination": "https://polar.mintlify.app"
+    },
+    {
+      "source": "/docs/llms.txt",
+      "destination": "https://polar.mintlify.app/llms.txt"
+    },
+    {
+      "source": "/docs/llms-full.txt",
+      "destination": "https://polar.mintlify.app/llms-full.txt"
+    },
+    {
+      "source": "/docs/sitemap.xml",
+      "destination": "https://polar.mintlify.app/sitemap.xml"
+    },
+    {
+      "source": "/docs/robots.txt",
+      "destination": "https://polar.mintlify.app/robots.txt"
+    },
+    {
+      "source": "/docs/:path*",
+      "destination": "https://polar.mintlify.app/docs/:path*"
+    },
+    {
+      "source": "/mintlify-assets/:path+",
+      "destination": "https://polar.mintlify.app/mintlify-assets/:path+"
     }
   ],
   "trailingSlash": false

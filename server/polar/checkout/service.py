@@ -1430,8 +1430,14 @@ class CheckoutService:
         async with locker.lock(
             f"checkout:{checkout.id}", timeout=10, blocking_timeout=10
         ):
-            # Refresh the checkout status: it may have been confirmed while waiting for the lock
-            await session.refresh(checkout, {"status"})
+            # Refresh the checkout: it may have changed while waiting for the lock
+            repository = CheckoutRepository.from_session(session)
+            checkout = typing.cast(
+                Checkout,
+                await repository.get_by_id(
+                    checkout.id, options=repository.get_eager_options()
+                ),
+            )
             yield checkout
 
     async def _update_checkout(

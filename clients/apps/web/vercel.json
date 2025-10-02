@@ -37,7 +37,7 @@
     },
     {
       "source": "/docs/:path*",
-      "destination": "https://polar.mintlify.app/docs/:path*"
+      "destination": "https://polar.mintlify.app/:path*"
     },
     {
       "source": "/mintlify-assets/:path+",

@@ -5,6 +5,7 @@ from typing import Any, Protocol, Self, TypeAlias
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, over, select
 from sqlalchemy.orm import Mapped
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 
@@ -134,6 +135,11 @@ class RepositoryBase[M]:
         if update_dict is not None:
             for attr, value in update_dict.items():
                 setattr(object, attr, value)
+                # Always consider that the attribute was modified if it's explictly set
+                # in the update_dict. This forces SQLAlchemy to include it in the
+                # UPDATE statement, even if the value is the same as before.
+                # Ref: https://docs.sqlalchemy.org/en/20/orm/session_api.html#sqlalchemy.orm.attributes.flag_modified
+                flag_modified(object, attr)
 
         self.session.add(object)
 

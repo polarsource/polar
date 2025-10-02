@@ -55,7 +55,7 @@ export const Hero = ({
         {description}
       </motion.p>
       <motion.div
-        className="mt-6 flex flex-row items-center gap-x-6"
+        className="mt-6 flex flex-col items-center gap-4 md:flex-row md:gap-6"
         variants={itemVariants}
       >
         {children}

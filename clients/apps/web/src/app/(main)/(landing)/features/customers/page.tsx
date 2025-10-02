@@ -2,7 +2,7 @@ import { CustomersPage } from '@/components/Landing/features/CustomersPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Customer management for SaaS businesses — Polar',
+  title: 'Customer Management — Polar',
   description:
     'Streamlined customer lifecycle management with detailed profiles, subscription management, and customer analytics.',
   keywords:

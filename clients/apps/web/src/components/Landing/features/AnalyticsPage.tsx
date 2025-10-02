@@ -2,7 +2,6 @@
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import AssessmentOutlined from '@mui/icons-material/AssessmentOutlined'
-import BarChartOutlined from '@mui/icons-material/BarChartOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
 import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined'
@@ -140,7 +139,7 @@ export const AnalyticsPage = () => {
           <div className="grid flex-1 grid-cols-1 gap-8 md:grid-cols-3">
             {[
               {
-                icon: <AssessmentOutlined fontSize="large" />,
+                icon: <TrendingUpOutlined fontSize="large" />,
                 title: 'Detailed Metrics',
                 description:
                   'Track revenue, understand customer behavior & identify growth opportunities',
@@ -152,7 +151,7 @@ export const AnalyticsPage = () => {
                   'Get a 360° view of your business with the Polar Dashboard',
               },
               {
-                icon: <BarChartOutlined fontSize="large" />,
+                icon: <AssessmentOutlined fontSize="large" />,
                 title: 'Churn Analysis',
                 description:
                   'Analyze customer behavior like cancellation behavior & churn rate',

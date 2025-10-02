@@ -124,7 +124,7 @@ jobs:
         run: uv run task api &
 
       - name: Run frontend server
-        working-directory: ./server
+        working-directory: ./clients
         run: pnpm run dev &
 
       - name: Run e2e tests

@@ -151,7 +151,7 @@ export const CustomersPage = () => {
             ].map((feature, i) => (
               <div
                 key={i}
-                className="dark:bg-polar-900 flex flex-col items-center gap-y-8 rounded-xl bg-gray-50 px-6 py-12 text-center"
+                className="dark:bg-polar-900 flex flex-col items-center gap-y-8 rounded-xl bg-white px-6 py-12 text-center"
               >
                 <div className="flex flex-row gap-x-2">{feature.icon}</div>
                 <div className="flex flex-col gap-y-4">

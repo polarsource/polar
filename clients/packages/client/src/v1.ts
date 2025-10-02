@@ -2098,26 +2098,6 @@ export interface paths {
     patch: operations['custom-fields:update']
     trace?: never
   }
-  '/v1/embed/product/{id}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Product Embed
-     * @description Get product card.
-     */
-    get: operations['embeds:get_product']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/discounts/': {
     parameters: {
       query?: never
@@ -17420,40 +17400,6 @@ export interface components {
       /** @description The recurring interval of the product. Note that the `day` and `week` values are for internal Polar staff use only. */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
     }
-    /** ProductEmbed */
-    ProductEmbed: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /** Name */
-      name: string
-      /** Description */
-      description: string | null
-      /** Is Recurring */
-      is_recurring: boolean
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
-      /** Price */
-      price:
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      cover: components['schemas']['ProductMediaFileRead'] | null
-      /**
-       * BenefitPublic
-       * @description List of benefits granted by the product.
-       */
-      benefits: components['schemas']['BenefitPublic'][]
-      /** Etag */
-      etag: string
-    }
     /**
      * ProductMediaFileCreate
      * @description Schema to create a file to be used as a product media file.
@@ -26370,39 +26316,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'embeds:get_product': {
-    parameters: {
-      query?: {
-        price_id?: string | null
-      }
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ProductEmbed']
         }
       }
       /** @description Validation Error */

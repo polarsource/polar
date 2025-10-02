@@ -54,6 +54,10 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
     buildFileObjects(initialFiles) as unknown as FileObject<T>[],
   )
 
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [lastError, setLastError] = useState<string | null>(null)
+  const [totalUploadingFiles, setTotalUploadingFiles] = useState(0)
+
   const setFiles = (callback: (prev: FileObject<T>[]) => FileObject<T>[]) => {
     setFilesState((prev) => {
       const updated = callback(prev)
@@ -84,11 +88,8 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
     })
   }
 
-  const onFileCreate = (
-    response: schemas['FileUpload'],
-    buffer: ArrayBuffer,
-  ) => {
-    const newFile = buildFileObject(response, buffer)
+  const onFileCreate = (response: schemas['FileUpload']) => {
+    const newFile = buildFileObject(response)
     newFile.isUploading = true
     setFiles((prev) => {
       return [...prev, newFile as unknown as FileObject<T>]
@@ -118,30 +119,73 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
     })
   }
 
-  const onDrop = (acceptedFiles: File[], fileRejections: FileRejection[]) => {
-    for (const file of acceptedFiles) {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        const buffer = reader.result
-        if (buffer instanceof ArrayBuffer) {
-          const upload = new Upload({
-            service,
-            organization,
-            file,
-            buffer,
-            onFileCreate,
-            onFileUploadProgress,
-            onFileUploaded,
-          })
-          await upload.run()
-        }
+  const onDrop = async (
+    acceptedFiles: File[],
+    fileRejections: FileRejection[],
+  ) => {
+    if (acceptedFiles.length === 0 && fileRejections.length > 0) {
+      setLastError('Some files were rejected. See console for details.')
+      if (onFilesRejected) {
+        onFilesRejected(fileRejections)
       }
-      reader.readAsArrayBuffer(file)
+      return
     }
 
-    if (onFilesRejected) {
-      onFilesRejected(fileRejections)
+    setIsProcessing(true)
+    setLastError(null)
+    setTotalUploadingFiles(acceptedFiles.length)
+
+    const uploadPromises = acceptedFiles.map(async (file) => {
+      const upload = new Upload({
+        service,
+        organization,
+        file,
+        onFileCreate,
+        onFileUploadProgress,
+        onFileUploaded,
+        onError: (msg, error) => {
+          console.error(`Upload failed for ${file.name}: ${msg}`, error)
+          return false
+        },
+      })
+      return { file, result: await upload.run() }
+    })
+
+    const results = await Promise.allSettled(uploadPromises)
+    const errors = results
+      .filter((result) => result.status === 'rejected' || !result.value.result)
+      .map((result) => {
+        if (result.status === 'rejected') {
+          return {
+            fileName: (result as any).value?.file?.name || 'Unknown file',
+            error: (result as PromiseRejectedResult).reason.toString(),
+          }
+        }
+        return {
+          fileName: result.value.file.name,
+          error: 'Upload failed',
+        }
+      })
+
+    if (errors.length > 0) {
+      setLastError(
+        `Failed to upload ${errors.length} file(s). See details below.`,
+      )
     }
+
+    if (fileRejections.length > 0) {
+      setLastError((prev) =>
+        prev
+          ? `${prev} Some files were rejected.`
+          : 'Some files were rejected. See console for details.',
+      )
+      if (onFilesRejected) {
+        onFilesRejected(fileRejections)
+      }
+    }
+
+    setIsProcessing(false)
+    setTotalUploadingFiles(0)
   }
 
   const dropzone = useDropzone({
@@ -155,6 +199,9 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
     setFiles,
     updateFile,
     removeFile,
+    isProcessing,
+    lastError,
+    totalUploadingFiles,
     ...dropzone,
   }
 }

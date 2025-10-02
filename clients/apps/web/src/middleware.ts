@@ -68,10 +68,11 @@ export const config = {
      * Match all request paths except for the ones starting with:
      * - api (API routes)
      * - ingest (Posthog)
+     * - docs (Mintlify)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      */
-    '/((?!api|ingest|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    '/((?!api|ingest|docs|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
   ],
 }

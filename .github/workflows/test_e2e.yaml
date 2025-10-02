@@ -103,15 +103,10 @@ jobs:
         working-directory: ./server
         run: uv run task db_migrate
 
-      - name: Run backend server
-        uses: JarvusInnovations/background-action@v1
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          working-directory: ./server
-          run: |
-            uv run task api
-          wait-on: |
-            http-get://127.0.0.1:8000/healthz
-          log-output-if: failure
+          package_json_file: clients/package.json
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v5
@@ -124,15 +119,13 @@ jobs:
         working-directory: clients
         run: pnpm install
 
+      - name: Run server test
+        working-directory: ./server
+        run: uv run task api &
+
       - name: Run frontend server
-        uses: JarvusInnovations/background-action@v1
-        with:
-          working-directory: clients
-          run: |
-            pnpm dev
-          wait-on: |
-            http-get://127.0.0.1:3000
-          log-output-if: failure
+        working-directory: ./server
+        run: pnpm run dev &
 
       - name: Run e2e tests
         working-directory: e2e

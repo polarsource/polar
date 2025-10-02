@@ -15,6 +15,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.models import Customer, CustomerSeat, Organization, Subscription, User
 from polar.models.customer_seat import SeatStatus
 from polar.postgres import AsyncReadSession
+from polar.worker import enqueue_job
 
 from .repository import CustomerSeatRepository
 
@@ -185,6 +186,18 @@ class SeatService:
         seat.status = SeatStatus.claimed
         seat.claimed_at = datetime.now(UTC)
 
+        # Flush to ensure database consistency before enqueuing job
+        await session.flush()
+
+        # Grant benefits to the customer who claimed the seat
+        enqueue_job(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=seat.subscription.product_id,
+            subscription_id=seat.subscription_id,
+        )
+
         log.info(
             "Seat claimed",
             seat_id=seat.id,
@@ -201,6 +214,19 @@ class SeatService:
     ) -> CustomerSeat:
         if seat.subscription and seat.subscription.product:
             self.check_seat_feature_enabled(seat.subscription.product.organization)
+
+        # Capture customer_id before clearing to avoid race condition
+        original_customer_id = seat.customer_id
+
+        # Revoke benefits from the customer before clearing the customer_id
+        if original_customer_id:
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="revoke",
+                customer_id=original_customer_id,
+                product_id=seat.subscription.product_id,
+                subscription_id=seat.subscription_id,
+            )
 
         seat.status = SeatStatus.revoked
         seat.revoked_at = datetime.now(UTC)

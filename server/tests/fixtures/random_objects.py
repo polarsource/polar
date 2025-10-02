@@ -912,6 +912,7 @@ async def create_subscription(
     revoke: bool = False,
     user_metadata: dict[str, Any] | None = None,
     scheduler_locked_at: datetime | None = None,
+    seats: int | None = None,
 ) -> Subscription:
     prices = prices or product.prices
 
@@ -955,11 +956,12 @@ async def create_subscription(
         customer=customer,
         product=product,
         subscription_product_prices=[
-            SubscriptionProductPrice.from_price(price) for price in prices
+            SubscriptionProductPrice.from_price(price, seats=seats) for price in prices
         ],
         discount=discount,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
+        seats=seats,
     )
     await save_fixture(subscription)
 

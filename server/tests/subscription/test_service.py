@@ -76,10 +76,12 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
     create_checkout,
+    create_customer,
     create_discount,
     create_event,
     create_meter,
     create_product,
+    create_product_price_seat_unit,
     create_subscription,
     create_trialing_subscription,
     set_product_benefits,
@@ -1458,6 +1460,75 @@ class TestEnqueueBenefitsGrants:
                     subscription_id=subscription.id,
                 )
             ]
+        )
+
+    async def test_seat_based_product_skips_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        await create_product_price_seat_unit(
+            save_fixture,
+            product=product,
+            price_per_seat=1000,
+        )
+        await session.refresh(product)
+
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+            status=SubscriptionStatus.active,
+        )
+
+        await subscription_service.enqueue_benefits_grants(session, subscription)
+
+        enqueue_job_mock.assert_not_called()
+
+    async def test_non_seat_based_product_grants_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        from tests.fixtures.random_objects import create_customer
+
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+
+        await subscription_service.enqueue_benefits_grants(session, subscription)
+
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            subscription_id=subscription.id,
         )
 
 

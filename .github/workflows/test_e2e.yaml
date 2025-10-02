@@ -103,10 +103,6 @@ jobs:
         working-directory: ./server
         run: uv run task db_migrate
 
-      - name: Run server test
-        working-directory: ./server
-        run: uv run task api
-
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -130,7 +126,7 @@ jobs:
           run: |
             uv run task api
           wait-on: |
-            http://127.0.0.1:8000/healthz
+            http-get://127.0.0.1:8000/healthz
           log-output-if: failure
 
       - name: Run frontend server
@@ -140,7 +136,7 @@ jobs:
           run: |
             pnpm dev
           wait-on: |
-            http://127.0.0.1:3000
+            http-get://127.0.0.1:3000
           log-output-if: failure
 
       - name: Run e2e tests

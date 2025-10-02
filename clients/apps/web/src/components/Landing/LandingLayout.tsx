@@ -277,13 +277,13 @@ const LandingPageDesktopNavigation = () => {
                         subtitle: 'Flexible pricing models',
                       },
                       {
-                        href: '/docs/features/customers',
+                        href: '/docs/features/checkout/links',
                         target: '_blank',
                         label: 'Checkouts',
                         subtitle: 'Checkout Links & Embeds',
                       },
                       {
-                        href: '/docs/features/usage-billing',
+                        href: '/docs/features/usage-based-billing/introduction',
                         label: 'Usage Billing',
                         subtitle: 'Ingestion-based Billing',
                       },
@@ -293,7 +293,7 @@ const LandingPageDesktopNavigation = () => {
                         subtitle: 'Entitlement Automation',
                       },
                       {
-                        href: '/docs/features/analytics',
+                        href: '/docs/features/finance/payouts',
                         label: 'Finance & Payouts',
                         subtitle: 'Detailed financial insights',
                         target: '_blank',

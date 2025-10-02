@@ -64,6 +64,9 @@ class CustomerSeat(TimestampedSchema):
     subscription_id: UUID = Field(..., description="The subscription ID")
     status: SeatStatus = Field(..., description="Status of the seat")
     customer_id: UUID | None = Field(None, description="The assigned customer ID")
+    invitation_token_expires_at: datetime | None = Field(
+        None, description="When the invitation token expires"
+    )
     claimed_at: datetime | None = Field(None, description="When the seat was claimed")
     revoked_at: datetime | None = Field(None, description="When the seat was revoked")
     seat_metadata: dict[str, Any] | None = Field(
@@ -79,6 +82,31 @@ class SeatsList(Schema):
     available_seats: int = Field(..., description="Number of available seats")
     total_seats: int = Field(
         ..., description="Total number of seats for the subscription"
+    )
+
+
+class SeatClaimInfo(Schema):
+    """
+    Read-only information about a seat claim invitation.
+    Safe for email scanners - no side effects when fetched.
+    """
+
+    product_name: str = Field(..., description="Name of the product")
+    product_id: UUID = Field(..., description="ID of the product")
+    organization_name: str = Field(..., description="Name of the organization")
+    organization_slug: str = Field(..., description="Slug of the organization")
+    customer_email: str = Field(
+        ..., description="Email of the customer assigned to this seat"
+    )
+    can_claim: bool = Field(..., description="Whether the seat can be claimed")
+
+
+class CustomerSeatClaimResponse(Schema):
+    """Response after successfully claiming a seat."""
+
+    seat: CustomerSeat = Field(..., description="The claimed seat")
+    customer_session_token: str = Field(
+        ..., description="Session token for immediate customer portal access"
     )
 
 

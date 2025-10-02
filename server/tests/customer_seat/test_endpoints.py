@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -12,10 +12,12 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
+from polar.models.customer_seat import SeatStatus
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
+    create_customer_seat,
     create_subscription_with_seats,
 )
 
@@ -280,7 +282,7 @@ class TestAssignSeat:
         subscription: Subscription,
         user_organization: UserOrganization,
     ) -> None:
-        subscription.started_at = datetime.utcnow()
+        subscription.started_at = datetime.now(UTC)
         await save_fixture(subscription)
         subscription.product.organization.feature_settings = {}
         await save_fixture(subscription.product.organization)
@@ -302,6 +304,7 @@ class TestAssignSeat:
         subscription_with_seats: Subscription,
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
+        """Test that assigning a seat with a new email creates a customer automatically."""
         response = await client.post(
             "/v1/customer-seats",
             json={
@@ -310,7 +313,9 @@ class TestAssignSeat:
             },
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "pending"
 
     @pytest.mark.auth(SEAT_AUTH)
     async def test_assign_seat_customer_not_found_external_id(
@@ -385,6 +390,222 @@ class TestAssignSeat:
         data = response.json()
         assert data["status"] == "pending"
         assert data["subscription_id"] == str(subscription_with_seats.id)
+
+
+@pytest.mark.asyncio
+class TestGetClaimInfo:
+    async def test_get_claim_info_success(
+        self,
+        client: AsyncClient,
+        customer_seat_pending: CustomerSeat,
+    ) -> None:
+        assert customer_seat_pending.invitation_token is not None
+
+        response = await client.get(
+            f"/v1/customer-seats/claim/{customer_seat_pending.invitation_token}"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["product_name"] == customer_seat_pending.subscription.product.name
+        assert data["product_id"] == str(customer_seat_pending.subscription.product_id)
+        assert (
+            data["organization_name"]
+            == customer_seat_pending.subscription.product.organization.name
+        )
+        assert (
+            data["organization_slug"]
+            == customer_seat_pending.subscription.product.organization.slug
+        )
+        assert data["can_claim"] is True
+
+    async def test_get_claim_info_with_customer_email(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+        session: AsyncSession,
+    ) -> None:
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer,
+        )
+        await session.refresh(seat, ["subscription"])
+        await session.refresh(seat.subscription, ["product"])
+        await session.refresh(seat.subscription.product, ["organization"])
+
+        assert seat.invitation_token is not None
+
+        response = await client.get(f"/v1/customer-seats/claim/{seat.invitation_token}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["customer_email"] == customer.email
+
+    async def test_get_claim_info_invalid_token(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/customer-seats/claim/invalid_token")
+
+        assert response.status_code == 404
+
+    async def test_get_claim_info_revoked_seat(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer_seat_pending: CustomerSeat,
+    ) -> None:
+        old_token = customer_seat_pending.invitation_token
+        customer_seat_pending.status = SeatStatus.revoked
+        customer_seat_pending.invitation_token = None
+        await save_fixture(customer_seat_pending)
+
+        assert old_token is not None
+        response = await client.get(f"/v1/customer-seats/claim/{old_token}")
+
+        assert response.status_code == 404
+
+    async def test_get_claim_info_already_claimed(
+        self,
+        client: AsyncClient,
+        customer_seat_claimed: CustomerSeat,
+    ) -> None:
+        # Claimed seats have their token cleared
+        response = await client.get("/v1/customer-seats/claim/expired_token")
+
+        assert response.status_code == 404
+
+    async def test_get_claim_info_expired_token(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer_seat_pending: CustomerSeat,
+    ) -> None:
+        old_token = customer_seat_pending.invitation_token
+        customer_seat_pending.invitation_token_expires_at = datetime.now(
+            UTC
+        ) - timedelta(hours=1)
+        await save_fixture(customer_seat_pending)
+
+        assert old_token is not None
+        response = await client.get(f"/v1/customer-seats/claim/{old_token}")
+
+        assert response.status_code == 404
+
+    async def test_get_claim_info_feature_disabled(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer_seat_pending: CustomerSeat,
+    ) -> None:
+        customer_seat_pending.subscription.product.organization.feature_settings = {}
+        await save_fixture(customer_seat_pending.subscription.product.organization)
+
+        assert customer_seat_pending.invitation_token is not None
+        response = await client.get(
+            f"/v1/customer-seats/claim/{customer_seat_pending.invitation_token}"
+        )
+
+        assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+class TestClaimSeat:
+    async def test_claim_seat_success(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+        session: AsyncSession,
+    ) -> None:
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer,
+        )
+        await session.refresh(seat, ["subscription", "customer"])
+        await session.refresh(seat.subscription, ["product"])
+        await session.refresh(seat.subscription.product, ["organization"])
+
+        assert seat.invitation_token is not None
+
+        response = await client.post(
+            "/v1/customer-seats/claim",
+            json={"invitation_token": seat.invitation_token},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "seat" in data
+        assert "customer_session_token" in data
+        assert data["seat"]["status"] == "claimed"
+        assert data["seat"]["claimed_at"] is not None
+        assert data["seat"]["customer_id"] == str(customer.id)
+
+    async def test_claim_seat_invalid_token(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/customer-seats/claim",
+            json={"invitation_token": "invalid_token"},
+        )
+
+        assert response.status_code == 400
+
+    async def test_claim_seat_revoked(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer_seat_pending: CustomerSeat,
+    ) -> None:
+        old_token = customer_seat_pending.invitation_token
+        customer_seat_pending.status = SeatStatus.revoked
+        customer_seat_pending.invitation_token = None
+        await save_fixture(customer_seat_pending)
+
+        assert old_token is not None
+        response = await client.post(
+            "/v1/customer-seats/claim",
+            json={"invitation_token": old_token},
+        )
+
+        assert response.status_code == 400
+
+    async def test_claim_seat_expired_token(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer_seat_pending: CustomerSeat,
+    ) -> None:
+        old_token = customer_seat_pending.invitation_token
+        customer_seat_pending.invitation_token_expires_at = datetime.now(
+            UTC
+        ) - timedelta(hours=1)
+        await save_fixture(customer_seat_pending)
+
+        assert old_token is not None
+        response = await client.post(
+            "/v1/customer-seats/claim",
+            json={"invitation_token": old_token},
+        )
+
+        assert response.status_code == 400
+
+    async def test_claim_seat_feature_disabled(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer_seat_pending: CustomerSeat,
+    ) -> None:
+        customer_seat_pending.subscription.product.organization.feature_settings = {}
+        await save_fixture(customer_seat_pending.subscription.product.organization)
+
+        assert customer_seat_pending.invitation_token is not None
+        response = await client.post(
+            "/v1/customer-seats/claim",
+            json={"invitation_token": customer_seat_pending.invitation_token},
+        )
+
+        assert response.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -482,7 +703,7 @@ class TestRevokeSeat:
         customer_seat_claimed: CustomerSeat,
         user_organization: UserOrganization,
     ) -> None:
-        subscription.started_at = datetime.utcnow()
+        subscription.started_at = datetime.now(UTC)
         await save_fixture(subscription)
         subscription.product.organization.feature_settings = {}
         await save_fixture(subscription.product.organization)

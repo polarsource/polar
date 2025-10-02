@@ -31,6 +31,11 @@ export function SeatInvitation({
         <br />
         A seat has been assigned to you. Click the button below to claim your
         seat and access your benefits.
+        <br />
+        <br />
+        <span className="text-sm text-gray-600">
+          This invitation expires in 24 hours.
+        </span>
       </IntroWithHi>
       <Section className="text-center">
         <Button href={claim_url}>Claim Your Seat</Button>

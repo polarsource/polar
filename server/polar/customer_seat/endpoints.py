@@ -1,22 +1,31 @@
 from typing import cast
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy.orm import joinedload
+from sse_starlette import EventSourceResponse
 
 from polar.auth.models import Anonymous, Organization, User
 from polar.auth.models import AuthSubject as AuthSubjectType
 from polar.checkout.repository import CheckoutRepository
-from polar.customer.auth import CustomerRead
+from polar.eventstream.endpoints import subscribe
+from polar.eventstream.service import Receivers
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.models import Product, Subscription
+from polar.models.customer_seat import SeatStatus
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.subscription.repository import SubscriptionRepository
 
 from .auth import SeatWriteOrAnonymous
 from .schemas import CustomerSeat as CustomerSeatSchema
-from .schemas import SeatAssign, SeatClaim
+from .schemas import (
+    CustomerSeatClaimResponse,
+    SeatAssign,
+    SeatClaim,
+    SeatClaimInfo,
+)
 from .service import seat_service
 
 router = APIRouter(
@@ -95,23 +104,80 @@ async def assign_seat(
     return CustomerSeatSchema.model_validate(seat)
 
 
-@router.post(
-    "/claim",
-    summary="Claim Seat",
-    response_model=CustomerSeatSchema,
+@router.get(
+    "/claim/{invitation_token}",
+    summary="Get Claim Info",
+    response_model=SeatClaimInfo,
     responses={
         400: {"description": "Invalid or expired invitation token"},
         403: {"description": "Seat-based pricing not enabled for organization"},
-        404: {"description": "Customer not found"},
+        404: {"description": "Seat not found"},
+    },
+)
+async def get_claim_info(
+    invitation_token: str,
+    session: AsyncSession = Depends(get_db_session),
+) -> SeatClaimInfo:
+    seat = await seat_service.get_seat_by_token(session, invitation_token)
+
+    if not seat:
+        raise ResourceNotFound("Invalid or expired invitation token")
+
+    seat_service.check_seat_feature_enabled(seat.subscription.product.organization)
+
+    return SeatClaimInfo(
+        product_name=seat.subscription.product.name,
+        product_id=seat.subscription.product.id,
+        organization_name=seat.subscription.product.organization.name,
+        organization_slug=seat.subscription.product.organization.slug,
+        customer_email=seat.customer.email if seat.customer else "",
+        can_claim=seat.status == SeatStatus.pending,
+    )
+
+
+@router.get("/claim/{invitation_token}/stream", include_in_schema=False)
+async def claim_stream(
+    request: Request,
+    invitation_token: str,
+    session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
+) -> EventSourceResponse:
+    seat = await seat_service.get_seat_by_token(session, invitation_token)
+
+    if not seat or not seat.customer_id or seat.status != SeatStatus.pending:
+        raise ResourceNotFound("Invalid or expired invitation token")
+
+    receivers = Receivers(customer_id=seat.customer_id)
+    return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
+
+
+@router.post(
+    "/claim",
+    summary="Claim Seat",
+    response_model=CustomerSeatClaimResponse,
+    responses={
+        400: {"description": "Invalid, expired, or already claimed token"},
+        403: {"description": "Seat-based pricing not enabled for organization"},
     },
 )
 async def claim_seat(
     seat_claim: SeatClaim,
-    auth_subject: CustomerRead,
+    request: Request,
     session: AsyncSession = Depends(get_db_session),
-) -> CustomerSeatSchema:
-    if not hasattr(auth_subject.subject, "id"):
-        raise ResourceNotFound()
-    raise NotImplementedError(
-        "Seat claiming endpoint needs customer authentication implementation"
+) -> CustomerSeatClaimResponse:
+    # Capture request metadata for audit logging
+    request_metadata = {
+        "user_agent": request.headers.get("user-agent"),
+        "ip": request.client.host if request.client else None,
+    }
+
+    seat, customer_session_token = await seat_service.claim_seat(
+        session,
+        seat_claim.invitation_token,
+        request_metadata,
+    )
+
+    return CustomerSeatClaimResponse(
+        seat=CustomerSeatSchema.model_validate(seat),
+        customer_session_token=customer_session_token,
     )

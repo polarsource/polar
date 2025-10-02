@@ -32,6 +32,9 @@ _RULES: dict[str, Sequence[Rule]] = {
     "^/v1/customer-portal/license-keys/(validate|activate|deactivate)": [
         Rule(second=3, block_time=60, zone="customer-license-key")
     ],
+    "^/v1/customer-seats/claim/.+/stream": [
+        Rule(minute=10, block_time=300, zone="seat-claim-stream")
+    ],
     "^/v1": [
         Rule(group=RateLimitGroup.default, minute=500, zone="api"),
         Rule(group=RateLimitGroup.web, second=100, zone="api"),

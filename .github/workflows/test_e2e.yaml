@@ -116,6 +116,7 @@ jobs:
           cache-dependency-path: "clients/pnpm-lock.yaml"
 
       - name: Install dependencies
+        working-directory: clients
         run: pnpm install
 
       - name: Run backend server

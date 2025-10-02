@@ -139,7 +139,11 @@ class RepositoryBase[M]:
                 # in the update_dict. This forces SQLAlchemy to include it in the
                 # UPDATE statement, even if the value is the same as before.
                 # Ref: https://docs.sqlalchemy.org/en/20/orm/session_api.html#sqlalchemy.orm.attributes.flag_modified
-                flag_modified(object, attr)
+                try:
+                    flag_modified(object, attr)
+                # Don't fail if the attribute is not tracked by SQLAlchemy
+                except KeyError:
+                    pass
 
         self.session.add(object)
 

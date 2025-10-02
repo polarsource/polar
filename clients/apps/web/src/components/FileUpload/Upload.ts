@@ -12,37 +12,37 @@ interface UploadProperties {
   organization: schemas['Organization']
   service: schemas['FileServiceTypes']
   file: File
-  buffer: ArrayBuffer
-  onFileCreate: (response: schemas['FileUpload'], buffer: ArrayBuffer) => void
+  onFileCreate: (response: schemas['FileUpload']) => void
   onFileUploadProgress: (file: schemas['FileUpload'], uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
+  onError: (message: string, error?: Error) => boolean
 }
 
 export class Upload {
   organization: schemas['Organization']
   service: schemas['FileServiceTypes']
   file: File
-  buffer: ArrayBuffer
-  onFileCreate: (response: schemas['FileUpload'], buffer: ArrayBuffer) => void
+  onFileCreate: (response: schemas['FileUpload']) => void
   onFileUploadProgress: (file: schemas['FileUpload'], uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
+  onError: (message: string, error?: Error) => boolean
 
   constructor({
     organization,
     service,
     file,
-    buffer,
     onFileCreate,
     onFileUploadProgress,
     onFileUploaded,
+    onError,
   }: UploadProperties) {
     this.organization = organization
     this.service = service
     this.file = file
-    this.buffer = buffer
     this.onFileCreate = onFileCreate
     this.onFileUploadProgress = onFileUploadProgress
     this.onFileUploaded = onFileUploaded
+    this.onError = onError
   }
 
   async getSha256Base64(buffer: ArrayBuffer) {
@@ -52,7 +52,6 @@ export class Upload {
   }
 
   async create() {
-    const sha256base64 = await this.getSha256Base64(this.buffer)
     const parts = await this.getMultiparts()
     const mimeType = this.file.type
       ? this.file.type
@@ -64,7 +63,6 @@ export class Upload {
       name: this.file.name,
       size: this.file.size,
       mime_type: mimeType,
-      checksum_sha256_base64: sha256base64,
       upload: { parts: parts },
     }
 
@@ -81,7 +79,7 @@ export class Upload {
       if (chunk_end > this.file.size) {
         chunk_end = this.file.size
       }
-      const chunk = this.buffer.slice(chunk_start, chunk_end)
+      const chunk = await this.file.slice(chunk_start, chunk_end).arrayBuffer()
 
       const chunkSha256base64 = await this.getSha256Base64(chunk)
 
@@ -134,7 +132,9 @@ export class Upload {
     part: schemas['S3FileUploadPart']
     onProgress: (uploaded: number) => void
   }): Promise<schemas['S3FileUploadCompletedPart']> {
-    const data = this.buffer.slice(part.chunk_start, part.chunk_end)
+    const data = await this.file
+      .slice(part.chunk_start, part.chunk_end)
+      .arrayBuffer()
     const blob = new Blob([data], { type: this.file.type })
 
     return new Promise((resolve, reject) => {
@@ -197,22 +197,32 @@ export class Upload {
     this.onFileUploaded(data)
   }
 
-  async run() {
-    const { data: createFileResponse, error } = await this.create()
-    if (error) {
-      return
+  async run(): Promise<boolean> {
+    try {
+      const { data: createFileResponse, error } = await this.create()
+      if (error) {
+        this.onError(
+          `Create failed for ${this.file.name}: ${error || 'Unknown error'}`,
+        )
+        return false
+      }
+      const upload = createFileResponse.upload
+
+      this.onFileCreate(createFileResponse)
+
+      const uploadedParts = await this.uploadMultiparts({
+        parts: upload.parts,
+        onProgress: (uploaded: number) => {
+          this.onFileUploadProgress(createFileResponse, uploaded)
+        },
+      })
+
+      await this.complete(createFileResponse, uploadedParts)
+      return true
+    } catch (e) {
+      const msg = `Failed during multipart/complete for ${this.file.name}: ${e instanceof Error ? e.message : 'Unknown error'}`
+      this.onError(msg, e instanceof Error ? e : undefined)
+      return false
     }
-    const upload = createFileResponse.upload
-
-    this.onFileCreate(createFileResponse, this.buffer)
-
-    const uploadedParts = await this.uploadMultiparts({
-      parts: upload.parts,
-      onProgress: (uploaded: number) => {
-        this.onFileUploadProgress(createFileResponse, uploaded)
-      },
-    })
-
-    await this.complete(createFileResponse, uploadedParts)
   }
 }

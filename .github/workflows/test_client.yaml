@@ -6,6 +6,10 @@ on:
   pull_request:
     types: [opened, synchronize, edited]
 
+defaults:
+  run:
+    working-directory: ./clients
+
 permissions:
   contents: read
 
@@ -36,17 +40,13 @@ jobs:
           cache-dependency-path: "clients/pnpm-lock.yaml"
 
       - name: Install dependencies
-        working-directory: ./clients
         run: pnpm install
 
       - name: Lint
-        working-directory: ./clients
         run: pnpm run lint
 
       - name: Typecheck
-        working-directory: ./clients
         run: pnpm run typecheck
 
       - name: Build
-        working-directory: ./clients
         run: pnpm build

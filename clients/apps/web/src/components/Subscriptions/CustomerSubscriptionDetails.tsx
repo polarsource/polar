@@ -146,6 +146,7 @@ const CustomerSubscriptionDetails = ({
                 amount={subscription.amount}
                 currency={subscription.currency}
                 interval={subscription.recurring_interval}
+                intervalCount={subscription.recurring_interval_count}
                 minimumFractionDigits={subscription.amount % 100 === 0 ? 0 : 2}
               />
             </span>

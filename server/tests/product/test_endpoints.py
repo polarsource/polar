@@ -11,7 +11,6 @@ from polar.models import (
     Organization,
     Product,
     ProductPriceFixed,
-    User,
     UserOrganization,
 )
 from polar.postgres import AsyncSession
@@ -189,76 +188,6 @@ class TestCreateProduct:
         assert response.status_code == 422
 
     @pytest.mark.auth
-    async def test_only_admin_daily_weekly_interval(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user: User,
-        user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
-        session: AsyncSession,
-    ) -> None:
-        create_product_mock: MagicMock = stripe_service_mock.create_product
-        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
-
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
-
-        assert user.is_admin is False
-
-        for interval, return_code in [
-            ("day", 403),
-            ("week", 403),
-            ("month", 201),
-            ("year", 201),
-        ]:
-            response = await client.post(
-                "/v1/products/",
-                json={
-                    "name": "Product",
-                    "organization_id": str(organization.id),
-                    "recurring_interval": interval,
-                    "prices": [
-                        {
-                            "amount_type": "fixed",
-                            "price_amount": 1000,
-                            "price_currency": "usd",
-                        }
-                    ],
-                },
-            )
-            assert response.status_code == return_code
-
-        user.is_admin = True
-        session.add(user)
-        await session.flush()
-
-        for interval, return_code in [
-            ("day", 201),
-            ("week", 201),
-            ("month", 201),
-            ("year", 201),
-        ]:
-            response = await client.post(
-                "/v1/products/",
-                json={
-                    "name": "Product",
-                    "organization_id": str(organization.id),
-                    "recurring_interval": interval,
-                    "prices": [
-                        {
-                            "amount_type": "fixed",
-                            "price_amount": 1000,
-                            "price_currency": "usd",
-                        }
-                    ],
-                },
-            )
-            assert response.status_code == return_code
-
-    @pytest.mark.auth
     @pytest.mark.parametrize(
         "payload",
         (
@@ -302,6 +231,32 @@ class TestCreateProduct:
             ),
             pytest.param(
                 {
+                    "recurring_interval": "day",
+                    "prices": [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="Recurring daily fixed",
+            ),
+            pytest.param(
+                {
+                    "recurring_interval": "week",
+                    "prices": [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="Recurring weekly fixed",
+            ),
+            pytest.param(
+                {
                     "recurring_interval": "month",
                     "prices": [
                         {
@@ -311,7 +266,20 @@ class TestCreateProduct:
                         }
                     ],
                 },
-                id="Recurring fixed",
+                id="Recurring monthly fixed",
+            ),
+            pytest.param(
+                {
+                    "recurring_interval": "year",
+                    "prices": [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="Recurring yearly fixed",
             ),
             pytest.param(
                 {
@@ -337,6 +305,20 @@ class TestCreateProduct:
                     ],
                 },
                 id="Recurring free",
+            ),
+            pytest.param(
+                {
+                    "recurring_interval": "month",
+                    "recurring_interval_count": 3,
+                    "prices": [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="Recurring with interval count",
             ),
         ),
     )

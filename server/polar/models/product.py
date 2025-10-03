@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
+    Integer,
     String,
     Text,
     Uuid,
@@ -58,6 +59,9 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
         nullable=True,
         index=True,
         default=None,
+    )
+    recurring_interval_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
     )
 
     stripe_product_id: Mapped[str | None] = mapped_column(

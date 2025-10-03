@@ -189,11 +189,18 @@ P = ParamSpec("P")
 def actor[**P, R](
     actor_class: Callable[..., dramatiq.Actor[Any, Any]] = dramatiq.Actor,
     actor_name: str | None = None,
-    queue_name: str = "default",
+    queue_name: str | None = None,
     priority: TaskPriority = TaskPriority.LOW,
     broker: dramatiq.Broker | None = None,
     **options: Any,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
+    if queue_name is None:
+        queue_name = (
+            TaskQueue.HIGH_PRIORITY
+            if priority == TaskPriority.HIGH
+            else TaskQueue.DEFAULT
+        )
+
     def decorator(
         fn: Callable[P, Awaitable[R]],
     ) -> Callable[P, Awaitable[R]]:

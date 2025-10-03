@@ -1,7 +1,7 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 const invalidateDiscountsQueries = ({
@@ -31,13 +31,20 @@ export const useDiscounts = (
     'organization_id'
   >,
 ) =>
-  useQuery({
+  useInfiniteQuery({
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: schemas['ListResource_Discount_'], _, lastPageParam) => {
+      if (lastPage.pagination.max_page === lastPageParam) {
+        return null;
+      }
+      return lastPageParam + 1
+    },
     queryKey: ['discounts', { organizationId, ...(parameters || {}) }],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       unwrap(
         api.GET('/v1/discounts/', {
           params: {
-            query: { organization_id: organizationId, ...(parameters || {}) },
+            query: { organization_id: organizationId, ...(parameters || {}), page: pageParam },
           },
         }),
       ),

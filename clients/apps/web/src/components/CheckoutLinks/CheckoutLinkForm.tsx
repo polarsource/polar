@@ -28,7 +28,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { XIcon } from 'lucide-react'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'
 import { toast } from '../Toast/use-toast'
@@ -54,10 +54,22 @@ export const CheckoutLinkForm = ({
   onClose,
   productIds,
 }: CheckoutLinkFormProps) => {
-  const { data: discounts } = useDiscounts(organization.id, {
+  const [isOpen, setIsOpen] = useState(false);
+  const { data: discountsData, fetchNextPage, hasNextPage, isFetching } = useDiscounts(organization.id, {
     limit: 100,
-    sorting: ['name'],
+    sorting: ['-created_at', 'name'],
   })
+  const discounts = discountsData?.pages.flatMap((page) => page.items);
+
+  const onLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetching) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetching, fetchNextPage]);
+
+  const onOpenChange = useCallback((open: boolean) => {
+    setIsOpen(open);
+  }, []);
 
   const defaultValues = useMemo<CheckoutLinkCreateForm>(() => {
     if (checkoutLink) {
@@ -292,7 +304,7 @@ export const CheckoutLinkForm = ({
             )}
           />
 
-          {(discounts?.items.length ?? 0) > 0 && (
+          {(discounts?.length ?? 0) > 0 && (
             <FormField
               control={control}
               name="discount_id"
@@ -304,12 +316,17 @@ export const CheckoutLinkForm = ({
                       <Select
                         onValueChange={field.onChange}
                         value={field.value || ''}
+                        onOpenChange={onOpenChange}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select a discount" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {discounts?.items.map((discount) => (
+                        <SelectContent
+                          open={isOpen}
+                          onLoadMore={onLoadMore}
+                          loading={isFetching}
+                        >
+                          {discounts?.map((discount) => (
                             <SelectItem
                               key={discount.id}
                               value={discount.id}

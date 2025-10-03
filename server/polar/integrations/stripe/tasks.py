@@ -77,7 +77,11 @@ def stripe_api_connection_error_retry[**Params, ReturnValue](
 class StripeTaskError(PolarTaskError): ...
 
 
-@actor(actor_name="stripe.webhook.account.updated", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.account.updated",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 @stripe_api_connection_error_retry
 async def account_updated(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
@@ -88,7 +92,11 @@ async def account_updated(event_id: uuid.UUID) -> None:
             )
 
 
-@actor(actor_name="stripe.webhook.payment_intent.succeeded", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.payment_intent.succeeded",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 @stripe_api_connection_error_retry
 async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
@@ -155,7 +163,11 @@ async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.setup_intent.succeeded", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.setup_intent.succeeded",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 @stripe_api_connection_error_retry
 async def setup_intent_succeeded(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
@@ -174,7 +186,9 @@ async def setup_intent_succeeded(event_id: uuid.UUID) -> None:
 
 
 @actor(
-    actor_name="stripe.webhook.setup_intent.setup_failed", priority=TaskPriority.HIGH, queue_name="high_priority"
+    actor_name="stripe.webhook.setup_intent.setup_failed",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
 )
 @stripe_api_connection_error_retry
 async def setup_intent_setup_failed(event_id: uuid.UUID) -> None:
@@ -192,7 +206,11 @@ async def setup_intent_setup_failed(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.charge.pending", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.charge.pending",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 async def charge_pending(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
@@ -212,7 +230,11 @@ async def charge_pending(event_id: uuid.UUID) -> None:
             )
 
 
-@actor(actor_name="stripe.webhook.charge.failed", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.charge.failed",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 async def charge_failed(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
@@ -228,7 +250,11 @@ async def charge_failed(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.charge.succeeded", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.charge.succeeded",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 @stripe_api_connection_error_retry
 async def charge_succeeded(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
@@ -246,7 +272,11 @@ async def charge_succeeded(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.refund.created", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.refund.created",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 @stripe_api_connection_error_retry
 async def refund_created(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
@@ -261,7 +291,11 @@ async def refund_created(event_id: uuid.UUID) -> None:
             await refund_service.create_from_stripe(session, stripe_refund=refund)
 
 
-@actor(actor_name="stripe.webhook.refund.updated", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.refund.updated",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 @stripe_api_connection_error_retry
 async def refund_updated(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
@@ -276,7 +310,11 @@ async def refund_updated(event_id: uuid.UUID) -> None:
             await refund_service.upsert_from_stripe(session, stripe_refund=refund)
 
 
-@actor(actor_name="stripe.webhook.refund.failed", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.refund.failed",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 @stripe_api_connection_error_retry
 async def refund_failed(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
@@ -291,7 +329,11 @@ async def refund_failed(event_id: uuid.UUID) -> None:
             await refund_service.upsert_from_stripe(session, stripe_refund=refund)
 
 
-@actor(actor_name="stripe.webhook.charge.dispute.closed", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.charge.dispute.closed",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 @stripe_api_connection_error_retry
 async def charge_dispute_closed(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
@@ -361,7 +403,11 @@ async def customer_subscription_deleted(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.invoice.created", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.invoice.created",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 @stripe_api_connection_error_retry
 async def invoice_created(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
@@ -383,7 +429,11 @@ async def invoice_created(event_id: uuid.UUID) -> None:
                 return
 
 
-@actor(actor_name="stripe.webhook.invoice.paid", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="stripe.webhook.invoice.paid",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 @stripe_api_connection_error_retry
 async def invoice_paid(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:

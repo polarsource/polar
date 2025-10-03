@@ -126,7 +126,11 @@ async def _webhook_event_send(
             await session.commit()
 
 
-@actor(actor_name="webhook_event.success", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(
+    actor_name="webhook_event.success",
+    priority=TaskPriority.HIGH,
+    queue_name="high_priority",
+)
 async def webhook_event_success(webhook_event_id: UUID) -> None:
     async with AsyncSessionMaker() as session:
         return await webhook_service.on_event_success(session, webhook_event_id)

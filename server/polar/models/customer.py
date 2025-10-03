@@ -1,11 +1,13 @@
 import dataclasses
 import time
 from collections.abc import Sequence
+from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import (
+    TIMESTAMP,
     Boolean,
     Column,
     ColumnElement,
@@ -24,6 +26,7 @@ from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
 from polar.kit.tax import TaxID, TaxIDType
+from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
     from .benefit_grant import BenefitGrant
@@ -125,6 +128,13 @@ class Customer(MetadataMixin, RecordModel):
 
     For new customers, this field will be null.
     """
+
+    meters_dirtied_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+    )
+    meters_updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+    )
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
@@ -245,3 +255,6 @@ class Customer(MetadataMixin, RecordModel):
     @billing_name.setter
     def billing_name(self, value: str | None) -> None:
         self._billing_name = value
+
+    def touch_meters_dirtied_at(self) -> None:
+        self.meters_dirtied_at = utc_now()

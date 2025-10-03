@@ -2,6 +2,7 @@ from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 from polar import tasks
+from polar.customer_meter.scheduler import CustomerMeterJobStore
 from polar.logfire import configure_logfire
 from polar.logging import configure as configure_logging
 from polar.sentry import configure_sentry
@@ -18,6 +19,7 @@ def start() -> None:
 
     scheduler.add_jobstore(MemoryJobStore(), "memory")
     scheduler.add_jobstore(SubscriptionJobStore(), "subscription")
+    scheduler.add_jobstore(CustomerMeterJobStore(), "customer_meter")
 
     for func, cron_trigger in scheduler_middleware.cron_triggers:
         scheduler.add_job(func, cron_trigger, jobstore="memory")

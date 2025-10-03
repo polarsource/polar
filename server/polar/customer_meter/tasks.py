@@ -25,13 +25,19 @@ class CustomerDoesNotExist(CustomerMeterTaskError):
     min_backoff=30_000,
 )
 async def update_customer(customer_id: uuid.UUID) -> None:
+    redis = RedisMiddleware.get()
+    dedup_key = f"customer_meter:enqueue_dedup:{customer_id}"
+
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
         customer = await repository.get_by_id(customer_id)
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
-        redis = RedisMiddleware.get()
         locker = Locker(redis)
 
         await customer_meter_service.update_customer(session, locker, customer)
+
+    # Only clear dedup key on success
+    # On failure, let the key expire naturally (60s TTL) to prevent duplicates during retry
+    await redis.delete(dedup_key)

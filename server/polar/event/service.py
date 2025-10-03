@@ -17,7 +17,7 @@ from polar.meter.repository import MeterRepository
 from polar.models import Customer, Event, Organization, User, UserOrganization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
-from polar.worker import enqueue_events, enqueue_job
+from polar.worker import RedisMiddleware, enqueue_events, enqueue_job
 
 from .repository import EventRepository
 from .schemas import EventCreateCustomer, EventName, EventsIngest, EventsIngestResponse
@@ -273,8 +273,20 @@ class EventService:
             assert event.customer is not None
             customers.add(event.customer)
 
+        redis = RedisMiddleware.get()
         for customer in customers:
-            enqueue_job("customer_meter.update_customer", customer_id=customer.id)
+            # Deduplication: only enqueue if no task is already pending/running
+            # Key expires after 60s as fallback, but task clears it on completion
+            dedup_key = f"customer_meter:enqueue_dedup:{customer.id}"
+            was_set = await redis.set(dedup_key, "1", nx=True, ex=60)
+
+            if was_set:
+                enqueue_job("customer_meter.update_customer", customer_id=customer.id)
+            else:
+                log.debug(
+                    "customer_meter.update_customer skipped (already pending)",
+                    customer_id=customer.id,
+                )
 
     async def _get_organization_validation_function(
         self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]

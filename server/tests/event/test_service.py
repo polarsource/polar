@@ -22,6 +22,7 @@ from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOp
 from polar.models import Customer, Organization, User, UserOrganization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_event
@@ -529,3 +530,60 @@ class TestIngested:
             ],
             any_order=True,
         )
+
+    async def test_deduplication(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        customer: Customer,
+    ) -> None:
+        """Test that multiple ingested calls for same customer only enqueue one task."""
+        event = await create_event(
+            save_fixture,
+            customer=customer,
+            organization=customer.organization,
+            source=EventSource.user,
+        )
+
+        # First ingestion should enqueue the task
+        await event_service.ingested(session, [event.id])
+
+        # Task should be enqueued
+        enqueue_job_mock.assert_called_once_with(
+            "customer_meter.update_customer", customer_id=customer.id
+        )
+
+        # Verify dedup key was set in Redis
+        dedup_key = f"customer_meter:enqueue_dedup:{customer.id}"
+        assert await redis.exists(dedup_key) == 1
+
+        # Create another event for same customer
+        event2 = await create_event(
+            save_fixture,
+            customer=customer,
+            organization=customer.organization,
+            source=EventSource.user,
+        )
+
+        # Second ingestion should NOT enqueue because dedup key exists
+        await event_service.ingested(session, [event2.id])
+
+        # Should still be called only once (not twice)
+        enqueue_job_mock.assert_called_once()
+
+        # After clearing the dedup key, it should enqueue again
+        await redis.delete(dedup_key)
+
+        event3 = await create_event(
+            save_fixture,
+            customer=customer,
+            organization=customer.organization,
+            source=EventSource.user,
+        )
+
+        await event_service.ingested(session, [event3.id])
+
+        # Now it should be called twice total
+        assert enqueue_job_mock.call_count == 2

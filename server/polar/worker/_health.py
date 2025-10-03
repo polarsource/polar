@@ -16,6 +16,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 from polar.config import settings
+from polar.external_event.repository import ExternalEventRepository
 from polar.kit.db.postgres import AsyncSessionMaker, create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -48,6 +49,9 @@ async def health(request: Request) -> JSONResponse:
 UNDELIVERED_WEBHOOKS_MINIMUM_AGE = timedelta(minutes=5)
 UNDELIVERED_WEBHOOKS_ALERT_THRESHOLD = 10
 
+UNHANDLED_EXTERNAL_EVENTS_MINIMUM_AGE = timedelta(minutes=5)
+UNHANDLED_EXTERNAL_EVENTS_ALERT_THRESHOLD = 10
+
 
 async def webhooks(request: Request) -> JSONResponse:
     async_sessionmaker: AsyncSessionMaker = request.state.async_sessionmaker
@@ -61,6 +65,25 @@ async def webhooks(request: Request) -> JSONResponse:
                 {
                     "status": "error",
                     "undelivered_webhooks": len(undelivered_webhooks),
+                },
+                status_code=503,
+            )
+
+    return JSONResponse({"status": "ok"})
+
+
+async def external_events(request: Request) -> JSONResponse:
+    async_sessionmaker: AsyncSessionMaker = request.state.async_sessionmaker
+    async with async_sessionmaker() as session:
+        repository = ExternalEventRepository(session)
+        unhandled_events = await repository.get_all_unhandled(
+            older_than=utc_now() - UNHANDLED_EXTERNAL_EVENTS_MINIMUM_AGE
+        )
+        if len(unhandled_events) > UNHANDLED_EXTERNAL_EVENTS_ALERT_THRESHOLD:
+            return JSONResponse(
+                {
+                    "status": "error",
+                    "unhandled_external_events": len(unhandled_events),
                 },
                 status_code=503,
             )
@@ -88,6 +111,7 @@ def create_app() -> Starlette:
     routes = [
         Route("/", health, methods=["GET"]),
         Route("/webhooks", webhooks, methods=["GET"]),
+        Route("/unhandled-external-events", external_events, methods=["GET"]),
     ]
     return Starlette(routes=routes, lifespan=lifespan)
 

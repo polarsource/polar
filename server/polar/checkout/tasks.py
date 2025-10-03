@@ -1,7 +1,7 @@
 import uuid
 
 from polar.exceptions import PolarTaskError
-from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, TaskQueue, actor
 
 from .repository import CheckoutRepository
 from .service import checkout as checkout_service
@@ -20,7 +20,7 @@ class CheckoutDoesNotExist(CheckoutTaskError):
 @actor(
     actor_name="checkout.handle_free_success",
     priority=TaskPriority.HIGH,
-    queue_name="high_priority",
+    queue_name=TaskQueue.HIGH_PRIORITY,
 )
 async def handle_free_success(checkout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:

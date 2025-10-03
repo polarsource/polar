@@ -14,7 +14,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, enqueue_job
+from polar.worker import AsyncSessionMaker, TaskPriority, TaskQueue, actor, can_retry, enqueue_job
 
 from .service import webhook as webhook_service
 
@@ -129,7 +129,7 @@ async def _webhook_event_send(
 @actor(
     actor_name="webhook_event.success",
     priority=TaskPriority.HIGH,
-    queue_name="high_priority",
+    queue_name=TaskQueue.HIGH_PRIORITY,
 )
 async def webhook_event_success(webhook_event_id: UUID) -> None:
     async with AsyncSessionMaker() as session:

@@ -15,7 +15,7 @@ from polar.models import (
 )
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
+from polar.worker import AsyncSessionMaker, TaskPriority, TaskQueue, actor, enqueue_job
 
 from .service import SubscriptionNotReadyForMigration
 from .service import subscription as subscription_service
@@ -89,7 +89,7 @@ async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
 @actor(
     actor_name="subscription.cancel_customer",
     priority=TaskPriority.HIGH,
-    queue_name="high_priority",
+    queue_name=TaskQueue.HIGH_PRIORITY,
 )
 async def subscription_cancel_customer(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:

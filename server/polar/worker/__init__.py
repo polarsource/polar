@@ -178,6 +178,11 @@ class TaskPriority(IntEnum):
     LOW = 100
 
 
+class TaskQueue:
+    HIGH_PRIORITY = "high_priority"
+    DEFAULT = "default"
+
+
 P = ParamSpec("P")
 
 
@@ -225,4 +230,6 @@ __all__ = [
     "enqueue_events",
     "get_retries",
     "can_retry",
+    "TaskPriority",
+    "TaskQueue",
 ]

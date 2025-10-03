@@ -1,9 +1,9 @@
-from polar.worker import TaskPriority, actor
+from polar.worker import TaskPriority, TaskQueue, actor
 
 from .sender import email_sender
 
 
-@actor(actor_name="email.send", priority=TaskPriority.HIGH, queue_name="high_priority")
+@actor(actor_name="email.send", priority=TaskPriority.HIGH, queue_name=TaskQueue.HIGH_PRIORITY)
 async def email_send(
     to_email_addr: str,
     subject: str,

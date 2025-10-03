@@ -11,19 +11,38 @@ from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
+    RepositorySortingMixin,
+    SortingClause,
 )
 from polar.models import CheckoutLink, CheckoutLinkProduct, Product, UserOrganization
+
+from .sorting import CheckoutLinkSortProperty
 
 if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
 
 
 class CheckoutLinkRepository(
+    RepositorySortingMixin[CheckoutLink, CheckoutLinkSortProperty],
     RepositorySoftDeletionIDMixin[CheckoutLink, UUID],
     RepositorySoftDeletionMixin[CheckoutLink],
     RepositoryBase[CheckoutLink],
 ):
     model = CheckoutLink
+    sorting_enum = CheckoutLinkSortProperty
+
+    def get_sorting_clause(self, property: CheckoutLinkSortProperty) -> SortingClause:
+        if property == CheckoutLinkSortProperty.created_at:
+            return self.model.created_at
+        elif property == CheckoutLinkSortProperty.label:
+            return self.model.label
+        elif property == CheckoutLinkSortProperty.success_url:
+            return self.model._success_url
+        elif property == CheckoutLinkSortProperty.allow_discount_codes:
+            return self.model.allow_discount_codes
+        elif property == CheckoutLinkSortProperty.organization:
+            return Organization.name
+        raise NotImplementedError()  # pragma: no cover
 
     async def get_by_client_secret(
         self, client_secret: str, *, options: Options = ()
@@ -90,6 +109,14 @@ class CheckoutLinkRepository(
             CheckoutLink.organization_id == organization_id
         )
         return await self.count(statement)
+
+    async def restore(
+        self, checkout_link: CheckoutLink, *, flush: bool = False
+    ) -> CheckoutLink:
+        """Restore a soft-deleted checkout link by setting deleted_at to None."""
+        return await self.update(
+            checkout_link, update_dict={"deleted_at": None}, flush=flush
+        )
 
     async def archive_product(self, product_id: UUID) -> None:
         statement = (

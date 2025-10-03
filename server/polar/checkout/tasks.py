@@ -17,10 +17,7 @@ class CheckoutDoesNotExist(CheckoutTaskError):
         super().__init__(message)
 
 
-@actor(
-    actor_name="checkout.handle_free_success",
-    priority=TaskPriority.HIGH,
-)
+@actor(actor_name="checkout.handle_free_success", priority=TaskPriority.HIGH)
 async def handle_free_success(checkout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = CheckoutRepository.from_session(session)

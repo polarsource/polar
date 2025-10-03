@@ -86,10 +86,7 @@ async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
         await subscription_service.update_meters(session, subscription)
 
 
-@actor(
-    actor_name="subscription.cancel_customer",
-    priority=TaskPriority.HIGH,
-)
+@actor(actor_name="subscription.cancel_customer", priority=TaskPriority.HIGH)
 async def subscription_cancel_customer(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         await subscription_service.cancel_customer(session, customer_id)

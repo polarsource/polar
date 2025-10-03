@@ -106,7 +106,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: pro
-    dockerCommand: uv run dramatiq -p 4 -t 8 -f polar.worker.scheduler:start polar.worker.run
+    dockerCommand: uv run dramatiq -p 2 -t 4 --queues default -f polar.worker.scheduler:start polar.worker.run
     healthCheckPath: /
     region: ohio
     numInstances: 1
@@ -114,6 +114,84 @@ services:
     envVars:
       - key: dramatiq_prom_port
         value: 10000
+      - key: POLAR_POSTGRES_DATABASE
+        fromDatabase:
+          name: db
+          property: database
+      - key: POLAR_POSTGRES_HOST
+        fromDatabase:
+          name: db
+          property: host
+      - key: POLAR_POSTGRES_PORT
+        fromDatabase:
+          name: db
+          property: port
+      - key: POLAR_POSTGRES_PWD
+        fromDatabase:
+          name: db
+          property: password
+      - key: POLAR_POSTGRES_USER
+        fromDatabase:
+          name: db
+          property: user
+      - key: POLAR_POSTGRES_READ_DATABASE
+        fromDatabase:
+          name: polar-read
+          property: database
+      - key: POLAR_POSTGRES_READ_HOST
+        fromDatabase:
+          name: polar-read
+          property: host
+      - key: POLAR_POSTGRES_READ_PORT
+        fromDatabase:
+          name: polar-read
+          property: port
+      - key: POLAR_POSTGRES_READ_PWD
+        fromDatabase:
+          name: polar-read
+          property: password
+      - key: POLAR_POSTGRES_READ_USER
+        fromDatabase:
+          name: polar-read
+          property: user
+      - key: POLAR_REDIS_HOST
+        fromService:
+          type: redis
+          name: redis
+          property: host
+      - key: POLAR_REDIS_PORT
+        fromService:
+          type: redis
+          name: redis
+          property: port
+      - key: POLAR_REDIS_DB
+        value: 0
+      - fromGroup: google-production
+      - fromGroup: github-production
+      - fromGroup: backend-production
+      - fromGroup: stripe-production
+      - fromGroup: logfire-worker
+      - fromGroup: aws-s3-production
+      - fromGroup: openai-production
+
+  # Worker - High Priority
+  - type: web # Use a web service to allow health checks
+    name: worker-high-priority
+    runtime: image
+    image:
+      url: ghcr.io/polarsource/polar:latest
+      creds:
+        fromRegistryCreds:
+          name: Registry Credentials (by fvoron)
+    plan: pro
+    dockerCommand: uv run dramatiq -p 2 -t 4 --queues high_priority polar.worker.run
+    healthCheckPath: /
+    region: ohio
+    numInstances: 1
+    autoDeploy: false # deploys are triggered by github actions
+    envVars:
+      - key: dramatiq_prom_port
+        value: 10001
       - key: POLAR_POSTGRES_DATABASE
         fromDatabase:
           name: db

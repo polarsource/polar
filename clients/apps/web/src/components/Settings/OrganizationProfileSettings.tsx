@@ -576,16 +576,17 @@ export const OrganizationDetailsForm: React.FC<
 interface OrganizationProfileSettingsProps {
   organization: schemas['Organization']
   kyc?: boolean
+  onOrganizationUpdated?: (organization: schemas['Organization']) => void
   onSubmitted?: () => void
 }
 
 const OrganizationProfileSettings: React.FC<
   OrganizationProfileSettingsProps
-> = ({ organization, kyc, onSubmitted }) => {
+> = ({ organization, kyc, onSubmitted, onOrganizationUpdated }) => {
   const form = useForm<schemas['OrganizationUpdate']>({
     defaultValues: organization,
   })
-  const { handleSubmit, setError, formState, reset } = form
+  const { handleSubmit, setError, formState, reset, control } = form
   const inKYCMode = kyc === true
 
   const updateOrganization = useUpdateOrganization()
@@ -613,6 +614,10 @@ const OrganizationProfileSettings: React.FC<
 
     if (onSubmitted) {
       onSubmitted()
+    }
+
+    if (onOrganizationUpdated) {
+      onOrganizationUpdated(data)
     }
   }
 
@@ -651,17 +656,42 @@ const OrganizationProfileSettings: React.FC<
                 title="Organization Slug"
                 description="Used for Customer Portal, Transaction Statements, etc."
               >
-                <FormControl>
-                  <CopyToClipboardInput
-                    value={organization.slug}
-                    onCopy={() => {
-                      toast({
-                        title: 'Copied To Clipboard',
-                        description: `Organization Slug was copied to clipboard`,
-                      })
-                    }}
-                  />
-                </FormControl>
+                <FormField
+                  control={control}
+                  name="slug"
+                  rules={{
+                    required: 'This field is required.',
+                    minLength: {
+                      value: 3,
+                      message: 'Slug must be at least 3 characters long.',
+                    },
+                    pattern: {
+                      value: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+                      message:
+                        'Can only contain lowercase letters, numbers, and hyphens.',
+                    },
+                  }}
+                  render={({ field }) => {
+                    const onChange = (
+                      e: React.ChangeEvent<HTMLInputElement>,
+                    ) => {
+                      field.onChange(e.target.value.toLowerCase())
+                    }
+
+                    return (
+                      <div className="flex w-full flex-col">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ''}
+                            onChange={onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </div>
+                    )
+                  }}
+                />
               </SettingsGroupItem>
             </>
           )}

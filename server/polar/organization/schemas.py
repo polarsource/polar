@@ -269,6 +269,7 @@ class OrganizationCreate(Schema):
 
 class OrganizationUpdate(Schema):
     name: NameInput | None = None
+    slug: SlugInput | None = None
     avatar_url: HttpUrlToStr | None = None
 
     email: EmailStrDNS | None = Field(None, description="Public support email.")

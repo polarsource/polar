@@ -1,0 +1,70 @@
+---
+title: "How to share links to customers after purchase automatically"
+sidebarTitle: "Custom Benefit"
+description: "In this guide, we will walk you through how to use markdown in a Custom Benefit to share links with customers after purchase automatically."
+---
+
+## Create a Custom Benefit
+<Steps>
+<Step title = "Go to Benefits">
+        In the Polar dashboard sidebar, click on **Benefits**.
+        You can also go directly to:  
+        `https://polar.sh/dashboard/${org_slug}/benefits`
+    <img height="200" src="/assets/guides/custom-benefit/benefits-page.png" />
+</Step>
+<Step title = "Click on Create Benefit">
+    Click on **Create Benefit**. You’ll see three configuration fields as shown in the image below: **Description**, **Type**, and **Private note**.  
+    <img height="200" src="/assets/guides/custom-benefit/create-benefit.png" />
+    The **Type** field is set to Custom by default, which is what we need for sharing links, so you don’t need to change it.
+    <Info>
+    The **Private note** field is specific to the Custom **Type**.  If you select a different **Type**, you’ll see configuration options specific to that type instead. 
+    </Info>
+</Step>
+<Step title = "Fill the configuration fields">
+    <a id="configuration-fill"></a>
+    Fill the **Description** and **Private note** fields. 
+    - **Description** accepts regular text.
+    - **Private note** requires Markdown format so you can format text, add links, or lists.  
+    
+    Add your link inside the **Private note** section, formatted in Markdown, as shown in the image below.
+    <img height="200" src="/assets/guides/custom-benefit/create-benefit-with-details.png" />
+    Click on **Create**.
+</Step>
+<Step title = "Benefit created">
+    The benefit is created successfully.
+    <img height="200" src="/assets/guides/custom-benefit/benefit-created.png" />
+</Step>
+</Steps>
+
+## Create a product adding Custom Benefit
+<Steps>
+<Step title="Go to Products Catalogue">
+    In the Polar dashboard sidebar, navigate to **Products** > **Catalogue** for your organization.  
+    You can also go directly to:  
+    `https://polar.sh/dashboard/${org_slug}/products`
+    <img height="200" src="/assets/guides/custom-benefit/product-catalogue.png" />
+    
+</Step>
+<Step title = "Fill new Product information">
+    Click on **New Product**. Fill out the Product information.
+    <img height="200" src="/assets/guides/custom-benefit/create-product-1.png" />
+</Step>
+<Step title = "Scroll to Automated Benefits">
+    On the Product information page, scroll to the bottom to find the **Automated Benefits** section.
+    <img height="200" src="/assets/guides/custom-benefit/create-product2.png" />
+</Step>
+<Step title = "Select your Custom Benefit">
+    Click on Custom to see all the custom benefits you’ve created, then toggle ON the one you want to enable.
+    <img height="200" src="/assets/guides/custom-benefit/create-product3.png" />
+<Info>
+    If you don’t want to use an existing Custom benefit, you can create a new one by clicking **Create new**. 
+    Enter the configuration details, following the [Step 3](#configuration-fill) of [Create a Custom Benefit](#create-a-custom-benefit) section.
+    <img height="200" src="/assets/guides/custom-benefit/create-product4.png" />
+</Info>
+</Step>
+<Step title = "Product Setup complete">
+    Click on **Create Product**. 
+    <img height="200" src="/assets/guides/custom-benefit/product-created.png" />
+    Your product is successfully created along with the Custom benefit that allows you to share the links automatically to customers after purchase.
+</Step>
+</Steps>

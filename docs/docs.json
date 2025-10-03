@@ -515,7 +515,8 @@
           "guides/create-variants",
           "guides/disable-subscription-changes-in-customer-portal",
           "guides/allow-multiple-subscriptions-per-customer",
-          "guides/subscription-downgrades"
+          "guides/subscription-downgrades",
+          "guides/custom-benefit"
         ]
       },
       {

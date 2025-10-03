@@ -28,7 +28,24 @@ export default async function Page(props: {
     ok,
     value: checkout,
     error,
-  } = await checkoutsClientGet(client, { clientSecret })
+  } = await checkoutsClientGet(
+    client,
+    {
+      clientSecret,
+    },
+    {
+      retries: {
+        strategy: 'backoff',
+        backoff: {
+          initialInterval: 200,
+          maxInterval: 2000,
+          exponent: 2,
+          maxElapsedTime: 15_000,
+        },
+        retryConnectionErrors: true,
+      },
+    },
+  )
 
   if (!ok) {
     if (error instanceof ResourceNotFound) {

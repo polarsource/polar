@@ -1,6 +1,6 @@
 import uuid
 from datetime import timedelta
-from unittest.mock import AsyncMock, call
+from unittest.mock import AsyncMock
 
 import pytest
 from pydantic import ValidationError
@@ -25,11 +25,6 @@ from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_event
-
-
-@pytest.fixture
-def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
-    return mocker.patch("polar.event.service.enqueue_job")
 
 
 @pytest.fixture
@@ -486,7 +481,6 @@ class TestIngest:
 class TestIngested:
     async def test_basic(
         self,
-        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -522,10 +516,5 @@ class TestIngested:
 
         await event_service.ingested(session, [event.id for event in events])
 
-        enqueue_job_mock.assert_has_calls(
-            [
-                call("customer_meter.update_customer", customer_id=customer.id),
-                call("customer_meter.update_customer", customer_id=customer_second.id),
-            ],
-            any_order=True,
-        )
+        assert customer.meters_dirtied_at is not None
+        assert customer_second.meters_dirtied_at is not None

@@ -31,7 +31,33 @@ export default async function Page(props: {
     ok,
     value: checkout,
     error,
-  } = await checkoutsClientGet(client, { clientSecret })
+  } = await checkoutsClientGet(
+    client,
+    {
+      clientSecret,
+    },
+    {
+      // We can see infrequent issues with checkouts rendering a white screen of death, correlated with this error in Vercel's logs:
+      // `[ConnectionError]: Unable to make request: TypeError: fetch failed`.
+      // The `[ConnectionError]` is something our own SDK adds, but it looks like temporary hiccups with our API connection.
+      // Other theories are something with our Cloudflare setup or timing issues (i.e. accessing a checkout during deployment).
+      // Regardless of root cause, I want to retry this fetch to see if that mitigates the issue.
+      //
+      // Because it's a connection issue, let's retry quickly and often but give up quickly if it doesn't fix itself.
+      //
+      // — @pieterbeulque
+      retries: {
+        strategy: 'backoff',
+        backoff: {
+          initialInterval: 200,
+          maxInterval: 2000,
+          exponent: 2,
+          maxElapsedTime: 15_000,
+        },
+        retryConnectionErrors: true,
+      },
+    },
+  )
 
   if (!ok) {
     if (error instanceof ResourceNotFound) {

@@ -204,6 +204,20 @@ class OrganizationService:
     ) -> Organization:
         repository = OrganizationRepository.from_session(session)
 
+        if update_schema.slug and update_schema.slug != organization.slug:
+            existing_slug = await repository.get_by_slug(update_schema.slug)
+            if existing_slug:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "loc": ("body", "slug"),
+                            "msg": "An organization with this slug already exists.",
+                            "type": "value_error",
+                            "input": update_schema.slug,
+                        }
+                    ]
+                )
+
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)
 

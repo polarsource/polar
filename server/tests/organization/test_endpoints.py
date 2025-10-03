@@ -131,6 +131,64 @@ class TestUpdateOrganization:
         assert json["name"] == "Updated"
 
     @pytest.mark.auth
+    async def test_valid_slug_update(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        new_slug = "updated-slug"
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}", json={"slug": new_slug}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["slug"] == new_slug
+
+    @pytest.mark.auth
+    async def test_update_slug_already_exists(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        existing_org = Organization(
+            name="Existing Org",
+            slug="existing-slug",
+            customer_invoice_prefix="INVOICE",
+        )
+        await save_fixture(existing_org)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}", json={"slug": "existing-slug"}
+        )
+
+        assert response.status_code == 422
+        json = response.json()
+        assert "slug" in json["detail"][0]["loc"]
+        assert "already exists" in json["detail"][0]["msg"]
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "invalid_slug",
+        ["UP", "s l u g", "invalid/slug"],
+    )
+    async def test_update_invalid_slug_format(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        invalid_slug: str,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}", json={"slug": invalid_slug}
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
     async def test_negative_revenue_validation(
         self,
         client: AsyncClient,

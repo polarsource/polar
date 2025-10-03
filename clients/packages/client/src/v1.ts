@@ -3039,11 +3039,7 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /**
-     * Get Claim Info
-     * @description Get seat claim information - READ ONLY.
-     *     Safe for email scanners to hit - no side effects.
-     */
+    /** Get Claim Info */
     get: operations['customer-seats:get_claim_info']
     put?: never
     post?: never
@@ -3062,12 +3058,7 @@ export interface paths {
     }
     get?: never
     put?: never
-    /**
-     * Claim Seat
-     * @description Claim a seat using invitation token.
-     *     No authentication required - token is proof of authorization.
-     *     Returns customer session token for immediate portal access.
-     */
+    /** Claim Seat */
     post: operations['customer-seats:claim_seat']
     delete?: never
     options?: never
@@ -11584,6 +11575,11 @@ export interface components {
        */
       customer_id?: string | null
       /**
+       * Invitation Token Expires At
+       * @description When the invitation token expires
+       */
+      invitation_token_expires_at?: string | null
+      /**
        * Claimed At
        * @description When the seat was claimed
        */
@@ -16859,6 +16855,8 @@ export interface components {
     OrganizationUpdate: {
       /** Name */
       name?: string | null
+      /** Slug */
+      slug?: string | null
       /** Avatar Url */
       avatar_url?: string | null
       /**
@@ -25415,6 +25413,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -28656,6 +28655,13 @@ export interface operations {
         }
         content?: never
       }
+      /** @description Seat-based pricing not enabled for organization */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
       /** @description Seat not found */
       404: {
         headers: {
@@ -31241,6 +31247,7 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   components['schemas']['AccountType']

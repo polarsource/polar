@@ -5,6 +5,7 @@ import React, {
   MouseEvent,
   useCallback,
   useEffect,
+  type JSX,
 } from 'react'
 import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
@@ -65,10 +66,10 @@ export const Modal: FunctionComponent<ModalProps> = ({
               hide()
             }}
           >
-            <div className="block h-[80px] w-2 lg:max-h-[10%] lg:grow-[2]"></div>
+            <div className="lg:grow-2 block h-[80px] w-2 lg:max-h-[10%]"></div>
             <motion.div
               className={twMerge(
-                'dark:bg-polar-900 dark:border-polar-800 rounded-4xl relative z-10 flex max-h-full w-full flex-col overflow-y-auto overflow-x-hidden bg-white shadow lg:w-[800px] lg:max-w-full dark:border',
+                'dark:bg-polar-900 dark:border-polar-800 rounded-4xl relative z-10 flex max-h-full w-full flex-col overflow-y-auto overflow-x-hidden bg-white shadow-sm lg:w-[800px] lg:max-w-full dark:border',
                 className,
               )}
               initial={{ opacity: 0, scale: 0.99 }}
@@ -88,7 +89,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
 }
 
 export const ModalHeader = (props: {
-  children: React.ReactElement
+  children: React.ReactElement<any>
   className?: string
   hide: () => void
 }) => {
@@ -140,7 +141,7 @@ export const ModalBox = ({
   children,
   className,
 }: {
-  children: React.ReactElement
+  children: React.ReactElement<any>
   className?: string
 }) => {
   return (

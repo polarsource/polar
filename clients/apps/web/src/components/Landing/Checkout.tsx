@@ -1,5 +1,5 @@
 import { CHECKOUT_PREVIEW } from '@/components/Customization/utils'
-import { ArrowOutwardOutlined } from '@mui/icons-material'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
@@ -51,7 +51,7 @@ export const Checkout = () => {
         <h1 className="w-fit max-w-2xl text-pretty text-center text-2xl md:text-4xl md:leading-normal">
           Powerful Checkouts made simple
         </h1>
-        <Link href="https://docs.polar.sh/documentation/features/checkouts/checkout-links">
+        <Link href="https://polar.sh/docs/documentation/features/checkouts/checkout-links">
           <Button
             fullWidth
             wrapperClassNames="flex flex-row items-center gap-x-2"

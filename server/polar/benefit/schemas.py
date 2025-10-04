@@ -114,6 +114,7 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
 
 class BenefitGrant(BenefitGrantBase):
     customer: Customer
+    benefit: "Benefit"
     properties: BenefitGrantProperties
 
 

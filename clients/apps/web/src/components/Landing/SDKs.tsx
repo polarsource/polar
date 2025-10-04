@@ -17,12 +17,12 @@ const frameworks: Framework[] = [
   {
     name: 'Node.js',
     icon: <NodeJsIcon />,
-    href: 'https://docs.polar.sh/documentation/sdks/typescript-sdk',
+    href: 'https://polar.sh/docs/documentation/sdks/typescript-sdk',
   },
   {
     name: 'Python',
     icon: <PythonIcon />,
-    href: 'https://docs.polar.sh/documentation/sdks/python-sdk',
+    href: 'https://polar.sh/docs/documentation/sdks/python-sdk',
   },
   {
     name: 'PHP',
@@ -37,7 +37,7 @@ const frameworks: Framework[] = [
   {
     name: 'CURL',
     icon: <CurlIcon />,
-    href: 'https://docs.polar.sh/api-reference',
+    href: 'https://polar.sh/docs/api-reference',
   },
 ]
 

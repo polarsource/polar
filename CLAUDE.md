@@ -104,6 +104,7 @@ docker compose up -d  # Start PostgreSQL, Redis, Minio
   - `ui/`: React components (Radix UI + Tailwind)
   - `client/`: Generated TypeScript API client
   - `sdk/`: Published SDK package
+  - `checkout/`: Checkout package
 
 ### Authentication System
 - Uses `AuthSubject[T]` type where T can be: User, Organization, Customer, or Anonymous
@@ -137,6 +138,7 @@ docker compose up -d  # Start PostgreSQL, Redis, Minio
 - UI components from shared `@polar-sh/ui` package
 - Follow Next.js App Router conventions
 - Tailwind CSS for styling
+- Updating "polar-sh/sdk" should be done on the web and on the checkout package.
 
 ### Testing
 - Backend: pytest with class-based test organization

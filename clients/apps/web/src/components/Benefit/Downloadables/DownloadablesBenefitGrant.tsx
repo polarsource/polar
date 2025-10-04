@@ -1,5 +1,6 @@
 import { useCustomerDownloadables } from '@/hooks/queries'
-import { ArrowDownward, MoreVertOutlined } from '@mui/icons-material'
+import ArrowDownward from '@mui/icons-material/ArrowDownward'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
@@ -37,7 +38,7 @@ export const DownloadableItem = ({
         className,
       )}
     >
-      <div className="flex w-full min-w-0 flex-shrink flex-row items-center gap-x-4">
+      <div className="flex w-full min-w-0 shrink flex-row items-center gap-x-4">
         {fileIcon && <FilePreview mimeType={downloadable.file.mime_type} />}
         <div className="flex w-full min-w-0 flex-col gap-y-1">
           <span className="min-w-0 truncate text-sm">

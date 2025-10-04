@@ -9,6 +9,7 @@ import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpub
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import type { AlreadyActiveSubscriptionError } from '@polar-sh/sdk/models/errors/alreadyactivesubscriptionerror'
+import type { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import type {
   ConnectionError,
   InvalidRequestError,
@@ -18,7 +19,6 @@ import type {
 } from '@polar-sh/sdk/models/errors/httpclienterrors'
 import type { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
 import type { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
-import type { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import type { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
 import type { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import type { SDKError } from '@polar-sh/sdk/models/errors/sdkerror'

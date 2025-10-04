@@ -6,10 +6,9 @@ from typing import Annotated, Literal
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
-from pydantic_extra_types.country import CountryAlpha2
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from polar.kit.address import Address
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.jwk import JWKSFile
 
 
@@ -59,6 +58,9 @@ class Settings(BaseSettings):
     WEBHOOK_MAX_RETRIES: int = 10
     WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=30)
 
+    CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=5)
+    CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=15)
+
     SECRET: str = "super secret jwt secret"
     JWKS: JWKSFile = Field(default="./.jwks.json")
     CURRENT_JWK_KID: str = "polar_dev"
@@ -72,6 +74,7 @@ class Settings(BaseSettings):
     # Base URL for the backend. Used by generate_external_url to
     # generate URLs to the backend accessible from the outside.
     BASE_URL: str = "http://127.0.0.1:8000"
+    BACKOFFICE_HOST: str | None = None
 
     # URL to frontend app.
     # Update to ngrok domain or similar in case you want
@@ -120,6 +123,7 @@ class Settings(BaseSettings):
     DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
     DATABASE_COMMAND_TIMEOUT_SECONDS: float = 30.0
+    DATABASE_STREAM_YIELD_PER: int = 100
 
     POSTGRES_READ_USER: str | None = None
     POSTGRES_READ_PWD: str | None = None
@@ -236,7 +240,7 @@ class Settings(BaseSettings):
         line2="PMB 61301",
         postal_code="94104",
         city="San Francisco",
-        state="CA",
+        state="US-CA",
         country=CountryAlpha2("US"),
     )
     INVOICES_ADDITIONAL_INFO: str | None = "[support@polar.sh](mailto:support@polar.sh)"
@@ -283,7 +287,7 @@ class Settings(BaseSettings):
         ".well-known",
     ]
 
-    ORGANIZATIONS_BILLING_ENGINE_DEFAULT: bool = False
+    ORGANIZATIONS_BILLING_ENGINE_DEFAULT: bool = True
 
     # Dunning Configuration
     DUNNING_RETRY_INTERVALS: list[timedelta] = [
@@ -365,6 +369,11 @@ class Settings(BaseSettings):
 
     def generate_frontend_url(self, path: str) -> str:
         return f"{self.FRONTEND_BASE_URL}{path}"
+
+    def generate_backoffice_url(self, path: str) -> str:
+        if self.BACKOFFICE_HOST is None:
+            return self.generate_external_url(f"/backoffice{path}")
+        return f"https://{self.BACKOFFICE_HOST}{path}"
 
     @property
     def stripe_descriptor_suffix_max_length(self) -> int:

@@ -6,12 +6,11 @@ import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import React from 'react'
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { organization: string }
+export async function generateMetadata(props: {
+  params: Promise<{ organization: string }>
 }): Promise<Metadata> {
-  const api = getServerSideAPI()
+  const params = await props.params
+  const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
@@ -24,14 +23,15 @@ export async function generateMetadata({
   }
 }
 
-export default async function Layout({
-  params,
-  children,
-}: {
-  params: { organization: string }
+export default async function Layout(props: {
+  params: Promise<{ organization: string }>
   children: React.ReactNode
 }) {
-  const api = getServerSideAPI()
+  const params = await props.params
+
+  const { children } = props
+
+  const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,

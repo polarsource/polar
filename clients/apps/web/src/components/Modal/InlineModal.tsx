@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useEffect,
   useRef,
+  type JSX,
 } from 'react'
 import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
@@ -74,7 +75,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 28 }}
               className={twMerge(
-                'dark:bg-polar-900 rounded-4xl relative z-10 flex h-full max-h-full w-full flex-col overflow-y-auto bg-white shadow md:fixed md:bottom-4 md:right-4 md:top-4 md:h-auto md:w-[540px] dark:text-white',
+                'dark:bg-polar-900 rounded-4xl relative z-10 flex h-full max-h-full w-full flex-col overflow-y-auto bg-white shadow-sm md:fixed md:bottom-4 md:right-4 md:top-4 md:h-auto md:w-[540px] dark:text-white',
                 className,
               )}
               onMouseDown={onInnerClick}
@@ -98,7 +99,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
 }
 
 export const InlineModalHeader = (props: {
-  children: React.ReactElement
+  children: React.ReactElement<any>
   className?: string
   hide: () => void
 }) => {

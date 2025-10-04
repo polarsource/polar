@@ -1,7 +1,7 @@
 'use client'
 
 import { usePostHog } from '@/hooks/posthog'
-import { KeyboardArrowRight } from '@mui/icons-material'
+import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ComponentProps, FormEvent, useCallback, useMemo } from 'react'
@@ -56,12 +56,13 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
     <>
       <Button
         wrapperClassNames={twMerge(
-          'flex flex-row items-center gap-x-2',
+          'flex flex-row items-center gap-x-2 ',
           wrapperClassNames,
         )}
         size={size}
         onClick={onClick}
         onSubmit={onSubmit}
+        className="dark:hover:bg-polar-50 rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black"
         {...props}
       >
         <div>{text}</div>

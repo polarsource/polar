@@ -4,6 +4,7 @@ version = "0.0.0"
 readme = "README.md"
 requires-python = "==3.12.11"
 dependencies = [
+  "certifi<=2025.1.31", # Remove this pin when CI tells us it's safe
   "fastapi>=0.115.2",
   "uvicorn[standard]>=0.31.1",
   "asyncpg>=0.29.0",
@@ -11,7 +12,7 @@ dependencies = [
   "sqlalchemy[asyncio]>=2.0.34",
   "greenlet>=3.1.1",
   "structlog>=24.4.0",
-  "githubkit==0.12.16",
+  "githubkit==0.13.3",
   "redis>=5.0.4",
   "sse-starlette>=2.0.0",
   "stripe>=10.12.0,<12",
@@ -145,3 +146,9 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = false
 warn_untyped_fields = true
+
+[tool.basedpyright]
+reportUnusedCallResult = 'none'
+reportUnusedParameter = 'none'
+reportAny = 'none'
+reportExplicitAny = 'none'

@@ -97,7 +97,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
         </div>
       }
       className="flex h-full flex-col gap-y-12"
-      wrapperClassName="!w-full !h-full !max-w-full"
+      wrapperClassName="w-full! h-full! max-w-full!"
     >
       <Form {...form}>
         <form

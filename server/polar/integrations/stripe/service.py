@@ -589,6 +589,11 @@ class StripeService:
         )
         return await stripe_lib.SetupIntent.create_async(**params)
 
+    async def get_setup_intent(
+        self, id: str, **params: Unpack[stripe_lib.SetupIntent.RetrieveParams]
+    ) -> stripe_lib.SetupIntent:
+        return await stripe_lib.SetupIntent.retrieve_async(id, **params)
+
     async def create_customer(
         self, **params: Unpack[stripe_lib.Customer.CreateParams]
     ) -> stripe_lib.Customer:

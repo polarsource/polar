@@ -27,6 +27,7 @@ from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.exceptions import (
+    BadRequest,
     NotPermitted,
     PaymentNotReady,
     PolarError,
@@ -36,12 +37,13 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.kit.address import Address
+from polar.kit.address import AddressInput
 from polar.kit.crypto import generate_token
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.tax import TaxID, to_stripe_tax_id, validate_tax_id
+from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
@@ -75,6 +77,7 @@ from polar.product.guard import (
     is_custom_price,
     is_discount_applicable,
     is_fixed_price,
+    is_seat_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service import product as product_service
@@ -351,6 +354,31 @@ class CheckoutService:
                     ]
                 ) from e
 
+        # Validate seats for seat-based pricing
+        if is_seat_price(price):
+            if checkout_create.seats is None or checkout_create.seats < 1:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "seats"),
+                            "msg": "Seats is required for seat-based pricing.",
+                            "input": checkout_create.seats,
+                        }
+                    ]
+                )
+        elif checkout_create.seats is not None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "seats"),
+                        "msg": "Seats can only be set for seat-based pricing.",
+                        "input": checkout_create.seats,
+                    }
+                ]
+            )
+
         product = await self._eager_load_product(session, product)
 
         subscription: Subscription | None = None
@@ -395,6 +423,11 @@ class CheckoutService:
                     or price.minimum_amount
                     or settings.CUSTOM_PRICE_PRESET_FALLBACK
                 )
+        elif is_seat_price(price):
+            # Calculate amount based on seat count
+            seats = checkout_create.seats or 1
+            amount = price.price_per_seat * seats
+            currency = price.price_currency
         else:
             amount = 0
             currency = price.price_currency if is_currency_price(price) else "usd"
@@ -487,6 +520,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -550,6 +584,31 @@ class CheckoutService:
 
         price = product.prices[0]
 
+        # Validate seats for seat-based pricing
+        if is_seat_price(price):
+            if checkout_create.seats is None or checkout_create.seats < 1:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "seats"),
+                            "msg": "Seats is required for seat-based pricing.",
+                            "input": checkout_create.seats,
+                        }
+                    ]
+                )
+        elif checkout_create.seats is not None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "seats"),
+                        "msg": "Seats can only be set for seat-based pricing.",
+                        "input": checkout_create.seats,
+                    }
+                ]
+            )
+
         amount = 0
         currency = "usd"
         if is_fixed_price(price):
@@ -562,6 +621,11 @@ class CheckoutService:
                 or price.minimum_amount
                 or settings.CUSTOM_PRICE_PRESET_FALLBACK
             )
+        elif is_seat_price(price):
+            # Calculate amount based on seat count
+            seats = checkout_create.seats or 1
+            amount = price.price_per_seat * seats
+            currency = price.price_currency
         elif is_currency_price(price):
             currency = price.price_currency
 
@@ -570,6 +634,7 @@ class CheckoutService:
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
+            seats=checkout_create.seats,
             checkout_products=[CheckoutProduct(product=product, order=0)],
             product=product,
             product_price=price,
@@ -597,6 +662,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -642,6 +708,7 @@ class CheckoutService:
 
         amount = 0
         currency = "usd"
+        seats = None
         if is_fixed_price(price):
             amount = price.price_amount
             currency = price.price_currency
@@ -652,6 +719,11 @@ class CheckoutService:
                 or price.minimum_amount
                 or settings.CUSTOM_PRICE_PRESET_FALLBACK
             )
+        elif is_seat_price(price):
+            # Default to 1 seat for checkout links with seat-based pricing
+            seats = 1
+            amount = price.price_per_seat * seats
+            currency = price.price_currency
         elif is_currency_price(price):
             currency = price.price_currency
 
@@ -669,6 +741,9 @@ class CheckoutService:
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
+            seats=seats,
+            trial_interval=checkout_link.trial_interval,
+            trial_interval_count=checkout_link.trial_interval_count,
             allow_discount_codes=checkout_link.allow_discount_codes,
             require_billing_address=checkout_link.require_billing_address,
             checkout_products=[
@@ -702,6 +777,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -855,6 +931,14 @@ class CheckoutService:
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
+
+        if (
+            checkout.trial_end is not None
+            and not checkout.organization.subscriptions_billing_engine
+        ):
+            raise BadRequest(
+                "Trials are not supported on susbcriptions managed by Stripe."
+            )
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(
@@ -1346,8 +1430,14 @@ class CheckoutService:
         async with locker.lock(
             f"checkout:{checkout.id}", timeout=10, blocking_timeout=10
         ):
-            # Refresh the checkout status: it may have been confirmed while waiting for the lock
-            await session.refresh(checkout, {"status"})
+            # Refresh the checkout: it may have changed while waiting for the lock
+            repository = CheckoutRepository.from_session(session)
+            checkout = typing.cast(
+                Checkout,
+                await repository.get_by_id(
+                    checkout.id, options=repository.get_eager_options()
+                ),
+            )
             yield checkout
 
     async def _update_checkout(
@@ -1423,6 +1513,11 @@ class CheckoutService:
                     or settings.CUSTOM_PRICE_PRESET_FALLBACK
                 )
                 checkout.currency = price.price_currency
+            elif is_seat_price(price):
+                # Calculate amount based on current seat count
+                seats = checkout.seats or checkout_update.seats or 1
+                checkout.amount = price.price_per_seat * seats
+                checkout.currency = price.price_currency
             elif is_currency_price(price):
                 checkout.currency = price.price_currency
 
@@ -1466,6 +1561,23 @@ class CheckoutService:
                 )
 
             checkout.amount = checkout_update.amount
+
+        # Handle seat updates for seat-based pricing
+        if checkout_update.seats is not None and is_seat_price(price):
+            checkout.seats = checkout_update.seats
+            checkout.amount = price.price_per_seat * checkout_update.seats
+        elif checkout_update.seats is not None:
+            # Seats provided for non-seat-based pricing
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "seats"),
+                        "msg": "Seats can only be set for seat-based pricing.",
+                        "input": checkout_update.seats,
+                    }
+                ]
+            )
 
         if isinstance(checkout_update, CheckoutUpdate):
             if checkout_update.discount_id is not None:
@@ -1549,6 +1661,7 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
+        checkout = await self._update_trial_end(checkout)
 
         exclude = {
             "product_id",
@@ -1634,12 +1747,27 @@ class CheckoutService:
             return checkout
 
         try:
-            address = Address.model_validate({"country": country})
+            address = AddressInput.model_validate({"country": country})
         except PydanticValidationError:
             return checkout
 
         checkout.customer_billing_address = address
         session.add(checkout)
+        return checkout
+
+    async def _update_trial_end(self, checkout: Checkout) -> Checkout:
+        if not checkout.product.is_recurring:
+            checkout.trial_end = None
+            return checkout
+
+        trial_interval = checkout.active_trial_interval
+        trial_interval_count = checkout.active_trial_interval_count
+
+        if trial_interval is not None and trial_interval_count is not None:
+            checkout.trial_end = trial_interval.get_end(utc_now(), trial_interval_count)
+        else:
+            checkout.trial_end = None
+
         return checkout
 
     async def _validate_subscription_uniqueness(

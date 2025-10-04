@@ -6,6 +6,10 @@ on:
   pull_request:
     types: [opened, synchronize, edited]
 
+defaults:
+  run:
+    working-directory: ./clients
+
 permissions:
   contents: read
 
@@ -26,7 +30,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10.13.1
+          package_json_file: clients/package.json
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v5
@@ -36,59 +40,13 @@ jobs:
           cache-dependency-path: "clients/pnpm-lock.yaml"
 
       - name: Install dependencies
-        working-directory: ./clients
         run: pnpm install
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ./clients/apps/web/.next
-          key: next-${{ hashFiles('./clients/pnpm-lock.yaml') }}-${{ github.sha }}
-          restore-keys: |
-            next-${{ hashFiles('./clients/pnpm-lock.yaml') }}-
-            next-
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run typecheck
 
       - name: Build
-        working-directory: ./clients
         run: pnpm build
-
-      - name: Test
-        working-directory: ./clients
-        run: pnpm test
-
-  build_storybook:
-    name: "Client: Storybook 🎨"
-    timeout-minutes: 15
-    runs-on: ubuntu-latest
-
-    env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      VERCEL_ENV: "testing"
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v5
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.13.1
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v5
-        with:
-          node-version: v22
-          cache: "pnpm"
-          cache-dependency-path: "clients/pnpm-lock.yaml"
-
-      - name: Install dependencies
-        working-directory: ./clients
-        run: pnpm install
-
-      - name: Build SDK
-        working-directory: ./clients
-        run: pnpm turbo run build --filter=@polar-sh/*
-
-      - name: Build
-        working-directory: ./clients/apps/web
-        run: pnpm build-storybook

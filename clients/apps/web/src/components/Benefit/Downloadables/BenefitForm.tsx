@@ -3,7 +3,7 @@
 import { FileObject, useFileUpload } from '@/components/FileUpload'
 import { FileRead } from '@/components/FileUpload/Upload'
 import { useFiles } from '@/hooks/queries'
-import { FileUploadOutlined as FileUploadIcon } from '@mui/icons-material'
+import FileUploadIcon from '@mui/icons-material/FileUploadOutlined'
 import { schemas } from '@polar-sh/client'
 import { ReactElement, useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -15,7 +15,7 @@ const DropzoneView = ({
   children,
 }: {
   isDragActive: boolean
-  children: ReactElement
+  children: ReactElement<any>
 }) => {
   return (
     <>

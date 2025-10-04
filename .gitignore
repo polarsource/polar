@@ -126,6 +126,9 @@ dmypy.json
 # Playground file
 playground.py
 
+# Playwright
+.playwright-mcp/
+
 .DS_Store
 .pnpm-store
 

@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
 from polar.kit.repository import (
@@ -6,8 +8,7 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import ExternalEvent
-from polar.models.external_event import ExternalEventSource
+from polar.models.external_event import ExternalEvent, ExternalEventSource
 
 from .sorting import ExternalEventSortProperty
 
@@ -34,6 +35,14 @@ class ExternalEventRepository(
             ExternalEvent.source == source, ExternalEvent.external_id == external_id
         )
         return await self.get_one_or_none(statement)
+
+    async def get_all_unhandled(
+        self, older_than: datetime | None = None
+    ) -> Sequence[ExternalEvent]:
+        statement = self.get_base_statement().where(ExternalEvent.handled_at.is_(None))
+        if older_than is not None:
+            statement = statement.where(ExternalEvent.created_at < older_than)
+        return await self.get_all(statement)
 
     def get_sorting_clause(self, property: ExternalEventSortProperty) -> SortingClause:
         match property:

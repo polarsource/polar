@@ -14,4 +14,13 @@ Sentry.init({
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
+
+  beforeSend: (event) => {
+    // Do not flag PostHog errors
+    if (event.request?.url?.includes('/ingest/flags')) {
+      return null
+    }
+
+    return event
+  },
 })

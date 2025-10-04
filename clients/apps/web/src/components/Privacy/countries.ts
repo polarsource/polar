@@ -1,5 +1,3 @@
-import { headers } from 'next/headers'
-
 export const EU_COUNTRY_CODES = [
   'AT',
   'BE',
@@ -60,13 +58,3 @@ export const EU_COUNTRY_CODES = [
   'XK',
   'RS',
 ]
-
-export function isEU() {
-  const countryCode = headers().get('x-vercel-ip-country')
-
-  if (countryCode && EU_COUNTRY_CODES.includes(countryCode)) {
-    return true
-  }
-
-  return false
-}

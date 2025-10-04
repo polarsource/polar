@@ -18,7 +18,12 @@ class CustomerDoesNotExist(CustomerMeterTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="customer_meter.update_customer", priority=TaskPriority.LOW)
+@actor(
+    actor_name="customer_meter.update_customer",
+    priority=TaskPriority.LOW,
+    max_retries=1,
+    min_backoff=30_000,
+)
 async def update_customer(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)

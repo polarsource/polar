@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge'
 
 const TakeoverBox = (props: {
   fadeOut: boolean
-  children: React.ReactElement
+  children: React.ReactElement<any>
 }) => {
   const [show, setShow] = useState(false)
 

@@ -144,7 +144,7 @@ export const OrganizationStep = ({
         initial="hidden"
         animate="visible"
         transition={{ duration: 1, staggerChildren: 0.3 }}
-        className="flex min-h-0 w-full flex-shrink-0 flex-col gap-12 md:max-w-xl md:p-8"
+        className="flex min-h-0 w-full shrink-0 flex-col gap-12 md:max-w-xl md:p-8"
       >
         <FadeUp className="flex flex-col items-center gap-y-8">
           <LogoIcon size={50} />
@@ -238,9 +238,10 @@ export const OrganizationStep = ({
                           <li>
                             • Anything in our list of{' '}
                             <a
-                              href="https://docs.polar.sh/merchant-of-record/acceptable-use"
+                              href="https://polar.sh/docs/merchant-of-record/acceptable-use"
                               className="text-blue-500 underline dark:text-blue-400"
                               target="_blank"
+                              rel="noreferrer"
                             >
                               prohibited products
                             </a>
@@ -287,9 +288,10 @@ export const OrganizationStep = ({
                               <ul className="dark:text-polar-500 flex flex-col gap-y-1 text-sm text-gray-500">
                                 <li>
                                   <a
-                                    href="https://docs.polar.sh/merchant-of-record/account-reviews"
+                                    href="https://polar.sh/docs/merchant-of-record/account-reviews"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
+                                    rel="noreferrer"
                                   >
                                     Account Reviews Policy
                                   </a>
@@ -302,6 +304,7 @@ export const OrganizationStep = ({
                                     href="https://polar.sh/legal/terms"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
+                                    rel="noreferrer"
                                   >
                                     Terms of Service
                                   </a>
@@ -311,6 +314,7 @@ export const OrganizationStep = ({
                                     href="https://polar.sh/legal/privacy"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
+                                    rel="noreferrer"
                                   >
                                     Privacy Policy
                                   </a>

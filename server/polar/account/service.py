@@ -68,9 +68,11 @@ class AccountService:
             joinedload(Account.users),
             joinedload(Account.organizations),
         )
-        return await repository.paginate(
+        accounts, count = await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
         )
+
+        return accounts, count
 
     async def get(
         self,
@@ -87,7 +89,9 @@ class AccountService:
                 joinedload(Account.organizations),
             )
         )
-        return await repository.get_one_or_none(statement)
+        account = await repository.get_one_or_none(statement)
+
+        return account
 
     async def _get_unrestricted(
         self,

@@ -6,19 +6,18 @@ import { addDays, max, min, subMonths } from 'date-fns'
 import { RedirectType, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
-export default async function Page({
-  params,
-  searchParams,
-}: {
-  params: { organization: string }
-  searchParams: {
+export default async function Page(props: {
+  params: Promise<{ organization: string }>
+  searchParams: Promise<{
     start_date?: string
     end_date?: string
     interval?: schemas['TimeInterval']
     product_id?: string | string[]
-  }
+  }>
 }) {
-  const api = getServerSideAPI()
+  const searchParams = await props.searchParams
+  const params = await props.params
+  const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,

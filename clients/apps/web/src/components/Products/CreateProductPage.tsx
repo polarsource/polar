@@ -134,7 +134,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   return (
     <DashboardBody
       title="Create Product"
-      wrapperClassName="!max-w-screen-md"
+      wrapperClassName="max-w-(--breakpoint-md)!"
       className="gap-y-16"
     >
       <div className="rounded-4xl dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border border-gray-200">

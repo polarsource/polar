@@ -26,15 +26,16 @@ services:
       targetCPUPercent: 90
     domains:
       - api.polar.sh
+      - backoffice.polar.sh
     envVars:
       - key: WEB_CONCURRENCY
         value: 2
       - key: FORWARDED_ALLOW_IPS
         value: "*"
       - key: POLAR_ALLOWED_HOSTS
-        value: '["polar.sh","docs.polar.sh"]'
+        value: '["polar.sh", "backoffice.polar.sh"]'
       - key: POLAR_CORS_ORIGINS
-        value: '["https://dashboard.polar.sh", "https://github.com" , "https://polar.sh", "https://docs.polar.sh", "https://polar-polar-sh.vercel.app"]'
+        value: '["https://polar.sh", "https://github.com", "https://docs.polar.sh"]'
       - key: POLAR_POSTGRES_DATABASE
         fromDatabase:
           name: db
@@ -105,7 +106,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: pro
-    dockerCommand: uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run
+    dockerCommand: uv run dramatiq -p 4 -t 8 -f polar.worker.scheduler:start polar.worker.run
     healthCheckPath: /
     region: ohio
     numInstances: 1
@@ -209,7 +210,7 @@ services:
       - key: POLAR_ALLOWED_HOSTS
         value: '["sandbox.polar.sh"]'
       - key: POLAR_CORS_ORIGINS
-        value: '["https://sandbox.polar.sh", "https://github.com"]'
+        value: '["https://sandbox.polar.sh", "https://github.com", "https://docs.polar.sh"]'
       - key: POLAR_POSTGRES_DATABASE
         value: polar_sandbox
       - key: POLAR_POSTGRES_HOST
@@ -371,6 +372,8 @@ envVarGroups:
         value: polar.sh
       - key: POLAR_BASE_URL
         value: https://api.polar.sh
+      - key: POLAR_BACKOFFICE_HOST
+        value: backoffice.polar.sh
       - key: POLAR_CURRENT_JWK_KID
         sync: false
       - key: POLAR_DEBUG

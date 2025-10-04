@@ -5,7 +5,7 @@ import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { ErrorMessage } from '@hookform/error-message'
-import { AddPhotoAlternateOutlined } from '@mui/icons-material'
+import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -39,7 +39,7 @@ const StorefrontSidebarContentWrapper = ({
   organization: schemas['Organization']
 }>) => {
   return (
-    <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col overflow-y-auto bg-white p-8 dark:border-transparent">
+    <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 shrink-0 grow-0 flex-col overflow-y-auto bg-white p-8 dark:border-transparent">
       <div className="flex h-full flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-lg">{title}</h2>
@@ -52,9 +52,7 @@ const StorefrontSidebarContentWrapper = ({
             </Button>
           )}
         </div>
-        <div
-          className={twMerge('flex flex-grow flex-col justify-between gap-y-8')}
-        >
+        <div className={twMerge('flex grow flex-col justify-between gap-y-8')}>
           {children}
         </div>
       </div>

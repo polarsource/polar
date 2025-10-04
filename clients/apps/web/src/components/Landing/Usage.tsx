@@ -1,6 +1,7 @@
 'use client'
 
-import { ArrowOutwardOutlined, Check } from '@mui/icons-material'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import Check from '@mui/icons-material/Check'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Tabs,
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
 
   return Response.json({ text });
 }`,
-    link: 'https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/llm-strategy',
+    link: 'https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/llm-strategy',
   },
   {
     name: 'Delta Time',
@@ -82,10 +83,10 @@ export async function GET(request: Request) {
 
   return Response.json({ delta });
 }`,
-    link: 'https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/delta-time-strategy',
+    link: 'https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/delta-time-strategy',
   },
   {
-    name: 'Manual',
+    name: 'Custom Ingestion',
     description:
       'Manually ingest data from your application to bill your customers',
     bullets: [
@@ -126,7 +127,7 @@ const itemVariants = {
 
 export const Usage = () => {
   const tabsTriggerClassName = useMemo(() => {
-    return '!rounded-full px-4 py-2 data-[state=active]:bg-white hidden md:flex'
+    return 'rounded-full! px-4 py-2 data-[state=active]:bg-white hidden md:flex'
   }, [])
 
   return (
@@ -151,7 +152,7 @@ export const Usage = () => {
                 </TabsTrigger>
               ))}
               <Link
-                href="https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
+                href="https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
                 target="_blank"
               >
                 <Button className="rounded-full" variant="ghost">
@@ -173,7 +174,7 @@ export const Usage = () => {
                 <div className="flex flex-col justify-center gap-y-8 p-8 md:w-1/2 md:p-16">
                   <div className="flex flex-col gap-y-8">
                     <motion.h2
-                      className="text-2xl !leading-normal md:text-4xl"
+                      className="leading-normal! text-2xl md:text-4xl"
                       variants={itemVariants}
                     >
                       {strategy.name} Strategy
@@ -227,7 +228,7 @@ export const Usage = () => {
                     loading="lazy"
                     alt=""
                   />
-                  <div className="dark:bg-polar-900 z-[1] rounded-lg bg-white p-4">
+                  <div className="dark:bg-polar-900 z-1 rounded-lg bg-white p-4">
                     <SyntaxHighlighterClient
                       lang="typescript"
                       code={strategy.code}

@@ -15,7 +15,7 @@ export default async function Layout({
   return (
     <SidebarProvider defaultOpen={!defaultCollapsed}>
       <DashboardLayout type="account">
-        <DashboardBody wrapperClassName="md:gap-y-8 !max-w-screen-sm">
+        <DashboardBody wrapperClassName="md:gap-y-8 max-w-(--breakpoint-sm)!">
           <div className="flex flex-col gap-y-12">{children}</div>
         </DashboardBody>
       </DashboardLayout>

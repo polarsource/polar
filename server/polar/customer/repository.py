@@ -1,9 +1,9 @@
 import contextlib
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterable, Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, select, update
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
@@ -11,6 +11,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
+from polar.kit.utils import utc_now
 from polar.models import Customer, UserOrganization
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
@@ -66,6 +67,22 @@ class CustomerRepository(
         enqueue_job("customer.webhook", WebhookEventType.customer_deleted, customer.id)
         return customer
 
+    async def touch_meters(self, customers: Iterable[Customer]) -> None:
+        statement = (
+            update(Customer)
+            .where(Customer.id.in_([c.id for c in customers]))
+            .values(meters_dirtied_at=utc_now())
+        )
+        await self.session.execute(statement)
+
+    async def set_meters_updated_at(self, customers: Iterable[Customer]) -> None:
+        statement = (
+            update(Customer)
+            .where(Customer.id.in_([c.id for c in customers]))
+            .values(meters_updated_at=utc_now())
+        )
+        await self.session.execute(statement)
+
     async def get_by_id_and_organization(
         self, id: UUID, organization_id: UUID
     ) -> Customer | None:
@@ -100,6 +117,21 @@ class CustomerRepository(
             Customer.organization_id == organization_id,
         )
         return await self.get_one_or_none(statement)
+
+    async def stream_by_organization(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: Sequence[UUID] | None,
+    ) -> AsyncGenerator[Customer]:
+        statement = self.get_readable_statement(auth_subject)
+
+        if organization_id is not None:
+            statement = statement.where(
+                Customer.organization_id.in_(organization_id),
+            )
+
+        async for customer in self.stream(statement):
+            yield customer
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

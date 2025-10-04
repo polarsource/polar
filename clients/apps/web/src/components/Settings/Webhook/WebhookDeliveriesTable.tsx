@@ -12,10 +12,8 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import {
-  KeyboardArrowDownOutlined,
-  KeyboardArrowRightOutlined,
-} from '@mui/icons-material'
+import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
+import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {

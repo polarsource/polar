@@ -1,21 +1,19 @@
 import { PolarHog, usePostHog } from '@/hooks/posthog'
-import {
-  AllInclusiveOutlined,
-  AttachMoneyOutlined,
-  CodeOutlined,
-  DiamondOutlined,
-  DiscountOutlined,
-  DonutLargeOutlined,
-  HiveOutlined,
-  LinkOutlined,
-  PeopleAltOutlined,
-  ShoppingBagOutlined,
-  SpaceDashboardOutlined,
-  Storefront,
-  StreamOutlined,
-  TrendingUp,
-  TuneOutlined,
-} from '@mui/icons-material'
+import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
+import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined'
+import CodeOutlined from '@mui/icons-material/CodeOutlined'
+import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
+import DiscountOutlined from '@mui/icons-material/DiscountOutlined'
+import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
+import HiveOutlined from '@mui/icons-material/HiveOutlined'
+import LinkOutlined from '@mui/icons-material/LinkOutlined'
+import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
+import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
+import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
+import Storefront from '@mui/icons-material/Storefront'
+import StreamOutlined from '@mui/icons-material/StreamOutlined'
+import TrendingUp from '@mui/icons-material/TrendingUp'
+import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import { schemas } from '@polar-sh/client'
 import { ShoppingCart } from 'lucide-react'
 import { usePathname } from 'next/navigation'
@@ -30,7 +28,7 @@ export type SubRoute = {
 export type Route = {
   readonly id: string
   readonly title: string
-  readonly icon?: React.ReactElement
+  readonly icon?: React.ReactElement<any>
   readonly link: string
   readonly if: boolean | undefined
   readonly subs?: SubRoute[]

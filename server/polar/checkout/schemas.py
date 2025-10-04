@@ -26,7 +26,7 @@ from polar.discount.schemas import (
     DiscountRepeatDurationBase,
 )
 from polar.enums import PaymentProcessor
-from polar.kit.address import Address
+from polar.kit.address import Address, AddressInput
 from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
     METADATA_DESCRIPTION,
@@ -40,6 +40,11 @@ from polar.kit.schemas import (
     Schema,
     SetSchemaReference,
     TimestampedSchema,
+)
+from polar.kit.trial import (
+    TrialConfigurationInputMixin,
+    TrialConfigurationOutputMixin,
+    TrialInterval,
 )
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
@@ -85,9 +90,11 @@ CustomerIPAddress = Annotated[
         description="IP address of the customer. Used to detect tax location.",
     ),
 ]
+CustomerBillingAddressInput = Annotated[
+    AddressInput, Field(description="Billing address of the customer.")
+]
 CustomerBillingAddress = Annotated[
-    Address,
-    Field(description="Billing address of the customer."),
+    Address, Field(description="Billing address of the customer.")
 ]
 SuccessURL = Annotated[
     HttpUrl | None,
@@ -141,7 +148,9 @@ _customer_metadata_description = METADATA_DESCRIPTION.format(
 )
 
 
-class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
+class CheckoutCreateBase(
+    CustomFieldDataInputMixin, MetadataInputMixin, TrialConfigurationInputMixin, Schema
+):
     """
     Create a new checkout session.
 
@@ -159,6 +168,11 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
         default=False, description=_require_billing_address_description
     )
     amount: Amount | None = None
+    seats: int | None = Field(
+        default=None,
+        ge=1,
+        description="Number of seats for seat-based pricing. Required for seat-based products.",
+    )
     customer_id: UUID4 | None = Field(
         default=None,
         description=(
@@ -179,7 +193,7 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
-    customer_billing_address: CustomerBillingAddress | None = None
+    customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_metadata: MetadataField = Field(
         default_factory=dict, description=_customer_metadata_description
@@ -256,6 +270,11 @@ class CheckoutCreatePublic(Schema):
     """Create a new checkout session from a client."""
 
     product_id: UUID4 = Field(description="ID of the product to checkout.")
+    seats: int | None = Field(
+        default=None,
+        ge=1,
+        description="Number of seats for seat-based pricing.",
+    )
     customer_email: CustomerEmail | None = None
     subscription_id: UUID4 | None = Field(
         default=None,
@@ -287,15 +306,22 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
         ),
     )
     amount: Amount | None = None
+    seats: int | None = Field(
+        default=None,
+        ge=1,
+        description="Number of seats for seat-based pricing.",
+    )
     is_business_customer: bool | None = None
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
-    customer_billing_address: CustomerBillingAddress | None = None
+    customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
 
-class CheckoutUpdate(MetadataInputMixin, CheckoutUpdateBase):
+class CheckoutUpdate(
+    MetadataInputMixin, TrialConfigurationInputMixin, CheckoutUpdateBase
+):
     """Update an existing checkout session using an access token."""
 
     discount_id: UUID4 | None = Field(
@@ -341,7 +367,7 @@ class CheckoutConfirmStripe(CheckoutConfirmBase):
 CheckoutConfirm = CheckoutConfirmStripe
 
 
-class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
+class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     payment_processor: PaymentProcessor = Field(description="Payment processor used.")
     status: CheckoutStatus = Field(
         description="""
@@ -377,6 +403,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
         "Used as a security measure to send messages only to the embedding page."
     )
     amount: int = Field(description="Amount in cents, before discounts and taxes.")
+    seats: int | None = Field(
+        default=None, description="Number of seats for seat-based pricing."
+    )
     discount_amount: int = Field(description="Discount amount in cents.")
     net_amount: int = Field(
         description="Amount in cents, after discounts but before taxes."
@@ -389,6 +418,25 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     )
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
     currency: str = Field(description="Currency code of the checkout session.")
+
+    active_trial_interval: TrialInterval | None = Field(
+        description=(
+            "Interval unit of the trial period, if any. "
+            "This value is either set from the checkout, if `trial_interval` is set, "
+            "or from the selected product."
+        )
+    )
+    active_trial_interval_count: int | None = Field(
+        description=(
+            "Number of interval units of the trial period, if any. "
+            "This value is either set from the checkout, if `trial_interval_count` "
+            "is set, or from the selected product."
+        )
+    )
+    trial_end: datetime | None = Field(
+        description="End date and time of the trial period, if any."
+    )
+
     product_id: UUID4 = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
     discount_id: UUID4 | None = Field(
@@ -527,7 +575,7 @@ CheckoutDiscount = Annotated[
 ]
 
 
-class Checkout(MetadataOutputMixin, CheckoutBase):
+class Checkout(MetadataOutputMixin, TrialConfigurationOutputMixin, CheckoutBase):
     """Checkout session data retrieved using an access token."""
 
     external_customer_id: str | None = Field(

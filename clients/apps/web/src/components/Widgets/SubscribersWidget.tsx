@@ -83,7 +83,7 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
                     )}%`,
                   }}
                   className={twMerge(
-                    'dark:bg-polar-700 w-3 flex-shrink rounded-full bg-gray-300',
+                    'dark:bg-polar-700 w-3 shrink rounded-full bg-gray-300',
                     activeClass,
                   )}
                 />

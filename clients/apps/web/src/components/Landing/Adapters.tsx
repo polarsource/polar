@@ -1,6 +1,7 @@
 'use client'
 
-import { ArrowOutwardOutlined, Check } from '@mui/icons-material'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import Check from '@mui/icons-material/Check'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Tabs,
@@ -25,7 +26,7 @@ const adapters = [
 export const GET = Checkout({
   accessToken: 'xxx'
 });`,
-    link: 'https://docs.polar.sh/integrate/sdk/adapters/nextjs',
+    link: 'https://polar.sh/docs/integrate/sdk/adapters/nextjs',
   },
   {
     name: 'BetterAuth',
@@ -50,7 +51,7 @@ const auth = betterAuth({
         })
     ]
 });`,
-    link: 'https://docs.polar.sh/integrate/sdk/adapters/better-auth',
+    link: 'https://polar.sh/docs/integrate/sdk/adapters/better-auth',
   },
   {
     name: 'TypeScript',
@@ -65,7 +66,7 @@ const checkout = await polar.checkouts.create({
 });
 
 redirect(checkout.url)`,
-    link: 'https://docs.polar.sh/api-reference/checkouts/create-session',
+    link: 'https://polar.sh/docs/api-reference/checkouts/create-session',
   },
 ]
 
@@ -87,7 +88,7 @@ const itemVariants = {
 
 export const Adapters = () => {
   const tabsTriggerClassName = useMemo(() => {
-    return '!rounded-full px-4 py-2 data-[state=active]:bg-white hidden md:flex'
+    return 'rounded-full! px-4 py-2 data-[state=active]:bg-white hidden md:flex'
   }, [])
 
   return (
@@ -112,7 +113,7 @@ export const Adapters = () => {
                 </TabsTrigger>
               ))}
               <Link
-                href="https://docs.polar.sh/integrate/sdk/adapters/nextjs"
+                href="https://polar.sh/docs/integrate/sdk/adapters/nextjs"
                 target="_blank"
               >
                 <Button className="rounded-full" variant="ghost">
@@ -134,7 +135,7 @@ export const Adapters = () => {
                 <div className="flex flex-col justify-center gap-y-8 p-8 md:w-1/2 md:p-16">
                   <div className="flex flex-col gap-y-8">
                     <motion.h2
-                      className="text-2xl !leading-normal md:text-4xl"
+                      className="leading-normal! text-2xl md:text-4xl"
                       variants={itemVariants}
                     >
                       {adapter.name} Adapter
@@ -211,7 +212,7 @@ export const Adapters = () => {
                     loading="lazy"
                     alt=""
                   />
-                  <div className="dark:bg-polar-900 z-[1] rounded-lg bg-white p-4">
+                  <div className="dark:bg-polar-900 z-1 rounded-lg bg-white p-4">
                     <SyntaxHighlighterClient
                       lang="typescript"
                       code={adapter.code}

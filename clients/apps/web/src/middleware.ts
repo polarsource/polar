@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import { RequestCookiesAdapter } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { createServerSideAPI } from './utils/client'
@@ -11,14 +12,10 @@ const AUTHENTICATED_ROUTES = [
   new RegExp('^/dashboard(/.*)?'),
   new RegExp('^/finance(/.*)?'),
   new RegExp('^/settings(/.*)?'),
-  new RegExp('^/backoffice(/.*)?'),
 ]
 
 const requiresAuthentication = (request: NextRequest): boolean => {
-  if (
-    request.nextUrl.hostname === 'docs.polar.sh' ||
-    request.nextUrl.pathname.startsWith('/docs/')
-  ) {
+  if (request.nextUrl.pathname.startsWith('/docs/')) {
     return false
   }
 
@@ -39,7 +36,10 @@ const getLoginResponse = (request: NextRequest): NextResponse => {
 export async function middleware(request: NextRequest) {
   let user: schemas['UserRead'] | undefined = undefined
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
-    const api = createServerSideAPI(request.headers, request.cookies)
+    const api = await createServerSideAPI(
+      request.headers,
+      RequestCookiesAdapter.seal(request.cookies),
+    )
     const { data, response } = await api.GET('/v1/users/me', {
       cache: 'no-cache',
     })
@@ -67,10 +67,12 @@ export const config = {
     /*
      * Match all request paths except for the ones starting with:
      * - api (API routes)
+     * - ingest (Posthog)
+     * - docs, _mintlify, mintlify-assets (Mintlify)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    '/((?!api|ingest|docs|_mintlify|mintlify-assets|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
   ],
 }

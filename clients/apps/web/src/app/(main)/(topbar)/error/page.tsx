@@ -2,11 +2,13 @@ import LogoType70 from '@/components/Brand/LogoType70'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 
-export default function Page({
-  searchParams: { message, return_to },
-}: {
-  searchParams: { message: string; return_to: string }
+export default async function Page(props: {
+  searchParams: Promise<{ message: string; return_to: string }>
 }) {
+  const searchParams = await props.searchParams
+
+  const { message, return_to } = searchParams
+
   return (
     <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-gray-50">
       <div id="polar-bg-gradient"></div>

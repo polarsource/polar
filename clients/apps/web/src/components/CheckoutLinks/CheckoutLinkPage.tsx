@@ -1,6 +1,6 @@
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
-import { QrCode } from '@mui/icons-material'
+import QrCode from '@mui/icons-material/QrCode'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -47,7 +47,7 @@ export const CheckoutLinkPage = ({ checkoutLink }: CheckoutLinkPageProps) => {
   const showDarkmodeToggle = embedType === 'svg' || embedType === 'checkout'
 
   const triggerClassName =
-    'dark:data-[state=active]:bg-polar-900 data-[state=active]:bg-white w-full !rounded-full'
+    'dark:data-[state=active]:bg-polar-900 data-[state=active]:bg-white w-full rounded-full!'
 
   return (
     <div className="flex w-full flex-col gap-8">

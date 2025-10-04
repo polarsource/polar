@@ -1,9 +1,11 @@
 import contextlib
+import re
 from collections.abc import Generator
 from enum import StrEnum
 from inspect import isclass
-from typing import Any, TypeAlias
+from typing import Any, Self, TypeAlias
 
+from fastapi.datastructures import FormData
 from pydantic import AfterValidator, BaseModel, ValidationError
 from pydantic.fields import FieldInfo
 from pydantic_core import ErrorDetails
@@ -14,7 +16,14 @@ Data: TypeAlias = dict[str, Any] | object
 
 
 def _get_field_errors(errors: list[ErrorDetails], key: str) -> list[ErrorDetails]:
-    return [error for error in errors if error["loc"][0] == key]
+    return [
+        {
+            **error,
+            "loc": error["loc"][1:],
+        }
+        for error in errors
+        if error["loc"][0] == key
+    ]
 
 
 def _get_data_value(
@@ -22,7 +31,9 @@ def _get_data_value(
 ) -> Any | None:
     field_errors = _get_field_errors(errors, key)
     if field_errors:
-        return errors[0]["input"]
+        for error in field_errors:
+            if len(error["loc"]) == 0:
+                return error["input"]
     if data is None:
         return None
     if isinstance(data, dict):
@@ -125,24 +136,25 @@ class InputField(FormField):
         Yields:
             None: Context manager yields control for the input field.
         """
-        with tag.div(classes="flex flex-col"):
-            with tag.label(classes="input w-full", **{"for": id}):
-                if errors:
-                    classes("input-error")
-                with tag.span(classes="label"):
-                    text(label)
-                with tag.input(
-                    id=id,
-                    name=id,
-                    type=self.type,
-                    required=required,
-                    value=str(value) if value is not None else "",
-                    **self.kwargs,
-                ):
-                    pass
-            for error in errors:
-                with tag.div(classes="validator-hint text-error"):
-                    text(error["msg"])
+        with tag.label(classes="label", **{"for": id}):
+            text(label)
+            if required:
+                with tag.span(classes="text-error"):
+                    text("*")
+        with tag.input(
+            classes="input w-full",
+            id=id,
+            name=id,
+            type=self.type,
+            required=required,
+            value=str(value) if value is not None else "",
+            **self.kwargs,
+        ):
+            if errors:
+                classes("input-error")
+        for error in errors:
+            with tag.div(classes="label text-error"):
+                text(error["msg"])
         yield
 
 
@@ -188,29 +200,26 @@ class TextAreaField(FormField):
         Yields:
             None: Context manager yields control for the textarea field.
         """
-        with tag.div(classes="form-control w-full"):
-            with tag.label(classes="label", **{"for": id}):
-                with tag.span(classes="label-text font-semibold"):
-                    text(label)
-                    if required:
-                        with tag.span(classes="text-error ml-1"):
-                            text("*")
-            with tag.textarea(
-                id=id,
-                name=id,
-                required=required,
-                rows=self.rows,
-                classes="textarea textarea-bordered w-full resize-none",
-                **self.kwargs,
-            ):
-                if errors:
-                    classes("textarea-error")
-                if value is not None:
-                    text(str(value))
-            for error in errors:
-                with tag.div(classes="label"):
-                    with tag.span(classes="label-text-alt text-error"):
-                        text(error["msg"])
+        with tag.label(classes="label", **{"for": id}):
+            text(label)
+            if required:
+                with tag.span(classes="text-error"):
+                    text("*")
+        with tag.textarea(
+            id=id,
+            name=id,
+            required=required,
+            rows=self.rows,
+            classes="textarea w-full",
+            **self.kwargs,
+        ):
+            if errors:
+                classes("textarea-error")
+            if value is not None:
+                text(str(value))
+        for error in errors:
+            with tag.div(classes="label text-error"):
+                text(error["msg"])
         yield
 
 
@@ -253,22 +262,21 @@ class CheckboxField(FormField):
         Yields:
             None: Context manager yields control for the checkbox field.
         """
-        with tag.div(classes="flex flex-col"):
-            with tag.label(classes="label", **{"for": id}):
-                with tag.input(
-                    id=id,
-                    name=id,
-                    type="checkbox",
-                    required=required,
-                    checked=value,
-                    classes="checkbox",
-                    **self.kwargs,
-                ):
-                    pass
-                text(label)
-            for error in errors:
-                with tag.div(classes="validator-hint text-error"):
-                    text(error["msg"])
+        with tag.label(classes="label", **{"for": id}):
+            with tag.input(
+                id=id,
+                name=id,
+                type="checkbox",
+                required=required,
+                checked=value,
+                classes="checkbox",
+                **self.kwargs,
+            ):
+                pass
+            text(label)
+        for error in errors:
+            with tag.div(classes="label text-error"):
+                text(error["msg"])
         yield
 
 
@@ -376,27 +384,84 @@ class SelectField(FormField):
         Yields:
             None: Context manager yields control for the select field.
         """
-        with tag.div(classes="flex flex-col"):
-            with tag.label(classes="select w-full", **{"for": id}):
-                if errors:
-                    classes("select-error")
-                with tag.span(classes="label"):
-                    text(label)
-                with tag.select(
-                    id=id,
-                    name=id,
-                    required=required,
-                    **self.kwargs,
+        with tag.legend(classes="label", **{"for": id}):
+            text(label)
+            if required:
+                with tag.span(classes="text-error"):
+                    text("*")
+        with tag.select(
+            classes="select w-full",
+            id=id,
+            name=id,
+            required=required,
+            **self.kwargs,
+        ):
+            with tag.option(value="", selected=value is None):
+                text(self.placeholder)
+            for option_value, option_label in self.options:
+                selected = value == option_value if value is not None else False
+                with tag.option(value=option_value, selected=selected):
+                    text(option_label)
+        for error in errors:
+            with tag.div(classes="label text-error"):
+                text(error["msg"])
+
+        yield
+
+
+class SubFormField(FormField):
+    """A nested sub-form field for embedding another BaseForm.
+
+    Allows inclusion of a complete BaseForm as a field within another form.
+    The sub-form is rendered inline with its own fields and validation.
+    """
+
+    def __init__(self, form_class: type["BaseForm"]) -> None:
+        """Args:
+        form_class: The BaseForm subclass to embed as a sub-form.
+        """
+        self.form_class = form_class
+
+    @contextlib.contextmanager
+    def render(
+        self,
+        id: str,
+        label: str,
+        *,
+        required: bool = False,
+        value: Any | None = None,
+        errors: list[ErrorDetails] = [],
+    ) -> Generator[None]:
+        """Render the sub-form inline with its own fields and validation.
+
+        Args:
+            id: The HTML id attribute for the sub-form container.
+            label: The display label for the sub-form section.
+            required: Whether the sub-form is required (not typically used).
+            value: Existing data to populate the sub-form fields.
+            errors: List of validation errors for the sub-form fields.
+
+        Yields:
+            None: Context manager yields control for the sub-form rendering.
+        """
+        with tag.fieldset(classes="fieldset border-base-300 rounded-box border p-4"):
+            with tag.legend(classes="fieldset-legend"):
+                text(label)
+
+            for key, field in self.form_class.model_fields.items():
+                if _is_skipped_field(field):
+                    continue
+
+                full_key = f"{id}[{key}]"
+                input_field = _get_input_field(field)
+                with input_field.render(
+                    full_key,
+                    field.title or full_key,
+                    required=field.is_required(),
+                    value=_get_data_value(value, errors, key),
+                    errors=_get_field_errors(errors, key),
                 ):
-                    with tag.option(value="", selected=value is None):
-                        text(self.placeholder)
-                    for option_value, option_label in self.options:
-                        selected = value == option_value if value is not None else False
-                        with tag.option(value=option_value, selected=selected):
-                            text(option_label)
-            for error in errors:
-                with tag.div(classes="validator-hint text-error"):
-                    text(error["msg"])
+                    pass
         yield
 
 
@@ -415,15 +480,38 @@ def _get_input_field(field: FieldInfo) -> FormField:
     if field.annotation:
         if field.annotation is bool:
             return CheckboxField()
-        if isclass(field.annotation) and issubclass(field.annotation, StrEnum):
-            return SelectField(
-                options=[(item.value, item.name) for item in field.annotation]
-            )
+        if isclass(field.annotation):
+            if issubclass(field.annotation, BaseForm):
+                return SubFormField(field.annotation)
+            if issubclass(field.annotation, StrEnum):
+                return SelectField(
+                    options=[(item.value, item.name) for item in field.annotation]
+                )
 
     return InputField()
 
 
 CurrencyValidator = AfterValidator(lambda x: x * 100)
+
+
+def _parse_form_data(form_data: FormData) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+
+    for key, value in form_data.items():
+        # Split the key by brackets: user[address][city] -> ['user', 'address', 'city']
+        parts = re.findall(r"([^\[\]]+)", key)
+
+        # Navigate/create the nested structure
+        current = result
+        for part in parts[:-1]:
+            if part not in current:
+                current[part] = {}
+            current = current[part]
+
+        # Set the final value
+        current[parts[-1]] = value
+
+    return result
 
 
 class BaseForm(BaseModel):
@@ -449,7 +537,7 @@ class BaseForm(BaseModel):
         >>> validation_error: ValidationError | None = None
         >>> if request.method == "POST":
         ...     try:
-        ...         form = UpdateOrganizationForm.model_validate(data)
+        ...         form = UpdateOrganizationForm.model_validate_form(data)
         ...         # Process valid form data
         ...     except ValidationError as e:
         ...         validation_error = e
@@ -492,17 +580,40 @@ class BaseForm(BaseModel):
                 like submit buttons, hidden fields, or custom sections.
         """
         errors = validation_error.errors() if validation_error else []
-        with tag.form(**kwargs):
-            for key, field in cls.model_fields.items():
-                if _is_skipped_field(field):
-                    continue
-                input_field = _get_input_field(field)
-                with input_field.render(
-                    key,
-                    field.title or key,
-                    required=field.is_required(),
-                    value=_get_data_value(data, errors, key),
-                    errors=_get_field_errors(errors, key),
-                ):
-                    pass
-            yield
+        with tag.form(**kwargs, novalidate=True):
+            with tag.fieldset(classes="fieldset"):
+                for key, field in cls.model_fields.items():
+                    if _is_skipped_field(field):
+                        continue
+
+                    input_field = _get_input_field(field)
+                    with input_field.render(
+                        key,
+                        field.title or key,
+                        required=field.is_required(),
+                        value=_get_data_value(data, errors, key),
+                        errors=_get_field_errors(errors, key),
+                    ):
+                        pass
+                yield
+
+    @classmethod
+    def model_validate_form(
+        cls,
+        obj: FormData,
+        *,
+        strict: bool | None = None,
+        from_attributes: bool | None = None,
+        context: Any | None = None,
+        by_alias: bool | None = None,
+        by_name: bool | None = None,
+    ) -> Self:
+        data = _parse_form_data(obj)
+        return cls.model_validate(
+            data,
+            strict=strict,
+            from_attributes=from_attributes,
+            context=context,
+            by_alias=by_alias,
+            by_name=by_name,
+        )

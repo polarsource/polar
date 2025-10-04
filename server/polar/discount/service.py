@@ -23,6 +23,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.checkout import Checkout
+from polar.models.discount import DiscountFixed
 from polar.models.discount_redemption import DiscountRedemption
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
@@ -196,7 +197,11 @@ class DiscountService(ResourceServiceReader[Discount]):
             )
 
         if discount.redemptions_count > 0:
-            forbidden_fields = {"amount", "currency", "basis_points"}
+            forbidden_fields = (
+                {"amount", "currency"}
+                if isinstance(discount, DiscountFixed)
+                else {"basis_points"}
+            )
             for field in forbidden_fields:
                 discount_update_value = getattr(discount_update, field, None)
                 if (
@@ -242,8 +247,14 @@ class DiscountService(ResourceServiceReader[Discount]):
                 discount.discount_products.append(DiscountProduct(product=product))
 
         updated_fields = set()
+        exclude = {"products"}
+        if isinstance(discount, DiscountFixed):
+            exclude.add("basis_points")
+        else:
+            exclude.add("amount")
+            exclude.add("currency")
         for attr, value in discount_update.model_dump(
-            exclude_unset=True, exclude={"products"}, by_alias=True
+            exclude_unset=True, exclude=exclude, by_alias=True
         ).items():
             if value != getattr(discount, attr):
                 setattr(discount, attr, value)
@@ -253,10 +264,12 @@ class DiscountService(ResourceServiceReader[Discount]):
             "starts_at",
             "ends_at",
             "max_redemptions",
-            "amount",
-            "currency",
-            "basis_points",
             "duration_in_months",
+            *(
+                {"amount", "currency"}
+                if isinstance(discount, DiscountFixed)
+                else {"basis_points"}
+            ),
         }
         if sensitive_fields.intersection(updated_fields):
             if discount.ends_at is not None and discount.ends_at < utc_now():

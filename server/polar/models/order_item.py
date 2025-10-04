@@ -1,6 +1,8 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
+from babel.dates import format_date
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Uuid
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -14,6 +16,7 @@ from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceFree,
+    ProductPriceSeatUnit,
 )
 
 if TYPE_CHECKING:
@@ -56,7 +59,11 @@ class OrderItem(RecordModel):
 
     @classmethod
     def from_price(
-        cls, price: ProductPrice, tax_amount: int, amount: int | None = None
+        cls,
+        price: ProductPrice,
+        tax_amount: int,
+        amount: int | None = None,
+        seats: int | None = None,
     ) -> Self:
         if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
             amount = price.price_amount
@@ -64,6 +71,9 @@ class OrderItem(RecordModel):
             assert amount is not None, "amount must be provided for custom prices"
         elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
             amount = 0
+        elif isinstance(price, ProductPriceSeatUnit):
+            assert seats is not None, "seats must be provided for seat-based prices"
+            amount = price.price_per_seat * seats
         return cls(
             label=price.product.name,
             amount=amount,
@@ -71,3 +81,10 @@ class OrderItem(RecordModel):
             proration=False,
             product_price=price,
         )
+
+    @classmethod
+    def from_trial(cls, product: "Product", start: datetime, end: datetime) -> Self:
+        formatted_start = format_date(start.date(), locale="en_US")
+        formatted_end = format_date(end.date(), locale="en_US")
+        label = f"Trial period for {product.name} ({formatted_start} - {formatted_end})"
+        return cls(label=label, amount=0, tax_amount=0, proration=False)

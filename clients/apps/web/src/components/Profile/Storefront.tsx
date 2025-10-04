@@ -5,7 +5,7 @@ import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCar
 import { useRecurringInterval } from '@/hooks/products'
 import { organizationPageLink } from '@/utils/nav'
 import { isLegacyRecurringPrice } from '@/utils/product'
-import { HiveOutlined } from '@mui/icons-material'
+import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import { schemas } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
@@ -45,7 +45,7 @@ export const Storefront = ({
   return (
     <div className="flex w-full flex-col gap-y-24">
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
-        <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-24">
+        <div className="flex w-full min-w-0 shrink flex-col gap-y-24">
           {subscriptionProducts.length < 1 && oneTimeProducts.length < 1 ? (
             <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">
               <HiveOutlined
@@ -73,7 +73,7 @@ export const Storefront = ({
             >
               {subscriptionProducts.map((tier) => (
                 <Link
-                  className="flex-shrink-0 self-stretch"
+                  className="shrink-0 self-stretch"
                   key={tier.id}
                   href={`/${organization.slug}/products/${tier.id}`}
                 >

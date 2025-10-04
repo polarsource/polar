@@ -1,3 +1,4 @@
+import builtins
 from collections.abc import Sequence
 from typing import Any, Literal, TypeVar, Unpack, overload
 from uuid import UUID
@@ -13,6 +14,7 @@ from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
+from polar.kit.sorting import Sorting
 from polar.logging import Logger
 from polar.models import Benefit, BenefitGrant, Customer, Product
 from polar.models.benefit_grant import BenefitGrantScope
@@ -30,6 +32,7 @@ from ..strategies import (
 )
 from .repository import BenefitGrantRepository
 from .scope import scope_to_args
+from .sorting import BenefitGrantSortProperty
 
 log: Logger = structlog.get_logger()
 
@@ -117,6 +120,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             .order_by(BenefitGrant.created_at.desc())
             .options(
                 joinedload(BenefitGrant.customer),
+                joinedload(BenefitGrant.benefit),
             )
         )
 
@@ -127,6 +131,44 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             statement = statement.where(BenefitGrant.customer_id.in_(customer_id))
 
         return await paginate(session, statement, pagination=pagination)
+
+    async def list_by_organization(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        *,
+        is_granted: bool | None = None,
+        customer_id: Sequence[UUID] | None = None,
+        pagination: PaginationParams,
+        sorting: builtins.list[Sorting[BenefitGrantSortProperty]] = [
+            (BenefitGrantSortProperty.created_at, True)
+        ],
+    ) -> tuple[Sequence[BenefitGrant], int]:
+        repository = BenefitGrantRepository.from_session(session)
+        statement = (
+            select(BenefitGrant)
+            .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
+            .where(
+                Benefit.organization_id == organization_id,
+                BenefitGrant.deleted_at.is_(None),
+            )
+            .options(
+                joinedload(BenefitGrant.customer),
+                joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
+            )
+        )
+
+        if is_granted is not None:
+            statement = statement.where(BenefitGrant.is_granted.is_(is_granted))
+
+        if customer_id is not None:
+            statement = statement.where(BenefitGrant.customer_id.in_(customer_id))
+
+        statement = repository.apply_sorting(statement, sorting)
+
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def grant_benefit(
         self,

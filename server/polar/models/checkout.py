@@ -28,8 +28,13 @@ from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataColumn, MetadataMixin
 from polar.kit.tax import TaxID, TaxIDType
+from polar.kit.trial import TrialConfigurationMixin, TrialInterval
 from polar.kit.utils import utc_now
-from polar.product.guard import is_discount_applicable, is_free_price, is_metered_price
+from polar.product.guard import (
+    is_discount_applicable,
+    is_free_price,
+    is_metered_price,
+)
 
 from .customer import Customer
 from .discount import Discount
@@ -82,7 +87,9 @@ class CheckoutBillingAddressFields(TypedDict):
     line2: BillingAddressFieldMode
 
 
-class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
+class Checkout(
+    TrialConfigurationMixin, CustomFieldDataMixin, MetadataMixin, RecordModel
+):
     __tablename__ = "checkouts"
 
     payment_processor: Mapped[PaymentProcessor] = mapped_column(
@@ -113,10 +120,15 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     tax_processor_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
+    )
+
+    trial_end: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     product_id: Mapped[UUID] = mapped_column(
@@ -193,6 +205,8 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
     customer_metadata: Mapped[MetadataColumn]
 
+    # Only set when a checkout is attached to an existing subscription (free-to-paid upgrades).
+    # For subscriptions created by the checkout itself, see `Subscription.checkout_id`.
     subscription_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("subscriptions.id", ondelete="set null"), nullable=True
     )
@@ -267,7 +281,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def is_payment_required(self) -> bool:
-        return self.total_amount > 0
+        return self.total_amount > 0 and self.trial_end is None
 
     @property
     def is_payment_setup_required(self) -> bool:
@@ -336,6 +350,14 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
             if require_billing_address
             else BillingAddressFieldMode.disabled,
         }
+
+    @property
+    def active_trial_interval(self) -> TrialInterval | None:
+        return self.trial_interval or self.product.trial_interval
+
+    @property
+    def active_trial_interval_count(self) -> int | None:
+        return self.trial_interval_count or self.product.trial_interval_count
 
 
 @event.listens_for(Checkout, "before_update")

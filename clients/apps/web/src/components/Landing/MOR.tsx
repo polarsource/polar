@@ -1,4 +1,4 @@
-import { KeyboardArrowRight } from '@mui/icons-material'
+import ArrowOutward from '@mui/icons-material/ArrowOutward'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { SplitPromo } from './molecules/SplitPromo'
@@ -15,11 +15,11 @@ export const MerchantOfRecord = () => {
       ]}
       image="/assets/landing/transactions.jpg"
       cta1={
-        <Link href="https://docs.polar.sh/documentation/polar-as-merchant-of-record/tax">
-          <Button variant="ghost">
+        <Link href="/resources/merchant-of-record">
+          <Button variant="secondary" className="rounded-full">
             Learn more
-            <span className="ml-1">
-              <KeyboardArrowRight fontSize="inherit" />
+            <span className="ml-2">
+              <ArrowOutward fontSize="inherit" />
             </span>
           </Button>
         </Link>

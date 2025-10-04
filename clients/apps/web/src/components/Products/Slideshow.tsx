@@ -1,6 +1,7 @@
 'use client'
 
-import { ChevronLeftRounded, ChevronRightRounded } from '@mui/icons-material'
+import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded'
+import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useState } from 'react'
@@ -83,14 +84,14 @@ export const Slideshow = ({ images }: SlideshowProps) => {
       {hasMultipleImages && (
         <div className="absolute bottom-6 left-6 z-10 flex flex-row items-center justify-between gap-x-2">
           <Button
-            className="h-8 w-8 rounded-full bg-gray-50 shadow-sm"
+            className="shadow-xs h-8 w-8 rounded-full bg-gray-50"
             variant="secondary"
             onClick={() => paginate(-1)}
           >
             <ChevronLeftRounded fontSize="inherit" />
           </Button>
           <Button
-            className="h-8 w-8 rounded-full bg-gray-50 shadow-sm"
+            className="shadow-xs h-8 w-8 rounded-full bg-gray-50"
             variant="secondary"
             onClick={() => paginate(1)}
           >

@@ -1,11 +1,9 @@
 'use client'
 
-import {
-  AccountBalance,
-  ArrowOutwardOutlined,
-  GitHub,
-  ShoppingBagOutlined,
-} from '@mui/icons-material'
+import AccountBalance from '@mui/icons-material/AccountBalance'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import GitHub from '@mui/icons-material/GitHub'
+import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import { Box, Check, LucideIcon } from 'lucide-react'
@@ -80,7 +78,7 @@ export const Upsell = () => {
           icon={Box}
           title="Digital Products"
           description="Manage and distribute your digital products with our robust platform."
-          link="https://docs.polar.sh/documentation/features/products"
+          link="https://polar.sh/docs/documentation/features/products"
         >
           <ul className="flex flex-col gap-y-1 text-gray-600 dark:text-gray-300">
             <li className="flex flex-row items-center gap-x-2">
@@ -104,7 +102,7 @@ export const Upsell = () => {
           icon={ShoppingBagOutlined}
           title="Simple Checkouts"
           description="Streamlined checkouts for a seamless user experience."
-          link="https://docs.polar.sh/documentation/features/checkouts/checkout-links"
+          link="https://polar.sh/docs/documentation/features/checkouts/checkout-links"
         >
           <ul className="flex flex-col gap-y-1 text-gray-600 dark:text-gray-300">
             <li className="flex flex-row items-center gap-x-2">

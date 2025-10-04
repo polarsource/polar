@@ -23,7 +23,8 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StrEnumType
 from polar.kit.metadata import MetadataMixin
-from polar.models.product_price import ProductPriceType
+from polar.kit.trial import TrialConfigurationMixin
+from polar.models.product_price import ProductPriceAmountType, ProductPriceType
 
 from .product_price import ProductPrice
 
@@ -43,7 +44,7 @@ class ProductBillingType(StrEnum):
     recurring = "recurring"
 
 
-class Product(MetadataMixin, RecordModel):
+class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "products"
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
@@ -153,6 +154,13 @@ class Product(MetadataMixin, RecordModel):
     @property
     def is_legacy_recurring_price(self) -> bool:
         return any(price.is_recurring for price in self.prices)
+
+    @property
+    def has_seat_based_price(self) -> bool:
+        return any(
+            price.amount_type == ProductPriceAmountType.seat_based
+            for price in self.prices
+        )
 
     @hybrid_property
     def is_recurring(self) -> bool:

@@ -607,6 +607,96 @@ class TestGetQuantities:
         assert quantity.quantity == 4
         assert result.total == 4
 
+    @pytest.mark.parametrize(
+        "customer_aggregation_function,expected_value",
+        [
+            (AggregationFunction.cnt, 2),
+            (AggregationFunction.sum, 30),
+            (AggregationFunction.max, 20),
+            (AggregationFunction.min, 10),
+            (AggregationFunction.avg, 15),
+            (AggregationFunction.unique, 2),
+        ],
+    )
+    async def test_per_customer_aggregation(
+        self,
+        customer_aggregation_function: AggregationFunction,
+        expected_value: Decimal,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        timestamp = utc_now()
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 20, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 10, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer_second,
+                metadata={"tokens": 10, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer_second,
+                metadata={"tokens": 0, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer_second,
+                metadata={"tokens": 100, "model": "pro"},
+            ),
+        ]
+
+        meter = await create_meter(
+            save_fixture,
+            name="Lite Model Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="tokens"
+            ),
+            organization=customer.organization,
+        )
+
+        result = await meter_service.get_quantities(
+            session,
+            meter,
+            start_timestamp=timestamp,
+            end_timestamp=timestamp,
+            interval=TimeInterval.day,
+            customer_aggregation_function=customer_aggregation_function,
+        )
+
+        assert len(result.quantities) == 1
+        quantity = result.quantities[0]
+        assert quantity.quantity == expected_value
+        assert result.total == expected_value
+
 
 @pytest_asyncio.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:

@@ -8,7 +8,7 @@ import {
   useInviteOrganizationMember,
   useListOrganizationMembers,
 } from '@/hooks/queries/org'
-import { Add } from '@mui/icons-material'
+import Add from '@mui/icons-material/Add'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -66,7 +66,7 @@ export default function ClientPage({
 
   return (
     <DashboardBody
-      wrapperClassName="!max-w-screen-sm"
+      wrapperClassName="max-w-(--breakpoint-sm)!"
       className="flex flex-col gap-y-8"
       header={
         <Button onClick={openInviteMemberModal} variant="default">
@@ -90,7 +90,7 @@ export default function ClientPage({
       )}
 
       <Modal
-        className="!max-w-screen-sm"
+        className="max-w-(--breakpoint-sm)!"
         modalContent={
           <InviteMemberModal
             organizationId={organization.id}

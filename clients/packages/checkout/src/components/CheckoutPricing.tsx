@@ -40,7 +40,7 @@ const CheckoutProductAmountLabel = ({
           <ProductPriceLabel product={product} price={productPrice} />
         </div>
 
-        <div className="relative rounded bg-gradient-to-br from-gray-400 to-gray-500 px-3 py-0.5 text-center text-sm text-white shadow-md dark:from-gray-600 dark:to-gray-700">
+        <div className="rounded-xs bg-linear-to-br relative from-gray-400 to-gray-500 px-3 py-0.5 text-center text-sm text-white shadow-md dark:from-gray-600 dark:to-gray-700">
           <span>{getDiscountDisplay(discount)}</span>
 
           <div className="dark:bg-polar-800 absolute left-0 top-1/2 -ml-1 flex h-2 w-2 -translate-y-1/2 transform rounded-full bg-gray-50"></div>
@@ -111,11 +111,13 @@ const CheckoutPricing = ({
 
         {meteredPrices.length > 0 && (
           <div className="text-sm">
-            <h2 className="mb-2 font-semibold">+ Additional Metered Usage</h2>
+            <h2 className="mb-2 text-base font-medium">
+              + Additional metered usage
+            </h2>
             {meteredPrices.map((price) => (
               <div
                 key={price.id}
-                className="dark:text-polar-500 flex flex-row items-center gap-x-2 text-sm text-gray-400"
+                className="dark:text-polar-100 flex flex-row items-center gap-x-2 text-sm text-gray-600"
               >
                 <GaugeIcon className="h-4 w-4" />
                 <ProductPriceLabel

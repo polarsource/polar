@@ -26,6 +26,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceType,
@@ -41,6 +42,9 @@ from polar.models.product_price import (
 )
 from polar.models.product_price import (
     ProductPriceMeteredUnit as ProductPriceMeteredUnitModel,
+)
+from polar.models.product_price import (
+    ProductPriceSeatUnit as ProductPriceSeatUnitModel,
 )
 from polar.organization.schemas import OrganizationID
 
@@ -149,6 +153,19 @@ class ProductPriceFreeCreate(ProductPriceCreateBase):
         return ProductPriceFreeModel
 
 
+class ProductPriceSeatBasedCreate(ProductPriceCreateBase):
+    """
+    Schema to create a seat-based price.
+    """
+
+    amount_type: Literal[ProductPriceAmountType.seat_based]
+    price_currency: PriceCurrency
+    price_per_seat: PriceAmount = Field(description="The price per seat in cents.")
+
+    def get_model_class(self) -> builtins.type[ProductPriceSeatUnitModel]:
+        return ProductPriceSeatUnitModel
+
+
 class ProductPriceMeteredCreateBase(ProductPriceCreateBase):
     meter_id: UUID4 = Field(description="The ID of the meter associated to the price.")
 
@@ -184,6 +201,7 @@ ProductPriceCreate = (
     ProductPriceFixedCreate
     | ProductPriceCustomCreate
     | ProductPriceFreeCreate
+    | ProductPriceSeatBasedCreate
     | ProductPriceMeteredUnitCreate
 )
 
@@ -204,21 +222,9 @@ ProductPriceCreateList = Annotated[
 ]
 
 
-class ProductCreate(MetadataInputMixin, Schema):
-    """
-    Schema to create a product.
-    """
-
+class ProductCreateBase(MetadataInputMixin, Schema):
     name: ProductName
     description: ProductDescription = None
-    recurring_interval: SubscriptionRecurringInterval | None = Field(
-        description=(
-            "The recurring interval of the product. "
-            "If `None`, the product is a one-time purchase."
-            ""
-            "Note that the `day` and `week` values are for internal Polar staff use only."
-        ),
-    )
     prices: ProductPriceCreateList = Field(
         ...,
         description="List of available prices for this product. "
@@ -244,6 +250,27 @@ class ProductCreate(MetadataInputMixin, Schema):
     )
 
 
+class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
+    recurring_interval: SubscriptionRecurringInterval = Field(
+        description=(
+            "The recurring interval of the product. "
+            "Note that the `day` and `week` values are for internal Polar staff use only."
+        ),
+    )
+
+
+class ProductCreateOneTime(ProductCreateBase):
+    recurring_interval: Literal[None] = Field(
+        default=None, description="States that the product is a one-time purchase."
+    )
+
+
+ProductCreate = Annotated[
+    ProductCreateRecurring | ProductCreateOneTime,
+    SetSchemaReference("ProductCreate"),
+]
+
+
 class ExistingProductPrice(Schema):
     """
     A price that already exists for this product.
@@ -259,7 +286,7 @@ ProductPriceUpdate = Annotated[
 ]
 
 
-class ProductUpdate(MetadataInputMixin, Schema):
+class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
     """
     Schema to update a product.
     """
@@ -368,6 +395,12 @@ class ProductPriceFreeBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.free]
 
 
+class ProductPriceSeatBasedBase(ProductPriceBase):
+    amount_type: Literal[ProductPriceAmountType.seat_based]
+    price_currency: str = Field(description="The currency.")
+    price_per_seat: int = Field(description="The price per seat in cents.")
+
+
 class LegacyRecurringProductPriceMixin:
     @computed_field
     def legacy(self) -> Literal[True]:
@@ -452,6 +485,12 @@ class ProductPriceFree(ProductPriceFreeBase):
     """
 
 
+class ProductPriceSeatBased(ProductPriceSeatBasedBase):
+    """
+    A seat-based price for a product.
+    """
+
+
 class ProductPriceMeter(IDSchema):
     """
     A meter associated to a metered price.
@@ -479,7 +518,11 @@ class ProductPriceMeteredUnit(ProductPriceBase):
 
 
 NewProductPrice = Annotated[
-    ProductPriceFixed | ProductPriceCustom | ProductPriceFree | ProductPriceMeteredUnit,
+    ProductPriceFixed
+    | ProductPriceCustom
+    | ProductPriceFree
+    | ProductPriceSeatBased
+    | ProductPriceMeteredUnit,
     Discriminator("amount_type"),
     SetSchemaReference("ProductPrice"),
 ]
@@ -499,15 +542,16 @@ ProductPrice = Annotated[
 ]
 
 
-class ProductBase(IDSchema, TimestampedSchema):
-    id: UUID4 = Field(description="The ID of the product.")
+class ProductBase(TrialConfigurationOutputMixin, TimestampedSchema, IDSchema):
     name: str = Field(description="The name of the product.")
     description: str | None = Field(description="The description of the product.")
     recurring_interval: SubscriptionRecurringInterval | None = Field(
-        description="The recurring interval of the product. "
-        "If `None`, the product is a one-time purchase."
-        ""
-        "Note that the `day` and `week` values are for internal Polar staff use only."
+        description=(
+            "The recurring interval of the product. "
+            "If `None`, the product is a one-time purchase."
+            ""
+            "Note that the `day` and `week` values are for internal Polar staff use only."
+        )
     )
     is_recurring: bool = Field(description="Whether the product is a subscription.")
     is_archived: bool = Field(

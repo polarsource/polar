@@ -1,6 +1,9 @@
 'use client'
 
-import { useOrganizationAIValidation } from '@/hooks/queries/org'
+import {
+  useOrganizationAIValidation,
+  useOrganizationReviewStatus,
+} from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Card } from '@polar-sh/ui/components/ui/card'
@@ -11,79 +14,72 @@ import {
   Info,
   Loader2,
 } from 'lucide-react'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import AppealForm from './AppealForm'
 
 interface AIValidationResultProps {
   organization: schemas['Organization']
-  autoValidate?: boolean
   onValidationCompleted?: () => void
   onAppealApproved?: () => void
-}
-
-interface ValidationResult {
-  verdict: 'PASS' | 'FAIL' | 'UNCERTAIN'
-  reason: string
-  timed_out: boolean
+  onAppealSubmitted?: () => void
 }
 
 const AIValidationResult: React.FC<AIValidationResultProps> = ({
   organization,
-  autoValidate = false,
   onValidationCompleted,
   onAppealApproved,
+  onAppealSubmitted,
 }) => {
-  const [validationResult, setValidationResult] =
-    useState<ValidationResult | null>(null)
   const hasAutoValidatedRef = useRef(false)
+  const startedAtRef = useRef<number | null>(null)
+  const [timedOut, setTimedOut] = useState(false)
+  const [stopPolling, setStopPolling] = useState(false)
 
   const aiValidation = useOrganizationAIValidation(organization.id)
+  const shouldPoll = useMemo(
+    () => !timedOut && !stopPolling,
+    [timedOut, stopPolling],
+  )
+  const reviewStatus = useOrganizationReviewStatus(
+    organization.id,
+    true,
+    shouldPoll ? 2000 : undefined,
+  )
 
-  const runValidation = useCallback(async () => {
-    // Prevent multiple concurrent calls
-    if (aiValidation.isPending) {
-      return
-    }
-
-    try {
-      const response = await aiValidation.mutateAsync()
-      const { data, error } = response
-
-      if (error) {
-        throw new Error(`AI validation failed: ${error}`)
-      }
-
-      setValidationResult(data)
-    } catch (error) {
-      console.error('AI validation failed:', error)
-      // Set a fallback result for error cases
-      const errorResult: ValidationResult = {
-        verdict: 'UNCERTAIN',
-        reason:
-          'Technical error during validation. Manual review will be conducted.',
-        timed_out: false,
-      }
-      setValidationResult(errorResult)
-      // Don't auto-progress - let user click continue button
+  // Auto-validate when component mounts
+  useEffect(() => {
+    if (!hasAutoValidatedRef.current && !aiValidation.isPending) {
+      hasAutoValidatedRef.current = true
+      startedAtRef.current = Date.now()
+      aiValidation.mutate()
     }
   }, [aiValidation])
 
-  // Auto-validate when component mounts if autoValidate is true
+  // Timeout after ~25s and stop polling
   useEffect(() => {
-    if (autoValidate && !hasAutoValidatedRef.current) {
-      hasAutoValidatedRef.current = true
-      runValidation()
+    if (timedOut) return
+    const started = startedAtRef.current
+    if (started == null) return
+    const timeout = setTimeout(() => setTimedOut(true), 25_000)
+    return () => clearTimeout(timeout)
+  }, [timedOut])
+
+  // Stop polling once a verdict is present
+  useEffect(() => {
+    if (reviewStatus.data?.verdict) {
+      setStopPolling(true)
     }
-  }, [autoValidate, runValidation])
+  }, [reviewStatus.data?.verdict])
 
   const getValidationStatus = () => {
-    // Check for actual data first, regardless of pending state
-    const result =
-      validationResult ||
-      (aiValidation.isSuccess ? aiValidation.data?.data : null)
-
-    // Only show loading if we don't have results and the request is pending
-    if (aiValidation.isPending && !result) {
+    // If we don't have a verdict yet, show loading while polling
+    const verdict = reviewStatus.data?.verdict
+    if (
+      !verdict &&
+      !timedOut &&
+      !aiValidation.isError &&
+      !reviewStatus.isError
+    ) {
       return {
         type: 'loading',
         title: 'Validating Organization Details...',
@@ -93,6 +89,19 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
       }
     }
 
+    // Handle error state with fallback result
+    if (aiValidation.isError || reviewStatus.isError || timedOut) {
+      return {
+        type: 'review_required',
+        title: 'Payment Access Denied',
+        message:
+          'Technical error during validation. Manual review will be conducted.',
+        icon: <AlertTriangle className="h-8 w-8 text-gray-600" />,
+        severity: 'error',
+      }
+    }
+
+    const result = reviewStatus.data
     if (!result) {
       return null
     }
@@ -128,7 +137,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
       <div className="space-y-6">
         {/* Status Header */}
         <div className="flex items-center space-x-4">
-          <div className="flex-shrink-0">{status.icon}</div>
+          <div className="shrink-0">{status.icon}</div>
           <div className="flex-1">
             <h3 className={`text-lg font-medium`}>{status.title}</h3>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -155,8 +164,9 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
         </Card>
 
         {/* Appeal Form for FAIL/UNCERTAIN or Continue Button */}
-        {(validationResult ||
-          (aiValidation.isSuccess && aiValidation.data?.data)) && (
+        {((reviewStatus.data && reviewStatus.data.verdict) ||
+          aiValidation.isError ||
+          timedOut) && (
           <>
             {status.type === 'review_required' ? (
               <div className="pt-6">
@@ -164,6 +174,8 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
                   organization={organization}
                   disabled={false} // Set to true to disable appeals
                   onAppealApproved={onAppealApproved}
+                  onContinueAfterSubmission={onAppealSubmitted}
+                  existingReviewStatus={reviewStatus.data}
                 />
               </div>
             ) : (

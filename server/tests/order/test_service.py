@@ -1,14 +1,13 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
-from typing import Any, TypedDict, cast
+from typing import Any, cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
-from pydantic_extra_types.country import CountryAlpha2
+from pydantic import BaseModel, Field
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
@@ -18,7 +17,7 @@ from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
-from polar.kit.address import Address
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams
@@ -29,6 +28,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Discount,
+    OrderItem,
     Product,
     ProductPriceFixed,
     Subscription,
@@ -58,6 +58,7 @@ from polar.order.service import (
     PaymentAlreadyInProgress,
     RecurringProduct,
     SubscriptionDoesNotExist,
+    SubscriptionNotTrialing,
 )
 from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_static_price
@@ -84,6 +85,7 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_product,
     create_subscription,
+    create_trialing_subscription,
 )
 from tests.fixtures.stripe import construct_stripe_invoice
 from tests.transaction.conftest import create_transaction
@@ -164,12 +166,25 @@ def event_creation_time() -> tuple[datetime, int]:
 def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
     mock = AsyncMock(spec=calculate_tax)
     mocker.patch("polar.order.service.calculate_tax", new=mock)
-    mock.return_value = {
-        "processor_id": "TAX_PROCESSOR_ID",
-        "amount": 100,
-        "taxability_reason": TaxabilityReason.standard_rated,
-        "tax_rate": {},
-    }
+
+    async def mocked_calculate_tax(
+        identifier: uuid.UUID,
+        currency: str,
+        amount: int,
+        stripe_product_id: str,
+        address: Address,
+        tax_ids: list[TaxID],
+        tax_exempted: bool,
+    ) -> TaxCalculation:
+        return {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": polar_round(amount * 0.20),
+            "taxability_reason": TaxabilityReason.standard_rated,
+            "tax_rate": None,
+        }
+
+    mock.side_effect = mocked_calculate_tax
+
     return mock
 
 
@@ -702,8 +717,35 @@ class TestCreateFromCheckoutSubscription:
         )
 
 
+class DiscountFixture(BaseModel):
+    type: DiscountType
+    duration: DiscountDuration
+    basis_points: int | None = None
+    duration_in_months: int | None = None
+    applies_to: list[str] | None = None
+    amount: int | None = None
+    currency: str | None = None
+
+
+class ProrationFixture(BaseModel):
+    discount: DiscountFixture | None = None
+    products: dict[str, tuple[SubscriptionRecurringInterval, int]]
+    history: list[
+        tuple[
+            str,
+            BillingEntryType,
+            tuple[BillingEntryDirection, int, int],
+            datetime,
+            datetime,
+        ]
+    ]
+    expected_discount: int
+    expected_subtotal: int
+    expected_tax: int
+
+
 @pytest.mark.asyncio
-class TestCreateSubscriptionOrderWithStripe:
+class TestCreateSubscriptionOrder:
     async def test_no_pending_billing_items(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
@@ -756,16 +798,11 @@ class TestCreateSubscriptionOrderWithStripe:
         assert order.billing_reason == OrderBillingReason.subscription_cycle
         assert order.subscription == subscription
 
-        assert order.tax_amount == calculate_tax_mock.return_value["amount"]
-        assert (
-            order.tax_calculation_processor_id
-            == calculate_tax_mock.return_value["processor_id"]
-        )
-        assert (
-            order.taxability_reason
-            == calculate_tax_mock.return_value["taxability_reason"]
-        )
-        assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
+        assert billing_entry.amount is not None
+        assert order.tax_amount == polar_round(billing_entry.amount * 0.20)
+        assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
+        assert order.taxability_reason == TaxabilityReason.standard_rated
+        assert order.tax_rate is None
         assert order.tax_transaction_processor_id is None
 
         enqueue_job_mock.assert_any_call(
@@ -863,13 +900,6 @@ class TestCreateSubscriptionOrderWithStripe:
             subscription=subscription,
         )
 
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 0,
-            "taxability_reason": TaxabilityReason.not_subject_to_tax,
-            "tax_rate": {},
-        }
-
         order = await order_service.create_subscription_order(
             session, subscription, OrderBillingReason.subscription_cycle
         )
@@ -879,6 +909,8 @@ class TestCreateSubscriptionOrderWithStripe:
 
         enqueued_jobs = [call[0][0] for call in enqueue_job_mock.call_args_list]
         assert "order.trigger_payment" not in enqueued_jobs
+
+        calculate_tax_mock.assert_not_called()
 
     async def test_cycle_tax_exempted(
         self,
@@ -908,13 +940,6 @@ class TestCreateSubscriptionOrderWithStripe:
             subscription=subscription,
         )
 
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 0,
-            "taxability_reason": TaxabilityReason.not_subject_to_tax,
-            "tax_rate": {},
-        }
-
         order = await order_service.create_subscription_order(
             session, subscription, OrderBillingReason.subscription_cycle
         )
@@ -929,139 +954,6 @@ class TestCreateSubscriptionOrderWithStripe:
             True,
         )
 
-    async def test_cycle_proration_discount(
-        self,
-        calculate_tax_mock: MagicMock,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product: Product,
-        organization: Organization,
-    ) -> None:
-        discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=5000,
-            duration=DiscountDuration.forever,
-            organization=organization,
-        )
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            billing_address=Address(country=CountryAlpha2("FR")),
-        )
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer, discount=discount
-        )
-        price = product.prices[0]
-        assert is_fixed_price(price)
-        await create_billing_entry(
-            save_fixture,
-            type=BillingEntryType.proration,
-            customer=subscription.customer,
-            product_price=price,
-            amount=500,
-            currency=price.price_currency,
-            subscription=subscription,
-        )
-        await create_billing_entry(
-            save_fixture,
-            type=BillingEntryType.cycle,
-            customer=subscription.customer,
-            product_price=price,
-            amount=price.price_amount,
-            currency=price.price_currency,
-            subscription=subscription,
-        )
-
-        order = await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
-        )
-
-        assert order.subtotal_amount == price.price_amount + 500
-        assert order.discount == discount
-        assert order.discount_amount == price.price_amount / 2
-        assert order.net_amount == order.subtotal_amount - order.discount_amount
-
-        calculate_tax_mock.assert_called_once_with(
-            order.id,
-            subscription.currency,
-            order.net_amount,
-            product.stripe_product_id,
-            customer.billing_address,
-            [],
-            False,
-        )
-
-
-class DiscountFixture(TypedDict):
-    type: DiscountType
-    duration: DiscountDuration
-    basis_points: int
-    duration_in_months: int
-    applies_to: list[str] | None
-
-
-class ProrationFixture(TypedDict):
-    discount: DiscountFixture | None
-    products: dict[str, tuple[SubscriptionRecurringInterval, int]]
-    history: list[
-        tuple[
-            str,
-            BillingEntryType,
-            tuple[BillingEntryDirection, int, int],
-            datetime,
-            datetime,
-        ]
-    ]
-    expected_discount: int
-    expected_subtotal: int
-    expected_tax: int
-
-
-@pytest.mark.asyncio
-class TestCreateSubscriptionOrder:
-    @pytest.fixture
-    def calculate_tax_mock(self, mocker: MockerFixture) -> AsyncMock:
-        mock = AsyncMock(spec=calculate_tax)
-        mocker.patch("polar.order.service.calculate_tax", new=mock)
-
-        def mocked_calculate_tax(
-            identifier: uuid.UUID,
-            currency: str,
-            amount: int,
-            stripe_product_id: str,
-            address: Address,
-            tax_ids: list[TaxID],
-            tax_exempted: bool,
-        ) -> TaxCalculation:
-            return {
-                "processor_id": "TAX_PROCESSOR_ID",
-                "amount": polar_round(amount * 0.20),
-                "taxability_reason": TaxabilityReason.standard_rated,
-                "tax_rate": None,
-            }
-
-        mock.side_effect = mocked_calculate_tax
-
-        return mock
-
-    @pytest_asyncio.fixture
-    async def subscription(
-        self, save_fixture: SaveFixture, organization: Organization, product: Product
-    ) -> Subscription:
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            billing_address=Address(country=CountryAlpha2("DK")),
-        )
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            stripe_subscription_id=None,
-        )
-        return subscription
-
     async def test_cycle_proration(
         self,
         calculate_tax_mock: MagicMock,
@@ -1070,8 +962,17 @@ class TestCreateSubscriptionOrder:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
-        subscription: Subscription,
+        product: Product,
     ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
         old_product = await create_product(
             save_fixture,
             organization=organization,
@@ -1145,7 +1046,6 @@ class TestCreateSubscriptionOrder:
         assert order.tax_amount == 850
         assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
         assert order.taxability_reason == TaxabilityReason.standard_rated
-        # assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
         assert order.tax_transaction_processor_id is None
 
         assert_set_order_item_ids(
@@ -1170,20 +1070,20 @@ class TestCreateSubscriptionOrder:
             pytest.param(
                 # 25% off every month for 3 months
                 # Switch from Basic to Pro middle of month
-                {
-                    "discount": {
+                ProrationFixture(
+                    discount=DiscountFixture(
                         # 25% off on Basic
-                        "type": DiscountType.percentage,
-                        "basis_points": 2500,
-                        "duration": DiscountDuration.repeating,
-                        "duration_in_months": 3,
-                        "applies_to": ["p-basic"],
-                    },
-                    "products": {
+                        type=DiscountType.percentage,
+                        basis_points=2500,
+                        duration=DiscountDuration.repeating,
+                        duration_in_months=3,
+                        applies_to=["p-basic"],
+                    ),
+                    products={
                         "p-basic": (SubscriptionRecurringInterval.month, 3000),
                         "p-pro": (SubscriptionRecurringInterval.month, 9000),
                     },
-                    "history": [
+                    history=[
                         (
                             "p-basic",
                             # 3000 x 50% (half a month), discount: (100 - 25)% x 1500 = 375
@@ -1213,31 +1113,31 @@ class TestCreateSubscriptionOrder:
                             datetime(2025, 11, 1, tzinfo=UTC),
                         ),
                     ],
-                    "expected_discount": 0 + 2250,
+                    expected_discount=0 + 2250,
                     # (4500 - 1125) - (1500 - 375) = 2250
-                    "expected_subtotal": 2250 + 9000,
+                    expected_subtotal=2250 + 9000,
                     # Tax: 2250 x 20% = 450 ; (9000 - 2250) x 25% = 1440
-                    "expected_tax": 450 + 1350,
-                },
+                    expected_tax=450 + 1350,
+                ),
                 id="discount-applies-only-to-first-product",
             ),
             pytest.param(
                 # $10 off every month for 3 months
                 # Switch from Basic to Pro middle of month
-                {
-                    "discount": {
-                        "type": DiscountType.fixed,
-                        "amount": 1000,
-                        "currency": "usd",
-                        "duration": DiscountDuration.repeating,
-                        "duration_in_months": 3,
-                        "applies_to": ["p-basic"],
-                    },
-                    "products": {
+                ProrationFixture(
+                    discount=DiscountFixture(
+                        type=DiscountType.fixed,
+                        amount=1000,
+                        currency="usd",
+                        duration=DiscountDuration.repeating,
+                        duration_in_months=3,
+                        applies_to=["p-basic"],
+                    ),
+                    products={
                         "p-basic": (SubscriptionRecurringInterval.month, 3000),
                         "p-pro": (SubscriptionRecurringInterval.month, 9000),
                     },
-                    "history": [
+                    history=[
                         # Discounts aren't applied on the BillingEntry, but they are applied to the OrderItem
                         (
                             "p-basic",
@@ -1266,27 +1166,27 @@ class TestCreateSubscriptionOrder:
                             datetime(2025, 11, 1, tzinfo=UTC),
                         ),
                     ],
-                    "expected_discount": 1000,
+                    expected_discount=1000,
                     # (4500 - 1750) - (1500 - 1000) = 2250
-                    "expected_subtotal": 2250 + 9000,
-                    "expected_tax": 450 + 1600,  # 2250 x 20% = 450 ; 8000 x 20% = 1600
+                    expected_subtotal=2250 + 9000,
+                    expected_tax=450 + 1600,  # 2250 x 20% = 450 ; 8000 x 20% = 1600
                     # You paid 2000 for the month. Now you get 1000 back (50% the month).
-                },
+                ),
                 id="fixed-discount-on-first-product",
             ),
             pytest.param(
                 # Switch from yearly to monthly after 3 months and 1 day
-                {
-                    "discount": {
-                        "type": DiscountType.percentage,
-                        "basis_points": 5000,
-                        "duration": DiscountDuration.forever,
-                    },
-                    "products": {
+                ProrationFixture(
+                    discount=DiscountFixture(
+                        type=DiscountType.percentage,
+                        basis_points=5000,
+                        duration=DiscountDuration.forever,
+                    ),
+                    products={
                         "p-monthly": (SubscriptionRecurringInterval.month, 3000),
                         "p-yearly": (SubscriptionRecurringInterval.year, 30000),
                     },
-                    "history": [
+                    history=[
                         (
                             "p-yearly",
                             BillingEntryType.proration,
@@ -1305,10 +1205,10 @@ class TestCreateSubscriptionOrder:
                             datetime(2025, 10, 1, tzinfo=UTC),
                         ),
                     ],
-                    "expected_discount": 1500,
-                    "expected_subtotal": -11219 + 3000,
-                    "expected_tax": -1944,  # (-11219 + 3000 - 1500) * 20%
-                },
+                    expected_discount=1500,
+                    expected_subtotal=-11219 + 3000,
+                    expected_tax=-1944,  # (-11219 + 3000 - 1500) * 20%
+                ),
                 id="yearly-to-monthly",
             ),
         ],
@@ -1321,13 +1221,21 @@ class TestCreateSubscriptionOrder:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
-        customer: Customer,
-        subscription: Subscription,
+        product: Product,
         setup: ProrationFixture,
     ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
         products = {}
         prices = {}
-        for key, (recurring_interval, price_amount) in setup["products"].items():
+        for key, (recurring_interval, price_amount) in setup.products.items():
             product = await create_product(
                 save_fixture,
                 organization=organization,
@@ -1344,7 +1252,7 @@ class TestCreateSubscriptionOrder:
             dir,
             amount,
             discount_amount,
-        ), start_dt, end_dt in setup["history"]:
+        ), start_dt, end_dt in setup.history:
             price = prices[product_key]
             entry = await create_billing_entry(
                 save_fixture,
@@ -1361,18 +1269,18 @@ class TestCreateSubscriptionOrder:
             )
             entries.append(entry)
 
-        if setup["discount"]:
+        if setup.discount:
             discount = await create_discount(
                 save_fixture,
-                type=setup["discount"]["type"],
-                amount=setup["discount"].get("amount"),
-                currency=setup["discount"].get("currency"),
-                basis_points=setup["discount"].get("basis_points"),
-                duration=setup["discount"]["duration"],
-                duration_in_months=setup["discount"].get("duration_in_months"),
+                type=setup.discount.type,
+                amount=setup.discount.amount,
+                currency=setup.discount.currency,
+                basis_points=setup.discount.basis_points,
+                duration=setup.discount.duration,
+                duration_in_months=setup.discount.duration_in_months,
                 organization=organization,
-                products=[products[key] for key in setup["discount"]["applies_to"]]  # type: ignore
-                if setup["discount"].get("applies_to")
+                products=[products[key] for key in setup.discount.applies_to]  # type: ignore
+                if setup.discount.applies_to
                 else None,
             )
             subscription.discount = discount
@@ -1383,42 +1291,35 @@ class TestCreateSubscriptionOrder:
             session, subscription, OrderBillingReason.subscription_cycle
         )
 
-        assert len(order.items) == len(setup["history"])
-        assert order.discount_amount == setup["expected_discount"]
-        assert order.subtotal_amount == setup["expected_subtotal"]
-        assert order.tax_amount == setup["expected_tax"]
-        # order_items = sorted(order.items, key=lambda i: i.amount)
-        # assert order_items[0].product_price == old_price
-        # assert order_items[0].amount == -250
-        # assert order_items[1].product_price == new_price
-        # assert order_items[1].amount == 1500
-        # assert order_items[2].product_price == new_price
-        # assert order_items[2].amount == 3000
+        assert len(order.items) == len(setup.history)
+        assert order.discount == subscription.discount
+        assert order.discount_amount == setup.expected_discount
+        assert order.subtotal_amount == setup.expected_subtotal
+        assert order.tax_amount == setup.expected_tax
 
         if order.subtotal_amount < 0:
             assert order.status == OrderStatus.paid
             assert order.tax_calculation_processor_id is None
             assert order.taxability_reason == TaxabilityReason.standard_rated
-            # assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
             assert order.tax_transaction_processor_id is None
         else:
             assert order.status == OrderStatus.pending
             assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
             assert order.taxability_reason == TaxabilityReason.standard_rated
-            # assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
             assert order.tax_transaction_processor_id is None
 
         assert order.billing_reason == OrderBillingReason.subscription_cycle
         assert order.subscription == subscription
 
-        # assert order_ids == set([oi.id for oi in order.items])
         assert_set_order_item_ids(
             enqueue_job_mock_billing_entry,
             [e.id for e in entries],
             [oi.id for oi in order.items],
         )
 
-        customer_balance = await order_service.customer_balance(session, customer)
+        customer_balance = await order_service.customer_balance(
+            session, subscription.customer
+        )
         if order.subtotal_amount >= 0:
             enqueue_job_mock.assert_any_call(
                 "order.trigger_payment",
@@ -1428,11 +1329,21 @@ class TestCreateSubscriptionOrder:
             assert customer_balance == 0
         else:
             assert (
-                customer_balance
-                == setup["expected_subtotal"]
-                - setup["expected_discount"]
-                + setup["expected_tax"]
+                -customer_balance
+                == setup.expected_subtotal
+                - setup.expected_discount
+                + setup.expected_tax
             )
+
+        calculate_tax_mock.assert_called_once_with(
+            order.id,
+            subscription.currency,
+            abs(order.net_amount),
+            subscription.product.stripe_product_id,
+            customer.billing_address,
+            [],
+            False,
+        )
 
     @pytest.mark.parametrize(
         "billing_reason",
@@ -1480,6 +1391,298 @@ class TestCreateSubscriptionOrder:
         subscription_service_mock.reset_meters.assert_awaited_once_with(
             session, subscription
         )
+
+    async def test_positive_order_positive_customer_balance(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Negative order to establish customer balance
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=-100_00,
+            status=OrderStatus.paid,
+        )
+
+        # Customer's balance sanity check
+        balance = await order_service.customer_balance(session, customer)
+        assert balance == 100_00
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=50_00,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        # Mock tax calculation to return 0 for simplicity
+        calculate_tax_mock.reset_mock(side_effect=True)
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.not_subject_to_tax,
+            "tax_rate": {},
+        }
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert order.applied_balance_amount == -50_00
+        assert order.total_amount == 50_00
+        assert order.due_amount == 0
+        assert order.status == OrderStatus.paid
+
+    async def test_positive_order_negative_customer_balance(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Order marked as paid with no payment to establish customer balance
+        # Usually happens with orders <0.50$ for which we can't create a payment
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=50,
+            status=OrderStatus.paid,
+        )
+
+        # Customer's balance sanity check
+        balance = await order_service.customer_balance(session, customer)
+        assert balance == -50
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=50_00,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        # Mock tax calculation to return 0 for simplicity
+        calculate_tax_mock.reset_mock(side_effect=True)
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.not_subject_to_tax,
+            "tax_rate": {},
+        }
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert order.applied_balance_amount == 50
+        assert order.total_amount == 50_00
+        assert order.due_amount == 50_50  # Carry over the outstanding balance
+        assert order.status == OrderStatus.pending
+
+    async def test_negative_order_positive_customer_balance(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Negative order to establish customer balance
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=-100_00,
+            status=OrderStatus.paid,
+        )
+
+        # Customer's balance sanity check
+        balance = await order_service.customer_balance(session, customer)
+        assert balance == 100_00
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=-50_00,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        # Mock tax calculation to return 0 for simplicity
+        calculate_tax_mock.reset_mock(side_effect=True)
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.not_subject_to_tax,
+            "tax_rate": {},
+        }
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert order.applied_balance_amount == 0
+        assert order.total_amount == -50_00
+        assert order.due_amount == 0
+        assert order.status == OrderStatus.paid
+
+    async def test_negative_order_negative_customer_balance(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Order marked as paid with no payment to establish customer balance
+        # Usually happens with orders <0.50$ for which we can't create a payment
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=50,
+            status=OrderStatus.paid,
+        )
+
+        # Customer's balance sanity check
+        balance = await order_service.customer_balance(session, customer)
+        assert balance == -50
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=-50_00,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        # Mock tax calculation to return 0 for simplicity
+        calculate_tax_mock.reset_mock(side_effect=True)
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.not_subject_to_tax,
+            "tax_rate": {},
+        }
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert order.applied_balance_amount == 50
+        assert order.total_amount == -50_00
+        assert order.due_amount == 0
+        assert order.status == OrderStatus.paid
+
+
+@pytest.mark.asyncio
+class TestCreateTrialOrder:
+    async def test_not_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        with pytest.raises(SubscriptionNotTrialing):
+            await order_service.create_trial_order(
+                session, subscription, OrderBillingReason.subscription_create
+            )
+
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        order = await order_service.create_trial_order(
+            session, subscription, OrderBillingReason.subscription_create
+        )
+
+        assert order.total_amount == 0
+        assert order.net_amount == 0
+        assert order.status == OrderStatus.paid
+        assert order.billing_reason == OrderBillingReason.subscription_create
+        assert order.customer == subscription.customer
+        assert order.product == product
+        assert order.subscription == subscription
+        assert len(order.items) == 1
 
 
 @pytest.mark.asyncio
@@ -2166,6 +2369,7 @@ class TestHandlePaymentFailure:
             status=OrderStatus.pending,
         )
         order.next_payment_attempt_at = None
+        assert order.subscription is not None
         order.subscription.stripe_subscription_id = "sub_stripe_123"
         await save_fixture(order)
 
@@ -2600,7 +2804,7 @@ class TestProcessDunningOrder:
 class TestTriggerPayment:
     """Test payment lock mechanism in trigger_payment service method."""
 
-    async def test_trigger_payment_when_already_locked(
+    async def test_already_locked(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -2623,7 +2827,7 @@ class TestTriggerPayment:
         with pytest.raises(PaymentAlreadyInProgress):
             await order_service.trigger_payment(session, order, payment_method)
 
-    async def test_trigger_payment_acquires_lock_successfully(
+    async def test_acquires_lock_successfully(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -2651,7 +2855,7 @@ class TestTriggerPayment:
         await session.refresh(order)
         assert order.payment_lock_acquired_at is not None
 
-    async def test_trigger_payment_releases_lock_on_failure(
+    async def test_releases_lock_on_failure(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -2681,7 +2885,7 @@ class TestTriggerPayment:
         await session.refresh(order)
         assert order.payment_lock_acquired_at is None
 
-    async def test_trigger_payment_card_error_raises_card_payment_failed(
+    async def test_card_error_raises_card_payment_failed(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -2720,7 +2924,7 @@ class TestTriggerPayment:
         await session.refresh(order)
         assert order.payment_lock_acquired_at is None
 
-    async def test_trigger_payment_other_stripe_errors_not_converted(
+    async def test_other_stripe_errors_not_converted(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -2751,6 +2955,66 @@ class TestTriggerPayment:
         # Verify lock is released on failure
         await session.refresh(order)
         assert order.payment_lock_acquired_at is None
+
+    async def test_due_amount_less_than_50(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Given
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=10,
+        )
+        await save_fixture(order)
+
+        # When
+        await order_service.trigger_payment(session, order, payment_method)
+
+        # Then
+        stripe_service_mock.create_payment_intent.assert_not_called()
+
+        await session.refresh(order)
+        assert order.status == OrderStatus.paid
+        assert order.payment_lock_acquired_at is None
+
+    async def test_applied_balance_amount(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Given
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=50_00,
+            applied_balance_amount=50,
+        )
+        await save_fixture(order)
+
+        # When
+        await order_service.trigger_payment(session, order, payment_method)
+
+        # Then
+        stripe_service_mock.create_payment_intent.assert_called_once()
+        amount = stripe_service_mock.create_payment_intent.call_args[1]["amount"]
+        assert amount == 50_50
+
+        await session.refresh(order)
+        assert order.payment_lock_acquired_at is not None
 
 
 @pytest.mark.asyncio
@@ -3119,3 +3383,342 @@ class TestProcessRetryPayment:
             await order_service.process_retry_payment(
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
+
+
+class BalanceOrderFixture(BaseModel):
+    items: list[
+        tuple[
+            str,
+            int,  # amount
+            bool,  # proration
+        ]
+    ]
+    status: OrderStatus
+    subtotal_amount: int
+    discount_amount: int
+    tax_amount: int
+    refunded_amount: int
+    refunded_tax_amount: int
+    applied_balance_amount: int = Field(default=0)
+
+
+class BalanceFixture(BaseModel):
+    products: dict[str, tuple[SubscriptionRecurringInterval, int]]
+    orders: list[BalanceOrderFixture]
+    payments: list[
+        tuple[
+            int,  # Order index
+            int,  # amount
+            PaymentStatus,
+        ]
+    ]
+    expected_balance: int
+
+
+@pytest.mark.asyncio
+class TestCustomerBalance:
+    @pytest.mark.parametrize(
+        "setup",
+        [
+            pytest.param(
+                BalanceFixture(
+                    products={
+                        "p-basic": (SubscriptionRecurringInterval.month, 3000),
+                        "p-pro": (SubscriptionRecurringInterval.month, 9000),
+                    },
+                    orders=[
+                        # Emulate a plan switch middle of month
+                        BalanceOrderFixture(
+                            items=[("p-basic", -1500, True), ("p-pro", 4500, True)],
+                            status=OrderStatus.paid,
+                            subtotal_amount=3000,
+                            discount_amount=0,
+                            tax_amount=0,
+                            refunded_amount=0,
+                            refunded_tax_amount=0,
+                        ),
+                    ],
+                    payments=[],
+                    expected_balance=-3000,
+                ),
+                id="no-payments-positive-balance",
+            ),
+            pytest.param(
+                BalanceFixture(
+                    products={
+                        "p-basic": (SubscriptionRecurringInterval.month, 3000),
+                        "p-pro": (SubscriptionRecurringInterval.month, 9000),
+                    },
+                    orders=[
+                        # Emulate a plan switch middle of month
+                        BalanceOrderFixture(
+                            items=[("p-pro", -4500, True), ("p-pro", 1500, True)],
+                            status=OrderStatus.paid,
+                            subtotal_amount=-3000,
+                            discount_amount=0,
+                            tax_amount=0,
+                            refunded_amount=0,
+                            refunded_tax_amount=0,
+                        ),
+                    ],
+                    payments=[],
+                    expected_balance=3000,
+                ),
+                id="no-payments-negative-balance",
+            ),
+            pytest.param(
+                BalanceFixture(
+                    products={
+                        "p-basic": (SubscriptionRecurringInterval.month, 3000),
+                    },
+                    orders=[
+                        BalanceOrderFixture(
+                            items=[("p-basic", 3000, False)],
+                            status=OrderStatus.partially_refunded,
+                            subtotal_amount=3000,
+                            discount_amount=0,
+                            tax_amount=750,
+                            refunded_amount=1000,
+                            refunded_tax_amount=250,
+                        ),
+                    ],
+                    payments=[(0, 3750, PaymentStatus.succeeded)],
+                    expected_balance=0,  # Refund already paid back to customer
+                ),
+                id="partial-refund",
+            ),
+            pytest.param(
+                BalanceFixture(
+                    products={
+                        "p-basic": (SubscriptionRecurringInterval.month, 5000),
+                    },
+                    orders=[
+                        BalanceOrderFixture(
+                            items=[("p-basic", 5000, False)],
+                            status=OrderStatus.refunded,
+                            subtotal_amount=5000,
+                            discount_amount=0,
+                            tax_amount=0,
+                            refunded_amount=5000,
+                            refunded_tax_amount=0,
+                        ),
+                    ],
+                    payments=[(0, 5000, PaymentStatus.succeeded)],
+                    expected_balance=0,  # Fully refunded orders should not affect balance
+                ),
+                id="full-refund-excluded",
+            ),
+            pytest.param(
+                BalanceFixture(
+                    products={
+                        "p-basic": (SubscriptionRecurringInterval.month, 3000),
+                        "p-pro": (SubscriptionRecurringInterval.month, 9000),
+                    },
+                    orders=[
+                        BalanceOrderFixture(
+                            items=[("p-basic", 3000, False)],
+                            status=OrderStatus.paid,
+                            subtotal_amount=3000,
+                            discount_amount=0,
+                            tax_amount=0,
+                            refunded_amount=0,
+                            refunded_tax_amount=0,
+                        ),
+                        BalanceOrderFixture(
+                            items=[("p-pro", 9000, False)],
+                            status=OrderStatus.partially_refunded,
+                            subtotal_amount=9000,
+                            discount_amount=0,
+                            tax_amount=2250,
+                            refunded_amount=4000,
+                            refunded_tax_amount=1000,
+                        ),
+                    ],
+                    payments=[
+                        (0, 3000, PaymentStatus.succeeded),
+                        (1, 11250, PaymentStatus.succeeded),
+                    ],
+                    expected_balance=0,  # Refunds already paid back to customer
+                ),
+                id="mixed-paid-and-partial-refund",
+            ),
+            pytest.param(
+                BalanceFixture(
+                    products={
+                        "p-basic": (SubscriptionRecurringInterval.month, 2000),
+                    },
+                    orders=[
+                        BalanceOrderFixture(
+                            items=[("p-basic", 2000, False)],
+                            status=OrderStatus.partially_refunded,
+                            subtotal_amount=2000,
+                            discount_amount=500,
+                            tax_amount=375,  # 25% tax on discounted amount
+                            refunded_amount=500,
+                            refunded_tax_amount=125,
+                        ),
+                    ],
+                    payments=[(0, 1875, PaymentStatus.succeeded)],
+                    expected_balance=0,  # Refund already paid back to customer
+                ),
+                id="partial-refund-with-discount-and-tax",
+            ),
+            pytest.param(
+                BalanceFixture(
+                    products={
+                        "p-basic": (SubscriptionRecurringInterval.month, 2000),
+                    },
+                    orders=[
+                        BalanceOrderFixture(
+                            items=[("p-basic", 2000, False)],
+                            status=OrderStatus.paid,
+                            subtotal_amount=50,
+                            discount_amount=0,
+                            tax_amount=0,
+                            refunded_amount=0,
+                            refunded_tax_amount=0,
+                        ),
+                    ],
+                    payments=[],
+                    expected_balance=-50,
+                ),
+                id="negative-balance",
+            ),
+            pytest.param(
+                BalanceFixture(
+                    products={
+                        "p-basic": (SubscriptionRecurringInterval.month, 2000),
+                    },
+                    orders=[
+                        BalanceOrderFixture(
+                            items=[("p-basic", 2000, False)],
+                            status=OrderStatus.paid,
+                            subtotal_amount=50,
+                            discount_amount=0,
+                            tax_amount=0,
+                            refunded_amount=0,
+                            refunded_tax_amount=0,
+                        ),
+                        BalanceOrderFixture(
+                            items=[("p-basic", 2000, False)],
+                            status=OrderStatus.paid,
+                            subtotal_amount=50,
+                            discount_amount=0,
+                            tax_amount=0,
+                            refunded_amount=0,
+                            refunded_tax_amount=0,
+                            applied_balance_amount=50,
+                        ),
+                    ],
+                    payments=[(0, 100, PaymentStatus.succeeded)],
+                    expected_balance=0,
+                ),
+                id="balance-carried-over",
+            ),
+            pytest.param(
+                BalanceFixture(
+                    products={
+                        "p-basic": (SubscriptionRecurringInterval.month, 2000),
+                    },
+                    orders=[
+                        BalanceOrderFixture(
+                            items=[("p-basic", 2000, False)],
+                            status=OrderStatus.paid,
+                            subtotal_amount=50,
+                            discount_amount=0,
+                            tax_amount=0,
+                            refunded_amount=0,
+                            refunded_tax_amount=0,
+                        ),
+                        BalanceOrderFixture(
+                            items=[("p-basic", 2000, False)],
+                            status=OrderStatus.paid,
+                            subtotal_amount=-50_00,
+                            discount_amount=0,
+                            tax_amount=0,
+                            refunded_amount=0,
+                            refunded_tax_amount=0,
+                            applied_balance_amount=50,
+                        ),
+                    ],
+                    payments=[],
+                    expected_balance=49_50,
+                ),
+                id="positive-credit-balance-partially-used",
+            ),
+        ],
+    )
+    async def test_customer_balance(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        subscription: Subscription,
+        setup: BalanceFixture,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.order.service.enqueue_job")
+        customer = subscription.customer
+
+        # Create products
+        products = {}
+        prices = {}
+        for key, (recurring_interval, price_amount) in setup.products.items():
+            product = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=recurring_interval,
+                prices=[(price_amount,)],
+            )
+            products[key] = product
+
+            price = cast(ProductPriceFixed, product.prices[0])
+            prices[key] = price
+
+        # Create orders
+        orders = []
+        for order_setup in setup.orders:
+            order_items = []
+            for t_order_item in order_setup.items:
+                product_key, amount, proration = t_order_item
+                product = products[product_key]
+                order_item = OrderItem(
+                    label="",
+                    product_price=prices[product_key],
+                    amount=amount,
+                    tax_amount=0,
+                    proration=proration,
+                )
+                order_items.append(order_item)
+            order = await create_order(
+                save_fixture,
+                product=products[product_key],
+                status=order_setup.status,
+                customer=customer,
+                order_items=order_items,
+                subtotal_amount=order_setup.subtotal_amount,
+                discount_amount=order_setup.discount_amount,
+                tax_amount=order_setup.tax_amount,
+                refunded_amount=order_setup.refunded_amount,
+                refunded_tax_amount=order_setup.refunded_tax_amount,
+                stripe_invoice_id=None,  # Let it generate unique IDs
+            )
+            orders.append(order)
+
+        # Create payments
+        payments = []
+        for order_idx, amount, status in setup.payments:
+            order = orders[order_idx]
+            payment = await create_payment(
+                save_fixture,
+                order.organization,
+                status=status,
+                order=order,
+                amount=amount,
+            )
+            payments.append(payment)
+
+        assert (
+            await order_service.customer_balance(session, customer)
+            == setup.expected_balance
+        )

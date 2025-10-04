@@ -5,9 +5,11 @@ from typing import Any, Protocol, Self, TypeAlias
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, over, select
 from sqlalchemy.orm import Mapped
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 
+from polar.config import settings
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
@@ -68,9 +70,28 @@ class RepositoryBase[M]:
         return result.scalars().unique().all()
 
     async def stream(self, statement: Select[tuple[M]]) -> AsyncGenerator[M, None]:
-        results = await self.session.stream_scalars(statement)
+        """
+        Stream results from the database using the given statement.
+
+        This is useful for processing large datasets without loading everything
+        into memory at once.
+
+        The caveat is that your statement shouldn't join many-to-one or
+        many-to-many relationships, as we can't apply ORM's `unique()` method
+        to the results, which may lead to duplicates.
+
+        Args:
+            statement: The SQLAlchemy select statement to execute.
+
+        Yields:
+            Instances of the model `M` as they are fetched from the database.
+        """
+        results = await self.session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
         try:
-            async for result in results.unique():
+            async for result in results:
                 yield result
         finally:
             await results.close()
@@ -82,11 +103,12 @@ class RepositoryBase[M]:
         paginated_statement: Select[tuple[M, int]] = (
             statement.add_columns(over(func.count())).limit(limit).offset(offset)
         )
-        results = await self.session.stream(paginated_statement)
+        # Streaming can't be applied here, since we need to call ORM's unique()
+        results = await self.session.execute(paginated_statement)
 
         items: list[M] = []
         count = 0
-        async for result in results.unique():
+        for result in results.unique().all():
             item, count = result._tuple()
             items.append(item)
 
@@ -113,6 +135,15 @@ class RepositoryBase[M]:
         if update_dict is not None:
             for attr, value in update_dict.items():
                 setattr(object, attr, value)
+                # Always consider that the attribute was modified if it's explictly set
+                # in the update_dict. This forces SQLAlchemy to include it in the
+                # UPDATE statement, even if the value is the same as before.
+                # Ref: https://docs.sqlalchemy.org/en/20/orm/session_api.html#sqlalchemy.orm.attributes.flag_modified
+                try:
+                    flag_modified(object, attr)
+                # Don't fail if the attribute is not tracked by SQLAlchemy
+                except KeyError:
+                    pass
 
         self.session.add(object)
 

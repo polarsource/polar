@@ -1,17 +1,15 @@
 import Input from '@polar-sh/ui/components/atoms/Input'
 import Big from 'big.js'
 import { DollarSign } from 'lucide-react'
-import React, { useCallback, useMemo } from 'react'
+import React, { ComponentProps, useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface UnitAmountInputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+const UnitAmountInput = ({
+  ref,
+  ...props
+}: ComponentProps<typeof Input> & {
   onValueChange: (value: number) => void
-}
-
-const UnitAmountInput: React.ForwardRefExoticComponent<
-  UnitAmountInputProps & React.RefAttributes<HTMLInputElement>
-> = React.forwardRef((props, ref) => {
+}) => {
   const { value, onValueChange, className, ...rest } = props
   const formatter = useMemo(
     () =>
@@ -83,7 +81,7 @@ const UnitAmountInput: React.ForwardRefExoticComponent<
       preSlot={<DollarSign className="h-4 w-4" />}
     />
   )
-})
+}
 
 UnitAmountInput.displayName = 'UnitAmountInput'
 

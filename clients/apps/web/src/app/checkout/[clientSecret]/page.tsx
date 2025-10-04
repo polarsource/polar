@@ -5,6 +5,7 @@ import {
 } from '@polar-sh/checkout/providers'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
+import { checkoutsClientUpdate } from '@polar-sh/sdk/funcs/checkoutsClientUpdate'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import { notFound, redirect } from 'next/navigation'
@@ -27,7 +28,7 @@ export default async function Page(props: {
   const embed = _embed === 'true'
   const client = new PolarCore({ serverURL: getServerURL() })
 
-  const {
+  let {
     ok,
     value: checkout,
     error,
@@ -59,13 +60,31 @@ export default async function Page(props: {
     },
   )
 
-  if (!ok) {
+  if (!ok || !checkout) {
     if (error instanceof ResourceNotFound) {
       notFound()
     } else if (error instanceof ExpiredCheckoutError) {
       notFound() // TODO: show expired checkout page
     } else {
       throw error
+    }
+  }
+
+  if (searchParams.amount && checkout.productPrice.amountType === 'custom') {
+    let amount = parseFloat(searchParams.amount)
+    if (!isNaN(amount)) {
+      amount = Math.round(amount * 100)
+
+      const updateResult = await checkoutsClientUpdate(client, {
+        clientSecret,
+        checkoutUpdatePublic: {
+          amount: amount,
+        },
+      })
+
+      if (updateResult.ok) {
+        checkout = updateResult.value
+      }
     }
   }
 

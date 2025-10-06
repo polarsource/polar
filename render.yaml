@@ -106,7 +106,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: pro
-    dockerCommand: uv run dramatiq -p 2 -t 4 --queues default -f polar.worker.scheduler:start polar.worker.run
+    dockerCommand: uv run dramatiq -p 2 -t 4 --queues default high_priority -f polar.worker.scheduler:start polar.worker.run
     healthCheckPath: /
     region: ohio
     numInstances: 1
@@ -244,13 +244,6 @@ services:
           property: port
       - key: POLAR_REDIS_DB
         value: 0
-      - fromGroup: google-production
-      - fromGroup: github-production
-      - fromGroup: backend-production
-      - fromGroup: stripe-production
-      - fromGroup: logfire-worker
-      - fromGroup: aws-s3-production
-      - fromGroup: openai-production
 
   - type: redis
     name: redis

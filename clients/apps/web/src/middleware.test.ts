@@ -217,9 +217,7 @@ describe('middleware function', () => {
     const response = await middleware(request)
 
     expect(response.status).toBe(200)
-    expect(response.headers.get('x-polar-user')).toBe(
-      JSON.stringify(mockUser),
-    )
+    expect(response.headers.get('x-polar-user')).toBe(JSON.stringify(mockUser))
   })
 
   it('should allow unauthenticated access to public routes', async () => {
@@ -243,7 +241,6 @@ describe('middleware function', () => {
     expect(location).toContain('/login')
     expect(location).toContain('return_to=%2Fdashboard%3Ffoo%3Dbar%26baz%3Dqux')
   })
-
 
   it('should throw error on unexpected API response status', async () => {
     createServerSideAPI.mockResolvedValue({

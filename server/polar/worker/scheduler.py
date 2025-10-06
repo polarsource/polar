@@ -1,4 +1,6 @@
+import logfire
 from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.schedulers.base import STATE_STOPPED
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 from polar import tasks
@@ -14,8 +16,18 @@ configure_logfire("worker")
 configure_logging(logfire=True)
 
 
+class LogfireBlockingScheduler(BlockingScheduler):
+    def _main_loop(self) -> None:
+        wait_seconds = 1
+        while self.state != STATE_STOPPED:
+            with logfire.span("Scheduler wakeup"):
+                self._event.wait(wait_seconds)
+                self._event.clear()
+                wait_seconds = self._process_jobs()
+
+
 def start() -> None:
-    scheduler = BlockingScheduler()
+    scheduler = LogfireBlockingScheduler()
 
     scheduler.add_jobstore(MemoryJobStore(), "memory")
     scheduler.add_jobstore(SubscriptionJobStore(), "subscription")

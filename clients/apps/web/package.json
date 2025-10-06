@@ -61,6 +61,7 @@
     "framer-motion": "^12.23.22",
     "geist": "^1.5.1",
     "import-in-the-middle": "^1.14.4",
+    "jose": "^6.1.0",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.544.0",
     "markdown-to-jsx": "^7.7.13",

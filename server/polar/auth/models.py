@@ -19,6 +19,17 @@ from .scope import Scope
 class Anonymous: ...
 
 
+class JWTSession:
+    """Session type for JWT-authenticated requests with organization context."""
+
+    organization: Organization
+    user: User | None
+
+    def __init__(self, organization: Organization) -> None:
+        self.organization = organization
+        self.user = None
+
+
 Subject = User | Organization | Customer | Anonymous
 SubjectType = type[User] | type[Organization] | type[Customer] | type[Anonymous]
 Session = (
@@ -27,6 +38,7 @@ Session = (
     | OAuth2Token
     | PersonalAccessToken
     | CustomerSession
+    | JWTSession
 )
 
 
@@ -117,6 +129,7 @@ __all__ = [
     "Subject",
     "SubjectType",
     "AuthSubject",
+    "JWTSession",
     "is_anonymous",
     "is_user",
     "is_organization",

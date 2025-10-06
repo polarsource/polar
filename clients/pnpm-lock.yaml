@@ -173,6 +173,9 @@ importers:
       import-in-the-middle:
         specifier: ^1.14.4
         version: 1.14.4
+      jose:
+        specifier: ^6.1.0
+        version: 6.1.0
       lodash.debounce:
         specifier: ^4.0.8
         version: 4.0.8
@@ -4793,6 +4796,9 @@ packages:
 
   jju@1.4.0:
     resolution: {integrity: sha512-8wb9Yw966OSxApiCt0K3yNJL8pnNeIv+OEq2YMidz4FKP6nonSRoOXc80iXY4JaN2FC11B9qsNmDsm+ZOfMROA==}
+
+  jose@6.1.0:
+    resolution: {integrity: sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA==}
 
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
@@ -11765,6 +11771,8 @@ snapshots:
   jiti@2.5.1: {}
 
   jju@1.4.0: {}
+
+  jose@6.1.0: {}
 
   joycon@3.1.1: {}
 

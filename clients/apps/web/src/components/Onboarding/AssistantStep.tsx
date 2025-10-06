@@ -21,6 +21,9 @@ export const AssistantStep = () => {
     transport: new DefaultChatTransport({
       api: `/dashboard/${organization.slug}/onboarding/assistant/chat`,
       credentials: 'include',
+      body: {
+        organizationId: organization.id,
+      },
     }),
   })
 

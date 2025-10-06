@@ -605,6 +605,8 @@ class SubscriptionService:
             raise InactiveSubscription(subscription)
 
         revoke = subscription.cancel_at_period_end
+        previous_status = subscription.status
+        previous_canceled = subscription.canceled
 
         # Subscription is due to cancel, revoke it
         if revoke:
@@ -676,7 +678,6 @@ class SubscriptionService:
                         ),
                     )
 
-        previous_status = subscription.status
         if previous_status == SubscriptionStatus.trialing:
             subscription.status = SubscriptionStatus.active
 
@@ -691,12 +692,14 @@ class SubscriptionService:
             OrderBillingReason.subscription_cycle,
         )
 
-        await self.send_cycled_email(session, subscription)
+        if not revoke:
+            await self.send_cycled_email(session, subscription)
+
         await self._after_subscription_updated(
             session,
             subscription,
             previous_status=previous_status,
-            previous_is_canceled=subscription.canceled,
+            previous_is_canceled=previous_canceled,
         )
 
         return subscription

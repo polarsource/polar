@@ -372,3 +372,30 @@ def build_stripe_dispute(
         },
         None,
     )
+
+
+def build_stripe_payment_intent(
+    *,
+    id: str = "STRIPE_PAYMENT_INTENT_ID",
+    status: str = "requires_payment_method",
+    amount: int = 1000,
+    currency: str = "usd",
+    customer: str | None = None,
+    receipt_email: str | None = None,
+    metadata: dict[str, str] | None = None,
+    latest_charge: str | None = None,
+    last_payment_error: dict[str, Any] | None = None,
+) -> stripe_lib.PaymentIntent:
+    obj: dict[str, Any] = {
+        "id": id,
+        "status": status,
+        "amount": amount,
+        "currency": currency,
+        "customer": customer,
+        "receipt_email": receipt_email,
+        "metadata": metadata or {},
+        "latest_charge": latest_charge,
+        "last_payment_error": last_payment_error,
+    }
+
+    return stripe_lib.PaymentIntent.construct_from(obj, None)

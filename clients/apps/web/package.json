@@ -7,7 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "prettier -c . && eslint .",
-    "test": "exit 0",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "analyze": "ANALYZE=true next build"
   },
@@ -87,6 +87,7 @@
   "devDependencies": {
     "@next/bundle-analyzer": "15.5.4",
     "@polar-sh/eslint-config": "workspace:*",
+    "@polar-sh/typescript-config": "workspace:*",
     "@types/big.js": "^6.2.2",
     "@types/d3": "^7.4.3",
     "@types/dom-to-image": "^2.6.7",
@@ -99,9 +100,12 @@
     "@types/react-dom": "19.1.9",
     "@types/tinycolor2": "^1.4.6",
     "@types/web": "^0.0.271",
+    "@vitejs/plugin-react": "^5.0.4",
+    "@vitest/ui": "^3.2.4",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.36.0",
     "gzip-size": "^7.0.0",
+    "jsdom": "^27.0.0",
     "mkdirp": "^3.0.1",
     "postcss": "^8.5.6",
     "prop-types": "^15.8.1",
@@ -109,9 +113,10 @@
     "remark-mdx": "^3.1.1",
     "tailwindcss": "^4.1.13",
     "ts-node": "^10.9.2",
-    "@polar-sh/typescript-config": "workspace:*",
     "typescript": "5.9.3",
-    "unist-util-visit": "^5.0.0"
+    "unist-util-visit": "^5.0.0",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
   },
   "nextBundleAnalysis": {
     "budget": 358400,

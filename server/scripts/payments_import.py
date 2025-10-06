@@ -9,7 +9,6 @@ import stripe as stripe_lib
 import structlog
 import typer
 from rich.progress import Progress
-from sqlalchemy.exc import IntegrityError
 
 from polar.kit.db.postgres import AsyncSessionMaker, create_async_sessionmaker
 from polar.models import Payment
@@ -89,14 +88,10 @@ async def process_intent(
     async with semaphore:
         async with sessionmaker() as session:
             try:
-                payment = await payment_service.create_from_stripe_payment_intent(
+                payment = await payment_service.upsert_from_stripe_payment_intent(
                     session, intent, None, None
                 )
                 payment.created_at = datetime.fromtimestamp(intent.created, tz=UTC)
-                try:
-                    await session.flush()
-                except IntegrityError:
-                    return None  # Already exists
                 return payment
             except (UnlinkedPaymentError, UnhandledPaymentIntent):
                 return None

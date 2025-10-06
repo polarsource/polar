@@ -150,7 +150,7 @@ class PaymentService:
 
         return await repository.update(payment)
 
-    async def create_from_stripe_payment_intent(
+    async def upsert_from_stripe_payment_intent(
         self,
         session: AsyncSession,
         payment_intent: stripe_lib.PaymentIntent,
@@ -167,9 +167,18 @@ class PaymentService:
         ):
             raise UnhandledPaymentIntent(payment_intent.id)
 
-        payment = Payment(processor_id=payment_intent.id)
+        repository = PaymentRepository.from_session(session)
 
-        payment.processor = PaymentProcessor.stripe
+        payment = await repository.get_by_processor_id(
+            PaymentProcessor.stripe, payment_intent.id
+        )
+        if payment is None:
+            payment = Payment(
+                id=generate_uuid(),
+                processor=PaymentProcessor.stripe,
+                processor_id=payment_intent.id,
+            )
+
         payment.status = PaymentStatus.failed
         payment.amount = payment_intent.amount
         payment.currency = payment_intent.currency
@@ -194,8 +203,7 @@ class PaymentService:
         else:
             raise UnlinkedPaymentError(payment_intent.id)
 
-        repository = PaymentRepository.from_session(session)
-        return await repository.create(payment)
+        return await repository.update(payment)
 
 
 payment = PaymentService()

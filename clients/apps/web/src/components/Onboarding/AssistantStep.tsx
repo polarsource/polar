@@ -6,6 +6,7 @@ import { useChat } from '@ai-sdk/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DefaultChatTransport } from 'ai'
 import { motion } from 'framer-motion'
+import { BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { FadeUp } from '../Animated/FadeUp'
@@ -35,6 +36,18 @@ export const AssistantStep = () => {
     if (input.trim()) {
       sendMessage({ text: input })
       setInput('')
+      textareaRef.current?.focus()
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      if (input.trim() && status === 'ready') {
+        sendMessage({ text: input })
+        setInput('')
+        textareaRef.current?.focus()
+      }
     }
   }
 
@@ -81,10 +94,27 @@ export const AssistantStep = () => {
                           if (part.type === 'text') {
                             return (
                               <MemoizedMarkdown
-                                key={index}
+                                key={`${message.id}-${index}`}
                                 content={part.text}
                               />
                             )
+                          }
+
+                          if (part.type === 'reasoning') {
+                            if (
+                              part.state === 'streaming' ||
+                              part.state === 'input-streaming'
+                            ) {
+                              return (
+                                <p
+                                  key={`${message.id}-${index}`}
+                                  className="dark:text-polar-500 text-sm italic text-gray-500"
+                                >
+                                  Thinking...
+                                </p>
+                              )
+                            }
+                            return null
                           }
 
                           if (part.type === 'dynamic-tool') {
@@ -146,10 +176,13 @@ export const AssistantStep = () => {
                             switch (part.state) {
                               case 'input-available':
                               case 'output-available':
-                                switch (part.input.data.reason) {
+                                switch (part.input.reason) {
                                   case 'unsupported_benefit_type':
                                     return (
-                                      <p className="">
+                                      <p
+                                        key={`${message.id}-${index}`}
+                                        className="flex flex-col items-center gap-y-2 rounded-2xl bg-gray-200 p-4 text-gray-500"
+                                      >
                                         Sorry, but this configuration needs
                                         manual input.
                                         <Link href="./product">
@@ -159,7 +192,10 @@ export const AssistantStep = () => {
                                     )
                                   case 'tool_call_error':
                                     return (
-                                      <p className="">
+                                      <p
+                                        key={`${message.id}-${index}`}
+                                        className="flex flex-col items-center gap-y-2 rounded-2xl bg-gray-200 p-4 text-gray-500"
+                                      >
                                         Something went wrong configuring Polar.
                                         <Link href="./product">
                                           Please try manually.
@@ -180,7 +216,7 @@ export const AssistantStep = () => {
                               case 'output-available':
                                 return (
                                   <div
-                                    key={index}
+                                    key={`${message.id}-${index}`}
                                     className="grid-auto-rows grid grid-cols-2 gap-4"
                                   >
                                     {part.input.products.map(
@@ -327,12 +363,13 @@ export const AssistantStep = () => {
 
               <form
                 onSubmit={handleSubmit}
-                className="dark:border-polar-700 flex shrink-0 items-start gap-2 overflow-hidden rounded-b-3xl border pr-4 first:rounded-t-3xl focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100"
+                className="dark:border-polar-700 flex shrink-0 flex-col gap-3 overflow-hidden rounded-b-3xl border first:rounded-t-3xl focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100"
               >
                 <textarea
                   ref={textareaRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   disabled={status !== 'ready'}
                   placeholder={
                     messages.length === 0
@@ -340,9 +377,18 @@ export const AssistantStep = () => {
                       : 'Reply…'
                   }
                   rows={1}
-                  className="dark:bg-polar-800 pt-6.5 min-h-[72px] flex-1 resize-none border-none px-4 pb-6 text-sm/5 focus:outline-none focus:ring-0 disabled:opacity-50"
+                  className="dark:bg-polar-800 max-h-[240px] min-h-[72px] resize-none overflow-y-auto border-none px-6 pb-0 pt-5 text-sm/5 focus:outline-none focus:ring-0 disabled:opacity-50"
                 />
-                <div className="py-4">
+                <div className="flex items-center justify-between gap-2 px-4 pb-4">
+                  <Link href="/docs">
+                    <Button
+                      variant="outline"
+                      wrapperClassNames="flex flex-row items-center gap-x-2"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      Read the docs
+                    </Button>
+                  </Link>
                   <Button
                     type="submit"
                     disabled={status !== 'ready' || !input.trim()}

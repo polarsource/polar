@@ -153,8 +153,6 @@ broker = RedisBroker(
     ],
 )
 
-broker.add_middleware(LogfireMiddleware())
-broker.add_middleware(LogContextMiddleware())
 broker.add_middleware(
     middleware.Retries(
         max_retries=settings.WORKER_MAX_RETRIES,
@@ -168,6 +166,8 @@ broker.add_middleware(MaxRetriesMiddleware())
 broker.add_middleware(SQLAlchemyMiddleware())
 broker.add_middleware(RedisMiddleware())
 broker.add_middleware(scheduler_middleware)
+broker.add_middleware(LogfireMiddleware())
+broker.add_middleware(LogContextMiddleware())
 dramatiq.set_broker(broker)
 dramatiq.set_encoder(JSONEncoder())
 

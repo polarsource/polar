@@ -244,6 +244,13 @@ services:
           property: port
       - key: POLAR_REDIS_DB
         value: 0
+      - fromGroup: google-production
+      - fromGroup: github-production
+      - fromGroup: backend-production
+      - fromGroup: stripe-production
+      - fromGroup: logfire-worker
+      - fromGroup: aws-s3-production
+      - fromGroup: openai-production
 
   - type: redis
     name: redis

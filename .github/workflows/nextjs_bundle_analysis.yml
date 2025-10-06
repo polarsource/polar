@@ -111,7 +111,7 @@ jobs:
           echo EOF >> $GITHUB_OUTPUT
 
       - name: Find Comment
-        uses: peter-evans/find-comment@v3
+        uses: peter-evans/find-comment@v4
         if: success() && github.event.number
         id: fc
         with:

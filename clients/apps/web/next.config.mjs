@@ -1,13 +1,7 @@
 import bundleAnalyzer from '@next/bundle-analyzer'
 import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
-import { createHighlighterCore } from 'shiki/core'
-import { createOnigurumaEngine } from 'shiki/engine/oniguruma'
-import langBash from 'shiki/langs/bash.mjs'
-import langJavascript from 'shiki/langs/javascript.mjs'
-import themeCatppuccinLatte from 'shiki/themes/catppuccin-latte.mjs'
-import themePoimandres from 'shiki/themes/poimandres.mjs'
-import { themeConfig, themesList, USED_LANGUAGES } from './shiki.config.mjs'
+import { themeConfig } from './shiki.config.mjs'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
@@ -463,23 +457,6 @@ const nextConfig = {
 }
 
 const createConfig = async () => {
-  // Map configuration to actual imports for tree-shaking
-  const LANGUAGE_MAP = {
-    javascript: langJavascript,
-    bash: langBash,
-  }
-
-  const THEME_MAP = {
-    'catppuccin-latte': themeCatppuccinLatte,
-    poimandres: themePoimandres,
-  }
-
-  const highlighter = await createHighlighterCore({
-    langs: USED_LANGUAGES.map((lang) => LANGUAGE_MAP[lang]).filter(Boolean),
-    themes: themesList.map((theme) => THEME_MAP[theme]).filter(Boolean),
-    engine: createOnigurumaEngine(() => import('shiki/wasm')),
-  })
-
   const withMDX = createMDX({
     options: {
       remarkPlugins: ['remark-frontmatter', 'remark-gfm'],

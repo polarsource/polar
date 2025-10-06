@@ -184,7 +184,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: pro
-    dockerCommand: uv run dramatiq -p 2 -t 4 --queues high_priority polar.worker.run
+    dockerCommand: uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority
     healthCheckPath: /
     region: ohio
     numInstances: 1

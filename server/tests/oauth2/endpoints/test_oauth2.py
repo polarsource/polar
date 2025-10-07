@@ -1,14 +1,22 @@
+from datetime import timedelta
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
+from polar.auth.scope import Scope
+from polar.auth.service import USER_SESSION_TOKEN_PREFIX
+from polar.config import settings
+from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.db.postgres import Session
+from polar.kit.utils import utc_now
 from polar.models import (
     OAuth2Client,
     OAuth2Grant,
     Organization,
     User,
     UserOrganization,
+    UserSession,
 )
 from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from polar.oauth2.sub_type import SubType
@@ -55,6 +63,30 @@ async def public_oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2C
             "token_endpoint_auth_method": "none",
             "grant_types": ["authorization_code", "refresh_token"],
             "response_types": ["code"],
+            "scope": "openid profile email",
+        }
+    )
+    await save_fixture(oauth2_client)
+    return oauth2_client
+
+
+@pytest_asyncio.fixture
+async def web_grant_oauth2_client(
+    save_fixture: SaveFixture, user: User
+) -> OAuth2Client:
+    oauth2_client = OAuth2Client(
+        client_id="polar_ci_123",
+        client_secret="polar_cs_123",
+        registration_access_token="polar_crt_123",
+        user=user,
+    )
+    oauth2_client.set_client_metadata(
+        {
+            "client_name": "Test Client",
+            "redirect_uris": ["http://127.0.0.1:8000/docs/oauth2-redirect"],
+            "token_endpoint_auth_method": "client_secret_post",
+            "grant_types": ["web"],
+            "response_types": [],
             "scope": "openid profile email",
         }
     )
@@ -949,3 +981,208 @@ class TestOAuth2Token:
         assert access_token.startswith("polar_at_u_")
         refresh_token = json["refresh_token"]
         assert refresh_token.startswith("polar_rt_u_")
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            pytest.param({"grant_type": "web"}, id="missing session_token"),
+            pytest.param(
+                {
+                    "grant_type": "web",
+                    "session_token": "TOKEN",
+                    "sub_type": "invalid",
+                },
+                id="invalid sub_type",
+            ),
+            pytest.param(
+                {
+                    "grant_type": "web",
+                    "session_token": "TOKEN",
+                    "sub_type": "user",
+                    "sub": "USER_ID",
+                },
+                id="sub set for user sub_type",
+            ),
+            pytest.param(
+                {
+                    "grant_type": "web",
+                    "session_token": "TOKEN",
+                    "sub_type": "organization",
+                },
+                id="missing sub for organization sub_type",
+            ),
+            pytest.param(
+                {
+                    "grant_type": "web",
+                    "session_token": "TOKEN",
+                    "sub_type": "organization",
+                    "sub": "ORGANIZATION_ID",
+                },
+                id="invalid uuid sub for organization sub_type",
+            ),
+            pytest.param(
+                {
+                    "grant_type": "web",
+                    "session_token": "TOKEN",
+                    "sub_type": "user",
+                    "scope": "invalid_scope",
+                },
+                id="invalid scope",
+            ),
+        ],
+    )
+    async def test_web_grant_invalid_request(
+        self,
+        payload: dict[str, str],
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        data = {
+            **payload,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
+
+    async def test_web_grant_not_allowed_client(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes={Scope.web_write},
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": oauth2_client.client_id,
+            "client_secret": oauth2_client.client_secret,
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
+
+    async def test_web_grant_sub_organization_not_member(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes={Scope.web_write},
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
+
+    async def test_web_grant_sub_user(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes={Scope.web_write},
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        json = response.json()
+
+        access_token = json["access_token"]
+        assert access_token.startswith("polar_at_u_")
+        assert "refresh_token" not in json
+
+    async def test_web_grant_sub_organization(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes={Scope.web_write},
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        json = response.json()
+
+        access_token = json["access_token"]
+        assert access_token.startswith("polar_at_o_")
+        assert "refresh_token" not in json

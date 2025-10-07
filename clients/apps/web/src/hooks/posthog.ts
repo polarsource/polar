@@ -2,8 +2,9 @@
 
 import { PostHogContext } from '@/app/providers'
 import { CONFIG } from '@/utils/config'
-import { schemas } from '@polar-sh/client'
-import { useContext } from 'react'
+import type { schemas } from '@polar-sh/client'
+import type { JsonType } from '@posthog/core'
+import { useCallback, useContext, useMemo } from 'react'
 
 // https://posthog.com/product-engineers/5-ways-to-improve-analytics-data#suggested-naming-guide
 
@@ -57,7 +58,7 @@ export interface PolarHog {
   setPersistence: (
     persistence: 'localStorage' | 'sessionStorage' | 'cookie' | 'memory',
   ) => void
-  capture: (event: EventName, properties?: { [key: string]: any }) => void
+  capture: (event: EventName, properties?: { [key: string]: JsonType }) => void
   identify: (user: schemas['UserRead']) => void
   isFeatureEnabled: (key: string) => boolean
   logout: () => void
@@ -66,44 +67,60 @@ export interface PolarHog {
 export const usePostHog = (): PolarHog => {
   const { client: posthog, setPersistence } = useContext(PostHogContext)
 
-  const capture = (event: EventName, properties?: { [key: string]: any }) => {
-    posthog?.capture(event, properties)
-  }
+  const capture: PolarHog['capture'] = useCallback(
+    (event, properties) => {
+      posthog?.capture(event, properties)
+    },
+    [posthog],
+  )
 
-  const identify = (user: schemas['UserRead']) => {
-    const posthogId = `user:${user.id}`
-    if (!posthog) {
-      return
-    }
-    if (posthog.getDistinctId() !== posthogId) {
-      posthog.identify(posthogId, {
-        email: user.email,
-      })
-    }
-  }
+  const identify: PolarHog['identify'] = useCallback(
+    (user) => {
+      const posthogId = `user:${user.id}`
 
-  const isFeatureEnabled = (key: string): boolean => {
-    if (CONFIG.ENVIRONMENT == 'development') {
-      return true
-    }
+      if (!posthog) {
+        return
+      }
 
-    if (!posthog) {
-      return false
-    }
+      if (posthog.getDistinctId() !== posthogId) {
+        posthog.identify(posthogId, {
+          email: user.email,
+        })
+      }
+    },
+    [posthog],
+  )
 
-    return posthog.isFeatureEnabled(key) || false
-  }
+  const isFeatureEnabled: PolarHog['isFeatureEnabled'] = useCallback(
+    (key) => {
+      if (CONFIG.ENVIRONMENT == 'development') {
+        return true
+      }
 
-  const logout = () => {
+      if (!posthog) {
+        return false
+      }
+
+      return posthog.isFeatureEnabled(key) ?? false
+    },
+    [posthog],
+  )
+
+  const logout: PolarHog['logout'] = useCallback(() => {
     capture('global:user:logout:done')
     posthog?.reset()
-  }
+  }, [capture, posthog])
 
-  return {
-    setPersistence,
-    capture,
-    identify,
-    isFeatureEnabled,
-    logout,
-  }
+  const context = useMemo(
+    () => ({
+      setPersistence,
+      capture,
+      identify,
+      isFeatureEnabled,
+      logout,
+    }),
+    [setPersistence, capture, identify, isFeatureEnabled, logout],
+  )
+
+  return context
 }

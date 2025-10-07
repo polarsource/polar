@@ -21,10 +21,10 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
         String, index=True, nullable=False
     )
 
-    user_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("users.id"), nullable=False, index=True
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id"), nullable=True, index=True
     )
 
     @declared_attr
-    def user(cls) -> "Mapped[User]":
+    def user(cls) -> "Mapped[User | None]":
         return relationship("User", lazy="raise")

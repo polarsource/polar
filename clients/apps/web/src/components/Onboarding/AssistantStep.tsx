@@ -3,10 +3,11 @@
 import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { useChat } from '@ai-sdk/react'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { DefaultChatTransport } from 'ai'
 import { motion } from 'framer-motion'
-import { BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { FadeUp } from '../Animated/FadeUp'
@@ -52,21 +53,19 @@ export const AssistantStep = () => {
   }
 
   return (
-    <div className="dark:md:bg-polar-950 flex flex-col pt-16 md:items-center md:p-16">
+    <div className="flex flex-col pt-16 md:items-center md:p-16">
       <motion.div
         initial="hidden"
         animate="visible"
         transition={{ duration: 1, staggerChildren: 0.3 }}
-        className="flex min-h-0 w-full shrink-0 flex-col gap-12 md:max-w-xl md:p-8"
+        className="flex min-h-0 w-full shrink-0 flex-col gap-12 md:max-w-2xl md:p-8"
       >
         <FadeUp className="flex flex-col items-center gap-y-8">
           <LogoIcon size={50} />
           <div className="flex flex-col gap-y-4">
-            <h1 className="text-center text-3xl">
-              Start selling in two minutes
-            </h1>
+            <h1 className="text-center text-3xl">Configure Products</h1>
             <p className="dark:text-polar-400 text-center text-lg text-gray-600">
-              Describe your product &amp; we&rsquo;ll handle the rest.
+              Describe your products &amp; we&rsquo;ll handle the rest
             </p>
           </div>
         </FadeUp>
@@ -75,7 +74,7 @@ export const AssistantStep = () => {
           <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4">
             <div className="dark:border-polar-700 flex flex-col">
               {messages.length > 0 && (
-                <div className="dark:border-polar-700 flex h-full max-h-[640px] flex-1 flex-col gap-y-3 overflow-y-auto rounded-t-3xl border border-b-0 border-gray-200 p-4">
+                <div className="dark:border-polar-700 flex h-full max-h-[640px] flex-1 flex-col gap-y-6 overflow-y-auto rounded-t-3xl border border-b-0 border-gray-200 p-6">
                   {messages.map((message) => (
                     <div
                       key={message.id}
@@ -84,10 +83,10 @@ export const AssistantStep = () => {
                       }`}
                     >
                       <div
-                        className={`${
+                        className={`text-sm ${
                           message.role === 'user'
-                            ? 'rounded-2xl bg-blue-600 px-4 py-2 text-white'
-                            : 'prose dark:prose-invert dark:bg-polar-800 w-full dark:text-white'
+                            ? 'dark:bg-polar-800 rounded-full bg-gray-100 px-4 py-2'
+                            : 'prose dark:prose-invert w-full dark:text-white'
                         }`}
                       >
                         {message.parts.map((part, index) => {
@@ -145,7 +144,7 @@ export const AssistantStep = () => {
                               case 'input-streaming':
                               case 'input-available':
                                 return (
-                                  <p className="opacity-40">
+                                  <p className="dark:text-polar-500 text-gray-500">
                                     {labels[
                                       part.toolName as keyof typeof labels
                                     ]?.input ?? 'Configuring Polar…'}
@@ -153,7 +152,7 @@ export const AssistantStep = () => {
                                 )
                               case 'output-available':
                                 return (
-                                  <p className="opacity-40">
+                                  <p className="dark:text-polar-500 text-gray-500">
                                     {labels[
                                       part.toolName as keyof typeof labels
                                     ]?.output ?? 'Configured Polar.'}
@@ -161,7 +160,7 @@ export const AssistantStep = () => {
                                 )
                               case 'output-error':
                                 return (
-                                  <p className="opacity-40">
+                                  <p className="dark:text-polar-500 text-gray-500">
                                     {labels[
                                       part.toolName as keyof typeof labels
                                     ]?.error ?? 'Something went wrong.'}
@@ -181,12 +180,12 @@ export const AssistantStep = () => {
                                     return (
                                       <p
                                         key={`${message.id}-${index}`}
-                                        className="flex flex-col items-center gap-y-2 rounded-2xl bg-gray-200 p-4 text-gray-500"
+                                        className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-200 p-4 text-gray-500"
                                       >
                                         Sorry, but this configuration needs
-                                        manual input.
+                                        manual input
                                         <Link href="./product">
-                                          Please configure the product manually.
+                                          Please configure the product manually
                                         </Link>
                                       </p>
                                     )
@@ -194,11 +193,11 @@ export const AssistantStep = () => {
                                     return (
                                       <p
                                         key={`${message.id}-${index}`}
-                                        className="flex flex-col items-center gap-y-2 rounded-2xl bg-gray-200 p-4 text-gray-500"
+                                        className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-200 p-4 text-gray-500"
                                       >
-                                        Something went wrong configuring Polar.
+                                        Something went wrong configuring Polar
                                         <Link href="./product">
-                                          Please try manually.
+                                          Please try manually
                                         </Link>
                                       </p>
                                     )
@@ -363,9 +362,9 @@ export const AssistantStep = () => {
 
               <form
                 onSubmit={handleSubmit}
-                className="dark:border-polar-700 flex shrink-0 flex-col gap-3 overflow-hidden rounded-b-3xl border first:rounded-t-3xl focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100"
+                className="dark:border-polar-700 flex shrink-0 flex-col gap-3 overflow-hidden rounded-b-3xl border first:rounded-t-3xl"
               >
-                <textarea
+                <TextArea
                   ref={textareaRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -377,16 +376,16 @@ export const AssistantStep = () => {
                       : 'Reply…'
                   }
                   rows={1}
-                  className="dark:bg-polar-800 max-h-[240px] min-h-[72px] resize-none overflow-y-auto border-none px-6 pb-0 pt-5 text-sm/5 focus:outline-none focus:ring-0 disabled:opacity-50"
+                  className="max-h-[240px] min-h-[72px] resize-none overflow-y-auto border-none px-6 pb-0 pt-5 text-sm/5 shadow-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-50 dark:bg-transparent"
                 />
                 <div className="flex items-center justify-between gap-2 px-4 pb-4">
-                  <Link href="/docs">
+                  <Link href="/docs" target="_blank">
                     <Button
-                      variant="outline"
+                      variant="secondary"
                       wrapperClassNames="flex flex-row items-center gap-x-2"
                     >
-                      <BookOpen className="h-4 w-4" />
-                      Read the docs
+                      Documentation
+                      <ArrowOutwardOutlined className="ml-1" />
                     </Button>
                   </Link>
                   <Button
@@ -394,10 +393,18 @@ export const AssistantStep = () => {
                     disabled={status !== 'ready' || !input.trim()}
                     loading={status === 'submitted' || status === 'streaming'}
                   >
-                    {messages.length === 0 ? 'Start selling' : 'Send'}
+                    {messages.length === 0 ? 'Setup' : 'Send'}
                   </Button>
                 </div>
               </form>
+            </div>
+            <div className="flex items-center justify-center pt-6">
+              <Link
+                className="dark:text-polar-600 dark:hover:text-polar-500 text-sm text-gray-400 transition-colors duration-100 hover:text-gray-500"
+                href={`/dashboard/${organization.slug}`}
+              >
+                Skip this step
+              </Link>
             </div>
           </FadeUp>
         </div>

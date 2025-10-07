@@ -1,10 +1,13 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { DiscordIcon } from '@/components/Benefit/utils'
+import GitHubIcon from '@/components/Icons/GitHubIcon'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import CloudDownloadOutlined from '@mui/icons-material/CloudDownloadOutlined'
+import CreditCardOutlined from '@mui/icons-material/CreditCardOutlined'
 import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
+import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import KeyOutlined from '@mui/icons-material/KeyOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
@@ -91,7 +94,7 @@ export const BenefitsPage = () => {
           </div>
           <div className="dark:bg-polar-800 relative flex flex-1 items-center justify-center p-8 md:p-16">
             <motion.div
-              className="dark:bg-polar-900 dark:border-polar-700 z-10 flex flex-col gap-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+              className="dark:bg-polar-900 dark:border-polar-700 z-10 flex w-full max-w-xs flex-col gap-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
               variants={itemVariants}
             >
               <div className="flex flex-row items-center gap-x-2">
@@ -101,7 +104,7 @@ export const BenefitsPage = () => {
                 </span>
               </div>
               <div className="flex flex-col gap-y-2">
-                <span className="dark:bg-polar-800 rounded border border-gray-200 bg-gray-100 p-3 font-mono text-xs dark:border-gray-700">
+                <span className="dark:bg-polar-800 rounded-lg border border-gray-200 bg-gray-100 p-3 font-mono text-xs dark:border-gray-700">
                   POLAR-ABC123-XYZ789-DEF456
                 </span>
                 <span className="dark:text-polar-500 text-xs text-gray-500">
@@ -142,16 +145,34 @@ export const BenefitsPage = () => {
           <div className="grid flex-1 grid-cols-1 gap-8 md:grid-cols-3">
             {[
               {
+                icon: <GitHubIcon className="h-8 w-8" />,
+                title: 'GitHub Repository Access',
+                description:
+                  'Automatically invite subscribers to private GitHub repo(s).',
+              },
+              {
+                icon: <DiscordIcon size={32} />,
+                title: 'Discord Roles',
+                description:
+                  'Automatically invite subscribers to your Discord server.',
+              },
+              {
                 icon: <KeyOutlined fontSize="large" />,
                 title: 'License Keys',
                 description:
                   'Generate and validate license keys for software access control.',
               },
               {
-                icon: <CloudDownloadOutlined fontSize="large" />,
+                icon: <FileDownloadOutlined fontSize="large" />,
                 title: 'File Downloads',
                 description:
                   'Provide secure file downloads for digital products and assets.',
+              },
+              {
+                icon: <CreditCardOutlined fontSize="large" />,
+                title: 'Meter Credits',
+                description:
+                  "Credit a customer's Usage Meter balance for usage.",
               },
               {
                 icon: <DiamondOutlined fontSize="large" />,

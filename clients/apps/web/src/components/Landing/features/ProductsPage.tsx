@@ -91,24 +91,24 @@ export const ProductsPage = () => {
           </div>
           <div className="dark:bg-polar-800 relative flex flex-1 items-center justify-center p-8 md:p-16">
             <motion.div
-              className="dark:bg-polar-900 dark:border-polar-700 z-10 flex flex-col gap-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+              className="dark:bg-polar-900 dark:border-polar-700 z-10 flex w-full max-w-xs flex-col gap-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
               variants={itemVariants}
             >
-              <div className="flex flex-row items-center gap-x-2">
+              <div className="flex flex-row items-center justify-between gap-x-2">
+                <span className="text-sm font-medium text-black dark:text-white">
+                  Active Subscription
+                </span>
                 <AutorenewOutlined
                   className="text-emerald-500"
                   fontSize="small"
                 />
-                <span className="text-sm font-medium text-black dark:text-white">
-                  Active Subscription
-                </span>
               </div>
               <div className="flex flex-col gap-y-1">
                 <span className="text-2xl text-black dark:text-white">
                   Pro Plan
                 </span>
                 <span className="dark:text-polar-500 text-sm text-gray-500">
-                  $49/month • Renews Jan 15, 2025
+                  $49/month
                 </span>
               </div>
               <div className="dark:border-polar-700 flex items-center justify-between border-t border-gray-200 pt-4">

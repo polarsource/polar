@@ -43,8 +43,9 @@ export const GitHubRepositoryBenefitForm = ({
     clearErrors,
   } = useFormContext<schemas['BenefitGitHubRepositoryCreate']>()
 
-  const canConfigurePersonalOrg = posthog.isFeatureEnabled(
-    'github-benefit-personal-org',
+  const canConfigurePersonalOrg = useMemo(
+    () => posthog.isFeatureEnabled('github-benefit-personal-org'),
+    [posthog],
   )
 
   const pathname = usePathname()

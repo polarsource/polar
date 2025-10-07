@@ -42,6 +42,14 @@
     {
       "source": "/mintlify-assets/:path+",
       "destination": "https://polar.mintlify.app/mintlify-assets/:path+"
+    },
+    {
+      "source": "/ingest/static/:path+",
+      "destination": "https://us-assets.i.posthog.com/static/:path+"
+    },
+    {
+      "source": "/ingest/:path+",
+      "destination": "https://us.i.posthog.com/:path+"
     }
   ],
   "trailingSlash": false

@@ -81,7 +81,7 @@ export const NavPopover = ({
             >
               {section.items.map(({ href, label, subtitle, target }) => (
                 <Link
-                  key={href}
+                  key={href + label}
                   href={href}
                   prefetch
                   target={target}

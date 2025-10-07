@@ -90,17 +90,17 @@ export const FinancePage = () => {
           </div>
           <div className="dark:bg-polar-800 relative flex flex-1 items-center justify-center p-8 md:p-16">
             <motion.div
-              className="dark:bg-polar-900 dark:border-polar-700 z-10 flex flex-col gap-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+              className="dark:bg-polar-900 dark:border-polar-700 z-10 flex w-full max-w-xs flex-col gap-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
               variants={itemVariants}
             >
-              <div className="flex flex-row items-center gap-x-2">
+              <div className="flex flex-row items-center justify-between gap-x-2">
+                <span className="text-sm font-medium text-black dark:text-white">
+                  Payout Summary
+                </span>
                 <AccountBalanceOutlined
                   className="text-emerald-500"
                   fontSize="small"
                 />
-                <span className="text-sm font-medium text-black dark:text-white">
-                  Payout Summary
-                </span>
               </div>
               <div className="flex flex-col gap-y-1">
                 <span className="text-3xl text-black dark:text-white">
@@ -124,7 +124,7 @@ export const FinancePage = () => {
                     Fees & Tax
                   </span>
                   <span className="font-medium text-black dark:text-white">
-                    $2,550
+                    $602
                   </span>
                 </div>
               </div>
@@ -149,7 +149,7 @@ export const FinancePage = () => {
                 icon: <PaymentsOutlined fontSize="large" />,
                 title: 'Global Payouts',
                 description:
-                  'Receive payouts in your local currency with competitive exchange rates.',
+                  'Receive payouts through your Stripe Connect account.',
               },
               {
                 icon: <ReceiptLongOutlined fontSize="large" />,

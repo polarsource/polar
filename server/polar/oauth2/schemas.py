@@ -10,6 +10,7 @@ from pydantic import (
     BeforeValidator,
     Discriminator,
     EmailStr,
+    Field,
     HttpUrl,
     TypeAdapter,
 )
@@ -118,7 +119,7 @@ authorize_response_adapter: TypeAdapter[AuthorizeResponse] = TypeAdapter(
 
 
 class TokenRequestBase(Schema):
-    grant_type: Literal["authorization_code", "refresh_token"]
+    grant_type: Literal["authorization_code", "refresh_token", "web"]
     client_id: str
     client_secret: str
 
@@ -133,6 +134,14 @@ class RefreshTokenRequest(TokenRequestBase):
     grant_type: Literal["refresh_token"]
 
     refresh_token: str
+
+
+class WebTokenRequest(TokenRequestBase):
+    grant_type: Literal["web"]
+    session_token: str
+    sub_type: Literal["user", "organization"] = Field(default="user")
+    sub: UUID4 | None = None
+    scope: str | None = Field(default=None)
 
 
 class TokenResponse(Schema):
@@ -195,6 +204,9 @@ def add_oauth2_form_schemas(openapi_schema: dict[str, Any]) -> dict[str, Any]:
     )
     openapi_schema["components"]["schemas"]["RefreshTokenRequest"] = (
         RefreshTokenRequest.model_json_schema(ref_template=REF_TEMPLATE)
+    )
+    openapi_schema["components"]["schemas"]["WebTokenRequest"] = (
+        WebTokenRequest.model_json_schema(ref_template=REF_TEMPLATE)
     )
     openapi_schema["components"]["schemas"]["RevokeTokenRequest"] = (
         RevokeTokenRequest.model_json_schema(ref_template=REF_TEMPLATE)

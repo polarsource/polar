@@ -216,6 +216,7 @@ async def consent(
                                 )
                             },
                             {"$ref": REF_TEMPLATE.format(model="RefreshTokenRequest")},
+                            {"$ref": REF_TEMPLATE.format(model="WebTokenRequest")},
                         ]
                     }
                 }

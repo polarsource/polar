@@ -15,6 +15,7 @@ const defaults = {
   FRONTEND_BASE_URL:
     process.env.NEXT_PUBLIC_FRONTEND_BASE_URL || 'http://127.0.0.1:3000',
   BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
+  AUTH_COOKIE_KEY: process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session',
   LOGIN_PATH: process.env.NEXT_PUBLIC_LOGIN_PATH || '/login',
   GITHUB_APP_NAMESPACE:
     process.env.NEXT_PUBLIC_GITHUB_APP_NAMESPACE || 'polar-sh',

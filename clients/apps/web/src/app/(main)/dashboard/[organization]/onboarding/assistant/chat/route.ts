@@ -1,3 +1,6 @@
+import { getServerSideAPI } from '@/utils/client/serverside'
+import { CONFIG } from '@/utils/config'
+import { getAuthenticatedUser } from '@/utils/user'
 import { openai } from '@ai-sdk/openai'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import {
@@ -9,6 +12,7 @@ import {
   tool,
   UIMessage,
 } from 'ai'
+import { cookies } from 'next/headers'
 import { z } from 'zod'
 
 export const maxDuration = 30
@@ -81,7 +85,7 @@ If the requested pricing appears to be for a software subscription, take this ap
 
 Do not explicitly mention this benefit creation to the user. Just configure it like that. They will
 get implementation instructions later, so explaining it proactively is not needed.
- 
+
 ## Products
 
 Products link a price and billing logic to one or more benefits.
@@ -113,7 +117,7 @@ As mentioned before, products can be configured to grant one or more benefits (a
 So, in general, you should follow this order:
 
  - Define meters first if there are any usage-based pricing components
- - Define benefits that should be granted 
+ - Define benefits that should be granted
  - Define products
 
 # Rules
@@ -145,56 +149,96 @@ So, in general, you should follow this order:
 The user will now describe their product and you will start the configuration assistant.
 `
 
-// Create MCP client instance (cached)
-let mcpClient: Awaited<ReturnType<typeof experimental_createMCPClient>> | null =
-  null
+async function generateOAT(
+  userId: string,
+  organizationId: string,
+): Promise<string> {
+  const requestCookies = await cookies()
+  const userSessionToken = requestCookies.get(CONFIG.AUTH_COOKIE_KEY)
+  if (!userSessionToken) {
+    throw new Error('No user session cookie found')
+  }
 
-async function getMCPClient() {
-  if (!mcpClient) {
-    try {
-      console.log('Attempting to connect to MCP server:', process.env.GRAM_URL)
-      console.log(
-        'Using API key:',
-        process.env.GRAM_API_KEY?.substring(0, 20) + '...',
-      )
-      console.log(
-        'Using OAT:',
-        'polar_oat_rGO4HuyYkkzbp0DDSKG309tfsKlBHaXb9hw1q20vG2c'.substring(
-          0,
-          20,
-        ) + '...',
-      )
+  const client = await getServerSideAPI()
+  const { data, error } = await client.POST('/v1/oauth2/token', {
+    body: {
+      grant_type: 'web',
+      client_id: process.env.MCP_OAUTH2_CLIENT_ID!,
+      client_secret: process.env.MCP_OAUTH2_CLIENT_SECRET!,
+      session_token: userSessionToken.value,
+      sub_type: 'organization',
+      sub: organizationId,
+      scope: null,
+    },
+    bodySerializer(body) {
+      const fd = new FormData()
+      for (const [key, value] of Object.entries(body)) {
+        if (value) {
+          fd.append(key, value)
+        }
+      }
+      return fd
+    },
+  })
+  if (error) {
+    console.error('Failed to generate OAT:', error)
+    throw new Error('Failed to generate OAT')
+  }
+  return data.access_token
+}
 
-      const httpTransport = new StreamableHTTPClientTransport(
-        new URL(process.env.GRAM_URL!),
-        {
-          requestInit: {
-            headers: {
-              Authorization: `Bearer ${process.env.GRAM_API_KEY}`,
-              'MCP-POLAR-DEV-PIETER-ACCESS-TOKEN':
-                'polar_oat_rGO4HuyYkkzbp0DDSKG309tfsKlBHaXb9hw1q20vG2c',
-            },
+async function getMCPClient(userId: string, organizationId: string) {
+  try {
+    const oat = await generateOAT(userId, organizationId)
+
+    console.log('Attempting to connect to MCP server:', process.env.GRAM_URL)
+    console.log(
+      'Using API key:',
+      process.env.GRAM_API_KEY?.substring(0, 20) + '...',
+    )
+    console.log('Using OAT:', oat)
+
+    const httpTransport = new StreamableHTTPClientTransport(
+      new URL(process.env.GRAM_URL!),
+      {
+        requestInit: {
+          headers: {
+            Authorization: `Bearer ${process.env.GRAM_API_KEY}`,
+            'MCP-POLAR-DEV-PIETER-ACCESS-TOKEN': oat,
           },
         },
-      )
+      },
+    )
 
-      mcpClient = await experimental_createMCPClient({
-        transport: httpTransport,
-      })
+    const mcpClient = await experimental_createMCPClient({
+      transport: httpTransport,
+    })
 
-      console.log('MCP client created successfully')
-    } catch (error) {
-      console.error('Failed to create MCP client:', error)
-      throw error
-    }
+    console.log('MCP client created successfully')
+    return mcpClient
+  } catch (error) {
+    console.error('Failed to create MCP client:', error)
+    throw error
   }
-  return mcpClient
 }
 
 export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json()
+  // Get authenticated user
+  const user = await getAuthenticatedUser()
+  if (!user) {
+    return new Response('Unauthorized', { status: 401 })
+  }
 
-  const mcpClient = await getMCPClient()
+  const {
+    messages,
+    organizationId,
+  }: { messages: UIMessage[]; organizationId: string } = await req.json()
+
+  if (!organizationId) {
+    return new Response('Organization ID is required', { status: 400 })
+  }
+
+  const mcpClient = await getMCPClient(user.id, organizationId)
   const tools = await mcpClient.tools()
 
   const redirectToManualSetup = tool({
@@ -235,36 +279,40 @@ export async function POST(req: Request) {
             .number()
             .optional()
             .describe('The trial interval count'),
-          benefits: z.array(
-            z.object({
-              type: z
-                .enum([
-                  'license_key',
-                  'file_download',
-                  'github_repository_access',
-                  'discord_server_access',
-                  'meter_credit',
-                  'custom',
-                ])
-                .describe('The type of the benefit'),
-              name: z
-                .string()
-                .optional()
-                .describe('The description of the benefit'),
-            }),
-          ),
-          usageBasedBilling: z.array(
-            z.object({
-              meterName: z.string().describe('The name of the meter'),
-              unitAmount: z
-                .number()
-                .describe('The unit amount in cents in USD'),
-              capAmount: z
-                .number()
-                .optional()
-                .describe('The cap amount in cents in USD'),
-            }),
-          ),
+          benefits: z
+            .array(
+              z.object({
+                type: z
+                  .enum([
+                    'license_key',
+                    'file_download',
+                    'github_repository_access',
+                    'discord_server_access',
+                    'meter_credit',
+                    'custom',
+                  ])
+                  .describe('The type of the benefit'),
+                name: z
+                  .string()
+                  .optional()
+                  .describe('The description of the benefit'),
+              }),
+            )
+            .optional(),
+          usageBasedBilling: z
+            .array(
+              z.object({
+                meterName: z.string().describe('The name of the meter'),
+                unitAmount: z
+                  .number()
+                  .describe('The unit amount in cents in USD'),
+                capAmount: z
+                  .number()
+                  .optional()
+                  .describe('The cap amount in cents in USD'),
+              }),
+            )
+            .optional(),
         }),
       ),
     }),

@@ -3039,11 +3039,7 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /**
-     * Get Claim Info
-     * @description Get seat claim information - READ ONLY.
-     *     Safe for email scanners to hit - no side effects.
-     */
+    /** Get Claim Info */
     get: operations['customer-seats:get_claim_info']
     put?: never
     post?: never
@@ -3062,12 +3058,7 @@ export interface paths {
     }
     get?: never
     put?: never
-    /**
-     * Claim Seat
-     * @description Claim a seat using invitation token.
-     *     No authentication required - token is proof of authorization.
-     *     Returns customer session token for immediate portal access.
-     */
+    /** Claim Seat */
     post: operations['customer-seats:claim_seat']
     delete?: never
     options?: never
@@ -11583,6 +11574,11 @@ export interface components {
        * @description The assigned customer ID
        */
       customer_id?: string | null
+      /**
+       * Invitation Token Expires At
+       * @description When the invitation token expires
+       */
+      invitation_token_expires_at?: string | null
       /**
        * Claimed At
        * @description When the seat was claimed
@@ -20831,6 +20827,36 @@ export interface components {
       /** Refresh Token */
       refresh_token: string
     }
+    /** WebTokenRequest */
+    WebTokenRequest: {
+      /**
+       * Grant Type
+       * @constant
+       */
+      grant_type: 'web'
+      /** Client Id */
+      client_id: string
+      /** Client Secret */
+      client_secret: string
+      /** Session Token */
+      session_token: string
+      /**
+       * Sub Type
+       * @default user
+       * @enum {string}
+       */
+      sub_type: 'user' | 'organization'
+      /**
+       * Sub
+       * @default null
+       */
+      sub: string | null
+      /**
+       * Scope
+       * @default null
+       */
+      scope: string | null
+    }
     /** RevokeTokenRequest */
     RevokeTokenRequest: {
       /** Token */
@@ -22915,6 +22941,7 @@ export interface operations {
         'application/x-www-form-urlencoded':
           | components['schemas']['AuthorizationCodeTokenRequest']
           | components['schemas']['RefreshTokenRequest']
+          | components['schemas']['WebTokenRequest']
       }
     }
     responses: {
@@ -28656,6 +28683,13 @@ export interface operations {
         }
         content?: never
       }
+      /** @description Seat-based pricing not enabled for organization */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
       /** @description Seat not found */
       404: {
         headers: {
@@ -33066,6 +33100,9 @@ export const webhookEventTypeValues: ReadonlyArray<
 export const webhookFormatValues: ReadonlyArray<
   components['schemas']['WebhookFormat']
 > = ['raw', 'discord', 'slack']
+export const webTokenRequestSub_typeValues: ReadonlyArray<
+  components['schemas']['WebTokenRequest']['sub_type']
+> = ['user', 'organization']
 export const revokeTokenRequestToken_type_hintValues: ReadonlyArray<
   components['schemas']['RevokeTokenRequest']['token_type_hint']
 > = ['access_token', 'refresh_token']

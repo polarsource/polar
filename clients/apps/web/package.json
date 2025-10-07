@@ -28,6 +28,7 @@
     "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",
     "@next/mdx": "15.5.4",
+    "@next/third-parties": "^15.5.4",
     "@polar-sh/checkout": "workspace:^",
     "@polar-sh/client": "workspace:*",
     "@polar-sh/mdx": "workspace:*",

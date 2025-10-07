@@ -7,7 +7,8 @@ import { InvestorsSection } from '@/components/Vision/sections/InvestorsSection'
 import { useArrowFocus } from '@/components/Vision/useArrowFocus'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
-import { Navigation, sections } from '../../../components/Vision/Navigation'
+import { Navigation, sections } from '../../../../components/Vision/Navigation'
+import { investors } from './investors'
 
 export default function PitchPage() {
   const [index, setIndex] = useState(0)
@@ -49,7 +50,7 @@ export default function PitchPage() {
           >
             <CompanySection active={index === 0} />
             <CareersSection active={index === 1} />
-            <InvestorsSection active={index === 2} />
+            <InvestorsSection active={index === 2} investors={investors} />
           </motion.div>
         </AnimatePresence>
       </div>

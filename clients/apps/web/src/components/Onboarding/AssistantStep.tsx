@@ -122,6 +122,11 @@ export const AssistantStep = () => {
 
                           if (part.type === 'dynamic-tool') {
                             const labels = {
+                              polar_dev_pieter_products_list: {
+                                input: 'Finding products…',
+                                output: 'Products found.',
+                                error: 'Error finding products.',
+                              },
                               polar_dev_pieter_products_create: {
                                 input: 'Creating product…',
                                 output: 'Product created.',
@@ -132,10 +137,25 @@ export const AssistantStep = () => {
                                 output: 'Product benefits updated.',
                                 error: 'Error updating product benefits.',
                               },
+                              polar_dev_pieter_benefits_list: {
+                                input: 'Finding benefits…',
+                                output: 'Benefits found.',
+                                error: 'Error finding benefits.',
+                              },
                               polar_dev_pieter_benefits_create: {
                                 input: 'Creating benefit…',
                                 output: 'Benefit created.',
                                 error: 'Error creating benefit.',
+                              },
+                              polar_dev_pieter_benefits_update: {
+                                input: 'Updating benefit…',
+                                output: 'Benefit updated.',
+                                error: 'Error updating benefit.',
+                              },
+                              polar_dev_pieter_meters_list: {
+                                input: 'Finding meters…',
+                                output: 'Meters found.',
+                                error: 'Error finding meters.',
                               },
                               polar_dev_pieter_meters_create: {
                                 input: 'Creating meter…',
@@ -148,7 +168,10 @@ export const AssistantStep = () => {
                               case 'input-streaming':
                               case 'input-available':
                                 return (
-                                  <p className="opacity-40">
+                                  <p
+                                    className="opacity-40"
+                                    key={`${message.id}-${index}`}
+                                  >
                                     {labels[
                                       part.toolName as keyof typeof labels
                                     ]?.input ?? 'Configuring Polar…'}
@@ -156,15 +179,22 @@ export const AssistantStep = () => {
                                 )
                               case 'output-available':
                                 return (
-                                  <p className="opacity-40">
+                                  <p
+                                    className="opacity-40"
+                                    key={`${message.id}-${index}`}
+                                  >
                                     {labels[
                                       part.toolName as keyof typeof labels
-                                    ]?.output ?? 'Configured Polar.'}
+                                    ]?.output ??
+                                      'Configured Polar: ' + part.toolName}
                                   </p>
                                 )
                               case 'output-error':
                                 return (
-                                  <p className="opacity-40">
+                                  <p
+                                    className="opacity-40"
+                                    key={`${message.id}-${index}`}
+                                  >
                                     {labels[
                                       part.toolName as keyof typeof labels
                                     ]?.error ?? 'Something went wrong.'}
@@ -220,7 +250,7 @@ export const AssistantStep = () => {
                                 return (
                                   <div
                                     key={`${message.id}-${index}`}
-                                    className="grid-auto-rows grid grid-cols-2 gap-4"
+                                    className="grid-auto-rows my-4 grid grid-cols-2 gap-4"
                                   >
                                     {part.input.products.map(
                                       (product: any, productIndex: number) => (

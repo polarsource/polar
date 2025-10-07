@@ -30,10 +30,12 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   const text = _text || 'Get Started'
 
   const signup = useMemo(() => {
-    if (!storefrontOrg) return {}
+    if (!storefrontOrg?.id) {
+      return undefined
+    }
 
     return {
-      from_storefront: storefrontOrg.id,
+      from_storefront: storefrontOrg.id as string,
     }
   }, [storefrontOrg])
 

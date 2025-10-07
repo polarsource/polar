@@ -154,6 +154,11 @@ async function generateOAT(
   organizationId: string,
 ): Promise<string> {
   const requestCookies = await cookies()
+
+  if (requestCookies.has(CONFIG.AUTH_MCP_COOKIE_KEY)) {
+    return requestCookies.get(CONFIG.AUTH_MCP_COOKIE_KEY)!.value
+  }
+
   const userSessionToken = requestCookies.get(CONFIG.AUTH_COOKIE_KEY)
   if (!userSessionToken) {
     throw new Error('No user session cookie found')
@@ -180,11 +185,25 @@ async function generateOAT(
       return fd
     },
   })
+
   if (error) {
     console.error('Failed to generate OAT:', error)
     throw new Error('Failed to generate OAT')
   }
-  return data.access_token
+
+  const accessToken = data.access_token
+
+  if (!accessToken) {
+    throw new Error('Failed to generate OAT')
+  }
+
+  requestCookies.set(CONFIG.AUTH_MCP_COOKIE_KEY, accessToken, {
+    httpOnly: true,
+    secure: true,
+    expires: new Date(Date.now() + data.expires_in * 1000),
+  })
+
+  return accessToken
 }
 
 async function getMCPClient(userId: string, organizationId: string) {

@@ -264,6 +264,17 @@ const UpdateDiscount = ({
     [updateSubscription, subscription, setError, onUpdate],
   )
 
+  if (discounts?.items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-gray-50 p-6 dark:bg-gray-800">
+        <h3 className="text-lg font-medium">Discounts</h3>
+        <p className="dark:text-polar-500 text-sm text-gray-500">
+          No discounts found
+        </p>
+      </div>
+    )
+  }
+
   return (
     <Form {...form}>
       <form
@@ -443,39 +454,16 @@ const UpdateTrial = ({
 
   return (
     <>
-      <div className="flex flex-col gap-8">
-        {/* Section 1: End trial now */}
-        {subscription.status === 'trialing' && (
-          <div className="rounded-lg border border-red-200 p-6 dark:border-red-800">
-            <div className="mb-4">
-              <h3 className="text-lg font-medium text-red-900 dark:text-red-100">
-                End Trial Now
-              </h3>
-              <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-                This will immediately end the trial period and charge the
-                customer for a new billing cycle.
-              </p>
-            </div>
-            <Button
-              variant="destructive"
-              onClick={showConfirmModal}
-              disabled={isEndingTrial}
-              loading={isEndingTrial}
-            >
-              End Trial Now
-            </Button>
-          </div>
-        )}
-
+      <div className="flex flex-col gap-4">
         {/* Section 2: Set/Update trial end date */}
-        <div className="rounded-lg border p-6">
-          <div className="mb-6">
+        <div className="flex flex-col gap-y-4 rounded-2xl bg-gray-50 p-6 dark:bg-gray-800">
+          <div className="flex flex-col gap-y-2">
             <h3 className="text-lg font-medium">
               {subscription.status === 'trialing'
                 ? 'Update Trial'
                 : 'Add Trial Period'}
             </h3>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            <p className="dark:text-polar-500 mt-1 text-sm text-gray-500">
               {subscription.status === 'trialing'
                 ? 'Set a new trial end date to extend or reduce the current trial period.'
                 : 'Add a trial period by setting a trial end date in the future.'}
@@ -492,7 +480,7 @@ const UpdateTrial = ({
                 name="trial_end"
                 render={({ field }) => {
                   return (
-                    <FormItem>
+                    <FormItem className="flex flex-col gap-y-2">
                       <FormLabel>Trial End Date</FormLabel>
 
                       <DatePicker
@@ -515,7 +503,6 @@ const UpdateTrial = ({
 
               <Button
                 type="submit"
-                size="lg"
                 loading={updateSubscription.isPending}
                 disabled={updateSubscription.isPending}
                 className="w-fit"
@@ -525,15 +512,36 @@ const UpdateTrial = ({
             </form>
           </Form>
         </div>
+
+        {/* Section 1: End trial now */}
+        {subscription.status === 'trialing' && (
+          <div className="flex flex-col items-start gap-y-4 rounded-2xl bg-gray-50 p-6 dark:bg-gray-800">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-lg font-medium">End Trial</h3>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                This will immediately end the trial period and charge the
+                customer for a new billing cycle.
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={showConfirmModal}
+              disabled={isEndingTrial}
+              loading={isEndingTrial}
+            >
+              End Trial
+            </Button>
+          </div>
+        )}
       </div>
 
       <ConfirmModal
         isShown={isConfirmModalShown}
         hide={hideConfirmModal}
-        title="End Trial Now"
+        title="End Trial"
         description="This action will immediately end the trial period and charge the customer for a new billing cycle. This cannot be undone."
         destructive={true}
-        destructiveText="End Trial Now"
+        destructiveText="End Trial"
         onConfirm={handleEndTrialNow}
         onCancel={hideConfirmModal}
       />
@@ -571,11 +579,13 @@ const UpdateSubscriptionModal = ({
             <UpdateProduct subscription={subscription} onUpdate={onUpdate} />
           </div>
         </TabsContent>
+
         <TabsContent value="discount">
           <div className="flex h-full flex-col gap-4">
             <UpdateDiscount subscription={subscription} onUpdate={onUpdate} />
           </div>
         </TabsContent>
+
         <TabsContent value="trial">
           <div className="flex h-full flex-col gap-4">
             <UpdateTrial subscription={subscription} onUpdate={onUpdate} />

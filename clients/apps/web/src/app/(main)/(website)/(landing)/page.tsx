@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import LandingPage from '../../../components/Landing/LandingPage'
+import LandingPage from '../../../../components/Landing/LandingPage'
 
 export const metadata: Metadata = {
   title: 'Polar — Payment infrastructure for the 21st century',

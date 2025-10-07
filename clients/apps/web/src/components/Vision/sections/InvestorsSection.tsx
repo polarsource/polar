@@ -1,7 +1,12 @@
-import { investors } from '@/app/(main)/company/investors'
 import { Section } from '../Section'
 
-export const InvestorsSection = ({ active }: { active: boolean }) => {
+export const InvestorsSection = ({
+  investors,
+  active,
+}: {
+  investors: { name: string; company: string }[]
+  active: boolean
+}) => {
   return (
     <Section
       active={active}

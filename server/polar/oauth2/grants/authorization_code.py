@@ -279,7 +279,10 @@ class ValidateSubAndPrompt:
             select(Organization)
             .join(
                 UserOrganization,
-                onclause=and_(UserOrganization.user_id == user.id),
+                onclause=and_(
+                    UserOrganization.user_id == user.id,
+                    UserOrganization.deleted_at.is_(None),
+                ),
             )
             .where(Organization.id == organization_id)
         )

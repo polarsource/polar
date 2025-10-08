@@ -27,6 +27,18 @@ Sentry.init({
   debug: false,
 
   ignoreErrors: [/WeakMap key undefined/i],
+
+  beforeSend: (event) => {
+    // Do not flag PostHog errors
+    if (
+      event.request?.url?.includes('/ingest/flags') ||
+      event.request?.url?.includes('/ingest/batch')
+    ) {
+      return null
+    }
+
+    return event
+  },
 })
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart

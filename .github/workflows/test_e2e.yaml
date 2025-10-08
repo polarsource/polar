@@ -132,4 +132,10 @@ jobs:
         run: |
           uv sync --dev
           uv run playwright install --with-deps
-          uv run pytest
+          uv run pytest --tracing=retain-on-failure
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-traces
+          path: test-results/

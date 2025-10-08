@@ -190,7 +190,7 @@ class PaymentService:
         payment.method_metadata = dict(payment_method[payment_method.type])
         payment.customer_email = payment_intent.receipt_email
 
-        payment.decline_reason = payment_error.code
+        payment.decline_reason = getattr(payment_error, "code", None)
         payment.decline_message = payment_error.message
 
         payment.checkout = checkout

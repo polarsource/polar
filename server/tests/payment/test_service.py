@@ -385,3 +385,46 @@ class TestUpsertFromStripePaymentIntent:
         assert payment_2.decline_message == "3D Secure authentication failed"
         assert payment_2.method == "card"
         assert payment_2.method_metadata == {"brand": "mastercard", "last4": "5555"}
+
+    async def test_no_error_code(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Create an order
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        # Create a payment intent with last_payment_error
+        payment_intent = build_stripe_payment_intent(
+            id="pi_test123",
+            amount=1000,
+            currency="usd",
+            receipt_email="test@example.com",
+            metadata={"order_id": str(order.id)},
+            latest_charge=None,
+            last_payment_error={
+                "message": "Generic error",
+                "type": "invalid_request_error",
+                "payment_method": {
+                    "id": "pm_test123",
+                    "type": "card",
+                    "card": {"brand": "visa", "last4": "4242"},
+                },
+            },
+        )
+
+        # Test upsert_from_stripe_payment_intent
+        payment = await payment_service.upsert_from_stripe_payment_intent(
+            session, payment_intent, None, order
+        )
+
+        # Verify payment was created correctly
+        assert payment.processor == PaymentProcessor.stripe
+        assert payment.decline_reason is None
+        assert payment.decline_message == "Generic error"

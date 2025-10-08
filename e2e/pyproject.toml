@@ -8,9 +8,6 @@ dependencies = [
     "pytest-playwright>=0.7.1",
 ]
 
-[tool.pytest.ini_options]
-base_url = "http://127.0.0.1:3000"
-
 [tool.basedpyright]
 reportUnusedCallResult = 'none'
 reportUnusedParameter = 'none'

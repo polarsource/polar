@@ -17,6 +17,11 @@
     }
   },
   "favicon": "./logo/favicon.png",
+  "integrations": {
+    "ga4": {
+      "measurementId": "G-MBYW1QZFHE"
+    }
+  },
   "navigation": {
     "tabs": [
       {

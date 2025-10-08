@@ -125,7 +125,7 @@ jobs:
 
       - name: Run frontend server
         working-directory: ./clients
-        run: pnpm run dev &
+        run: pnpm run dev
 
       - name: Run e2e tests
         working-directory: e2e

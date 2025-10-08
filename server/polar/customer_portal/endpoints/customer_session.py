@@ -8,9 +8,13 @@ from polar.routing import APIRouter
 from ..schemas.customer_session import (
     CustomerSessionCodeAuthenticateRequest,
     CustomerSessionCodeAuthenticateResponse,
+    CustomerSessionCodeInvalidOrExpiredResponse,
     CustomerSessionCodeRequest,
 )
-from ..service.customer_session import CustomerDoesNotExist, OrganizationDoesNotExist
+from ..service.customer_session import (
+    CustomerDoesNotExist,
+    OrganizationDoesNotExist,
+)
 from ..service.customer_session import customer_session as customer_session_service
 
 router = APIRouter(
@@ -42,7 +46,13 @@ async def request(
     )
 
 
-@router.post("/authenticate", name="customer_portal.customer_session.authenticate")
+@router.post(
+    "/authenticate",
+    name="customer_portal.customer_session.authenticate",
+    responses={
+        401: CustomerSessionCodeInvalidOrExpiredResponse,
+    },
+)
 async def authenticate(
     authenticated_request: CustomerSessionCodeAuthenticateRequest,
     session: AsyncSession = Depends(get_db_session),

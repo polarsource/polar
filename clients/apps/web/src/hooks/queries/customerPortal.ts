@@ -20,9 +20,23 @@ export const useCustomerPortalSessionRequest = (
 export const useCustomerPortalSessionAuthenticate = (api: Client) =>
   useMutation({
     mutationFn: ({ code }: { code: string }) =>
-      api.POST('/v1/customer-portal/customer-session/authenticate', {
-        body: { code },
-      }),
+      api
+        .POST('/v1/customer-portal/customer-session/authenticate', {
+          body: { code },
+        })
+        .then((res) => {
+          if (res.response.status === 429) {
+            return {
+              data: undefined,
+              error: {
+                detail: 'Too many attempts. Please try again in 15 minutes.',
+              },
+              response: res.response,
+            }
+          }
+
+          return res
+        }),
   })
 
 export const useAuthenticatedCustomer = (api: Client) =>

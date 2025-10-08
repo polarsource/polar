@@ -20,6 +20,7 @@ const _getOrganizationOrNotFound = async (
     }),
     {
       404: notFound,
+      429: () => redirect(`/too-many-requests`),
       401: () => redirect(`/${slug}/portal/request`),
     },
   )

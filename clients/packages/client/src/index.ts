@@ -49,6 +49,13 @@ export class NotFoundResponseError extends ClientResponseError {
   }
 }
 
+export class TooManyRequestsResponseError extends ClientResponseError {
+  constructor(error: any, response: Response) {
+    super(error, response)
+    this.name = 'TooManyRequestsResponseError'
+  }
+}
+
 export const unwrap = async <
   T extends Record<string | number, any>,
   Options,
@@ -69,12 +76,20 @@ export const unwrap = async <
     }
   }
 
+  if (response.status === 429) {
+    throw new TooManyRequestsResponseError(
+      { message: 'Too Many Requests' },
+      response,
+    )
+  }
+
   if (error) {
     if (response.status === 401) {
       throw new UnauthorizedResponseError(error, response)
     } else if (response.status === 404) {
       throw new NotFoundResponseError(error, response)
     }
+
     throw new ClientResponseError(error, response)
   }
 

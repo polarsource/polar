@@ -123,9 +123,13 @@ jobs:
         working-directory: ./server
         run: uv run task api &
 
-      - name: Run frontend server
+      - name: Build frontend server
         working-directory: ./clients
-        run: pnpm run dev
+        run: pnpm run build
+
+      - name: Start frontend server
+        working-directory: ./clients/apps/web
+        run: pnpm start &
 
       - name: Run e2e tests
         working-directory: e2e

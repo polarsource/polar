@@ -165,7 +165,7 @@ export const Usage = () => {
           {strategies.map((strategy) => (
             <TabsContent value={strategy.name} key={strategy.name}>
               <motion.div
-                className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row`}
+                className={`dark:bg-polar-900 md:rounded-4xl flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row`}
                 variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"
@@ -219,7 +219,7 @@ export const Usage = () => {
                   </div>
                 </div>
 
-                <div className="dark:bg-polar-800 relative flex flex-col justify-center bg-gray-100 p-8 text-sm md:w-1/2 md:p-16">
+                <div className="dark:bg-polar-800 relative flex flex-col justify-center bg-gray-100 p-4 text-sm md:w-1/2 xl:p-12">
                   <Image
                     className="absolute inset-0 h-full w-full object-cover"
                     src="/assets/landing/abstract_02.jpg"

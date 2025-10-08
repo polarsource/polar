@@ -97,10 +97,6 @@ const mobileNavigationItems: NavigationItem[] = [
     href: '/company',
   },
   {
-    title: 'Blog',
-    href: '/blog',
-  },
-  {
     title: 'Open Source',
     href: 'https://github.com/polarsource',
     target: '_blank',
@@ -303,9 +299,6 @@ const LandingPageDesktopNavigation = () => {
           </li>
           <li>
             <NavLink href="/company">Company</NavLink>
-          </li>
-          <li>
-            <NavLink href="/blog">Blog</NavLink>
           </li>
         </ul>
 

@@ -30,7 +30,7 @@ COPY ./polar/web_backoffice/ .
 
 RUN pnpm run build
 
-FROM --platform=$BUILDPLATFORM python:3-slim
+FROM --platform=$BUILDPLATFORM python:3.14-slim
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
 LABEL org.opencontainers.image.licenses=Apache-2.0

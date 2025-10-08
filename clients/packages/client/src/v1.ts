@@ -3039,11 +3039,7 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /**
-     * Get Claim Info
-     * @description Get seat claim information - READ ONLY.
-     *     Safe for email scanners to hit - no side effects.
-     */
+    /** Get Claim Info */
     get: operations['customer-seats:get_claim_info']
     put?: never
     post?: never
@@ -3062,12 +3058,7 @@ export interface paths {
     }
     get?: never
     put?: never
-    /**
-     * Claim Seat
-     * @description Claim a seat using invitation token.
-     *     No authentication required - token is proof of authorization.
-     *     Returns customer session token for immediate portal access.
-     */
+    /** Claim Seat */
     post: operations['customer-seats:claim_seat']
     delete?: never
     options?: never
@@ -5214,6 +5205,8 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /** @description The cost associated with the event. */
+      cost: components['schemas']['EventCost'] | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -6512,6 +6505,8 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /** @description The cost associated with the event. */
+      cost: components['schemas']['EventCost'] | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -7064,6 +7059,8 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /** @description The cost associated with the event. */
+      cost: components['schemas']['EventCost'] | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -7135,6 +7132,8 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /** @description The cost associated with the event. */
+      cost: components['schemas']['EventCost'] | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -11584,6 +11583,11 @@ export interface components {
        */
       customer_id?: string | null
       /**
+       * Invitation Token Expires At
+       * @description When the invitation token expires
+       */
+      invitation_token_expires_at?: string | null
+      /**
        * Claimed At
        * @description When the seat was claimed
        */
@@ -13593,6 +13597,25 @@ export interface components {
     Event:
       | components['schemas']['SystemEvent']
       | components['schemas']['UserEvent']
+    /** EventCost */
+    EventCost: {
+      /**
+       * Cost
+       * @description The cost of the event in cents.
+       */
+      cost: number
+      /**
+       * Currency
+       * @description The currency of the event. Currently, only `usd` is supported.
+       * @default usd
+       */
+      currency: string
+      /**
+       * Vendor
+       * @description The vendor which is associated with the cost.
+       */
+      vendor?: string | null
+    }
     /** EventCreateCustomer */
     EventCreateCustomer: {
       /**
@@ -13623,6 +13646,8 @@ export interface components {
        * @description The name of the event.
        */
       name: string
+      /** @description Optional cost associated with the event. */
+      cost?: components['schemas']['EventCost'] | null
       /**
        * Organization Id
        * @description The ID of the organization owning the event. **Required unless you use an organization token.**
@@ -13665,6 +13690,8 @@ export interface components {
        * @description The name of the event.
        */
       name: string
+      /** @description Optional cost associated with the event. */
+      cost?: components['schemas']['EventCost'] | null
       /**
        * Organization Id
        * @description The ID of the organization owning the event. **Required unless you use an organization token.**
@@ -15121,6 +15148,8 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /** @description The cost associated with the event. */
+      cost: components['schemas']['EventCost'] | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -15205,6 +15234,8 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /** @description The cost associated with the event. */
+      cost: components['schemas']['EventCost'] | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -15303,6 +15334,10 @@ export interface components {
       revenue: number
       /** Net Revenue */
       net_revenue: number
+      /** Costs */
+      costs: number
+      /** Cumulative Costs */
+      cumulative_costs: number
       /** Cumulative Revenue */
       cumulative_revenue: number
       /** Net Cumulative Revenue */
@@ -15370,6 +15405,8 @@ export interface components {
       orders: components['schemas']['Metric']
       revenue: components['schemas']['Metric']
       net_revenue: components['schemas']['Metric']
+      costs: components['schemas']['Metric']
+      cumulative_costs: components['schemas']['Metric']
       cumulative_revenue: components['schemas']['Metric']
       net_cumulative_revenue: components['schemas']['Metric']
       average_order_value: components['schemas']['Metric']
@@ -15463,6 +15500,10 @@ export interface components {
       revenue: number
       /** Net Revenue */
       net_revenue: number
+      /** Costs */
+      costs: number
+      /** Cumulative Costs */
+      cumulative_costs: number
       /** Cumulative Revenue */
       cumulative_revenue: number
       /** Net Cumulative Revenue */
@@ -18985,6 +19026,8 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /** @description The cost associated with the event. */
+      cost: components['schemas']['EventCost'] | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -19100,6 +19143,8 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /** @description The cost associated with the event. */
+      cost: components['schemas']['EventCost'] | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -19210,6 +19255,8 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /** @description The cost associated with the event. */
+      cost: components['schemas']['EventCost'] | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -19809,6 +19856,8 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /** @description The cost associated with the event. */
+      cost: components['schemas']['EventCost'] | null
       /**
        * Name
        * @description The name of the event.
@@ -28651,6 +28700,13 @@ export interface operations {
       }
       /** @description Invalid or expired invitation token */
       400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Seat-based pricing not enabled for organization */
+      403: {
         headers: {
           [name: string]: unknown
         }

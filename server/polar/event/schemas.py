@@ -56,9 +56,31 @@ class EventCost(Schema):
         default="usd",
         description="The currency of the event. Currently, only `usd` is supported.",
     )
-    vendor: str | None = Field(
+
+
+class LLMEvent(Schema):
+    vendor: str = Field(..., description="The vendor of the event.")
+    model: str = Field(..., description="The model used for the event.")
+    prompt: str | None = Field(
         default=None,
-        description="The vendor which is associated with the cost.",
+        description="The LLM prompt used for the event.",
+    )
+    response: str | None = Field(
+        default=None,
+        description="The LLM response used for the event.",
+    )
+    input_tokens: int = Field(
+        ..., description="The number of LLM input tokens used for the event."
+    )
+    output_tokens: int = Field(
+        ..., description="The number of LLM output tokens used for the event."
+    )
+    total_tokens: int = Field(
+        ..., description="The total number of LLM tokens used for the event."
+    )
+    cost: EventCost | None = Field(
+        default=None,
+        description="Optional cost associated with the event.",
     )
 
 
@@ -71,16 +93,16 @@ class EventCreateBase(Schema, MetadataInputMixin):
         description="The timestamp of the event.",
     )
     name: str = Field(..., description="The name of the event.")
-    cost: EventCost | None = Field(
-        default=None,
-        description="Optional cost associated with the event.",
-    )
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
             "The ID of the organization owning the event. "
             "**Required unless you use an organization token.**"
         ),
+    )
+    _llm: LLMEvent | None = Field(
+        default=None,
+        description="Optional LLM metadata associated with the event.",
     )
 
 

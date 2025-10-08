@@ -91,7 +91,7 @@ export const ProfitChart = forwardRef<HTMLDivElement, MetricChartProps>(
           }}
           onMouseMove={(state) => {
             if (onDataIndexHover) {
-              onDataIndexHover(state.activeTooltipIndex)
+              onDataIndexHover(state.activeTooltipIndex as number)
             }
           }}
           onMouseLeave={() => {
@@ -181,3 +181,5 @@ export const ProfitChart = forwardRef<HTMLDivElement, MetricChartProps>(
     )
   },
 )
+
+ProfitChart.displayName = 'ProfitChart'

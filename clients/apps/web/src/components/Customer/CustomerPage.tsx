@@ -79,8 +79,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       sorting: ['-granted_at'],
     })
 
-  const { data: customerBalance, isLoading: balanceLoading } =
-    useCustomerBalance(customer.id)
+  const { data: customerBalance } = useCustomerBalance(customer.id)
 
   const [selectedMetric, setSelectedMetric] =
     React.useState<keyof schemas['Metrics']>('revenue')
@@ -147,7 +146,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
   const profit = useMemo(() => {
     if (!metricsData) return 0
 
-    if (hoverIndex === undefined) {
+    if (!hoverIndex) {
       if (graphType === 'cumulative') {
         return (
           metricsData.totals.cumulative_revenue -

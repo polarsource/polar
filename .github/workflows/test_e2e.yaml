@@ -131,5 +131,5 @@ jobs:
         working-directory: e2e
         run: |
           uv sync --dev
-          uv run playwright install
+          uv run playwright install --with-deps
           uv run pytest

@@ -50,11 +50,11 @@ const oauth2CSP = `
 // Ref: https://www.mintlify.com/docs/guides/csp-configuration#content-security-policy-csp-configuration
 const docsCSP = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com;
   style-src 'self' 'unsafe-inline' d4tuoctqmanu0.cloudfront.net;
   font-src 'self' d4tuoctqmanu0.cloudfront.net cdn.jsdelivr.net fonts.cdnfonts.com;
   img-src 'self' data: blob: d3gk2c5xim1je2.cloudfront.net mintcdn.com mintlify.s3.us-west-1.amazonaws.com;
-  connect-src 'self' *.mintlify.dev *.mintlify.com;
+  connect-src 'self' *.mintlify.dev *.mintlify.com https://*.google-analytics.com;
   frame-src 'self' *.mintlify.dev *.mintlify.com;
 `
 

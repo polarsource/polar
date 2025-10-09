@@ -83,6 +83,26 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_one_or_none(statement)
 
+    async def get_revoked_seat_by_subscription(
+        self,
+        subscription_id: UUID,
+        *,
+        options: tuple["_AbstractLoad", ...] = (),
+    ) -> CustomerSeat | None:
+        """Get a revoked seat for a subscription that can be reused."""
+        from polar.models.customer_seat import SeatStatus
+
+        statement = (
+            select(CustomerSeat)
+            .where(
+                CustomerSeat.subscription_id == subscription_id,
+                CustomerSeat.status == SeatStatus.revoked,
+            )
+            .options(*options)
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_eager_options(self) -> tuple["_AbstractLoad", ...]:
         return (
             joinedload(CustomerSeat.subscription)

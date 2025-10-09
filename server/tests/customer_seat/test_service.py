@@ -332,6 +332,49 @@ class TestAssignSeat:
         )
         assert time_diff < 60  # Within 1 minute
 
+    @pytest.mark.asyncio
+    async def test_assign_seat_reuses_revoked_seat(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+    ) -> None:
+        """Test that assigning a seat to a customer with a revoked seat reuses the existing seat record."""
+        # Create and revoke a seat for the customer
+        revoked_seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+        await session.refresh(revoked_seat, ["subscription"])
+        await session.refresh(revoked_seat.subscription, ["product"])
+        await session.refresh(revoked_seat.subscription.product, ["organization"])
+
+        revoked_seat = await seat_service.revoke_seat(session, revoked_seat)
+        await session.commit()
+
+        original_seat_id = revoked_seat.id
+        assert revoked_seat.status == SeatStatus.revoked
+        assert revoked_seat.revoked_at is not None
+        assert revoked_seat.customer_id is None
+
+        # Now assign a seat to the same customer again
+        new_seat = await seat_service.assign_seat(
+            session, subscription_with_seats, customer_id=customer.id
+        )
+
+        # Should reuse the same seat record
+        assert new_seat.id == original_seat_id
+        assert new_seat.status == SeatStatus.pending
+        assert new_seat.customer_id == customer.id
+        assert new_seat.invitation_token is not None
+        assert new_seat.invitation_token_expires_at is not None
+        assert new_seat.revoked_at is None
+        assert new_seat.claimed_at is None
+
 
 class TestGetSeatByToken:
     @pytest.mark.asyncio

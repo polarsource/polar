@@ -138,16 +138,30 @@ class SeatService:
         invitation_token = secrets.token_urlsafe(32)
         token_expires_at = datetime.now(UTC) + timedelta(days=1)
 
-        seat = CustomerSeat(
-            subscription_id=subscription.id,
-            status=SeatStatus.pending,
-            invitation_token=invitation_token,
-            invitation_token_expires_at=token_expires_at,
-            customer_id=customer.id,
-            seat_metadata=metadata or {},
+        # First, try to reuse a revoked seat from this subscription
+        revoked_seat = await repository.get_revoked_seat_by_subscription(
+            subscription.id
         )
+        if revoked_seat:
+            seat = revoked_seat
+            seat.status = SeatStatus.pending
+            seat.invitation_token = invitation_token
+            seat.invitation_token_expires_at = token_expires_at
+            seat.customer_id = customer.id
+            seat.seat_metadata = metadata or {}
+            seat.revoked_at = None
+            seat.claimed_at = None
+        else:
+            seat = CustomerSeat(
+                subscription_id=subscription.id,
+                status=SeatStatus.pending,
+                invitation_token=invitation_token,
+                invitation_token_expires_at=token_expires_at,
+                customer_id=customer.id,
+                seat_metadata=metadata or {},
+            )
+            session.add(seat)
 
-        session.add(seat)
         await session.flush()
 
         log.info(

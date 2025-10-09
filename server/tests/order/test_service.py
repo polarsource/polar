@@ -3490,6 +3490,36 @@ class TestCustomerBalance:
             pytest.param(
                 BalanceFixture(
                     products={
+                        "p-basic": (SubscriptionRecurringInterval.month, 3000),
+                    },
+                    orders=[
+                        BalanceOrderFixture(
+                            items=[("p-basic", 3000, False)],
+                            status=OrderStatus.partially_refunded,
+                            subtotal_amount=3000,
+                            discount_amount=0,
+                            tax_amount=0,
+                            refunded_amount=1000,
+                            refunded_tax_amount=0,
+                        ),
+                        BalanceOrderFixture(
+                            items=[("p-basic", 3000, False)],
+                            status=OrderStatus.paid,
+                            subtotal_amount=-1000,
+                            discount_amount=0,
+                            tax_amount=0,
+                            refunded_amount=0,
+                            refunded_tax_amount=0,
+                        ),
+                    ],
+                    payments=[(0, 3000, PaymentStatus.succeeded)],
+                    expected_balance=0,  # Refund already paid back to customer
+                ),
+                id="partial-refund-negative-order",
+            ),
+            pytest.param(
+                BalanceFixture(
+                    products={
                         "p-basic": (SubscriptionRecurringInterval.month, 5000),
                     },
                     orders=[

@@ -1836,16 +1836,44 @@ class OrderService:
             )
         )
 
-        total_orders = sum(
-            order.total_amount - order.refunded_amount - order.refunded_tax_amount
-            for order in paid_orders
-        )
-        total_paid = sum(payment.amount for payment in payments)
-        total_refunded = sum(
-            order.refunded_amount + order.refunded_tax_amount for order in paid_orders
-        )
+        # Calculate positive and negative order amounts separately
+        positive_order_total = 0
+        negative_order_total = 0  # Absolute value of negative orders (customer credits)
+        refunds_on_positive_orders = 0
 
-        return total_paid - total_orders - total_refunded
+        for order in paid_orders:
+            if order.total_amount >= 0:
+                # Positive order: track gross amount and refunds separately
+                positive_order_total += order.total_amount
+                refunds_on_positive_orders += (
+                    order.refunded_amount + order.refunded_tax_amount
+                )
+            else:
+                # Negative order (credit): use absolute value
+                # Refunds on negative orders don't make sense, so we ignore them
+                negative_order_total += abs(order.total_amount)
+
+        total_paid = sum(payment.amount for payment in payments)
+
+        # When there are negative orders (customer credits), refunds can settle them
+        # Otherwise, refunds just reduce the customer's debt
+        if negative_order_total > 0:
+            # Refunds first settle negative orders (customer credits)
+            settled_amount = min(refunds_on_positive_orders, negative_order_total)
+            remaining_refunds = refunds_on_positive_orders - settled_amount
+            remaining_credits = negative_order_total - settled_amount
+
+            # Balance = paid - positive orders + remaining refunds + remaining credits
+            return (
+                total_paid
+                - positive_order_total
+                + remaining_refunds
+                + remaining_credits
+            )
+        else:
+            # No negative orders: standard calculation
+            # The refunds cancel out in the formula
+            return total_paid - positive_order_total
 
 
 order = OrderService()

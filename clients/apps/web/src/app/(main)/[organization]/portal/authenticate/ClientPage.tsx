@@ -31,18 +31,29 @@ const ClientPage = ({
 }) => {
   const router = useRouter()
   const form = useForm<{ code: string }>()
-  const { control, handleSubmit, setError } = form
+  const { control, handleSubmit, setError, watch } = form
   const sessionRequest = useCustomerPortalSessionAuthenticate(api)
+
+  const code = watch('code') || ''
 
   const onSubmit = useCallback(
     async ({ code }: { code: string }) => {
       const { data, error } = await sessionRequest.mutateAsync({ code })
-      if (error) {
-        if (error.detail) {
+
+      if (error && error?.detail) {
+        if (typeof error.detail === 'string') {
+          setError('root', { message: error.detail })
+        } else {
           setValidationErrors(error.detail, setError)
         }
         return
       }
+
+      if (!data) {
+        setError('root', { message: 'Invalid verification code' })
+        return
+      }
+
       router.push(
         `/${organization.slug}/portal/?customer_session_token=${data.token}`,
       )
@@ -107,12 +118,19 @@ const ClientPage = ({
                 )
               }}
             />
+
+            {form.formState.errors.root && (
+              <p className="text-sm font-medium text-red-500 dark:text-red-400">
+                {form.formState.errors.root.message}
+              </p>
+            )}
+
             <Button
               type="submit"
               size="lg"
               className={twMerge('w-full', themingPreset.polar.button)}
               loading={sessionRequest.isPending}
-              disabled={sessionRequest.isPending}
+              disabled={sessionRequest.isPending || code.length !== 6}
             >
               Access my purchases
             </Button>

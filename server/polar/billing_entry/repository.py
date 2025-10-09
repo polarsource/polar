@@ -13,7 +13,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import BillingEntry
-from polar.models.product_price import ProductPrice
+from polar.models.product_price import ProductPrice, ProductPriceMeteredUnit
 
 
 class BillingEntryRepository(
@@ -58,17 +58,35 @@ class BillingEntryRepository(
 
     async def get_pending_metered_by_subscription_tuples(
         self, subscription_id: UUID
-    ) -> AsyncGenerator[tuple[UUID, datetime, datetime]]:
+    ) -> AsyncGenerator[tuple[UUID, UUID, datetime, datetime]]:
+        """
+        Get pending metered billing entries grouped appropriately.
+
+        Returns tuples of (product_price_id, meter_id, start_timestamp, end_timestamp).
+        Groups by (product_price_id, meter_id) and orders by meter_id, then by most recent price first.
+        """
+        latest_price_created_at = func.max(ProductPriceMeteredUnit.created_at).label(
+            "latest_price_created_at"
+        )
         statement = (
             self.get_pending_by_subscription_statement(subscription_id)
-            .join(BillingEntry.product_price)
+            .join(
+                ProductPriceMeteredUnit,
+                BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
+            )
             .with_only_columns(
                 BillingEntry.product_price_id,
+                ProductPriceMeteredUnit.meter_id,
                 func.min(BillingEntry.start_timestamp),
                 func.max(BillingEntry.end_timestamp),
+                latest_price_created_at,
             )
-            .where(ProductPrice.is_metered.is_(True))
-            .group_by(BillingEntry.product_price_id)
+            .group_by(BillingEntry.product_price_id, ProductPriceMeteredUnit.meter_id)
+            .order_by(None)  # Clear existing ORDER BY from base statement
+            .order_by(
+                ProductPriceMeteredUnit.meter_id.asc(),
+                latest_price_created_at.desc(),
+            )
         )
         results = await self.session.stream(
             statement,
@@ -76,7 +94,8 @@ class BillingEntryRepository(
         )
         try:
             async for result in results:
-                yield result._tuple()
+                # Return only the first 4 values (exclude latest_price_created_at)
+                yield result._tuple()[:4]
         finally:
             await results.close()
 
@@ -87,6 +106,22 @@ class BillingEntryRepository(
             self.get_pending_by_subscription_statement(subscription_id)
             .with_only_columns(BillingEntry.id)
             .where(BillingEntry.product_price_id == product_price_id)
+        )
+        results = await self.session.execute(statement)
+        return results.scalars().unique().all()
+
+    async def get_pending_ids_by_subscription_and_meter(
+        self, subscription_id: UUID, meter_id: UUID
+    ) -> Sequence[UUID]:
+        """Get all pending billing entry IDs for a subscription and meter, regardless of price."""
+        statement = (
+            self.get_pending_by_subscription_statement(subscription_id)
+            .join(
+                ProductPriceMeteredUnit,
+                BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
+            )
+            .with_only_columns(BillingEntry.id)
+            .where(ProductPriceMeteredUnit.meter_id == meter_id)
         )
         results = await self.session.execute(statement)
         return results.scalars().unique().all()

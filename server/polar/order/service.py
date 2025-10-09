@@ -1863,16 +1863,17 @@ class OrderService:
             remaining_refunds = refunds_on_positive_orders - settled_amount
             remaining_credits = negative_order_total - settled_amount
 
-            # Balance = paid - positive orders - remaining refunds + remaining credits
+            # Balance = paid - positive orders + remaining refunds + remaining credits
             return (
                 total_paid
                 - positive_order_total
-                - remaining_refunds
+                + remaining_refunds
                 + remaining_credits
             )
         else:
             # No negative orders: standard calculation
-            return total_paid - positive_order_total - refunds_on_positive_orders
+            # The refunds cancel out in the formula
+            return total_paid - positive_order_total
 
 
 order = OrderService()

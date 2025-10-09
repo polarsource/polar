@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
-import { openai } from '@ai-sdk/openai'
+import { anthropic } from '@ai-sdk/anthropic'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import {
   convertToModelMessages,
@@ -19,7 +19,7 @@ export const maxDuration = 30
 
 const systemPrompt = `
 You are a helpful assistant that helps a new user configure their Polar account.
-You're part of their onboarding flow, where you'll guide them through collecting the necessary information
+You're part of their initial onboarding flow, where you'll guide them through collecting the necessary information
 of what they're going to be selling on Polar. Once all required information is collected,
 you'll be able to configure their account using some tools provided to you.
 
@@ -72,7 +72,8 @@ Polar has these benefit types:
 ### Unsupported benefit types
 
 While Polar fully supports these benefits, your chat capabilities are limited.
-You will not be able to configure Discord invites or GitHub repository access for now, since the user has to
+
+You will not be able to configure file downloads, Discord invites or GitHub repository access for now, since the user has to
 authenticate with these third party services before being able to set up a benefit. That's impossible from this chat.
 
 If so, you can use the "redirect_to_manual_setup" tool to redirect the user to the manual setup page.
@@ -121,6 +122,8 @@ So, in general, you should follow this order:
  - Define products
 
 # Rules
+- Never render ID's in your text response.
+- Prefer no formatting in your response, but if you do, use valid Markdown (limited to bold, italic, and lists. No headings.)
 - Prices will always be in USD. If you are prompted about a different currency, mention that this is not supported yet,
   and ask them to specify their prices in USD. If no currency is mentioned, assume USD. Never ask to confirm the currency,
   nor mention this limitation proactively. Use only a dollar sign ($), no need to repeat USD.
@@ -145,6 +148,7 @@ So, in general, you should follow this order:
 - Be eager to resolve the request as quickly as possible.
 - If you use the "renderProductsPreview" tool, do not repeat the preview in the text response after that.
 - If a benefit type is unsupported, immediately use the "redirectToManualSetup" tool to redirect the user to the manual setup page. There is no use in collecting more information in that case since they'll have to manually re-enter everything anyway.
+- Remember that you are helping the user with their initial setup, you're the first thing they see after signing up, so don't ask for pre-existing information (ID's, meters, …). Assume you'll have to create from scratch.
 
 The user will now describe their product and you will start the configuration assistant.
 `
@@ -217,7 +221,7 @@ async function getMCPClient(userId: string, organizationId: string) {
           headers: {
             Authorization: `Bearer ${process.env.GRAM_API_KEY}`,
             'MCP-POLAR-SERVER-URL':
-              process.env.NEXT_PUBLIC_API_URL ?? process.env.GRAM_SERVER_URL,
+              process.env.GRAM_SERVER_URL ?? process.env.NEXT_PUBLIC_API_URL,
             'MCP-POLAR-ACCESS-TOKEN': oat,
           },
         },
@@ -338,7 +342,7 @@ export async function POST(req: Request) {
   })
 
   const result = streamText({
-    model: openai('gpt-5-mini'),
+    model: anthropic('claude-sonnet-4-5'),
     system: systemPrompt,
     tools: {
       redirectToManualSetup,

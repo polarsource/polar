@@ -90,7 +90,7 @@ const CountryStatePicker = ({
   itemClassName?: string
   value?: string
   onChange: (value: string) => void
-  country: string
+  country?: string
   autoComplete?: string
 }) => {
   if (country === 'US' || country === 'CA') {

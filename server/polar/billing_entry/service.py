@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import cast
 
+import structlog
 from babel.dates import format_date
 from sqlalchemy.util.typing import Literal
 from typing_extensions import AsyncGenerator
@@ -19,11 +20,14 @@ from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
     StaticPrice,
+    is_metered_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.worker._enqueue import enqueue_job
 
 from .repository import BillingEntryRepository
+
+log = structlog.get_logger(__name__)
 
 
 @dataclasses.dataclass
@@ -122,7 +126,10 @@ class BillingEntryService:
         # performance issues and even OOM on large subscriptions.
         product_price_repository = ProductPriceRepository.from_session(session)
 
-        # Track which meters we've already processed to avoid duplicates when grouping by meter
+        # Track which meters we've already processed to avoid duplicates
+        # For non-summable aggregations (max, min, avg, unique), we process each meter only once
+        # (even if there are billing entries with multiple prices) because these aggregations
+        # must be computed across ALL events, not per-price
         processed_meters: set[uuid.UUID] = set()
 
         async for (
@@ -136,17 +143,34 @@ class BillingEntryService:
             )
 
             # Check if this meter uses a non-summable aggregation
-            # For non-summable aggregations (max, min, avg, unique), we need to compute
-            # across ALL events for this meter, regardless of which price was active
+            # Non-summable aggregations (max, min, avg, unique) must be computed across
+            # ALL events in the period, not per-price. For example:
+            # - MAX(3 servers on priceA, 2 servers on priceB) = 3 servers (not 3+2=5)
+            # - We bill this at the currently active price from subscription
             if not metered_price.meter.aggregation.is_summable():
-                # Skip if we've already processed this meter
                 if meter_id in processed_meters:
                     continue
                 processed_meters.add(meter_id)
 
-                # Compute using meter-grouped entries
+                # Find the currently active price for this meter from the subscription
+                # This is the source of truth - even if all billing entries used priceA,
+                # if the customer changed to priceB, we bill at priceB
+                active_price = None
+                for spp in subscription.subscription_product_prices:
+                    if (
+                        is_metered_price(spp.product_price)
+                        and spp.product_price.meter_id == meter_id
+                    ):
+                        active_price = cast(MeteredPrice, spp.product_price)
+                        break
+
+                if active_price is None:
+                    log.info(
+                        f"No active price found for meter {meter_id} in subscription {subscription.id}"
+                    )
+
                 metered_line_item = await self._get_metered_line_item_by_meter(
-                    session, metered_price, subscription, start_timestamp, end_timestamp
+                    session, active_price, subscription, start_timestamp, end_timestamp
                 )
                 pending_entries_ids = (
                     await repository.get_pending_ids_by_subscription_and_meter(

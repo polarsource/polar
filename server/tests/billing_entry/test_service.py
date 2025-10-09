@@ -25,6 +25,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
+from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     StaticPrice,
@@ -648,6 +649,11 @@ class TestCreateOrderItemsFromPending:
             prices=[(meter_max, Decimal(15_00), None)],  # $15 per server
         )
         price_b = product_b.prices[0]
+
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price_b)
+        ]
+        await save_fixture(subscription)
 
         # Create events on price B: values are lower but shouldn't matter for MAX
         entries.extend(

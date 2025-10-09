@@ -60,14 +60,16 @@ class BillingEntryRepository(
         self, subscription_id: UUID
     ) -> AsyncGenerator[tuple[UUID, UUID, datetime, datetime]]:
         """
-        Get pending metered billing entries grouped appropriately.
+        Get pending metered billing entries grouped by (product_price_id, meter_id).
 
         Returns tuples of (product_price_id, meter_id, start_timestamp, end_timestamp).
-        Groups by (product_price_id, meter_id) and orders by meter_id, then by most recent price first.
+
+        For summable aggregations (count, sum): Each tuple represents entries to bill separately.
+        For non-summable aggregations (max, min, avg, unique): Multiple tuples for the same
+        meter_id will be returned (one per price), but only the first is processed by the
+        service layer - the rest are skipped. The active price is determined from
+        subscription.subscription_product_prices, not from these tuples.
         """
-        latest_price_created_at = func.max(ProductPriceMeteredUnit.created_at).label(
-            "latest_price_created_at"
-        )
         statement = (
             self.get_pending_by_subscription_statement(subscription_id)
             .join(
@@ -79,14 +81,10 @@ class BillingEntryRepository(
                 ProductPriceMeteredUnit.meter_id,
                 func.min(BillingEntry.start_timestamp),
                 func.max(BillingEntry.end_timestamp),
-                latest_price_created_at,
             )
             .group_by(BillingEntry.product_price_id, ProductPriceMeteredUnit.meter_id)
             .order_by(None)  # Clear existing ORDER BY from base statement
-            .order_by(
-                ProductPriceMeteredUnit.meter_id.asc(),
-                latest_price_created_at.desc(),
-            )
+            .order_by(ProductPriceMeteredUnit.meter_id.asc())
         )
         results = await self.session.stream(
             statement,
@@ -94,8 +92,7 @@ class BillingEntryRepository(
         )
         try:
             async for result in results:
-                # Return only the first 4 values (exclude latest_price_created_at)
-                yield result._tuple()[:4]
+                yield result._tuple()
         finally:
             await results.close()
 
@@ -113,7 +110,9 @@ class BillingEntryRepository(
     async def get_pending_ids_by_subscription_and_meter(
         self, subscription_id: UUID, meter_id: UUID
     ) -> Sequence[UUID]:
-        """Get all pending billing entry IDs for a subscription and meter, regardless of price."""
+        """
+        Get all pending billing entry IDs for a subscription and meter across all prices.
+        """
         statement = (
             self.get_pending_by_subscription_statement(subscription_id)
             .join(

@@ -88,5 +88,6 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             joinedload(CustomerSeat.subscription)
             .joinedload(Subscription.product)
             .joinedload(Product.organization),
+            joinedload(CustomerSeat.subscription).joinedload(Subscription.customer),
             joinedload(CustomerSeat.customer),
         )

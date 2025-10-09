@@ -398,3 +398,83 @@ export const useCustomerOrderPaymentStatus = (api: Client) =>
         params: { path: { id: variables.orderId } },
       }),
   })
+
+export const useCustomerSeats = (
+  api: Client,
+  subscriptionId: string | undefined,
+) =>
+  useQuery({
+    queryKey: ['customer_seats', { subscription_id: subscriptionId }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/seats', {
+          params: { query: { subscription_id: subscriptionId! } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!subscriptionId,
+  })
+
+export const useAssignSeat = (api: Client) =>
+  useMutation({
+    mutationFn: async (variables: {
+      subscription_id: string
+      email?: string
+      external_customer_id?: string
+      customer_id?: string
+      metadata?: Record<string, any>
+    }) =>
+      api.POST('/v1/customer-portal/seats', {
+        body: variables,
+      }),
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
+      queryClient.invalidateQueries({
+        queryKey: ['customer_seats'],
+      })
+    },
+  })
+
+export const useRevokeSeat = (api: Client) =>
+  useMutation({
+    mutationFn: async (seatId: string) => {
+      const result = await api.DELETE('/v1/customer-portal/seats/{seat_id}', {
+        params: { path: { seat_id: seatId } },
+      })
+      if (result.error) {
+        const errorMessage =
+          typeof result.error.detail === 'string'
+            ? result.error.detail
+            : 'Failed to revoke seat'
+        throw new Error(errorMessage)
+      }
+      return result
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['customer_seats'],
+      })
+    },
+  })
+
+export const useResendSeatInvitation = (api: Client) =>
+  useMutation({
+    mutationFn: async (seatId: string) => {
+      const result = await api.POST(
+        '/v1/customer-portal/seats/{seat_id}/resend',
+        {
+          params: { path: { seat_id: seatId } },
+        },
+      )
+      if (result.error) {
+        const errorMessage =
+          typeof result.error.detail === 'string'
+            ? result.error.detail
+            : 'Failed to resend invitation'
+        throw new Error(errorMessage)
+      }
+      return result
+    },
+  })

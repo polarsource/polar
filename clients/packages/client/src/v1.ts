@@ -2564,6 +2564,70 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/seats': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Seats
+     * @description **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:seats:list_seats']
+    put?: never
+    /**
+     * Assign Seat
+     * @description **Scopes**: `customer_portal:write`
+     */
+    post: operations['customer_portal:seats:assign_seat']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/seats/{seat_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Revoke Seat
+     * @description **Scopes**: `customer_portal:write`
+     */
+    delete: operations['customer_portal:seats:revoke_seat']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/seats/{seat_id}/resend': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Resend Invitation
+     * @description **Scopes**: `customer_portal:write`
+     */
+    post: operations['customer_portal:seats:resend_invitation']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/customer-session/request': {
     parameters: {
       query?: never
@@ -3019,13 +3083,57 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    get?: never
+    /**
+     * List Seats
+     * @description **Scopes**: `subscriptions:write`
+     */
+    get: operations['customer-seats:list_seats']
     put?: never
     /**
      * Assign Seat
      * @description **Scopes**: `subscriptions:write`
      */
     post: operations['customer-seats:assign_seat']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-seats/{seat_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Revoke Seat
+     * @description **Scopes**: `subscriptions:write`
+     */
+    delete: operations['customer-seats:revoke_seat']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-seats/{seat_id}/resend': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Resend Invitation
+     * @description **Scopes**: `subscriptions:write`
+     */
+    post: operations['customer-seats:resend_invitation']
     delete?: never
     options?: never
     head?: never
@@ -3039,11 +3147,7 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    /**
-     * Get Claim Info
-     * @description Get seat claim information - READ ONLY.
-     *     Safe for email scanners to hit - no side effects.
-     */
+    /** Get Claim Info */
     get: operations['customer-seats:get_claim_info']
     put?: never
     post?: never
@@ -3062,12 +3166,7 @@ export interface paths {
     }
     get?: never
     put?: never
-    /**
-     * Claim Seat
-     * @description Claim a seat using invitation token.
-     *     No authentication required - token is proof of authorization.
-     *     Returns customer session token for immediate portal access.
-     */
+    /** Claim Seat */
     post: operations['customer-seats:claim_seat']
     delete?: never
     options?: never
@@ -11583,6 +11682,16 @@ export interface components {
        * @description The assigned customer ID
        */
       customer_id?: string | null
+      /**
+       * Customer Email
+       * @description The assigned customer email
+       */
+      customer_email?: string | null
+      /**
+       * Invitation Token Expires At
+       * @description When the invitation token expires
+       */
+      invitation_token_expires_at?: string | null
       /**
        * Claimed At
        * @description When the seat was claimed
@@ -27523,6 +27632,231 @@ export interface operations {
       }
     }
   }
+  'customer_portal:seats:list_seats': {
+    parameters: {
+      query: {
+        /** @description Subscription ID */
+        subscription_id: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SeatsList']
+        }
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted or seat-based pricing not enabled */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Subscription not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:seats:assign_seat': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SeatAssign']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSeat']
+        }
+      }
+      /** @description No available seats or customer already has a seat */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted or seat-based pricing not enabled */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Subscription or customer not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:seats:revoke_seat': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        seat_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSeat']
+        }
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted or seat-based pricing not enabled */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Seat not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:seats:resend_invitation': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        seat_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSeat']
+        }
+      }
+      /** @description Seat is not pending or already claimed */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted or seat-based pricing not enabled */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Seat not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer_portal:customer-session:customer_portal.customer_session.request': {
     parameters: {
       query?: never
@@ -28568,6 +28902,58 @@ export interface operations {
       }
     }
   }
+  'customer-seats:list_seats': {
+    parameters: {
+      query: {
+        subscription_id: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SeatsList']
+        }
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted or seat-based pricing not enabled */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Subscription not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer-seats:assign_seat': {
     parameters: {
       query?: never
@@ -28629,6 +29015,117 @@ export interface operations {
       }
     }
   }
+  'customer-seats:revoke_seat': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        seat_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSeat']
+        }
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted or seat-based pricing not enabled */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Seat not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer-seats:resend_invitation': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        seat_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSeat']
+        }
+      }
+      /** @description Seat is not pending or already claimed */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted or seat-based pricing not enabled */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Seat not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer-seats:get_claim_info': {
     parameters: {
       query?: never
@@ -28651,6 +29148,13 @@ export interface operations {
       }
       /** @description Invalid or expired invitation token */
       400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Seat-based pricing not enabled for organization */
+      403: {
         headers: {
           [name: string]: unknown
         }

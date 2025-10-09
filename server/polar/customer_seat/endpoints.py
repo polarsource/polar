@@ -1,4 +1,5 @@
 from typing import cast
+from uuid import UUID
 
 from fastapi import Depends, Request
 from sqlalchemy.orm import joinedload
@@ -25,6 +26,7 @@ from .schemas import (
     SeatAssign,
     SeatClaim,
     SeatClaimInfo,
+    SeatsList,
 )
 from .service import seat_service
 
@@ -102,6 +104,113 @@ async def assign_seat(
     )
 
     return CustomerSeatSchema.model_validate(seat)
+
+
+@router.get(
+    "",
+    summary="List Seats",
+    response_model=SeatsList,
+    responses={
+        401: {"description": "Authentication required"},
+        403: {"description": "Not permitted or seat-based pricing not enabled"},
+        404: {"description": "Subscription not found"},
+    },
+)
+async def list_seats(
+    subscription_id: str,
+    auth_subject: SeatWriteOrAnonymous,
+    session: AsyncSession = Depends(get_db_session),
+) -> SeatsList:
+    if isinstance(auth_subject.subject, Anonymous):
+        raise NotPermitted("Authentication required")
+
+    typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
+    subscription_repository = SubscriptionRepository.from_session(session)
+
+    statement = (
+        subscription_repository.get_readable_statement(typed_auth_subject)
+        .where(Subscription.id == UUID(subscription_id))
+        .options(joinedload(Subscription.product).joinedload(Product.organization))
+    )
+
+    subscription = await subscription_repository.get_one_or_none(statement)
+
+    if not subscription:
+        raise ResourceNotFound("Subscription not found")
+
+    seats = await seat_service.list_seats(session, subscription)
+    available_seats = await seat_service.get_available_seats_count(
+        session, subscription
+    )
+
+    return SeatsList(
+        seats=[CustomerSeatSchema.model_validate(seat) for seat in seats],
+        available_seats=available_seats,
+        total_seats=subscription.seats or 0,
+    )
+
+
+@router.delete(
+    "/{seat_id}",
+    summary="Revoke Seat",
+    response_model=CustomerSeatSchema,
+    responses={
+        401: {"description": "Authentication required"},
+        403: {"description": "Not permitted or seat-based pricing not enabled"},
+        404: {"description": "Seat not found"},
+    },
+)
+async def revoke_seat(
+    seat_id: str,
+    auth_subject: SeatWriteOrAnonymous,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerSeatSchema:
+    if isinstance(auth_subject.subject, Anonymous):
+        raise NotPermitted("Authentication required")
+
+    typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
+
+    seat = await seat_service.get_seat(session, typed_auth_subject, UUID(seat_id))
+
+    if not seat:
+        raise ResourceNotFound("Seat not found")
+
+    revoked_seat = await seat_service.revoke_seat(session, seat)
+    await session.commit()
+
+    return CustomerSeatSchema.model_validate(revoked_seat)
+
+
+@router.post(
+    "/{seat_id}/resend",
+    summary="Resend Invitation",
+    response_model=CustomerSeatSchema,
+    responses={
+        400: {"description": "Seat is not pending or already claimed"},
+        401: {"description": "Authentication required"},
+        403: {"description": "Not permitted or seat-based pricing not enabled"},
+        404: {"description": "Seat not found"},
+    },
+)
+async def resend_invitation(
+    seat_id: str,
+    auth_subject: SeatWriteOrAnonymous,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerSeatSchema:
+    if isinstance(auth_subject.subject, Anonymous):
+        raise NotPermitted("Authentication required")
+
+    typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
+
+    seat = await seat_service.get_seat(session, typed_auth_subject, UUID(seat_id))
+
+    if not seat:
+        raise ResourceNotFound("Seat not found")
+
+    resent_seat = await seat_service.resend_invitation(session, seat)
+    await session.commit()
+
+    return CustomerSeatSchema.model_validate(resent_seat)
 
 
 @router.get(

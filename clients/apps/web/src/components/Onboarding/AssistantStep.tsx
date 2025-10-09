@@ -3,7 +3,7 @@
 import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { useChat } from '@ai-sdk/react'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import ArrowForwardOutlined from '@mui/icons-material/ArrowForwardOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { DefaultChatTransport } from 'ai'
@@ -378,32 +378,33 @@ export const AssistantStep = () => {
                   rows={1}
                   className="max-h-[240px] min-h-[72px] resize-none overflow-y-auto border-none px-6 pb-0 pt-5 text-sm/5 shadow-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-50 dark:bg-transparent"
                 />
-                <div className="flex items-center justify-between gap-2 px-4 pb-4">
-                  <Link href="/docs" target="_blank">
-                    <Button
-                      variant="secondary"
-                      wrapperClassNames="flex flex-row items-center gap-x-2"
-                    >
-                      Documentation
-                      <ArrowOutwardOutlined className="ml-1" />
-                    </Button>
-                  </Link>
+                <div className="flex items-center justify-end gap-2 px-4 pb-4">
                   <Button
                     type="submit"
                     disabled={status !== 'ready' || !input.trim()}
                     loading={status === 'submitted' || status === 'streaming'}
+                    className="dark:hover:bg-polar-50 rounded-full bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black"
                   >
                     {messages.length === 0 ? 'Setup' : 'Send'}
+                    <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
                   </Button>
                 </div>
               </form>
             </div>
-            <div className="flex items-center justify-center pt-6">
+            <div className="dark:text-polar-500 flex flex-row items-center justify-center gap-x-4 pt-6 text-sm text-gray-500">
               <Link
-                className="dark:text-polar-600 dark:hover:text-polar-500 text-sm text-gray-400 transition-colors duration-100 hover:text-gray-500"
+                className="dark:hover:text-polar-500 dark:hover:bg-polar-700 rounded-full px-2.5 py-1 transition-colors duration-100 hover:bg-gray-100 hover:text-gray-500"
                 href={`/dashboard/${organization.slug}`}
               >
                 Skip this step
+              </Link>
+              ·
+              <Link
+                href="/docs"
+                target="_blank"
+                className="dark:hover:text-polar-500 dark:hover:bg-polar-700 rounded-full px-2.5 py-1 transition-colors duration-100 hover:bg-gray-100 hover:text-gray-500"
+              >
+                Documentation
               </Link>
             </div>
           </FadeUp>

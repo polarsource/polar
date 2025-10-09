@@ -20,6 +20,7 @@ import { ProductFullMediasMixin } from '../Products/ProductForm/ProductForm'
 import { ProductInfoSection } from '../Products/ProductForm/ProductInfoSection'
 import { ProductMediaSection } from '../Products/ProductForm/ProductMediaSection'
 import { ProductPricingSection } from '../Products/ProductForm/ProductPricingSection'
+import { AssistantStep } from './AssistantStep'
 
 type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
   ProductFullMediasMixin & {
@@ -27,6 +28,43 @@ type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
   }
 
 export const ProductStep = () => {
+  const [isConversationActive, setIsConversationActive] = useState(true)
+
+  return (
+    <div className="dark:md:bg-polar-950 flex flex-col pt-16 md:items-center md:p-16">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        transition={{ duration: 1, staggerChildren: 0.3 }}
+        className="flex min-h-0 w-full shrink-0 flex-col gap-12 md:max-w-xl md:p-8"
+      >
+        <FadeUp className="flex flex-col items-center gap-y-8">
+          <LogoIcon size={50} />
+          <div className="flex flex-col gap-y-4">
+            <h1 className="text-center text-3xl">Your first product</h1>
+            <p className="dark:text-polar-400 text-center text-lg text-gray-600">
+              Setup your first digital product to get started.
+            </p>
+          </div>
+        </FadeUp>
+
+        <AssistantStep
+          onConversationActive={() => setIsConversationActive(true)}
+        />
+
+        <FadeUp>
+          <span className="dark:text-polar-500 mx-auto flex w-full justify-center text-center text-sm text-gray-500">
+            or configure manually
+          </span>
+        </FadeUp>
+
+        <ProductForm />
+      </motion.div>
+    </div>
+  )
+}
+
+const ProductForm = () => {
   const { organization } = useContext(OrganizationContext)
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
     schemas['Benefit']['id'][]
@@ -35,6 +73,7 @@ export const ProductStep = () => {
   const benefits = useBenefits(organization.id, {
     limit: 200,
   })
+
   const organizationBenefits = useMemo(
     () => benefits.data?.items ?? [],
     [benefits],
@@ -133,82 +172,63 @@ export const ProductStep = () => {
 
   return (
     <Form {...form}>
-      <div className="dark:md:bg-polar-950 flex flex-col pt-16 md:items-center md:p-16">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          transition={{ duration: 1, staggerChildren: 0.3 }}
-          className="flex min-h-0 w-full shrink-0 flex-col gap-12 md:max-w-xl md:p-8"
+      <div className="flex flex-col md:gap-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col gap-y-6 [&>div>*]:px-0 [&>div>:first-child]:pt-0"
         >
-          <FadeUp className="flex flex-col items-center gap-y-8">
-            <LogoIcon size={50} />
-            <div className="flex flex-col gap-y-4">
-              <h1 className="text-center text-3xl">Your first product</h1>
-              <p className="dark:text-polar-400 text-center text-lg text-gray-600">
-                Setup your first digital product to get started.
-              </p>
-            </div>
-          </FadeUp>
-
           <div className="flex flex-col md:gap-y-4">
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="flex flex-col gap-y-6 [&>div>*]:px-0 [&>div>:first-child]:pt-0"
-            >
-              <div className="flex flex-col md:gap-y-4">
-                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
-                  <ProductInfoSection compact />
-                </FadeUp>
-
-                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
-                  <ProductMediaSection
-                    className="py-0"
-                    organization={organization}
-                    compact
-                  />
-                </FadeUp>
-
-                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
-                  <ProductPricingSection
-                    className="py-0"
-                    organization={organization}
-                    compact
-                  />
-                </FadeUp>
-              </div>
-            </form>
             <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
-              <ProductBenefitsForm
-                className="px-0 py-0"
+              <ProductInfoSection compact />
+            </FadeUp>
+
+            <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
+              <ProductMediaSection
+                className="py-0"
                 organization={organization}
-                organizationBenefits={organizationBenefits.filter(
-                  (benefit) =>
-                    // Hide not selectable benefits unless they are already enabled
-                    benefit.selectable ||
-                    enabledBenefits.some((b) => b.id === benefit.id),
-                )}
-                benefits={enabledBenefits}
-                onSelectBenefit={onSelectBenefit}
-                onRemoveBenefit={onRemoveBenefit}
+                compact
               />
             </FadeUp>
-            <FadeUp className="flex flex-col gap-y-2 p-8 md:p-0">
-              <Button
-                onClick={() => handleSubmit(onSubmit)()}
-                disabled={!formState.isValid}
-                loading={createProduct.isPending}
-                size="lg"
-              >
-                Create Product
-              </Button>
-              <Link href={`/dashboard/${organization.slug}`}>
-                <Button className="w-full" size="lg" variant="secondary">
-                  Skip
-                </Button>
-              </Link>
+
+            <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
+              <ProductPricingSection
+                className="py-0"
+                organization={organization}
+                compact
+              />
             </FadeUp>
           </div>
-        </motion.div>
+        </form>
+        <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
+          <ProductBenefitsForm
+            className="px-0 py-0"
+            organization={organization}
+            organizationBenefits={organizationBenefits.filter(
+              (benefit) =>
+                // Hide not selectable benefits unless they are already enabled
+                benefit.selectable ||
+                enabledBenefits.some((b) => b.id === benefit.id),
+            )}
+            benefits={enabledBenefits}
+            onSelectBenefit={onSelectBenefit}
+            onRemoveBenefit={onRemoveBenefit}
+          />
+        </FadeUp>
+        <FadeUp className="flex flex-col gap-y-2 p-8 md:p-0">
+          <Button
+            onClick={() => handleSubmit(onSubmit)()}
+            disabled={!formState.isValid}
+            loading={createProduct.isPending}
+            size="lg"
+          >
+            Create Product
+          </Button>
+          <Link href={`/dashboard/${organization.slug}`}>
+            <Button className="w-full" size="lg" variant="secondary">
+              Skip
+            </Button>
+          </Link>
+        </FadeUp>
       </div>
     </Form>
   )

@@ -104,16 +104,13 @@ export const AssistantStep = () => {
                           }
 
                           if (part.type === 'reasoning') {
-                            if (
-                              part.state === 'streaming' ||
-                              part.state === 'input-streaming'
-                            ) {
+                            if (part.state === 'streaming') {
                               return (
                                 <p
                                   key={`${message.id}-${index}`}
-                                  className="dark:text-polar-500 text-sm italic text-gray-500"
+                                  className="dark:text-polar-500 animate-pulse text-sm italic text-gray-500"
                                 >
-                                  Thinking...
+                                  Thinking…
                                 </p>
                               )
                             }
@@ -122,42 +119,42 @@ export const AssistantStep = () => {
 
                           if (part.type === 'dynamic-tool') {
                             const labels = {
-                              polar_dev_pieter_products_list: {
+                              polar_products_list: {
                                 input: 'Finding products…',
                                 output: 'Products found.',
                                 error: 'Error finding products.',
                               },
-                              polar_dev_pieter_products_create: {
+                              polar_products_create: {
                                 input: 'Creating product…',
                                 output: 'Product created.',
                                 error: 'Error creating product.',
                               },
-                              polar_dev_pieter_products_update_benefits: {
+                              polar_products_update_benefits: {
                                 input: 'Updating product benefits…',
                                 output: 'Product benefits updated.',
                                 error: 'Error updating product benefits.',
                               },
-                              polar_dev_pieter_benefits_list: {
+                              polar_benefits_list: {
                                 input: 'Finding benefits…',
                                 output: 'Benefits found.',
                                 error: 'Error finding benefits.',
                               },
-                              polar_dev_pieter_benefits_create: {
+                              polar_benefits_create: {
                                 input: 'Creating benefit…',
                                 output: 'Benefit created.',
                                 error: 'Error creating benefit.',
                               },
-                              polar_dev_pieter_benefits_update: {
+                              polar_benefits_update: {
                                 input: 'Updating benefit…',
                                 output: 'Benefit updated.',
                                 error: 'Error updating benefit.',
                               },
-                              polar_dev_pieter_meters_list: {
+                              polar_meters_list: {
                                 input: 'Finding meters…',
                                 output: 'Meters found.',
                                 error: 'Error finding meters.',
                               },
-                              polar_dev_pieter_meters_create: {
+                              polar_meters_create: {
                                 input: 'Creating meter…',
                                 output: 'Meter created.',
                                 error: 'Error creating meter.',
@@ -174,21 +171,27 @@ export const AssistantStep = () => {
                                   >
                                     {labels[
                                       part.toolName as keyof typeof labels
-                                    ]?.input ?? 'Configuring Polar…'}
+                                    ]?.input ?? 'Working my magic…'}
                                   </p>
                                 )
-                              case 'output-available':
+                              case 'output-available': {
+                                const label =
+                                  labels[part.toolName as keyof typeof labels]
+                                    ?.output
+
+                                if (!label) {
+                                  return null
+                                }
+
                                 return (
                                   <p
                                     className="opacity-40"
                                     key={`${message.id}-${index}`}
                                   >
-                                    {labels[
-                                      part.toolName as keyof typeof labels
-                                    ]?.output ??
-                                      'Configured Polar: ' + part.toolName}
+                                    {label}
                                   </p>
                                 )
+                              }
                               case 'output-error':
                                 return (
                                   <p

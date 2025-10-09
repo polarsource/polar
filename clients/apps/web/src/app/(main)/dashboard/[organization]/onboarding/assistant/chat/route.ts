@@ -210,20 +210,15 @@ async function getMCPClient(userId: string, organizationId: string) {
   try {
     const oat = await generateOAT(userId, organizationId)
 
-    console.log('Attempting to connect to MCP server:', process.env.GRAM_URL)
-    console.log(
-      'Using API key:',
-      process.env.GRAM_API_KEY?.substring(0, 20) + '...',
-    )
-    console.log('Using OAT:', oat)
-
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(process.env.GRAM_URL!),
       {
         requestInit: {
           headers: {
             Authorization: `Bearer ${process.env.GRAM_API_KEY}`,
-            'MCP-POLAR-DEV-PIETER-ACCESS-TOKEN': oat,
+            'MCP-POLAR-SERVER-URL':
+              process.env.NEXT_PUBLIC_API_URL ?? process.env.GRAM_SERVER_URL,
+            'MCP-POLAR-ACCESS-TOKEN': oat,
           },
         },
       },

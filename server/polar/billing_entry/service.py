@@ -161,13 +161,14 @@ class BillingEntryService:
                         is_metered_price(spp.product_price)
                         and spp.product_price.meter_id == meter_id
                     ):
-                        active_price = cast(MeteredPrice, spp.product_price)
+                        active_price = spp.product_price
                         break
 
                 if active_price is None:
                     log.info(
                         f"No active price found for meter {meter_id} in subscription {subscription.id}"
                     )
+                    continue
 
                 metered_line_item = await self._get_metered_line_item_by_meter(
                     session, active_price, subscription, start_timestamp, end_timestamp

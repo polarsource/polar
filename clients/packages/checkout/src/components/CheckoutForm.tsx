@@ -553,40 +553,39 @@ const BaseCheckoutForm = ({
                         </FormControl>
                       )}
                     </div>
-                    {country &&
-                      isDisplayedField(checkout.billingAddressFields.state) && (
-                        <FormControl>
-                          <FormField
-                            control={control}
-                            name="customerBillingAddress.state"
-                            rules={{
-                              required: isRequiredField(
-                                checkout.billingAddressFields.state,
-                              )
-                                ? 'This field is required'
-                                : false,
-                            }}
-                            render={({ field }) => (
-                              <>
-                                <CountryStatePicker
-                                  autoComplete="billing address-level1"
-                                  country={country}
-                                  value={field.value || ''}
-                                  onChange={field.onChange}
-                                  className={themePresetProps.polar.dropdown}
-                                  itemClassName={
-                                    themePresetProps.polar.dropdownItem
-                                  }
-                                  contentClassName={
-                                    themePresetProps.polar.dropdownContent
-                                  }
-                                />
-                                <FormMessage />
-                              </>
-                            )}
-                          />
-                        </FormControl>
-                      )}
+                    {isDisplayedField(checkout.billingAddressFields.state) && (
+                      <FormControl>
+                        <FormField
+                          control={control}
+                          name="customerBillingAddress.state"
+                          rules={{
+                            required: isRequiredField(
+                              checkout.billingAddressFields.state,
+                            )
+                              ? 'This field is required'
+                              : false,
+                          }}
+                          render={({ field }) => (
+                            <>
+                              <CountryStatePicker
+                                autoComplete="billing address-level1"
+                                country={country}
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                className={themePresetProps.polar.dropdown}
+                                itemClassName={
+                                  themePresetProps.polar.dropdownItem
+                                }
+                                contentClassName={
+                                  themePresetProps.polar.dropdownContent
+                                }
+                              />
+                              <FormMessage />
+                            </>
+                          )}
+                        />
+                      </FormControl>
+                    )}
                     {isDisplayedField(
                       checkout.billingAddressFields.country,
                     ) && (

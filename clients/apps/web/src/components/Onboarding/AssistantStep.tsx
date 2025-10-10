@@ -7,7 +7,8 @@ import ArrowForwardOutlined from '@mui/icons-material/ArrowForwardOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { DefaultChatTransport } from 'ai'
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { FadeUp } from '../Animated/FadeUp'
 
 export const AssistantStep = ({
@@ -28,6 +29,17 @@ export const AssistantStep = ({
       },
     }),
   })
+
+  const hasRedirectedToManualSetup = useMemo(() => {
+    return messages.some((message) =>
+      message.parts.some(
+        (part) =>
+          part.type === 'tool-redirectToManualSetup' &&
+          (part.state === 'input-available' ||
+            part.state === 'output-available'),
+      ),
+    )
+  }, [messages])
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -60,7 +72,14 @@ export const AssistantStep = ({
     <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4">
       <div className="dark:border-polar-700 flex flex-col">
         {messages.length > 0 && (
-          <div className="dark:border-polar-700 flex h-full max-h-[640px] flex-1 flex-col gap-y-6 overflow-y-auto rounded-t-3xl border border-b-0 border-gray-200 p-6">
+          <div
+            className={twMerge(
+              'dark:border-polar-700 flex h-full max-h-[640px] flex-1 flex-col gap-y-6 overflow-y-auto rounded-t-3xl border border-gray-200 p-6',
+              hasRedirectedToManualSetup
+                ? 'rounded-b-3xl border-b'
+                : 'border-b-0',
+            )}
+          >
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -240,36 +259,38 @@ export const AssistantStep = ({
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="dark:border-polar-700 flex shrink-0 flex-col gap-3 overflow-hidden rounded-b-3xl border first:rounded-t-3xl"
-        >
-          <TextArea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={status !== 'ready'}
-            placeholder={
-              messages.length === 0
-                ? 'Describe your product and how you want to sell it…'
-                : 'Reply…'
-            }
-            rows={1}
-            className="max-h-[240px] min-h-[72px] resize-none overflow-y-auto border-none px-6 pb-0 pt-5 text-sm/5 shadow-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-50 dark:bg-transparent"
-          />
-          <div className="flex items-center justify-end gap-2 px-4 pb-4">
-            <Button
-              type="submit"
-              disabled={status !== 'ready' || !input.trim()}
-              loading={status === 'submitted' || status === 'streaming'}
-              className="dark:hover:bg-polar-50 rounded-full bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black"
-            >
-              {messages.length === 0 ? 'Setup' : 'Send'}
-              <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
-            </Button>
-          </div>
-        </form>
+        {!hasRedirectedToManualSetup && (
+          <form
+            onSubmit={handleSubmit}
+            className="dark:border-polar-700 flex shrink-0 flex-col gap-3 overflow-hidden rounded-b-3xl border first:rounded-t-3xl"
+          >
+            <TextArea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={status !== 'ready'}
+              placeholder={
+                messages.length === 0
+                  ? 'Describe your product and how you want to sell it…'
+                  : 'Reply…'
+              }
+              rows={1}
+              className="max-h-[240px] min-h-[72px] resize-none overflow-y-auto border-none px-6 pb-0 pt-5 text-sm/5 shadow-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-50 dark:bg-transparent"
+            />
+            <div className="flex items-center justify-end gap-2 px-4 pb-4">
+              <Button
+                type="submit"
+                disabled={status !== 'ready' || !input.trim()}
+                loading={status === 'submitted' || status === 'streaming'}
+                className="dark:hover:bg-polar-50 rounded-full bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black"
+              >
+                {messages.length === 0 ? 'Setup' : 'Send'}
+                <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
+              </Button>
+            </div>
+          </form>
+        )}
       </div>
     </FadeUp>
   )

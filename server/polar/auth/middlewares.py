@@ -15,6 +15,7 @@ from polar.models import (
     PersonalAccessToken,
     UserSession,
 )
+from polar.oauth2.constants import is_registration_token_prefix
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
 from polar.oauth2.exceptions import InvalidTokenError
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
@@ -96,6 +97,9 @@ async def get_auth_subject(
 ) -> AuthSubject[Subject]:
     token = get_bearer_token(request)
     if token is not None:
+        if is_registration_token_prefix(token):
+            return AuthSubject(Anonymous(), set(), None)
+
         customer_session = await get_customer_session(session, token)
         if customer_session:
             return AuthSubject(

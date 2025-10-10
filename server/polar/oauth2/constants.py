@@ -28,3 +28,7 @@ JWT_CONFIG = {
     "iss": ISSUER,
     "exp": 3600,
 }
+
+
+def is_registration_token_prefix(value: str) -> bool:
+    return value.startswith(CLIENT_REGISTRATION_TOKEN_PREFIX)

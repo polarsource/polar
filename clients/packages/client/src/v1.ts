@@ -13590,14 +13590,26 @@ export interface components {
       }
       /** Name */
       name?: string | null
-      /** Code */
-      code?: (string | null) | null
-      /** Starts At */
-      starts_at?: (string | null) | null
-      /** Ends At */
-      ends_at?: (string | null) | null
-      /** Max Redemptions */
-      max_redemptions?: (number | null) | null
+      /**
+       * Code
+       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
+       */
+      code?: string | null
+      /**
+       * Starts At
+       * @description Optional timestamp after which the discount is redeemable.
+       */
+      starts_at?: string | null
+      /**
+       * Ends At
+       * @description Optional timestamp after which the discount is no longer redeemable.
+       */
+      ends_at?: string | null
+      /**
+       * Max Redemptions
+       * @description Optional maximum number of times the discount can be redeemed.
+       */
+      max_redemptions?: number | null
       duration?: components['schemas']['DiscountDuration'] | null
       /** Duration In Months */
       duration_in_months?: number | null
@@ -18566,7 +18578,7 @@ export interface components {
       customer_id?: string | null
       /**
        * Metadata
-       * @description Additional metadata for the seat
+       * @description Additional metadata for the seat (max 10 keys, 1KB total)
        */
       metadata?: {
         [key: string]: unknown
@@ -20001,6 +20013,8 @@ export interface components {
       identity_verification_status: components['schemas']['IdentityVerificationStatus']
       /** Oauth Accounts */
       oauth_accounts: components['schemas']['OAuthAccountRead'][]
+      /** Email Hash */
+      readonly email_hash: string | null
     }
     /** UserScopes */
     UserScopes: {

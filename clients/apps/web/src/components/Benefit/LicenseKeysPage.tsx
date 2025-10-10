@@ -25,6 +25,11 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useState } from 'react'
@@ -176,30 +181,53 @@ export const LicenseKeysPage = ({
       </div>
       <div className="flex flex-row gap-x-4">
         {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('granted')}
-            loading={statusLoading}
-          >
-            Enable
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => handleToggleLicenseKeyStatus('granted')}
+                loading={statusLoading}
+              >
+                Enable
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Re-activate this license key to allow validation
+            </TooltipContent>
+          </Tooltip>
         )}
         {selectedLicenseKey.status === 'granted' && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('disabled')}
-            variant="secondary"
-            loading={statusLoading}
-          >
-            Disable
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => handleToggleLicenseKeyStatus('disabled')}
+                variant="secondary"
+                loading={statusLoading}
+              >
+                Disable
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Temporarily deactivate this key. Can be re-enabled later. Use this
+              for pausing access without permanent revocation.
+            </TooltipContent>
+          </Tooltip>
         )}
         {selectedLicenseKey.status === 'granted' && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('revoked')}
-            loading={statusLoading}
-            variant="destructive"
-          >
-            Revoke
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => handleToggleLicenseKeyStatus('revoked')}
+                loading={statusLoading}
+                variant="destructive"
+              >
+                Revoke
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Permanently revoke this key due to subscription cancellation or
+              policy violation. Can be re-enabled if needed.
+            </TooltipContent>
+          </Tooltip>
         )}
       </div>
     </div>

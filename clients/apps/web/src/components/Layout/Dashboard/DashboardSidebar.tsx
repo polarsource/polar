@@ -159,7 +159,9 @@ export const DashboardSidebar = ({
           target="_blank"
         >
           <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
-          {!isCollapsed && <span className="ml-4 font-medium">Documentation</span>}
+          {!isCollapsed && (
+            <span className="ml-4 font-medium">Documentation</span>
+          )}
         </Link>
         <Separator />
         {type === 'organization' && (

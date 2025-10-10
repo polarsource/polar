@@ -256,8 +256,8 @@ class AIReviewVerdict:
                                         text("Review the appeal and make a decision")
 
                                 # Import forms at method level to avoid circular imports
-                                from polar.web_backoffice.components import button
-                                from polar.web_backoffice.organizations.forms import (
+                                from polar.backoffice.components import button
+                                from polar.backoffice.organizations.forms import (
                                     ApproveOrganizationAppealForm,
                                 )
 

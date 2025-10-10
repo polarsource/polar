@@ -22,11 +22,11 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 WORKDIR /app
 
-COPY ./polar/web_backoffice/pnpm-lock.yaml .
-COPY ./polar/web_backoffice/package.json .
+COPY ./polar/backoffice/pnpm-lock.yaml .
+COPY ./polar/backoffice/package.json .
 RUN pnpm install --frozen-lockfile
 
-COPY ./polar/web_backoffice/ .
+COPY ./polar/backoffice/ .
 
 RUN pnpm run build
 
@@ -61,8 +61,8 @@ ADD . /app/server/
 COPY --from=build-emails-bin /app/bin/react-email-pkg /app/server/
 ENV POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg
 
-COPY --from=build-backoffice /app/static /app/server/polar/web_backoffice/static
-RUN ls -la /app/server/polar/web_backoffice/static
+COPY --from=build-backoffice /app/static /app/server/polar/backoffice/static
+RUN ls -la /app/server/polar/backoffice/static
 
 RUN --mount=type=secret,id=IPINFO_ACCESS_TOKEN mkdir /data && curl -fsSL https://ipinfo.io/data/free/country_asn.mmdb?token=$(cat /run/secrets/IPINFO_ACCESS_TOKEN) -o /data/country_asn.mmdb
 ENV POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data

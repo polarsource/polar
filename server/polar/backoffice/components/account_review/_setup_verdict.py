@@ -4,7 +4,7 @@ from typing import Any
 
 from tagflow import tag, text
 
-from polar.web_backoffice.organizations.schemas import SetupVerdictData
+from polar.backoffice.organizations.schemas import SetupVerdictData
 
 
 class SetupVerdict:

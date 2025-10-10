@@ -29,9 +29,6 @@ const frameworks = (products: schemas['Product'][]) =>
 
 export const GET = Checkout({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
-  products: [
-${products.map((p) => `    "${p.id}"`).join(',\n')}
-  ],
   successUrl: process.env.POLAR_SUCCESS_URL
 });`,
     },

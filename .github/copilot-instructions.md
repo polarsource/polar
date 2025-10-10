@@ -37,8 +37,6 @@ The primary setup and workflow instructions are in `DEVELOPMENT.md`.
     - `uv run task worker` to start the Dramatiq background worker.
 - **Frontend**: In the `clients/` directory, run `pnpm run dev` to start the Next.js development server (http://127.0.0.1:3000).
 
-When running on GitHub CI, the server is seeded with test data. You'll also be automatically logged in, so you can access the dashboard directly through your browser.
-
 ### Database Migrations
 
 The project uses Alembic for database migrations, located in `server/migrations/`. To apply migrations, run `uv run task db_migrate` from the `server/` directory. When creating a new model, you'll need to generate a new migration script.

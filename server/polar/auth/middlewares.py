@@ -5,7 +5,6 @@ from fastapi.security.utils import get_authorization_scheme_param
 from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
 
-from polar.config import settings
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -27,28 +26,13 @@ from polar.personal_access_token.service import (
 )
 from polar.postgres import AsyncSession
 from polar.sentry import set_sentry_user
-from polar.user.repository import UserRepository
-from polar.worker import enqueue_job
+from polar.worker._enqueue import enqueue_job
 
-from .models import Anonymous, AuthSubject, Subject, User
+from .models import Anonymous, AuthSubject, Subject
 from .scope import Scope
 from .service import auth as auth_service
 
 log: Logger = structlog.get_logger(__name__)
-
-
-async def get_e2e_auth_subject(
-    request: Request, session: AsyncSession
-) -> AuthSubject[User] | None:
-    if not settings.TESTING or not settings.E2E_AUTHENTICATED_USER_EMAIL:
-        return None
-
-    user_repository = UserRepository.from_session(session)
-    user = await user_repository.get_by_email(settings.E2E_AUTHENTICATED_USER_EMAIL)
-    if user is None:
-        return None
-
-    return AuthSubject(user, {Scope.web_read, Scope.web_write}, None)
 
 
 async def get_user_session(
@@ -110,10 +94,6 @@ async def get_customer_session(
 async def get_auth_subject(
     request: Request, session: AsyncSession
 ) -> AuthSubject[Subject]:
-    e2e_auth_subject = await get_e2e_auth_subject(request, session)
-    if e2e_auth_subject is not None:
-        return e2e_auth_subject
-
     token = get_bearer_token(request)
     if token is not None:
         customer_session = await get_customer_session(session, token)

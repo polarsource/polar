@@ -50,7 +50,6 @@ class Settings(BaseSettings):
     POSTHOG_DEBUG: bool = False
     LOG_LEVEL: str = "DEBUG"
     TESTING: bool = False
-    E2E_AUTHENTICATED_USER_EMAIL: str | None = None
 
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
     WORKER_MAX_RETRIES: int = 20

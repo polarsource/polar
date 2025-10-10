@@ -1,7 +1,12 @@
 from typing import Annotated, Literal
 
 from annotated_types import Ge
-from pydantic import Discriminator, Field, TypeAdapter
+from pydantic import (
+    Discriminator,
+    Field,
+    StringConstraints,
+    TypeAdapter,
+)
 
 from polar.kit.schemas import HttpUrlToStr
 from polar.organization.schemas import NameInput, SlugInput
@@ -53,6 +58,12 @@ OrganizationStatusFormAdapter: TypeAdapter[OrganizationStatusForm] = TypeAdapter
 class UpdateOrganizationForm(forms.BaseForm):
     name: NameInput
     slug: SlugInput
+    customer_invoice_prefix: Annotated[
+        str,
+        StringConstraints(
+            to_upper=True, min_length=3, pattern=r"^[a-zA-Z0-9\-]+[a-zA-Z0-9]$"
+        ),
+    ]
 
 
 class UpdateOrganizationDetailsDataForm(forms.BaseForm):

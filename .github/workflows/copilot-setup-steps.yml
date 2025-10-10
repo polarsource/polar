@@ -38,6 +38,11 @@ jobs:
         ports:
           - 5432:5432
 
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+
       minio:
         image: bitnamilegacy/minio:2024.5.28
         ports:
@@ -51,6 +56,11 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
+      POLAR_E2E_AUTHENTICATED_USER_EMAIL: contact@acme-corp.com
 
     # You can define any steps you want, and they will run before the agent starts.
     # If you do not check out your code, Copilot will do this for you.
@@ -109,6 +119,30 @@ jobs:
         run: |
           uv sync --dev
           uv run task generate_dev_jwks
+
+      - name: ⚗️ alembic migrate
+        working-directory: ./server
+        run: uv run task db_migrate
+
+      - name: 🌾 Seed database
+        working-directory: ./server
+        run: uv run python -m scripts.seeds_load
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: Install dependencies
+        working-directory: clients
+        run: pnpm install
 
       - name: 📚 Setup documentation
         working-directory: ./docs

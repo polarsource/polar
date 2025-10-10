@@ -7,14 +7,13 @@ import ArrowForwardOutlined from '@mui/icons-material/ArrowForwardOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { DefaultChatTransport } from 'ai'
-import Link from 'next/link'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { FadeUp } from '../Animated/FadeUp'
 
 export const AssistantStep = ({
-  onConversationActive,
+  onEjectToManual,
 }: {
-  onConversationActive: () => void
+  onEjectToManual: () => void
 }) => {
   const { organization } = useContext(OrganizationContext)
   const [input, setInput] = useState('')
@@ -29,13 +28,6 @@ export const AssistantStep = ({
       },
     }),
   })
-
-  useEffect(() => {
-    // This is a hacky way to trigger once on the first message
-    if (messages.length === 1) {
-      onConversationActive()
-    }
-  }, [messages, onConversationActive])
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -202,28 +194,35 @@ export const AssistantStep = ({
                           switch (part.input.reason) {
                             case 'unsupported_benefit_type':
                               return (
-                                <p
+                                <div
                                   key={`${message.id}-${index}`}
-                                  className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-200 p-4 text-gray-500"
+                                  className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-gray-500"
                                 >
                                   Sorry, but this configuration needs manual
                                   input.
-                                  <Link href="./product">
-                                    Please configure the product manually
-                                  </Link>
-                                </p>
+                                  <Button
+                                    variant="secondary"
+                                    onClick={() => onEjectToManual()}
+                                    className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:border-polar-700 dark:hover:border-polar-700 border-gray-200 bg-white hover:border-gray-300 hover:bg-white"
+                                  >
+                                    Configure manually
+                                  </Button>
+                                </div>
                               )
                             case 'tool_call_error':
                               return (
-                                <p
+                                <div
                                   key={`${message.id}-${index}`}
                                   className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-200 p-4 text-gray-500"
                                 >
                                   Sorry, something went wrong.
-                                  <Link href="./product">
-                                    Please try manually
-                                  </Link>
-                                </p>
+                                  <Button
+                                    variant="secondary"
+                                    onClick={() => onEjectToManual()}
+                                  >
+                                    Configure manually
+                                  </Button>
+                                </div>
                               )
                             default:
                               return null

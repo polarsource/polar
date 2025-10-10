@@ -5,12 +5,8 @@ import Markdown from 'markdown-to-jsx'
 import { memo } from 'react'
 
 export const MemoizedMarkdown = memo(
-  ({ content, className }: { content: string; className?: string }) => {
-    return (
-      <Markdown options={markdownOptions} className={className}>
-        {content}
-      </Markdown>
-    )
+  ({ content }: { content: string }) => {
+    return <Markdown options={markdownOptions}>{content}</Markdown>
   },
   (prevProps, nextProps) => prevProps.content === nextProps.content,
 )

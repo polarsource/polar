@@ -147,7 +147,7 @@ export const DashboardSidebar = ({
           }}
         >
           <ArrowOutwardOutlined fontSize="inherit" />
-          <span className="ml-4 font-medium">Support</span>
+          {!isCollapsed && <span className="ml-4 font-medium">Support</span>}
         </Link>
         <Link
           className={twMerge(
@@ -159,7 +159,9 @@ export const DashboardSidebar = ({
           target="_blank"
         >
           <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
-          <span className="ml-4 font-medium">Documentation</span>
+          {!isCollapsed && (
+            <span className="ml-4 font-medium">Documentation</span>
+          )}
         </Link>
         <Separator />
         {type === 'organization' && (

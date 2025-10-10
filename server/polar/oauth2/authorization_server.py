@@ -67,10 +67,10 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
             "registration_access_token": client.registration_access_token,
         }
 
-    def generate_client_id(self) -> str:
+    def generate_client_id(self, request: StarletteJsonRequest) -> str:
         return generate_token(prefix=CLIENT_ID_PREFIX)
 
-    def generate_client_secret(self) -> str:
+    def generate_client_secret(self, request: StarletteJsonRequest) -> str:
         return generate_token(prefix=CLIENT_SECRET_PREFIX)
 
     def get_server_metadata(self) -> dict[str, typing.Any]:

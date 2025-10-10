@@ -5,7 +5,7 @@ import httpx
 import structlog
 from pydantic import Field
 from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
@@ -202,7 +202,7 @@ class OrganizationAIValidator:
 
     def __init__(self) -> None:
         provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
-        self.model = OpenAIModel(settings.OPENAI_MODEL, provider=provider)
+        self.model = OpenAIChatModel(settings.OPENAI_MODEL, provider=provider)
 
         self.agent = Agent(
             self.model,

@@ -73,9 +73,6 @@ class CustomerSeat(TimestampedSchema):
         None, description="Additional metadata for the seat"
     )
 
-    class Config:
-        from_attributes = True
-
 
 class SeatsList(Schema):
     seats: list[CustomerSeat] = Field(..., description="List of seats")

@@ -46,7 +46,7 @@ class StarletteOAuth2Payload(OAuth2Payload):
 
 class StarletteOAuth2Request(RequestPathParamsMixin, OAuth2Request):
     def __init__(self, request: Request):
-        super().__init__(request.method, str(request.url), request.headers)
+        super().__init__(request.method, str(request.url), headers=request.headers)
         self.user = getattr(request.state, "user", None)
         self.payload = StarletteOAuth2Payload(request)
         self._args = dict(request.query_params)

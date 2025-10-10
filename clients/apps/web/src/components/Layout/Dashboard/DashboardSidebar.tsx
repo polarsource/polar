@@ -168,7 +168,7 @@ export const DashboardSidebar = ({
           >
             <SupportIcon fontSize="inherit" />
           </span>
-          <span className="ml-2 text-sm font-medium">Support</span>
+          {!isCollapsed && <span className="ml-2 text-sm font-medium">Support</span>}
         </Link>
         <Link
           className={twMerge(
@@ -187,7 +187,7 @@ export const DashboardSidebar = ({
           >
             <ImportContactsIcon fontSize="inherit" />
           </span>
-          <span className="ml-2 text-sm font-medium">Documentation</span>
+          {!isCollapsed && <span className="ml-2 text-sm font-medium">Documentation</span>}
         </Link>
         {type === 'organization' && (
           <SidebarMenu>

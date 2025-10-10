@@ -6,8 +6,8 @@ Events are the core of Usage Based Billing. They represent _some_ usage done by 
 
 Events are sent to Polar using the [Events Ingestion API](/api-reference/events/ingest) and are stored in our database. An event consists of the following fields:
 
-- A `name`, which is a string that can be used to identify the type event. For example, `ai_usage`, `video_streamed` or `file_uploaded`.
-- A `customer_id` or `external_customer_id`, which is the Polar's customer ID or your user's ID. This is used to identify the customer that triggered the event.
+- A `name`, which is a string that can be used to identify the type of event. For example, `ai_usage`, `video_streamed` or `file_uploaded`.
+- A `customer_id` or `external_customer_id`, which is Polar's customer ID or your user's ID. This is used to identify the customer that triggered the event.
 - A `metadata` object, which is a JSON object that can contain any additional information about the event. This is useful for storing information that can be used to filter the events or compute the actual usage. For example, you can store the duration of the video streamed or the size of the file uploaded.
 
 Here is an example of an event:

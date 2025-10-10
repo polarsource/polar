@@ -207,7 +207,7 @@ export const AssistantStep = ({
                                   className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-200 p-4 text-gray-500"
                                 >
                                   Sorry, but this configuration needs manual
-                                  input
+                                  input.
                                   <Link href="./product">
                                     Please configure the product manually
                                   </Link>
@@ -219,7 +219,7 @@ export const AssistantStep = ({
                                   key={`${message.id}-${index}`}
                                   className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-200 p-4 text-gray-500"
                                 >
-                                  Something went wrong configuring Polar
+                                  Sorry, something went wrong.
                                   <Link href="./product">
                                     Please try manually
                                   </Link>

@@ -4,6 +4,9 @@ from typing import Any
 
 from tagflow import tag, text
 
+from ...components import button
+from ..forms import ApproveOrganizationAppealForm
+
 
 class AIReviewVerdict:
     """Component for displaying AI-generated organization review assessment."""
@@ -254,12 +257,6 @@ class AIReviewVerdict:
                                         classes="text-xs text-gray-600 dark:text-gray-400"
                                     ):
                                         text("Review the appeal and make a decision")
-
-                                # Import forms at method level to avoid circular imports
-                                from polar.backoffice.components import button
-                                from polar.backoffice.organizations.forms import (
-                                    ApproveOrganizationAppealForm,
-                                )
 
                                 with ApproveOrganizationAppealForm.render(
                                     method="POST",

@@ -260,9 +260,9 @@ async def delete_confirm(
 Create `my_entity/forms.py`:
 
 ```python
-from polar.backoffice.forms import BaseForm
+from .. import forms
 
-class UpdateMyEntityForm(BaseForm):
+class UpdateMyEntityForm(forms.BaseForm):
     name: str
     description: str | None = None
 ```
@@ -502,16 +502,16 @@ with modal("Dialog Title", open=True):
 
 ```python
 from typing import Annotated
-from polar.backoffice.forms import BaseForm, SelectField
+from .. import forms
 
-class MyForm(BaseForm):
+class MyForm(forms.BaseForm):
     name: str
-    status: Annotated[str, StatusField([
+    status: Annotated[str, forms.SelectField([
         ("active", "Active"),
         ("inactive", "Inactive"),
         ("pending", "Pending"),
     ])]
-    amount: Annotated[int, CurrencyField(), CurrencyValidator]
+    amount: Annotated[int, forms.CurrencyField(), CurrencyValidator]
 ```
 
 ### Validation Error Handling

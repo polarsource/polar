@@ -16,6 +16,7 @@ from polar.models import Customer, Order, Organization, Product, Subscription
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession, get_db_session
 from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.sorting import SubscriptionSortProperty
 
 from ..components import button, datatable, description_list, modal
 from ..layout import layout
@@ -272,7 +273,7 @@ async def get(
                         text(f"Subscriptions ({len(subscriptions)})")
 
                 if subscriptions:
-                    with datatable.Datatable[Subscription, None](
+                    with datatable.Datatable[Subscription, SubscriptionSortProperty](
                         datatable.DatatableAttrColumn(
                             "id",
                             "ID",

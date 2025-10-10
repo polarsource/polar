@@ -25,6 +25,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
+from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     StaticPrice,
@@ -113,12 +114,13 @@ async def create_metered_event_billing_entry(
     tokens: int,
     pending: bool = True,
     order: Order | None = None,
+    metadata_key: str = "tokens",
 ) -> BillingEntry:
     event = await create_event(
         save_fixture,
         organization=customer.organization,
         customer=customer,
-        metadata={"tokens": tokens},
+        metadata={metadata_key: tokens},
     )
     billing_entry = BillingEntry(
         start_timestamp=event.timestamp,
@@ -574,3 +576,125 @@ class TestCreateOrderItemsFromPending:
             [entry.id for entry in entries[2:3]],
             order_item_2.id,
         )
+
+    async def test_max_aggregation_across_product_prices(
+        self,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that MAX aggregation computes correctly across multiple product prices
+        for the same meter. The MAX should be computed across ALL events, not per-price.
+        """
+        # Create a meter with MAX aggregation
+        meter_max = await create_meter(
+            save_fixture,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="servers"
+            ),
+            organization=organization,
+        )
+
+        # Create initial product with metered price
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(10_00), None)],  # $10 per server
+        )
+        price_a = product_a.prices[0]
+
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_a
+        )
+
+        # Create events on price A: max is 3 servers
+        entries = [
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_a,
+                subscription=subscription,
+                tokens=1,
+                metadata_key="servers",
+            ),
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_a,
+                subscription=subscription,
+                tokens=3,  # MAX here
+                metadata_key="servers",
+            ),
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_a,
+                subscription=subscription,
+                tokens=2,
+                metadata_key="servers",
+            ),
+        ]
+
+        # Simulate product change: create new price for same meter but different product
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(15_00), None)],  # $15 per server
+        )
+        price_b = product_b.prices[0]
+
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price_b)
+        ]
+        await save_fixture(subscription)
+
+        # Create events on price B: values are lower but shouldn't matter for MAX
+        entries.extend(
+            [
+                await create_metered_event_billing_entry(
+                    save_fixture,
+                    customer=customer,
+                    price=price_b,
+                    subscription=subscription,
+                    tokens=1,
+                    metadata_key="servers",
+                ),
+                await create_metered_event_billing_entry(
+                    save_fixture,
+                    customer=customer,
+                    price=price_b,
+                    subscription=subscription,
+                    tokens=2,
+                    metadata_key="servers",
+                ),
+            ]
+        )
+
+        # When computing order items, MAX should be 3 (not 3 + 2 = 5)
+        order_items = await billing_entry_service.create_order_items_from_pending(
+            session,
+            subscription,
+        )
+
+        # Should create ONE line item (grouped by meter, not by price)
+        assert len(order_items) == 1
+
+        order_item = order_items[0]
+        assert meter_max.name in order_item.label
+        # MAX of all events is 3, billed at the most recent price ($15)
+        assert order_item.amount == 45_00
+        assert order_item.product_price == price_b  # Uses most recent price
+
+        # All billing entries should be linked to this single order item
+        enqueue_job_mock.assert_called_once()
+        call_args = enqueue_job_mock.call_args[0]
+        assert call_args[0] == "billing_entry.set_order_item"
+        assert set(call_args[1]) == {entry.id for entry in entries}
+        assert call_args[2] == order_item.id

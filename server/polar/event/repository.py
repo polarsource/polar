@@ -20,6 +20,7 @@ from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
 from polar.models import BillingEntry, Customer, Event, Meter, UserOrganization
 from polar.models.event import EventSource
+from polar.models.product_price import ProductPriceMeteredUnit
 
 from .system import SystemEvent
 
@@ -150,6 +151,29 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.order_item_id.is_(None),
                 BillingEntry.product_price_id == price,
+            )
+            .order_by(Event.ingested_at.asc())
+        )
+
+    def get_by_pending_entries_for_meter_statement(
+        self, subscription: UUID, meter: UUID
+    ) -> Select[tuple[Event]]:
+        """
+        Get events for pending billing entries grouped by meter.
+        Used for non-summable aggregations where we need to compute across all events
+        in the period, regardless of which price was active when the event occurred.
+        """
+        return (
+            self.get_base_statement()
+            .join(BillingEntry, Event.id == BillingEntry.event_id)
+            .join(
+                ProductPriceMeteredUnit,
+                BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
+            )
+            .where(
+                BillingEntry.subscription_id == subscription,
+                BillingEntry.order_item_id.is_(None),
+                ProductPriceMeteredUnit.meter_id == meter,
             )
             .order_by(Event.ingested_at.asc())
         )

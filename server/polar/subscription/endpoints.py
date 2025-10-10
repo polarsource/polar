@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.customer_seat import seat_service
 from polar.customer_seat.auth import SeatRead, SeatWrite
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
 from polar.customer_seat.schemas import CustomerSeatID, SeatAssign, SeatsList
 from polar.exceptions import ResourceNotFound
@@ -340,9 +341,19 @@ async def revoke_seat(
     if not subscription:
         raise ResourceNotFound()
 
-    seat = await seat_service.get_seat(session, auth_subject, seat_id)
-    if not seat or seat.subscription_id != subscription.id:
+    seat_repository = CustomerSeatRepository.from_session(session)
+
+    seat = await seat_repository.get_by_subscription_and_auth_subject(
+        auth_subject,
+        seat_id,
+        subscription.id,
+        options=seat_repository.get_eager_options(),
+    )
+
+    if not seat:
         raise ResourceNotFound()
+
+    seat_service.check_seat_feature_enabled(seat.subscription.product.organization)
 
     revoked_seat = await seat_service.revoke_seat(session, seat)
     return CustomerSeatSchema.model_validate(revoked_seat)

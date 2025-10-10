@@ -699,17 +699,16 @@ class TestRevokeSeat:
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        subscription: Subscription,
+        subscription_with_seats: Subscription,
         customer_seat_claimed: CustomerSeat,
-        user_organization: UserOrganization,
+        user_organization_seat_enabled: UserOrganization,
     ) -> None:
-        subscription.started_at = datetime.now(UTC)
-        await save_fixture(subscription)
-        subscription.product.organization.feature_settings = {}
-        await save_fixture(subscription.product.organization)
+        # Disable the feature
+        subscription_with_seats.product.organization.feature_settings = {}
+        await save_fixture(subscription_with_seats.product.organization)
 
         response = await client.delete(
-            f"/v1/subscriptions/{subscription.id}/seats/{customer_seat_claimed.id}",
+            f"/v1/subscriptions/{subscription_with_seats.id}/seats/{customer_seat_claimed.id}",
         )
 
         assert response.status_code == 403

@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import EmailStr, Field, field_validator, model_validator
+from sqlalchemy import inspect
 
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.customer_seat import SeatStatus
@@ -17,7 +18,7 @@ class SeatAssign(Schema):
         None,
         description="Checkout ID. Used to look up subscription. Required if subscription_id is not provided.",
     )
-    email: str | None = Field(
+    email: EmailStr | None = Field(
         None, description="Email of the customer to assign the seat to"
     )
     external_customer_id: str | None = Field(
@@ -27,8 +28,21 @@ class SeatAssign(Schema):
         None, description="Customer ID for the seat assignment"
     )
     metadata: dict[str, Any] | None = Field(
-        None, description="Additional metadata for the seat"
+        None, description="Additional metadata for the seat (max 10 keys, 1KB total)"
     )
+
+    @field_validator("metadata")
+    @classmethod
+    def validate_metadata(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
+        if v is None:
+            return v
+        if len(v) > 10:
+            raise ValueError("Metadata cannot have more than 10 keys")
+        import json
+
+        if len(json.dumps(v)) > 1024:  # 1KB limit
+            raise ValueError("Metadata size cannot exceed 1KB")
+        return v
 
     @model_validator(mode="after")
     def validate_identifiers(self) -> "SeatAssign":
@@ -64,6 +78,7 @@ class CustomerSeat(TimestampedSchema):
     subscription_id: UUID = Field(..., description="The subscription ID")
     status: SeatStatus = Field(..., description="Status of the seat")
     customer_id: UUID | None = Field(None, description="The assigned customer ID")
+    customer_email: str | None = Field(None, description="The assigned customer email")
     invitation_token_expires_at: datetime | None = Field(
         None, description="When the invitation token expires"
     )
@@ -72,6 +87,29 @@ class CustomerSeat(TimestampedSchema):
     seat_metadata: dict[str, Any] | None = Field(
         None, description="Additional metadata for the seat"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def extract_customer_email(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            # For dict data
+            if "customer" in data and data["customer"]:
+                data["customer_email"] = data.get("customer", {}).get("email")
+            return data
+        elif hasattr(data, "__dict__"):
+            # For SQLAlchemy models - check if customer is loaded
+            state = inspect(data)
+            if "customer" not in state.unloaded:
+                # Customer is loaded, we can extract the email
+                # But we need to let Pydantic handle the model conversion
+                # We'll just add the customer_email field if customer is available
+                if hasattr(data, "customer") and data.customer:
+                    # Add customer_email as a temporary attribute
+                    object.__setattr__(data, "customer_email", data.customer.email)
+        return data
+
+    class Config:
+        from_attributes = True
 
 
 class SeatsList(Schema):

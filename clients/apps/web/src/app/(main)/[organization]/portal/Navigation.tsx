@@ -25,6 +25,11 @@ const links = (organization: schemas['Organization']) => [
     isActive: (path: string) => path.includes('/orders'),
   },
   {
+    href: `/${organization.slug}/portal/seats`,
+    label: 'Seats',
+    isActive: (path: string) => path.includes('/seats'),
+  },
+  {
     href: `/${organization.slug}/portal/usage`,
     label: 'Usage',
     isActive: (path: string) => path.includes('/usage'),

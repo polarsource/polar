@@ -2,11 +2,13 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import joinedload
 
+from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase
-from polar.models import CustomerSeat, Product, Subscription
+from polar.models import CustomerSeat, Product, Subscription, UserOrganization
+from polar.subscription.repository import SubscriptionRepository
 
 if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
@@ -39,8 +41,6 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         subscription_statement = select(Subscription).where(
             Subscription.id == subscription_id
         )
-        from polar.subscription.repository import SubscriptionRepository
-
         subscription_repository = SubscriptionRepository.from_session(self.session)
         subscription = await subscription_repository.get_one_or_none(
             subscription_statement
@@ -83,10 +83,127 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_one_or_none(statement)
 
+    async def get_revoked_seat_by_subscription(
+        self,
+        subscription_id: UUID,
+        *,
+        options: tuple["_AbstractLoad", ...] = (),
+    ) -> CustomerSeat | None:
+        """Get a revoked seat for a subscription that can be reused."""
+        from polar.models.customer_seat import SeatStatus
+
+        statement = (
+            select(CustomerSeat)
+            .where(
+                CustomerSeat.subscription_id == subscription_id,
+                CustomerSeat.status == SeatStatus.revoked,
+            )
+            .options(*options)
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_by_id(
+        self,
+        seat_id: UUID,
+        *,
+        options: tuple["_AbstractLoad", ...] = (),
+    ) -> CustomerSeat | None:
+        """Get a seat by ID."""
+        statement = (
+            select(CustomerSeat).where(CustomerSeat.id == seat_id).options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_by_id_for_customer(
+        self,
+        seat_id: UUID,
+        customer_id: UUID,
+        *,
+        options: tuple["_AbstractLoad", ...] = (),
+    ) -> CustomerSeat | None:
+        """Get a seat by ID and verify it belongs to a subscription owned by the customer."""
+        statement = (
+            select(CustomerSeat)
+            .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
+            .where(
+                CustomerSeat.id == seat_id,
+                Subscription.customer_id == customer_id,
+            )
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    def get_readable_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[CustomerSeat]]:
+        """
+        Get a statement filtered by authorization.
+
+        Seats are readable by users/organizations who have access to the product's organization.
+        """
+        statement = (
+            self.get_base_statement()
+            .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
+            .join(Product, Subscription.product_id == Product.id)
+        )
+
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            statement = statement.where(
+                Product.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == user.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                Product.organization_id == auth_subject.subject.id,
+            )
+
+        return statement
+
+    async def get_by_id_and_auth_subject(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        seat_id: UUID,
+        *,
+        options: tuple["_AbstractLoad", ...] = (),
+    ) -> CustomerSeat | None:
+        """Get a seat by ID filtered by auth subject."""
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .where(CustomerSeat.id == seat_id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_by_subscription_and_auth_subject(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        seat_id: UUID,
+        subscription_id: UUID,
+        *,
+        options: tuple["_AbstractLoad", ...] = (),
+    ) -> CustomerSeat | None:
+        """Get a seat by ID and subscription ID filtered by auth subject."""
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .where(
+                CustomerSeat.id == seat_id,
+                CustomerSeat.subscription_id == subscription_id,
+            )
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_eager_options(self) -> tuple["_AbstractLoad", ...]:
         return (
             joinedload(CustomerSeat.subscription)
             .joinedload(Subscription.product)
             .joinedload(Product.organization),
+            joinedload(CustomerSeat.subscription).joinedload(Subscription.customer),
             joinedload(CustomerSeat.customer),
         )

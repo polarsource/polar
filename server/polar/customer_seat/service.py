@@ -55,6 +55,12 @@ class SeatAlreadyAssigned(SeatError):
         super().__init__(message, 400)
 
 
+class SeatNotPending(SeatError):
+    def __init__(self) -> None:
+        message = "Seat is not in pending status"
+        super().__init__(message, 400)
+
+
 class InvalidSeatAssignmentRequest(SeatError):
     def __init__(self) -> None:
         message = "Exactly one of email, external_customer_id, or customer_id must be provided"
@@ -132,16 +138,30 @@ class SeatService:
         invitation_token = secrets.token_urlsafe(32)
         token_expires_at = datetime.now(UTC) + timedelta(days=1)
 
-        seat = CustomerSeat(
-            subscription_id=subscription.id,
-            status=SeatStatus.pending,
-            invitation_token=invitation_token,
-            invitation_token_expires_at=token_expires_at,
-            customer_id=customer.id,
-            seat_metadata=metadata or {},
+        # First, try to reuse a revoked seat from this subscription
+        revoked_seat = await repository.get_revoked_seat_by_subscription(
+            subscription.id
         )
+        if revoked_seat:
+            seat = revoked_seat
+            seat.status = SeatStatus.pending
+            seat.invitation_token = invitation_token
+            seat.invitation_token_expires_at = token_expires_at
+            seat.customer_id = customer.id
+            seat.seat_metadata = metadata or {}
+            seat.revoked_at = None
+            seat.claimed_at = None
+        else:
+            seat = CustomerSeat(
+                subscription_id=subscription.id,
+                status=SeatStatus.pending,
+                invitation_token=invitation_token,
+                invitation_token_expires_at=token_expires_at,
+                customer_id=customer.id,
+                seat_metadata=metadata or {},
+            )
+            session.add(seat)
 
-        session.add(seat)
         await session.flush()
 
         log.info(
@@ -206,14 +226,9 @@ class SeatService:
         ):
             raise InvalidInvitationToken(invitation_token)
 
+        # Reject already-claimed tokens for security
         if seat.is_claimed():
-            if not seat.customer:
-                raise InvalidInvitationToken(invitation_token)
-
-            session_token, _ = await customer_session_service.create_customer_session(
-                session, seat.customer
-            )
-            return seat, session_token
+            raise InvalidInvitationToken(invitation_token)
 
         self.check_seat_feature_enabled(seat.subscription.product.organization)
 
@@ -301,12 +316,10 @@ class SeatService:
     ) -> CustomerSeat | None:
         repository = CustomerSeatRepository.from_session(session)
 
-        statement = (
-            repository.get_base_statement()
-            .where(CustomerSeat.id == seat_id)
-            .options(*repository.get_eager_options())
+        seat = await repository.get_by_id(
+            seat_id,
+            options=repository.get_eager_options(),
         )
-        seat = await repository.get_one_or_none(statement)
 
         if not seat:
             return None
@@ -318,6 +331,54 @@ class SeatService:
             pass
 
         self.check_seat_feature_enabled(seat.subscription.product.organization)
+        return seat
+
+    async def resend_invitation(
+        self,
+        session: AsyncSession,
+        seat: CustomerSeat,
+    ) -> CustomerSeat:
+        if seat.subscription and seat.subscription.product:
+            self.check_seat_feature_enabled(seat.subscription.product.organization)
+
+        if not seat.is_pending():
+            raise SeatNotPending()
+
+        if not seat.customer or not seat.invitation_token:
+            raise InvalidInvitationToken(seat.invitation_token or "")
+
+        log.info(
+            "Resending seat invitation",
+            seat_id=seat.id,
+            customer_id=seat.customer_id,
+            subscription_id=seat.subscription_id,
+        )
+
+        send_seat_invitation_email(
+            customer_email=seat.customer.email,
+            seat=seat,
+            organization=seat.subscription.product.organization,
+            product_name=seat.subscription.product.name,
+            billing_manager_email=seat.subscription.customer.email,
+        )
+
+        return seat
+
+    async def get_seat_for_customer(
+        self,
+        session: AsyncReadSession,
+        customer: Customer,
+        seat_id: uuid.UUID,
+    ) -> CustomerSeat | None:
+        """Get a seat and verify it belongs to a subscription owned by the customer."""
+        repository = CustomerSeatRepository.from_session(session)
+
+        seat = await repository.get_by_id_for_customer(
+            seat_id,
+            customer.id,
+            options=repository.get_eager_options(),
+        )
+
         return seat
 
     async def _find__or_create_customer(

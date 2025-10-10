@@ -1,19 +1,9 @@
-import LogoIcon from '@/components/Brand/LogoIcon'
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import ImportContactsIcon from '@mui/icons-material/ImportContacts'
-import SupportIcon from '@mui/icons-material/Support'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@polar-sh/ui/components/atoms/DropdownMenu'
 import {
   Sidebar,
   SidebarContent,
@@ -25,7 +15,15 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
-import { AnimatePresence, motion } from 'framer-motion'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import { Separator } from '@polar-sh/ui/components/ui/separator'
+import { motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -101,36 +99,10 @@ export const DashboardSidebar = ({
         </motion.div>
       </SidebarContent>
       <SidebarFooter>
-        {!isCollapsed && (
-          <AnimatePresence>
-            <motion.div
-              key={isCollapsed ? 'nav-collapsed' : 'nav-expanded'}
-              className={`flex ${isCollapsed ? 'flex-col' : 'flex-row'} items-center gap-2`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1 }}
-            >
-              <SidebarContent>
-                <div className="dark:bg-polar-900 dark:border-polar-800 flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 text-sm">
-                  <LogoIcon size={24} />
-                  <span>Polar for iOS is now available on TestFlight!</span>
-                  <Link
-                    href="https://testflight.apple.com/join/CwVdc1Jt"
-                    target="_blank"
-                    className="dark:bg-polar-800 dark:hover:bg-polar-700 rounded-xs self-start bg-gray-100 p-1 text-xs transition-colors hover:bg-gray-200"
-                  >
-                    <span>Join Beta</span>
-                    <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
-                  </Link>
-                </div>
-              </SidebarContent>
-            </motion.div>
-          </AnimatePresence>
-        )}
         <Link
           href="#"
           className={twMerge(
-            'mt-2 flex cursor-pointer flex-row items-center rounded-lg border border-transparent px-2 transition-colors dark:border-transparent',
+            'mt-2 flex cursor-pointer flex-row items-center rounded-lg border border-transparent px-2 text-sm transition-colors dark:border-transparent',
             'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
             isCollapsed && '!dark:text-polar-600',
           )}
@@ -147,8 +119,22 @@ export const DashboardSidebar = ({
                   links: [
                     {
                       icon: 'book',
-                      text: 'View our docs',
+                      text: 'Documentation Portal',
                       url: 'https://polar.sh/docs',
+                    },
+                    {
+                      icon: 'email',
+                      text: 'Email Support',
+                      url: 'mailto:support@polar.sh',
+                    },
+                    {
+                      icon: 'discord',
+                      text: 'Discord Community',
+                      url: 'https://dub.sh/polar-discord',
+                    },
+                    {
+                      text: 'Join the conversation',
+                      url: 'https://x.com/polar_sh',
                     },
                   ],
                   appId: 'liveChatApp_01K55GCP6V4FJ0DKDP604MZYDV',
@@ -160,35 +146,22 @@ export const DashboardSidebar = ({
             }
           }}
         >
-          <span
-            className={twMerge(
-              'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
-              'bg-transparent',
-            )}
-          >
-            <SupportIcon fontSize="inherit" />
-          </span>
-          {!isCollapsed && <span className="ml-2 text-sm font-medium">Support</span>}
+          <ArrowOutwardOutlined fontSize="inherit" />
+          {!isCollapsed && <span className="ml-4 font-medium">Support</span>}
         </Link>
         <Link
           className={twMerge(
-            'my-2 flex flex-row items-center rounded-lg border border-transparent px-2 transition-colors dark:border-transparent',
+            'flex flex-row items-center rounded-lg border border-transparent text-sm transition-colors dark:border-transparent',
             'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
             isCollapsed && '!dark:text-polar-600',
           )}
           href="https://polar.sh/docs"
           target="_blank"
         >
-          <span
-            className={twMerge(
-              'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
-              'bg-transparent',
-            )}
-          >
-            <ImportContactsIcon fontSize="inherit" />
-          </span>
-          {!isCollapsed && <span className="ml-2 text-sm font-medium">Documentation</span>}
+          <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
+          {!isCollapsed && <span className="ml-4 font-medium">Documentation</span>}
         </Link>
+        <Separator />
         {type === 'organization' && (
           <SidebarMenu>
             <SidebarMenuItem>

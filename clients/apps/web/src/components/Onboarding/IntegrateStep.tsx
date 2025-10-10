@@ -3,7 +3,7 @@ import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
-import { useContext, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import slugify from 'slugify'
 import { twMerge } from 'tailwind-merge'
 import LogoIcon from '../Brand/LogoIcon'
@@ -132,8 +132,14 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
 
   const { organization } = useContext(OrganizationContext)
 
-  const currentFramework = frameworks(products).find(
-    (framework) => framework.slug === selectedFramework,
+  const parsedFrameworks = useMemo(() => frameworks(products), [products])
+
+  const currentFramework = useMemo(
+    () =>
+      parsedFrameworks.find(
+        (framework) => framework.slug === selectedFramework,
+      ),
+    [parsedFrameworks, selectedFramework],
   )
 
   return (
@@ -151,7 +157,7 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
 
         <div className="hidden flex-col gap-y-8 md:flex">
           <div className="grid grid-cols-2 gap-4">
-            {frameworks(products).map((framework) => (
+            {parsedFrameworks.map((framework) => (
               <FrameworkCard
                 key={framework.slug}
                 {...framework}
@@ -187,11 +193,7 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
               <CodeWrapper>
                 <SyntaxHighlighterClient
                   lang="bash"
-                  code={
-                    frameworks(products).find(
-                      (framework) => framework.slug === selectedFramework,
-                    )?.install ?? ''
-                  }
+                  code={currentFramework?.install ?? ''}
                 />
               </CodeWrapper>
             </div>

@@ -52,6 +52,25 @@ Customers can:
 * See usage left (if applicable)
 * Deactivate activations (if enabled)
 
+Manage License Keys
+--------------------------
+
+As an organization administrator, you can manage license keys from your Benefits dashboard. Each license key can have one of three statuses:
+
+### License Key Statuses
+
+* **Granted**: The license key is active and can be validated by the customer
+* **Disabled**: The license key is temporarily deactivated. Use this when you need to pause a customer's access without permanently revoking it. The key can be re-enabled at any time. This is useful for:
+  * Temporary account suspensions
+  * Payment issues that may be resolved
+  * Testing and debugging scenarios
+* **Revoked**: The license key is deactivated, typically due to subscription cancellation or policy violations. While technically it can be re-enabled, this status indicates a more permanent action tied to the benefit lifecycle. This is typically used when:
+  * A subscription or purchase is cancelled
+  * A refund is issued
+  * Terms of service violations occur
+
+Both **Disabled** and **Revoked** keys will fail validation, preventing customers from using the associated benefits. The key difference is the intent: Disable is for temporary pauses, while Revoke is for permanent or lifecycle-related deactivation.
+
 Integrate API
 --------------------
 

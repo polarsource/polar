@@ -453,3 +453,214 @@ class TestResendInvitation:
         data = response.json()
         assert data["id"] == str(seat.id)
         assert data["status"] == "pending"
+
+
+@pytest.mark.asyncio
+class TestListClaimedSubscriptions:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        """Verify that unauthenticated requests are rejected."""
+        response = await client.get("/v1/customer-portal/seats/subscriptions")
+        assert response.status_code == 401
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_empty_list(
+        self,
+        client: AsyncClient,
+        customer: Customer,
+    ) -> None:
+        """Verify empty list when customer has no claimed seats."""
+        response = await client.get("/v1/customer-portal/seats/subscriptions")
+        assert response.status_code == 200
+        data = response.json()
+        assert data == []
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_only_claimed_seats_returned(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        """Verify only subscriptions with claimed seats are returned."""
+        # Create a seat-based product
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            is_archived=False,
+        )
+        await create_product_price_seat_unit(save_fixture, product=product)
+
+        # Create subscription owned by different customer
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer_second,
+            seats=5,
+        )
+
+        # Create a claimed seat for the authenticated customer
+        claimed_seat = CustomerSeat(
+            subscription_id=subscription.id,
+            customer_id=customer.id,
+            status="claimed",
+        )
+        await save_fixture(claimed_seat)
+
+        # Create a pending seat (should not be returned)
+        pending_seat = CustomerSeat(
+            subscription_id=subscription.id,
+            status="pending",
+        )
+        await save_fixture(pending_seat)
+
+        response = await client.get("/v1/customer-portal/seats/subscriptions")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["id"] == str(subscription.id)
+        assert data[0]["product"]["name"] == product.name
+        assert data[0]["product"]["organization"]["name"] == organization.name
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_does_not_include_owned_subscriptions(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Verify owned subscriptions are not included in claimed list."""
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            is_archived=False,
+        )
+        await create_product_price_seat_unit(save_fixture, product=product)
+
+        # Create subscription owned by the authenticated customer
+        owned_subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        response = await client.get("/v1/customer-portal/seats/subscriptions")
+        assert response.status_code == 200
+        data = response.json()
+        # Should be empty because customer owns the subscription, not claiming a seat
+        assert len(data) == 0
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_revoked_seats_not_returned(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        """Verify revoked seats are not included."""
+        # Create a seat-based product
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            is_archived=False,
+        )
+        await create_product_price_seat_unit(save_fixture, product=product)
+
+        # Create subscription owned by different customer
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer_second,
+            seats=5,
+        )
+
+        # Create a revoked seat
+        revoked_seat = CustomerSeat(
+            subscription_id=subscription.id,
+            customer_id=customer.id,
+            status="revoked",
+        )
+        await save_fixture(revoked_seat)
+
+        response = await client.get("/v1/customer-portal/seats/subscriptions")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 0
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_multiple_claimed_subscriptions(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        """Verify multiple claimed subscriptions are all returned."""
+        # Create two seat-based products
+        product1 = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            is_archived=False,
+        )
+        await create_product_price_seat_unit(save_fixture, product=product1)
+
+        product2 = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            is_archived=False,
+        )
+        await create_product_price_seat_unit(save_fixture, product=product2)
+
+        # Create subscriptions owned by different customer
+        subscription1 = await create_subscription_with_seats(
+            save_fixture,
+            product=product1,
+            customer=customer_second,
+            seats=5,
+        )
+
+        subscription2 = await create_subscription_with_seats(
+            save_fixture,
+            product=product2,
+            customer=customer_second,
+            seats=3,
+        )
+
+        # Create claimed seats for both subscriptions
+        claimed_seat1 = CustomerSeat(
+            subscription_id=subscription1.id,
+            customer_id=customer.id,
+            status="claimed",
+        )
+        await save_fixture(claimed_seat1)
+
+        claimed_seat2 = CustomerSeat(
+            subscription_id=subscription2.id,
+            customer_id=customer.id,
+            status="claimed",
+        )
+        await save_fixture(claimed_seat2)
+
+        response = await client.get("/v1/customer-portal/seats/subscriptions")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 2
+
+        subscription_ids = {item["id"] for item in data}
+        assert str(subscription1.id) in subscription_ids
+        assert str(subscription2.id) in subscription_ids

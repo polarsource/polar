@@ -37,6 +37,7 @@ from polar.models import (
     SubscriptionProductPrice,
     UserOrganization,
 )
+from polar.models.customer_seat import SeatStatus
 from polar.models.subscription import SubscriptionStatus
 
 from .sorting import SubscriptionSortProperty
@@ -159,7 +160,7 @@ class SubscriptionRepository(
             .join(CustomerSeat, CustomerSeat.subscription_id == Subscription.id)
             .where(
                 CustomerSeat.customer_id == customer.id,
-                CustomerSeat.status == "claimed",
+                CustomerSeat.status == SeatStatus.claimed,
             )
         )
 

@@ -3,7 +3,7 @@ name = "e2e"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = "==3.14.0"
 dependencies = [
     "pytest-playwright>=0.7.1",
 ]

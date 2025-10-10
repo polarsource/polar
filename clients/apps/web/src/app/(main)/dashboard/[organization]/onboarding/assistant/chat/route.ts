@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
-import { anthropic } from '@ai-sdk/anthropic'
+import { openai } from '@ai-sdk/openai'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import {
   convertToModelMessages,
@@ -342,7 +342,7 @@ export async function POST(req: Request) {
   })
 
   const result = streamText({
-    model: anthropic('claude-sonnet-4-5'),
+    model: openai('gpt-5-mini'),
     system: systemPrompt,
     tools: {
       redirectToManualSetup,

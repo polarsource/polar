@@ -2,6 +2,7 @@ import { NotificationsPopover } from '@/components/Notifications/NotificationsPo
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import SupportIcon from '@mui/icons-material/Support'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -123,13 +124,8 @@ export const DashboardSidebar = ({
                       url: 'https://polar.sh/docs',
                     },
                     {
-                      icon: 'email',
-                      text: 'Email Support',
-                      url: 'mailto:support@polar.sh',
-                    },
-                    {
                       icon: 'discord',
-                      text: 'Discord Community',
+                      text: 'Join our Discord',
                       url: 'https://dub.sh/polar-discord',
                     },
                     {
@@ -146,7 +142,7 @@ export const DashboardSidebar = ({
             }
           }}
         >
-          <ArrowOutwardOutlined fontSize="inherit" />
+          <SupportIcon fontSize="inherit" />
           {!isCollapsed && <span className="ml-4 font-medium">Support</span>}
         </Link>
         <Link

@@ -3,6 +3,8 @@ import { NotificationsPopover } from '@/components/Notifications/NotificationsPo
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import ImportContactsIcon from '@mui/icons-material/ImportContacts'
+import SupportIcon from '@mui/icons-material/Support'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -125,6 +127,68 @@ export const DashboardSidebar = ({
             </motion.div>
           </AnimatePresence>
         )}
+        <Link
+          href="#"
+          className={twMerge(
+            'mt-2 flex cursor-pointer flex-row items-center rounded-lg border border-transparent px-2 transition-colors dark:border-transparent',
+            'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
+            isCollapsed && '!dark:text-polar-600',
+          )}
+          onClick={(e) => {
+            e.preventDefault()
+            if (window.Plain) window.Plain.open()
+            else {
+              let script = document.createElement('script')
+              script.async = false
+              script.onload = function () {
+                window.Plain.init({
+                  theme: 'auto',
+                  hideBranding: true,
+                  links: [
+                    {
+                      icon: 'book',
+                      text: 'View our docs',
+                      url: 'https://polar.sh/docs',
+                    },
+                  ],
+                  appId: 'liveChatApp_01K55GCP6V4FJ0DKDP604MZYDV',
+                })
+                window.Plain.open()
+              }
+              script.src = 'https://chat.cdn-plain.com/index.js'
+              document.getElementsByTagName('head')[0].appendChild(script)
+            }
+          }}
+        >
+          <span
+            className={twMerge(
+              'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
+              'bg-transparent',
+            )}
+          >
+            <SupportIcon fontSize="inherit" />
+          </span>
+          <span className="ml-2 text-sm font-medium">Support</span>
+        </Link>
+        <Link
+          className={twMerge(
+            'my-2 flex flex-row items-center rounded-lg border border-transparent px-2 transition-colors dark:border-transparent',
+            'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
+            isCollapsed && '!dark:text-polar-600',
+          )}
+          href="https://polar.sh/docs"
+          target="_blank"
+        >
+          <span
+            className={twMerge(
+              'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
+              'bg-transparent',
+            )}
+          >
+            <ImportContactsIcon fontSize="inherit" />
+          </span>
+          <span className="ml-2 text-sm font-medium">Documentation</span>
+        </Link>
         {type === 'organization' && (
           <SidebarMenu>
             <SidebarMenuItem>

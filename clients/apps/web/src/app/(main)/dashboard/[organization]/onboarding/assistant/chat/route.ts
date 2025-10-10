@@ -275,6 +275,7 @@ export async function POST(req: Request) {
   const hasToolAccess = (await cookies()).has(CONFIG.AUTH_MCP_COOKIE_KEY)
   let requiresToolAccess = false
   let requiresManualSetup = false
+  let isRelevant = true // assume good faith
 
   if (!organizationId) {
     return new Response('Organization ID is required', { status: 400 })
@@ -303,6 +304,11 @@ export async function POST(req: Request) {
       model: google('gemini-2.5-flash-lite'),
       output: 'object',
       schema: z.object({
+        isRelevant: z
+          .boolean()
+          .describe(
+            'Whether the user request is relevant to configuring their Polar account',
+          ),
         requiresManualSetup: z
           .boolean()
           .describe(
@@ -321,12 +327,16 @@ export async function POST(req: Request) {
     console.log(`[${performance.now() - start}ms] Router made decision`)
     console.log({ decision: router.object })
 
-    if (router.object.requiresManualSetup) {
-      requiresManualSetup = true
-    }
+    if (!router.object.isRelevant) {
+      isRelevant = false
+    } else {
+      if (router.object.requiresManualSetup) {
+        requiresManualSetup = true
+      }
 
-    if (router.object.requiresToolAccess) {
-      requiresToolAccess = true
+      if (router.object.requiresToolAccess) {
+        requiresToolAccess = true
+      }
     }
   }
 
@@ -340,7 +350,6 @@ export async function POST(req: Request) {
   const redirectToManualSetup = tool({
     description: 'Request the user to manually configure the product instead',
     inputSchema: z.object({
-      message: z.string().describe('A message to show the user'),
       reason: z
         .enum(['unsupported_benefit_type', 'tool_call_error'])
         .describe(
@@ -355,9 +364,10 @@ export async function POST(req: Request) {
 
   const result = streamText({
     // Quick & cheap models can say "no" too :-)
-    model: requiresManualSetup
-      ? google('gemini-2.5-flash-lite')
-      : openai('gpt-5-nano'),
+    model:
+      requiresManualSetup || !isRelevant
+        ? google('gemini-2.5-flash-lite')
+        : openai('gpt-5-mini'),
     system: conversationalSystemPrompt,
     tools: {
       redirectToManualSetup,

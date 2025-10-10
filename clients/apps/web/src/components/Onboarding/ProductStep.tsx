@@ -28,7 +28,7 @@ type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
   }
 
 export const ProductStep = () => {
-  const [isConversationActive, setIsConversationActive] = useState(true)
+  const [mode, setMode] = useState<'assistant' | 'manual'>('assistant')
 
   return (
     <div className="dark:md:bg-polar-950 flex flex-col pt-16 md:items-center md:p-16">
@@ -48,17 +48,11 @@ export const ProductStep = () => {
           </div>
         </FadeUp>
 
-        <AssistantStep
-          onConversationActive={() => setIsConversationActive(true)}
-        />
+        {mode === 'assistant' && (
+          <AssistantStep onEjectToManual={() => setMode('manual')} />
+        )}
 
-        <FadeUp>
-          <span className="dark:text-polar-500 mx-auto flex w-full justify-center text-center text-sm text-gray-500">
-            or configure manually
-          </span>
-        </FadeUp>
-
-        <ProductForm />
+        {mode === 'manual' && <ProductForm />}
       </motion.div>
     </div>
   )

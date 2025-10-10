@@ -1,11 +1,13 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
+import { google } from '@ai-sdk/google'
 import { openai } from '@ai-sdk/openai'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import {
   convertToModelMessages,
   experimental_createMCPClient,
+  generateObject,
   smoothStream,
   stepCountIs,
   streamText,
@@ -17,7 +19,7 @@ import { z } from 'zod'
 
 export const maxDuration = 30
 
-const systemPrompt = `
+const sharedSystemPrompt = `
 You are a helpful assistant that helps a new user configure their Polar account.
 You're part of their initial onboarding flow, where you'll guide them through collecting the necessary information
 of what they're going to be selling on Polar. Once all required information is collected,
@@ -74,9 +76,8 @@ Polar has these benefit types:
 While Polar fully supports these benefits, your chat capabilities are limited.
 
 You will not be able to configure file downloads, Discord invites or GitHub repository access for now, since the user has to
-authenticate with these third party services before being able to set up a benefit. That's impossible from this chat.
-
-If so, you can use the "redirect_to_manual_setup" tool to redirect the user to the manual setup page.
+authenticate with these third party services before being able to set up a benefit. That's impossible from this chat,
+and you should route the user to manual setup instead.
 
 ### Setting up subscriptions for software businesses
 
@@ -109,7 +110,20 @@ This is done by adding a metered price to the product, specifying the meter to u
 
 ### Product Trials
 
-Trials can be granted to any product for a number of days/weeks/months/year.
+Trials can be granted to any product for a number of days/weeks/months/years.`
+
+const routerSystemPrompt = `
+${sharedSystemPrompt}
+
+# Your task
+Your task is to determine whether the user request requires manual setup, follow-up questions, and if the subsequent LLM call
+will require MCP tool access to act on the users request.
+
+You will now be handed the users' prompt.
+`
+
+const conversationalSystemPrompt = `
+${sharedSystemPrompt}
 
 ### Product Configuration
 
@@ -241,27 +255,92 @@ async function getMCPClient(userId: string, organizationId: string) {
 }
 
 export async function POST(req: Request) {
+  const start = performance.now()
+
+  console.log(`[${performance.now() - start}ms] New onboarding chat request`)
+
   // Get authenticated user
   const user = await getAuthenticatedUser()
   if (!user) {
     return new Response('Unauthorized', { status: 401 })
   }
 
+  console.log(`[${performance.now() - start}ms] Authenticated user ${user.id}`)
+
   const {
     messages,
     organizationId,
   }: { messages: UIMessage[]; organizationId: string } = await req.json()
 
+  const hasToolAccess = (await cookies()).has(CONFIG.AUTH_MCP_COOKIE_KEY)
+  let requiresToolAccess = false
+  let requiresManualSetup = false
+
   if (!organizationId) {
     return new Response('Organization ID is required', { status: 400 })
   }
 
-  const mcpClient = await getMCPClient(user.id, organizationId)
-  const tools = await mcpClient.tools()
+  let tools = {}
+
+  const lastUserMessage = messages.reverse().find((m) => m.role === 'user')
+
+  if (!lastUserMessage) {
+    // Should never happen
+    return new Response('No user message found', { status: 400 })
+  }
+
+  const userMessage = lastUserMessage.parts
+    .filter((part) => part.type === 'text')
+    .map((part) => part.text)
+    .join(' ')
+
+  console.log({ hasToolAccess })
+
+  if (true || !hasToolAccess) {
+    console.log(`[${performance.now() - start}ms] Routing user message`)
+
+    const router = await generateObject({
+      model: google('gemini-2.5-flash-lite'),
+      output: 'object',
+      schema: z.object({
+        requiresManualSetup: z
+          .boolean()
+          .describe(
+            'Whether the user request requires manual setup due to unsupported benefit types (file download, GitHub, Discord) or too complex configuration',
+          ),
+        requiresToolAccess: z
+          .boolean()
+          .describe(
+            'Whether MCP access is required to act on the user request (get, create, update, delete products, meters or benefits)',
+          ),
+      }),
+      system: routerSystemPrompt,
+      prompt: userMessage,
+    })
+
+    console.log(`[${performance.now() - start}ms] Router made decision`)
+    console.log({ decision: router.object })
+
+    if (router.object.requiresManualSetup) {
+      requiresManualSetup = true
+    }
+
+    if (router.object.requiresToolAccess) {
+      requiresToolAccess = true
+    }
+  }
+
+  if (hasToolAccess || requiresToolAccess) {
+    console.log(`[${performance.now() - start}ms] Getting MCP client`)
+    const mcpClient = await getMCPClient(user.id, organizationId)
+    tools = await mcpClient.tools()
+    console.log(`[${performance.now() - start}ms] MCP tools loaded`)
+  }
 
   const redirectToManualSetup = tool({
     description: 'Request the user to manually configure the product instead',
     inputSchema: z.object({
+      message: z.string().describe('A message to show the user'),
       reason: z
         .enum(['unsupported_benefit_type', 'tool_call_error'])
         .describe(
@@ -270,16 +349,32 @@ export async function POST(req: Request) {
     }),
   })
 
+  console.log(`[${performance.now() - start}ms] Start generating response`)
+
+  let streamStarted = false
+
   const result = streamText({
-    model: openai('gpt-5-mini'),
-    system: systemPrompt,
+    // Quick & cheap models can say "no" too :-)
+    model: requiresManualSetup
+      ? google('gemini-2.5-flash-lite')
+      : openai('gpt-5-nano'),
+    system: conversationalSystemPrompt,
     tools: {
       redirectToManualSetup,
       ...tools,
     },
+    toolChoice: requiresManualSetup
+      ? { type: 'tool', toolName: 'redirectToManualSetup' }
+      : 'auto',
     messages: convertToModelMessages(messages),
     stopWhen: stepCountIs(10),
     experimental_transform: smoothStream(),
+    onChunk: () => {
+      if (!streamStarted) {
+        streamStarted = true
+        console.log(`[${performance.now() - start}ms] First token streamed`)
+      }
+    },
   })
 
   return result.toUIMessageStreamResponse()

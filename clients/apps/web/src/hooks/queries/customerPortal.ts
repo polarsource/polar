@@ -492,3 +492,10 @@ export const useResendSeatInvitation = (api: Client) =>
       return result
     },
   })
+
+export const useCustomerClaimedSubscriptions = (api: Client) =>
+  useQuery({
+    queryKey: ['customer_claimed_subscriptions'],
+    queryFn: () => unwrap(api.GET('/v1/customer-portal/seats/subscriptions')),
+    retry: defaultRetry,
+  })

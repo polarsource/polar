@@ -82,11 +82,6 @@ async def create_oauth2_grant(
 
 @pytest.mark.asyncio
 class TestOAuth2Register:
-    async def test_unauthenticated(self, client: AsyncClient) -> None:
-        response = await client.post("/v1/oauth2/register", json={})
-
-        assert response.status_code == 401
-
     @pytest.mark.parametrize("redirect_uri", ["http://example.com", "foobar"])
     @pytest.mark.auth
     async def test_invalid_redirect_uri(
@@ -99,7 +94,10 @@ class TestOAuth2Register:
 
         assert response.status_code == 422
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="anonymous"),
+        AuthSubjectFixture(subject="user"),
+    )
     @pytest.mark.parametrize(
         "redirect_uri",
         [

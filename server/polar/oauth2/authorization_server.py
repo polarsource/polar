@@ -76,8 +76,8 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     def get_server_metadata(self) -> dict[str, typing.Any]:
         return _get_server_metadata(self.server)
 
-    def authenticate_token(self, request: StarletteJsonRequest) -> User | None:
-        return request.user
+    def authenticate_token(self, request: StarletteJsonRequest) -> User | str:
+        return request.user if request.user is not None else "dynamic_client"
 
     def save_client(
         self,
@@ -88,8 +88,8 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
         oauth2_client = OAuth2Client(**client_info)
         oauth2_client.set_client_metadata(client_metadata)
 
-        assert request.user is not None
-        oauth2_client.user_id = request.user.id
+        if request.user is not None:
+            oauth2_client.user_id = request.user.id
         oauth2_client.registration_access_token = generate_token(
             prefix=CLIENT_REGISTRATION_TOKEN_PREFIX
         )

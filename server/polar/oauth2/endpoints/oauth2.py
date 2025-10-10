@@ -65,17 +65,17 @@ async def list(
 @router.post(
     "/register",
     summary="Create Client",
-    tags=["clients", APITag.private],
+    tags=["clients"],
     name="oauth2:create_client",
 )
 async def create(
     client_configuration: OAuth2ClientConfiguration,
     request: Request,
-    auth_subject: WebUserWrite,
+    auth_subject: WebUserOrAnonymous,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
     """Create an OAuth2 client."""
-    request.state.user = auth_subject.subject
+    request.state.user = auth_subject.subject if is_user(auth_subject) else None
     request.state.parsed_data = client_configuration.model_dump(mode="json")
     return authorization_server.create_endpoint_response(
         ClientRegistrationEndpoint.ENDPOINT_NAME, request
@@ -84,7 +84,7 @@ async def create(
 
 @router.get(
     "/register/{client_id}",
-    tags=["clients", APITag.private],
+    tags=["clients"],
     summary="Get Client",
     name="oauth2:get_client",
 )
@@ -103,7 +103,7 @@ async def get(
 
 @router.put(
     "/register/{client_id}",
-    tags=["clients", APITag.private],
+    tags=["clients"],
     summary="Update Client",
     name="oauth2:update_client",
 )
@@ -124,7 +124,7 @@ async def update(
 
 @router.delete(
     "/register/{client_id}",
-    tags=["clients", APITag.private],
+    tags=["clients"],
     summary="Delete Client",
     name="oauth2:delete_client",
 )

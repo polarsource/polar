@@ -270,83 +270,11 @@ export async function POST(req: Request) {
     }),
   })
 
-  const renderProductsPreview = tool({
-    description:
-      'Render a preview of the product you are about to configure. This will render the product preview in the UI and is cleaner than a text description.',
-    inputSchema: z.object({
-      products: z.array(
-        z.object({
-          name: z.string().describe('The name of the product'),
-          description: z
-            .string()
-            .optional()
-            .describe(
-              'The description of the product. Only include if explicitly included, probably not needed.',
-            ),
-          priceInCents: z
-            .number()
-            .describe('The price of the product in cents in USD'),
-          priceType: z
-            .enum(['one_time', 'recurring_monthly', 'recurring_yearly'])
-            .describe('The type of the price'),
-          trialInterval: z
-            .enum(['day', 'week', 'month', 'year'])
-            .optional()
-            .describe('The trial interval'),
-          trialIntervalCount: z
-            .number()
-            .optional()
-            .describe('The trial interval count'),
-          benefits: z
-            .array(
-              z.object({
-                type: z
-                  .enum([
-                    'license_key',
-                    'file_download',
-                    'github_repository_access',
-                    'discord_server_access',
-                    'meter_credit',
-                    'custom',
-                  ])
-                  .describe('The type of the benefit'),
-                name: z
-                  .string()
-                  .optional()
-                  .describe('The description of the benefit'),
-              }),
-            )
-            .optional(),
-          usageBasedBilling: z
-            .array(
-              z.object({
-                meterName: z.string().describe('The name of the meter'),
-                unitAmount: z
-                  .number()
-                  .describe('The unit amount in cents in USD'),
-                capAmount: z
-                  .number()
-                  .optional()
-                  .describe('The cap amount in cents in USD'),
-              }),
-            )
-            .optional(),
-        }),
-      ),
-    }),
-    execute: () => {
-      return {
-        shown: true,
-      }
-    },
-  })
-
   const result = streamText({
     model: openai('gpt-5-mini'),
     system: systemPrompt,
     tools: {
       redirectToManualSetup,
-      renderProductsPreview,
       ...tools,
     },
     messages: convertToModelMessages(messages),

@@ -5,6 +5,7 @@ from tagflow import tag, text
 
 from .accounts.endpoints import router as accounts_router
 from .benefits.endpoints import router as benefits_router
+from .customers.endpoints import router as customers_router
 from .dependencies import get_admin
 from .external_events.endpoints import router as external_events_router
 from .impersonation.endpoints import router as impersonation_router
@@ -37,6 +38,7 @@ app.mount(
 )
 app.include_router(users_router, prefix="/users")
 app.include_router(organizations_router, prefix="/organizations")
+app.include_router(customers_router, prefix="/customers")
 app.include_router(benefits_router, prefix="/benefits")
 app.include_router(accounts_router, prefix="/accounts")
 app.include_router(external_events_router, prefix="/external-events")

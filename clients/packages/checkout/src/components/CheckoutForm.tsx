@@ -190,6 +190,12 @@ const BaseCheckoutForm = ({
     } catch {}
   }, [update, clearErrors, resetField])
 
+  useEffect(() => {
+    if (!discountCode && !checkout.discount) {
+      clearErrors('discountCode')
+    }
+  }, [discountCode, checkout.discount, clearErrors])
+
   const updateBusinessCustomer = useCallback(
     async (isBusinessCustomer: boolean) => {
       try {

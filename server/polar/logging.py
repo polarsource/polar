@@ -94,6 +94,7 @@ class Logging[RendererType]:
                             "dramatiq",
                             "authlib",
                             "logfire",
+                            "apscheduler",
                         ]
                     },
                 },

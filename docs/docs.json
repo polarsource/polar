@@ -17,6 +17,11 @@
     }
   },
   "favicon": "./logo/favicon.png",
+  "integrations": {
+    "ga4": {
+      "measurementId": "G-MBYW1QZFHE"
+    }
+  },
   "navigation": {
     "tabs": [
       {
@@ -510,12 +515,18 @@
       {
         "tab": "Guides",
         "icon": "book-open",
-        "pages": [
-          "guides/introduction",
-          "guides/create-variants",
-          "guides/disable-subscription-changes-in-customer-portal",
-          "guides/allow-multiple-subscriptions-per-customer",
-          "guides/subscription-downgrades"
+        "groups": [
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/introduction",
+              "guides/create-variants",
+              "guides/disable-subscription-changes-in-customer-portal",
+              "guides/allow-multiple-subscriptions-per-customer",
+              "guides/subscription-downgrades",
+              "guides/subscription-upgrades"
+            ]
+          }
         ]
       },
       {

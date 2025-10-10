@@ -2,7 +2,7 @@
 name = "polar"
 version = "0.0.0"
 readme = "README.md"
-requires-python = "==3.12.11"
+requires-python = "==3.14.0"
 dependencies = [
   "certifi<=2025.1.31", # Remove this pin when CI tells us it's safe
   "fastapi>=0.115.2",
@@ -82,9 +82,9 @@ dev = [
 
 [tool.taskipy.tasks]
 emails = { cmd = "cd emails && pnpm i --frozen-lockfile && pnpm run build", help = "build emails" }
-backoffice = { cmd = "pnpm -C polar/web_backoffice install && pnpm -C polar/web_backoffice build", help = "build backoffice CSS and JS" }
+backoffice = { cmd = "pnpm -C polar/backoffice install && pnpm -C polar/backoffice build", help = "build backoffice CSS and JS" }
 api = { cmd = "env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
-worker = { cmd = "dramatiq -p 1 -t 1 --watch polar -f polar.worker.scheduler:start polar.worker.run", help = "run worker" }
+worker = { cmd = "dramatiq -p 1 -t 1 --queues high_priority default --watch polar -f polar.worker.scheduler:start polar.worker.run", help = "run worker" }
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }

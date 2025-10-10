@@ -120,7 +120,7 @@ async def handle_failure(
             session, object, checkout, order
         )
     elif object.OBJECT_NAME == "payment_intent":
-        payment = await payment_service.create_from_stripe_payment_intent(
+        payment = await payment_service.upsert_from_stripe_payment_intent(
             session, object, checkout, order
         )
 

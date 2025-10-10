@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import cast
 
+import structlog
 from babel.dates import format_date
 from sqlalchemy.util.typing import Literal
 from typing_extensions import AsyncGenerator
@@ -19,11 +20,14 @@ from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
     StaticPrice,
+    is_metered_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.worker._enqueue import enqueue_job
 
 from .repository import BillingEntryRepository
+
+log = structlog.get_logger(__name__)
 
 
 @dataclasses.dataclass
@@ -121,22 +125,69 @@ class BillingEntryService:
         # but it involved to load lot of BillingEntry in memory, which was causing
         # performance issues and even OOM on large subscriptions.
         product_price_repository = ProductPriceRepository.from_session(session)
+
+        # Track which meters we've already processed to avoid duplicates
+        # For non-summable aggregations (max, min, avg, unique), we process each meter only once
+        # (even if there are billing entries with multiple prices) because these aggregations
+        # must be computed across ALL events, not per-price
+        processed_meters: set[uuid.UUID] = set()
+
         async for (
             product_price_id,
+            meter_id,
             start_timestamp,
             end_timestamp,
         ) in repository.get_pending_metered_by_subscription_tuples(subscription.id):
             metered_price = cast(
                 MeteredPrice, await product_price_repository.get_by_id(product_price_id)
             )
-            metered_line_item = await self._get_metered_line_item(
-                session, metered_price, subscription, start_timestamp, end_timestamp
-            )
-            pending_entries_ids = (
-                await repository.get_pending_ids_by_subscription_and_price(
-                    subscription.id, product_price_id
+
+            # Check if this meter uses a non-summable aggregation
+            # Non-summable aggregations (max, min, avg, unique) must be computed across
+            # ALL events in the period, not per-price. For example:
+            # - MAX(3 servers on priceA, 2 servers on priceB) = 3 servers (not 3+2=5)
+            # - We bill this at the currently active price from subscription
+            if not metered_price.meter.aggregation.is_summable():
+                if meter_id in processed_meters:
+                    continue
+                processed_meters.add(meter_id)
+
+                # Find the currently active price for this meter from the subscription
+                # This is the source of truth - even if all billing entries used priceA,
+                # if the customer changed to priceB, we bill at priceB
+                active_price = None
+                for spp in subscription.subscription_product_prices:
+                    if (
+                        is_metered_price(spp.product_price)
+                        and spp.product_price.meter_id == meter_id
+                    ):
+                        active_price = spp.product_price
+                        break
+
+                if active_price is None:
+                    log.info(
+                        f"No active price found for meter {meter_id} in subscription {subscription.id}"
+                    )
+                    continue
+
+                metered_line_item = await self._get_metered_line_item_by_meter(
+                    session, active_price, subscription, start_timestamp, end_timestamp
                 )
-            )
+                pending_entries_ids = (
+                    await repository.get_pending_ids_by_subscription_and_meter(
+                        subscription.id, meter_id
+                    )
+                )
+            else:
+                metered_line_item = await self._get_metered_line_item(
+                    session, metered_price, subscription, start_timestamp, end_timestamp
+                )
+                pending_entries_ids = (
+                    await repository.get_pending_ids_by_subscription_and_price(
+                        subscription.id, product_price_id
+                    )
+                )
+
             yield metered_line_item, pending_entries_ids
 
     async def _get_static_price_line_item(
@@ -176,11 +227,64 @@ class BillingEntryService:
         start_timestamp: datetime,
         end_timestamp: datetime,
     ) -> MeteredLineItem:
+        """
+        Compute a metered line item for a specific price.
+        Used for summable aggregations (sum, count) where we can group by price.
+        """
         event_repository = EventRepository.from_session(session)
         events_statement = event_repository.get_by_pending_entries_statement(
             subscription.id, price.id
         )
         meter = price.meter
+        units = await meter_service.get_quantity(
+            session,
+            meter,
+            events_statement.with_only_columns(Event.id).where(
+                Event.source == EventSource.user
+            ),
+        )
+        credit_events_statement = events_statement.where(
+            Event.is_meter_credit.is_(True)
+        )
+        credit_events = await event_repository.get_all(credit_events_statement)
+        credited_units = non_negative_running_sum(
+            event.user_metadata["units"] for event in credit_events
+        )
+        amount, amount_label = price.get_amount_and_label(units - credited_units)
+        label = f"{meter.name} — {amount_label}"
+
+        return MeteredLineItem(
+            price=price,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            consumed_units=units,
+            credited_units=credited_units,
+            amount=amount,
+            currency=price.price_currency,
+            label=label,
+        )
+
+    async def _get_metered_line_item_by_meter(
+        self,
+        session: AsyncSession,
+        price: MeteredPrice,
+        subscription: Subscription,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+    ) -> MeteredLineItem:
+        """
+        Compute a metered line item grouped by meter.
+        Used for non-summable aggregations (max, min, avg, unique) where we must
+        compute across ALL events for the meter, regardless of which price was active.
+        Uses the provided price for billing (should be the most recent/current price).
+        """
+        event_repository = EventRepository.from_session(session)
+        meter = price.meter
+
+        # Get events across ALL prices for this meter
+        events_statement = event_repository.get_by_pending_entries_for_meter_statement(
+            subscription.id, meter.id
+        )
         units = await meter_service.get_quantity(
             session,
             meter,

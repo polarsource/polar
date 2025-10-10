@@ -1,13 +1,7 @@
 import bundleAnalyzer from '@next/bundle-analyzer'
 import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
-import { createHighlighterCore } from 'shiki/core'
-import { createOnigurumaEngine } from 'shiki/engine/oniguruma'
-import langBash from 'shiki/langs/bash.mjs'
-import langJavascript from 'shiki/langs/javascript.mjs'
-import themeCatppuccinLatte from 'shiki/themes/catppuccin-latte.mjs'
-import themePoimandres from 'shiki/themes/poimandres.mjs'
-import { themeConfig, themesList, USED_LANGUAGES } from './shiki.config.mjs'
+import { themeConfig } from './shiki.config.mjs'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
@@ -25,9 +19,9 @@ const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env
   : ''
 const baseCSP = `
     default-src 'self';
-    connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL} ${process.env.S3_UPLOAD_ORIGINS} https://api.stripe.com https://maps.googleapis.com;
+    connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL} ${process.env.S3_UPLOAD_ORIGINS} https://api.stripe.com https://maps.googleapis.com https://*.google-analytics.com;
     frame-src 'self' https://*.js.stripe.com https://js.stripe.com https://hooks.stripe.com;
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.js.stripe.com https://js.stripe.com https://maps.googleapis.com;
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.js.stripe.com https://js.stripe.com https://maps.googleapis.com https://www.googletagmanager.com;
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https://www.gravatar.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com ${S3_PUBLIC_IMAGES_BUCKET_ORIGIN};
     font-src 'self';
@@ -56,11 +50,11 @@ const oauth2CSP = `
 // Ref: https://www.mintlify.com/docs/guides/csp-configuration#content-security-policy-csp-configuration
 const docsCSP = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com;
   style-src 'self' 'unsafe-inline' d4tuoctqmanu0.cloudfront.net;
   font-src 'self' d4tuoctqmanu0.cloudfront.net cdn.jsdelivr.net fonts.cdnfonts.com;
   img-src 'self' data: blob: d3gk2c5xim1je2.cloudfront.net mintcdn.com mintlify.s3.us-west-1.amazonaws.com;
-  connect-src 'self' *.mintlify.dev *.mintlify.com;
+  connect-src 'self' *.mintlify.dev *.mintlify.com https://*.google-analytics.com;
   frame-src 'self' *.mintlify.dev *.mintlify.com;
 `
 
@@ -131,21 +125,6 @@ const nextConfig = {
     ],
   },
 
-  async rewrites() {
-    return {
-      beforeFiles: [
-        // PostHog Rewrite
-        {
-          source: '/ingest/static/:path*',
-          destination: 'https://us-assets.i.posthog.com/static/:path*',
-        },
-        {
-          source: '/ingest/:path*',
-          destination: 'https://us.i.posthog.com/:path*',
-        },
-      ],
-    }
-  },
   async redirects() {
     return [
       // dashboard.polar.sh redirections
@@ -463,23 +442,6 @@ const nextConfig = {
 }
 
 const createConfig = async () => {
-  // Map configuration to actual imports for tree-shaking
-  const LANGUAGE_MAP = {
-    javascript: langJavascript,
-    bash: langBash,
-  }
-
-  const THEME_MAP = {
-    'catppuccin-latte': themeCatppuccinLatte,
-    poimandres: themePoimandres,
-  }
-
-  const highlighter = await createHighlighterCore({
-    langs: USED_LANGUAGES.map((lang) => LANGUAGE_MAP[lang]).filter(Boolean),
-    themes: themesList.map((theme) => THEME_MAP[theme]).filter(Boolean),
-    engine: createOnigurumaEngine(() => import('shiki/wasm')),
-  })
-
   const withMDX = createMDX({
     options: {
       remarkPlugins: ['remark-frontmatter', 'remark-gfm'],

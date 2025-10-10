@@ -12,19 +12,15 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@polar-sh/ui/components/ui/popover'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ComponentProps, PropsWithChildren, useState } from 'react'
+import { ComponentProps, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
+import { NavPopover, NavPopoverSection } from './NavPopover'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
@@ -101,10 +97,6 @@ const mobileNavigationItems: NavigationItem[] = [
     href: '/company',
   },
   {
-    title: 'Blog',
-    href: '/blog',
-  },
-  {
     title: 'Open Source',
     href: 'https://github.com/polarsource',
     target: '_blank',
@@ -173,12 +165,121 @@ const LandingPageMobileNavigation = () => {
 const LandingPageDesktopNavigation = () => {
   const posthog = usePostHog()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
-  const [docsPopoverOpen, setDocsPopoverOpen] = useState(false)
+  const pathname = usePathname()
 
   const onLoginClick = () => {
     posthog.capture('global:user:login:click')
     showModal()
   }
+
+  const featuresSections: NavPopoverSection[] = [
+    {
+      items: [
+        {
+          href: '/features/products',
+          label: 'Products',
+          subtitle: 'Digital products for SaaS',
+        },
+        {
+          href: '/features/usage-billing',
+          label: 'Usage Billing',
+          subtitle: 'Ingestion-based Billing',
+        },
+        {
+          href: '/features/customers',
+          label: 'Customer Management',
+          subtitle: 'Profiles & Analytics',
+        },
+        {
+          href: '/features/analytics',
+          label: 'Analytics',
+          subtitle: 'Revenue Insights',
+        },
+        {
+          href: '/features/benefits',
+          label: 'Benefits',
+          subtitle: 'Powerful Entitlements',
+        },
+        {
+          href: '/features/finance',
+          label: 'Finance',
+          subtitle: 'Payouts & Reporting',
+        },
+      ],
+    },
+  ]
+
+  const docsSections: NavPopoverSection[] = [
+    {
+      title: 'Integrate',
+      items: [
+        {
+          href: '/docs/integrate/sdk/adapters/nextjs',
+          label: 'Next.js',
+          target: '_blank',
+        },
+        {
+          href: '/docs/integrate/sdk/adapters/better-auth',
+          label: 'Better Auth',
+          target: '_blank',
+        },
+        {
+          href: '/docs/integrate/sdk/adapters/hono',
+          label: 'Hono',
+          target: '_blank',
+        },
+        {
+          href: '/docs/integrate/sdk/adapters/laravel',
+          label: 'Laravel',
+          target: '_blank',
+        },
+        {
+          href: '/docs/integrate/sdk/adapters/hono',
+          target: '_blank',
+          label: 'All 13 Adapters',
+        },
+      ],
+    },
+    {
+      title: 'Features',
+      items: [
+        {
+          href: '/docs/features/products',
+          label: 'Documentation Portal',
+          target: '_blank',
+          subtitle: 'Get started with Polar',
+        },
+        {
+          href: '/docs/features/products',
+          label: 'Products & Subscriptions',
+          target: '_blank',
+          subtitle: 'Flexible pricing models',
+        },
+        {
+          href: '/docs/features/checkout/links',
+          target: '_blank',
+          label: 'Checkouts',
+          subtitle: 'Checkout Links & Embeds',
+        },
+        {
+          href: '/docs/features/usage-based-billing/introduction',
+          label: 'Usage Billing',
+          subtitle: 'Ingestion-based Billing',
+        },
+        {
+          href: '/docs/features/benefits',
+          label: 'Benefits',
+          subtitle: 'Entitlement Automation',
+        },
+        {
+          href: '/docs/features/finance/payouts',
+          label: 'Finance & Payouts',
+          subtitle: 'Detailed financial insights',
+          target: '_blank',
+        },
+      ],
+    },
+  ]
 
   return (
     <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-8 md:flex">
@@ -187,141 +288,17 @@ const LandingPageDesktopNavigation = () => {
 
         <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-8 font-medium">
           <li>
-            <NavLink
-              href="/"
-              isActive={(pathname) =>
-                pathname === '/' || pathname.startsWith('/features')
-              }
-            >
-              Features
-            </NavLink>
+            <NavPopover
+              trigger="Features"
+              sections={featuresSections}
+              isActive={pathname.startsWith('/features')}
+            />
           </li>
           <li>
-            <Popover open={docsPopoverOpen} onOpenChange={setDocsPopoverOpen}>
-              <PopoverTrigger
-                className={twMerge(
-                  'dark:text-polar-500 -m-1 flex items-center gap-x-2 p-1 text-gray-500 transition-colors hover:text-black focus:outline-none dark:hover:text-white',
-                  docsPopoverOpen && 'text-black dark:text-white',
-                )}
-                onMouseEnter={() => setDocsPopoverOpen(true)}
-                onMouseLeave={() => setDocsPopoverOpen(false)}
-              >
-                Docs
-              </PopoverTrigger>
-              <PopoverContent
-                className="grid w-fit grid-cols-3 divide-x p-0"
-                sideOffset={0}
-                onMouseEnter={() => setDocsPopoverOpen(true)}
-                onMouseLeave={() => setDocsPopoverOpen(false)}
-              >
-                <div className="flex flex-col p-2">
-                  <h3 className="dark:text-polar-500 px-4 py-2 text-sm text-gray-500">
-                    Integrate
-                  </h3>
-                  <div>
-                    {[
-                      {
-                        href: '/docs/integrate/sdk/adapters/nextjs',
-                        label: 'Next.js',
-                        target: '_blank',
-                      },
-                      {
-                        href: '/docs/integrate/sdk/adapters/better-auth',
-                        label: 'Better Auth',
-                        target: '_blank',
-                      },
-                      {
-                        href: '/docs/integrate/sdk/adapters/hono',
-                        label: 'Hono',
-                        target: '_blank',
-                      },
-                      {
-                        href: '/docs/integrate/sdk/adapters/laravel',
-                        label: 'Laravel',
-                        target: '_blank',
-                      },
-                      {
-                        href: '/docs/integrate/sdk/adapters/hono',
-                        target: '_blank',
-                        label: 'All 13 Adapters',
-                      },
-                    ].map(({ href, label, target }) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        prefetch
-                        target={target}
-                        className="dark:hover:bg-polar-800 flex flex-col rounded-md px-4 py-2 text-sm transition-colors hover:bg-gray-100"
-                      >
-                        <span className="font-medium">{label}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-                <div className="col-span-2 flex flex-col p-2">
-                  <h3 className="dark:text-polar-500 px-4 py-2 text-sm text-gray-500">
-                    Features
-                  </h3>
-                  <div className="grid grid-cols-2">
-                    {[
-                      {
-                        href: '/docs/features/products',
-                        label: 'Documentation Portal',
-                        target: '_blank',
-                        subtitle: 'Get started with Polar',
-                      },
-                      {
-                        href: '/docs/features/products',
-                        label: 'Products & Subscriptions',
-                        target: '_blank',
-                        subtitle: 'Flexible pricing models',
-                      },
-                      {
-                        href: '/docs/features/checkout/links',
-                        target: '_blank',
-                        label: 'Checkouts',
-                        subtitle: 'Checkout Links & Embeds',
-                      },
-                      {
-                        href: '/docs/features/usage-based-billing/introduction',
-                        label: 'Usage Billing',
-                        subtitle: 'Ingestion-based Billing',
-                      },
-                      {
-                        href: '/docs/features/benefits',
-                        label: 'Benefits',
-                        subtitle: 'Entitlement Automation',
-                      },
-                      {
-                        href: '/docs/features/finance/payouts',
-                        label: 'Finance & Payouts',
-                        subtitle: 'Detailed financial insights',
-                        target: '_blank',
-                      },
-                    ].map(({ href, label, subtitle, target }) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        prefetch
-                        target={target}
-                        className="dark:hover:bg-polar-800 flex flex-col rounded-md px-4 py-2 text-sm transition-colors hover:bg-gray-100"
-                      >
-                        <span className="font-medium">{label}</span>
-                        <span className="dark:text-polar-500 text-gray-500">
-                          {subtitle}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <NavPopover trigger="Docs" sections={docsSections} layout="flex" />
           </li>
           <li>
             <NavLink href="/company">Company</NavLink>
-          </li>
-          <li>
-            <NavLink href="/blog">Blog</NavLink>
           </li>
         </ul>
 

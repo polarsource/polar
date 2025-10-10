@@ -9,6 +9,7 @@ from fastapi.routing import APIRoute
 from polar import worker  # noqa
 from polar.api import router
 from polar.auth.middlewares import AuthSubjectMiddleware
+from polar.backoffice import app as backoffice_app
 from polar.checkout import ip_geolocation
 from polar.config import settings
 from polar.exception_handlers import add_exception_handlers
@@ -48,7 +49,6 @@ from polar.postgres import (
 from polar.posthog import configure_posthog
 from polar.redis import Redis, create_redis
 from polar.sentry import configure_sentry
-from polar.web_backoffice import app as backoffice_app
 from polar.webhook.webhooks import document_webhooks
 
 from . import rate_limit

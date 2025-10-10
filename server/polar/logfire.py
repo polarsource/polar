@@ -103,7 +103,7 @@ def instrument_httpx(client: httpx.AsyncClient | httpx.Client | None = None) -> 
 
 
 def instrument_fastapi(app: FastAPI) -> None:
-    logfire.instrument_fastapi(app)
+    logfire.instrument_fastapi(app, capture_headers=True)
 
 
 def instrument_sqlalchemy(engine: Engine) -> None:

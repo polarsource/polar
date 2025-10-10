@@ -58,13 +58,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
         title: 'Subscription Uncanceled',
         description:
           'The subscription has been successfully uncanceled and will continue at the next billing cycle.',
-        variant: 'success',
       })
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to uncancel the subscription. Please try again.',
-        variant: 'error',
+        description: `Failed to uncancel the subscription: ${error}`,
       })
     }
   }

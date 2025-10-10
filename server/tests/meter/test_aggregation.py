@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from polar.meter.aggregation import (
     Aggregation,
     AggregationFunction,
+    CountAggregation,
     PropertyAggregation,
     UniqueAggregation,
 )
@@ -18,6 +19,24 @@ def test_strip_metadata_prefix() -> None:
         func=AggregationFunction.sum, property="metadata.property"
     )
     assert aggregation.property == "property"
+
+
+@pytest.mark.parametrize(
+    ("aggregation", "expected_summable"),
+    [
+        (CountAggregation(), True),
+        (PropertyAggregation(func=AggregationFunction.sum, property="tokens"), True),
+        (PropertyAggregation(func=AggregationFunction.max, property="tokens"), False),
+        (PropertyAggregation(func=AggregationFunction.min, property="tokens"), False),
+        (PropertyAggregation(func=AggregationFunction.avg, property="tokens"), False),
+        (UniqueAggregation(property="user_id"), False),
+    ],
+    ids=["count", "sum", "max", "min", "avg", "unique"],
+)
+def test_aggregation_is_summable(
+    aggregation: Aggregation, expected_summable: bool
+) -> None:
+    assert aggregation.is_summable() is expected_summable
 
 
 async def _get_aggregation_result(

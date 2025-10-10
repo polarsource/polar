@@ -109,10 +109,11 @@ SuccessURL = Annotated[
 EmbedOrigin = Annotated[
     str | None,
     Field(
-        default=None,
-        description="If you plan to embed the checkout session, "
-        "set this to the Origin of the embedding page. "
-        "It'll allow the Polar iframe to communicate with the parent page.",
+        description=(
+            "If you plan to embed the checkout session, "
+            "set this to the Origin of the embedding page. "
+            "It'll allow the Polar iframe to communicate with the parent page."
+        ),
     ),
 ]
 

@@ -47,6 +47,13 @@ class CountAggregation(BaseModel):
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         return true()
 
+    def is_summable(self) -> bool:
+        """
+        Whether this aggregation can be computed separately across different price groups
+        and then summed together. Count aggregations are summable.
+        """
+        return True
+
 
 def _strip_metadata_prefix(value: str) -> str:
     prefix = "metadata."
@@ -78,6 +85,13 @@ class PropertyAggregation(BaseModel):
 
         return func.jsonb_typeof(model.user_metadata[self.property]) == "number"
 
+    def is_summable(self) -> bool:
+        """
+        Whether this aggregation can be computed separately across different groups
+        and then summed together. Only SUM is summable; MAX, MIN, AVG are not.
+        """
+        return self.func == AggregationFunction.sum
+
 
 class UniqueAggregation(BaseModel):
     func: Literal[AggregationFunction.unique] = AggregationFunction.unique
@@ -89,6 +103,14 @@ class UniqueAggregation(BaseModel):
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         return true()
+
+    def is_summable(self) -> bool:
+        """
+        Whether this aggregation can be computed separately across different groups
+        and then summed together. Unique count is not summable (same unique value
+        could appear in multiple groups).
+        """
+        return False
 
 
 _Aggregation = CountAggregation | PropertyAggregation | UniqueAggregation

@@ -126,7 +126,7 @@ export const Adapters = () => {
           {adapters.map((adapter) => (
             <TabsContent value={adapter.name} key={adapter.name}>
               <motion.div
-                className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row`}
+                className={`dark:bg-polar-900 md:rounded-4xl flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row`}
                 variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"

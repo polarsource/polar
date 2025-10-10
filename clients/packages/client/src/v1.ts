@@ -11771,6 +11771,17 @@ export interface components {
       /** Token */
       token: string
     }
+    /** CustomerSessionCodeInvalidOrExpired */
+    CustomerSessionCodeInvalidOrExpired: {
+      /**
+       * Error
+       * @example CustomerSessionCodeInvalidOrExpired
+       * @constant
+       */
+      error: 'CustomerSessionCodeInvalidOrExpired'
+      /** Detail */
+      detail: string
+    }
     /** CustomerSessionCodeRequest */
     CustomerSessionCodeRequest: {
       /**
@@ -27910,6 +27921,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CustomerSessionCodeAuthenticateResponse']
+        }
+      }
+      /** @description Invalid or expired verification code. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSessionCodeInvalidOrExpired']
         }
       }
       /** @description Validation Error */

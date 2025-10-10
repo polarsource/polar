@@ -14,8 +14,28 @@ const AUTHENTICATED_ROUTES = [
   new RegExp('^/settings(/.*)?'),
 ]
 
-const requiresAuthentication = (request: NextRequest): boolean => {
+const isForwardedRoute = (request: NextRequest): boolean => {
   if (request.nextUrl.pathname.startsWith('/docs/')) {
+    return true
+  }
+
+  if (request.nextUrl.pathname.startsWith('/mintlify-assets/')) {
+    return true
+  }
+
+  if (request.nextUrl.pathname.startsWith('/_mintlify/')) {
+    return true
+  }
+
+  if (request.nextUrl.pathname.startsWith('/ingest/')) {
+    return true
+  }
+
+  return false
+}
+
+const requiresAuthentication = (request: NextRequest): boolean => {
+  if (isForwardedRoute(request)) {
     return false
   }
 
@@ -34,7 +54,15 @@ const getLoginResponse = (request: NextRequest): NextResponse => {
 }
 
 export async function middleware(request: NextRequest) {
+  // Do not run middleware for forwarded routes
+  // @pieterbeulque added this because the `config.matcher` behavior below
+  // doesn't appear to be working consistently with Vercel rewrites
+  if (isForwardedRoute(request)) {
+    return NextResponse.next()
+  }
+
   let user: schemas['UserRead'] | undefined = undefined
+
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
     const api = await createServerSideAPI(
       request.headers,
@@ -68,11 +96,12 @@ export const config = {
      * Match all request paths except for the ones starting with:
      * - api (API routes)
      * - ingest (Posthog)
+     * - monitoring (Sentry)
      * - docs, _mintlify, mintlify-assets (Mintlify)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      */
-    '/((?!api|ingest|docs|_mintlify|mintlify-assets|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    '/((?!api|ingest|monitoring|docs|_mintlify|mintlify-assets|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
   ],
 }

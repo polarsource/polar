@@ -78,7 +78,6 @@ PriceAmount = Annotated[
 PriceCurrency = Annotated[
     str,
     Field(
-        default="usd",
         pattern="usd",
         description="The currency. Currently, only `usd` is supported.",
     ),
@@ -111,7 +110,7 @@ class ProductPriceFixedCreate(ProductPriceCreateBase):
 
     amount_type: Literal[ProductPriceAmountType.fixed]
     price_amount: PriceAmount
-    price_currency: PriceCurrency
+    price_currency: PriceCurrency = "usd"
 
     def get_model_class(self) -> builtins.type[ProductPriceFixedModel]:
         return ProductPriceFixedModel
@@ -123,7 +122,7 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.custom]
-    price_currency: PriceCurrency
+    price_currency: PriceCurrency = "usd"
     minimum_amount: PriceAmount | None = Field(
         default=None, ge=50, description="The minimum amount the customer can pay."
     )
@@ -159,7 +158,7 @@ class ProductPriceSeatBasedCreate(ProductPriceCreateBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.seat_based]
-    price_currency: PriceCurrency
+    price_currency: PriceCurrency = "usd"
     price_per_seat: PriceAmount = Field(description="The price per seat in cents.")
 
     def get_model_class(self) -> builtins.type[ProductPriceSeatUnitModel]:
@@ -176,7 +175,7 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
-    price_currency: PriceCurrency
+    price_currency: PriceCurrency = "usd"
     unit_amount: Decimal = Field(
         gt=0,
         max_digits=17,

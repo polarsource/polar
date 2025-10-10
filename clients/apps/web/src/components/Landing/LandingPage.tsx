@@ -15,6 +15,7 @@ import Features from './Features'
 import { Pricing } from './Pricing'
 import SDKs from './SDKs'
 import { Section } from './Section'
+import { SeedRound } from './SeedRound'
 import { Usage } from './Usage'
 
 export default function Page() {
@@ -82,6 +83,7 @@ export const PageContent = () => {
             </div>
           </div>
         </Link>
+        <SeedRound />
       </Section>
       <Section className="flex flex-col gap-y-24">
         <Checkout />

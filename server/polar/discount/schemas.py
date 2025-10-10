@@ -56,7 +56,6 @@ Code = Annotated[
     EmptyStrToNone,
     AfterValidator(_code_validator),
     Field(
-        default=None,
         description=(
             "Code customers can use to apply the discount during checkout. "
             "Must be between 3 and 256 characters long and "
@@ -78,14 +77,12 @@ def _starts_at_ends_at_validator(
 StartsAt = Annotated[
     datetime | None,
     Field(
-        default=None,
         description="Optional timestamp after which the discount is redeemable.",
     ),
 ]
 EndsAt = Annotated[
     datetime | None,
     Field(
-        default=None,
         description=(
             "Optional timestamp after which the discount is no longer redeemable."
         ),
@@ -94,7 +91,6 @@ EndsAt = Annotated[
 MaxRedemptions = Annotated[
     int | None,
     Field(
-        default=None,
         description="Optional maximum number of times the discount can be redeemed.",
     ),
     Ge(1),
@@ -140,7 +136,6 @@ Amount = Annotated[
 Currency = Annotated[
     str,
     Field(
-        default="usd",
         pattern="usd",
         description="The currency. Currently, only `usd` is supported.",
     ),
@@ -169,11 +164,11 @@ ProductsList = Annotated[
 class DiscountCreateBase(MetadataInputMixin, Schema):
     name: Name
     type: DiscountType = Field(description="Type of the discount.")
-    code: Code
+    code: Code = None
 
-    starts_at: StartsAt
-    ends_at: EndsAt
-    max_redemptions: MaxRedemptions
+    starts_at: StartsAt = None
+    ends_at: EndsAt = None
+    max_redemptions: MaxRedemptions = None
 
     duration: DiscountDuration
 
@@ -205,7 +200,7 @@ class DiscountRepeatDurationCreateBase(Schema):
 class DiscountFixedCreateBase(Schema):
     type: Literal[DiscountType.fixed] = DiscountType.fixed
     amount: Amount
-    currency: Currency
+    currency: Currency = "usd"
 
 
 class DiscountPercentageCreateBase(Schema):
@@ -251,11 +246,11 @@ class DiscountUpdate(MetadataInputMixin, Schema):
     """
 
     name: Name | None = None
-    code: Code | None = None
+    code: Code = None
 
-    starts_at: StartsAt | None = None
-    ends_at: EndsAt | None = None
-    max_redemptions: MaxRedemptions | None = None
+    starts_at: StartsAt = None
+    ends_at: EndsAt = None
+    max_redemptions: MaxRedemptions = None
 
     duration: DiscountDuration | None = None
     duration_in_months: DurationInMonths | None = None

@@ -171,6 +171,11 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
+def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.subscription.service.enqueue_email")
+
+
+@pytest.fixture
 def frozen_time() -> Generator[datetime, None]:
     frozen_time = utc_now()
     with freezegun.freeze_time(frozen_time):
@@ -537,6 +542,7 @@ class TestCycle:
         self,
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
@@ -591,6 +597,10 @@ class TestCycle:
             subscription.id,
             OrderBillingReason.subscription_cycle,
         )
+
+        enqueue_email_mock.assert_called_once()
+        subject = enqueue_email_mock.call_args.kwargs["subject"]
+        assert "renewed" in subject.lower()
 
     async def test_free_price(
         self,
@@ -679,6 +689,7 @@ class TestCycle:
         self,
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
@@ -733,10 +744,15 @@ class TestCycle:
             OrderBillingReason.subscription_cycle,
         )
 
+        enqueue_email_mock.assert_called_once()
+        subject = enqueue_email_mock.call_args.kwargs["subject"]
+        assert "ended" in subject.lower()
+
     async def test_trial_end(
         self,
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
@@ -768,6 +784,10 @@ class TestCycle:
             subscription.id,
             OrderBillingReason.subscription_cycle,
         )
+
+        enqueue_email_mock.assert_called_once()
+        subject = enqueue_email_mock.call_args.kwargs["subject"]
+        assert "renewed" in subject.lower()
 
 
 @pytest.mark.asyncio
@@ -2152,8 +2172,6 @@ class TestMarkPastDue:
         )
         invoice_mock.return_value = mocker.MagicMock(hosted_invoice_url=None)
 
-        mocker.patch("polar.subscription.service.enqueue_email")
-
         # When
         result_subscription = await subscription_service.mark_past_due(
             session, subscription
@@ -2192,8 +2210,6 @@ class TestMarkPastDue:
             "polar.subscription.service.stripe_service.get_invoice"
         )
         invoice_mock.return_value = mocker.MagicMock(hosted_invoice_url=None)
-
-        mocker.patch("polar.subscription.service.enqueue_email")
 
         send_past_due_email_mock = mocker.patch.object(
             subscription_service, "send_past_due_email"

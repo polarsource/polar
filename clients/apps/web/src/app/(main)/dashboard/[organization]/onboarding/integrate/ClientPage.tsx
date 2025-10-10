@@ -1,20 +1,21 @@
 'use client'
 
 import { IntegrateStep } from '@/components/Onboarding/IntegrateStep'
-import { useProduct } from '@/hooks/queries/products'
+import { useSelectedProducts } from '@/hooks/queries/products'
 
 import { useSearchParams } from 'next/navigation'
 
 export default function ClientPage() {
   const searchParams = useSearchParams()
 
-  const productId = searchParams.get('productId')
+  const productIdsParam = searchParams.get('productId')
+  const productIds = productIdsParam ? productIdsParam.split(',') : []
 
-  const { data: product } = useProduct(productId ?? undefined)
+  const { data: products, isLoading } = useSelectedProducts(productIds)
 
-  if (!product) {
+  if (isLoading || !products || products.length === 0) {
     return null
   }
 
-  return <IntegrateStep product={product} />
+  return <IntegrateStep products={products} />
 }

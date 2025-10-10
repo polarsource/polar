@@ -111,7 +111,7 @@ jobs:
           echo EOF >> $GITHUB_OUTPUT
 
       - name: Find Comment
-        uses: peter-evans/find-comment@v3
+        uses: peter-evans/find-comment@v4
         if: success() && github.event.number
         id: fc
         with:
@@ -119,14 +119,14 @@ jobs:
           body-includes: "<!-- __NEXTJS_BUNDLE -->"
 
       - name: Create Comment
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@v5
         if: success() && github.event.number && steps.fc.outputs.comment-id == 0
         with:
           issue-number: ${{ github.event.number }}
           body: ${{ steps.get-comment-body.outputs.body }}
 
       - name: Update Comment
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@v5
         if: success() && github.event.number && steps.fc.outputs.comment-id != 0
         with:
           issue-number: ${{ github.event.number }}

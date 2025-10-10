@@ -16,6 +16,7 @@ const defaults = {
     process.env.NEXT_PUBLIC_FRONTEND_BASE_URL || 'http://127.0.0.1:3000',
   BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
   LOGIN_PATH: process.env.NEXT_PUBLIC_LOGIN_PATH || '/login',
+  GOOGLE_ANALYTICS_ID: process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || undefined,
   GITHUB_APP_NAMESPACE:
     process.env.NEXT_PUBLIC_GITHUB_APP_NAMESPACE || 'polar-sh',
   GITHUB_BADGE_EMBED_DEFAULT_LABEL:

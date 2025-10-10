@@ -3,6 +3,7 @@ from typing import Any
 from uuid import UUID
 
 from pydantic import EmailStr, Field, field_validator, model_validator
+from sqlalchemy import inspect
 
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.customer_seat import SeatStatus
@@ -97,8 +98,6 @@ class CustomerSeat(TimestampedSchema):
             return data
         elif hasattr(data, "__dict__"):
             # For SQLAlchemy models - check if customer is loaded
-            from sqlalchemy import inspect
-
             state = inspect(data)
             if "customer" not in state.unloaded:
                 # Customer is loaded, we can extract the email

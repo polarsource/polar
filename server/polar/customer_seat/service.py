@@ -316,12 +316,10 @@ class SeatService:
     ) -> CustomerSeat | None:
         repository = CustomerSeatRepository.from_session(session)
 
-        statement = (
-            repository.get_base_statement()
-            .where(CustomerSeat.id == seat_id)
-            .options(*repository.get_eager_options())
+        seat = await repository.get_by_id(
+            seat_id,
+            options=repository.get_eager_options(),
         )
-        seat = await repository.get_one_or_none(statement)
 
         if not seat:
             return None
@@ -375,19 +373,11 @@ class SeatService:
         """Get a seat and verify it belongs to a subscription owned by the customer."""
         repository = CustomerSeatRepository.from_session(session)
 
-        statement = (
-            repository.get_base_statement()
-            .where(CustomerSeat.id == seat_id)
-            .options(*repository.get_eager_options())
+        seat = await repository.get_by_id_for_customer(
+            seat_id,
+            customer.id,
+            options=repository.get_eager_options(),
         )
-        seat = await repository.get_one_or_none(statement)
-
-        if not seat:
-            return None
-
-        # Verify the seat belongs to a subscription owned by this customer
-        if seat.subscription.customer_id != customer.id:
-            return None
 
         return seat
 

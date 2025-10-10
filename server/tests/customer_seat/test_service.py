@@ -12,6 +12,7 @@ from polar.customer_seat.service import (
     InvalidSeatAssignmentRequest,
     SeatAlreadyAssigned,
     SeatNotAvailable,
+    SeatNotPending,
     seat_service,
 )
 from polar.enums import SubscriptionRecurringInterval
@@ -690,6 +691,160 @@ class TestGetSeat:
 
         with pytest.raises(FeatureNotEnabled):
             await seat_service.get_seat(session, auth_subject, customer_seat_claimed.id)
+
+
+class TestResendInvitation:
+    @pytest.mark.asyncio
+    async def test_resend_invitation_success(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+    ) -> None:
+        """Test resending invitation for a pending seat."""
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer,
+            status=SeatStatus.pending,
+        )
+        await session.refresh(seat, ["subscription", "customer"])
+        await session.refresh(seat.subscription, ["product", "customer"])
+        await session.refresh(seat.subscription.product, ["organization"])
+
+        original_token = seat.invitation_token
+
+        with patch(
+            "polar.customer_seat.service.send_seat_invitation_email"
+        ) as mock_send_email:
+            result_seat = await seat_service.resend_invitation(session, seat)
+
+            # Verify the seat is still pending
+            assert result_seat.status == SeatStatus.pending
+            assert result_seat.id == seat.id
+            assert result_seat.invitation_token == original_token
+
+            # Verify email was sent
+            mock_send_email.assert_called_once()
+            call_kwargs = mock_send_email.call_args[1]
+            assert call_kwargs["customer_email"] == customer.email
+            assert call_kwargs["seat"] == seat
+            assert (
+                call_kwargs["organization"]
+                == subscription_with_seats.product.organization
+            )
+            assert call_kwargs["product_name"] == subscription_with_seats.product.name
+            assert (
+                call_kwargs["billing_manager_email"]
+                == subscription_with_seats.customer.email
+            )
+
+    @pytest.mark.asyncio
+    async def test_resend_invitation_not_pending(
+        self,
+        session: AsyncSession,
+        customer_seat_claimed: CustomerSeat,
+    ) -> None:
+        """Test that resending invitation for a claimed seat raises an error."""
+        with pytest.raises(SeatNotPending):
+            await seat_service.resend_invitation(session, customer_seat_claimed)
+
+    @pytest.mark.asyncio
+    async def test_resend_invitation_no_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        """Test that resending invitation without a customer raises an error."""
+        # Create a pending seat without a customer (edge case)
+        seat = CustomerSeat(
+            subscription_id=subscription_with_seats.id,
+            status=SeatStatus.pending,
+            invitation_token="test-token",
+        )
+        await save_fixture(seat)
+        await session.refresh(seat, ["subscription", "customer"])
+        await session.refresh(seat.subscription, ["product"])
+        await session.refresh(seat.subscription.product, ["organization"])
+
+        with pytest.raises(InvalidInvitationToken):
+            await seat_service.resend_invitation(session, seat)
+
+    @pytest.mark.asyncio
+    async def test_resend_invitation_no_token(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+    ) -> None:
+        """Test that resending invitation without a token raises an error."""
+        # Create a pending seat without an invitation token (edge case)
+        seat = CustomerSeat(
+            subscription_id=subscription_with_seats.id,
+            customer_id=customer.id,
+            status=SeatStatus.pending,
+            invitation_token=None,
+        )
+        await save_fixture(seat)
+        await session.refresh(seat, ["subscription", "customer"])
+        await session.refresh(seat.subscription, ["product"])
+        await session.refresh(seat.subscription.product, ["organization"])
+
+        with pytest.raises(InvalidInvitationToken):
+            await seat_service.resend_invitation(session, seat)
+
+    @pytest.mark.asyncio
+    async def test_resend_invitation_feature_disabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+    ) -> None:
+        """Test that resending invitation fails when feature is disabled."""
+        # Create a pending seat
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer,
+            status=SeatStatus.pending,
+        )
+        await session.refresh(seat, ["subscription", "customer"])
+        await session.refresh(seat.subscription, ["product"])
+        await session.refresh(seat.subscription.product, ["organization"])
+
+        # Disable feature
+        subscription_with_seats.product.organization.feature_settings = {}
+        await save_fixture(subscription_with_seats.product.organization)
+
+        with pytest.raises(FeatureNotEnabled):
+            await seat_service.resend_invitation(session, seat)
+
+    @pytest.mark.asyncio
+    async def test_resend_invitation_revoked_seat(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+    ) -> None:
+        """Test that resending invitation for a revoked seat raises an error."""
+        # Create and revoke a seat
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer,
+            status=SeatStatus.revoked,
+        )
+        await session.refresh(seat, ["subscription", "customer"])
+        await session.refresh(seat.subscription, ["product"])
+        await session.refresh(seat.subscription.product, ["organization"])
+
+        with pytest.raises(SeatNotPending):
+            await seat_service.resend_invitation(session, seat)
 
 
 class TestBenefitGranting:

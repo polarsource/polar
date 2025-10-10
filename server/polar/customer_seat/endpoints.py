@@ -20,6 +20,7 @@ from polar.routing import APIRouter
 from polar.subscription.repository import SubscriptionRepository
 
 from .auth import SeatWriteOrAnonymous
+from .repository import CustomerSeatRepository
 from .schemas import CustomerSeat as CustomerSeatSchema
 from .schemas import (
     CustomerSeatClaimResponse,
@@ -169,11 +170,18 @@ async def revoke_seat(
         raise NotPermitted("Authentication required")
 
     typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
+    seat_repository = CustomerSeatRepository.from_session(session)
 
-    seat = await seat_service.get_seat(session, typed_auth_subject, UUID(seat_id))
+    seat = await seat_repository.get_by_id_and_auth_subject(
+        typed_auth_subject,
+        UUID(seat_id),
+        options=seat_repository.get_eager_options(),
+    )
 
     if not seat:
         raise ResourceNotFound("Seat not found")
+
+    seat_service.check_seat_feature_enabled(seat.subscription.product.organization)
 
     revoked_seat = await seat_service.revoke_seat(session, seat)
     await session.commit()
@@ -201,11 +209,18 @@ async def resend_invitation(
         raise NotPermitted("Authentication required")
 
     typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
+    seat_repository = CustomerSeatRepository.from_session(session)
 
-    seat = await seat_service.get_seat(session, typed_auth_subject, UUID(seat_id))
+    seat = await seat_repository.get_by_id_and_auth_subject(
+        typed_auth_subject,
+        UUID(seat_id),
+        options=seat_repository.get_eager_options(),
+    )
 
     if not seat:
         raise ResourceNotFound("Seat not found")
+
+    seat_service.check_seat_feature_enabled(seat.subscription.product.organization)
 
     resent_seat = await seat_service.resend_invitation(session, seat)
     await session.commit()

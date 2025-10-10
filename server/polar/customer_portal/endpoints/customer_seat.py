@@ -5,6 +5,7 @@ import structlog
 from fastapi import Depends, Query
 from sqlalchemy.orm import joinedload
 
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
 from polar.customer_seat.schemas import SeatAssign, SeatsList
 from polar.customer_seat.service import seat_service
@@ -117,8 +118,6 @@ async def assign_seat(
     await session.commit()
 
     # Reload seat with customer relationship
-    from polar.customer_seat.repository import CustomerSeatRepository
-
     seat_repository = CustomerSeatRepository.from_session(session)
     seat_statement = (
         seat_repository.get_base_statement()

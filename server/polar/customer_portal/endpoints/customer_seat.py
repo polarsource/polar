@@ -3,7 +3,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import Depends, Query
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.customer_seat.repository import CustomerSeatRepository
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
@@ -18,6 +18,7 @@ from polar.routing import APIRouter
 from polar.subscription.repository import SubscriptionRepository
 
 from .. import auth
+from ..schemas.subscription import CustomerSubscription
 
 log = structlog.get_logger()
 
@@ -185,3 +186,33 @@ async def resend_invitation(
     await session.commit()
 
     return CustomerSeatSchema.model_validate(resent_seat)
+
+
+@router.get(
+    "/subscriptions",
+    summary="List Claimed Subscriptions",
+    response_model=list[CustomerSubscription],
+    responses={
+        401: {"description": "Authentication required"},
+    },
+)
+async def list_claimed_subscriptions(
+    auth_subject: auth.CustomerPortalRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> list[Subscription]:
+    """List all subscriptions where the authenticated customer has claimed a seat."""
+    subscription_repository = SubscriptionRepository.from_session(session)
+
+    statement = subscription_repository.get_claimed_subscriptions_statement(
+        auth_subject
+    ).options(
+        joinedload(Subscription.customer),
+        joinedload(Subscription.product).options(
+            selectinload(Product.product_medias),
+            joinedload(Product.organization),
+        ),
+    )
+
+    subscriptions = await subscription_repository.get_all(statement)
+
+    return list(subscriptions)

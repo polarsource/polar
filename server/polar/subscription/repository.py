@@ -6,7 +6,16 @@ from sqlalchemy import Select, case, or_, select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.strategy_options import joinedload, selectinload
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.auth.models import (
+    AuthSubject,
+    Organization,
+    User,
+    is_organization,
+    is_user,
+)
+from polar.auth.models import (
+    Customer as AuthCustomer,
+)
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.repository import (
     Options,
@@ -18,6 +27,7 @@ from polar.kit.repository import (
 )
 from polar.models import (
     Customer,
+    CustomerSeat,
     Discount,
     Product,
     ProductPrice,
@@ -27,6 +37,7 @@ from polar.models import (
     SubscriptionProductPrice,
     UserOrganization,
 )
+from polar.models.customer_seat import SeatStatus
 from polar.models.subscription import SubscriptionStatus
 
 from .sorting import SubscriptionSortProperty
@@ -135,6 +146,23 @@ class SubscriptionRepository(
             statement = statement.where(
                 Product.organization_id == auth_subject.subject.id,
             )
+
+        return statement
+
+    def get_claimed_subscriptions_statement(
+        self, auth_subject: AuthSubject[AuthCustomer]
+    ) -> Select[tuple[Subscription]]:
+        """Get subscriptions where the customer has a claimed seat."""
+        customer = auth_subject.subject
+
+        statement = (
+            self.get_base_statement()
+            .join(CustomerSeat, CustomerSeat.subscription_id == Subscription.id)
+            .where(
+                CustomerSeat.customer_id == customer.id,
+                CustomerSeat.status == SeatStatus.claimed,
+            )
+        )
 
         return statement
 

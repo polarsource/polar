@@ -57,7 +57,7 @@ async def start_impersonation(
         )
 
     # Create a read-only impersonation session for the target user
-    token, impersonation_session = await auth_service._create_user_session(
+    token, impersonation_session = await auth_service.create_user_session(
         session=session,
         user=target_user,
         user_agent=request.headers.get("User-Agent", ""),

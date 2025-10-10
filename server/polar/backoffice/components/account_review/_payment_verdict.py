@@ -4,12 +4,12 @@ from typing import Any
 
 from tagflow import tag, text
 
-from polar.web_backoffice.components import button
-from polar.web_backoffice.organizations.forms import (
+from polar.backoffice.components import button
+from polar.backoffice.organizations.forms import (
     ApproveOrganizationForm,
     UnderReviewOrganizationForm,
 )
-from polar.web_backoffice.organizations.schemas import PaymentStatistics
+from polar.backoffice.organizations.schemas import PaymentStatistics
 
 
 class PaymentVerdict:

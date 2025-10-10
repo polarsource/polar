@@ -8,7 +8,7 @@
 polar_backoffice/
 tests/
 emails/node_modules/
-polar/web_backoffice/node_modules/
+polar/backoffice/node_modules/
 
 ip-geolocation.mmdb
 .env*

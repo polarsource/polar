@@ -9,6 +9,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import classes, tag, text
 
+from polar.backoffice.responses import HXRedirectResponse
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Customer, Order, Organization, Product, Subscription
@@ -19,7 +20,6 @@ from polar.subscription import sorting
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.subscription.sorting import SubscriptionSortProperty
-from polar.web_backoffice.responses import HXRedirectResponse
 
 from ..components import button, datatable, description_list, input, modal
 from ..layout import layout

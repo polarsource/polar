@@ -26,7 +26,7 @@ The backoffice is built using:
 ### File Structure
 
 ```
-polar/web_backoffice/
+polar/backoffice/
 ├── __init__.py              # FastAPI app configuration
 ├── README.md               # Basic setup instructions
 ├── DEVELOPMENT_GUIDE.md    # This file
@@ -57,10 +57,10 @@ Follow these steps to add a new entity to the backoffice:
 ### 1. Create the Module Structure
 
 ```bash
-mkdir polar/web_backoffice/my_entity
-touch polar/web_backoffice/my_entity/__init__.py
-touch polar/web_backoffice/my_entity/endpoints.py
-touch polar/web_backoffice/my_entity/forms.py  # Optional
+mkdir polar/backoffice/my_entity
+touch polar/backoffice/my_entity/__init__.py
+touch polar/backoffice/my_entity/endpoints.py
+touch polar/backoffice/my_entity/forms.py  # Optional
 ```
 
 ### 2. Define Endpoints
@@ -260,7 +260,7 @@ async def delete_confirm(
 Create `my_entity/forms.py`:
 
 ```python
-from polar.web_backoffice.forms import BaseForm
+from polar.backoffice.forms import BaseForm
 
 class UpdateMyEntityForm(BaseForm):
     name: str
@@ -502,7 +502,7 @@ with modal("Dialog Title", open=True):
 
 ```python
 from typing import Annotated
-from polar.web_backoffice.forms import BaseForm, SelectField
+from polar.backoffice.forms import BaseForm, SelectField
 
 class MyForm(BaseForm):
     name: str

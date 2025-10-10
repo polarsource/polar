@@ -3,8 +3,8 @@ import { NotificationsPopover } from '@/components/Notifications/NotificationsPo
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import ImportContactsIcon from '@mui/icons-material/ImportContacts';
-import SupportIcon from '@mui/icons-material/Support';
+import ImportContactsIcon from '@mui/icons-material/ImportContacts'
+import SupportIcon from '@mui/icons-material/Support'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -130,41 +130,40 @@ export const DashboardSidebar = ({
         <Link
           href="#"
           className={twMerge(
-            'mt-2 flex flex-row items-center rounded-lg border border-transparent px-2 transition-colors dark:border-transparent cursor-pointer',
+            'mt-2 flex cursor-pointer flex-row items-center rounded-lg border border-transparent px-2 transition-colors dark:border-transparent',
             'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
             isCollapsed && '!dark:text-polar-600',
           )}
           onClick={(e) => {
             e.preventDefault()
-            if (window.Plain) 
-              window.Plain.open();
+            if (window.Plain) window.Plain.open()
             else {
-              let script = document.createElement('script');
-              script.async = false;
+              let script = document.createElement('script')
+              script.async = false
               script.onload = function () {
                 window.Plain.init({
                   theme: 'auto',
                   hideBranding: true,
                   links: [
                     {
-                      icon: 'book', 
+                      icon: 'book',
                       text: 'View our docs',
                       url: 'https://polar.sh/docs',
                     },
                   ],
                   appId: 'liveChatApp_01K55GCP6V4FJ0DKDP604MZYDV',
-                });
-                window.Plain.open();
-              };
-              script.src = 'https://chat.cdn-plain.com/index.js';
-              document.getElementsByTagName('head')[0].appendChild(script);
+                })
+                window.Plain.open()
+              }
+              script.src = 'https://chat.cdn-plain.com/index.js'
+              document.getElementsByTagName('head')[0].appendChild(script)
             }
           }}
         >
           <span
             className={twMerge(
               'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
-              'bg-transparent'
+              'bg-transparent',
             )}
           >
             <SupportIcon fontSize="inherit" />
@@ -183,7 +182,7 @@ export const DashboardSidebar = ({
           <span
             className={twMerge(
               'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
-              'bg-transparent'
+              'bg-transparent',
             )}
           >
             <ImportContactsIcon fontSize="inherit" />

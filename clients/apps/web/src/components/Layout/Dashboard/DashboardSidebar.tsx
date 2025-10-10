@@ -1,4 +1,5 @@
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
+import { useAuth } from '@/hooks'
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
@@ -47,6 +48,8 @@ export const DashboardSidebar = ({
 }) => {
   const router = useRouter()
   const { state } = useSidebar()
+
+  const { currentUser } = useAuth()
 
   const isCollapsed = state === 'collapsed'
 
@@ -134,6 +137,14 @@ export const DashboardSidebar = ({
                     },
                   ],
                   appId: 'liveChatApp_01K55GCP6V4FJ0DKDP604MZYDV',
+                  ...(currentUser && currentUser.email_hash
+                    ? {
+                        customerDetails: {
+                          email: currentUser.email,
+                          emailHash: currentUser.email_hash,
+                        },
+                      }
+                    : {}),
                 })
                 window.Plain.open()
               }

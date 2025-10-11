@@ -1,4 +1,3 @@
-import { PolarHog, usePostHog } from '@/hooks/posthog'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined'
 import CodeOutlined from '@mui/icons-material/CodeOutlined'
@@ -82,21 +81,17 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
 }
 
 const useResolveRoutes = (
-  routesResolver: (
-    org?: schemas['Organization'],
-    posthog?: PolarHog,
-  ) => Route[],
+  routesResolver: (org?: schemas['Organization']) => Route[],
   org?: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
   const path = usePathname()
-  const posthog = usePostHog()
 
   return useMemo(() => {
-    return routesResolver(org, posthog)
+    return routesResolver(org)
       .filter((o) => allowAll || o.if)
       .map(applyIsActive(path))
-  }, [org, path, allowAll, routesResolver, posthog])
+  }, [org, path, allowAll, routesResolver])
 }
 
 export const useDashboardRoutes = (

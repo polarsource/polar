@@ -2,22 +2,24 @@
 
 import revalidate from '@/app/actions'
 import {
-  useAuthenticatedCustomer,
-  useCustomerPaymentMethods,
-} from '@/hooks/queries'
-import { createClientSideAPI } from '@/utils/client'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { Separator } from '@polar-sh/ui/components/ui/separator'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useTheme } from 'next-themes'
-import { twMerge } from 'tailwind-merge'
-import { Modal } from '../Modal'
-import { useModal } from '../Modal/useModal'
-import { Well, WellContent, WellHeader } from '../Shared/Well'
-import { AddPaymentMethodModal } from './AddPaymentMethodModal'
-import EditBillingDetails from './EditBillingDetails'
-import PaymentMethod from './PaymentMethod'
+	useAuthenticatedCustomer,
+	useCustomerPaymentMethods,
+	useCustomerPortalSignOut,
+} from "@/hooks/queries";
+import { createClientSideAPI } from "@/utils/client";
+import { schemas } from "@polar-sh/client";
+import Button from "@polar-sh/ui/components/atoms/Button";
+import { Separator } from "@polar-sh/ui/components/ui/separator";
+import { useThemePreset } from "@polar-sh/ui/hooks/theming";
+import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
+import { twMerge } from "tailwind-merge";
+import { Modal } from "../Modal";
+import { useModal } from "../Modal/useModal";
+import { Well, WellContent, WellHeader } from "../Shared/Well";
+import { AddPaymentMethodModal } from "./AddPaymentMethodModal";
+import EditBillingDetails from "./EditBillingDetails";
+import PaymentMethod from "./PaymentMethod";
 
 interface CustomerPortalSettingsProps {
   organization: schemas['Organization']
@@ -33,15 +35,17 @@ export const CustomerPortalSettings = ({
   customerSessionToken,
   setupIntentParams,
 }: CustomerPortalSettingsProps) => {
-  const api = createClientSideAPI(customerSessionToken)
+	const api = createClientSideAPI(customerSessionToken);
+	const router = useRouter();
 
-  const {
-    isShown: isAddPaymentMethodModalOpen,
-    hide: hideAddPaymentMethodModal,
-    show: showAddPaymentMethodModal,
-  } = useModal(setupIntentParams !== undefined)
-  const { data: customer } = useAuthenticatedCustomer(api)
-  const { data: paymentMethods } = useCustomerPaymentMethods(api)
+	const {
+		isShown: isAddPaymentMethodModalOpen,
+		hide: hideAddPaymentMethodModal,
+		show: showAddPaymentMethodModal,
+	} = useModal();
+	const { data: customer } = useAuthenticatedCustomer(api);
+	const { data: paymentMethods } = useCustomerPaymentMethods(api);
+	const customerPortalSignOut = useCustomerPortalSignOut(api);
 
   const theme = useTheme()
   const themingPreset = useThemePreset(
@@ -49,9 +53,23 @@ export const CustomerPortalSettings = ({
     theme.resolvedTheme as 'light' | 'dark',
   )
 
-  if (!customer) {
-    return null
-  }
+	const handleSignOut = async () => {
+		try {
+			await customerPortalSignOut.mutateAsync();
+
+			const url = new URL(window.location.href);
+			const parts = url.pathname.split("/");
+			const orgSlug = parts[1];
+
+			router.replace(`/${orgSlug}/portal/request`);
+		} catch (error) {
+			console.error("Failed to sign out:", error);
+		}
+	};
+
+	if (!customer) {
+		return null;
+	}
 
   return (
     <div className="flex flex-col gap-y-8">
@@ -110,22 +128,31 @@ export const CustomerPortalSettings = ({
         </WellContent>
       </Well>
 
-      <Modal
-        isShown={isAddPaymentMethodModalOpen}
-        hide={hideAddPaymentMethodModal}
-        modalContent={
-          <AddPaymentMethodModal
-            api={api}
-            onPaymentMethodAdded={() => {
-              revalidate(`customer_portal`)
-              hideAddPaymentMethodModal()
-            }}
-            setupIntentParams={setupIntentParams}
-            hide={hideAddPaymentMethodModal}
-            themingPreset={themingPreset}
-          />
-        }
-      />
-    </div>
-  )
-}
+            <div className="flex">
+                <Button
+                    variant="destructive"
+                    onClick={handleSignOut}
+                    disabled={customerPortalSignOut.isPending}
+                >
+                    {customerPortalSignOut.isPending ? "Signing Out..." : "Sign Out"}
+                </Button>
+            </div>
+
+			<Modal
+				isShown={isAddPaymentMethodModalOpen}
+				hide={hideAddPaymentMethodModal}
+				modalContent={
+					<AddPaymentMethodModal
+						api={api}
+						onPaymentMethodAdded={() => {
+							revalidate(`customer_portal`);
+							hideAddPaymentMethodModal();
+						}}
+						hide={hideAddPaymentMethodModal}
+						themingPreset={themingPreset}
+					/>
+				}
+			/>
+		</div>
+	);
+};

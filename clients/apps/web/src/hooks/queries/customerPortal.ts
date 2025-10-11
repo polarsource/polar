@@ -62,6 +62,20 @@ export const useUpdateCustomerPortal = (api: Client) =>
     },
   })
 
+export const useCustomerPortalSignOut = (api: Client) =>
+  useMutation({
+    mutationFn: async () =>
+      api.DELETE('/v1/customer-portal/customer-session/sign-out'),
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
+      queryClient.invalidateQueries({
+        queryKey: ['customer'],
+      })
+    },
+  })
+
 export const useCustomerPaymentMethods = (api: Client) =>
   useQuery({
     queryKey: ['customer_payment_methods'],
@@ -112,10 +126,12 @@ export const useDeleteCustomerPaymentMethod = (api: Client) =>
         },
       )
       if (result.error) {
+
         const errorMessage =
           typeof result.error.detail === 'string'
             ? result.error.detail
             : 'Failed to delete payment method'
+
         throw new Error(errorMessage)
       }
       return result

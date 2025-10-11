@@ -6,6 +6,7 @@ import { useFiles } from '@/hooks/queries'
 import FileUploadIcon from '@mui/icons-material/FileUploadOutlined'
 import { schemas } from '@polar-sh/client'
 import { ReactElement, useEffect, useState } from 'react'
+import { FileRejection } from 'react-dropzone'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileList } from './FileList'
@@ -15,7 +16,7 @@ const DropzoneView = ({
   children,
 }: {
   isDragActive: boolean
-  children: ReactElement<any>
+  children: ReactElement
 }) => {
   return (
     <>
@@ -76,21 +77,29 @@ const DownloadablesForm = ({
   const [archivedFiles, setArchivedFiles] = useState<{
     [key: string]: boolean
   }>(initialArchivedFiles ?? {})
+  const [uploadErrors, setUploadErrors] = useState<{ [key: string]: string }>(
+    {},
+  )
+  const [formFiles, setFormFilesState] = useState<FileObject[]>(
+    initialFiles.map((file) => ({
+      ...file,
+      isUploading: false,
+      uploadedBytes: file.is_uploaded ? file.size : 0,
+    })),
+  )
 
-  const setFormFiles = (formFiles: FileObject[]) => {
-    const files = []
-
-    for (const file of formFiles) {
-      if (file.is_uploaded) {
-        files.push(file.id)
-      }
-    }
-
+  const updateFormState = () => {
+    const files = formFiles
+      .filter((file) => file.is_uploaded)
+      .map((file) => file.id)
+    setValue('properties.files', files, { shouldValidate: false })
     if (files.length > 0) {
       clearErrors('properties.files')
     }
+  }
 
-    setValue('properties.files', files)
+  const updateFormFiles = (updatedFiles: FileObject[]) => {
+    setFormFilesState(updatedFiles)
   }
 
   const setArchivedFile = (fileId: string, archived: boolean) => {
@@ -104,6 +113,10 @@ const DownloadablesForm = ({
     })
   }
 
+  useEffect(() => {
+    updateFormState()
+  }, [formFiles])
+
   const {
     files,
     setFiles,
@@ -112,16 +125,35 @@ const DownloadablesForm = ({
     getRootProps,
     getInputProps,
     isDragActive,
+    isProcessing,
+    lastError,
+    totalUploadingFiles,
   } = useFileUpload({
     organization: organization,
     service: 'downloadable',
-    onFilesUpdated: setFormFiles,
+    maxSize: 10 * 1024 * 1024 * 1024, // 10GB limit for downloadable files
+    onFilesUpdated: updateFormFiles,
     initialFiles,
+    onFilesRejected: (rejections: FileRejection[]) => {
+      const errors = rejections.reduce(
+        (acc, rej) => {
+          acc[rej.file.name] = rej.errors.map((e) => e.message).join(', ')
+          return acc
+        },
+        {} as { [key: string]: string },
+      )
+      setUploadErrors((prev) => ({ ...prev, ...errors }))
+    },
   })
 
   useEffect(() => {
     trigger('properties.files')
   }, [files, trigger])
+
+  const uploadingCount =
+    files.filter((f) => f.isUploading).length +
+    files.filter((f) => f.is_uploaded).length
+  const fileWord = uploadingCount === 1 ? 'file' : 'files'
 
   return (
     <>
@@ -130,6 +162,32 @@ const DownloadablesForm = ({
           <input {...getInputProps()} />
         </DropzoneView>
       </div>
+      {isProcessing && (
+        <div
+          className="mt-2 text-sm text-blue-600 dark:text-blue-400"
+          aria-live="polite"
+        >
+          Uploading {uploadingCount} of {totalUploadingFiles} {fileWord}...
+          please keep this tab open
+        </div>
+      )}
+      {lastError && (
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          {lastError}
+        </p>
+      )}
+      {Object.keys(uploadErrors).length > 0 && (
+        <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+          <p>Upload errors:</p>
+          <ul className="list-disc pl-5">
+            {Object.entries(uploadErrors).map(([fileName, error]) => (
+              <li key={fileName}>
+                {fileName}: {error}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <FileList
         files={files}
         setFiles={setFiles}
@@ -165,7 +223,6 @@ const DownloadablesEditForm = ({
     filesQuery?.data?.items.filter((v): v is FileRead => Boolean(v)) ?? []
 
   if (filesQuery.isLoading) {
-    // TODO: Style me
     return <div>Loading...</div>
   }
 

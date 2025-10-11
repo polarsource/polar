@@ -28,7 +28,6 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceUnavailable,
 )
-from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
@@ -66,7 +65,6 @@ from polar.subscription.service import (
     InactiveSubscription,
     MissingCheckoutCustomer,
     NotARecurringProduct,
-    SubscriptionDoesNotExist,
     TrialingSubscription,
 )
 from polar.subscription.service import subscription as subscription_service
@@ -85,12 +83,6 @@ from tests.fixtures.random_objects import (
     create_subscription,
     create_trialing_subscription,
     set_product_benefits,
-)
-from tests.fixtures.stripe import (
-    build_stripe_payment_method,
-    cloned_stripe_canceled_subscription,
-    cloned_stripe_subscription,
-    construct_stripe_subscription,
 )
 
 Hooks = namedtuple("Hooks", "updated activated canceled uncanceled revoked")
@@ -146,13 +138,6 @@ def subscription_hooks(mocker: MockerFixture) -> Hooks:
         uncanceled=uncanceled,
         revoked=revoked,
     )
-
-
-@pytest.fixture(autouse=True)
-def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
-    mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.subscription.service.stripe_service", new=mock)
-    return mock
 
 
 @pytest.fixture
@@ -804,7 +789,6 @@ class TestRevoke:
             product=product,
             customer=customer,
             status=SubscriptionStatus.canceled,
-            stripe_subscription_id=None,
         )
 
         with pytest.raises(AlreadyCanceledSubscription):
@@ -823,7 +807,6 @@ class TestRevoke:
             save_fixture,
             product=product,
             customer=customer,
-            stripe_subscription_id=None,
         )
 
         updated_subscription = await subscription_service.revoke(session, subscription)
@@ -873,7 +856,6 @@ class TestUncancel:
             save_fixture,
             product=product,
             customer=customer,
-            stripe_subscription_id=None,
         )
 
         with pytest.raises(BadRequest):
@@ -893,7 +875,6 @@ class TestUncancel:
             product=product,
             customer=customer,
             cancel_at_period_end=True,
-            stripe_subscription_id=None,
         )
 
         updated_subscription = await subscription_service.uncancel(
@@ -946,283 +927,6 @@ class TestUncancel:
 
         with pytest.raises(ResourceUnavailable):
             await subscription_service.uncancel(session, subscription)
-
-
-@pytest.mark.asyncio
-class TestUpdateFromStripe:
-    async def test_not_existing_subscription(
-        self, session: AsyncSession, locker: Locker, product: Product
-    ) -> None:
-        stripe_subscription = construct_stripe_subscription(product=product)
-
-        with pytest.raises(SubscriptionDoesNotExist):
-            await subscription_service.update_from_stripe(
-                session, locker, stripe_subscription=stripe_subscription
-            )
-
-    async def test_valid(
-        self,
-        enqueue_benefits_grants_mock: MagicMock,
-        stripe_service_mock: MagicMock,
-        session: AsyncSession,
-        locker: Locker,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        stripe_payment_method = build_stripe_payment_method(
-            customer=customer.stripe_customer_id,
-        )
-        stripe_service_mock.get_payment_method.return_value = stripe_payment_method
-        stripe_subscription = construct_stripe_subscription(
-            product=product,
-            status=SubscriptionStatus.active,
-            default_payment_method=stripe_payment_method.id,
-        )
-        subscription = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            stripe_subscription_id=stripe_subscription.id,
-        )
-        assert subscription.started_at is None
-
-        updated_subscription = await subscription_service.update_from_stripe(
-            session, locker, stripe_subscription=stripe_subscription
-        )
-
-        assert updated_subscription.status == SubscriptionStatus.active
-        assert updated_subscription.started_at is not None
-        assert updated_subscription.payment_method is not None
-        assert (
-            updated_subscription.payment_method.processor_id == stripe_payment_method.id
-        )
-
-        enqueue_benefits_grants_mock.assert_called_once()
-
-    async def test_discount_reset(
-        self,
-        enqueue_benefits_grants_mock: MagicMock,
-        session: AsyncSession,
-        locker: Locker,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-        discount_percentage_50: Discount,
-    ) -> None:
-        stripe_subscription = construct_stripe_subscription(
-            product=product, status=SubscriptionStatus.active, discounts=[]
-        )
-        subscription = await create_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            stripe_subscription_id=stripe_subscription.id,
-            discount=discount_percentage_50,
-        )
-        assert subscription.discount is not None
-
-        updated_subscription = await subscription_service.update_from_stripe(
-            session, locker, stripe_subscription=stripe_subscription
-        )
-
-        assert updated_subscription.discount is None
-
-    async def test_valid_cancel_at_period_end(
-        self,
-        enqueue_benefits_grants_mock: MagicMock,
-        session: AsyncSession,
-        locker: Locker,
-        save_fixture: SaveFixture,
-        subscription_hooks: Hooks,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-        )
-        stripe_subscription = cloned_stripe_canceled_subscription(subscription)
-
-        updated_subscription = await subscription_service.update_from_stripe(
-            session, locker, stripe_subscription=stripe_subscription
-        )
-
-        assert updated_subscription.status == SubscriptionStatus.active
-        assert updated_subscription.cancel_at_period_end is True
-
-        enqueue_benefits_grants_mock.assert_called_once()
-        assert_hooks_called_once(subscription_hooks, {"updated", "canceled"})
-
-    async def test_send_cancel_hooks_once(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        locker: Locker,
-        save_fixture: SaveFixture,
-        subscription_hooks: Hooks,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-        )
-        assert subscription.cancel_at_period_end is False
-        stripe_subscription = cloned_stripe_subscription(
-            subscription, cancel_at_period_end=True
-        )
-
-        updated_subscription = await subscription_service.update_from_stripe(
-            session, locker, stripe_subscription=stripe_subscription
-        )
-
-        assert updated_subscription.status == SubscriptionStatus.active
-        assert updated_subscription.cancel_at_period_end is True
-        assert updated_subscription.ends_at
-        assert updated_subscription.canceled_at
-        assert_hooks_called_once(subscription_hooks, {"updated", "canceled"})
-        reset_hooks(subscription_hooks)
-
-        repeat_cancellation = await subscription_service.update_from_stripe(
-            session, locker, stripe_subscription=stripe_subscription
-        )
-        assert repeat_cancellation.status == SubscriptionStatus.active
-        assert repeat_cancellation.cancel_at_period_end is True
-        assert repeat_cancellation.ends_at
-        assert repeat_cancellation.canceled_at
-        assert_hooks_called_once(subscription_hooks, {"updated"})
-
-    async def test_valid_uncancel(
-        self,
-        session: AsyncSession,
-        locker: Locker,
-        save_fixture: SaveFixture,
-        subscription_hooks: Hooks,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await create_canceled_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-        )
-        assert subscription.cancel_at_period_end is True
-        assert subscription.ends_at
-        assert subscription.canceled_at
-
-        stripe_subscription = cloned_stripe_subscription(
-            subscription, cancel_at_period_end=False
-        )
-
-        updated_subscription = await subscription_service.update_from_stripe(
-            session, locker, stripe_subscription=stripe_subscription
-        )
-
-        assert updated_subscription.status == SubscriptionStatus.active
-        assert updated_subscription.cancel_at_period_end is False
-        assert updated_subscription.ends_at is None
-        assert updated_subscription.canceled_at is None
-        assert_hooks_called_once(subscription_hooks, {"updated", "uncanceled"})
-
-    async def test_valid_revokation(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        locker: Locker,
-        save_fixture: SaveFixture,
-        subscription_hooks: Hooks,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-        )
-        stripe_subscription = cloned_stripe_canceled_subscription(
-            subscription, revoke=True
-        )
-
-        updated_subscription = await subscription_service.update_from_stripe(
-            session, locker, stripe_subscription=stripe_subscription
-        )
-
-        assert updated_subscription.status == SubscriptionStatus.canceled
-        assert updated_subscription.cancel_at_period_end is False
-        assert updated_subscription.ended_at
-
-        enqueue_job_mock.assert_has_calls(
-            [
-                call(
-                    "benefit.enqueue_benefits_grants",
-                    task="revoke",
-                    customer_id=subscription.customer_id,
-                    product_id=product.id,
-                    subscription_id=subscription.id,
-                )
-            ]
-        )
-        assert_hooks_called_once(subscription_hooks, {"updated", "canceled", "revoked"})
-
-    async def test_valid_cancel_and_revoke(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        locker: Locker,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        subscription_hooks: Hooks,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-        )
-        stripe_subscription = cloned_stripe_canceled_subscription(
-            subscription,
-        )
-
-        updated_subscription = await subscription_service.update_from_stripe(
-            session, locker, stripe_subscription=stripe_subscription
-        )
-
-        assert updated_subscription.status == SubscriptionStatus.active
-        assert updated_subscription.cancel_at_period_end is True
-        assert_hooks_called_once(subscription_hooks, {"updated", "canceled"})
-        reset_hooks(subscription_hooks)
-
-        # Now revoke
-        stripe_subscription = cloned_stripe_canceled_subscription(
-            updated_subscription, revoke=True
-        )
-
-        updated_subscription = await subscription_service.update_from_stripe(
-            session, locker, stripe_subscription=stripe_subscription
-        )
-
-        assert updated_subscription.status == SubscriptionStatus.canceled
-        assert updated_subscription.cancel_at_period_end is False
-        assert updated_subscription.ended_at
-
-        enqueue_job_mock.assert_has_calls(
-            [
-                call(
-                    "benefit.enqueue_benefits_grants",
-                    task="revoke",
-                    customer_id=subscription.customer_id,
-                    product_id=product.id,
-                    subscription_id=subscription.id,
-                )
-            ]
-        )
-        assert_hooks_called_once(subscription_hooks, {"updated", "revoked"})
 
 
 async def create_event_billing_entry(
@@ -1782,7 +1486,6 @@ class TestUpdateProduct:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
         meter: Meter,
         product: Product,  # This is a product with fixed pricing
         customer: Customer,
@@ -1792,8 +1495,6 @@ class TestUpdateProduct:
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )
-        subscription.stripe_subscription_id = "sub_test_stripe_id"
-        await save_fixture(subscription)
 
         # Create a new product that only has metered prices (no static/fixed prices)
         metered_only_product = await create_product(
@@ -1803,34 +1504,11 @@ class TestUpdateProduct:
             prices=[(meter, Decimal(100), None)],
         )
 
-        mock_placeholder_price = MagicMock()
-        mock_placeholder_price.id = "price_placeholder_test_id"
-        stripe_service_mock.create_placeholder_price.return_value = (
-            mock_placeholder_price
-        )
-
         updated_subscription = await subscription_service.update_product(
             session,
             subscription,
             product_id=metered_only_product.id,
             proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
-
-        stripe_service_mock.create_placeholder_price.assert_called_once_with(
-            metered_only_product,
-            subscription.currency,
-            idempotency_key=f"subscription_update_{subscription.id}_placeholder",
-        )
-
-        # Verify that update_subscription_price was called with the placeholder price
-        stripe_service_mock.update_subscription_price.assert_called_once_with(
-            subscription.stripe_subscription_id,
-            new_prices=["price_placeholder_test_id"],
-            proration_behavior="create_prorations",  # This is the Stripe equivalent of prorate
-            metadata={
-                "type": "product",
-                "product_id": str(metered_only_product.id),
-            },
         )
 
         assert updated_subscription.product == metered_only_product
@@ -1868,7 +1546,6 @@ class TestUpdateDiscount:
         customer: Customer,
         discount_percentage_50: Discount,
         discount_percentage_100: Discount,
-        stripe_service_mock: MagicMock,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
@@ -1890,7 +1567,6 @@ class TestUpdateDiscount:
         product: Product,
         customer: Customer,
         discount_percentage_50: Discount,
-        stripe_service_mock: MagicMock,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
@@ -1904,11 +1580,6 @@ class TestUpdateDiscount:
         )
 
         assert subscription.discount is None
-        stripe_service_mock.update_subscription_discount.assert_called_once_with(
-            subscription.stripe_subscription_id,
-            discount_percentage_50.stripe_coupon_id,
-            None,
-        )
 
     async def test_valid_added(
         self,
@@ -1918,7 +1589,6 @@ class TestUpdateDiscount:
         product: Product,
         customer: Customer,
         discount_percentage_50: Discount,
-        stripe_service_mock: MagicMock,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
@@ -1929,11 +1599,6 @@ class TestUpdateDiscount:
         )
 
         assert subscription.discount == discount_percentage_50
-        stripe_service_mock.update_subscription_discount.assert_called_once_with(
-            subscription.stripe_subscription_id,
-            None,
-            discount_percentage_50.stripe_coupon_id,
-        )
 
     async def test_valid_modified(
         self,
@@ -1944,7 +1609,6 @@ class TestUpdateDiscount:
         customer: Customer,
         discount_percentage_50: Discount,
         discount_percentage_100: Discount,
-        stripe_service_mock: MagicMock,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
@@ -1958,11 +1622,6 @@ class TestUpdateDiscount:
         )
 
         assert subscription.discount == discount_percentage_100
-        stripe_service_mock.update_subscription_discount.assert_called_once_with(
-            subscription.stripe_subscription_id,
-            discount_percentage_50.stripe_coupon_id,
-            discount_percentage_100.stripe_coupon_id,
-        )
 
 
 @pytest.mark.asyncio
@@ -2027,7 +1686,6 @@ class TestUpdateTrial:
             save_fixture,
             product=product,
             customer=customer,
-            stripe_subscription_id=None,
         )
 
         with pytest.raises(PolarRequestValidationError) as exc_info:
@@ -2052,7 +1710,6 @@ class TestUpdateTrial:
             save_fixture,
             product=product,
             customer=customer,
-            stripe_subscription_id=None,
         )
 
         assert subscription.current_period_end is not None
@@ -2079,7 +1736,6 @@ class TestUpdateTrial:
             save_fixture,
             product=product,
             customer=customer,
-            stripe_subscription_id=None,
         )
 
         assert subscription.current_period_end is not None
@@ -2161,17 +1817,6 @@ class TestMarkPastDue:
         subscription.status = SubscriptionStatus.active
         await save_fixture(subscription)
 
-        # Mock the Stripe calls in send_past_due_email
-        stripe_subscription_mock = mocker.patch(
-            "polar.subscription.service.stripe_lib.Subscription.retrieve_async"
-        )
-        stripe_subscription_mock.return_value = mocker.MagicMock(latest_invoice=None)
-
-        invoice_mock = mocker.patch(
-            "polar.subscription.service.stripe_service.get_invoice"
-        )
-        invoice_mock.return_value = mocker.MagicMock(hosted_invoice_url=None)
-
         # When
         result_subscription = await subscription_service.mark_past_due(
             session, subscription
@@ -2200,17 +1845,6 @@ class TestMarkPastDue:
         subscription.status = SubscriptionStatus.active
         await save_fixture(subscription)
 
-        # Mock the Stripe calls in send_past_due_email
-        stripe_subscription_mock = mocker.patch(
-            "polar.subscription.service.stripe_lib.Subscription.retrieve_async"
-        )
-        stripe_subscription_mock.return_value = mocker.MagicMock(latest_invoice=None)
-
-        invoice_mock = mocker.patch(
-            "polar.subscription.service.stripe_service.get_invoice"
-        )
-        invoice_mock.return_value = mocker.MagicMock(hosted_invoice_url=None)
-
         send_past_due_email_mock = mocker.patch.object(
             subscription_service, "send_past_due_email"
         )
@@ -2227,15 +1861,13 @@ class TestMarkPastDue:
 
 @pytest.mark.asyncio
 class TestUpdatePaymentMethodFromRetry:
-    async def test_stripe_managed_subscription(
+    async def test_basic(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
         customer: Customer,
         product: Product,
     ) -> None:
-        # Given: Stripe-managed subscription with old payment method
         old_payment_method = PaymentMethod(
             processor=PaymentProcessor.stripe,
             processor_id="pm_old",
@@ -2247,7 +1879,6 @@ class TestUpdatePaymentMethodFromRetry:
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )
-        subscription.stripe_subscription_id = "sub_123"
         subscription.payment_method = old_payment_method
         await save_fixture(subscription)
 
@@ -2267,97 +1898,4 @@ class TestUpdatePaymentMethodFromRetry:
             )
         )
 
-        # Then: Stripe subscription is updated with new payment method
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once_with(
-            "sub_123", "pm_new"
-        )
-
-        # And: Local subscription record is updated
-        assert updated_subscription.payment_method == new_payment_method
-
-    async def test_polar_managed_subscription(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
-        customer: Customer,
-        product: Product,
-    ) -> None:
-        # Given: Polar-managed subscription (no stripe_subscription_id)
-        old_payment_method = PaymentMethod(
-            processor=PaymentProcessor.stripe,
-            processor_id="pm_old",
-            type="card",
-            customer=customer,
-        )
-        await save_fixture(old_payment_method)
-
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
-        )
-        # No stripe_subscription_id for Polar-managed
-        subscription.stripe_subscription_id = None
-        subscription.payment_method = old_payment_method
-        await save_fixture(subscription)
-
-        # New payment method from retry
-        new_payment_method = PaymentMethod(
-            processor=PaymentProcessor.stripe,
-            processor_id="pm_new",
-            type="card",
-            customer=customer,
-        )
-        await save_fixture(new_payment_method)
-
-        # When
-        updated_subscription = (
-            await subscription_service.update_payment_method_from_retry(
-                session, subscription, new_payment_method
-            )
-        )
-
-        # Then: Stripe service is NOT called for Polar-managed subscriptions
-        stripe_service_mock.set_automatically_charged_subscription.assert_not_called()
-
-        # But: Local subscription record is still updated
-        assert updated_subscription.payment_method == new_payment_method
-
-    async def test_subscription_without_payment_method(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
-        customer: Customer,
-        product: Product,
-    ) -> None:
-        # Given: Subscription without payment method
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
-        )
-        subscription.stripe_subscription_id = "sub_123"
-        subscription.payment_method = None
-        await save_fixture(subscription)
-
-        # New payment method from retry
-        new_payment_method = PaymentMethod(
-            processor=PaymentProcessor.stripe,
-            processor_id="pm_new",
-            type="card",
-            customer=customer,
-        )
-        await save_fixture(new_payment_method)
-
-        # When
-        updated_subscription = (
-            await subscription_service.update_payment_method_from_retry(
-                session, subscription, new_payment_method
-            )
-        )
-
-        # Then: Stripe subscription is updated
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once_with(
-            "sub_123", "pm_new"
-        )
-
-        # And: Local subscription record is updated
         assert updated_subscription.payment_method == new_payment_method

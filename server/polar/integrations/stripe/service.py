@@ -1,21 +1,19 @@
 import uuid
-from collections.abc import AsyncGenerator, AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, AsyncIterator
 from typing import TYPE_CHECKING, Literal, Unpack, cast, overload
 
 import stripe as stripe_lib
 import structlog
 
 from polar.config import settings
-from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarError
-from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import utc_now
 from polar.logfire import instrument_httpx
 from polar.logging import Logger
 
 if TYPE_CHECKING:
     from polar.account.schemas import AccountCreateForOrganization
-    from polar.models import Product, ProductPrice, User
+    from polar.models import Product, User
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
@@ -256,41 +254,6 @@ class StripeService:
 
     async def archive_price(self, id: str) -> stripe_lib.Price:
         return await stripe_lib.Price.modify_async(id, active=False)
-
-    async def create_ad_hoc_custom_price(
-        self,
-        product: "Product",
-        product_price: "ProductPrice",
-        amount: int,
-        currency: str,
-        *,
-        idempotency_key: str | None = None,
-    ) -> stripe_lib.Price:
-        assert product.stripe_product_id is not None
-        price_params: stripe_lib.Price.CreateParams = {
-            "unit_amount": amount,
-            "currency": currency,
-            "metadata": {
-                "product_price_id": str(product_price.id),
-            },
-        }
-
-        if product.is_recurring:
-            recurring_interval: SubscriptionRecurringInterval
-            if product_price.legacy_recurring_interval:
-                recurring_interval = product_price.legacy_recurring_interval
-            else:
-                assert product.recurring_interval is not None
-                recurring_interval = product.recurring_interval
-            price_params["recurring"] = {
-                "interval": recurring_interval.as_literal(),
-            }
-
-        return await self.create_price_for_product(
-            product.stripe_product_id,
-            price_params,
-            idempotency_key=idempotency_key,
-        )
 
     async def create_placeholder_price(
         self,
@@ -666,107 +629,6 @@ class StripeService:
             customer=customer_id,
         )
 
-    async def create_out_of_band_subscription(
-        self,
-        *,
-        customer: str,
-        currency: str,
-        prices: Sequence[str],
-        coupon: str | None = None,
-        automatic_tax: bool = True,
-        metadata: dict[str, str] | None = None,
-        invoice_metadata: dict[str, str] | None = None,
-        idempotency_key: str | None = None,
-    ) -> tuple[stripe_lib.Subscription, stripe_lib.Invoice]:
-        log.info(
-            "stripe.subscription.create_out_of_band",
-            customer=customer,
-            currency=currency,
-            prices=list(prices),
-            coupon=coupon,
-            automatic_tax=automatic_tax,
-            idempotency_key=idempotency_key,
-        )
-        params: stripe_lib.Subscription.CreateParams = {
-            "customer": customer,
-            "currency": currency,
-            "collection_method": "send_invoice",
-            "days_until_due": 0,
-            "items": [{"price": price, "quantity": 1} for price in prices],
-            "metadata": metadata or {},
-            "automatic_tax": {"enabled": automatic_tax},
-            "expand": ["latest_invoice"],
-            "idempotency_key": idempotency_key,
-        }
-        if coupon is not None:
-            params["discounts"] = [{"coupon": coupon}]
-
-        subscription = await stripe_lib.Subscription.create_async(**params)
-
-        if subscription.latest_invoice is None:
-            raise MissingLatestInvoiceForOutofBandSubscription(subscription.id)
-
-        invoice = cast(stripe_lib.Invoice, subscription.latest_invoice)
-        invoice_id = get_expandable_id(invoice)
-        invoice = await self._pay_out_of_band_subscription_invoice(
-            invoice_id, invoice_metadata, idempotency_key
-        )
-        return subscription, invoice
-
-    async def update_out_of_band_subscription(
-        self,
-        *,
-        subscription_id: str,
-        new_prices: list[str],
-        coupon: str | None = None,
-        automatic_tax: bool = True,
-        metadata: dict[str, str] | None = None,
-        invoice_metadata: dict[str, str] | None = None,
-        idempotency_key: str | None = None,
-    ) -> tuple[stripe_lib.Subscription, stripe_lib.Invoice]:
-        subscription = await stripe_lib.Subscription.retrieve_async(subscription_id)
-
-        modify_params: stripe_lib.Subscription.ModifyParams = {
-            "collection_method": "send_invoice",
-            "days_until_due": 0,
-            "automatic_tax": {"enabled": automatic_tax},
-        }
-        if coupon is not None:
-            modify_params["discounts"] = [{"coupon": coupon}]
-        if metadata is not None:
-            modify_params["metadata"] = metadata
-        if idempotency_key is not None:
-            modify_params["idempotency_key"] = idempotency_key
-
-        old_items = subscription["items"]
-        new_items: list[stripe_lib.Subscription.ModifyParamsItem] = []
-        found_new_prices: set[str] = set()
-        for item in old_items:
-            if item.price.id not in new_prices:
-                new_items.append({"id": item.id, "deleted": True})
-            else:
-                new_items.append({"id": item.id, "deleted": False})
-                found_new_prices.add(item.price.id)
-        for new_price in new_prices:
-            if new_price not in found_new_prices:
-                new_items.append({"price": new_price, "quantity": 1})
-        modify_params["items"] = new_items
-
-        subscription = await stripe_lib.Subscription.modify_async(
-            subscription_id, **modify_params
-        )
-
-        if subscription.latest_invoice is None:
-            raise MissingLatestInvoiceForOutofBandSubscription(subscription.id)
-
-        invoice = cast(stripe_lib.Invoice, subscription.latest_invoice)
-        invoice_id = get_expandable_id(invoice)
-        invoice = await self._pay_out_of_band_subscription_invoice(
-            invoice_id, invoice_metadata, idempotency_key
-        )
-
-        return subscription, invoice
-
     async def set_automatically_charged_subscription(
         self,
         subscription_id: str,
@@ -781,121 +643,6 @@ class StripeService:
         if payment_method is not None:
             params["default_payment_method"] = payment_method
         return await stripe_lib.Subscription.modify_async(subscription_id, **params)
-
-    async def _pay_out_of_band_subscription_invoice(
-        self,
-        invoice_id: str,
-        metadata: dict[str, str] | None = None,
-        idempotency_key: str | None = None,
-    ) -> stripe_lib.Invoice:
-        invoice = await stripe_lib.Invoice.modify_async(
-            invoice_id,
-            metadata=metadata or {},
-            idempotency_key=(
-                f"{idempotency_key}_update_invoice"
-                if idempotency_key is not None
-                else None
-            ),
-        )
-        if invoice.status == "draft":
-            invoice = await stripe_lib.Invoice.finalize_invoice_async(
-                invoice_id,
-                idempotency_key=(
-                    f"{idempotency_key}_finalize_invoice"
-                    if idempotency_key is not None
-                    else None
-                ),
-            )
-        if invoice.status == "open":
-            await stripe_lib.Invoice.pay_async(
-                invoice_id,
-                paid_out_of_band=True,
-                idempotency_key=(
-                    f"{idempotency_key}_pay_invoice"
-                    if idempotency_key is not None
-                    else None
-                ),
-            )
-
-        return invoice
-
-    async def create_out_of_band_invoice(
-        self,
-        *,
-        customer: str,
-        currency: str,
-        prices: Sequence[str],
-        coupon: str | None = None,
-        automatic_tax: bool = True,
-        metadata: dict[str, str] | None = None,
-        idempotency_key: str | None = None,
-    ) -> tuple[stripe_lib.Invoice, dict[str, stripe_lib.InvoiceLineItem]]:
-        params: stripe_lib.Invoice.CreateParams = {
-            "auto_advance": True,
-            "collection_method": "send_invoice",
-            "days_until_due": 0,
-            "customer": customer,
-            "metadata": metadata or {},
-            "automatic_tax": {"enabled": automatic_tax},
-            "currency": currency,
-            "idempotency_key": (
-                f"{idempotency_key}_invoice" if idempotency_key else None
-            ),
-        }
-        if coupon is not None:
-            params["discounts"] = [{"coupon": coupon}]
-
-        invoice = await stripe_lib.Invoice.create_async(**params)
-        invoice_id = cast(str, invoice.id)
-
-        item_map: dict[str, tuple[str, stripe_lib.InvoiceItem]] = {}
-        for price in prices:
-            invoice_item = await stripe_lib.InvoiceItem.create_async(
-                customer=customer,
-                currency=currency,
-                price=price,
-                invoice=invoice_id,
-                quantity=1,
-                idempotency_key=(
-                    f"{idempotency_key}_{price}_invoice_item"
-                    if idempotency_key
-                    else None
-                ),
-            )
-            item_map[invoice_item.id] = (price, invoice_item)
-
-        # Manually retrieve the invoice, as we've seen cases where finalization below
-        # failed because the idempotency request returned us a draft invoice,
-        # but the invoice was actually already finalized.
-        invoice = await stripe_lib.Invoice.retrieve_async(
-            invoice_id, expand=["total_tax_amounts.tax_rate"]
-        )
-
-        if invoice.status == "draft":
-            invoice = await stripe_lib.Invoice.finalize_invoice_async(
-                invoice_id,
-                idempotency_key=(
-                    f"{idempotency_key}_finalize_invoice" if idempotency_key else None
-                ),
-                expand=["total_tax_amounts.tax_rate"],
-            )
-
-        if invoice.status == "open":
-            await stripe_lib.Invoice.pay_async(
-                invoice_id,
-                paid_out_of_band=True,
-                idempotency_key=(
-                    f"{idempotency_key}_pay_invoice" if idempotency_key else None
-                ),
-            )
-
-        price_line_item_map = {}
-        for line_item in invoice.lines.data:
-            assert line_item.invoice_item is not None
-            price_id, invoice_item = item_map[get_expandable_id(line_item.invoice_item)]
-            price_line_item_map[price_id] = line_item
-
-        return invoice, price_line_item_map
 
     async def create_invoice_item(
         self,

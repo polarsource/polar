@@ -908,6 +908,54 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/oauth2/register': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create Client
+     * @description Create an OAuth2 client.
+     */
+    post: operations['oauth2:clients:oauth2:create_client']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/oauth2/register/{client_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Client
+     * @description Get an OAuth2 client by Client ID.
+     */
+    get: operations['oauth2:clients:oauth2:get_client']
+    /**
+     * Update Client
+     * @description Update an OAuth2 client.
+     */
+    put: operations['oauth2:clients:oauth2:update_client']
+    post?: never
+    /**
+     * Delete Client
+     * @description Delete an OAuth2 client.
+     */
+    delete: operations['oauth2:clients:oauth2:delete_client']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/oauth2/authorize': {
     parameters: {
       query?: never
@@ -15801,6 +15849,96 @@ export interface components {
       /** Client Secret Expires At */
       client_secret_expires_at: number
     }
+    /** OAuth2ClientConfiguration */
+    OAuth2ClientConfiguration: {
+      /** Redirect Uris */
+      redirect_uris: string[]
+      /**
+       * Token Endpoint Auth Method
+       * @default client_secret_post
+       * @enum {string}
+       */
+      token_endpoint_auth_method:
+        | 'client_secret_basic'
+        | 'client_secret_post'
+        | 'none'
+      /**
+       * Grant Types
+       * @default [
+       *       "authorization_code",
+       *       "refresh_token"
+       *     ]
+       */
+      grant_types: ('authorization_code' | 'refresh_token')[]
+      /**
+       * Response Types
+       * @default [
+       *       "code"
+       *     ]
+       */
+      response_types: 'code'[]
+      /**
+       * Scope
+       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       */
+      scope: string
+      /** Client Name */
+      client_name: string
+      /** Client Uri */
+      client_uri?: string | null
+      /** Logo Uri */
+      logo_uri?: string | null
+      /** Tos Uri */
+      tos_uri?: string | null
+      /** Policy Uri */
+      policy_uri?: string | null
+    }
+    /** OAuth2ClientConfigurationUpdate */
+    OAuth2ClientConfigurationUpdate: {
+      /** Redirect Uris */
+      redirect_uris: string[]
+      /**
+       * Token Endpoint Auth Method
+       * @default client_secret_post
+       * @enum {string}
+       */
+      token_endpoint_auth_method:
+        | 'client_secret_basic'
+        | 'client_secret_post'
+        | 'none'
+      /**
+       * Grant Types
+       * @default [
+       *       "authorization_code",
+       *       "refresh_token"
+       *     ]
+       */
+      grant_types: ('authorization_code' | 'refresh_token')[]
+      /**
+       * Response Types
+       * @default [
+       *       "code"
+       *     ]
+       */
+      response_types: 'code'[]
+      /**
+       * Scope
+       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       */
+      scope: string
+      /** Client Name */
+      client_name: string
+      /** Client Uri */
+      client_uri?: string | null
+      /** Logo Uri */
+      logo_uri?: string | null
+      /** Tos Uri */
+      tos_uri?: string | null
+      /** Policy Uri */
+      policy_uri?: string | null
+      /** Client Id */
+      client_id: string
+    }
     /** OAuth2ClientPublic */
     OAuth2ClientPublic: {
       /**
@@ -22723,6 +22861,136 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_OAuth2Client_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'oauth2:clients:oauth2:create_client': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OAuth2ClientConfiguration']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'oauth2:clients:oauth2:get_client': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        client_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'oauth2:clients:oauth2:update_client': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        client_id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OAuth2ClientConfigurationUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'oauth2:clients:oauth2:delete_client': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        client_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -32782,6 +33050,18 @@ export const oAuth2ClientToken_endpoint_auth_methodValues: ReadonlyArray<
 > = ['client_secret_basic', 'client_secret_post', 'none']
 export const oAuth2ClientGrant_typesValues: ReadonlyArray<
   components['schemas']['OAuth2Client']['grant_types']
+> = ['authorization_code', 'refresh_token']
+export const oAuth2ClientConfigurationToken_endpoint_auth_methodValues: ReadonlyArray<
+  components['schemas']['OAuth2ClientConfiguration']['token_endpoint_auth_method']
+> = ['client_secret_basic', 'client_secret_post', 'none']
+export const oAuth2ClientConfigurationGrant_typesValues: ReadonlyArray<
+  components['schemas']['OAuth2ClientConfiguration']['grant_types']
+> = ['authorization_code', 'refresh_token']
+export const oAuth2ClientConfigurationUpdateToken_endpoint_auth_methodValues: ReadonlyArray<
+  components['schemas']['OAuth2ClientConfigurationUpdate']['token_endpoint_auth_method']
+> = ['client_secret_basic', 'client_secret_post', 'none']
+export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<
+  components['schemas']['OAuth2ClientConfigurationUpdate']['grant_types']
 > = ['authorization_code', 'refresh_token']
 export const oAuthPlatformValues: ReadonlyArray<
   components['schemas']['OAuthPlatform']

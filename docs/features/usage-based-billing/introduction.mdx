@@ -37,40 +37,6 @@ This is done by ingesting events from your application, creating Meters to repre
 
 <MeterCredits />
 
-### Diagram
-
-Here is a diagram of how the different components of Usage Based Billing work together:
-
-```mermaid
-flowchart TD
-App[Your Application]
-User[User]
-
-    subgraph Polar["Polar"]
-        API[Events Ingestion API]
-        DB[(Events database)]
-        Meters[Meters]
-        Products[Products]
-        Benefit[Meter Credits Benefit]
-
-        subgraph MeteredPrice["Metered Prices"]
-            Unit[Unit Pricing]
-        end
-    end
-
-
-    User -->|Uses| App
-    App -->|Sends events| API
-    API -->|Stores events| DB
-    Benefit -->|Stores credit events| DB
-
-    DB -->|Filtered & aggregated by| Meters
-    Meters -->|Associated with| Products
-    Benefit -->|Associated with| Meters
-
-    Products -.->|Apply| MeteredPrice
-```
-
 ## Quickstart
 
 Get up and running in 5 minutes

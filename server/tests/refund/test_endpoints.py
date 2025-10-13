@@ -54,7 +54,6 @@ async def create_order_and_payment(
         customer=customer,
         subtotal_amount=amount,
         tax_amount=tax_amount,
-        stripe_invoice_id=stripe_invoice_id,
         subscription=subscription,
     )
     payment = await ro.create_payment_transaction(

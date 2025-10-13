@@ -10,7 +10,7 @@ export const investors = [
   { name: 'Thomas Paul Mann', company: 'Raycast' },
   { name: 'Jorn van Dijk & Koen Bok', company: 'Framer' },
   { name: 'Harley Finkelstein', company: 'Shopify' },
-  { name: 'Jared Palmer', company: 'Vercel' },
+  { name: 'Jared Palmer', company: 'GitHub & Microsoft' },
   { name: 'Zeno Rocha', company: 'Resend' },
   { name: 'Steven Tey', company: 'Dub' },
   { name: 'Sébastien & Alexandre Chopin', company: 'Nuxt' },

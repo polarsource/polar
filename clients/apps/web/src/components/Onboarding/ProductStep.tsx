@@ -11,7 +11,7 @@ import { Form } from '@polar-sh/ui/components/ui/form'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useContext, useMemo, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { FadeUp } from '../Animated/FadeUp'
 import LogoIcon from '../Brand/LogoIcon'
@@ -29,6 +29,19 @@ type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
 
 export const ProductStep = () => {
   const [mode, setMode] = useState<'assistant' | 'manual'>('assistant')
+  const [isAssistantFinished, setIsAssistantFinished] = useState(false)
+  const [shouldShowSkip, setShouldShowSkip] = useState(false)
+  const { organization } = useContext(OrganizationContext)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isAssistantFinished) {
+        setShouldShowSkip(true)
+      }
+    }, 5000)
+
+    return () => clearTimeout(timer)
+  }, [isAssistantFinished])
 
   return (
     <div className="dark:md:bg-polar-950 flex flex-col pt-16 md:items-center md:p-16">
@@ -49,10 +62,40 @@ export const ProductStep = () => {
         </FadeUp>
 
         {mode === 'assistant' && (
-          <AssistantStep onEjectToManual={() => setMode('manual')} />
+          <AssistantStep
+            onEjectToManual={() => setMode('manual')}
+            onFinished={() => {
+              setShouldShowSkip(false)
+              setIsAssistantFinished(true)
+            }}
+          />
         )}
 
         {mode === 'manual' && <ProductForm />}
+
+        {shouldShowSkip && (
+          <FadeUp className="flex flex-col gap-y-2 p-8 md:p-0">
+            <div className="dark:text-polar-500 flex flex-row items-center justify-center gap-x-4 text-sm text-gray-500">
+              {mode === 'assistant' && (
+                <>
+                  <button
+                    className="dark:hover:text-polar-500 dark:hover:bg-polar-700 cursor-pointer rounded-full px-2.5 py-1 transition-colors duration-100 hover:bg-gray-100 hover:text-gray-500"
+                    onClick={() => setMode('manual')}
+                  >
+                    Configure manually
+                  </button>
+                  ·
+                </>
+              )}
+              <Link
+                href={`/dashboard/${organization.slug}`}
+                className="dark:hover:text-polar-500 dark:hover:bg-polar-700 rounded-full px-2.5 py-1 transition-colors duration-100 hover:bg-gray-100 hover:text-gray-500"
+              >
+                Skip onboarding
+              </Link>
+            </div>
+          </FadeUp>
+        )}
       </motion.div>
     </div>
   )
@@ -217,11 +260,6 @@ const ProductForm = () => {
           >
             Create Product
           </Button>
-          <Link href={`/dashboard/${organization.slug}`}>
-            <Button className="w-full" size="lg" variant="secondary">
-              Skip
-            </Button>
-          </Link>
         </FadeUp>
       </div>
     </Form>

@@ -7,18 +7,22 @@ import ArrowForwardOutlined from '@mui/icons-material/ArrowForwardOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { DefaultChatTransport } from 'ai'
+import Link from 'next/link'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FadeUp } from '../Animated/FadeUp'
 
 export const AssistantStep = ({
   onEjectToManual,
+  onFinished,
 }: {
   onEjectToManual: () => void
+  onFinished: () => void
 }) => {
   const { organization } = useContext(OrganizationContext)
   const [input, setInput] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -41,12 +45,33 @@ export const AssistantStep = ({
     )
   }, [messages])
 
+  const isFinished = useMemo(() => {
+    return messages.some((message) =>
+      message.parts.some(
+        (part) =>
+          part.type === 'tool-markAsDone' &&
+          (part.state === 'input-available' ||
+            part.state === 'output-available'),
+      ),
+    )
+  }, [messages])
+
+  useEffect(() => {
+    if (isFinished) {
+      onFinished()
+    }
+  }, [isFinished, onFinished])
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
     }
   }, [input])
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -90,7 +115,7 @@ export const AssistantStep = ({
                 <div
                   className={`text-sm ${
                     message.role === 'user'
-                      ? 'dark:bg-polar-800 rounded-full bg-gray-100 px-4 py-2'
+                      ? 'dark:bg-polar-800 rounded-2xl bg-gray-100 px-4 py-2'
                       : 'prose dark:prose-invert w-full dark:text-white'
                   }`}
                 >
@@ -209,43 +234,65 @@ export const AssistantStep = ({
                     if (part.type === 'tool-redirectToManualSetup') {
                       switch (part.state) {
                         case 'input-available':
-                        case 'output-available':
-                          switch (part.input.reason) {
-                            case 'unsupported_benefit_type':
-                              return (
-                                <div
-                                  key={`${message.id}-${index}`}
-                                  className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-gray-500"
-                                >
-                                  Sorry, but this configuration needs manual
-                                  input.
-                                  <Button
-                                    variant="secondary"
-                                    onClick={() => onEjectToManual()}
-                                    className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:border-polar-700 dark:hover:border-polar-700 border-gray-200 bg-white hover:border-gray-300 hover:bg-white"
-                                  >
-                                    Configure manually
-                                  </Button>
-                                </div>
-                              )
-                            case 'tool_call_error':
-                              return (
-                                <div
-                                  key={`${message.id}-${index}`}
-                                  className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-200 p-4 text-gray-500"
-                                >
-                                  Sorry, something went wrong.
-                                  <Button
-                                    variant="secondary"
-                                    onClick={() => onEjectToManual()}
-                                  >
-                                    Configure manually
-                                  </Button>
-                                </div>
-                              )
-                            default:
-                              return null
-                          }
+                        case 'output-available': {
+                          return (
+                            <div
+                              key={`${message.id}-${index}`}
+                              className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-center text-gray-500"
+                            >
+                              {part.input.reason ===
+                              'unsupported_benefit_type' ? (
+                                'Sorry, but this configuration needs manual input.'
+                              ) : part.input.reason === 'tool_call_error' ? (
+                                'Sorry, something went wrong.'
+                              ) : (
+                                <>
+                                  We&rsquo;re sorry this isn&rsquo;t working for
+                                  you.
+                                  <br />
+                                  Let&rsquo;s continue manually.
+                                </>
+                              )}
+                              <Button
+                                variant="secondary"
+                                className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:border-polar-700 border-gray-200 bg-white hover:border-gray-300 hover:bg-white"
+                                onClick={() => onEjectToManual()}
+                              >
+                                Configure manually
+                              </Button>
+                            </div>
+                          )
+                        }
+                        default:
+                          return null
+                      }
+                    }
+
+                    if (part.type === 'tool-markAsDone') {
+                      switch (part.state) {
+                        case 'input-available':
+                        case 'output-available': {
+                          const productIds = (part.input.productIds || []).join(
+                            ',',
+                          )
+
+                          const nextStep = `/dashboard/${organization.slug}/onboarding/integrate?productId=${productIds}`
+
+                          return (
+                            <div
+                              key={`${message.id}-${index}`}
+                              className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-gray-500"
+                            >
+                              You&rsquo;re all set! Now let&rsquo;s integrate
+                              your checkout flow.
+                              <Link href={nextStep}>
+                                <Button variant="default">
+                                  Integrate Checkout
+                                </Button>
+                              </Link>
+                            </div>
+                          )
+                        }
                         default:
                           return null
                       }
@@ -256,10 +303,11 @@ export const AssistantStep = ({
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} className="-mt-6" />
           </div>
         )}
 
-        {!hasRedirectedToManualSetup && (
+        {!hasRedirectedToManualSetup && !isFinished && (
           <form
             onSubmit={handleSubmit}
             className="dark:border-polar-700 flex shrink-0 flex-col gap-3 overflow-hidden rounded-b-3xl border first:rounded-t-3xl"

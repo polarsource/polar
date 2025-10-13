@@ -1,8 +1,8 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
+import { anthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
-import { openai } from '@ai-sdk/openai'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import {
   convertToModelMessages,
@@ -28,6 +28,20 @@ you'll be able to configure their account using some tools provided to you.
 # About Polar
 Polar acts a Merchant of Record, handling international sales taxes and other cumbersome compliance administration,
 so that users can focus on building their product and business.
+
+<example prompt="What is Polar?">
+Polar acts as a Merchant of Record, handling international sales taxes and other cumbersome compliance administration, so that you can focus on building your product and business.
+
+You can sell various things on Polar, typically configured as "Products" that grant "Benefits" to your customers. Benefits can include things like:
+
+ - License keys for software
+ - Access to private GitHub repositories or Discord servers
+ - File downloads of any kind
+ - Custom benefits, which can be used for general software access or other unique offerings
+ - Meter credits for usage-based billing
+
+What kind of product or service are you looking to sell?
+</example>
 
 # Configuration setup
 Polar can be configured in a multitude of ways, depending on what you want to sell.
@@ -119,13 +133,17 @@ ${sharedSystemPrompt}
 Your task is to determine whether the user request requires manual setup, follow-up questions, and if the subsequent LLM call
 will require MCP tool access to act on the users request.
 
-You will now be handed the users' prompt.
+If you notice any frustration with the onboarding assistant from the user, also opt for manual setup.
+
+You will now be handed the last three user messages from the conversation, separated by "---", oldest message first.
+
+Always respond in JSON format, and do not include any extra text.
 `
 
 const conversationalSystemPrompt = `
 ${sharedSystemPrompt}
 
-### Product Configuration
+# Product Configuration
 
 As mentioned before, products can be configured to grant one or more benefits (also sometimes called "entitlements").
 
@@ -163,6 +181,7 @@ So, in general, you should follow this order:
 - If you use the "renderProductsPreview" tool, do not repeat the preview in the text response after that.
 - If a benefit type is unsupported, immediately use the "redirectToManualSetup" tool to redirect the user to the manual setup page. There is no use in collecting more information in that case since they'll have to manually re-enter everything anyway.
 - Remember that you are helping the user with their initial setup, you're the first thing they see after signing up, so don't ask for pre-existing information (ID's, meters, …). Assume you'll have to create from scratch.
+- Be friendly and helpful if people ask questions like "What is Polar?" or "What can I sell?".
 
 The user will now describe their product and you will start the configuration assistant.
 `
@@ -283,21 +302,27 @@ export async function POST(req: Request) {
 
   let tools = {}
 
-  const lastUserMessage = messages.reverse().find((m) => m.role === 'user')
+  const lastUserMessages = messages.reverse().filter((m) => m.role === 'user')
 
-  if (!lastUserMessage) {
+  if (lastUserMessages.length === 0) {
     // Should never happen
     return new Response('No user message found', { status: 400 })
   }
 
-  const userMessage = lastUserMessage.parts
-    .filter((part) => part.type === 'text')
-    .map((part) => part.text)
-    .join(' ')
+  const userMessage = lastUserMessages
+    .slice(0, 3)
+    .reverse()
+    .map((m) =>
+      m.parts
+        .filter((part) => part.type === 'text')
+        .map((part) => part.text)
+        .join(' '),
+    )
+    .join('\n---\n')
 
   console.log({ hasToolAccess })
 
-  if (true || !hasToolAccess) {
+  if (!hasToolAccess) {
     console.log(`[${performance.now() - start}ms] Routing user message`)
 
     const router = await generateObject({
@@ -351,10 +376,25 @@ export async function POST(req: Request) {
     description: 'Request the user to manually configure the product instead',
     inputSchema: z.object({
       reason: z
-        .enum(['unsupported_benefit_type', 'tool_call_error'])
+        .enum(['unsupported_benefit_type', 'tool_call_error', 'user_requested'])
         .describe(
           'The reason why the user should manually configure the product',
         ),
+    }),
+  })
+
+  const markAsDone = tool({
+    description: `Mark the onboarding as done call, this tool once products (and their related benefits) have been fully created.
+    
+You can call this tool only once as it will end the onboarding flow, so make sure your work is done.
+However, don't specifically ask if the user wants anything else before calling this tool. Use your own judgement
+based on the conversation history whether you're done.
+
+`,
+    inputSchema: z.object({
+      productIds: z
+        .array(z.string())
+        .describe('The UUIDs of the created products'),
     }),
   })
 
@@ -366,11 +406,12 @@ export async function POST(req: Request) {
     // Quick & cheap models can say "no" too :-)
     model:
       requiresManualSetup || !isRelevant
-        ? google('gemini-2.5-flash-lite')
-        : openai('gpt-5-mini'),
+        ? google('gemini-2.5-flash')
+        : anthropic('claude-sonnet-4-5'),
     system: conversationalSystemPrompt,
     tools: {
       redirectToManualSetup,
+      ...(!requiresManualSetup ? { markAsDone } : {}), // only allow done if we can actually create products
       ...tools,
     },
     toolChoice: requiresManualSetup

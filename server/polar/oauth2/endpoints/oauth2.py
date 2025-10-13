@@ -65,7 +65,7 @@ async def list(
 @router.post(
     "/register",
     summary="Create Client",
-    tags=["clients"],
+    tags=["clients", APITag.public],
     name="oauth2:create_client",
 )
 async def create(
@@ -84,7 +84,7 @@ async def create(
 
 @router.get(
     "/register/{client_id}",
-    tags=["clients"],
+    tags=["clients", APITag.public],
     summary="Get Client",
     name="oauth2:get_client",
 )
@@ -103,7 +103,7 @@ async def get(
 
 @router.put(
     "/register/{client_id}",
-    tags=["clients"],
+    tags=["clients", APITag.public],
     summary="Update Client",
     name="oauth2:update_client",
 )
@@ -124,7 +124,7 @@ async def update(
 
 @router.delete(
     "/register/{client_id}",
-    tags=["clients"],
+    tags=["clients", APITag.public],
     summary="Delete Client",
     name="oauth2:delete_client",
 )

@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FadeUp } from '../Animated/FadeUp'
+import LogoIcon from '../Brand/LogoIcon'
 
 export const AssistantStep = ({
   onEjectToManual,
@@ -144,11 +145,13 @@ export const AssistantStep = ({
                     }
 
                     if (part.type === 'dynamic-tool') {
+                      console.log(part.input)
+
                       const labels = {
                         polar_products_list: {
-                          input: 'Finding products…',
+                          input: 'Listing products…',
                           output: 'Products found.',
-                          error: 'Error finding products.',
+                          error: 'Error listing products.',
                         },
                         polar_products_create: {
                           input: 'Creating product…',
@@ -156,14 +159,14 @@ export const AssistantStep = ({
                           error: 'Error creating product.',
                         },
                         polar_products_update_benefits: {
-                          input: 'Updating product benefits…',
-                          output: 'Product benefits updated.',
-                          error: 'Error updating product benefits.',
+                          input: 'Assigning benefits to product…',
+                          output: 'Benefits assigned to product.',
+                          error: 'Error assigning benefits.',
                         },
                         polar_benefits_list: {
-                          input: 'Finding benefits…',
+                          input: 'Listing benefits…',
                           output: 'Benefits found.',
-                          error: 'Error finding benefits.',
+                          error: 'Error listing benefits.',
                         },
                         polar_benefits_create: {
                           input: 'Creating benefit…',
@@ -176,9 +179,9 @@ export const AssistantStep = ({
                           error: 'Error updating benefit.',
                         },
                         polar_meters_list: {
-                          input: 'Finding meters…',
+                          input: 'Listing meters…',
                           output: 'Meters found.',
-                          error: 'Error finding meters.',
+                          error: 'Error listing meters.',
                         },
                         polar_meters_create: {
                           input: 'Creating meter…',
@@ -187,48 +190,34 @@ export const AssistantStep = ({
                         },
                       }
 
-                      switch (part.state) {
-                        case 'input-streaming':
-                        case 'input-available':
-                          return (
-                            <p
-                              className="dark:text-polar-500 text-gray-500"
-                              key={`${message.id}-${index}`}
-                            >
-                              {labels[part.toolName as keyof typeof labels]
-                                ?.input ?? 'Working my magic…'}
-                            </p>
-                          )
-                        case 'output-available': {
-                          const label =
-                            labels[part.toolName as keyof typeof labels]?.output
-
-                          if (!label) {
-                            return null
-                          }
-
-                          return (
-                            <p
-                              className="dark:text-polar-500 text-gray-500"
-                              key={`${message.id}-${index}`}
-                            >
-                              {label}
-                            </p>
-                          )
+                      const label = (() => {
+                        switch (part.state) {
+                          case 'input-streaming':
+                          case 'input-available':
+                            return (
+                              labels[part.toolName as keyof typeof labels]
+                                ?.input ?? 'Working my magic…'
+                            )
+                          case 'output-available':
+                            return labels[part.toolName as keyof typeof labels]
+                              ?.output
+                          case 'output-error':
+                            return (
+                              labels[part.toolName as keyof typeof labels]
+                                ?.error ?? 'Something went wrong.'
+                            )
                         }
-                        case 'output-error':
-                          return (
-                            <p
-                              className="dark:text-polar-500 text-gray-500"
-                              key={`${message.id}-${index}`}
-                            >
-                              {labels[part.toolName as keyof typeof labels]
-                                ?.error ?? 'Something went wrong.'}
-                            </p>
-                          )
-                        default:
-                          return null
-                      }
+                      })()
+
+                      return (
+                        <p
+                          className="dark:text-polar-500 flex items-center gap-1 text-gray-500"
+                          key={`${message.id}-${index}`}
+                        >
+                          <LogoIcon size={24} className="-ml-1.5" />
+                          {label}
+                        </p>
+                      )
                     }
 
                     if (part.type === 'tool-redirectToManualSetup') {

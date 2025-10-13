@@ -114,7 +114,19 @@ implementation details with better developer ergonomics.
 
 ## IP Allowlist
 
-If you are using a firewall or a reverse proxy that requires IP allowlisting, here are the IPs you need to allow:
+If you are using a firewall or a reverse proxy that requires IP allowlisting, here are the IPs range you need to allow:
+
+<Danger>
+  **New IP ranges**
+
+Starting **October 27th, 2025**, new IP ranges will be added:
+
+```
+74.220.50.0/24
+74.220.58.0/24
+```
+
+</Danger>
 
 <CodeGroup>
 
@@ -122,12 +134,18 @@ If you are using a firewall or a reverse proxy that requires IP allowlisting, he
 3.134.238.10
 3.129.111.220
 52.15.118.168
+
+74.220.50.0/24
+74.220.58.0/24
 ```
 
 ```txt Sandbox
 3.134.238.10
 3.129.111.220
 52.15.118.168
+
+74.220.50.0/24
+74.220.58.0/24
 ```
 
 </CodeGroup>

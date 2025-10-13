@@ -75,6 +75,11 @@ export default async function Page(props: {
       error: benefitGrantsError,
       response: benefitGrantsResponse,
     },
+    {
+      data: claimedSubscriptions,
+      error: claimedSubscriptionsError,
+      response: claimedSubscriptionsResponse,
+    },
   ] = await Promise.all([
     api.GET('/v1/customer-portal/subscriptions/', {
       params: {
@@ -95,11 +100,16 @@ export default async function Page(props: {
       },
       ...cacheConfig,
     }),
+
+    api.GET('/v1/customer-portal/seats/subscriptions', {
+      ...cacheConfig,
+    }),
   ])
 
   if (
     subscriptionsResponse.status === 401 ||
-    benefitGrantsResponse.status === 401
+    benefitGrantsResponse.status === 401 ||
+    claimedSubscriptionsResponse.status === 401
   ) {
     redirect(`/${organization.slug}/portal/request`)
   }
@@ -112,11 +122,16 @@ export default async function Page(props: {
     throw benefitGrantsError
   }
 
+  if (claimedSubscriptionsError) {
+    throw claimedSubscriptionsError
+  }
+
   return (
     <ClientPage
       organization={organization}
       products={products}
       subscriptions={subscriptions}
+      claimedSubscriptions={claimedSubscriptions ?? []}
       benefitGrants={benefitGrants}
       customerSessionToken={searchParams.customer_session_token as string}
     />

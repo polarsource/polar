@@ -8,12 +8,14 @@ const ClientPage = ({
   organization,
   products,
   subscriptions,
+  claimedSubscriptions,
   benefitGrants,
   customerSessionToken,
 }: {
   organization: schemas['Organization']
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['ListResource_CustomerSubscription_']
+  claimedSubscriptions: schemas['CustomerSubscription'][]
   benefitGrants: schemas['ListResource_CustomerBenefitGrant_']
   customerSessionToken: string
 }) => {
@@ -23,6 +25,7 @@ const ClientPage = ({
         organization={organization}
         products={products}
         subscriptions={subscriptions.items ?? []}
+        claimedSubscriptions={claimedSubscriptions}
         benefitGrants={benefitGrants.items ?? []}
         customerSessionToken={customerSessionToken}
       />

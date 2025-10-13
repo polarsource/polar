@@ -13,6 +13,7 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.customer.schemas.state import CustomerState
 from polar.exceptions import PolarError, ResourceNotFound
+from polar.integrations.loops.service import loops as loops_service
 from polar.kit.crypto import generate_token
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
@@ -40,6 +41,9 @@ from polar.models.webhook_endpoint import (
 )
 from polar.oauth2.constants import WEBHOOK_SECRET_PREFIX
 from polar.organization.resolver import get_payload_organization
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 from polar.webhook.schemas import (
     WebhookEndpointCreate,
     WebhookEndpointUpdate,
@@ -121,6 +125,16 @@ class WebhookService:
             organization=organization,
         )
         session.add(endpoint)
+
+        # Store it in Loops in case we need to announce technical things regarding webhooks
+        user_organizations = await user_organization_service.list_by_org(
+            session, organization.id
+        )
+        for user_organization in user_organizations:
+            await loops_service.user_update(
+                session, user_organization.user, webhooksCreated=True
+            )
+
         return endpoint
 
     async def update_endpoint(

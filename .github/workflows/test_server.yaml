@@ -246,7 +246,10 @@ jobs:
 
       - name: 🚀 Start API server
         working-directory: ./server
-        run: uv run task api &
+        run: |
+          uv run task api > /tmp/api-server.log 2>&1 &
+          echo $! > /tmp/api-server.pid
+          echo "API server started with PID $(cat /tmp/api-server.pid)"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -264,7 +267,27 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: ⏳ Wait for API server
-        run: timeout 30 bash -c 'until curl -sf http://127.0.0.1:8000/healthz; do sleep 1; done'
+        run: |
+          echo "Waiting for API server to be ready..."
+          for i in {1..60}; do
+            if curl -sf http://127.0.0.1:8000/healthz > /dev/null 2>&1; then
+              echo "✅ API server is ready!"
+              exit 0
+            fi
+            if [ $i -eq 30 ]; then
+              echo "⚠️ Server not ready after 30s, checking logs..."
+              tail -50 /tmp/api-server.log || true
+            fi
+            if ! kill -0 $(cat /tmp/api-server.pid) 2>/dev/null; then
+              echo "❌ API server process died!"
+              tail -100 /tmp/api-server.log || true
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "❌ Timeout waiting for API server"
+          tail -100 /tmp/api-server.log || true
+          exit 1
 
       - name: 🔄 Generate client and check for changes
         working-directory: ./clients

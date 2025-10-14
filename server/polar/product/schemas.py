@@ -206,9 +206,17 @@ class ProductPriceSeatTiers(Schema):
 
             if next_tier.min_seats != current.max_seats + 1:
                 raise ValueError(
-                    f"Gap or overlap between tiers: "
-                    f"tier ending at {current.max_seats} and tier starting at {next_tier.min_seats}"
+                    "Gap or overlap between tiers: "
+                    + f"tier ending at {current.max_seats} and tier starting at {next_tier.min_seats}"
                 )
+
+        # Ensure last tier has unlimited max_seats
+        last_tier = sorted_tiers[-1]
+        if last_tier.max_seats is not None:
+            raise ValueError(
+                "Last tier must have unlimited max_seats (None). "
+                + f"Currently set to {last_tier.max_seats}."
+            )
 
         return sorted_tiers
 

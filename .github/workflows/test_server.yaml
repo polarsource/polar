@@ -246,6 +246,8 @@ jobs:
         working-directory: ./server
         env:
           POLAR_ENV: development
+          POLAR_POSTGRES_DATABASE: polar_test
+          POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
         run: |
           uv run task api > /tmp/api-server.log 2>&1 &
           echo $! > /tmp/api-server.pid

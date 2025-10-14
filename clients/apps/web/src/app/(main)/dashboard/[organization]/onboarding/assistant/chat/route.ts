@@ -21,11 +21,11 @@ import { cookies } from 'next/headers'
 import { PostHog } from 'posthog-node'
 import { z } from 'zod'
 
-export const maxDuration = 30
-
-const phClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
-  host: 'https://us.i.posthog.com',
-})
+const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
+  ? new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
+      host: 'https://us.i.posthog.com',
+    })
+  : null
 
 const sharedSystemPrompt = `
 You are a helpful assistant that helps a new user configure their Polar account.
@@ -233,7 +233,6 @@ async function generateOAT(
   })
 
   if (error) {
-    console.error('Failed to generate OAT:', error)
     throw new Error('Failed to generate OAT')
   }
 
@@ -257,13 +256,13 @@ async function getMCPClient(userId: string, organizationId: string) {
     const oat = await generateOAT(userId, organizationId)
 
     const httpTransport = new StreamableHTTPClientTransport(
-      new URL(process.env.GRAM_URL!),
+      new URL(process.env.GRAM_ONBOARDING_MCP_URL!),
       {
         requestInit: {
           headers: {
             Authorization: `Bearer ${process.env.GRAM_API_KEY}`,
             'MCP-POLAR-SERVER-URL':
-              process.env.GRAM_SERVER_URL ?? process.env.NEXT_PUBLIC_API_URL!,
+              process.env.GRAM_API_URL ?? process.env.NEXT_PUBLIC_API_URL!,
             'MCP-POLAR-ACCESS-TOKEN': oat,
           },
         },
@@ -274,7 +273,6 @@ async function getMCPClient(userId: string, organizationId: string) {
       transport: httpTransport,
     })
 
-    console.log('MCP client created successfully')
     return mcpClient
   } catch (error) {
     console.error('Failed to create MCP client:', error)
@@ -283,17 +281,10 @@ async function getMCPClient(userId: string, organizationId: string) {
 }
 
 export async function POST(req: Request) {
-  const start = performance.now()
-
-  console.log(`[${performance.now() - start}ms] New onboarding chat request`)
-
-  // Get authenticated user
   const user = await getAuthenticatedUser()
   if (!user) {
     return new Response('Unauthorized', { status: 401 })
   }
-
-  console.log(`[${performance.now() - start}ms] Authenticated user ${user.id}`)
 
   const {
     messages,
@@ -316,7 +307,6 @@ export async function POST(req: Request) {
   const lastUserMessages = messages.reverse().filter((m) => m.role === 'user')
 
   if (lastUserMessages.length === 0) {
-    // Should never happen
     return new Response('No user message found', { status: 400 })
   }
 
@@ -331,17 +321,25 @@ export async function POST(req: Request) {
     )
     .join('\n---\n')
 
-  console.log({ hasToolAccess })
-
-  if (!hasToolAccess) {
-    console.log(`[${performance.now() - start}ms] Routing user message`)
-
-    const router = await generateObject({
-      model: withTracing(google('gemini-2.5-flash-lite'), phClient, {
+  const gemini = phClient
+    ? withTracing(google('gemini-2.5-flash-lite'), phClient, {
         posthogDistinctId: user.id,
         posthogTraceId: conversationId,
         posthogGroups: { organization: organizationId },
-      }),
+      })
+    : google('gemini-2.5-flash-lite')
+
+  const sonnet = phClient
+    ? withTracing(anthropic('claude-sonnet-4-5'), phClient, {
+        posthogDistinctId: user.id,
+        posthogTraceId: conversationId,
+        posthogGroups: { organization: organizationId },
+      })
+    : anthropic('claude-sonnet-4-5')
+
+  if (!hasToolAccess) {
+    const router = await generateObject({
+      model: gemini,
       output: 'object',
       schema: z.object({
         isRelevant: z
@@ -364,9 +362,6 @@ export async function POST(req: Request) {
       prompt: userMessage,
     })
 
-    console.log(`[${performance.now() - start}ms] Router made decision`)
-    console.log({ decision: router.object })
-
     if (!router.object.isRelevant) {
       isRelevant = false
     } else {
@@ -381,10 +376,8 @@ export async function POST(req: Request) {
   }
 
   if (hasToolAccess || requiresToolAccess) {
-    console.log(`[${performance.now() - start}ms] Getting MCP client`)
     const mcpClient = await getMCPClient(user.id, organizationId)
     tools = await mcpClient.tools()
-    console.log(`[${performance.now() - start}ms] MCP tools loaded`)
   }
 
   const redirectToManualSetup = tool({
@@ -413,23 +406,11 @@ based on the conversation history whether you're done.
     }),
   })
 
-  console.log(`[${performance.now() - start}ms] Start generating response`)
-
   let streamStarted = false
 
   const result = streamText({
     // Quick & cheap models can say "no" too :-)
-    model: withTracing(
-      requiresManualSetup || !isRelevant
-        ? google('gemini-2.5-flash')
-        : anthropic('claude-sonnet-4-5'),
-      phClient,
-      {
-        posthogDistinctId: user.id,
-        posthogTraceId: conversationId,
-        posthogGroups: { organization: organizationId },
-      },
-    ),
+    model: requiresManualSetup || !isRelevant ? gemini : sonnet,
     system: conversationalSystemPrompt,
     tools: {
       redirectToManualSetup,
@@ -445,11 +426,12 @@ based on the conversation history whether you're done.
     onChunk: () => {
       if (!streamStarted) {
         streamStarted = true
-        console.log(`[${performance.now() - start}ms] First token streamed`)
       }
     },
     onFinish: () => {
-      phClient.flush()
+      if (phClient) {
+        phClient.flush()
+      }
     },
   })
 

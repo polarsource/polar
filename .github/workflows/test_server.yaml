@@ -150,8 +150,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     continue-on-error: true
-    env:
-      POLAR_ENV: testing
 
     services:
       postgres:
@@ -246,6 +244,8 @@ jobs:
 
       - name: 🚀 Start API server
         working-directory: ./server
+        env:
+          POLAR_ENV: development
         run: |
           uv run task api > /tmp/api-server.log 2>&1 &
           echo $! > /tmp/api-server.pid

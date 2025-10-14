@@ -18076,15 +18076,12 @@ export interface components {
        * @description The currency.
        */
       price_currency: string
-      /**
-       * Price Per Seat
-       * @description The price per seat in cents.
-       */
-      price_per_seat: number
+      /** @description Tiered pricing based on seat quantity */
+      seat_tiers: components['schemas']['ProductPriceSeatTiers']
     }
     /**
      * ProductPriceSeatBasedCreate
-     * @description Schema to create a seat-based price.
+     * @description Schema to create a seat-based price with volume-based tiers.
      */
     ProductPriceSeatBasedCreate: {
       /**
@@ -18098,11 +18095,40 @@ export interface components {
        * @default usd
        */
       price_currency: string
+      /** @description Tiered pricing based on seat quantity */
+      seat_tiers: components['schemas']['ProductPriceSeatTiers']
+    }
+    /**
+     * ProductPriceSeatTier
+     * @description A pricing tier for seat-based pricing.
+     */
+    ProductPriceSeatTier: {
+      /**
+       * Min Seats
+       * @description Minimum number of seats (inclusive)
+       */
+      min_seats: number
+      /**
+       * Max Seats
+       * @description Maximum number of seats (inclusive). None for unlimited.
+       */
+      max_seats?: number | null
       /**
        * Price Per Seat
-       * @description The price per seat in cents.
+       * @description Price per seat in cents for this tier
        */
       price_per_seat: number
+    }
+    /**
+     * ProductPriceSeatTiers
+     * @description List of pricing tiers for seat-based pricing.
+     */
+    ProductPriceSeatTiers: {
+      /**
+       * Tiers
+       * @description List of pricing tiers
+       */
+      tiers: components['schemas']['ProductPriceSeatTier'][]
     }
     /**
      * ProductPriceType

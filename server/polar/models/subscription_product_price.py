@@ -55,7 +55,7 @@ class SubscriptionProductPrice(RecordModel):
             assert amount is not None, "amount must be provided for custom prices"
         elif isinstance(price, ProductPriceSeatUnit):
             assert seats is not None, "seats must be provided for seat-based prices"
-            amount = price.price_per_seat * seats
+            amount = price.calculate_amount(seats)
         else:
             amount = 0
         return cls(product_price=price, amount=amount)

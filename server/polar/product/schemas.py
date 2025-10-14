@@ -2,8 +2,9 @@ import builtins
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Discriminator, Field, Tag, computed_field
+from pydantic import UUID4, Discriminator, Field, Tag, computed_field, field_validator
 from pydantic.aliases import AliasChoices
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.benefit.schemas import Benefit, BenefitID, BenefitPublic
 from polar.custom_field.attachment import (
@@ -152,14 +153,76 @@ class ProductPriceFreeCreate(ProductPriceCreateBase):
         return ProductPriceFreeModel
 
 
+class ProductPriceSeatTier(Schema):
+    """
+    A pricing tier for seat-based pricing.
+    """
+
+    min_seats: int = Field(ge=1, description="Minimum number of seats (inclusive)")
+    max_seats: int | None = Field(
+        default=None,
+        ge=1,
+        description="Maximum number of seats (inclusive). None for unlimited.",
+    )
+    price_per_seat: PriceAmount = Field(
+        description="Price per seat in cents for this tier"
+    )
+
+
+class ProductPriceSeatTiers(Schema):
+    """
+    List of pricing tiers for seat-based pricing.
+    """
+
+    tiers: list[ProductPriceSeatTier] = Field(
+        min_length=1, description="List of pricing tiers"
+    )
+
+    @field_validator("tiers")
+    @classmethod
+    def validate_tiers(
+        cls, v: list[ProductPriceSeatTier]
+    ) -> list[ProductPriceSeatTier]:
+        """Validate that tiers form continuous ranges without gaps or overlaps."""
+        if not v:
+            raise ValueError("At least one tier is required")
+
+        # Sort by min_seats
+        sorted_tiers = sorted(v, key=lambda t: t.min_seats)
+
+        # Ensure first tier starts at 1
+        if sorted_tiers[0].min_seats != 1:
+            raise ValueError("First tier must start at min_seats=1")
+
+        # Validate continuous ranges without gaps/overlaps
+        for i in range(len(sorted_tiers) - 1):
+            current = sorted_tiers[i]
+            next_tier = sorted_tiers[i + 1]
+
+            if current.max_seats is None:
+                raise ValueError(
+                    "Only the last tier can have unlimited max_seats (None)"
+                )
+
+            if next_tier.min_seats != current.max_seats + 1:
+                raise ValueError(
+                    f"Gap or overlap between tiers: "
+                    f"tier ending at {current.max_seats} and tier starting at {next_tier.min_seats}"
+                )
+
+        return sorted_tiers
+
+
 class ProductPriceSeatBasedCreate(ProductPriceCreateBase):
     """
-    Schema to create a seat-based price.
+    Schema to create a seat-based price with volume-based tiers.
     """
 
     amount_type: Literal[ProductPriceAmountType.seat_based]
     price_currency: PriceCurrency = "usd"
-    price_per_seat: PriceAmount = Field(description="The price per seat in cents.")
+    seat_tiers: ProductPriceSeatTiers = Field(
+        description="Tiered pricing based on seat quantity"
+    )
 
     def get_model_class(self) -> builtins.type[ProductPriceSeatUnitModel]:
         return ProductPriceSeatUnitModel
@@ -397,7 +460,24 @@ class ProductPriceFreeBase(ProductPriceBase):
 class ProductPriceSeatBasedBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.seat_based]
     price_currency: str = Field(description="The currency.")
-    price_per_seat: int = Field(description="The price per seat in cents.")
+    seat_tiers: ProductPriceSeatTiers = Field(
+        description="Tiered pricing based on seat quantity"
+    )
+
+    @computed_field(
+        description="Price per seat in cents from the first tier.",
+        deprecated=(
+            "Use `seat_tiers` instead. "
+            "The tiered pricing system supports volume-based pricing with multiple tiers. "
+            "This field returns only the first tier's price for backward compatibility."
+        ),
+    )
+    def price_per_seat(self) -> SkipJsonSchema[int]:
+        """Return price_per_seat from first tier for backward compatibility."""
+        if not self.seat_tiers.tiers:
+            # This shouldn't happen due to validation, but protect against it
+            raise ValueError("seat_tiers must contain at least one tier")
+        return self.seat_tiers.tiers[0].price_per_seat
 
 
 class LegacyRecurringProductPriceMixin:

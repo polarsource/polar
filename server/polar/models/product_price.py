@@ -1,6 +1,6 @@
 from decimal import Decimal
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -18,6 +18,7 @@ from sqlalchemy import (
     func,
     type_coerce,
 )
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Mapped,
@@ -50,6 +51,20 @@ class ProductPriceAmountType(StrEnum):
     free = "free"
     metered_unit = "metered_unit"
     seat_based = "seat_based"
+
+
+class SeatTier(TypedDict):
+    """A single pricing tier for seat-based pricing."""
+
+    min_seats: int
+    max_seats: int | None
+    price_per_seat: int
+
+
+class SeatTiersData(TypedDict):
+    """The structure of the seat_tiers JSONB column."""
+
+    tiers: list[SeatTier]
 
 
 class HasPriceCurrency:
@@ -371,7 +386,25 @@ class ProductPriceSeatUnit(NewProductPrice, HasPriceCurrency, ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.seat_based]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.seat_based
     )
-    price_per_seat: Mapped[int] = mapped_column(Integer, nullable=True)
+    seat_tiers: Mapped[SeatTiersData] = mapped_column(
+        postgresql.JSONB,
+        nullable=True,
+    )
+
+    def get_tier_for_seats(self, seats: int) -> SeatTier:
+        for tier in self.seat_tiers.get("tiers", []):
+            min_seats = tier["min_seats"]
+            max_seats = tier.get("max_seats")
+            if seats >= min_seats and (max_seats is None or seats <= max_seats):
+                return tier
+        raise ValueError(f"No tier found for {seats} seats")
+
+    def get_price_per_seat(self, seats: int) -> int:
+        tier = self.get_tier_for_seats(seats)
+        return tier["price_per_seat"]
+
+    def calculate_amount(self, seats: int) -> int:
+        return self.get_price_per_seat(seats) * seats
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,

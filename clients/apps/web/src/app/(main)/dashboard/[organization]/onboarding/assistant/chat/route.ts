@@ -137,7 +137,8 @@ If you notice any frustration with the onboarding assistant from the user, also 
 
 You will now be handed the last three user messages from the conversation, separated by "---", oldest message first.
 
-Always respond in JSON format, and do not include any extra text.
+Always respond in JSON format with the JSON object ONLY and do not include any extra text.
+Do not return Markdown formatting or code fences.
 `
 
 const conversationalSystemPrompt = `
@@ -254,7 +255,7 @@ async function getMCPClient(userId: string, organizationId: string) {
           headers: {
             Authorization: `Bearer ${process.env.GRAM_API_KEY}`,
             'MCP-POLAR-SERVER-URL':
-              process.env.GRAM_SERVER_URL ?? process.env.NEXT_PUBLIC_API_URL,
+              process.env.GRAM_SERVER_URL ?? process.env.NEXT_PUBLIC_API_URL!,
             'MCP-POLAR-ACCESS-TOKEN': oat,
           },
         },

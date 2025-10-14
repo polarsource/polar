@@ -11,7 +11,56 @@ import Link from 'next/link'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FadeUp } from '../Animated/FadeUp'
-import LogoIcon from '../Brand/LogoIcon'
+import { ToolCallGroup } from './ToolCallGroup'
+
+type MessagePart = {
+  type: string
+  [key: string]: unknown
+}
+
+type RenderableItem =
+  | { type: 'single'; part: MessagePart; index: number }
+  | { type: 'group'; parts: MessagePart[]; startIndex: number }
+
+// Group consecutive dynamic-tool parts together
+const groupMessageParts = (parts: MessagePart[]): RenderableItem[] => {
+  const result: RenderableItem[] = []
+  let currentGroup: MessagePart[] = []
+  let groupStartIndex = 0
+
+  parts
+    .filter(({ type }) => type !== 'step-start')
+    .forEach((part, index) => {
+      if (part.type === 'dynamic-tool') {
+        if (currentGroup.length === 0) {
+          groupStartIndex = index
+        }
+        currentGroup.push(part)
+      } else {
+        // Non-dynamic-tool part breaks the group
+        if (currentGroup.length > 0) {
+          result.push({
+            type: 'group',
+            parts: currentGroup,
+            startIndex: groupStartIndex,
+          })
+          currentGroup = []
+        }
+        result.push({ type: 'single', part, index })
+      }
+    })
+
+  // Don't forget the last group if we ended with dynamic-tool parts
+  if (currentGroup.length > 0) {
+    result.push({
+      type: 'group',
+      parts: currentGroup,
+      startIndex: groupStartIndex,
+    })
+  }
+
+  return result
+}
 
 export const AssistantStep = ({
   onEjectToManual,
@@ -94,6 +143,8 @@ export const AssistantStep = ({
     }
   }
 
+  console.log(messages)
+
   return (
     <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4">
       <div className="dark:border-polar-700 flex flex-col">
@@ -101,7 +152,7 @@ export const AssistantStep = ({
           <div
             className={twMerge(
               'dark:border-polar-700 flex h-full max-h-[640px] flex-1 flex-col gap-y-6 overflow-y-auto rounded-t-3xl border border-gray-200 p-6',
-              hasRedirectedToManualSetup
+              hasRedirectedToManualSetup || isFinished
                 ? 'rounded-b-3xl border-b'
                 : 'border-b-0',
             )}
@@ -117,178 +168,118 @@ export const AssistantStep = ({
                   className={`text-sm ${
                     message.role === 'user'
                       ? 'dark:bg-polar-800 rounded-2xl bg-gray-100 px-4 py-2'
-                      : 'prose dark:prose-invert w-full dark:text-white'
+                      : 'prose dark:prose-invert w-full space-y-4 dark:text-white'
                   }`}
                 >
-                  {message.parts.map((part, index) => {
-                    if (part.type === 'text') {
-                      return (
-                        <MemoizedMarkdown
-                          key={`${message.id}-${index}`}
-                          content={part.text}
-                        />
-                      )
-                    }
-
-                    if (part.type === 'reasoning') {
-                      if (part.state === 'streaming') {
+                  {groupMessageParts(message.parts as MessagePart[]).map(
+                    (item) => {
+                      if (item.type === 'group') {
                         return (
-                          <p
-                            key={`${message.id}-${index}`}
-                            className="dark:text-polar-500 animate-pulse text-sm italic text-gray-500"
-                          >
-                            Thinking…
-                          </p>
+                          <ToolCallGroup
+                            key={`${message.id}-group-${item.startIndex}`}
+                            parts={item.parts as any}
+                            messageId={message.id}
+                          />
                         )
                       }
-                      return null
-                    }
 
-                    if (part.type === 'dynamic-tool') {
-                      console.log(part.input)
+                      const part = item.part
+                      const index = item.index
 
-                      const labels = {
-                        polar_products_list: {
-                          input: 'Listing products…',
-                          output: 'Products found.',
-                          error: 'Error listing products.',
-                        },
-                        polar_products_create: {
-                          input: 'Creating product…',
-                          output: 'Product created.',
-                          error: 'Error creating product.',
-                        },
-                        polar_products_update_benefits: {
-                          input: 'Assigning benefits to product…',
-                          output: 'Benefits assigned to product.',
-                          error: 'Error assigning benefits.',
-                        },
-                        polar_benefits_list: {
-                          input: 'Listing benefits…',
-                          output: 'Benefits found.',
-                          error: 'Error listing benefits.',
-                        },
-                        polar_benefits_create: {
-                          input: 'Creating benefit…',
-                          output: 'Benefit created.',
-                          error: 'Error creating benefit.',
-                        },
-                        polar_benefits_update: {
-                          input: 'Updating benefit…',
-                          output: 'Benefit updated.',
-                          error: 'Error updating benefit.',
-                        },
-                        polar_meters_list: {
-                          input: 'Listing meters…',
-                          output: 'Meters found.',
-                          error: 'Error listing meters.',
-                        },
-                        polar_meters_create: {
-                          input: 'Creating meter…',
-                          output: 'Meter created.',
-                          error: 'Error creating meter.',
-                        },
+                      if (part.type === 'text') {
+                        return (
+                          <MemoizedMarkdown
+                            key={`${message.id}-${index}`}
+                            content={(part as any).text}
+                          />
+                        )
                       }
 
-                      const label = (() => {
-                        switch (part.state) {
-                          case 'input-streaming':
+                      if (part.type === 'reasoning') {
+                        if ((part as any).state === 'streaming') {
+                          return (
+                            <p
+                              key={`${message.id}-${index}`}
+                              className="dark:text-polar-500 animate-pulse text-sm italic text-gray-500"
+                            >
+                              Thinking…
+                            </p>
+                          )
+                        }
+                        return null
+                      }
+
+                      if (part.type === 'tool-redirectToManualSetup') {
+                        switch ((part as any).state) {
                           case 'input-available':
+                          case 'output-available': {
                             return (
-                              labels[part.toolName as keyof typeof labels]
-                                ?.input ?? 'Working my magic…'
-                            )
-                          case 'output-available':
-                            return labels[part.toolName as keyof typeof labels]
-                              ?.output
-                          case 'output-error':
-                            return (
-                              labels[part.toolName as keyof typeof labels]
-                                ?.error ?? 'Something went wrong.'
-                            )
-                        }
-                      })()
-
-                      return (
-                        <p
-                          className="dark:text-polar-500 flex items-center gap-1 text-gray-500"
-                          key={`${message.id}-${index}`}
-                        >
-                          <LogoIcon size={24} className="-ml-1.5" />
-                          {label}
-                        </p>
-                      )
-                    }
-
-                    if (part.type === 'tool-redirectToManualSetup') {
-                      switch (part.state) {
-                        case 'input-available':
-                        case 'output-available': {
-                          return (
-                            <div
-                              key={`${message.id}-${index}`}
-                              className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-center text-gray-500"
-                            >
-                              {part.input.reason ===
-                              'unsupported_benefit_type' ? (
-                                'Sorry, but this configuration needs manual input.'
-                              ) : part.input.reason === 'tool_call_error' ? (
-                                'Sorry, something went wrong.'
-                              ) : (
-                                <>
-                                  We&rsquo;re sorry this isn&rsquo;t working for
-                                  you.
-                                  <br />
-                                  Let&rsquo;s continue manually.
-                                </>
-                              )}
-                              <Button
-                                variant="secondary"
-                                className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:border-polar-700 border-gray-200 bg-white hover:border-gray-300 hover:bg-white"
-                                onClick={() => onEjectToManual()}
+                              <div
+                                key={`${message.id}-${index}`}
+                                className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-center text-gray-500"
                               >
-                                Configure manually
-                              </Button>
-                            </div>
-                          )
-                        }
-                        default:
-                          return null
-                      }
-                    }
-
-                    if (part.type === 'tool-markAsDone') {
-                      switch (part.state) {
-                        case 'input-available':
-                        case 'output-available': {
-                          const productIds = (part.input.productIds || []).join(
-                            ',',
-                          )
-
-                          const nextStep = `/dashboard/${organization.slug}/onboarding/integrate?productId=${productIds}`
-
-                          return (
-                            <div
-                              key={`${message.id}-${index}`}
-                              className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-gray-500"
-                            >
-                              You&rsquo;re all set! Now let&rsquo;s integrate
-                              your checkout flow.
-                              <Link href={nextStep}>
-                                <Button variant="default">
-                                  Integrate Checkout
+                                {(part as any).input.reason ===
+                                'unsupported_benefit_type' ? (
+                                  'Sorry, but this configuration needs manual input.'
+                                ) : (part as any).input.reason ===
+                                  'tool_call_error' ? (
+                                  'Sorry, something went wrong.'
+                                ) : (
+                                  <>
+                                    We&rsquo;re sorry this isn&rsquo;t working
+                                    for you.
+                                    <br />
+                                    Let&rsquo;s continue manually.
+                                  </>
+                                )}
+                                <Button
+                                  variant="secondary"
+                                  className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:border-polar-700 border-gray-200 bg-white hover:border-gray-300 hover:bg-white"
+                                  onClick={() => onEjectToManual()}
+                                >
+                                  Configure manually
                                 </Button>
-                              </Link>
-                            </div>
-                          )
+                              </div>
+                            )
+                          }
+                          default:
+                            return null
                         }
-                        default:
-                          return null
                       }
-                    }
 
-                    return null
-                  })}
+                      if (part.type === 'tool-markAsDone') {
+                        switch ((part as any).state) {
+                          case 'input-available':
+                          case 'output-available': {
+                            const productIds = (
+                              (part as any).input.productIds || []
+                            ).join(',')
+
+                            const nextStep = `/dashboard/${organization.slug}/onboarding/integrate?productId=${productIds}`
+
+                            return (
+                              <div
+                                key={`${message.id}-${index}`}
+                                className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-gray-500"
+                              >
+                                You&rsquo;re all set! Now let&rsquo;s integrate
+                                your checkout flow.
+                                <Link href={nextStep}>
+                                  <Button variant="default">
+                                    Integrate Checkout
+                                  </Button>
+                                </Link>
+                              </div>
+                            )
+                          }
+                          default:
+                            return null
+                        }
+                      }
+
+                      return null
+                    },
+                  )}
                 </div>
               </div>
             ))}

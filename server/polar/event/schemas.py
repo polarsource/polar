@@ -11,6 +11,7 @@ from pydantic import (
     Field,
 )
 from pydantic.type_adapter import TypeAdapter
+from typing_extensions import TypedDict
 
 from polar.customer.schemas.customer import Customer
 from polar.event.system import (
@@ -21,11 +22,14 @@ from polar.event.system import (
     SubscriptionProductUpdatedMetadata,
     SubscriptionRevokedMetadata,
 )
-from polar.event.system import (
-    SystemEvent as SystemEventEnum,
+from polar.event.system import SystemEvent as SystemEventEnum
+from polar.kit.metadata import METADATA_DESCRIPTION, MetadataValue
+from polar.kit.schemas import (
+    ClassName,
+    IDSchema,
+    Schema,
+    SetSchemaReference,
 )
-from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
-from polar.kit.schemas import ClassName, IDSchema, Schema, SetSchemaReference
 from polar.models.event import EventSource
 from polar.organization.schemas import OrganizationID
 
@@ -49,7 +53,59 @@ def is_past_timestamp(timestamp: datetime) -> datetime:
     return timestamp
 
 
-class EventCreateBase(Schema, MetadataInputMixin):
+class CostMetadata(TypedDict):
+    amount: Annotated[int, Field(description="The amount in cents.")]
+    currency: Annotated[
+        str,
+        Field(
+            pattern="usd",
+            description="The currency. Currently, only `usd` is supported.",
+        ),
+    ]
+
+
+class LLMMetadata(TypedDict):
+    vendor: Annotated[str, Field(description="The vendor of the event.")]
+    model: Annotated[str, Field(description="The model used for the event.")]
+    prompt: Annotated[
+        str | None,
+        Field(default=None, description="The LLM prompt used for the event."),
+    ]
+    response: Annotated[
+        str | None,
+        Field(default=None, description="The LLM response used for the event."),
+    ]
+    input_tokens: Annotated[
+        int,
+        Field(description="The number of LLM input tokens used for the event."),
+    ]
+    output_tokens: Annotated[
+        int,
+        Field(description="The number of LLM output tokens used for the event."),
+    ]
+    total_tokens: Annotated[
+        int,
+        Field(description="The total number of LLM tokens used for the event."),
+    ]
+    cost: Annotated[
+        CostMetadata | None,
+        Field(default=None, description="Optional cost associated with the event."),
+    ]
+
+
+class EventMetadataInput(  # type: ignore[call-arg]
+    TypedDict,
+    total=False,
+    extra_items=MetadataValue,
+):
+    _llm: LLMMetadata
+
+
+def metadata_default_factory() -> EventMetadataInput:
+    return {}
+
+
+class EventCreateBase(Schema):
     timestamp: Annotated[
         AwareDatetime,
         AfterValidator(is_past_timestamp),
@@ -64,6 +120,16 @@ class EventCreateBase(Schema, MetadataInputMixin):
             "The ID of the organization owning the event. "
             "**Required unless you use an organization token.**"
         ),
+    )
+    metadata: EventMetadataInput = Field(
+        description=METADATA_DESCRIPTION.format(
+            heading=(
+                "Key-value object allowing you to store additional information about the event. "
+                "Some keys like `_llm` are structured data that are handled specially by Polar."
+            )
+        ),
+        default_factory=metadata_default_factory,
+        serialization_alias="user_metadata",
     )
 
 
@@ -225,11 +291,22 @@ SystemEvent = Annotated[
 ]
 
 
-class UserEvent(BaseEvent, MetadataOutputMixin):
+class EventMetadataOutput(  # type: ignore[call-arg]
+    TypedDict,
+    total=False,
+    extra_items=str | int | float | bool,
+):
+    _llm: LLMMetadata
+
+
+class UserEvent(BaseEvent):
     """An event you created through the ingestion API."""
 
     name: str = Field(description=_NAME_DESCRIPTION)
     source: Literal[EventSource.user] = Field(description=_SOURCE_DESCRIPTION)
+    metadata: EventMetadataOutput = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
 
 
 Event = Annotated[

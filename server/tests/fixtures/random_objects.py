@@ -513,7 +513,15 @@ async def create_product_price_seat_unit(
 ) -> ProductPriceSeatUnit:
     price = ProductPriceSeatUnit(
         price_currency="usd",
-        price_per_seat=price_per_seat,
+        seat_tiers={
+            "tiers": [
+                {
+                    "min_seats": 1,
+                    "max_seats": None,
+                    "price_per_seat": price_per_seat,
+                }
+            ]
+        },
         product=product,
     )
     assert price.amount_type == ProductPriceAmountType.seat_based
@@ -1269,7 +1277,7 @@ async def create_checkout(
         currency = price.price_currency
     elif isinstance(price, ProductPriceSeatUnit):
         seat_count = seats or 1
-        amount = price.price_per_seat * seat_count
+        amount = price.calculate_amount(seat_count)
         currency = price.price_currency
     else:
         amount = 0

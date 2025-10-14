@@ -426,7 +426,7 @@ class CheckoutService:
         elif is_seat_price(price):
             # Calculate amount based on seat count
             seats = checkout_create.seats or 1
-            amount = price.price_per_seat * seats
+            amount = price.calculate_amount(seats)
             currency = price.price_currency
         else:
             amount = 0
@@ -624,7 +624,7 @@ class CheckoutService:
         elif is_seat_price(price):
             # Calculate amount based on seat count
             seats = checkout_create.seats or 1
-            amount = price.price_per_seat * seats
+            amount = price.calculate_amount(seats)
             currency = price.price_currency
         elif is_currency_price(price):
             currency = price.price_currency
@@ -722,7 +722,7 @@ class CheckoutService:
         elif is_seat_price(price):
             # Default to 1 seat for checkout links with seat-based pricing
             seats = 1
-            amount = price.price_per_seat * seats
+            amount = price.calculate_amount(seats)
             currency = price.price_currency
         elif is_currency_price(price):
             currency = price.price_currency
@@ -1516,7 +1516,7 @@ class CheckoutService:
             elif is_seat_price(price):
                 # Calculate amount based on current seat count
                 seats = checkout.seats or checkout_update.seats or 1
-                checkout.amount = price.price_per_seat * seats
+                checkout.amount = price.calculate_amount(seats)
                 checkout.currency = price.price_currency
             elif is_currency_price(price):
                 checkout.currency = price.price_currency
@@ -1565,7 +1565,7 @@ class CheckoutService:
         # Handle seat updates for seat-based pricing
         if checkout_update.seats is not None and is_seat_price(price):
             checkout.seats = checkout_update.seats
-            checkout.amount = price.price_per_seat * checkout_update.seats
+            checkout.amount = price.calculate_amount(checkout_update.seats)
         elif checkout_update.seats is not None:
             # Seats provided for non-seat-based pricing
             raise PolarRequestValidationError(

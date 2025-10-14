@@ -73,7 +73,7 @@ class OrderItem(RecordModel):
             amount = 0
         elif isinstance(price, ProductPriceSeatUnit):
             assert seats is not None, "seats must be provided for seat-based prices"
-            amount = price.price_per_seat * seats
+            amount = price.calculate_amount(seats)
         return cls(
             label=price.product.name,
             amount=amount,

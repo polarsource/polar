@@ -1532,7 +1532,7 @@ class TestCreate:
         assert checkout.product_price == price
         assert checkout.product == product_seat_based
         assert checkout.seats == 10
-        assert checkout.amount == price.price_per_seat * 10
+        assert checkout.amount == price.calculate_amount(10)
         assert checkout.currency == price.price_currency
 
     @pytest.mark.auth(
@@ -1643,7 +1643,7 @@ class TestCreate:
         )
 
         assert checkout.seats == seats
-        assert checkout.amount == price.price_per_seat * seats
+        assert checkout.amount == price.calculate_amount(seats)
 
 
 @pytest.mark.asyncio
@@ -1791,7 +1791,7 @@ class TestClientCreate:
         assert checkout.product_price == price
         assert checkout.product == product_seat_based
         assert checkout.seats == 7
-        assert checkout.amount == price.price_per_seat * 7
+        assert checkout.amount == price.calculate_amount(7)
         assert checkout.currency == price.price_currency
 
     async def test_seat_based_price_without_seats(
@@ -1830,7 +1830,7 @@ class TestClientCreate:
         )
 
         assert checkout.seats == seats
-        assert checkout.amount == price.price_per_seat * seats
+        assert checkout.amount == price.calculate_amount(seats)
 
 
 @pytest.mark.asyncio
@@ -2832,7 +2832,7 @@ class TestUpdate:
         )
 
         assert checkout.seats == 12
-        assert checkout.amount == price.price_per_seat * 12
+        assert checkout.amount == price.calculate_amount(12)
 
     async def test_update_seats_amount_recalculation(
         self,
@@ -2845,7 +2845,7 @@ class TestUpdate:
 
         # Initial amount
         initial_amount = checkout_seat_based.amount
-        assert initial_amount == price.price_per_seat * 5
+        assert initial_amount == price.calculate_amount(5)
 
         # Update seats to 3
         checkout = await checkout_service.update(
@@ -2856,7 +2856,7 @@ class TestUpdate:
         )
 
         assert checkout.seats == 3
-        assert checkout.amount == price.price_per_seat * 3
+        assert checkout.amount == price.calculate_amount(3)
         assert checkout.amount != initial_amount
 
     async def test_update_seats_on_non_seat_based(

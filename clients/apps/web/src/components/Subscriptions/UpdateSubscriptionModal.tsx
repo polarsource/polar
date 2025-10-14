@@ -8,6 +8,7 @@ import { hasLegacyRecurringPrices } from '@/utils/product'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import DatePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
+import Pill from '@polar-sh/ui/components/atoms/Pill'
 import {
   Select,
   SelectContent,
@@ -70,14 +71,33 @@ const UpdateProduct = ({
       sorting: ['price_amount'],
     },
   )
+
+  const activePriceIds = useMemo(
+    () => subscription.prices.map(({ id }) => id),
+    [subscription],
+  )
   const products = useMemo(
     () =>
       allProducts
-        ? allProducts.items.filter(
-            (product) => !hasLegacyRecurringPrices(product),
-          )
+        ? allProducts.items
+            .filter((product) => !hasLegacyRecurringPrices(product))
+            .filter((product) => {
+              // If it's a different product, include it
+              if (subscription.product_id !== product.id) {
+                return true
+              }
+
+              // For the same product, only include if the price sets are different
+              const productPriceIds = product.prices.map(({ id }) => id)
+
+              // Check if price sets are identical (same length and same IDs)
+              if (productPriceIds.length !== activePriceIds.length) {
+                return true
+              }
+              return !productPriceIds.every((id) => activePriceIds.includes(id))
+            })
         : [],
-    [allProducts],
+    [allProducts, activePriceIds, subscription],
   )
 
   const selectedProductId = watch('product_id')
@@ -148,20 +168,19 @@ const UpdateProduct = ({
                       <SelectValue placeholder="Select a new product" />
                     </SelectTrigger>
                     <SelectContent>
-                      {products
-                        .filter(
-                          (product) => product.id !== subscription.product_id,
-                        )
-                        .map((product) => (
-                          <SelectItem
-                            key={product.id}
-                            value={product.id}
-                            disabled={product.id === subscription.product_id}
-                          >
-                            <div>{product.name}</div>
-                            <ProductPriceLabel product={product} />
-                          </SelectItem>
-                        ))}
+                      {products.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          <div className="flex gap-1">
+                            {product.name}
+                            {product.id === subscription.product_id && (
+                              <Pill color="green" className="px-3 py-1 text-xs">
+                                Upgrade pricing
+                              </Pill>
+                            )}
+                          </div>
+                          <ProductPriceLabel product={product} />
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </FormControl>

@@ -172,6 +172,7 @@ class CheckoutCreateBase(
     seats: int | None = Field(
         default=None,
         ge=1,
+        le=1000,
         description="Number of seats for seat-based pricing. Required for seat-based products.",
     )
     customer_id: UUID4 | None = Field(
@@ -274,6 +275,7 @@ class CheckoutCreatePublic(Schema):
     seats: int | None = Field(
         default=None,
         ge=1,
+        le=1000,
         description="Number of seats for seat-based pricing.",
     )
     customer_email: CustomerEmail | None = None
@@ -310,6 +312,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     seats: int | None = Field(
         default=None,
         ge=1,
+        le=1000,
         description="Number of seats for seat-based pricing.",
     )
     is_business_customer: bool | None = None

@@ -179,8 +179,35 @@ jobs:
         ports:
           - 6379:6379
 
+      minio:
+        image: bitnamilegacy/minio:2024.5.28
+        ports:
+          - 9000:9000
+          - 9001:9001
+        env:
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+        options: >-
+          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v5
+
+      - name: 💿 MinIO Setup
+        working-directory: ./server/.minio
+        env:
+          MINIO_HOST: 127.0.0.1
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+          ACCESS_KEY: polar-development
+          SECRET_ACCESS_KEY: polar123456789
+          BUCKET_NAME: polar-s3
+          BUCKET_TESTING_NAME: testing-polar-s3
+          POLICY_FILE: policy.json
+        run: bash github.sh
 
       - uses: pnpm/action-setup@v4
         with:

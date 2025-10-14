@@ -150,6 +150,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     continue-on-error: true
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
 
     services:
       postgres:
@@ -247,7 +250,6 @@ jobs:
         env:
           POLAR_ENV: development
           POLAR_POSTGRES_DATABASE: polar_test
-          POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
         run: |
           uv run task api > /tmp/api-server.log 2>&1 &
           echo $! > /tmp/api-server.pid

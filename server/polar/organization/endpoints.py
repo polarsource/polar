@@ -288,9 +288,14 @@ async def members(
 
     items = []
     for m in members:
-        member_dict = OrganizationMember.model_validate(m).model_dump()
-        member_dict["is_admin"] = m.user_id == admin_user_id
-        items.append(OrganizationMember.model_validate(member_dict))
+        # Create a dict with all the necessary fields
+        member_data = {
+            "user_id": m.user_id,
+            "created_at": m.created_at,
+            "user": {"email": m.user.email, "avatar_url": m.user.avatar_url},
+            "is_admin": m.user_id == admin_user_id,
+        }
+        items.append(OrganizationMember.model_validate(member_data))
 
     return ListResource(
         items=items,

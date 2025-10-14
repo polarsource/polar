@@ -9388,6 +9388,19 @@ export interface components {
        */
       discount_code?: string | null
     }
+    /** CostMetadata */
+    CostMetadata: {
+      /**
+       * Amount
+       * @description The amount in cents.
+       */
+      amount: number
+      /**
+       * Currency
+       * @description The currency. Currently, only `usd` is supported.
+       */
+      currency: string
+    }
     /** CountAggregation */
     CountAggregation: {
       /**
@@ -13750,23 +13763,6 @@ export interface components {
     /** EventCreateCustomer */
     EventCreateCustomer: {
       /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
@@ -13782,6 +13778,18 @@ export interface components {
        * @description The ID of the organization owning the event. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**. */
+      metadata?: components['schemas']['EventMetadataInput']
       /**
        * Customer Id
        * Format: uuid4
@@ -13792,23 +13800,6 @@ export interface components {
     /** EventCreateExternalCustomer */
     EventCreateExternalCustomer: {
       /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
        * Timestamp
        * Format: date-time
        * @description The timestamp of the event.
@@ -13824,11 +13815,35 @@ export interface components {
        * @description The ID of the organization owning the event. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**. */
+      metadata?: components['schemas']['EventMetadataInput']
       /**
        * External Customer Id
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string
+    }
+    /** EventMetadataInput */
+    EventMetadataInput: {
+      _llm?: components['schemas']['LLMMetadata']
+    } & {
+      [key: string]: string | number | boolean
+    }
+    /** EventMetadataOutput */
+    EventMetadataOutput: {
+      _llm?: components['schemas']['LLMMetadata']
+    } & {
+      [key: string]: string | number | boolean
     }
     /** EventName */
     EventName: {
@@ -14225,6 +14240,46 @@ export interface components {
       error: 'InvoiceAlreadyExists'
       /** Detail */
       detail: string
+    }
+    /** LLMMetadata */
+    LLMMetadata: {
+      /**
+       * Vendor
+       * @description The vendor of the event.
+       */
+      vendor: string
+      /**
+       * Model
+       * @description The model used for the event.
+       */
+      model: string
+      /**
+       * Prompt
+       * @description The LLM prompt used for the event.
+       */
+      prompt?: string | null
+      /**
+       * Response
+       * @description The LLM response used for the event.
+       */
+      response?: string | null
+      /**
+       * Input Tokens
+       * @description The number of LLM input tokens used for the event.
+       */
+      input_tokens: number
+      /**
+       * Output Tokens
+       * @description The number of LLM output tokens used for the event.
+       */
+      output_tokens: number
+      /**
+       * Total Tokens
+       * @description The total number of LLM tokens used for the event.
+       */
+      total_tokens: number
+      /** @description Optional cost associated with the event. */
+      cost?: components['schemas']['CostMetadata'] | null
     }
     LegacyRecurringProductPrice:
       | components['schemas']['LegacyRecurringProductPriceFixed']
@@ -19928,10 +19983,6 @@ export interface components {
      * @description An event you created through the ingestion API.
      */
     UserEvent: {
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
       /**
        * Id
        * Format: uuid4
@@ -19973,6 +20024,7 @@ export interface components {
        * @enum {string}
        */
       source: 'user'
+      metadata: components['schemas']['EventMetadataOutput']
     }
     /** UserIdentityVerification */
     UserIdentityVerification: {

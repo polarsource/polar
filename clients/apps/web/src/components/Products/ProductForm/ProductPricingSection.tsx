@@ -178,7 +178,7 @@ export const ProductPriceSeatBasedItem: React.FC<
     <>
       <FormField
         control={control}
-        name={`prices.${index}.price_per_seat`}
+        name={`prices.${index}.seat_tiers.tiers.0.price_per_seat` as any}
         rules={{
           required: 'This field is required',
           min: { value: 50, message: 'Price must be greater than 0.5' },
@@ -190,7 +190,7 @@ export const ProductPriceSeatBasedItem: React.FC<
                 <FormControl>
                   <MoneyInput
                     name={field.name}
-                    value={field.value}
+                    value={field.value as number}
                     onChange={(v) => {
                       field.onChange(v)
                       setValue(`prices.${index}.id`, '')
@@ -459,7 +459,15 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         replace({
           amount_type: 'seat_based',
           price_currency: 'usd',
-          price_per_seat: 0,
+          seat_tiers: {
+            tiers: [
+              {
+                min_seats: 1,
+                max_seats: null,
+                price_per_seat: 0,
+              },
+            ],
+          },
         })
       } else if (amountType === 'metered_unit') {
         replace({

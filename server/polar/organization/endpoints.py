@@ -1,4 +1,5 @@
 from typing import cast
+from uuid import UUID
 
 from fastapi import Depends, Query, Response, status
 from sqlalchemy.orm import joinedload
@@ -342,6 +343,48 @@ async def invite_member(
 
     response.status_code = status.HTTP_201_CREATED
     return OrganizationMember.model_validate(user_org)
+
+
+@router.delete(
+    "/{id}/members/{user_id}",
+    status_code=204,
+    tags=[APITag.private],
+)
+async def remove_member(
+    id: OrganizationID,
+    user_id: UUID,
+    auth_subject: auth.OrganizationsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Remove a member from an organization.
+
+    Only non-admin members can be removed. The organization admin cannot be removed.
+
+    Raises:
+        404: Organization not found or user is not a member
+        403: Cannot remove organization admin
+    """
+    from polar.user_organization.service import (
+        CannotRemoveOrganizationAdmin,
+        OrganizationNotFound,
+        UserNotMemberOfOrganization,
+    )
+
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    try:
+        await user_organization_service.remove_member_safe(
+            session, user_id, organization.id
+        )
+    except OrganizationNotFound:
+        raise ResourceNotFound()
+    except UserNotMemberOfOrganization:
+        raise ResourceNotFound()
+    except CannotRemoveOrganizationAdmin:
+        raise NotPermitted("Cannot remove organization admin")
 
 
 @router.post(

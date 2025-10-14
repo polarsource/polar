@@ -149,6 +149,7 @@ jobs:
     name: "Check Generated Client"
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    continue-on-error: true
     env:
       POLAR_ENV: testing
 

@@ -144,3 +144,89 @@ jobs:
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
         run: uv run pytest -n auto --no-cov
+
+  check-generated-client:
+    name: "Check Generated Client"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      POLAR_ENV: testing
+
+    services:
+      postgres:
+        image: postgres:15.1-bullseye
+        env:
+          POSTGRES_USER: polar
+          POSTGRES_PASSWORD: polar
+          POSTGRES_DB: polar_test
+          POSTGRES_PORT: 5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: 🔧 uv install
+        working-directory: ./server
+        run: uv sync --dev
+
+      - name: ⚗️ alembic migrate
+        working-directory: ./server
+        run: uv run task db_migrate
+
+      - name: 🚀 Start API server
+        working-directory: ./server
+        run: uv run task api &
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: 📦 Install client dependencies
+        working-directory: ./clients
+        run: pnpm install --frozen-lockfile
+
+      - name: ⏳ Wait for API server
+        run: timeout 30 bash -c 'until curl -sf http://127.0.0.1:8000/readyz; do sleep 1; done'
+
+      - name: 🔄 Generate client and check for changes
+        working-directory: ./clients
+        run: |
+          pnpm generate
+          if ! git diff --exit-code packages/client/src/; then
+            echo "❌ Generated client is out of sync with OpenAPI spec"
+            echo "Run 'cd clients && pnpm generate' and commit the changes"
+            exit 1
+          fi

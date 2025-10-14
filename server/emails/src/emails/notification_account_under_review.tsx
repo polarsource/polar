@@ -27,12 +27,12 @@ export function NotificationAccountUnderReview({
         certain sales thresholds.
       </BodyText>
       <BodyText>You can read more about our account reviews here:</BodyText>
-      <Link href="https://dub.sh/polar-review">
-        https://dub.sh/polar-review
+      <Link href="https://polar.sh/docs/merchant-of-record/account-reviews">
+        https://polar.sh/docs/merchant-of-record/account-reviews
       </Link>
       <BodyText>
         So no cause to be concerned. Typically, our reviews are completed within
-        24-48h.
+        96-120h.
       </BodyText>
       <BodyText>
         We'll reach out shortly in case we need any further information from you

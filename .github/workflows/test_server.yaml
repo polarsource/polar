@@ -237,7 +237,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: ⏳ Wait for API server
-        run: timeout 30 bash -c 'until curl -sf http://127.0.0.1:8000/readyz; do sleep 1; done'
+        run: timeout 30 bash -c 'until curl -sf http://127.0.0.1:8000/healthz; do sleep 1; done'
 
       - name: 🔄 Generate client and check for changes
         working-directory: ./clients

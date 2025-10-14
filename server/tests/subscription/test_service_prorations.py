@@ -31,6 +31,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_product,
+    create_product_price_fixed,
 )
 
 # This tests Subscription updates with prorations, where the subscription is
@@ -551,6 +552,80 @@ class TestUpdateProductProrations:
             assert len(billing_entries) == 1
 
             billing_entry = billing_entries[0]
+            assert billing_entry.start_timestamp == update_time
+            assert billing_entry.end_timestamp == previous_period_end
+            assert billing_entry.direction == BillingEntryDirection.debit
+            assert billing_entry.amount == 50_00
+            assert billing_entry.currency == new_price.price_currency
+            assert billing_entry.customer_id == customer.id
+            assert billing_entry.product_price_id == new_price.id
+
+    async def test_archived_price_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00,)],
+        )
+
+        # Simulate an archived price
+        old_price = await create_product_price_fixed(
+            save_fixture,
+            product=product,
+            amount=50_00,
+            is_archived=True,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            prices=[old_price],
+            customer=customer,
+            stripe_subscription_id=None,
+            current_period_start=datetime(2025, 6, 1, tzinfo=UTC),
+            current_period_end=datetime(2025, 7, 1, tzinfo=UTC),
+        )
+        previous_period_end = subscription.current_period_end
+
+        update_time = datetime(2025, 6, 16, tzinfo=UTC)
+        with freezegun.freeze_time(update_time):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=product.id,
+            )
+
+            new_price = product.prices[0]
+            assert not new_price.is_archived
+            assert is_fixed_price(old_price)
+            assert is_fixed_price(new_price)
+            billing_entry_repository = BillingEntryRepository.from_session(session)
+            billing_entries = (
+                await billing_entry_repository.get_pending_by_subscription(
+                    subscription.id
+                )
+            )
+
+            assert len(billing_entries) == 2
+            billing_entries = sorted(
+                billing_entries, key=lambda e: (e.start_timestamp, e.direction)
+            )
+
+            billing_entry = billing_entries[0]
+            assert billing_entry.start_timestamp == update_time
+            assert billing_entry.end_timestamp == previous_period_end
+            assert billing_entry.direction == BillingEntryDirection.credit
+            assert billing_entry.amount == 25_00
+            assert billing_entry.currency == old_price.price_currency
+            assert billing_entry.customer_id == customer.id
+            assert billing_entry.product_price_id == old_price.id
+
+            billing_entry = billing_entries[1]
             assert billing_entry.start_timestamp == update_time
             assert billing_entry.end_timestamp == previous_period_end
             assert billing_entry.direction == BillingEntryDirection.debit

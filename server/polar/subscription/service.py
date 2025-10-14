@@ -842,6 +842,7 @@ class SubscriptionService:
         previous_product = subscription.product
         previous_status = subscription.status
         previous_is_canceled = subscription.canceled
+        previous_prices = [*subscription.prices]
 
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id_and_organization(
@@ -1010,9 +1011,7 @@ class SubscriptionService:
             # credit you for both prices and debit you for the 1 price.
             #
             # Metered prices are ignored for prorations.
-            old_static_prices = [
-                p for p in previous_product.prices if is_static_price(p)
-            ]
+            old_static_prices = [p for p in previous_prices if is_static_price(p)]
             new_static_prices = [p for p in product.prices if is_static_price(p)]
 
             for old_price in old_static_prices:

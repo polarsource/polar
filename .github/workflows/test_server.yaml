@@ -182,6 +182,21 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: server/emails/package.json
+
+      - name: 📬 Setup Node.js environment for server/emails
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: server/emails/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "server/emails/pnpm-lock.yaml"
+
+      - name: 📬 Build server/emails
+        working-directory: server/emails
+        run: pnpm install --frozen-lockfile && pnpm build
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -194,7 +209,9 @@ jobs:
 
       - name: 🔧 uv install
         working-directory: ./server
-        run: uv sync --dev
+        run: |
+          uv sync --dev
+          uv run task generate_dev_jwks
 
       - name: ⚗️ alembic migrate
         working-directory: ./server

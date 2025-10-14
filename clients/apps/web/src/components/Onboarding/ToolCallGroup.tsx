@@ -1,19 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
+import { DynamicToolUIPart } from 'ai'
 import { useState } from 'react'
 import LogoIcon from '../Brand/LogoIcon'
-
-type DynamicToolPart = {
-  type: 'dynamic-tool'
-  toolName: string
-  state:
-    | 'input-streaming'
-    | 'input-available'
-    | 'output-available'
-    | 'output-error'
-  input?: unknown
-}
 
 function ensureJSONArgument<T>(callback: (a: T | undefined) => string) {
   return (arg: T | string) => {
@@ -133,7 +123,7 @@ const TOOL_LABELS = {
   },
 }
 
-const getToolLabel = (part: DynamicToolPart): string => {
+const getToolLabel = (part: DynamicToolUIPart): string => {
   switch (part.state) {
     case 'input-streaming':
       return (
@@ -166,7 +156,7 @@ export const ToolCallGroup = ({
   parts,
   messageId,
 }: {
-  parts: DynamicToolPart[]
+  parts: DynamicToolUIPart[]
   messageId: string
 }) => {
   const [expanded, setExpanded] = useState(false)

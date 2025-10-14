@@ -8,7 +8,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { DefaultChatTransport, DynamicToolUIPart } from 'ai'
 import Link from 'next/link'
-import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useContext, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FadeUp } from '../Animated/FadeUp'
 import { ToolCallGroup } from './ToolCallGroup'
@@ -74,12 +74,15 @@ export const AssistantStep = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  const conversationId = useId()
+
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       api: `/dashboard/${organization.slug}/onboarding/assistant/chat`,
       credentials: 'include',
       body: {
         organizationId: organization.id,
+        conversationId,
       },
     }),
   })
@@ -142,8 +145,6 @@ export const AssistantStep = ({
       }
     }
   }
-
-  console.log(messages)
 
   return (
     <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4">

@@ -4,6 +4,7 @@ packages:
   - examples/*
 
 onlyBuiltDependencies:
+  - '@parcel/watcher'
   - '@sentry/cli'
   - '@tailwindcss/oxide'
   - core-js-pure

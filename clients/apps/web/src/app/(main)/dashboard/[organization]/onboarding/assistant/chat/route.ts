@@ -1,9 +1,12 @@
+'use server'
+
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
 import { anthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import { withTracing } from '@posthog/ai'
 import {
   convertToModelMessages,
   experimental_createMCPClient,
@@ -15,9 +18,14 @@ import {
   UIMessage,
 } from 'ai'
 import { cookies } from 'next/headers'
+import { PostHog } from 'posthog-node'
 import { z } from 'zod'
 
 export const maxDuration = 30
+
+const phClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_TOKEN!, {
+  host: 'https://us.i.posthog.com',
+})
 
 const sharedSystemPrompt = `
 You are a helpful assistant that helps a new user configure their Polar account.
@@ -290,7 +298,9 @@ export async function POST(req: Request) {
   const {
     messages,
     organizationId,
-  }: { messages: UIMessage[]; organizationId: string } = await req.json()
+    conversationId,
+  }: { messages: UIMessage[]; organizationId: string; conversationId: string } =
+    await req.json()
 
   const hasToolAccess = (await cookies()).has(CONFIG.AUTH_MCP_COOKIE_KEY)
   let requiresToolAccess = false
@@ -327,7 +337,11 @@ export async function POST(req: Request) {
     console.log(`[${performance.now() - start}ms] Routing user message`)
 
     const router = await generateObject({
-      model: google('gemini-2.5-flash-lite'),
+      model: withTracing(google('gemini-2.5-flash-lite'), phClient, {
+        posthogDistinctId: user.id,
+        posthogTraceId: conversationId,
+        posthogGroups: { organization: organizationId },
+      }),
       output: 'object',
       schema: z.object({
         isRelevant: z
@@ -405,10 +419,17 @@ based on the conversation history whether you're done.
 
   const result = streamText({
     // Quick & cheap models can say "no" too :-)
-    model:
+    model: withTracing(
       requiresManualSetup || !isRelevant
         ? google('gemini-2.5-flash')
         : anthropic('claude-sonnet-4-5'),
+      phClient,
+      {
+        posthogDistinctId: user.id,
+        posthogTraceId: conversationId,
+        posthogGroups: { organization: organizationId },
+      },
+    ),
     system: conversationalSystemPrompt,
     tools: {
       redirectToManualSetup,
@@ -426,6 +447,9 @@ based on the conversation history whether you're done.
         streamStarted = true
         console.log(`[${performance.now() - start}ms] First token streamed`)
       }
+    },
+    onFinish: () => {
+      phClient.flush()
     },
   })
 

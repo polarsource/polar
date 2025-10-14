@@ -170,11 +170,11 @@ const UpdateProduct = ({
                     <SelectContent>
                       {products.map((product) => (
                         <SelectItem key={product.id} value={product.id}>
-                          <div className="flex gap-1">
+                          <div className="flex justify-between gap-1">
                             {product.name}
                             {product.id === subscription.product_id && (
                               <Pill color="green" className="px-3 py-1 text-xs">
-                                Upgrade pricing
+                                New Pricing
                               </Pill>
                             )}
                           </div>

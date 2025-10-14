@@ -267,6 +267,8 @@ async def members(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationMember]:
     """List members in an organization."""
+    from polar.organization.repository import OrganizationRepository
+
     organization = await organization_service.get(session, auth_subject, id)
 
     if organization is None:
@@ -274,8 +276,24 @@ async def members(
 
     members = await user_organization_service.list_by_org(session, id)
 
+    # Get admin user to mark them in the response
+    admin_user_id = None
+    if organization.account_id:
+        org_repo = OrganizationRepository.from_session(session)
+        admin_user = await org_repo.get_admin_user(
+            cast(AsyncSession, session), organization
+        )
+        if admin_user:
+            admin_user_id = admin_user.id
+
+    items = []
+    for m in members:
+        member_dict = OrganizationMember.model_validate(m).model_dump()
+        member_dict["is_admin"] = m.user_id == admin_user_id
+        items.append(OrganizationMember.model_validate(member_dict))
+
     return ListResource(
-        items=[OrganizationMember.model_validate(m) for m in members],
+        items=items,
         pagination=Pagination(total_count=len(members), max_page=1),
     )
 

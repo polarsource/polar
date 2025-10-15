@@ -456,7 +456,7 @@ class SubFormField(FormField):
                 input_field = _get_input_field(field)
                 with input_field.render(
                     full_key,
-                    field.title or full_key,
+                    field.title or key,
                     required=field.is_required(),
                     value=_get_data_value(value, errors, key),
                     errors=_get_field_errors(errors, key),

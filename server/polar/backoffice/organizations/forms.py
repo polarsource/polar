@@ -9,7 +9,7 @@ from pydantic import (
 )
 
 from polar.kit.schemas import HttpUrlToStr
-from polar.organization.schemas import NameInput, SlugInput
+from polar.organization.schemas import NameInput, OrganizationFeatureSettings, SlugInput
 
 from .. import forms
 
@@ -63,6 +63,11 @@ class UpdateOrganizationForm(forms.BaseForm):
         StringConstraints(
             to_upper=True, min_length=3, pattern=r"^[a-zA-Z0-9\-]+[a-zA-Z0-9]$"
         ),
+    ]
+    feature_flags: Annotated[
+        OrganizationFeatureSettings | None,
+        forms.SubFormField(OrganizationFeatureSettings),
+        Field(default=None, title="Feature Flags"),
     ]
 
 

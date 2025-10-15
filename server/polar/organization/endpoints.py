@@ -381,12 +381,14 @@ async def remove_member(
 ) -> None:
     """Remove a member from an organization.
 
-    Only non-admin members can be removed. The organization admin cannot be removed.
+    Only the organization admin can remove members.
+    Non-admin members cannot be removed by other members.
 
     Raises:
         404: Organization not found or user is not a member
-        403: Cannot remove organization admin
+        403: Only admin can remove members, or cannot remove organization admin
     """
+    from polar.organization.repository import OrganizationRepository
     from polar.user_organization.service import (
         CannotRemoveOrganizationAdmin,
         OrganizationNotFound,
@@ -397,6 +399,16 @@ async def remove_member(
 
     if organization is None:
         raise ResourceNotFound()
+
+    # Check if the authenticated user is the organization admin
+    if not is_user(auth_subject):
+        raise NotPermitted("Only users can remove members")
+
+    org_repo = OrganizationRepository.from_session(session)
+    admin_user = await org_repo.get_admin_user(session, organization)
+
+    if not admin_user or admin_user.id != auth_subject.subject.id:
+        raise NotPermitted("Only the organization admin can remove members")
 
     try:
         await user_organization_service.remove_member_safe(

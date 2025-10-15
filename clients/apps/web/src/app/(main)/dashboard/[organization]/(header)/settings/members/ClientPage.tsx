@@ -4,6 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
+import { useAuth } from '@/hooks/auth'
 import {
   useInviteOrganizationMember,
   useListOrganizationMembers,
@@ -28,6 +29,7 @@ export default function ClientPage({
 }: {
   organization: schemas['Organization']
 }) {
+  const { currentUser } = useAuth()
   const { data: members, isLoading } = useListOrganizationMembers(
     organization.id,
   )
@@ -48,6 +50,12 @@ export default function ClientPage({
     setMemberToRemove(member)
     openRemoveMemberModal()
   }
+
+  // Check if the current user is the admin
+  const currentUserMember = members?.items.find(
+    (m) => currentUser && m.user_id === currentUser.id,
+  )
+  const isCurrentUserAdmin = currentUserMember?.is_admin ?? false
 
   const columns: DataTableColumnDef<schemas['OrganizationMember']>[] = [
     {
@@ -86,8 +94,8 @@ export default function ClientPage({
     {
       id: 'actions',
       cell: ({ row: { original: member } }) => {
-        // Don't show remove button for admins
-        if (member.is_admin) {
+        // Only show remove button if current user is admin and the member is not an admin
+        if (!isCurrentUserAdmin || member.is_admin) {
           return null
         }
         return (

@@ -1,11 +1,14 @@
 from fastapi import Depends
 
 from polar.kit.db.postgres import AsyncSession
+from polar.models import CustomerSession
 from polar.openapi import APITag
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
+from .. import auth
 from ..schemas.customer_session import (
+    CustomerCustomerSession,
     CustomerSessionCodeAuthenticateRequest,
     CustomerSessionCodeAuthenticateResponse,
     CustomerSessionCodeInvalidOrExpiredResponse,
@@ -17,13 +20,14 @@ from ..service.customer_session import (
 )
 from ..service.customer_session import customer_session as customer_session_service
 
-router = APIRouter(
-    prefix="/customer-session", tags=["customer-session", APITag.private]
-)
+router = APIRouter(prefix="/customer-session", tags=["customer-session"])
 
 
 @router.post(
-    "/request", name="customer_portal.customer_session.request", status_code=202
+    "/request",
+    name="customer_portal.customer_session.request",
+    status_code=202,
+    tags=[APITag.private],
 )
 async def request(
     customer_session_code_request: CustomerSessionCodeRequest,
@@ -52,6 +56,7 @@ async def request(
     responses={
         401: CustomerSessionCodeInvalidOrExpiredResponse,
     },
+    tags=[APITag.private],
 )
 async def authenticate(
     authenticated_request: CustomerSessionCodeAuthenticateRequest,
@@ -61,3 +66,18 @@ async def authenticate(
         session, authenticated_request.code
     )
     return CustomerSessionCodeAuthenticateResponse(token=token)
+
+
+@router.get(
+    "/introspect",
+    summary="Introspect Customer Session",
+    tags=[APITag.public],
+    response_model=CustomerCustomerSession,
+)
+async def introspect(
+    auth_subject: auth.CustomerPortalRead,
+) -> CustomerSession:
+    """Introspect the current session and return its information."""
+    session = auth_subject.session
+    assert isinstance(session, CustomerSession)
+    return session

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import UUID4
 
 from polar.customer_portal.service.customer_session import (
@@ -24,3 +26,8 @@ CustomerSessionCodeInvalidOrExpiredResponse = {
     "description": "Invalid or expired verification code.",
     "model": CustomerSessionCodeInvalidOrExpired.schema(),
 }
+
+
+class CustomerCustomerSession(Schema):
+    expires_at: datetime
+    return_url: str | None

@@ -9,6 +9,12 @@ interface ProductPriceLabelProps {
     | schemas['CheckoutProduct']
 }
 
+function isSeatBasedPrice(
+  price: schemas['ProductPrice'],
+): price is schemas['ProductPriceSeatBased'] {
+  return price.amount_type === 'seat_based'
+}
+
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ product }) => {
   const staticPrice = product.prices.find(({ amount_type }) =>
     ['fixed', 'custom', 'free', 'seat_based'].includes(amount_type),
@@ -30,22 +36,8 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ product }) => {
         }
       />
     )
-  } else if (staticPrice.amount_type === 'seat_based') {
-    interface SeatTier {
-      min_seats: number
-      max_seats: number | null
-      price_per_seat: number
-    }
-
-    interface SeatBasedPrice {
-      price_currency: string
-      seat_tiers?: {
-        tiers: SeatTier[]
-      }
-    }
-
-    const seatPrice = staticPrice as unknown as SeatBasedPrice
-    const tiers = seatPrice.seat_tiers?.tiers || []
+  } else if (isSeatBasedPrice(staticPrice)) {
+    const tiers = staticPrice.seat_tiers.tiers
 
     // Show the starting tier price with "from" indicator if multiple tiers
     if (tiers.length > 0) {
@@ -61,10 +53,10 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ product }) => {
           )}
           <AmountLabel
             amount={firstTier.price_per_seat}
-            currency={seatPrice.price_currency}
+            currency={staticPrice.price_currency}
             interval={
               isLegacyRecurringPrice(staticPrice)
-                ? (staticPrice as any).recurring_interval
+                ? staticPrice.recurring_interval
                 : product.recurring_interval || undefined
             }
           />

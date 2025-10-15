@@ -17765,8 +17765,8 @@ export interface components {
      */
     ProductPriceCustomCreate: {
       /**
-       * Amount Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       amount_type: 'custom'
       /**
@@ -17852,8 +17852,8 @@ export interface components {
      */
     ProductPriceFixedCreate: {
       /**
-       * Amount Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       amount_type: 'fixed'
       /**
@@ -17919,8 +17919,8 @@ export interface components {
      */
     ProductPriceFreeCreate: {
       /**
-       * Amount Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       amount_type: 'free'
     }
@@ -18015,8 +18015,8 @@ export interface components {
      */
     ProductPriceMeteredUnitCreate: {
       /**
-       * Amount Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       amount_type: 'metered_unit'
       /**
@@ -18100,8 +18100,8 @@ export interface components {
      */
     ProductPriceSeatBasedCreate: {
       /**
-       * Amount Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       amount_type: 'seat_based'
       /**
@@ -18293,11 +18293,13 @@ export interface components {
       prices?:
         | (
             | components['schemas']['ExistingProductPrice']
-            | components['schemas']['ProductPriceFixedCreate']
-            | components['schemas']['ProductPriceCustomCreate']
-            | components['schemas']['ProductPriceFreeCreate']
-            | components['schemas']['ProductPriceSeatBasedCreate']
-            | components['schemas']['ProductPriceMeteredUnitCreate']
+            | (
+                | components['schemas']['ProductPriceFixedCreate']
+                | components['schemas']['ProductPriceCustomCreate']
+                | components['schemas']['ProductPriceFreeCreate']
+                | components['schemas']['ProductPriceSeatBasedCreate']
+                | components['schemas']['ProductPriceMeteredUnitCreate']
+              )
           )[]
         | null
       /**
@@ -33266,17 +33268,32 @@ export const productMediaFileReadServiceValues: ReadonlyArray<
 export const productPriceCustomAmount_typeValues: ReadonlyArray<
   components['schemas']['ProductPriceCustom']['amount_type']
 > = ['custom']
+export const productPriceCustomCreateAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceCustomCreate']['amount_type']
+> = ['custom']
 export const productPriceFixedAmount_typeValues: ReadonlyArray<
   components['schemas']['ProductPriceFixed']['amount_type']
+> = ['fixed']
+export const productPriceFixedCreateAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceFixedCreate']['amount_type']
 > = ['fixed']
 export const productPriceFreeAmount_typeValues: ReadonlyArray<
   components['schemas']['ProductPriceFree']['amount_type']
 > = ['free']
+export const productPriceFreeCreateAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceFreeCreate']['amount_type']
+> = ['free']
 export const productPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   components['schemas']['ProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']
+export const productPriceMeteredUnitCreateAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceMeteredUnitCreate']['amount_type']
+> = ['metered_unit']
 export const productPriceSeatBasedAmount_typeValues: ReadonlyArray<
   components['schemas']['ProductPriceSeatBased']['amount_type']
+> = ['seat_based']
+export const productPriceSeatBasedCreateAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceSeatBasedCreate']['amount_type']
 > = ['seat_based']
 export const productPriceTypeValues: ReadonlyArray<
   components['schemas']['ProductPriceType']

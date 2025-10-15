@@ -249,9 +249,14 @@ export const ProductPriceSeatBasedItem: React.FC<
           <div
             key={field.id}
             className="dark:bg-polar-900 group relative rounded-xl border border-gray-200 bg-white transition-colors hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700"
+            role="group"
+            aria-labelledby={`tier-title-${index}-${tierIndex}`}
           >
             <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-sm font-medium text-gray-900 dark:text-white">
+              <span
+                id={`tier-title-${index}-${tierIndex}`}
+                className="text-sm font-medium text-gray-900 dark:text-white"
+              >
                 {getTierTitle(tierIndex, currentTier)}
               </span>
               {!isFirst && (
@@ -261,7 +266,7 @@ export const ProductPriceSeatBasedItem: React.FC<
                   variant="ghost"
                   className="dark:text-polar-400 -mr-2 h-7 w-7 text-gray-400 opacity-0 transition-opacity hover:text-gray-600 group-hover:opacity-100 dark:hover:text-gray-300"
                   onClick={() => removeTier(tierIndex)}
-                  aria-label="Remove tier"
+                  aria-label={`Remove ${getTierTitle(tierIndex, currentTier)}`}
                 >
                   <CloseOutlined className="h-3.5 w-3.5" />
                 </Button>
@@ -310,6 +315,25 @@ export const ProductPriceSeatBasedItem: React.FC<
                 name={
                   `prices.${index}.seat_tiers.tiers.${tierIndex}.max_seats` as const
                 }
+                rules={{
+                  validate: (value) => {
+                    if (isLast) return true // Last tier is always unlimited (null)
+
+                    const minSeats = tiers?.[tierIndex]?.min_seats
+
+                    // max_seats must exist for non-last tiers
+                    if (value === null || value === undefined) {
+                      return 'Max seats is required'
+                    }
+
+                    // max_seats must be >= min_seats
+                    if (minSeats && value < minSeats) {
+                      return `Max seats must be at least ${minSeats}`
+                    }
+
+                    return true
+                  },
+                }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs text-gray-600 dark:text-gray-400">
@@ -388,6 +412,16 @@ export const ProductPriceSeatBasedItem: React.FC<
           </div>
         )
       })}
+
+      <FormField
+        control={control}
+        name={`prices.${index}.seat_tiers.tiers` as const}
+        render={() => (
+          <FormItem>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <Button
         type="button"
@@ -918,9 +952,17 @@ export const ProductPricingSection = ({
           <ErrorMessage
             errors={errors}
             name="prices"
-            render={({ message }) => (
-              <p className="text-destructive text-sm font-medium">{message}</p>
-            )}
+            render={({ message }) => {
+              // Don't render if message is undefined or invalid
+              if (!message || message === 'undefined' || message === 'null') {
+                return null
+              }
+              return (
+                <p className="text-destructive text-sm font-medium">
+                  {message}
+                </p>
+              )
+            }}
           />
         </div>
       )}

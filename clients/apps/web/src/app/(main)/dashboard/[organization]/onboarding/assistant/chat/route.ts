@@ -256,7 +256,7 @@ async function getMCPClient(userId: string, organizationId: string) {
     const oat = await generateOAT(userId, organizationId)
 
     const httpTransport = new StreamableHTTPClientTransport(
-      new URL(process.env.GRAM_ONBOARDING_MCP_URL!),
+      new URL('https://app.getgram.ai/mcp/polar-onboarding-assistant'),
       {
         requestInit: {
           headers: {

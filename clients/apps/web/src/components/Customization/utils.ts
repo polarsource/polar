@@ -187,6 +187,7 @@ export const createCheckoutPreview = (
     active_trial_interval: null,
     active_trial_interval_count: null,
     trial_end: null,
+    return_url: null,
   })
 
   return {

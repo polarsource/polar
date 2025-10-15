@@ -2684,6 +2684,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/customer-session/introspect': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Introspect Customer Session
+     * @description Introspect the current session and return its information.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:customer-session:introspect']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/downloadables/': {
     parameters: {
       query?: never
@@ -7466,6 +7488,11 @@ export interface components {
        */
       success_url: string
       /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url: string | null
+      /**
        * Embed Origin
        * @description When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page.
        */
@@ -8425,6 +8452,11 @@ export interface components {
        */
       success_url?: string | null
       /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url?: string | null
+      /**
        * Embed Origin
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
@@ -8634,6 +8666,11 @@ export interface components {
        */
       success_url?: string | null
       /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url?: string | null
+      /**
        * Embed Origin
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
@@ -8764,6 +8801,11 @@ export interface components {
        */
       success_url?: string | null
       /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url?: string | null
+      /**
        * Embed Origin
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
@@ -8836,6 +8878,11 @@ export interface components {
        * @description URL where the customer will be redirected after a successful payment.
        */
       success_url: string
+      /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url: string | null
       /**
        * Embed Origin
        * @description When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page.
@@ -9062,6 +9109,11 @@ export interface components {
        * @description URL where the customer will be redirected after a successful payment.
        */
       success_url: string
+      /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url: string | null
       /**
        * Embed Origin
        * @description When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page.
@@ -9350,6 +9402,11 @@ export interface components {
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
        */
       success_url?: string | null
+      /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url?: string | null
       /**
        * Embed Origin
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
@@ -11005,6 +11062,16 @@ export interface components {
       | '-credited_units'
       | 'balance'
       | '-balance'
+    /** CustomerCustomerSession */
+    CustomerCustomerSession: {
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string
+      /** Return Url */
+      return_url: string | null
+    }
     /**
      * CustomerMeter
      * @description An active customer meter, with current consumed and credited units.
@@ -11789,6 +11856,8 @@ export interface components {
        * Format: date-time
        */
       expires_at: string
+      /** Return Url */
+      return_url: string | null
       /** Customer Portal Url */
       customer_portal_url: string
       /**
@@ -11838,6 +11907,12 @@ export interface components {
      */
     CustomerSessionCustomerExternalIDCreate: {
       /**
+       * Return Url
+       * @description When set, a back button will be shown in the customer portal to return to this URL.
+       * @example https://example.com/account
+       */
+      return_url?: string | null
+      /**
        * External Customer Id
        * @description External ID of the customer to create a session for.
        */
@@ -11848,6 +11923,12 @@ export interface components {
      * @description Schema for creating a customer session using a customer ID.
      */
     CustomerSessionCustomerIDCreate: {
+      /**
+       * Return Url
+       * @description When set, a back button will be shown in the customer portal to return to this URL.
+       * @example https://example.com/account
+       */
+      return_url?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -28076,6 +28157,26 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:introspect': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerCustomerSession']
         }
       }
     }

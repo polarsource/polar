@@ -122,7 +122,7 @@ export const ProductListItem = ({
             )}
             {isSeatBasedProduct && (
               <Pill color="blue" className="px-3 py-1 text-xs">
-                Seat-based Pricing
+                Seat Pricing
               </Pill>
             )}
             <span className="text-sm leading-snug">

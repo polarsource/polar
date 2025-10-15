@@ -21028,6 +21028,36 @@ export interface components {
       /** Refresh Token */
       refresh_token: string
     }
+    /** WebTokenRequest */
+    WebTokenRequest: {
+      /**
+       * Grant Type
+       * @constant
+       */
+      grant_type: 'web'
+      /** Client Id */
+      client_id: string
+      /** Client Secret */
+      client_secret: string
+      /** Session Token */
+      session_token: string
+      /**
+       * Sub Type
+       * @default user
+       * @enum {string}
+       */
+      sub_type: 'user' | 'organization'
+      /**
+       * Sub
+       * @default null
+       */
+      sub: string | null
+      /**
+       * Scope
+       * @default null
+       */
+      scope: string | null
+    }
     /** RevokeTokenRequest */
     RevokeTokenRequest: {
       /** Token */
@@ -23112,6 +23142,7 @@ export interface operations {
         'application/x-www-form-urlencoded':
           | components['schemas']['AuthorizationCodeTokenRequest']
           | components['schemas']['RefreshTokenRequest']
+          | components['schemas']['WebTokenRequest']
       }
     }
     responses: {
@@ -33694,6 +33725,9 @@ export const webhookEventTypeValues: ReadonlyArray<
 export const webhookFormatValues: ReadonlyArray<
   components['schemas']['WebhookFormat']
 > = ['raw', 'discord', 'slack']
+export const webTokenRequestSub_typeValues: ReadonlyArray<
+  components['schemas']['WebTokenRequest']['sub_type']
+> = ['user', 'organization']
 export const revokeTokenRequestToken_type_hintValues: ReadonlyArray<
   components['schemas']['RevokeTokenRequest']['token_type_hint']
 > = ['access_token', 'refresh_token']

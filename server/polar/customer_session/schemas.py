@@ -1,13 +1,27 @@
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import UUID4, Field
+from pydantic import UUID4, Field, HttpUrl
 from pydantic.aliases import AliasChoices
 
 from polar.customer.schemas.customer import Customer
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 
 
-class CustomerSessionCustomerIDCreate(Schema):
+class CustomerSessionCreateBase(Schema):
+    return_url: Annotated[
+        HttpUrl | None,
+        Field(
+            description=(
+                "When set, a back button will be shown in the customer portal "
+                "to return to this URL."
+            ),
+            examples=["https://example.com/account"],
+        ),
+    ] = None
+
+
+class CustomerSessionCustomerIDCreate(CustomerSessionCreateBase):
     """
     Schema for creating a customer session using a customer ID.
     """
@@ -17,7 +31,7 @@ class CustomerSessionCustomerIDCreate(Schema):
     )
 
 
-class CustomerSessionCustomerExternalIDCreate(Schema):
+class CustomerSessionCustomerExternalIDCreate(CustomerSessionCreateBase):
     """
     Schema for creating a customer session using an external customer ID.
     """
@@ -40,6 +54,7 @@ class CustomerSession(IDSchema, TimestampedSchema):
 
     token: str = Field(validation_alias="raw_token")
     expires_at: datetime
+    return_url: str | None
     customer_portal_url: str
     customer_id: UUID4
     customer: Customer

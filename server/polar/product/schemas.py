@@ -267,13 +267,14 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
         return ProductPriceMeteredUnitModel
 
 
-ProductPriceCreate = (
+ProductPriceCreate = Annotated[
     ProductPriceFixedCreate
     | ProductPriceCustomCreate
     | ProductPriceFreeCreate
     | ProductPriceSeatBasedCreate
-    | ProductPriceMeteredUnitCreate
-)
+    | ProductPriceMeteredUnitCreate,
+    Discriminator("amount_type"),
+]
 
 
 ProductPriceCreateList = Annotated[

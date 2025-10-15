@@ -22,6 +22,7 @@ import ShadowBox, {
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { CheckoutCard } from './CheckoutCard'
@@ -228,6 +229,14 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           'flex flex-col gap-y-8 md:p-12',
         )}
       >
+        {checkout.returnUrl && (
+          <Link
+            href={checkout.returnUrl}
+            className="dark:text-polar-500 dark:hover:text-polar-200 text-sm text-gray-500 hover:text-black"
+          >
+            ← Back to {checkout.organization.name}
+          </Link>
+        )}
         <CheckoutProductInfo
           organization={checkout.organization}
           product={checkout.product}

@@ -297,9 +297,8 @@ jobs:
         working-directory: ./clients
         run: |
           pnpm generate
-          pnpm format
           if ! git diff --exit-code packages/client/src/; then
             echo "❌ Generated client is out of sync with OpenAPI spec"
-            echo "Run 'cd clients && pnpm generate && pnpm format' and commit the changes"
+            echo "Run 'cd clients && pnpm generate' and commit the changes"
             exit 1
           fi

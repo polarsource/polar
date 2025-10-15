@@ -54,11 +54,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ product }) => {
           <AmountLabel
             amount={firstTier.price_per_seat}
             currency={staticPrice.price_currency}
-            interval={
-              isLegacyRecurringPrice(staticPrice)
-                ? staticPrice.recurring_interval
-                : product.recurring_interval || undefined
-            }
+            interval={product.recurring_interval || undefined}
           />
           <span className="text-sm text-gray-500 dark:text-gray-400">
             /seat

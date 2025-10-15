@@ -17,6 +17,7 @@ from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.config import settings
 from polar.customer_meter.service import customer_meter as customer_meter_service
+from polar.customer_seat.service import seat_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
@@ -1722,9 +1723,16 @@ class SubscriptionService:
         if subscription.is_incomplete():
             return
 
-        # Skip automatic benefit grants for seat-based products
-        # Benefits will be granted when individual seats are claimed
+        # For seat-based products, handle benefits through seats
         if product.has_seat_based_price:
+            # When subscription is cancelled/revoked, revoke all seats
+            # which will in turn revoke benefits for each seat holder
+            if not subscription.active:
+                await seat_service.revoke_all_seats_for_subscription(
+                    session, subscription
+                )
+            # When subscription is active, benefits are granted when seats are claimed
+            # So we don't need to do anything here
             return
 
         task = "grant" if subscription.active else "revoke"

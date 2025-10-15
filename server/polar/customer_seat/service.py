@@ -381,6 +381,43 @@ class SeatService:
 
         return seat
 
+    async def revoke_all_seats_for_subscription(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> int:
+        """
+        Revoke all non-revoked seats for a subscription.
+
+        This is typically called when a subscription is cancelled to ensure
+        all seat holders lose access to their benefits.
+
+        Returns the number of seats revoked.
+        """
+        repository = CustomerSeatRepository.from_session(session)
+
+        all_seats = await repository.list_by_subscription_id(
+            subscription.id,
+            options=repository.get_eager_options(),
+        )
+
+        active_seats = [seat for seat in all_seats if not seat.is_revoked()]
+
+        revoked_count = 0
+        for seat in active_seats:
+            await self.revoke_seat(session, seat)
+            revoked_count += 1
+
+        if revoked_count > 0:
+            await session.flush()
+            log.info(
+                "Revoked all seats for subscription",
+                subscription_id=subscription.id,
+                seats_revoked=revoked_count,
+            )
+
+        return revoked_count
+
     async def _find__or_create_customer(
         self,
         session: AsyncSession,

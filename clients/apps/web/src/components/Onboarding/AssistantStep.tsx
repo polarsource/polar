@@ -271,13 +271,13 @@ export const AssistantStep = ({
                           return (
                             <div
                               key={`${message.id}-${index}`}
-                              className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-center text-gray-500"
+                              className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-4 rounded-2xl bg-gray-100 p-4 text-center text-gray-500"
                             >
                               You&rsquo;re all set!
                               <br />
                               Now, let&rsquo;s integrate your checkout flow.
                               <Link href={nextStep}>
-                                <Button variant="default">
+                                <Button className="dark:hover:bg-polar-50 rounded-full bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black">
                                   Integrate Checkout
                                 </Button>
                               </Link>

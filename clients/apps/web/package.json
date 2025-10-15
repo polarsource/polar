@@ -67,6 +67,7 @@
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.545.0",
     "markdown-to-jsx": "^7.7.15",
+    "nanoid": "^5.1.6",
     "next": "15.5.4",
     "next-themes": "^0.4.6",
     "nuqs": "^2.7.1",

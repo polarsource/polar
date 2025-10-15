@@ -1,15 +1,19 @@
 'use client'
 
-import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { useChat } from '@ai-sdk/react'
 import ArrowForwardOutlined from '@mui/icons-material/ArrowForwardOutlined'
+import { DefaultChatTransport, DynamicToolUIPart } from 'ai'
+import { nanoid } from 'nanoid'
+import Link from 'next/link'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+
+import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
+
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
-import { DefaultChatTransport, DynamicToolUIPart } from 'ai'
-import Link from 'next/link'
-import { useContext, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+
 import { FadeUp } from '../Animated/FadeUp'
 import { ToolCallGroup } from './ToolCallGroup'
 
@@ -74,7 +78,7 @@ export const AssistantStep = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const conversationId = useId()
+  const conversationId = useMemo(() => nanoid(), [])
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({

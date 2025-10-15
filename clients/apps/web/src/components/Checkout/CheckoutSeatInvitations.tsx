@@ -9,15 +9,9 @@ import {
 } from '@heroicons/react/24/outline'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@polar-sh/ui/components/atoms/Card'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { useState } from 'react'
+import { Well, WellContent, WellHeader } from '../Shared/Well'
 
 export interface CheckoutSeatInvitationsProps {
   checkout: CheckoutPublic
@@ -122,19 +116,19 @@ const CheckoutSeatInvitations = ({
   const canSend = validEmails > 0 && !isSending
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Invite team members</CardTitle>
-        <CardDescription>
+    <Well className="dark:border-polar-700 w-full border border-gray-200 bg-transparent dark:bg-transparent">
+      <WellHeader className="gap-y-4">
+        <h2 className="text-xl">Invite team members</h2>
+        <p className="dark:text-polar-500 text-sm text-gray-500">
           You purchased {seats} {seats === 1 ? 'seat' : 'seats'}. Invite team
           members to access the benefits.
-        </CardDescription>
-        <CardDescription className="text-xs">
+        </p>
+        <p className="text-sm">
           {availableSeats} {availableSeats === 1 ? 'seat' : 'seats'} available
-        </CardDescription>
-      </CardHeader>
+        </p>
+      </WellHeader>
 
-      <CardContent className="flex flex-col gap-6">
+      <WellContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
           {emailInputs.map((input) => (
             <div key={input.id} className="flex items-start gap-2">
@@ -178,7 +172,7 @@ const CheckoutSeatInvitations = ({
               disabled={isSending}
               className="self-start"
             >
-              <PlusIcon className="h-4 w-4" />
+              <PlusIcon className="mr-2 h-4 w-4" />
               Add another email
             </Button>
           )}
@@ -195,17 +189,13 @@ const CheckoutSeatInvitations = ({
         </Button>
 
         {sentCount > 0 && (
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="dark:text-polar-400 text-sm text-gray-600">
-                Successfully sent {sentCount}{' '}
-                {sentCount === 1 ? 'invitation' : 'invitations'}
-              </p>
-            </CardContent>
-          </Card>
+          <p className="dark:text-polar-500 text-center text-sm text-gray-500">
+            Successfully sent {sentCount}{' '}
+            {sentCount === 1 ? 'invitation' : 'invitations'}
+          </p>
         )}
-      </CardContent>
-    </Card>
+      </WellContent>
+    </Well>
   )
 }
 

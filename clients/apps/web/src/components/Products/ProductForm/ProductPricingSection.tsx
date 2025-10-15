@@ -335,7 +335,11 @@ export const ProductPriceSeatBasedItem: React.FC<
                             setValue(`prices.${index}.id`, '')
 
                             // Update next tier's min_seats immediately
-                            if (value && tiers && tierIndex < tiers.length - 1) {
+                            if (
+                              value &&
+                              tiers &&
+                              tierIndex < tiers.length - 1
+                            ) {
                               setValue(
                                 `prices.${index}.seat_tiers.tiers.${tierIndex + 1}.min_seats`,
                                 value + 1,

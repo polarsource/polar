@@ -16,6 +16,7 @@ import { ErrorMessage } from '@hookform/error-message'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   Select,
@@ -96,7 +97,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   const { control, setValue } = useFormContext<ProductFormType>()
 
   return (
-    <div className="flex w-40 flex-col gap-4">
+    <div className="mt-1.5 flex flex-row gap-4 gap-x-6">
       <FormField
         control={control}
         name={`prices.${index}.minimum_amount`}
@@ -105,7 +106,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
         }}
         render={({ field }) => {
           return (
-            <FormItem>
+            <FormItem className="flex flex-1 flex-col gap-0.5">
               <FormLabel>Minimum amount</FormLabel>
               <FormControl>
                 <MoneyInput
@@ -135,7 +136,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
         }}
         render={({ field }) => {
           return (
-            <FormItem>
+            <FormItem className="flex flex-1 flex-col gap-0.5">
               <FormLabel>Suggested amount</FormLabel>
               <FormControl>
                 <MoneyInput
@@ -248,11 +249,11 @@ export const ProductPriceSeatBasedItem: React.FC<
         return (
           <div
             key={field.id}
-            className="dark:bg-polar-900 group relative rounded-xl border border-gray-200 bg-white transition-colors hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700"
+            className="dark:bg-polar-900 group relative rounded-2xl border border-gray-200 bg-white dark:border-gray-800"
             role="group"
             aria-labelledby={`tier-title-${index}-${tierIndex}`}
           >
-            <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center justify-between p-4">
               <span
                 id={`tier-title-${index}-${tierIndex}`}
                 className="text-sm font-medium text-gray-900 dark:text-white"
@@ -285,20 +286,15 @@ export const ProductPriceSeatBasedItem: React.FC<
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-600 dark:text-gray-400">
+                    <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
                       From
                     </FormLabel>
                     <FormControl>
-                      <input
+                      <Input
                         {...field}
                         type="number"
                         min={1}
                         disabled={!isFirst}
-                        className={
-                          isFirst
-                            ? 'dark:bg-polar-900 flex h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500'
-                            : 'dark:bg-polar-950 flex h-9 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-500'
-                        }
                         onChange={(e) => {
                           field.onChange(parseInt(e.target.value) || 1)
                           setValue(`prices.${index}.id`, '')
@@ -336,21 +332,20 @@ export const ProductPriceSeatBasedItem: React.FC<
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-600 dark:text-gray-400">
+                    <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
                       To
                     </FormLabel>
                     <FormControl>
                       {isLast ? (
-                        <div className="dark:bg-polar-950 flex h-9 w-full items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm font-medium text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                        <div className="dark:bg-polar-800 dark:text-polar-500 flex h-9 w-full items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm font-medium text-gray-500 dark:border-gray-800">
                           ∞
                         </div>
                       ) : (
-                        <input
+                        <Input
                           {...field}
                           value={field.value ?? ''}
                           type="number"
                           min={tiers?.[tierIndex]?.min_seats ?? 1}
-                          className="dark:bg-polar-900 flex h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500"
                           onChange={(e) => {
                             const value = e.target.value
                               ? parseInt(e.target.value)
@@ -390,8 +385,8 @@ export const ProductPriceSeatBasedItem: React.FC<
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-600 dark:text-gray-400">
-                      Price/seat
+                    <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
+                      Price per seat
                     </FormLabel>
                     <FormControl>
                       <MoneyInput
@@ -425,13 +420,11 @@ export const ProductPriceSeatBasedItem: React.FC<
 
       <Button
         type="button"
-        size="sm"
         variant="secondary"
         onClick={addTier}
         className="self-start"
       >
-        <PlusIcon className="mr-1.5 h-4 w-4" />
-        {hasSingleTier ? 'Add volume tier' : 'Add another tier'}
+        {hasSingleTier ? 'Add Volume Tier' : 'Add Another Tier'}
       </Button>
     </div>
   )
@@ -740,7 +733,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       <SelectItem value="free">Free</SelectItem>
                       {organization.feature_settings
                         ?.seat_based_pricing_enabled && (
-                        <SelectItem value="seat_based">Seat-based</SelectItem>
+                        <SelectItem value="seat_based">Seats</SelectItem>
                       )}
                       {recurringInterval !== null && (
                         <SelectItem value="metered_unit">
@@ -868,7 +861,7 @@ export const ProductPricingSection = ({
           </Button>
         </div>
       ) : (
-        <div className="flex w-full flex-col gap-6">
+        <div className="flex w-full flex-col gap-4">
           <FormField
             control={control}
             name="recurring_interval"

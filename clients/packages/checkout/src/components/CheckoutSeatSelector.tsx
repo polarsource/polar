@@ -96,9 +96,7 @@ const CheckoutSeatSelector = ({
 
       {/* Seat Selector */}
       <div className="flex flex-col gap-2">
-        <label className="dark:text-polar-300 text-sm font-medium text-gray-700">
-          Number of seats
-        </label>
+        <label className="text-lg">Number of seats</label>
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"

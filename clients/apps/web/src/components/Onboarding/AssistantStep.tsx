@@ -147,12 +147,12 @@ export const AssistantStep = ({
   }
 
   return (
-    <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4">
-      <div className="dark:border-polar-700 flex flex-col">
+    <FadeUp className="flex flex-col gap-y-4">
+      <div className="dark:bg-polar-800 flex flex-col overflow-hidden rounded-3xl">
         {messages.length > 0 && (
           <div
             className={twMerge(
-              'dark:border-polar-700 flex h-full max-h-[640px] flex-1 flex-col gap-y-6 overflow-y-auto rounded-t-3xl border border-gray-200 p-6',
+              'dark:border-polar-600 flex h-full max-h-[640px] flex-1 flex-col gap-y-6 overflow-y-auto rounded-t-3xl border border-gray-200 p-6',
               hasRedirectedToManualSetup || isFinished
                 ? 'rounded-b-3xl border-b'
                 : 'border-b-0',
@@ -168,7 +168,7 @@ export const AssistantStep = ({
                 <div
                   className={`prose dark:prose-invert text-sm ${
                     message.role === 'user'
-                      ? 'dark:bg-polar-800 rounded-2xl bg-gray-100 px-4 py-2'
+                      ? 'dark:bg-polar-950 rounded-2xl bg-gray-100 px-4 py-2 dark:text-white'
                       : 'w-full space-y-4 dark:text-white'
                   }`}
                 >
@@ -297,7 +297,7 @@ export const AssistantStep = ({
         {!hasRedirectedToManualSetup && !isFinished && (
           <form
             onSubmit={handleSubmit}
-            className="dark:border-polar-700 flex shrink-0 flex-col gap-3 overflow-hidden rounded-b-3xl border first:rounded-t-3xl"
+            className="dark:border-polar-600 flex shrink-0 flex-col gap-3 overflow-hidden rounded-b-3xl border first:rounded-t-3xl"
           >
             <TextArea
               ref={textareaRef}

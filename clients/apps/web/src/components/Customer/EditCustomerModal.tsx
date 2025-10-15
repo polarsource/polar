@@ -7,6 +7,7 @@ import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -31,6 +32,7 @@ export const EditCustomerModal = ({
     defaultValues: {
       name: customer.name || '',
       email: customer.email || '',
+      external_id: customer.external_id || '',
       metadata: Object.entries(customer.metadata).map(([key, value]) => ({
         key,
         value,
@@ -111,6 +113,24 @@ export const EditCustomerModal = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value || ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="external_id"
+              disabled={!!customer.external_id}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>External ID</FormLabel>
+                  <FormDescription>
+                    An optional ID of the customer in your system. Once set, it
+                    can&apos;t be updated.
+                  </FormDescription>
                   <FormControl>
                     <Input {...field} value={field.value || ''} />
                   </FormControl>

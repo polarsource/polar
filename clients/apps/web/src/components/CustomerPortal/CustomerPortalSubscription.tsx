@@ -24,9 +24,9 @@ import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useState } from 'react'
 import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
-import { Well, WellContent, WellHeader } from '../Shared/Well'
 import AmountLabel from '../Shared/AmountLabel'
 import { DetailRow } from '../Shared/DetailRow'
+import { Well, WellContent, WellHeader } from '../Shared/Well'
 import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { toast } from '../Toast/use-toast'
@@ -285,7 +285,9 @@ const CustomerPortalSubscription = ({
                   </div>
                   <Button
                     onClick={handleAssignSeat}
-                    disabled={!email.trim() || availableSeats === 0 || isSending}
+                    disabled={
+                      !email.trim() || availableSeats === 0 || isSending
+                    }
                     loading={isSending}
                   >
                     <PlusIcon className="h-4 w-4" />

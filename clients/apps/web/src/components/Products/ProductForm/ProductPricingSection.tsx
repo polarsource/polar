@@ -172,40 +172,268 @@ export interface ProductPriceSeatBasedItemProps {
 export const ProductPriceSeatBasedItem: React.FC<
   ProductPriceSeatBasedItemProps
 > = ({ index }) => {
-  const { control, setValue } = useFormContext<ProductFormType>()
+  const { control, setValue, watch } = useFormContext<ProductFormType>()
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `prices.${index}.seat_tiers.tiers` as const,
+  })
+
+  const tiers = watch(`prices.${index}.seat_tiers.tiers`)
+
+  const DEFAULT_TIER_SIZE = 10
+
+  const addTier = useCallback(() => {
+    const lastTier = tiers?.[tiers.length - 1]
+    const minSeats = lastTier?.max_seats ? lastTier.max_seats + 1 : 1
+
+    // Update the current last tier to have a specific max_seats value
+    if (tiers && tiers.length > 0) {
+      const lastTierIndex = tiers.length - 1
+      setValue(
+        `prices.${index}.seat_tiers.tiers.${lastTierIndex}.max_seats`,
+        minSeats - 1,
+        { shouldValidate: true },
+      )
+    }
+
+    // Add the new tier with max_seats: null (unlimited)
+    // The LAST tier should ALWAYS have null max_seats
+    append({
+      min_seats: minSeats,
+      max_seats: null,
+      price_per_seat: 0,
+    })
+    setValue(`prices.${index}.id`, '')
+  }, [tiers, append, setValue, index])
+
+  const removeTier = useCallback(
+    (tierIndex: number) => {
+      remove(tierIndex)
+      setValue(`prices.${index}.id`, '')
+
+      // If only one tier remains after removal, set its max_seats to null (unlimited)
+      if (tiers && tiers.length === 2) {
+        // After removal there will be 1 tier left
+        const remainingTierIndex = tierIndex === 0 ? 1 : 0
+        setValue(
+          `prices.${index}.seat_tiers.tiers.${remainingTierIndex}.max_seats`,
+          null,
+          { shouldValidate: true },
+        )
+      }
+    },
+    [remove, setValue, index, tiers],
+  )
+
+  const hasSingleTier = fields.length === 1
+
+  const getTierTitle = (tierIndex: number, tier: any) => {
+    if (!tier) return `Tier ${tierIndex + 1}`
+
+    const isLast = tierIndex === fields.length - 1
+    const range = isLast
+      ? `${tier.min_seats}+ seats`
+      : `${tier.min_seats}–${tier.max_seats || tier.min_seats} seats`
+
+    return `Tier ${tierIndex + 1} (${range})`
+  }
 
   return (
-    <>
+    <div className="flex flex-col gap-3">
+      {fields.map((field, tierIndex) => {
+        const isLast = tierIndex === fields.length - 1
+        const isFirst = tierIndex === 0
+        const currentTier = tiers?.[tierIndex]
+
+        return (
+          <div
+            key={field.id}
+            className="dark:bg-polar-900 group relative rounded-xl border border-gray-200 bg-white transition-colors hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700"
+            role="group"
+            aria-labelledby={`tier-title-${index}-${tierIndex}`}
+          >
+            <div className="flex items-center justify-between px-4 py-3">
+              <span
+                id={`tier-title-${index}-${tierIndex}`}
+                className="text-sm font-medium text-gray-900 dark:text-white"
+              >
+                {getTierTitle(tierIndex, currentTier)}
+              </span>
+              {!isFirst && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="dark:text-polar-400 -mr-2 h-7 w-7 text-gray-400 opacity-0 transition-opacity hover:text-gray-600 group-hover:opacity-100 dark:hover:text-gray-300"
+                  onClick={() => removeTier(tierIndex)}
+                  aria-label={`Remove ${getTierTitle(tierIndex, currentTier)}`}
+                >
+                  <CloseOutlined className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 px-4 pb-4">
+              <FormField
+                control={control}
+                name={
+                  `prices.${index}.seat_tiers.tiers.${tierIndex}.min_seats` as const
+                }
+                rules={{
+                  required: 'Required',
+                  min: { value: 1, message: 'Must be at least 1' },
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs text-gray-600 dark:text-gray-400">
+                      From
+                    </FormLabel>
+                    <FormControl>
+                      <input
+                        {...field}
+                        type="number"
+                        min={1}
+                        disabled={!isFirst}
+                        className={
+                          isFirst
+                            ? 'dark:bg-polar-900 flex h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500'
+                            : 'dark:bg-polar-950 flex h-9 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm text-gray-500 dark:border-gray-800 dark:text-gray-500'
+                        }
+                        onChange={(e) => {
+                          field.onChange(parseInt(e.target.value) || 1)
+                          setValue(`prices.${index}.id`, '')
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={control}
+                name={
+                  `prices.${index}.seat_tiers.tiers.${tierIndex}.max_seats` as const
+                }
+                rules={{
+                  validate: (value) => {
+                    if (isLast) return true // Last tier is always unlimited (null)
+
+                    const minSeats = tiers?.[tierIndex]?.min_seats
+
+                    // max_seats must exist for non-last tiers
+                    if (value === null || value === undefined) {
+                      return 'Max seats is required'
+                    }
+
+                    // max_seats must be >= min_seats
+                    if (minSeats && value < minSeats) {
+                      return `Max seats must be at least ${minSeats}`
+                    }
+
+                    return true
+                  },
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs text-gray-600 dark:text-gray-400">
+                      To
+                    </FormLabel>
+                    <FormControl>
+                      {isLast ? (
+                        <div className="dark:bg-polar-950 flex h-9 w-full items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm font-medium text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                          ∞
+                        </div>
+                      ) : (
+                        <input
+                          {...field}
+                          value={field.value ?? ''}
+                          type="number"
+                          min={tiers?.[tierIndex]?.min_seats ?? 1}
+                          className="dark:bg-polar-900 flex h-9 w-full rounded-lg border border-gray-300 bg-white px-2.5 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500"
+                          onChange={(e) => {
+                            const value = e.target.value
+                              ? parseInt(e.target.value)
+                              : null
+                            field.onChange(value)
+                            setValue(`prices.${index}.id`, '')
+
+                            // Update next tier's min_seats immediately
+                            if (
+                              value &&
+                              tiers &&
+                              tierIndex < tiers.length - 1
+                            ) {
+                              setValue(
+                                `prices.${index}.seat_tiers.tiers.${tierIndex + 1}.min_seats`,
+                                value + 1,
+                                { shouldValidate: true },
+                              )
+                            }
+                          }}
+                        />
+                      )}
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={control}
+                name={
+                  `prices.${index}.seat_tiers.tiers.${tierIndex}.price_per_seat` as const
+                }
+                rules={{
+                  required: 'This field is required',
+                  min: { value: 50, message: 'Price must be greater than 0.5' },
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs text-gray-600 dark:text-gray-400">
+                      Price/seat
+                    </FormLabel>
+                    <FormControl>
+                      <MoneyInput
+                        name={field.name}
+                        value={field.value}
+                        onChange={(v) => {
+                          field.onChange(v)
+                          setValue(`prices.${index}.id`, '')
+                        }}
+                        placeholder={1000}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        )
+      })}
+
       <FormField
         control={control}
-        name={`prices.${index}.seat_tiers.tiers.0.price_per_seat` as any}
-        rules={{
-          required: 'This field is required',
-          min: { value: 50, message: 'Price must be greater than 0.5' },
-        }}
-        render={({ field }) => {
-          return (
-            <FormItem className="grow">
-              <div className="flex items-center gap-2">
-                <FormControl>
-                  <MoneyInput
-                    name={field.name}
-                    value={field.value as number}
-                    onChange={(v) => {
-                      field.onChange(v)
-                      setValue(`prices.${index}.id`, '')
-                    }}
-                    placeholder={0}
-                  />
-                </FormControl>
-              </div>
-              <FormDescription>Price per seat</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
+        name={`prices.${index}.seat_tiers.tiers` as const}
+        render={() => (
+          <FormItem>
+            <FormMessage />
+          </FormItem>
+        )}
       />
-    </>
+
+      <Button
+        type="button"
+        size="sm"
+        variant="secondary"
+        onClick={addTier}
+        className="self-start"
+      >
+        <PlusIcon className="mr-1.5 h-4 w-4" />
+        {hasSingleTier ? 'Add volume tier' : 'Add another tier'}
+      </Button>
+    </div>
   )
 }
 
@@ -724,9 +952,17 @@ export const ProductPricingSection = ({
           <ErrorMessage
             errors={errors}
             name="prices"
-            render={({ message }) => (
-              <p className="text-destructive text-sm font-medium">{message}</p>
-            )}
+            render={({ message }) => {
+              // Don't render if message is undefined or invalid
+              if (!message || message === 'undefined' || message === 'null') {
+                return null
+              }
+              return (
+                <p className="text-destructive text-sm font-medium">
+                  {message}
+                </p>
+              )
+            }}
           />
         </div>
       )}

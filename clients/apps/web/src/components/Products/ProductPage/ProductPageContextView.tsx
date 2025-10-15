@@ -3,7 +3,7 @@ import {
   useUpdateProduct,
   useUpdateProductBenefits,
 } from '@/hooks/queries'
-import { setValidationErrors } from '@/utils/api/errors'
+import { setProductValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -75,7 +75,7 @@ export const ProductPageContextView = ({
 
       if (error) {
         if (isValidationError(error.detail)) {
-          setValidationErrors(error.detail, setError)
+          setProductValidationErrors(error.detail, setError)
         }
         return
       }

@@ -166,10 +166,10 @@ export const AssistantStep = ({
                 }`}
               >
                 <div
-                  className={`text-sm ${
+                  className={`prose dark:prose-invert text-sm ${
                     message.role === 'user'
                       ? 'dark:bg-polar-800 rounded-2xl bg-gray-100 px-4 py-2'
-                      : 'prose dark:prose-invert w-full space-y-4 dark:text-white'
+                      : 'w-full space-y-4 dark:text-white'
                   }`}
                 >
                   {groupMessageParts(message.parts).map((item) => {
@@ -267,7 +267,7 @@ export const AssistantStep = ({
                           return (
                             <div
                               key={`${message.id}-${index}`}
-                              className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-gray-500"
+                              className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-center text-gray-500"
                             >
                               You&rsquo;re all set!
                               <br />

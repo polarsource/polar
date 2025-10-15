@@ -19,13 +19,9 @@ export default async function Page(props: {
   const userOrganizations = await getUserOrganizations(api)
 
   if (userOrganizations.length > 0) {
-    const org = userOrganizations.find(
-      async (org) => org.slug === getLastVisitedOrg(await cookies()),
-    )
-
-    const targetOrg = org?.slug ?? userOrganizations[0].slug
-
-    redirect(`/dashboard/${targetOrg}`)
+    const lastVisitedOrg = getLastVisitedOrg(await cookies(), userOrganizations)
+    const organization = lastVisitedOrg ? lastVisitedOrg : userOrganizations[0]
+    redirect(`/dashboard/${organization.slug}`)
   }
 
   return (

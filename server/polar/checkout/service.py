@@ -1440,6 +1440,12 @@ class CheckoutService:
             )
             yield checkout
 
+            # 🚨 It's not a mistake: we do explicitly commit here before releasing the lock.
+            # The goal is to avoid race conditions where waiting updates take the lock and refresh
+            # the Checkout object _before_ the previous operation had the chance to commit
+            # See: https://github.com/polarsource/polar/issues/7260
+            await session.commit()
+
     async def _update_checkout(
         self,
         session: AsyncSession,

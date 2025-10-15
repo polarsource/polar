@@ -17,7 +17,6 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.25",
     "@ai-sdk/google": "^2.0.19",
-    "@ai-sdk/openai": "^2.0.42",
     "@ai-sdk/react": "^2.0.59",
     "@date-fns/utc": "^2.1.1",
     "@dnd-kit/core": "^6.3.1",

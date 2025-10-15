@@ -68,29 +68,25 @@ export const CustomerPortalOverview = ({
 
       {activeClaimedSubscriptions.length > 0 && (
         <div className="flex flex-col gap-y-4">
-          <h3 className="text-xl">Team Seat Access</h3>
-          <div className="dark:border-polar-700 dark:bg-polar-900 flex flex-col gap-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-6">
-            {activeClaimedSubscriptions.map((s) => (
-              <div
-                key={s.id}
-                className="dark:bg-polar-800 flex items-center justify-between rounded-lg bg-white p-4"
-              >
-                <div className="flex flex-col gap-1">
-                  <span className="font-medium">{s.product.name}</span>
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
-                    {s.product.organization.name}
-                  </span>
-                </div>
-                <span className="dark:bg-polar-700 dark:text-polar-300 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
-                  Team Seat
+          <div className="flex flex-col gap-y-2">
+            <h3 className="text-xl">Team Seat Access</h3>
+            <p className="dark:text-polar-500 text-gray-500">
+              Access provided through team subscription
+            </p>
+          </div>
+          {activeClaimedSubscriptions.map((s) => (
+            <div
+              key={s.id}
+              className="dark:bg-polar-900 flex justify-between rounded-2xl bg-gray-50 px-6 py-4"
+            >
+              <div className="flex flex-col gap-1">
+                <span>{s.product.name}</span>
+                <span className="dark:text-polar-500 text-sm text-gray-500">
+                  {s.product.organization.name}
                 </span>
               </div>
-            ))}
-          </div>
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            Access provided through team subscription. Contact your team admin
-            to manage these subscriptions.
-          </p>
+            </div>
+          ))}
         </div>
       )}
 

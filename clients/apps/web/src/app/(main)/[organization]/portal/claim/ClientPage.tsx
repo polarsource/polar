@@ -2,12 +2,14 @@
 
 import { useSeatClaimFulfillment } from '@/hooks/useSeatClaimFulfillment'
 import { CONFIG } from '@/utils/config'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import ErrorOutlined from '@mui/icons-material/ErrorOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -151,10 +153,10 @@ export default function ClientPage({
           themePreset.polar.wellSecondary,
         )}
       >
-        <XCircle className="h-16 w-16 text-red-500" />
+        <ErrorOutlined fontSize="large" />
         <div className="flex flex-col items-center gap-2 text-center">
-          <h2 className="text-2xl font-medium">Missing Invitation Token</h2>
-          <p className="dark:text-polar-400 text-gray-500">
+          <h2 className="text-xl">Missing Invitation Token</h2>
+          <p className="dark:text-polar-500 text-gray-500">
             This page requires a valid invitation token in the URL.
           </p>
         </div>
@@ -170,7 +172,7 @@ export default function ClientPage({
           themePreset.polar.wellSecondary,
         )}
       >
-        <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin" />
         <p className="dark:text-polar-400 text-gray-500">
           Loading invitation details...
         </p>
@@ -186,10 +188,10 @@ export default function ClientPage({
           themePreset.polar.wellSecondary,
         )}
       >
-        <XCircle className="h-16 w-16 text-red-500" />
-        <div className="flex flex-col items-center gap-2 text-center">
-          <h2 className="text-2xl font-medium">Invalid Invitation</h2>
-          <p className="dark:text-polar-400 text-gray-500">
+        <ErrorOutlined fontSize="large" />
+        <div className="flex flex-col items-center gap-4 text-center">
+          <h2 className="text-xl">Invalid Invitation</h2>
+          <p className="dark:text-polar-500 text-gray-500">
             This invitation link is invalid, has expired, or has already been
             claimed. Contact the person who invited you to resend the
             invitation.
@@ -211,22 +213,22 @@ export default function ClientPage({
       >
         {isRedirecting ? (
           <>
-            <CheckCircle2 className="h-16 w-16 text-green-500" />
+            <CheckOutlined fontSize="large" />
             <div className="flex flex-col items-center gap-2 text-center">
-              <h2 className="text-2xl font-medium">Success!</h2>
-              <p className="dark:text-polar-400 text-gray-500">
+              <h2 className="text-xl font-medium">Success!</h2>
+              <p className="dark:text-polar-500 text-gray-500">
                 Redirecting to your portal...
               </p>
             </div>
           </>
         ) : (
           <>
-            <Loader2 className="h-16 w-16 animate-spin text-blue-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
             <div className="flex flex-col items-center gap-2 text-center">
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl">
                 {fulfillmentLabel || 'Claiming benefits...'}
               </h2>
-              <p className="dark:text-polar-400 text-sm text-gray-500">
+              <p className="dark:text-polar-500 text-sm text-gray-500">
                 Please wait while we set up your access
               </p>
             </div>
@@ -244,36 +246,32 @@ export default function ClientPage({
       )}
     >
       <div className="flex flex-col gap-4">
-        <h2 className="text-3xl font-medium">Claim Your Seat</h2>
-        <p className="dark:text-polar-400 text-lg text-gray-600">
+        <h2 className="text-xl">Claim Your Seat</h2>
+        <p className="dark:text-polar-500 text-gray-500">
           You&apos;ve been invited to access {claimInfo.product_name}
         </p>
       </div>
 
-      <div className="dark:bg-polar-800 flex flex-col gap-4 rounded-2xl bg-gray-50 p-6">
+      <div className="dark:bg-polar-800 flex flex-col gap-4 rounded-2xl bg-white p-6">
         <div className="flex flex-col gap-1">
           <span className="dark:text-polar-400 text-sm text-gray-500">
             Product
           </span>
-          <span className="text-lg font-medium">{claimInfo.product_name}</span>
+          <span>{claimInfo.product_name}</span>
         </div>
 
         <div className="flex flex-col gap-1">
           <span className="dark:text-polar-400 text-sm text-gray-500">
             Organization
           </span>
-          <span className="text-lg font-medium">
-            {claimInfo.organization_name}
-          </span>
+          <span>{claimInfo.organization_name}</span>
         </div>
 
         <div className="flex flex-col gap-1">
           <span className="dark:text-polar-400 text-sm text-gray-500">
             Your Email
           </span>
-          <span className="text-lg font-medium">
-            {claimInfo.customer_email}
-          </span>
+          <span>{claimInfo.customer_email}</span>
         </div>
       </div>
 
@@ -285,9 +283,7 @@ export default function ClientPage({
           size="lg"
           className={themePreset.polar.button}
         >
-          {claimingState !== 'idle'
-            ? 'Claiming...'
-            : 'Claim My Seat & Access Benefits'}
+          {claimingState !== 'idle' ? 'Claiming...' : 'Claim Seat'}
         </Button>
 
         {(claimError || claimMutation.error) && (

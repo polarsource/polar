@@ -1,10 +1,8 @@
 'use client'
 
-import {
-  ArrowPathIcon,
-  EllipsisVerticalIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline'
+import { ArrowPathIcon, TrashIcon } from '@heroicons/react/24/outline'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import {
   DropdownMenu,
@@ -67,7 +65,10 @@ export const SeatManagementTable = ({
 
   return (
     <DataTable
-      data={seats}
+      data={seats.sort((a, b) => {
+        const order = ['claimed', 'pending', 'revoked']
+        return order.indexOf(a.status) - order.indexOf(b.status)
+      })}
       isLoading={false}
       columns={[
         {
@@ -75,7 +76,7 @@ export const SeatManagementTable = ({
           header: 'Email',
           cell: ({ row }) => (
             <span className="font-medium">
-              {row.original.customer_email || 'N/A'}
+              {row.original.customer_email || '—'}
             </span>
           ),
         },
@@ -111,7 +112,9 @@ export const SeatManagementTable = ({
               <div className="flex justify-end">
                 <DropdownMenu>
                   <DropdownMenuTrigger disabled={isLoading}>
-                    <EllipsisVerticalIcon className="h-5 w-5" />
+                    <Button className="h-8 w-8" variant="secondary">
+                      <MoreVertOutlined fontSize="inherit" />
+                    </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {seat.status === 'pending' && (

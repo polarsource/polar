@@ -34,7 +34,7 @@ export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {
             {<TabsTrigger value="alerts">Alerts</TabsTrigger>}
           </TabsList> */}
         </div>
-        <TabsContent className="flex flex-col gap-y-12 pt-8" value="meters">
+        <TabsContent className="flex flex-col gap-y-12 pt-4" value="meters">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col items-center gap-4 lg:flex-row">
               <div className="w-full lg:w-1/3">

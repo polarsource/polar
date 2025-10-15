@@ -106,6 +106,15 @@ SuccessURL = Annotated[
         )
     ),
 ]
+ReturnURL = Annotated[
+    HttpUrl | None,
+    Field(
+        description=(
+            "When set, a back button will be shown in the checkout "
+            "to return to this URL."
+        )
+    ),
+]
 EmbedOrigin = Annotated[
     str | None,
     Field(
@@ -209,6 +218,7 @@ class CheckoutCreateBase(
         ),
     )
     success_url: SuccessURL = None
+    return_url: ReturnURL = None
     embed_origin: EmbedOrigin = None
 
 
@@ -342,6 +352,7 @@ class CheckoutUpdate(
         default=None, description=_customer_metadata_description
     )
     success_url: SuccessURL = None
+    return_url: ReturnURL = None
     embed_origin: EmbedOrigin = None
 
 
@@ -401,10 +412,18 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
             "URL where the customer will be redirected after a successful payment."
         )
     )
+    return_url: str | None = Field(
+        description=(
+            "When set, a back button will be shown in the checkout "
+            "to return to this URL."
+        )
+    )
     embed_origin: str | None = Field(
-        description="When checkout is embedded, "
-        "represents the Origin of the page embedding the checkout. "
-        "Used as a security measure to send messages only to the embedding page."
+        description=(
+            "When checkout is embedded, "
+            "represents the Origin of the page embedding the checkout. "
+            "Used as a security measure to send messages only to the embedding page."
+        )
     )
     amount: int = Field(description="Amount in cents, before discounts and taxes.")
     seats: int | None = Field(

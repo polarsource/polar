@@ -107,6 +107,7 @@ class Checkout(
     payment_processor_metadata: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )
+    return_url: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     _success_url: Mapped[str | None] = mapped_column(
         "success_url", String, nullable=True, default=None
     )

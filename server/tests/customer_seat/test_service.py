@@ -947,3 +947,206 @@ class TestBenefitGranting:
                 claimed_seat.subscription_id
             )
             assert call_args[1]["customer_id"] == customer.id
+
+
+class TestRevokeAllSeatsForSubscription:
+    """Tests for revoking all seats when a subscription is cancelled."""
+
+    @pytest.mark.asyncio
+    async def test_revoke_all_seats_for_subscription_success(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        """Test that all active seats are revoked when subscription is cancelled."""
+        # Create multiple claimed seats
+        customer1 = await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="customer1@example.com",
+        )
+        customer2 = await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="customer2@example.com",
+        )
+        customer3 = await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="customer3@example.com",
+        )
+
+        seat1 = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer1,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+        seat2 = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer2,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+        # Create a pending seat as well
+        seat3 = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer3,
+            status=SeatStatus.pending,
+        )
+
+        await session.refresh(subscription_with_seats, ["product"])
+        await session.refresh(subscription_with_seats.product, ["organization"])
+
+        # Revoke all seats for the subscription
+        revoked_count = await seat_service.revoke_all_seats_for_subscription(
+            session, subscription_with_seats
+        )
+
+        # Should have revoked 3 seats (2 claimed + 1 pending)
+        assert revoked_count == 3
+
+        # Verify all seats are now revoked
+        await session.refresh(seat1)
+        await session.refresh(seat2)
+        await session.refresh(seat3)
+
+        assert seat1.status == SeatStatus.revoked
+        assert seat1.revoked_at is not None
+        assert seat1.customer_id is None
+
+        assert seat2.status == SeatStatus.revoked
+        assert seat2.revoked_at is not None
+        assert seat2.customer_id is None
+
+        assert seat3.status == SeatStatus.revoked
+        assert seat3.revoked_at is not None
+        assert seat3.customer_id is None
+
+    @pytest.mark.asyncio
+    async def test_revoke_all_seats_skips_already_revoked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        """Test that already-revoked seats are skipped."""
+        customer1 = await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="customer1@example.com",
+        )
+        customer2 = await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="customer2@example.com",
+        )
+
+        # Create one claimed seat
+        seat1 = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer1,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+        # Create one already-revoked seat
+        seat2 = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer2,
+            status=SeatStatus.revoked,
+            revoked_at=utc_now(),
+        )
+
+        await session.refresh(subscription_with_seats, ["product"])
+        await session.refresh(subscription_with_seats.product, ["organization"])
+
+        # Revoke all seats
+        revoked_count = await seat_service.revoke_all_seats_for_subscription(
+            session, subscription_with_seats
+        )
+
+        # Should have revoked only 1 seat (the claimed one)
+        assert revoked_count == 1
+
+        # Verify seat1 is revoked
+        await session.refresh(seat1)
+        assert seat1.status == SeatStatus.revoked
+
+    @pytest.mark.asyncio
+    async def test_revoke_all_seats_no_active_seats(
+        self,
+        session: AsyncSession,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        """Test that revoking when there are no active seats returns 0."""
+        await session.refresh(subscription_with_seats, ["product"])
+        await session.refresh(subscription_with_seats.product, ["organization"])
+
+        revoked_count = await seat_service.revoke_all_seats_for_subscription(
+            session, subscription_with_seats
+        )
+
+        assert revoked_count == 0
+
+    @pytest.mark.asyncio
+    async def test_revoke_all_seats_enqueues_benefit_revocations(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        """Test that revoking all seats enqueues benefit revocations for each seat holder."""
+        customer1 = await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="customer1@example.com",
+        )
+        customer2 = await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="customer2@example.com",
+        )
+
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer1,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer2,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+
+        await session.refresh(subscription_with_seats, ["product"])
+        await session.refresh(subscription_with_seats.product, ["organization"])
+
+        with patch("polar.customer_seat.service.enqueue_job") as mock_enqueue_job:
+            revoked_count = await seat_service.revoke_all_seats_for_subscription(
+                session, subscription_with_seats
+            )
+
+            # Should have revoked 2 seats
+            assert revoked_count == 2
+
+            # Should have enqueued 2 benefit revocations
+            assert mock_enqueue_job.call_count == 2
+
+            # Verify both calls were for benefit revocation
+            for call in mock_enqueue_job.call_args_list:
+                assert call[0][0] == "benefit.enqueue_benefits_grants"
+                assert call[1]["task"] == "revoke"
+                assert call[1]["product_id"] == subscription_with_seats.product_id
+                assert call[1]["subscription_id"] == subscription_with_seats.id
+                # Customer ID should be either customer1 or customer2
+                assert call[1]["customer_id"] in [customer1.id, customer2.id]

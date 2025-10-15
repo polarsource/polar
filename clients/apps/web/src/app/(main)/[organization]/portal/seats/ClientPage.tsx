@@ -1,5 +1,6 @@
 'use client'
 
+import { EmptyState } from '@/components/CustomerPortal/EmptyState'
 import { SeatManagementTable } from '@/components/CustomerPortal/SeatManagementTable'
 import { Well, WellContent, WellHeader } from '@/components/Shared/Well'
 import { toast } from '@/components/Toast/use-toast'
@@ -12,9 +13,16 @@ import {
 import { createClientSideAPI } from '@/utils/client'
 import { validateEmail } from '@/utils/validation'
 import { PlusIcon } from '@heroicons/react/24/outline'
+import ChairOutlined from '@mui/icons-material/ChairOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@polar-sh/ui/components/atoms/Tabs'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useState } from 'react'
 
@@ -119,12 +127,11 @@ const ClientPage = ({
 
   if (subscriptions.length === 0) {
     return (
-      <div className="flex flex-col">
-        <h3 className="text-2xl">Seats</h3>
-        <div className="dark:text-polar-500 mt-8 text-center text-gray-500">
-          You don&apos;t have any active seat-based subscriptions.
-        </div>
-      </div>
+      <EmptyState
+        icon={<ChairOutlined />}
+        title="No Seat Subscriptions"
+        description="You don't manage any seat-based subscriptions at the moment."
+      />
     )
   }
 
@@ -133,94 +140,98 @@ const ClientPage = ({
   const seats = seatsData?.seats || []
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-y-6">
       <h3 className="text-2xl">Seats</h3>
 
-      <div className="mt-8 flex flex-col gap-12">
+      <Tabs className="flex flex-col gap-6" value={selectedSubscriptionId}>
         {subscriptions.length > 1 && (
-          <div className="flex flex-col gap-4">
-            <h3 className="text-xl">Subscription</h3>
-            <div className="flex flex-wrap gap-2">
-              {subscriptions.map((sub) => (
-                <button
-                  key={sub.id}
-                  onClick={() => setSelectedSubscriptionId(sub.id)}
-                  className={`dark:border-polar-700 rounded-lg border px-4 py-2 text-sm transition-colors ${
-                    selectedSubscriptionId === sub.id
-                      ? 'dark:bg-polar-800 dark:border-polar-600 border-gray-300 bg-gray-100'
-                      : 'dark:hover:bg-polar-900 border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  {sub.product.name}
-                </button>
-              ))}
-            </div>
-          </div>
+          <TabsList className="dark:bg-polar-900 flex flex-wrap gap-2 rounded-xl bg-gray-50">
+            {subscriptions.map((sub) => (
+              <TabsTrigger
+                className="dark:data-[state=active]:bg-polar-700 data-[state=active]:rounded-lg data-[state=active]:bg-white"
+                key={sub.id}
+                value={sub.id}
+                onClick={() => setSelectedSubscriptionId(sub.id)}
+              >
+                {sub.product.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         )}
 
-        <Well className="flex flex-col gap-y-6">
-          <WellHeader>
-            <div className="flex flex-col gap-y-2">
-              <h3 className="text-xl">
-                {subscriptions.length > 1
-                  ? selectedSubscription?.product.name
-                  : 'Manage Seats'}
-              </h3>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                {availableSeats} of {totalSeats} seats available
-              </p>
-            </div>
-          </WellHeader>
-          <Separator className="dark:bg-polar-700" />
-          <WellContent className="gap-y-4">
-            <div className="flex flex-col gap-y-3">
-              <div className="flex items-start gap-2">
-                <div className="flex-1">
-                  <Input
-                    type="email"
-                    placeholder="email@example.com"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value)
-                      setError(undefined)
-                    }}
-                    disabled={isSending || availableSeats === 0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleAssignSeat()
-                      }
-                    }}
-                  />
-                  {error && (
-                    <p className="dark:text-polar-400 mt-1 text-xs text-gray-500">
-                      {error}
-                    </p>
-                  )}
+        {subscriptions.map((sub) => (
+          <TabsContent
+            key={sub.id}
+            value={sub.id}
+            className="flex flex-col gap-6"
+          >
+            <Well className="dark:border-polar-700 flex flex-col gap-y-6 border border-gray-200 bg-transparent dark:bg-transparent">
+              <WellHeader>
+                <div className="flex flex-col gap-y-2">
+                  <h3 className="text-xl">
+                    {subscriptions.length > 1
+                      ? selectedSubscription?.product.name
+                      : 'Manage Seats'}
+                  </h3>
+                  <p className="dark:text-polar-500 text-sm text-gray-500">
+                    {availableSeats} of {totalSeats} seats available
+                  </p>
                 </div>
-                <Button
-                  onClick={handleAssignSeat}
-                  disabled={!email.trim() || availableSeats === 0 || isSending}
-                  loading={isSending}
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  Invite
-                </Button>
-              </div>
-            </div>
-          </WellContent>
-        </Well>
+              </WellHeader>
+              <Separator className="dark:bg-polar-700" />
+              <WellContent className="gap-y-4">
+                <div className="flex flex-col gap-y-3">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1">
+                      <Input
+                        type="email"
+                        placeholder="email@example.com"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value)
+                          setError(undefined)
+                        }}
+                        disabled={isSending || availableSeats === 0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAssignSeat()
+                          }
+                        }}
+                      />
+                      {error && (
+                        <p className="dark:text-polar-400 mt-1 text-xs text-gray-500">
+                          {error}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      onClick={handleAssignSeat}
+                      disabled={
+                        !email.trim() || availableSeats === 0 || isSending
+                      }
+                      loading={isSending}
+                    >
+                      <PlusIcon className="mr-2 h-4 w-4" />
+                      Invite
+                    </Button>
+                  </div>
+                </div>
+              </WellContent>
+            </Well>
 
-        {!isLoading && seats.length > 0 && (
-          <div className="flex flex-col gap-6">
-            <h3 className="text-xl">Assigned Seats</h3>
-            <SeatManagementTable
-              seats={seats}
-              onRevokeSeat={handleRevokeSeat}
-              onResendInvitation={handleResendInvitation}
-            />
-          </div>
-        )}
-      </div>
+            {!isLoading && seats.length > 0 && (
+              <div className="flex flex-col gap-6">
+                <h3 className="text-xl">Manage Seats</h3>
+                <SeatManagementTable
+                  seats={seats}
+                  onRevokeSeat={handleRevokeSeat}
+                  onResendInvitation={handleResendInvitation}
+                />
+              </div>
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   )
 }

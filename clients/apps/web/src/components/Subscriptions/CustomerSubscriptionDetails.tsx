@@ -239,7 +239,6 @@ const CustomerSubscriptionDetails = ({
       <div className="flex flex-row gap-4">
         {primaryAction && (
           <Button
-            size="lg"
             onClick={primaryAction.onClick}
             loading={primaryAction.loading}
             className={themePreset.polar.button}
@@ -248,7 +247,6 @@ const CustomerSubscriptionDetails = ({
           </Button>
         )}
         <Button
-          size="lg"
           className={twMerge(
             'hidden md:flex',
             themePreset.polar.buttonSecondary,
@@ -263,7 +261,6 @@ const CustomerSubscriptionDetails = ({
           href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
         >
           <Button
-            size="lg"
             variant="secondary"
             className={themePreset.polar.buttonSecondary}
           >

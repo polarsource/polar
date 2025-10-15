@@ -304,9 +304,7 @@ export async function POST(req: Request) {
 
   let tools = {}
 
-  const lastUserMessages = [...messages]
-    .reverse()
-    .filter((m) => m.role === 'user')
+  const lastUserMessages = messages.filter((m) => m.role === 'user').reverse()
 
   if (lastUserMessages.length === 0) {
     return new Response('No user message found', { status: 400 })

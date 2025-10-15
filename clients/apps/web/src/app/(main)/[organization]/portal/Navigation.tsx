@@ -1,5 +1,7 @@
 'use client'
 
+import { useCustomerPortalSession } from '@/hooks/queries'
+import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import {
   Select,
@@ -47,6 +49,11 @@ export const Navigation = ({
   const currentPath = usePathname()
   const searchParams = useSearchParams()
 
+  const api = createClientSideAPI(
+    searchParams.get('customer_session_token') as string,
+  )
+  const { data: customerPortalSession } = useCustomerPortalSession(api)
+
   // Hide navigation on routes where portal access is being requested or authenticated
   const hideNav =
     currentPath.endsWith('/portal/request') ||
@@ -65,6 +72,14 @@ export const Navigation = ({
   return (
     <>
       <nav className="sticky top-0 hidden h-fit w-40 flex-none flex-col gap-y-1 py-12 md:flex lg:w-64">
+        {customerPortalSession && customerPortalSession.return_url && (
+          <Link
+            href={customerPortalSession.return_url}
+            className="dark:text-polar-500 px-4 py-2 text-gray-500"
+          >
+            ← Back to {organization.name}
+          </Link>
+        )}
         {filteredLinks.map((link) => (
           <Link
             key={link.href}

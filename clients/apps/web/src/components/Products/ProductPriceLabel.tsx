@@ -56,8 +56,8 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ product }) => {
             currency={staticPrice.price_currency}
             interval={product.recurring_interval || undefined}
           />
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            /seat
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            / seat
           </span>
         </div>
       )

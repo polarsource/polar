@@ -8,19 +8,15 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { motion } from 'framer-motion'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useContext, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { FadeUp } from '../Animated/FadeUp'
-import LogoIcon from '../Brand/LogoIcon'
 import ProductBenefitsForm from '../Products/ProductBenefitsForm'
 import { ProductFullMediasMixin } from '../Products/ProductForm/ProductForm'
 import { ProductInfoSection } from '../Products/ProductForm/ProductInfoSection'
 import { ProductMediaSection } from '../Products/ProductForm/ProductMediaSection'
 import { ProductPricingSection } from '../Products/ProductForm/ProductPricingSection'
-import { AssistantStep } from './AssistantStep'
 
 type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
   ProductFullMediasMixin & {
@@ -28,80 +24,6 @@ type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
   }
 
 export const ProductStep = () => {
-  const [mode, setMode] = useState<'assistant' | 'manual'>('assistant')
-  const [isAssistantFinished, setIsAssistantFinished] = useState(false)
-  const [shouldShowSkip, setShouldShowSkip] = useState(false)
-  const { organization } = useContext(OrganizationContext)
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isAssistantFinished) {
-        setShouldShowSkip(true)
-      }
-    }, 5000)
-
-    return () => clearTimeout(timer)
-  }, [isAssistantFinished])
-
-  return (
-    <div className="dark:md:bg-polar-950 flex flex-col pt-16 md:items-center md:p-16">
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        transition={{ duration: 1, staggerChildren: 0.3 }}
-        className="flex min-h-0 w-full shrink-0 flex-col gap-12 md:max-w-xl md:p-8"
-      >
-        <FadeUp className="flex flex-col items-center gap-y-8">
-          <LogoIcon size={50} />
-          <div className="flex flex-col gap-y-4">
-            <h1 className="text-center text-3xl">Your first product</h1>
-            <p className="dark:text-polar-400 text-center text-lg text-gray-600">
-              Setup your first digital product to get started.
-            </p>
-          </div>
-        </FadeUp>
-
-        {mode === 'assistant' && (
-          <AssistantStep
-            onEjectToManual={() => setMode('manual')}
-            onFinished={() => {
-              setShouldShowSkip(false)
-              setIsAssistantFinished(true)
-            }}
-          />
-        )}
-
-        {mode === 'manual' && <ProductForm />}
-
-        {shouldShowSkip && (
-          <FadeUp className="flex flex-col gap-y-2 p-8 md:p-0">
-            <div className="dark:text-polar-500 flex flex-row items-center justify-center gap-x-4 text-sm text-gray-500">
-              {mode === 'assistant' && (
-                <>
-                  <button
-                    className="dark:hover:text-polar-500 dark:hover:bg-polar-700 cursor-pointer rounded-full px-2.5 py-1 transition-colors duration-100 hover:bg-gray-100 hover:text-gray-500"
-                    onClick={() => setMode('manual')}
-                  >
-                    Configure manually
-                  </button>
-                  ·
-                </>
-              )}
-              <Link
-                href={`/dashboard/${organization.slug}`}
-                className="dark:hover:text-polar-500 dark:hover:bg-polar-700 rounded-full px-2.5 py-1 transition-colors duration-100 hover:bg-gray-100 hover:text-gray-500"
-              >
-                Skip onboarding
-              </Link>
-            </div>
-          </FadeUp>
-        )}
-      </motion.div>
-    </div>
-  )
-}
-
-const ProductForm = () => {
   const { organization } = useContext(OrganizationContext)
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
     schemas['Benefit']['id'][]

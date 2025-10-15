@@ -1,3 +1,4 @@
+import { schemas } from '@polar-sh/client'
 import { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 
 const lastVisitedOrg = 'last_visited_org'
@@ -11,6 +12,11 @@ export const setLastVisitedOrg = (
 
 export const getLastVisitedOrg = (
   cookies: ReadonlyRequestCookies,
-): string | undefined => {
-  return cookies.get(lastVisitedOrg)?.value
+  organizations: schemas['Organization'][],
+): schemas['Organization'] | undefined => {
+  const lastVisitedOrgSlug = cookies.get(lastVisitedOrg)?.value
+  if (!lastVisitedOrgSlug) {
+    return undefined
+  }
+  return organizations.find((org) => org.slug === lastVisitedOrgSlug)
 }

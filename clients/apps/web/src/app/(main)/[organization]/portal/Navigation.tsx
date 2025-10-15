@@ -2,6 +2,7 @@
 
 import { useCustomerPortalSession } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
+import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { schemas } from '@polar-sh/client'
 import {
   Select,
@@ -75,9 +76,10 @@ export const Navigation = ({
         {customerPortalSession && customerPortalSession.return_url && (
           <Link
             href={customerPortalSession.return_url}
-            className="dark:text-polar-500 px-4 py-2 text-gray-500"
+            className="dark:text-polar-500 flex flex-row items-center gap-x-4 px-4 py-2 text-gray-500"
           >
-            ← Back to {organization.name}
+            <ArrowBackOutlined fontSize="inherit" />
+            <span>Back to {organization.name}</span>
           </Link>
         )}
         {filteredLinks.map((link) => (

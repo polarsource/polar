@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "email dev --dir src/emails",
     "clean": "rm -rf dist bin",
+    "types": "uv --directory .. run python -m polar.email.schemas | openapi-typescript --output src/types/openapi.ts",
     "build": "pnpm run clean && tsup && pkg package.json",
     "format_check": "prettier src/** --check",
     "format_write": "prettier src/** --write"
@@ -26,6 +27,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
     "@yao-pkg/pkg": "^6.8.0",
+    "openapi-typescript": "^7.10.1",
     "prettier": "^3.6.2",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-tailwindcss": "^0.6.14",

@@ -302,15 +302,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return f"{settings.STRIPE_STATEMENT_DESCRIPTOR}# {self.statement_descriptor}"
 
     @property
-    def email_props(self) -> dict[str, Any]:
-        return {
-            "name": self.name,
-            "slug": self.slug,
-            "logo_url": self.avatar_url,
-            "website_url": self.website,
-        }
-
-    @property
     def email_from_reply(self) -> EmailFromReply:
         return {
             "from_name": f"{self.name} (via {settings.EMAIL_FROM_NAME})",

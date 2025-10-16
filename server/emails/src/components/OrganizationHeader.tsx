@@ -1,8 +1,8 @@
 import { Column, Img, Link, Row, Section, Text } from '@react-email/components'
-import type { OrganizationProps } from '../types'
+import type { schemas } from '../types'
 
 interface HeaderProps {
-  organization: OrganizationProps
+  organization: schemas['Organization']
 }
 
 const LinkWrapper = ({
@@ -19,14 +19,14 @@ const LinkWrapper = ({
 }
 
 const Header = ({ organization }: HeaderProps) => (
-  <LinkWrapper href={organization.website_url}>
+  <LinkWrapper href={organization.website}>
     <Section className="pt-[10px]">
       <Row>
-        {organization.logo_url && (
+        {organization.avatar_url && (
           <Column className="w-10">
             <Img
               alt={organization.name}
-              src={organization.logo_url}
+              src={organization.avatar_url}
               className="size-8"
             />
           </Column>

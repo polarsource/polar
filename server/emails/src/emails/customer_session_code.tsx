@@ -4,21 +4,14 @@ import IntroWithHi from '../components/IntroWithHi'
 import OrganizationHeader from '../components/OrganizationHeader'
 import OTPCode from '../components/OTPCode'
 import Wrapper from '../components/Wrapper'
-import type { OrganizationProps } from '../types'
-
-interface CustomerSessionCodeProps {
-  organization: OrganizationProps
-  code: string
-  code_lifetime_minutes: number
-  url: string
-}
+import type { schemas } from '../types'
 
 export function CustomerSessionCode({
   organization,
   code,
   code_lifetime_minutes,
   url,
-}: CustomerSessionCodeProps) {
+}: schemas['CustomerSessionCodeProps']) {
   return (
     <Wrapper>
       <Preview>

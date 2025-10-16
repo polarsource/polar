@@ -1,13 +1,8 @@
 import { Column, Img, Link, Row, Section } from '@react-email/components'
 
-interface HeaderProps {
-  featuredOrganization?: {
-    name: string
-    slug: string
-  }
-}
+interface HeaderProps {}
 
-const Header = ({ featuredOrganization }: HeaderProps) => (
+const Header = () => (
   <Section className="pt-[10px]">
     <Row>
       <Column className="w-[80%]">

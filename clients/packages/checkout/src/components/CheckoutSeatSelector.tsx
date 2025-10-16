@@ -30,7 +30,7 @@ const CheckoutSeatSelector = ({
   }
 
   const seats = checkout.seats || 1
-  const totalAmount = checkout.totalAmount || 0
+  const netAmount = checkout.netAmount || 0
   const currency = productPrice.priceCurrency || 'usd'
   const pricePerSeat = checkout.pricePerSeat || 0
 
@@ -88,7 +88,7 @@ const CheckoutSeatSelector = ({
       {/* Total Amount Display */}
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-light text-gray-900 dark:text-white">
-          {formatCurrencyAndAmount(totalAmount, currency, 0)}
+          {formatCurrencyAndAmount(netAmount, currency, 0)}
         </h1>
         <p className="dark:text-polar-400 text-sm text-gray-500">
           {formatCurrencyAndAmount(pricePerSeat, currency, 0)} per seat

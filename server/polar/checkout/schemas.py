@@ -14,11 +14,11 @@ from pydantic import (
 )
 from pydantic.json_schema import SkipJsonSchema
 
-from polar.custom_field.attachment import AttachedCustomField
 from polar.custom_field.data import (
     CustomFieldDataInputMixin,
     CustomFieldDataOutputMixin,
 )
+from polar.custom_field.schemas import AttachedCustomField
 from polar.discount.schemas import (
     DiscountFixedBase,
     DiscountOnceForeverDurationBase,

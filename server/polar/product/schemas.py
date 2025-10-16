@@ -7,7 +7,7 @@ from pydantic.aliases import AliasChoices
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.benefit.schemas import Benefit, BenefitID, BenefitPublic
-from polar.custom_field.attachment import (
+from polar.custom_field.schemas import (
     AttachedCustomField,
     AttachedCustomFieldListCreate,
 )

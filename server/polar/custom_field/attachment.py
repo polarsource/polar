@@ -1,7 +1,6 @@
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from pydantic import UUID4, Field
 from sqlalchemy import Boolean, ForeignKey, Integer, Uuid, event
 from sqlalchemy.orm import (
     Mapped,
@@ -10,10 +9,6 @@ from sqlalchemy.orm import (
     mapped_column,
     relationship,
 )
-
-from polar.kit.schemas import Schema
-
-from .schemas import CustomField as CustomFieldSchema
 
 if TYPE_CHECKING:
     from polar.models import CustomField
@@ -44,29 +39,3 @@ attached_custom_fields_models: set[type[AttachedCustomFieldMixin]] = set()
 def track_attached_custom_field_mixin(_mapper: Mapper[Any], class_: type) -> None:
     if issubclass(class_, AttachedCustomFieldMixin):
         attached_custom_fields_models.add(class_)
-
-
-class AttachedCustomField(Schema):
-    """Schema of a custom field attached to a resource."""
-
-    custom_field_id: UUID4 = Field(description="ID of the custom field.")
-    custom_field: CustomFieldSchema
-    order: int = Field(description="Order of the custom field in the resource.")
-    required: bool = Field(
-        description="Whether the value is required for this custom field."
-    )
-
-
-class AttachedCustomFieldCreate(Schema):
-    """Schema to attach a custom field to a resource."""
-
-    custom_field_id: UUID4 = Field(description="ID of the custom field to attach.")
-    required: bool = Field(
-        description="Whether the value is required for this custom field."
-    )
-
-
-AttachedCustomFieldListCreate = Annotated[
-    list[AttachedCustomFieldCreate],
-    Field(description="List of custom fields to attach."),
-]

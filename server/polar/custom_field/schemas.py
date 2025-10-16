@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import Discriminator, Field, StringConstraints, TypeAdapter
+from pydantic import UUID4, Discriminator, Field, StringConstraints, TypeAdapter
 
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -216,3 +216,29 @@ CustomField = Annotated[
 ]
 
 CustomFieldAdapter: TypeAdapter[CustomField] = TypeAdapter(CustomField)
+
+
+class AttachedCustomField(Schema):
+    """Schema of a custom field attached to a resource."""
+
+    custom_field_id: UUID4 = Field(description="ID of the custom field.")
+    custom_field: CustomField
+    order: int = Field(description="Order of the custom field in the resource.")
+    required: bool = Field(
+        description="Whether the value is required for this custom field."
+    )
+
+
+class AttachedCustomFieldCreate(Schema):
+    """Schema to attach a custom field to a resource."""
+
+    custom_field_id: UUID4 = Field(description="ID of the custom field to attach.")
+    required: bool = Field(
+        description="Whether the value is required for this custom field."
+    )
+
+
+AttachedCustomFieldListCreate = Annotated[
+    list[AttachedCustomFieldCreate],
+    Field(description="List of custom fields to attach."),
+]

@@ -14,6 +14,7 @@ from polar.kit.metadata import (
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
     ORGANIZATION_ID_EXAMPLE,
+    EmptyStrToNoneValidator,
     IDSchema,
     Schema,
     TimestampedSchema,
@@ -39,7 +40,7 @@ _name_example = "John Doe"
 
 
 class CustomerCreate(MetadataInputMixin, Schema):
-    external_id: str | None = Field(
+    external_id: Annotated[str | None, EmptyStrToNoneValidator] = Field(
         default=None,
         description=_external_id_description,
         examples=[_external_id_example],
@@ -73,7 +74,7 @@ class CustomerUpdateBase(MetadataInputMixin, Schema):
 
 
 class CustomerUpdate(CustomerUpdateBase):
-    external_id: str | None = Field(
+    external_id: Annotated[str | None, EmptyStrToNoneValidator] = Field(
         default=None,
         description=_external_id_description,
         examples=[_external_id_example],

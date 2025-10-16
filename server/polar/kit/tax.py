@@ -8,6 +8,7 @@ from typing import Annotated, Any, Literal, LiteralString, Protocol, TypedDict
 import stdnum.ca.bn
 import stdnum.cl.rut
 import stdnum.exceptions
+import stdnum.tr.vkn
 import stripe as stripe_lib
 from pydantic import Field
 from sqlalchemy.dialects.postgresql import JSONB
@@ -251,12 +252,23 @@ class CLTINValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class TRTINValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.tr.vkn.compact(number)
+        try:
+            return stdnum.tr.vkn.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
     match tax_id_type:
         case TaxIDFormat.ca_gst_hst:
             return CAGSTHSTValidator()
         case TaxIDFormat.cl_tin:
             return CLTINValidator()
+        case TaxIDFormat.tr_tin:
+            return TRTINValidator()
         case _:
             return StdNumValidator(tax_id_type)
 

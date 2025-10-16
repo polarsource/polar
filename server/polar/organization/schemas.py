@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal
@@ -15,7 +14,6 @@ from pydantic.json_schema import SkipJsonSchema
 from pydantic.networks import HttpUrl
 
 from polar.config import settings
-from polar.currency.schemas import CurrencyAmount
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
     ORGANIZATION_ID_EXAMPLE,
@@ -28,9 +26,7 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.models.organization import (
-    Organization as OrganizationModel,
-)
+from polar.models.organization import Organization as OrganizationModel
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationNotificationSettings,
@@ -185,7 +181,6 @@ class OrganizationProfileSettings(Schema):
     )
 
 
-# Public API
 class Organization(IDSchema, TimestampedSchema):
     id: OrganizationID
     name: str = Field(
@@ -294,20 +289,6 @@ class OrganizationUpdate(Schema):
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
 
 
-class OrganizationSetAccount(Schema):
-    account_id: UUID4
-
-
-class OrganizationStripePortalSession(Schema):
-    url: str
-
-
-class CreditBalance(Schema):
-    amount: CurrencyAmount = Field(
-        description="The customers credit balance. A negative value means that Polar owes this customer money (credit), a positive number means that the customer owes Polar money (debit)."
-    )
-
-
 class OrganizationPaymentStep(Schema):
     id: str = Field(description="Step identifier")
     title: str = Field(description="Step title")
@@ -323,44 +304,6 @@ class OrganizationPaymentStatus(Schema):
     organization_status: OrganizationModel.Status = Field(
         description="Current organization status"
     )
-
-
-# Internal model
-class RepositoryBadgeSettingsUpdate(Schema):
-    id: UUID4
-    badge_auto_embed: bool
-    retroactive: bool
-
-
-# Internal model
-class RepositoryBadgeSettingsRead(Schema):
-    id: UUID4
-    avatar_url: str | None
-    name: str
-    synced_issues: int
-    open_issues: int
-    auto_embedded_issues: int
-    label_embedded_issues: int
-    badge_auto_embed: bool
-    badge_label: str
-    is_private: bool
-    is_sync_completed: bool
-
-
-# Internal model
-class OrganizationBadgeSettingsUpdate(Schema):
-    show_amount: bool
-    minimum_amount: int
-    message: str
-    repositories: Sequence[RepositoryBadgeSettingsUpdate]
-
-
-# Internal model
-class OrganizationBadgeSettingsRead(Schema):
-    show_amount: bool
-    minimum_amount: int
-    message: str | None
-    repositories: Sequence[RepositoryBadgeSettingsRead]
 
 
 class OrganizationAppealRequest(Schema):

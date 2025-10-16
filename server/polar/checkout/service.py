@@ -582,7 +582,8 @@ class CheckoutService:
                 ]
             )
 
-        price = product.prices[0]
+        # Select the static price in priority, as it determines the amount and specific behavior
+        price = product.get_static_price() or product.prices[0]
 
         # Validate seats for seat-based pricing
         if is_seat_price(price):
@@ -704,7 +705,8 @@ class CheckoutService:
             )
 
         product = products[0]
-        price = product.prices[0]
+        # Select the static price in priority, as it determines the amount and specific behavior
+        price = product.get_static_price() or product.prices[0]
 
         amount = 0
         currency = "usd"
@@ -1504,7 +1506,7 @@ class CheckoutService:
                         ]
                     )
             else:
-                price = product.prices[0]
+                price = product.get_static_price() or product.prices[0]
 
             checkout.product_price = price
             checkout.amount = 0

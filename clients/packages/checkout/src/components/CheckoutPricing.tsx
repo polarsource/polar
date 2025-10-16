@@ -2,16 +2,12 @@
 
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 import { useMemo } from 'react'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
-import {
-  getMeteredPrices,
-  hasRecurringIntervals,
-  isLegacyRecurringPrice,
-} from '../utils/product'
+import { hasRecurringIntervals, isLegacyRecurringPrice } from '../utils/product'
 import AmountLabel from './AmountLabel'
+import MeteredPricesDisplay from './MeteredPricesDisplay'
 import ProductPriceLabel from './ProductPriceLabel'
 
 const CheckoutProductAmountLabel = ({
@@ -51,26 +47,6 @@ const CheckoutProductAmountLabel = ({
   )
 }
 
-const GaugeIcon = ({ className }: { className?: string }) => {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="m12 14 4-4" />
-      <path d="M3.34 19a10 10 0 1 1 17.32 0" />
-    </svg>
-  )
-}
-
 interface CheckoutPricingProps {
   checkout: CheckoutPublic
   update?: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
@@ -88,12 +64,6 @@ const CheckoutPricing = ({
     [product],
   )
 
-  // Get the metered prices, minus the currently selected one, in case there are only metered prices
-  const meteredPrices = useMemo(
-    () => getMeteredPrices(product).filter((p) => p.id !== productPrice.id),
-    [product, productPrice],
-  )
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -109,25 +79,7 @@ const CheckoutPricing = ({
           )}
         </h1>
 
-        {meteredPrices.length > 0 && (
-          <div className="text-sm">
-            <h2 className="mb-2 text-base font-medium">
-              + Additional metered usage
-            </h2>
-            {meteredPrices.map((price) => (
-              <div
-                key={price.id}
-                className="dark:text-polar-100 flex flex-row items-center gap-x-2 text-sm text-gray-600"
-              >
-                <GaugeIcon className="h-4 w-4" />
-                <ProductPriceLabel
-                  product={product}
-                  price={price as ProductPrice}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        <MeteredPricesDisplay checkout={checkout} />
       </div>
     </div>
   )

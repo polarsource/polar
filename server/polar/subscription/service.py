@@ -1868,7 +1868,15 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         subject_template: str,
-        template_name: str,
+        template_name: Literal[
+            "subscription_cancellation",
+            "subscription_confirmation",
+            "subscription_cycled",
+            "subscription_past_due",
+            "subscription_revoked",
+            "subscription_uncanceled",
+            "subscription_updated",
+        ],
         extra_context: dict[str, JSONProperty] | None = None,
     ) -> None:
         product = subscription.product
@@ -1882,6 +1890,9 @@ class SubscriptionService:
             include_blocked=True,
         )
         assert organization is not None
+
+        if not organization.customer_email_settings[template_name]:
+            return
 
         customer = subscription.customer
         token, _ = await customer_session_service.create_customer_session(

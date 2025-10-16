@@ -56,6 +56,7 @@ class OAuth2ClientConfiguration(Schema):
     logo_uri: HttpUrl | None = None
     tos_uri: HttpUrl | None = None
     policy_uri: HttpUrl | None = None
+    default_sub_type: SubType = SubType.organization
 
 
 class OAuth2ClientConfigurationUpdate(OAuth2ClientConfiguration):

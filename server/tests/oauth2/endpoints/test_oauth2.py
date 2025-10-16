@@ -42,6 +42,7 @@ async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
             "grant_types": ["authorization_code", "refresh_token"],
             "response_types": ["code"],
             "scope": "openid profile email",
+            "default_sub_type": "organization",
         }
     )
     await save_fixture(oauth2_client)
@@ -64,6 +65,7 @@ async def public_oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2C
             "grant_types": ["authorization_code", "refresh_token"],
             "response_types": ["code"],
             "scope": "openid profile email",
+            "default_sub_type": "organization",
         }
     )
     await save_fixture(oauth2_client)
@@ -345,7 +347,7 @@ class TestOAuth2Authorize:
     @pytest.mark.auth
     @pytest.mark.parametrize(
         "input_sub_type,expected_sub_type",
-        [("user", "user"), (None, "user"), ("organization", "organization")],
+        [("user", "user"), (None, "organization"), ("organization", "organization")],
     )
     async def test_authenticated(
         self,
@@ -435,6 +437,7 @@ class TestOAuth2Authorize:
             "response_type": "code",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": scope,
+            "sub_type": "user",
         }
         response = await client.get("/v1/oauth2/authorize", params=params)
 
@@ -463,6 +466,7 @@ class TestOAuth2Authorize:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
             "prompt": "consent",
+            "sub_type": "user",
         }
         response = await client.get("/v1/oauth2/authorize", params=params)
 
@@ -493,6 +497,7 @@ class TestOAuth2Authorize:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
             "prompt": "none",
+            "sub_type": "user",
         }
         response = await client.get("/v1/oauth2/authorize", params=params)
 
@@ -600,6 +605,7 @@ class TestOAuth2Consent:
             "response_type": "code",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
+            "sub_type": "user",
         }
         response = await client.post(
             "/v1/oauth2/consent", params=params, data={"action": "deny"}
@@ -622,6 +628,7 @@ class TestOAuth2Consent:
             "response_type": "code",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
+            "sub_type": "user",
         }
         response = await client.post(
             "/v1/oauth2/consent", params=params, data={"action": "allow"}

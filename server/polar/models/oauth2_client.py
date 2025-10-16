@@ -6,6 +6,7 @@ from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
+from polar.oauth2.sub_type import SubType
 
 if TYPE_CHECKING:
     from polar.models import User
@@ -28,3 +29,10 @@ class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     @declared_attr
     def user(cls) -> "Mapped[User | None]":
         return relationship("User", lazy="raise")
+
+    @property
+    def default_sub_type(self) -> SubType:
+        try:
+            return SubType(self.client_metadata["default_sub_type"])
+        except KeyError:
+            return SubType.organization

@@ -48,7 +48,7 @@ export default async function Page(props: {
   params: Promise<{ organization: string }>
   searchParams: Promise<{
     customer_session_token?: string
-    customerEmail?: string
+    email?: string
   }>
 }) {
   const searchParams = await props.searchParams
@@ -59,10 +59,5 @@ export default async function Page(props: {
     params.organization,
   )
 
-  return (
-    <ClientPage
-      organization={organization}
-      customerEmail={searchParams.customerEmail}
-    />
-  )
+  return <ClientPage organization={organization} email={searchParams.email} />
 }

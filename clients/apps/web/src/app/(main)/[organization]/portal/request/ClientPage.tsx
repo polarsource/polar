@@ -23,15 +23,15 @@ import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({
   organization,
-  customerEmail,
+  email,
 }: {
   organization: schemas['Organization']
-  customerEmail?: string
+  email?: string
 }) => {
   const router = useRouter()
   const form = useForm<{ email: string }>({
     defaultValues: {
-      email: customerEmail || '',
+      email: email || '',
     },
   })
   const { control, handleSubmit, setError } = form

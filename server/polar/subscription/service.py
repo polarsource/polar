@@ -638,7 +638,9 @@ class SubscriptionService:
             if subscription.discount is not None:
                 assert subscription.started_at is not None
                 if subscription.discount.is_repetition_expired(
-                    subscription.started_at, subscription.current_period_start
+                    subscription.started_at,
+                    subscription.current_period_start,
+                    was_trialing=previous_status == SubscriptionStatus.trialing,
                 ):
                     subscription.discount = None
 

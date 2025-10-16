@@ -789,6 +789,69 @@ class TestCycle:
         subject = enqueue_email_mock.call_args.kwargs["subject"]
         assert "renewed" in subject.lower()
 
+    async def test_trial_end_with_once_discount(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Create a "once" discount (e.g., 100% off)
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,  # 100%
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="TRIAL100",
+        )
+
+        # Create trialing subscription with the discount
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            scheduler_locked_at=utc_now(),
+        )
+
+        # Verify discount is applied
+        assert subscription.discount == discount
+        assert subscription.status == SubscriptionStatus.trialing
+
+        # Cycle the subscription (trial ends, first billing cycle)
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        # Verify discount is STILL applied after trial ends
+        # This is the first actual billing cycle, so "once" discount should apply
+        assert updated_subscription.discount == discount
+        assert updated_subscription.status == SubscriptionStatus.active
+
+        # Verify billing entry was created with discount
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) > 0
+        cycle_entries = [
+            entry for entry in billing_entries if entry.type == BillingEntryType.cycle
+        ]
+        assert len(cycle_entries) == 1
+        assert cycle_entries[0].discount == discount
+        assert cycle_entries[0].discount_amount is not None
+        assert cycle_entries[0].discount_amount > 0
+
+        # Now cycle again (second billing period)
+        second_cycle_subscription = await subscription_service.cycle(
+            session, updated_subscription
+        )
+
+        # Verify discount is NOW removed (used up after first billing cycle)
+        assert second_cycle_subscription.discount is None
+
 
 @pytest.mark.asyncio
 class TestRevoke:

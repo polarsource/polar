@@ -111,7 +111,9 @@ export default async function Page(props: {
     benefitGrantsResponse.status === 401 ||
     claimedSubscriptionsResponse.status === 401
   ) {
-    redirect(`/${organization.slug}/portal/request`)
+    redirect(
+      `/${organization.slug}/portal/request?${new URLSearchParams(searchParams)}`,
+    )
   }
 
   if (subscriptionsError) {

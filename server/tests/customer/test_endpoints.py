@@ -266,6 +266,29 @@ class TestCreateCustomer:
         assert json["organization_id"] == str(organization.id)
         assert json["metadata"] == {"test": "test"}
 
+    @pytest.mark.auth
+    async def test_empty_external_id_converts_to_none(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        # Test that empty string external_id is converted to None during creation
+        response = await client.post(
+            "/v1/customers/",
+            json={
+                "email": "customer@example.com",
+                "organization_id": str(organization.id),
+                "external_id": "",
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["email"] == "customer@example.com"
+        assert json["external_id"] is None
+
 
 @pytest.mark.asyncio
 class TestUpdateCustomer:

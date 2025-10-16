@@ -6,6 +6,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useState } from 'react'
+import MeteredPricesDisplay from './MeteredPricesDisplay'
 
 export interface CheckoutSeatSelectorProps {
   checkout: CheckoutPublic
@@ -165,6 +166,8 @@ const CheckoutSeatSelector = ({
           </Button>
         </div>
       </div>
+
+      <MeteredPricesDisplay checkout={checkout} />
     </div>
   )
 }

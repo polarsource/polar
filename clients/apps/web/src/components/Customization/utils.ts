@@ -99,6 +99,16 @@ const ORGANIZATION: schemas['Organization'] = {
     new_order: true,
     new_subscription: true,
   },
+  customer_email_settings: {
+    order_confirmation: true,
+    subscription_cancellation: true,
+    subscription_confirmation: true,
+    subscription_cycled: true,
+    subscription_past_due: true,
+    subscription_revoked: true,
+    subscription_uncanceled: true,
+    subscription_updated: true,
+  },
 }
 
 export const createCheckoutPreview = (

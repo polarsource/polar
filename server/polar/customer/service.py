@@ -60,6 +60,7 @@ class CustomerService:
                 or_(
                     Customer.email.ilike(f"%{query}%"),
                     Customer.name.ilike(f"%{query}%"),
+                    Customer.external_id.ilike(f"{query}%"),
                 )
             )
 

@@ -71,6 +71,40 @@ class TestListCustomers:
         json = response.json()
         assert json["pagination"]["total_count"] == 2
 
+    @pytest.mark.auth
+    async def test_query_filter_by_external_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+            external_id="ext_123",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer2@example.com",
+            external_id="ext_456",
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer3@example.com",
+            external_id="ext_789",
+        )
+
+        response = await client.get("/v1/customers/", params={"query": "ext_456"})
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["external_id"] == "ext_456"
+
 
 @pytest.mark.asyncio
 class TestGetExternal:

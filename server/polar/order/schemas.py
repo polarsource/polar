@@ -161,6 +161,7 @@ class OrderItemSchema(IDSchema, TimestampedSchema):
 
 
 class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
+    platform_fee_amount: int = Field(description="Platform fee amount in cents.")
     customer: OrderCustomer
     user_id: UUID4 = Field(
         validation_alias=AliasChoices(

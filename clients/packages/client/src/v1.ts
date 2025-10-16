@@ -26952,7 +26952,7 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by exact email. */
         email?: string | null
-        /** @description Filter by name or email. */
+        /** @description Filter by name, email, or external ID. */
         query?: string | null
         /** @description Page number, defaults to 1. */
         page?: number

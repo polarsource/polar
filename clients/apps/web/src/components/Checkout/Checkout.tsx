@@ -3,6 +3,7 @@
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
+import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import {
   CheckoutForm,
   CheckoutProductSwitcher,
@@ -232,9 +233,10 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
         {checkout.returnUrl && (
           <Link
             href={checkout.returnUrl}
-            className="dark:text-polar-500 dark:hover:text-polar-200 text-sm text-gray-500 hover:text-black"
+            className="dark:text-polar-500 flex flex-row items-center gap-x-4 px-4 py-2 text-gray-500"
           >
-            ← Back to {checkout.organization.name}
+            <ArrowBackOutlined fontSize="inherit" />
+            <span>Back to {checkout.organization.name}</span>
           </Link>
         )}
         <CheckoutProductInfo

@@ -13,14 +13,6 @@ export const CareersSection = ({ active }: { active: boolean }) => {
             title="Product & Engineering"
             jobs={[
               {
-                role: 'Staff Frontend Engineer',
-                description:
-                  'Come and build the Shadcn of Billing and shape our frontend architecture, standards, and user experience across both our dashboard and SDKs.',
-                location: 'Remote — Europe',
-                link: 'https://jobs.ashbyhq.com/polar/f47dae43-497f-4ad2-8123-f6e5d23485fb',
-                experience: '10+ Years Experience',
-              },
-              {
                 role: 'Staff Infrastructure Engineer',
                 description:
                   'Own the end-to-end architecture and implementation of our infrastructure to ensure world-class uptime and latency.',
@@ -75,13 +67,6 @@ export const CareersSection = ({ active }: { active: boolean }) => {
             title="Community"
             jobs={[
               {
-                role: 'Head of Developer Relations',
-                description:
-                  'Build, lead, and scale our developer-facing efforts across community, content and advocacy. You’ll be the voice of Polar.',
-                location: 'San Francisco - Remote',
-                link: 'https://jobs.ashbyhq.com/polar/d09babe6-f727-42ec-b466-cf074f468f19',
-              },
-              {
                 role: 'Community Manager',
                 description:
                   'Nurture and scale our thriving developer community around Polar.',
@@ -101,20 +86,6 @@ export const CareersSection = ({ active }: { active: boolean }) => {
                   'Help provide exceptional support to developers world-wide and scale our efforts by improving docs, guides and internal tooling.',
                 location: 'Europe - Remote',
                 link: 'https://jobs.ashbyhq.com/polar/3b7b5522-3781-4a6b-b112-5ad93320192a',
-                experience: '2+ Years Experience',
-              },
-            ]}
-          />
-
-          <JobSection
-            title="Business & Operations"
-            jobs={[
-              {
-                role: 'Founder Associate (On-site)',
-                description:
-                  'Support Birk on high-leverage opportunities to mundane must does. No two weeks will look the same.',
-                location: 'Stockholm, Sweden',
-                link: 'https://jobs.ashbyhq.com/polar/fd957155-cc2e-4ab1-aa58-9c1ee161721c',
                 experience: '2+ Years Experience',
               },
             ]}

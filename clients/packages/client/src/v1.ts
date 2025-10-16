@@ -8179,10 +8179,15 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -8463,10 +8468,15 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -11357,10 +11367,15 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -11443,6 +11458,11 @@ export interface components {
       currency: string
       /** @description The interval at which the subscription recurs. */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /** @description The status of the subscription. */
       status: components['schemas']['SubscriptionStatus']
       /**
@@ -11671,10 +11691,15 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -12304,6 +12329,11 @@ export interface components {
       currency: string
       /** @description The interval at which the subscription recurs. */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /** @description The status of the subscription. */
       status: components['schemas']['SubscriptionStatus']
       /**
@@ -12531,10 +12561,15 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -13601,10 +13636,15 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -16384,10 +16424,15 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -16468,6 +16513,11 @@ export interface components {
       currency: string
       /** @description The interval at which the subscription recurs. */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /** @description The status of the subscription. */
       status: components['schemas']['SubscriptionStatus']
       /**
@@ -17487,10 +17537,15 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -17614,6 +17669,11 @@ export interface components {
        * @description States that the product is a one-time purchase.
        */
       recurring_interval?: null
+      /**
+       * Recurring Interval Count
+       * @description States that the product is a one-time purchase.
+       */
+      recurring_interval_count?: null
     }
     /** ProductCreateRecurring */
     ProductCreateRecurring: {
@@ -17679,6 +17739,12 @@ export interface components {
       trial_interval_count?: number | null
       /** @description The recurring interval of the product. Note that the `day` and `week` values are for internal Polar staff use only. */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @default 1
+       */
+      recurring_interval_count: number
     }
     /**
      * ProductMediaFileCreate
@@ -18277,10 +18343,15 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -18356,6 +18427,11 @@ export interface components {
       recurring_interval?:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count?: number | null
       /**
        * Is Archived
        * @description Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.
@@ -18986,6 +19062,11 @@ export interface components {
       currency: string
       /** @description The interval at which the subscription recurs. */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number | null
       /** @description The status of the subscription. */
       status: components['schemas']['SubscriptionStatus']
       /**

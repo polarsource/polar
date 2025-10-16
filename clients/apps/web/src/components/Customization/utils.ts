@@ -22,6 +22,7 @@ const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
   modified_at: new Date().toISOString(),
   organization_id: '123',
   recurring_interval: null,
+  recurring_interval_count: null,
   medias: [
     {
       id: '123',

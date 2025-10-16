@@ -28,13 +28,13 @@ export const PostHogContext = createContext<{
   setPersistence: (
     persistence: 'localStorage' | 'sessionStorage' | 'cookie' | 'memory',
   ) => void
-  // @ts-ignore
+  // @ts-expect-error `stub` will throw a runtime error
 }>(stub)
 
 export function PolarPostHogProvider({
   children,
 }: {
-  children: React.ReactElement<any>
+  children: React.ReactElement
 }) {
   const [persistence, setPersistence] = useState<
     'localStorage' | 'sessionStorage' | 'cookie' | 'memory'
@@ -64,8 +64,13 @@ export function PolarPostHogProvider({
     }
   }, [pathname, searchParams, posthog])
 
+  const contextValue = useMemo(
+    () => ({ client: posthog, setPersistence }),
+    [posthog, setPersistence],
+  )
+
   return (
-    <PostHogContext.Provider value={{ client: posthog, setPersistence }}>
+    <PostHogContext.Provider value={contextValue}>
       {children}
     </PostHogContext.Provider>
   )

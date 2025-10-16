@@ -34,17 +34,20 @@ export const UserContextProvider = ({
   const [userOrganizations, setUserOrganizations] =
     React.useState<schemas['Organization'][]>(_userOrganizations)
 
+  const contextValue = React.useMemo(
+    () => ({
+      user,
+      setUser: setUser as React.Dispatch<
+        React.SetStateAction<schemas['UserRead']>
+      >,
+      userOrganizations,
+      setUserOrganizations,
+    }),
+    [user, userOrganizations, setUser, setUserOrganizations],
+  )
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        setUser: setUser as React.Dispatch<
-          React.SetStateAction<schemas['UserRead']>
-        >,
-        userOrganizations,
-        setUserOrganizations,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )

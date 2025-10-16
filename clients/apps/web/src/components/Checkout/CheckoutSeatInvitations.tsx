@@ -41,10 +41,12 @@ const CheckoutSeatInvitations = ({
   ])
   const [isSending, setIsSending] = useState(false)
   const [sentCount, setSentCount] = useState(0)
+  const [selfInvited, setSelfInvited] = useState(false)
+  const [isSendingSelf, setIsSendingSelf] = useState(false)
 
   const assignSeat = useAssignSeatFromCheckout(checkoutId)
 
-  const availableSeats = seats - sentCount
+  const availableSeats = seats - sentCount - (selfInvited ? 1 : 0)
   const canAddMore = emailInputs.length < availableSeats
 
   const addEmailInput = () => {
@@ -110,6 +112,20 @@ const CheckoutSeatInvitations = ({
     setIsSending(false)
   }
 
+  const inviteSelf = async () => {
+    if (!checkout.customerEmail || selfInvited || isSendingSelf) return
+
+    setIsSendingSelf(true)
+    try {
+      await assignSeat.mutateAsync({ email: checkout.customerEmail })
+      setSelfInvited(true)
+    } catch (error) {
+      console.error('Failed to invite yourself:', error)
+    } finally {
+      setIsSendingSelf(false)
+    }
+  }
+
   const validEmails = emailInputs.filter(
     (input) => input.value.trim() && !input.error && !input.sent,
   ).length
@@ -123,13 +139,40 @@ const CheckoutSeatInvitations = ({
           You purchased {seats} {seats === 1 ? 'seat' : 'seats'}. Invite team
           members to access the benefits.
         </p>
-        <p className="text-sm">
-          {availableSeats} {availableSeats === 1 ? 'seat' : 'seats'} available
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm">
+            {availableSeats} {availableSeats === 1 ? 'seat' : 'seats'} available
+          </p>
+          {checkout.customerEmail && !selfInvited && availableSeats > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={inviteSelf}
+              loading={isSendingSelf}
+              disabled={isSendingSelf}
+              className="dark:text-polar-400 text-xs text-gray-600"
+            >
+              Assign seat to yourself
+            </Button>
+          )}
+        </div>
       </WellHeader>
 
       <WellContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
+          {selfInvited && (
+            <div className="flex items-start gap-2">
+              <div className="flex-1">
+                <Input
+                  type="email"
+                  value={checkout.customerEmail || ''}
+                  disabled
+                  className="dark:bg-polar-800 bg-gray-50"
+                />
+              </div>
+              <CheckCircleIcon className="dark:text-polar-500 mt-2 h-6 w-6 text-gray-400" />
+            </div>
+          )}
           {emailInputs.map((input) => (
             <div key={input.id} className="flex items-start gap-2">
               <div className="flex-1">
@@ -188,10 +231,10 @@ const CheckoutSeatInvitations = ({
           {validEmails === 1 ? 'Invitation' : 'Invitations'}
         </Button>
 
-        {sentCount > 0 && (
+        {(sentCount > 0 || selfInvited) && (
           <p className="dark:text-polar-500 text-center text-sm text-gray-500">
-            Successfully sent {sentCount}{' '}
-            {sentCount === 1 ? 'invitation' : 'invitations'}
+            Successfully assigned {sentCount + (selfInvited ? 1 : 0)}{' '}
+            {sentCount + (selfInvited ? 1 : 0) === 1 ? 'seat' : 'seats'}
           </p>
         )}
       </WellContent>

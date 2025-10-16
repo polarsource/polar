@@ -23,11 +23,17 @@ import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({
   organization,
+  customerEmail,
 }: {
   organization: schemas['Organization']
+  customerEmail?: string
 }) => {
   const router = useRouter()
-  const form = useForm<{ email: string }>()
+  const form = useForm<{ email: string }>({
+    defaultValues: {
+      email: customerEmail || '',
+    },
+  })
   const { control, handleSubmit, setError } = form
   const sessionRequest = useCustomerPortalSessionRequest(api, organization.id)
 

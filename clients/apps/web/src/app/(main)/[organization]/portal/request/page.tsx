@@ -46,7 +46,10 @@ export async function generateMetadata(props: {
 
 export default async function Page(props: {
   params: Promise<{ organization: string }>
-  searchParams: Promise<{ customer_session_token?: string }>
+  searchParams: Promise<{
+    customer_session_token?: string
+    customerEmail?: string
+  }>
 }) {
   const searchParams = await props.searchParams
   const params = await props.params
@@ -56,5 +59,10 @@ export default async function Page(props: {
     params.organization,
   )
 
-  return <ClientPage organization={organization} />
+  return (
+    <ClientPage
+      organization={organization}
+      customerEmail={searchParams.customerEmail}
+    />
+  )
 }

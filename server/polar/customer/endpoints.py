@@ -63,7 +63,7 @@ async def list(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
     email: str | None = Query(None, description="Filter by exact email."),
-    query: str | None = Query(None, description="Filter by name or email."),
+    query: str | None = Query(None, description="Filter by name, email, or external ID."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CustomerSchema]:
     """List customers."""

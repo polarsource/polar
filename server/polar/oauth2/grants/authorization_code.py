@@ -197,10 +197,14 @@ class ValidateSubAndPrompt:
         assert payload is not None
 
         sub_type: str | None = payload.data.get("sub_type")
-        try:
-            grant.sub_type = SubType(sub_type) if sub_type else SubType.user
-        except ValueError as e:
-            raise InvalidRequestError("Invalid sub_type") from e
+        if sub_type:
+            try:
+                grant.sub_type = SubType(sub_type)
+            except ValueError as e:
+                raise InvalidRequestError("Invalid sub_type") from e
+        else:
+            client: OAuth2Client = typing.cast(OAuth2Client, grant.client)
+            grant.sub_type = client.default_sub_type
 
         sub: str | None = payload.data.get("sub")
         user = grant.request.user

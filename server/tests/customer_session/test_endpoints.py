@@ -67,3 +67,29 @@ class TestCreate:
         assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
         assert json["customer_id"] == str(customer_external_id.id)
         assert json["customer_portal_url"].endswith(json["token"])
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_return_url(
+        self,
+        client: AsyncClient,
+        customer_external_id: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={
+                "external_customer_id": customer_external_id.external_id,
+                "return_url": "https://example.com/return",
+            },
+        )
+        assert response.status_code == 201
+
+        json = response.json()
+
+        assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
+        assert json["customer_id"] == str(customer_external_id.id)
+        assert json["customer_portal_url"].endswith(json["token"])
+        assert json["return_url"] == "https://example.com/return"

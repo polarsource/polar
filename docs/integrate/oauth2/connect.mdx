@@ -27,18 +27,31 @@ The parameters are the one described in the [OpenID Connect specification](https
 </ParamField>
 
 <ParamField path="redirect_uri" type="string" required>
-  The URL where the user will be redirected after granting access to their data. Make sure you declared it when creating the OAuth2 client.
+  The URL where the user will be redirected after granting access to their data.
+  Make sure you declared it when creating the OAuth2 client.
 </ParamField>
 
 <ParamField path="scope" type="string" required>
-  A space-separated list of scopes you want to ask for. Make sure they are part of the scopes you declared when creating the OAuth2 client.
+  A space-separated list of scopes you want to ask for. Make sure they are part
+  of the scopes you declared when creating the OAuth2 client.
 </ParamField>
 
-If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for.
+If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for. By default, the user will also be prompted to select one of their organizations, as Polar generates organization-level access tokens by default.
 
 <img src="/assets/integrate/oauth2/connect.png" />
 
-If they allow it, they'll be redirected to your `redirect_uri` with a `code` parameter in the query string. This code is a one-time code that you can exchange for an access token.
+If they allow it and select an organization, they'll be redirected to your `redirect_uri` with a `code` parameter in the query string. This code is a one-time code that you can exchange for an access token.
+
+To skip the organization selection and get a user-scoped token instead, you can add `sub_type=user` to the authorization URL:
+
+```
+https://polar.sh/oauth2/authorize?
+  response_type=code
+  &client_id=CLIENT_ID
+  &redirect_uri=https%3A%2F%2Fexample.com%2Fcallback
+  &scope=openid%20email
+  &sub_type=user
+```
 
 #### Exchange code token
 
@@ -67,25 +80,23 @@ You should get the following response:
 
 The `access_token` will allow you to make authenticated API requests on behalf of the user. The `refresh_token` is a long-lived token that you can use to get new access tokens when the current one expires. The `id_token` is a signed JWT token containing information about the user, as per the [OpenID Connect specification](https://openid.net/specs/openid-connect-core-1_0.html#IDToken).
 
-#### User vs Organization Access Tokens
+#### Organization vs User Access Tokens
 
-We support the concept of access tokens at **organization level**. Contrary to the standard access tokens, those tokens are not tied to a user but to an organization. They can be used to make requests operating only on a specific organization data, improving privacy and security.
+By default, Polar OAuth2 flow generates **organization-level** access tokens. These tokens are tied to a specific organization rather than a user, allowing requests to operate only on that organization's data, which improves privacy and security.
 
-To ask for an organization access token, you need to add the parameter `sub_type=organization` to the authorization URL:
+When using the default flow, the user will be prompted to select one of their organizations before allowing access to their data:
 
 ```
-https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_MgfdSCeCd2qkFnUw&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&scope=openid%20email&sub_type=organization
+https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_MgfdSCeCd2qkFnUw&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&scope=openid%20email
 ```
 
-At this point, the user will be prompted to select one of their organization before allowing access to their data.
+To request a **user-scoped** access token instead, you need to explicitly add the parameter `sub_type=user` to the authorization URL:
 
-The rest of the flow remains unchanged. The access token you'll get will be tied to the selected organization.
+```
+https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_MgfdSCeCd2qkFnUw&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&scope=openid%20email&sub_type=user
+```
 
-
-Bear in mind that some endpoints might not support organization access tokens.
-Typically, user-specific endpoints like `/v1/users/benefit` will not work with
-organization access tokens.
-
+The rest of the flow remains unchanged. The access token you'll get will be tied to either the selected organization (default) or the user (when explicitly requested).
 
 #### Public Clients
 

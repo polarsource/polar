@@ -80,7 +80,9 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
             secret=settings.SECRET, prefix=CUSTOMER_SESSION_TOKEN_PREFIX
         )
         customer_session = CustomerSession(
-            token=token_hash, customer=customer, return_url=str(return_url)
+            token=token_hash,
+            customer=customer,
+            return_url=str(return_url) if return_url else None,
         )
         session.add(customer_session)
         await session.flush()

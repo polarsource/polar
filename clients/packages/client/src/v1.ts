@@ -767,50 +767,6 @@ export interface paths {
     patch: operations['subscriptions:update']
     trace?: never
   }
-  '/v1/subscriptions/{id}/seats': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List Subscription Seats
-     * @description **Scopes**: `subscriptions:read`
-     */
-    get: operations['subscriptions:subscriptions:list_seats']
-    put?: never
-    /**
-     * Assign Seat
-     * @description **Scopes**: `subscriptions:write`
-     */
-    post: operations['subscriptions:subscriptions:assign_seat']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/subscriptions/{id}/seats/{seat_id}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    /**
-     * Revoke Seat
-     * @description **Scopes**: `subscriptions:write`
-     */
-    delete: operations['subscriptions:subscriptions:revoke_seat']
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/transactions/search': {
     parameters: {
       query?: never
@@ -16211,6 +16167,11 @@ export interface components {
       custom_field_data?: {
         [key: string]: string | number | boolean | null
       }
+      /**
+       * Platform Fee Amount
+       * @description Platform fee amount in cents.
+       */
+      platform_fee_amount: number
       customer: components['schemas']['OrderCustomer']
       /**
        * User Id
@@ -22734,162 +22695,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionLocked']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'subscriptions:subscriptions:list_seats': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The subscription ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['SeatsList']
-        }
-      }
-      /** @description Seat-based pricing not enabled for organization */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Subscription not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'subscriptions:subscriptions:assign_seat': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The subscription ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['SeatAssign']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSeat']
-        }
-      }
-      /** @description No seats available or customer already has seat */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Seat-based pricing not enabled for organization */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Subscription not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'subscriptions:subscriptions:revoke_seat': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The subscription ID. */
-        id: string
-        seat_id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSeat']
-        }
-      }
-      /** @description Seat-based pricing not enabled for organization */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Subscription not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

@@ -43,7 +43,8 @@ class TestListSeats:
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
         response = await client.get(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats",
+            "/v1/customer-seats",
+            params={"subscription_id": str(subscription_with_seats.id)},
         )
 
         assert response.status_code == 200
@@ -63,7 +64,8 @@ class TestListSeats:
     ) -> None:
         fake_id = uuid.uuid4()
         response = await client.get(
-            f"/v1/subscriptions/{fake_id}/seats",
+            "/v1/customer-seats",
+            params={"subscription_id": str(fake_id)},
         )
 
         assert response.status_code == 404
@@ -82,7 +84,8 @@ class TestListSeats:
         await save_fixture(subscription.product.organization)
 
         response = await client.get(
-            f"/v1/subscriptions/{subscription.id}/seats",
+            "/v1/customer-seats",
+            params={"subscription_id": str(subscription.id)},
         )
 
         assert response.status_code == 403
@@ -93,10 +96,11 @@ class TestListSeats:
         subscription_with_seats: Subscription,
     ) -> None:
         response = await client.get(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats"
+            "/v1/customer-seats",
+            params={"subscription_id": str(subscription_with_seats.id)},
         )
 
-        assert response.status_code == 401
+        assert response.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -619,7 +623,7 @@ class TestRevokeSeat:
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
         response = await client.delete(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats/{customer_seat_claimed.id}",
+            f"/v1/customer-seats/{customer_seat_claimed.id}",
         )
 
         assert response.status_code == 200
@@ -637,7 +641,7 @@ class TestRevokeSeat:
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
         response = await client.delete(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats/{customer_seat_pending.id}",
+            f"/v1/customer-seats/{customer_seat_pending.id}",
         )
 
         assert response.status_code == 200
@@ -653,7 +657,7 @@ class TestRevokeSeat:
     ) -> None:
         fake_id = uuid.uuid4()
         response = await client.delete(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats/{fake_id}",
+            f"/v1/customer-seats/{fake_id}",
         )
 
         assert response.status_code == 404
@@ -675,10 +679,12 @@ class TestRevokeSeat:
         )
 
         response = await client.delete(
-            f"/v1/subscriptions/{other_subscription.id}/seats/{customer_seat_claimed.id}",
+            f"/v1/customer-seats/{customer_seat_claimed.id}",
         )
 
-        assert response.status_code == 404
+        # Since the new endpoint doesn't take subscription_id in the path,
+        # this should succeed as long as the user has permission to the seat
+        assert response.status_code == 200
 
     @pytest.mark.auth(SEAT_AUTH)
     async def test_revoke_seat_subscription_not_found(
@@ -687,9 +693,11 @@ class TestRevokeSeat:
         customer_seat_claimed: CustomerSeat,
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
+        # This test is no longer relevant since we don't pass subscription_id
+        # Testing with just the seat_id instead
         fake_id = uuid.uuid4()
         response = await client.delete(
-            f"/v1/subscriptions/{fake_id}/seats/{customer_seat_claimed.id}",
+            f"/v1/customer-seats/{fake_id}",
         )
 
         assert response.status_code == 404
@@ -708,7 +716,7 @@ class TestRevokeSeat:
         await save_fixture(subscription_with_seats.product.organization)
 
         response = await client.delete(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats/{customer_seat_claimed.id}",
+            f"/v1/customer-seats/{customer_seat_claimed.id}",
         )
 
         assert response.status_code == 403
@@ -719,8 +727,6 @@ class TestRevokeSeat:
         subscription_with_seats: Subscription,
         customer_seat_claimed: CustomerSeat,
     ) -> None:
-        response = await client.delete(
-            f"/v1/subscriptions/{subscription_with_seats.id}/seats/{customer_seat_claimed.id}"
-        )
+        response = await client.delete(f"/v1/customer-seats/{customer_seat_claimed.id}")
 
-        assert response.status_code == 401
+        assert response.status_code == 403

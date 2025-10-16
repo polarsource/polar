@@ -41,6 +41,12 @@ class CustomerRepository(
         customer = await self.create(object, flush=flush)
         yield customer
         assert customer.id is not None, "Customer.id is None"
+
+        # If the customer has an external_id, enqueue a meter update job
+        # to create meters for any pre-existing events with that external_id.
+        if customer.external_id is not None:
+            enqueue_job("customer_meter.update_customer", customer.id)
+
         enqueue_job("customer.webhook", WebhookEventType.customer_created, customer.id)
 
     async def update(

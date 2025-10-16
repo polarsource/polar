@@ -33,6 +33,7 @@ export default defineEventHandler((event) => {
   const checkoutHandler = Checkout({
     accessToken: polarAccessToken,
     successUrl: polarCheckoutSuccessUrl,
+    returnUrl: "https://myapp.com", // An optional URL which renders a back-button in the Checkout
     server: polarServer as "sandbox" | "production",
     theme: "dark", // Enforces the theme - System-preferred theme will be set if left omitted
   });
@@ -65,6 +66,7 @@ export default defineEventHandler((event) => {
 
   const customerPortalHandler = CustomerPortal({
     accessToken: polarAccessToken,
+    returnUrl: "https://myapp.com", // An optional URL which renders a back-button in the Customer Portal
     server: polarServer as "sandbox" | "production",
     getCustomerId: (event) => {
       // Use your own logic to get the customer ID - from a database, session, etc.

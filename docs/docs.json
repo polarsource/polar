@@ -77,6 +77,7 @@
                 ]
               },
               "features/trials",
+              "features/seat-based-pricing",
               "features/custom-fields",
               "features/discounts",
               "features/orders",
@@ -397,6 +398,16 @@
                   "api-reference/customer-portal/downloadables/get",
                   "api-reference/customer-portal/downloadables/list"
                 ]
+              },
+              {
+                "group": "Seats",
+                "pages": [
+                  "api-reference/customer-portal/seats/list",
+                  "api-reference/customer-portal/seats/assign",
+                  "api-reference/customer-portal/seats/revoke",
+                  "api-reference/customer-portal/seats/resend",
+                  "api-reference/customer-portal/seats/list-subscriptions"
+                ]
               }
             ]
           },
@@ -520,6 +531,7 @@
             "group": "Guides",
             "pages": [
               "guides/introduction",
+              "guides/seat-based-pricing",
               "guides/create-variants",
               "guides/disable-subscription-changes-in-customer-portal",
               "guides/allow-multiple-subscriptions-per-customer",

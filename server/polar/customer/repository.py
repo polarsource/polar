@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator, Iterable, Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, exists, func, select, update
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
@@ -12,7 +12,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.kit.utils import utc_now
-from polar.models import Customer, UserOrganization
+from polar.models import Customer, Event, UserOrganization
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
 
@@ -41,6 +41,22 @@ class CustomerRepository(
         customer = await self.create(object, flush=flush)
         yield customer
         assert customer.id is not None, "Customer.id is None"
+
+        # If the customer has an external_id, check if there are existing events
+        # for that external_id. If so, touch meters to trigger meter calculations.
+        if customer.external_id is not None:
+            has_events_statement = select(
+                exists(
+                    select(1).where(
+                        Event.external_customer_id == customer.external_id,
+                        Event.organization_id == customer.organization_id,
+                    )
+                )
+            )
+            has_events = await self.session.scalar(has_events_statement)
+            if has_events:
+                await self.touch_meters([customer])
+
         enqueue_job("customer.webhook", WebhookEventType.customer_created, customer.id)
 
     async def update(

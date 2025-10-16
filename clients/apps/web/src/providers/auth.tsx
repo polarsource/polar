@@ -47,8 +47,6 @@ export const UserContextProvider = ({
   )
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   )
 }

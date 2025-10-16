@@ -21,7 +21,6 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship
 
 from polar.config import settings
-from polar.custom_field.attachment import AttachedCustomFieldMixin
 from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address, AddressType
@@ -44,6 +43,8 @@ from .product_price import ProductPrice, ProductPriceSeatUnit
 from .subscription import Subscription
 
 if TYPE_CHECKING:
+    from polar.custom_field.attachment import AttachedCustomFieldMixin
+
     from .checkout_product import CheckoutProduct
 
 

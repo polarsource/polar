@@ -1,10 +1,10 @@
 'use client'
 
-import { PostHogContext } from '@/app/providers'
 import { CONFIG } from '@/utils/config'
 import type { schemas } from '@polar-sh/client'
 import type { JsonType } from '@posthog/core'
-import { useCallback, useContext, useMemo } from 'react'
+import { usePostHog as useOuterPostHog } from 'posthog-js/react'
+import { useCallback, useMemo } from 'react'
 
 // https://posthog.com/product-engineers/5-ways-to-improve-analytics-data#suggested-naming-guide
 
@@ -65,11 +65,18 @@ export interface PolarHog {
 }
 
 export const usePostHog = (): PolarHog => {
-  const { client: posthog, setPersistence } = useContext(PostHogContext)
+  const posthog = useOuterPostHog()
+
+  const setPersistence = useCallback(
+    (persistence: 'localStorage' | 'sessionStorage' | 'cookie' | 'memory') => {
+      posthog.set_config({ persistence })
+    },
+    [posthog],
+  )
 
   const capture: PolarHog['capture'] = useCallback(
     (event, properties) => {
-      posthog?.capture(event, properties)
+      posthog.capture(event, properties)
     },
     [posthog],
   )
@@ -78,11 +85,7 @@ export const usePostHog = (): PolarHog => {
     (user) => {
       const posthogId = `user:${user.id}`
 
-      if (!posthog) {
-        return
-      }
-
-      if (posthog.getDistinctId() !== posthogId) {
+      if (posthog.get_distinct_id() !== posthogId) {
         posthog.identify(posthogId, {
           email: user.email,
         })
@@ -95,10 +98,6 @@ export const usePostHog = (): PolarHog => {
     (key) => {
       if (CONFIG.ENVIRONMENT == 'development') {
         return true
-      }
-
-      if (!posthog) {
-        return false
       }
 
       return posthog.isFeatureEnabled(key) ?? false

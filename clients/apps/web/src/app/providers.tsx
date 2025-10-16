@@ -8,72 +8,29 @@ import { ReactQueryStreamedHydration } from '@tanstack/react-query-next-experime
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
-import PostHog from 'posthog-js-lite'
-import {
-  createContext,
-  PropsWithChildren,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
-
-const stub = (): never => {
-  throw new Error(
-    'You forgot to wrap your component in <PolarPostHogProvider>.',
-  )
-}
-
-export const PostHogContext = createContext<{
-  client: PostHog | null
-  setPersistence: (
-    persistence: 'localStorage' | 'sessionStorage' | 'cookie' | 'memory',
-  ) => void
-  // @ts-expect-error `stub` will throw a runtime error
-}>(stub)
+import posthog from 'posthog-js'
+import { PostHogProvider } from 'posthog-js/react'
+import { PropsWithChildren, useEffect } from 'react'
 
 export function PolarPostHogProvider({
   children,
 }: {
   children: React.ReactElement
 }) {
-  const [persistence, setPersistence] = useState<
-    'localStorage' | 'sessionStorage' | 'cookie' | 'memory'
-  >(cookieConsentGiven() === 'yes' ? 'localStorage' : 'memory')
-  const posthog = useMemo(() => {
-    if (!CONFIG.POSTHOG_TOKEN) {
-      return null
-    }
-    return new PostHog(CONFIG.POSTHOG_TOKEN, {
-      host: '/ingest',
-      persistence,
-    })
-  }, [persistence])
-
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  // Track pageviews
   useEffect(() => {
-    if (pathname) {
-      let url = window.origin + pathname
-      if (searchParams && searchParams.toString()) {
-        url = url + `?${searchParams.toString()}`
-      }
-      posthog?.capture('$pageview', {
-        $current_url: url,
-      })
+    if (!CONFIG.POSTHOG_TOKEN) {
+      return
     }
-  }, [pathname, searchParams, posthog])
 
-  const contextValue = useMemo(
-    () => ({ client: posthog, setPersistence }),
-    [posthog, setPersistence],
-  )
+    posthog.init(CONFIG.POSTHOG_TOKEN, {
+      ui_host: 'https://us.i.posthog.com',
+      api_host: '/ingest',
+      defaults: '2025-05-24', // this enables automatic pageview tracking
+      persistence: cookieConsentGiven() === 'yes' ? 'localStorage' : 'memory',
+    })
+  }, [])
 
-  return (
-    <PostHogContext.Provider value={contextValue}>
-      {children}
-    </PostHogContext.Provider>
-  )
+  return <PostHogProvider client={posthog}>{children}</PostHogProvider>
 }
 
 export function PolarThemeProvider({

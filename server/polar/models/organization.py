@@ -72,6 +72,29 @@ _default_subscription_settings: OrganizationSubscriptionSettings = {
 }
 
 
+class OrganizationCustomerEmailSettings(TypedDict):
+    order_confirmation: bool
+    subscription_cancellation: bool
+    subscription_confirmation: bool
+    subscription_cycled: bool
+    subscription_past_due: bool
+    subscription_revoked: bool
+    subscription_uncanceled: bool
+    subscription_updated: bool
+
+
+_default_customer_email_settings: OrganizationCustomerEmailSettings = {
+    "order_confirmation": True,
+    "subscription_cancellation": True,
+    "subscription_confirmation": True,
+    "subscription_cycled": True,
+    "subscription_past_due": True,
+    "subscription_revoked": True,
+    "subscription_uncanceled": True,
+    "subscription_updated": True,
+}
+
+
 class Organization(RateLimitGroupMixin, RecordModel):
     class Status(StrEnum):
         CREATED = "created"
@@ -156,6 +179,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     notification_settings: Mapped[OrganizationNotificationSettings] = mapped_column(
         JSONB, nullable=False, default=_default_notification_settings
+    )
+
+    customer_email_settings: Mapped[OrganizationCustomerEmailSettings] = mapped_column(
+        JSONB, nullable=False, default=_default_customer_email_settings
     )
 
     #

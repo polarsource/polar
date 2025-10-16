@@ -32,6 +32,7 @@ from polar.models.organization import (
     Organization as OrganizationModel,
 )
 from polar.models.organization import (
+    OrganizationCustomerEmailSettings,
     OrganizationNotificationSettings,
     OrganizationSubscriptionSettings,
 )
@@ -216,6 +217,9 @@ class Organization(IDSchema, TimestampedSchema):
     notification_settings: OrganizationNotificationSettings = Field(
         description="Settings related to notifications",
     )
+    customer_email_settings: OrganizationCustomerEmailSettings = Field(
+        description="Settings related to customer emails",
+    )
 
     # Deprecated attributes
     bio: SkipJsonSchema[str | None] = Field(..., deprecated="")
@@ -265,6 +269,7 @@ class OrganizationCreate(Schema):
     feature_settings: OrganizationFeatureSettings | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
     notification_settings: OrganizationNotificationSettings | None = None
+    customer_email_settings: OrganizationCustomerEmailSettings | None = None
 
 
 class OrganizationUpdate(Schema):
@@ -286,6 +291,7 @@ class OrganizationUpdate(Schema):
     feature_settings: OrganizationFeatureSettings | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
     notification_settings: OrganizationNotificationSettings | None = None
+    customer_email_settings: OrganizationCustomerEmailSettings | None = None
 
 
 class OrganizationSetAccount(Schema):

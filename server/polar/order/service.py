@@ -1455,6 +1455,9 @@ class OrderService:
     async def send_confirmation_email(
         self, session: AsyncSession, organization: Organization, order: Order
     ) -> None:
+        if not organization.customer_email_settings["order_confirmation"]:
+            return
+
         product = order.product
         customer = order.customer
         token, _ = await customer_session_service.create_customer_session(

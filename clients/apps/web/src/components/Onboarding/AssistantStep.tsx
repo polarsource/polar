@@ -152,11 +152,11 @@ export const AssistantStep = ({
 
   return (
     <FadeUp className="flex flex-col gap-y-4">
-      <div className="dark:bg-polar-800 flex flex-col overflow-hidden rounded-3xl">
+      <div className="dark:bg-polar-900 flex flex-col overflow-hidden rounded-3xl">
         {messages.length > 0 && (
           <div
             className={twMerge(
-              'dark:border-polar-600 flex h-full max-h-[640px] flex-1 flex-col gap-y-6 overflow-y-auto rounded-t-3xl border border-gray-200 p-6',
+              'dark:border-polar-700 flex h-full max-h-[640px] flex-1 flex-col gap-y-6 overflow-y-auto rounded-t-3xl border border-gray-200 p-6',
               hasRedirectedToManualSetup || isFinished
                 ? 'rounded-b-3xl border-b'
                 : 'border-b-0',
@@ -172,7 +172,7 @@ export const AssistantStep = ({
                 <div
                   className={`prose dark:prose-invert text-sm ${
                     message.role === 'user'
-                      ? 'dark:bg-polar-950 rounded-2xl bg-gray-100 px-4 py-2 dark:text-white'
+                      ? 'dark:bg-polar-800 rounded-2xl bg-gray-100 px-4 py-2 dark:text-white'
                       : 'w-full space-y-4 dark:text-white'
                   }`}
                 >
@@ -228,7 +228,7 @@ export const AssistantStep = ({
                           return (
                             <div
                               key={`${message.id}-${index}`}
-                              className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-2 rounded-2xl bg-gray-100 p-4 text-center text-gray-500"
+                              className="dark:bg-polar-800 dark:text-polar-500 flex flex-col items-center gap-y-4 rounded-2xl bg-gray-100 p-4 text-center text-gray-500"
                             >
                               {reason === 'unsupported_benefit_type' ? (
                                 'Sorry, but this configuration needs manual input.'
@@ -244,10 +244,10 @@ export const AssistantStep = ({
                               )}
                               <Button
                                 variant="secondary"
-                                className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:border-polar-700 border-gray-200 bg-white hover:border-gray-300 hover:bg-white"
+                                className="dark:bg-polar-700 dark:hover:bg-polar-600 rounded-full border-transparent bg-white hover:bg-white dark:border-transparent"
                                 onClick={() => onEjectToManual()}
                               >
-                                Configure manually
+                                Configure Manually
                               </Button>
                             </div>
                           )
@@ -301,7 +301,7 @@ export const AssistantStep = ({
         {!hasRedirectedToManualSetup && !isFinished && (
           <form
             onSubmit={handleSubmit}
-            className="dark:border-polar-600 flex shrink-0 flex-col gap-3 overflow-hidden rounded-b-3xl border first:rounded-t-3xl"
+            className="dark:border-polar-700 flex shrink-0 flex-col gap-3 overflow-hidden rounded-b-3xl border first:rounded-t-3xl"
           >
             <TextArea
               ref={textareaRef}

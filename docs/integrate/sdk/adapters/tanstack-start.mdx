@@ -4,18 +4,10 @@ description: "Payments and Checkouts made dead simple with TanStack Start"
 ---
 
 <CodeGroup>
-```bash npm
-npm install @polar-sh/tanstack-start zod
-```
-```bash pnpm
-pnpm add @polar-sh/tanstack-start zod
-```
-```bash yarn
-yarn add @polar-sh/tanstack-start zod
-```
-```bash bun
-bun install @polar-sh/tanstack-start zod
-```
+  ```bash npm npm install @polar-sh/tanstack-start zod ``` ```bash pnpm pnpm add
+  @polar-sh/tanstack-start zod ``` ```bash yarn yarn add
+  @polar-sh/tanstack-start zod ``` ```bash bun bun install
+  @polar-sh/tanstack-start zod ```
 </CodeGroup>
 
 ## Checkout
@@ -24,18 +16,18 @@ Create a Checkout handler which takes care of redirections.
 
 ```typescript
 // routes/api/checkout.ts
-import { Checkout } from '@polar-sh/tanstack-start'
-import { createServerFileRoute } from '@tanstack/react-start/server'
+import { Checkout } from "@polar-sh/tanstack-start";
+import { createServerFileRoute } from "@tanstack/react-start/server";
 
-export const ServerRoute = createServerFileRoute('/api/checkout').methods({
+export const ServerRoute = createServerFileRoute("/api/checkout").methods({
   GET: Checkout({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
     successUrl: process.env.SUCCESS_URL,
+    returnUrl: "https://myapp.com", // An optional URL which renders a back-button in the Checkout
     server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
     theme: "dark", // Enforces the theme - System-preferred theme will be set if left omitted
-  })
-})
-
+  }),
+});
 ```
 
 ### Query Params
@@ -63,6 +55,7 @@ export const APIRoute = createAPIFileRoute("/api/portal")({
   GET: CustomerPortal({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
     getCustomerId: async (request: Request) => "", // Function to resolve a Polar Customer ID
+    returnUrl: "https://myapp.com", // An optional URL which renders a back-button in the Customer Portal
     server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
   }),
 });

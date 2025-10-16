@@ -61,6 +61,7 @@ export interface CheckoutFormContextProps {
   loading: boolean
   loadingLabel: string | undefined
   isUpdatePending: boolean
+  prefilledParameters?: Record<string, string>
 }
 
 // @ts-ignore
@@ -266,6 +267,7 @@ export const CheckoutFormProvider = ({
         loading,
         loadingLabel,
         isUpdatePending,
+        prefilledParameters,
       }}
     >
       {children}

@@ -10,8 +10,9 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { getCents } from '@polar-sh/ui/lib/money'
+import { useEffect, useRef } from 'react'
+import { UseFormReturn } from 'react-hook-form'
 import useDebouncedCallback from '../hooks/debounce'
 import { formatCurrencyNumber } from '../utils/money'
 
@@ -36,48 +37,66 @@ const DollarSignIcon = ({ className }: { className?: string }) => {
 }
 
 export interface CheckoutPWYWFormProps {
-  update: (data: CheckoutUpdatePublic) => void
+  update: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   checkout: CheckoutPublic
+  form: UseFormReturn<CheckoutUpdatePublic>
   productPrice: ProductPriceCustom
   themePreset: ThemingPresetProps
+  prefilledParameters?: Record<string, string>
 }
 
 export const CheckoutPWYWForm = ({
   update,
   checkout,
+  form,
   productPrice,
   themePreset,
+  prefilledParameters,
 }: CheckoutPWYWFormProps) => {
-  const { amount } = checkout
+  const { control, trigger, reset, watch, getValues } = form
+  const appliedPrefilledAmountRef = useRef<string | null>(null)
 
-  const form = useForm<{ amount: number }>({
-    defaultValues: { amount: amount || 0 },
-  })
-  const { control, trigger, reset, watch } = form
-
-  const debouncedAmountUpdate = useDebouncedCallback(
-    async (amount: number) => {
-      const isValid = await trigger('amount')
-      if (isValid) {
-        update?.({ amount })
-      }
-    },
-    600,
-    [update, trigger],
-  )
+  const updateAmount = async (amount: number) => {
+    const isValid = await trigger('amount')
+    if (isValid) {
+      update?.({ amount })
+    }
+  }
+  const debouncedUpdateAmount = useDebouncedCallback(updateAmount, 600, [
+    update,
+    trigger,
+  ])
 
   useEffect(() => {
     const subscription = watch(async (value, { name }) => {
-      if (name === 'amount' && value.amount !== undefined) {
-        debouncedAmountUpdate(value.amount)
+      if (
+        name === 'amount' &&
+        value.amount !== undefined &&
+        value.amount !== null
+      ) {
+        debouncedUpdateAmount(value.amount)
       }
     })
     return () => subscription.unsubscribe()
-  }, [watch, debouncedAmountUpdate])
+  }, [watch, debouncedUpdateAmount])
 
   useEffect(() => {
-    reset({ amount: amount || 0 })
-  }, [amount, reset])
+    const prefilledAmountString = prefilledParameters?.amount
+    if (!prefilledAmountString) {
+      return
+    }
+
+    if (appliedPrefilledAmountRef.current !== prefilledAmountString) {
+      appliedPrefilledAmountRef.current = prefilledAmountString
+      const amountInCents = getCents(prefilledAmountString)
+
+      // Use reset to update the form with the correct cent value
+      const currentValues = getValues()
+      reset({ ...currentValues, amount: amountInCents })
+
+      updateAmount(amountInCents)
+    }
+  }, [prefilledParameters?.amount, reset, getValues, updateAmount])
 
   let customAmountMinLabel = null
   let customAmountMaxLabel = null

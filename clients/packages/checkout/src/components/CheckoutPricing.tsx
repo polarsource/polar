@@ -47,7 +47,6 @@ const CheckoutProductAmountLabel = ({
   )
 }
 
-
 interface CheckoutPricingProps {
   checkout: CheckoutPublic
   update?: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>

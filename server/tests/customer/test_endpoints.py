@@ -266,6 +266,29 @@ class TestCreateCustomer:
         assert json["organization_id"] == str(organization.id)
         assert json["metadata"] == {"test": "test"}
 
+    @pytest.mark.auth
+    async def test_empty_external_id_converts_to_none(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        # Test that empty string external_id is converted to None during creation
+        response = await client.post(
+            "/v1/customers/",
+            json={
+                "email": "customer@example.com",
+                "organization_id": str(organization.id),
+                "external_id": "",
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["email"] == "customer@example.com"
+        assert json["external_id"] is None
+
 
 @pytest.mark.asyncio
 class TestUpdateCustomer:
@@ -354,3 +377,72 @@ class TestUpdateCustomer:
 
         json = response.json()
         assert json["metadata"] == {"test": "test"}
+
+    @pytest.mark.auth
+    async def test_empty_external_id_converts_to_none(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        # Create two customers with None external_id
+        customer1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+            external_id=None,
+        )
+        customer2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer2@example.com",
+            external_id=None,
+        )
+
+        # Try to update customer1 with empty string external_id
+        # This should be converted to None and not cause a conflict
+        response = await client.patch(
+            f"/v1/customers/{customer1.id}",
+            json={"external_id": ""},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["external_id"] is None
+
+    @pytest.mark.auth
+    async def test_external_id_conflict(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        # Create two customers, one with an external_id
+        customer1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+            external_id="existing_id",
+        )
+        customer2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer2@example.com",
+            external_id=None,
+        )
+
+        # Try to update customer2 with customer1's external_id
+        # This should fail with a conflict error
+        response = await client.patch(
+            f"/v1/customers/{customer2.id}",
+            json={"external_id": "existing_id"},
+        )
+
+        assert response.status_code == 422
+        json = response.json()
+        assert any(
+            "already exists" in str(error.get("msg", ""))
+            for error in json.get("detail", [])
+        )

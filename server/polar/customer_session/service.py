@@ -1,6 +1,7 @@
 import uuid
 
 import structlog
+from pydantic import HttpUrl
 from sqlalchemy import delete, select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
@@ -63,17 +64,24 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
                 ]
             )
 
-        token, customer_session = await self.create_customer_session(session, customer)
+        token, customer_session = await self.create_customer_session(
+            session, customer, customer_create.return_url
+        )
         customer_session.raw_token = token
         return customer_session
 
     async def create_customer_session(
-        self, session: AsyncSession, customer: Customer
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        return_url: HttpUrl | None = None,
     ) -> tuple[str, CustomerSession]:
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=CUSTOMER_SESSION_TOKEN_PREFIX
         )
-        customer_session = CustomerSession(token=token_hash, customer=customer)
+        customer_session = CustomerSession(
+            token=token_hash, customer=customer, return_url=str(return_url)
+        )
         session.add(customer_session)
         await session.flush()
 

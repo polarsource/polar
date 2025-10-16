@@ -361,6 +361,27 @@ class TestCreateCheckout:
         assert json["customer_external_id"] == "external_customer_id_value"
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_return_url(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        body = {
+            "payment_processor": "stripe",
+            "product_price_id": str(product.prices[0].id),
+            "return_url": "https://example.com/return",
+        }
+
+        response = await client.post(f"{api_prefix}/", json=body)
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["return_url"] == "https://example.com/return"
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     async def test_valid_seat_based_checkout(
         self,
         api_prefix: str,

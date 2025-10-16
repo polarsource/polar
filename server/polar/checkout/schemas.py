@@ -36,6 +36,7 @@ from polar.kit.metadata import (
 )
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
+    HttpUrlToStr,
     IDSchema,
     Schema,
     SetSchemaReference,
@@ -107,7 +108,7 @@ SuccessURL = Annotated[
     ),
 ]
 ReturnURL = Annotated[
-    HttpUrl | None,
+    HttpUrlToStr | None,
     Field(
         description=(
             "When set, a back button will be shown in the checkout "

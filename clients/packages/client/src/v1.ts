@@ -15925,6 +15925,8 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
+      /** @default organization */
+      default_sub_type: components['schemas']['SubType']
       /**
        * Created At
        * Format: date-time
@@ -15988,6 +15990,8 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
+      /** @default organization */
+      default_sub_type: components['schemas']['SubType']
     }
     /** OAuth2ClientConfigurationUpdate */
     OAuth2ClientConfigurationUpdate: {
@@ -16032,6 +16036,8 @@ export interface components {
       tos_uri?: string | null
       /** Policy Uri */
       policy_uri?: string | null
+      /** @default organization */
+      default_sub_type: components['schemas']['SubType']
       /** Client Id */
       client_id: string
     }
@@ -16668,6 +16674,8 @@ export interface components {
       subscription_settings: components['schemas']['OrganizationSubscriptionSettings']
       /** @description Settings related to notifications */
       notification_settings: components['schemas']['OrganizationNotificationSettings']
+      /** @description Settings related to customer emails */
+      customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
     }
     /** OrganizationAccessToken */
     OrganizationAccessToken: {
@@ -16887,6 +16895,28 @@ export interface components {
       notification_settings?:
         | components['schemas']['OrganizationNotificationSettings']
         | null
+      customer_email_settings?:
+        | components['schemas']['OrganizationCustomerEmailSettings']
+        | null
+    }
+    /** OrganizationCustomerEmailSettings */
+    OrganizationCustomerEmailSettings: {
+      /** Order Confirmation */
+      order_confirmation: boolean
+      /** Subscription Cancellation */
+      subscription_cancellation: boolean
+      /** Subscription Confirmation */
+      subscription_confirmation: boolean
+      /** Subscription Cycled */
+      subscription_cycled: boolean
+      /** Subscription Past Due */
+      subscription_past_due: boolean
+      /** Subscription Revoked */
+      subscription_revoked: boolean
+      /** Subscription Uncanceled */
+      subscription_uncanceled: boolean
+      /** Subscription Updated */
+      subscription_updated: boolean
     }
     /** OrganizationDetails */
     OrganizationDetails: {
@@ -17136,6 +17166,9 @@ export interface components {
         | null
       notification_settings?:
         | components['schemas']['OrganizationNotificationSettings']
+        | null
+      customer_email_settings?:
+        | components['schemas']['OrganizationCustomerEmailSettings']
         | null
     }
     /** Pagination */

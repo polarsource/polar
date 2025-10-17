@@ -6,11 +6,13 @@ import {
   Section,
   Text,
 } from '@react-email/components'
+import Benefits from '../components/Benefits'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
+import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
 export function OrderConfirmation({
@@ -29,8 +31,12 @@ export function OrderConfirmation({
         <BodyText>
           Your order of <span className="font-bold">{product.name}</span> is now
           processed.
+          {product.benefits.length > 0 &&
+            ' You have access to the following benefits:'}
         </BodyText>
       </Section>
+      {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
+
       <Section className="my-8 text-center">
         <Button href={url}>Access my purchase</Button>
       </Section>
@@ -52,17 +58,8 @@ export function OrderConfirmation({
 }
 
 OrderConfirmation.PreviewProps = {
-  organization: {
-    name: 'Acme Inc.',
-    slug: 'acme-inc',
-    logo_url:
-      'https://polar-public-sandbox-files.s3.amazonaws.com/organization_avatar/b3281d01-7b90-4a5b-8225-e8e150f4009c/9e5f848b-8b1d-4592-9fe1-7cad2cfa53ee/unicorn-dev-logo.png',
-    website_url: 'https://www.example.com',
-  },
-  product: {
-    name: 'Premium Subscription',
-    benefits: [],
-  },
+  organization,
+  product,
   url: 'https://polar.sh/acme-inc/portal/orders/12345',
 }
 

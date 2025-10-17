@@ -8,11 +8,10 @@
   "scripts": {
     "dev": "email dev --dir src/emails",
     "clean": "rm -rf dist bin",
-    "types": "uv --directory .. run python -m polar.email.schemas | openapi-typescript --output src/types/openapi.ts",
+    "types": "uv --directory .. run python -m polar.email.schemas | openapi-typescript --output src/types/openapi.ts && prettier src/types/openapi.ts --write",
     "build": "pnpm run clean && tsup && pkg package.json",
     "typecheck": "tsc --noEmit",
-    "format_check": "prettier src/** --check",
-    "format_write": "prettier src/** --write"
+    "lint": "prettier src/** --write"
   },
   "packageManager": "pnpm@10.5.2",
   "dependencies": {

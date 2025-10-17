@@ -80,15 +80,12 @@ export const ProductPageContextView = ({
         return
       }
 
-      const newBenefitSet = new Set(enabledBenefitIds)
-      const oldBenefitSet = new Set(product.benefits.map((b) => b.id))
-      const hasAddedBenefits = [...newBenefitSet].some(
-        (id) => !oldBenefitSet.has(id),
-      )
-      const hasRemovedBenefits = [...oldBenefitSet].some(
-        (id) => !newBenefitSet.has(id),
-      )
-      if (hasAddedBenefits || hasRemovedBenefits) {
+      const originalBenefitIds = product.benefits.map((b) => b.id)
+      const hasBenefitsChanged =
+        enabledBenefitIds.length !== originalBenefitIds.length ||
+        enabledBenefitIds.some((id, index) => id !== originalBenefitIds[index])
+
+      if (hasBenefitsChanged) {
         await updateBenefits.mutateAsync({
           id: product.id,
           body: {
@@ -132,11 +129,20 @@ export const ProductPageContextView = ({
     [setEnabledBenefitIds],
   )
 
+  const onReorderBenefits = useCallback(
+    (benefits: schemas['Benefit'][]) => {
+      setEnabledBenefitIds(benefits.map((b) => b.id))
+    },
+    [setEnabledBenefitIds],
+  )
+
   const enabledBenefits = useMemo(
     () =>
-      organizationBenefits.filter((benefit) =>
-        enabledBenefitIds.includes(benefit.id),
-      ),
+      enabledBenefitIds
+        .map((id) => organizationBenefits.find((benefit) => benefit.id === id))
+        .filter(
+          (benefit): benefit is schemas['Benefit'] => benefit !== undefined,
+        ),
     [organizationBenefits, enabledBenefitIds],
   )
 
@@ -182,6 +188,7 @@ export const ProductPageContextView = ({
           benefits={enabledBenefits}
           onSelectBenefit={onSelectBenefit}
           onRemoveBenefit={onRemoveBenefit}
+          onReorderBenefits={onReorderBenefits}
           compact={true}
         />
         {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (

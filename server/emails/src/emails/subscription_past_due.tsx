@@ -4,24 +4,15 @@ import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
-import type { OrganizationProps, ProductProps } from '../types'
-
-interface SubscriptionPastDueProps {
-  organization: OrganizationProps
-  product: ProductProps
-  subscription: {
-    ends_at: string // ISO date string
-  }
-  url: string
-  payment_url?: string
-}
+import type { schemas } from '../types'
 
 export function SubscriptionPastDue({
   organization,
   product,
+  subscription,
   url,
   payment_url,
-}: SubscriptionPastDueProps) {
+}: schemas['SubscriptionPastDueProps']) {
   return (
     <Wrapper>
       <Preview>Your {product.name} subscription payment is past due</Preview>
@@ -82,7 +73,9 @@ SubscriptionPastDue.PreviewProps = {
     ],
   },
   subscription: {
-    ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+    id: '12345',
+    status: 'past_due',
+    ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
   payment_url: 'https://invoice.stripe.com/i/acct_123/test',

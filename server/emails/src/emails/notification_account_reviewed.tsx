@@ -4,8 +4,11 @@ import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
+import type { schemas } from '../types'
 
-export function NotificationAccountReviewed() {
+export function NotificationAccountReviewed({
+  account_type,
+}: schemas['MaintainerAccountReviewedNotificationPayload']) {
   return (
     <Wrapper>
       <Preview>Polar account review complete</Preview>
@@ -23,6 +26,8 @@ export function NotificationAccountReviewed() {
   )
 }
 
-NotificationAccountReviewed.PreviewProps = {}
+NotificationAccountReviewed.PreviewProps = {
+  account_type: 'individual',
+}
 
 export default NotificationAccountReviewed

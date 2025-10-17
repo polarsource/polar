@@ -10,6 +10,7 @@
     "clean": "rm -rf dist bin",
     "types": "uv --directory .. run python -m polar.email.schemas | openapi-typescript --output src/types/openapi.ts",
     "build": "pnpm run clean && tsup && pkg package.json",
+    "typecheck": "tsc --noEmit",
     "format_check": "prettier src/** --check",
     "format_write": "prettier src/** --write"
   },

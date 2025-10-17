@@ -4,19 +4,14 @@ import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
-import type { OrganizationProps, ProductProps } from '../types'
-
-interface SubscriptionConfirmationProps {
-  organization: OrganizationProps
-  product: ProductProps
-  url: string
-}
+import type { schemas } from '../types'
 
 export function SubscriptionConfirmation({
   organization,
   product,
+  subscription,
   url,
-}: SubscriptionConfirmationProps) {
+}: schemas['SubscriptionConfirmationProps']) {
   return (
     <Wrapper>
       <Preview>Thank you for your subscription to {product.name}!</Preview>
@@ -60,6 +55,10 @@ SubscriptionConfirmation.PreviewProps = {
   product: {
     name: 'Premium Subscription',
     benefits: [],
+  },
+  subscription: {
+    id: '12345',
+    status: 'active',
   },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }

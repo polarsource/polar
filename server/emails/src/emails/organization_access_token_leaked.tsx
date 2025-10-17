@@ -3,18 +3,13 @@ import Footer from '../components/Footer'
 import InfoBox from '../components/InfoBox'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
-
-interface OrganizationAccessTokenLeakedProps {
-  notifier: string
-  url?: string
-  organization_access_token: string
-}
+import type { schemas } from '../types'
 
 export function OrganizationAccessTokenLeaked({
   notifier,
   url,
   organization_access_token,
-}: OrganizationAccessTokenLeakedProps) {
+}: schemas['OrganizationAccessTokenLeakedProps']) {
   return (
     <Wrapper>
       <Preview>
@@ -43,7 +38,7 @@ export function OrganizationAccessTokenLeaked({
       <InfoBox title="Leak details" variant="warning">
         <ul className="list-disc space-y-1 pl-6">
           <li>Notifier: {notifier}</li>
-          {url && <li>URL: {url}</li>}
+          <li>URL: {url}</li>
           <li>Organization Access Token: {organization_access_token}</li>
         </ul>
         <Text className="mb-0 mt-4 text-sm text-gray-600">

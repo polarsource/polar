@@ -3,6 +3,7 @@ import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
+import type { schemas } from '../types'
 
 export function NotificationNewSubscription({
   subscriber_name,
@@ -10,13 +11,8 @@ export function NotificationNewSubscription({
   tier_name,
   tier_price_amount,
   tier_price_recurring_interval,
-}: {
-  subscriber_name: string
-  formatted_price_amount: string
-  tier_name: string
-  tier_price_amount: string
-  tier_price_recurring_interval: string
-}) {
+  tier_organization_name,
+}: schemas['MaintainerNewPaidSubscriptionNotificationPayload']) {
   return (
     <Wrapper>
       <Preview>New {tier_name} subscriber</Preview>
@@ -35,8 +31,9 @@ NotificationNewSubscription.PreviewProps = {
   subscriber_name: 'John Doe',
   formatted_price_amount: '$12.95',
   tier_name: 'Pro',
-  tier_price_amount: '$12.95',
+  tier_price_amount: 1295,
   tier_price_recurring_interval: 'monthly',
+  tier_organization_name: 'Acme Inc.',
 }
 
 export default NotificationNewSubscription

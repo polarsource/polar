@@ -4,13 +4,12 @@ import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
+import type { schemas } from '../types'
 
-interface EmailUpdateProps {
-  token_lifetime_minutes: number
-  url: string
-}
-
-export function EmailUpdate({ token_lifetime_minutes, url }: EmailUpdateProps) {
+export function EmailUpdate({
+  token_lifetime_minutes,
+  url,
+}: schemas['EmailUpdateProps']) {
   return (
     <Wrapper>
       <Preview>Here is the verification link to update your email</Preview>
@@ -23,9 +22,7 @@ export function EmailUpdate({ token_lifetime_minutes, url }: EmailUpdateProps) {
         </span>
       </IntroWithHi>
       <Section className="my-8 text-center">
-        <Button href={url} className="font-bold">
-          Update my email
-        </Button>
+        <Button href={url}>Update my email</Button>
       </Section>
       <Hr />
       <Section className="mt-6 border-t border-gray-200 pt-6">

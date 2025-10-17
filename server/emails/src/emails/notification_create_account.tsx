@@ -5,14 +5,12 @@ import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
+import type { schemas } from '../types'
 
 export function NotificationCreateAccount({
   organization_name,
   url,
-}: {
-  organization_name: string
-  url: string
-}) {
+}: schemas['MaintainerCreateAccountNotificationPayload']) {
   return (
     <Wrapper>
       <Preview>Your Polar account is being reviewed</Preview>

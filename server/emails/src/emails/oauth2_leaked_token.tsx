@@ -3,18 +3,13 @@ import Footer from '../components/Footer'
 import InfoBox from '../components/InfoBox'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
-
-interface OAuth2LeakedTokenProps {
-  notifier: string
-  url?: string
-  client_name: string
-}
+import type { schemas } from '../types'
 
 export function OAuth2LeakedToken({
   notifier,
   url,
   client_name,
-}: OAuth2LeakedTokenProps) {
+}: schemas['OAuth2LeakedTokenProps']) {
   return (
     <Wrapper>
       <Preview>
@@ -39,7 +34,7 @@ export function OAuth2LeakedToken({
       <InfoBox title="Leak details" variant="warning">
         <ul className="list-disc space-y-1 pl-6">
           <li>Notifier: {notifier}</li>
-          {url && <li>URL: {url}</li>}
+          <li>URL: {url}</li>
           <li>OAuth2 Client: {client_name}</li>
         </ul>
         <Text className="mb-0 mt-4 text-sm text-gray-600">

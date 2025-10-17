@@ -3,18 +3,13 @@ import Footer from '../components/Footer'
 import InfoBox from '../components/InfoBox'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
-
-interface PersonalAccessTokenLeakedProps {
-  notifier: string
-  url?: string
-  personal_access_token: string
-}
+import type { schemas } from '../types'
 
 export function PersonalAccessTokenLeaked({
   notifier,
   url,
   personal_access_token,
-}: PersonalAccessTokenLeakedProps) {
+}: schemas['PersonalAccessTokenLeakedProps']) {
   return (
     <Wrapper>
       <Preview>
@@ -42,7 +37,7 @@ export function PersonalAccessTokenLeaked({
       <InfoBox title="Leak details" variant="warning">
         <ul className="list-disc space-y-1 pl-6">
           <li>Notifier: {notifier}</li>
-          {url && <li>URL: {url}</li>}
+          <li>URL: {url}</li>
           <li>Personal Access Token: {personal_access_token}</li>
         </ul>
         <Text className="mb-0 mt-4 text-sm text-gray-600">

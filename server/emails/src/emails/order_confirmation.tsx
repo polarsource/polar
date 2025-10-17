@@ -11,19 +11,13 @@ import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
-import type { OrganizationProps, ProductProps } from '../types'
-
-interface OrderConfirmationProps {
-  organization: OrganizationProps
-  product: ProductProps
-  url: string
-}
+import type { schemas } from '../types'
 
 export function OrderConfirmation({
   organization,
   product,
   url,
-}: OrderConfirmationProps) {
+}: schemas['OrderConfirmationProps']) {
   return (
     <Wrapper>
       <Preview>Thank you for your order of {product.name}!</Preview>

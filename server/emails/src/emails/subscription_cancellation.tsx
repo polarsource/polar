@@ -4,18 +4,9 @@ import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
-import type { BenefitProps, OrganizationProps, ProductProps } from '../types'
+import type { schemas } from '../types'
 
-interface SubscriptionCancellationProps {
-  organization: OrganizationProps
-  product: ProductProps
-  subscription: {
-    ends_at: string // ISO date string
-  }
-  url: string
-}
-
-function BenefitsSection({ benefits }: { benefits: BenefitProps[] }) {
+function BenefitsSection({ benefits }: { benefits: any[] }) {
   // Only render if there are actual benefits to display
   if (benefits.length === 0) {
     return null
@@ -39,8 +30,8 @@ export function SubscriptionCancellation({
   product,
   subscription,
   url,
-}: SubscriptionCancellationProps) {
-  const endDate = new Date(subscription.ends_at).toLocaleDateString('en-US', {
+}: schemas['SubscriptionCancellationProps']) {
+  const endDate = new Date(subscription.ends_at!).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

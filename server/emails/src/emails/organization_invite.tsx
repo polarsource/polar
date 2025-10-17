@@ -4,16 +4,13 @@ import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
+import type { schemas } from '../types'
 
 export function OrganizationInvite({
   organization_name,
   inviter_email,
   invite_url,
-}: {
-  organization_name: string
-  inviter_email: string
-  invite_url: string
-}) {
+}: schemas['OrganizationInviteProps']) {
   return (
     <Wrapper>
       <Preview>You've been added to {organization_name} on Polar</Preview>

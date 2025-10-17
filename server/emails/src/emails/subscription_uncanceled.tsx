@@ -4,19 +4,14 @@ import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
-import type { OrganizationProps, ProductProps } from '../types'
-
-interface SubscriptionUncanceledProps {
-  organization: OrganizationProps
-  product: ProductProps
-  url: string
-}
+import type { schemas } from '../types'
 
 export function SubscriptionUncanceled({
   organization,
   product,
+  subscription,
   url,
-}: SubscriptionUncanceledProps) {
+}: schemas['SubscriptionUncanceledProps']) {
   return (
     <Wrapper>
       <Preview>Your subscription to {product.name} is now uncanceled</Preview>
@@ -60,6 +55,10 @@ SubscriptionUncanceled.PreviewProps = {
   product: {
     name: 'Premium Subscription',
     benefits: [],
+  },
+  subscription: {
+    id: '12345',
+    status: 'active',
   },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }

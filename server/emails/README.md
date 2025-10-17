@@ -20,9 +20,29 @@ This will start a development server at [http://localhost:3000](http://localhost
 
 ## How to create a new email?
 
-1. Create a new TSX file in the `src/emails` directory with the name of the email template, as snake case, e.g. `login_code.tsx`.
-2. Implement the email template using the `react-email` components.
-3. Make sure the props are JSON serializable.
+1. On Python's side, in `server/polar/email/schemas.py`, add a new item to `EmailTemplate` and implement a Pydantic schema to describe the props of the email.
+
+```python
+# server/polar/email/schemas.py
+
+class EmailTemplate(StrEnum):
+    # ...
+    customer_greetings = "customer_greetings"
+
+class CustomerGreetingsProps(EmailProps):
+    organization: Organization
+    url: str
+
+class CustomerGreetingsEmail(BaseModel):
+    template: Literal[EmailTemplate.customer_greetings] = EmailTemplate.customer_greetings
+    props: CustomerGreetingsProps
+```
+
+Don't hesitate to reuse existing schemas for common types like `Organization`, `Product`, etc.
+
+2. Run `pnpm run types` to generate updated TypeScript types based on the Pydantic models.
+3. Create a new TSX file in the `src/emails` directory with the name of the email template, as snake case, e.g. `customer_greetings.tsx`.
+4. Implement the email template using the `react-email` components.
 
 ## How to render it from the Python server?
 
@@ -36,14 +56,15 @@ Then, use the `render_email_template` function:
 
 ```python
 from polar.email.react import render_email_template
+from polar.email.schemas import CustomerGreetingsEmail, CustomerGreetingsProps
 
-body = render_email_template("login_code", {
-    "code": "ABC123",
-    "code_lifetime_minutes": 30,
-})
+body = render_email_template(CustomerGreetingsEmail(
+    props=CustomerGreetingsProps.model_validate({
+        "organization": organization,
+        "url": "https://example.com/welcome",
+    })
+))
 ```
-
-The first argument is the name of the email template, and the second argument is a dictionary with the props the email template expects.
 
 ## How does it work?
 

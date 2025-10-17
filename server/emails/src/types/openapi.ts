@@ -7,6 +7,830 @@ export type paths = Record<string, never>;
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Address */
+        Address: {
+            /**
+             * Line1
+             * @default null
+             */
+            line1: string | null;
+            /**
+             * Line2
+             * @default null
+             */
+            line2: string | null;
+            /**
+             * Postal Code
+             * @default null
+             */
+            postal_code: string | null;
+            /**
+             * City
+             * @default null
+             */
+            city: string | null;
+            /**
+             * State
+             * @default null
+             */
+            state: string | null;
+            /**
+             * CountryAlpha2
+             * @example US
+             * @example SE
+             * @example FR
+             * @enum {string}
+             */
+            country: "AD" | "AE" | "AF" | "AG" | "AI" | "AL" | "AM" | "AO" | "AQ" | "AR" | "AS" | "AT" | "AU" | "AW" | "AX" | "AZ" | "BA" | "BB" | "BD" | "BE" | "BF" | "BG" | "BH" | "BI" | "BJ" | "BL" | "BM" | "BN" | "BO" | "BQ" | "BR" | "BS" | "BT" | "BV" | "BW" | "BY" | "BZ" | "CA" | "CC" | "CD" | "CF" | "CG" | "CH" | "CI" | "CK" | "CL" | "CM" | "CN" | "CO" | "CR" | "CU" | "CV" | "CW" | "CX" | "CY" | "CZ" | "DE" | "DJ" | "DK" | "DM" | "DO" | "DZ" | "EC" | "EE" | "EG" | "EH" | "ER" | "ES" | "ET" | "FI" | "FJ" | "FK" | "FM" | "FO" | "FR" | "GA" | "GB" | "GD" | "GE" | "GF" | "GG" | "GH" | "GI" | "GL" | "GM" | "GN" | "GP" | "GQ" | "GR" | "GS" | "GT" | "GU" | "GW" | "GY" | "HK" | "HM" | "HN" | "HR" | "HT" | "HU" | "ID" | "IE" | "IL" | "IM" | "IN" | "IO" | "IQ" | "IR" | "IS" | "IT" | "JE" | "JM" | "JO" | "JP" | "KE" | "KG" | "KH" | "KI" | "KM" | "KN" | "KP" | "KR" | "KW" | "KY" | "KZ" | "LA" | "LB" | "LC" | "LI" | "LK" | "LR" | "LS" | "LT" | "LU" | "LV" | "LY" | "MA" | "MC" | "MD" | "ME" | "MF" | "MG" | "MH" | "MK" | "ML" | "MM" | "MN" | "MO" | "MP" | "MQ" | "MR" | "MS" | "MT" | "MU" | "MV" | "MW" | "MX" | "MY" | "MZ" | "NA" | "NC" | "NE" | "NF" | "NG" | "NI" | "NL" | "NO" | "NP" | "NR" | "NU" | "NZ" | "OM" | "PA" | "PE" | "PF" | "PG" | "PH" | "PK" | "PL" | "PM" | "PN" | "PR" | "PS" | "PT" | "PW" | "PY" | "QA" | "RE" | "RO" | "RS" | "RU" | "RW" | "SA" | "SB" | "SC" | "SD" | "SE" | "SG" | "SH" | "SI" | "SJ" | "SK" | "SL" | "SM" | "SN" | "SO" | "SR" | "SS" | "ST" | "SV" | "SX" | "SY" | "SZ" | "TC" | "TD" | "TF" | "TG" | "TH" | "TJ" | "TK" | "TL" | "TM" | "TN" | "TO" | "TR" | "TT" | "TV" | "TW" | "TZ" | "UA" | "UG" | "UM" | "US" | "UY" | "UZ" | "VA" | "VC" | "VE" | "VG" | "VI" | "VN" | "VU" | "WF" | "WS" | "YE" | "YT" | "ZA" | "ZM" | "ZW";
+        };
+        /**
+         * AttachedCustomField
+         * @description Schema of a custom field attached to a resource.
+         */
+        AttachedCustomField: {
+            /**
+             * Custom Field Id
+             * Format: uuid4
+             * @description ID of the custom field.
+             */
+            custom_field_id: string;
+            /** CustomField */
+            custom_field: components["schemas"]["CustomField"];
+            /**
+             * Order
+             * @description Order of the custom field in the resource.
+             */
+            order: number;
+            /**
+             * Required
+             * @description Whether the value is required for this custom field.
+             */
+            required: boolean;
+        };
+        Benefit: components["schemas"]["BenefitCustom"] | components["schemas"]["BenefitDiscord"] | components["schemas"]["BenefitGitHubRepository"] | components["schemas"]["BenefitDownloadables"] | components["schemas"]["BenefitLicenseKeys"] | components["schemas"]["BenefitMeterCredit"];
+        /**
+         * BenefitCustom
+         * @description A benefit of type `custom`.
+         *
+         *     Use it to grant any kind of benefit that doesn't fit in the other types.
+         */
+        BenefitCustom: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "custom";
+            /**
+             * Description
+             * @description The description of the benefit.
+             */
+            description: string;
+            /**
+             * Selectable
+             * @description Whether the benefit is selectable when creating a product.
+             */
+            selectable: boolean;
+            /**
+             * Deletable
+             * @description Whether the benefit is deletable.
+             */
+            deletable: boolean;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the benefit.
+             */
+            organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            properties: components["schemas"]["BenefitCustomProperties"];
+        };
+        /**
+         * BenefitCustomProperties
+         * @description Properties for a benefit of type `custom`.
+         */
+        BenefitCustomProperties: {
+            /** Note */
+            note: (string | null) | null;
+        };
+        /**
+         * BenefitDiscord
+         * @description A benefit of type `discord`.
+         *
+         *     Use it to automatically invite your backers to a Discord server.
+         */
+        BenefitDiscord: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "discord";
+            /**
+             * Description
+             * @description The description of the benefit.
+             */
+            description: string;
+            /**
+             * Selectable
+             * @description Whether the benefit is selectable when creating a product.
+             */
+            selectable: boolean;
+            /**
+             * Deletable
+             * @description Whether the benefit is deletable.
+             */
+            deletable: boolean;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the benefit.
+             */
+            organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            properties: components["schemas"]["BenefitDiscordProperties"];
+        };
+        /**
+         * BenefitDiscordProperties
+         * @description Properties for a benefit of type `discord`.
+         */
+        BenefitDiscordProperties: {
+            /**
+             * Guild Id
+             * @description The ID of the Discord server.
+             */
+            guild_id: string;
+            /**
+             * Role Id
+             * @description The ID of the Discord role to grant.
+             */
+            role_id: string;
+            /**
+             * Kick Member
+             * @description Whether to kick the member from the Discord server on revocation.
+             */
+            kick_member: boolean;
+            /** Guild Token */
+            readonly guild_token: string;
+        };
+        /** BenefitDownloadables */
+        BenefitDownloadables: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "downloadables";
+            /**
+             * Description
+             * @description The description of the benefit.
+             */
+            description: string;
+            /**
+             * Selectable
+             * @description Whether the benefit is selectable when creating a product.
+             */
+            selectable: boolean;
+            /**
+             * Deletable
+             * @description Whether the benefit is deletable.
+             */
+            deletable: boolean;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the benefit.
+             */
+            organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            properties: components["schemas"]["BenefitDownloadablesProperties"];
+        };
+        /** BenefitDownloadablesProperties */
+        BenefitDownloadablesProperties: {
+            /** Archived */
+            archived: {
+                [key: string]: boolean;
+            };
+            /** Files */
+            files: string[];
+        };
+        /**
+         * BenefitGitHubRepository
+         * @description A benefit of type `github_repository`.
+         *
+         *     Use it to automatically invite your backers to a private GitHub repository.
+         */
+        BenefitGitHubRepository: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "github_repository";
+            /**
+             * Description
+             * @description The description of the benefit.
+             */
+            description: string;
+            /**
+             * Selectable
+             * @description Whether the benefit is selectable when creating a product.
+             */
+            selectable: boolean;
+            /**
+             * Deletable
+             * @description Whether the benefit is deletable.
+             */
+            deletable: boolean;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the benefit.
+             */
+            organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            properties: components["schemas"]["BenefitGitHubRepositoryProperties"];
+        };
+        /**
+         * BenefitGitHubRepositoryProperties
+         * @description Properties for a benefit of type `github_repository`.
+         */
+        BenefitGitHubRepositoryProperties: {
+            /**
+             * Repository Owner
+             * @description The owner of the repository.
+             * @example polarsource
+             */
+            repository_owner: string;
+            /**
+             * Repository Name
+             * @description The name of the repository.
+             * @example private_repo
+             */
+            repository_name: string;
+            /**
+             * Permission
+             * @description The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+             * @enum {string}
+             */
+            permission: "pull" | "triage" | "push" | "maintain" | "admin";
+        };
+        /** BenefitLicenseKeyActivationProperties */
+        BenefitLicenseKeyActivationProperties: {
+            /** Limit */
+            limit: number;
+            /** Enable Customer Admin */
+            enable_customer_admin: boolean;
+        };
+        /** BenefitLicenseKeyExpirationProperties */
+        BenefitLicenseKeyExpirationProperties: {
+            /** Ttl */
+            ttl: number;
+            /**
+             * Timeframe
+             * @enum {string}
+             */
+            timeframe: "year" | "month" | "day";
+        };
+        /** BenefitLicenseKeys */
+        BenefitLicenseKeys: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "license_keys";
+            /**
+             * Description
+             * @description The description of the benefit.
+             */
+            description: string;
+            /**
+             * Selectable
+             * @description Whether the benefit is selectable when creating a product.
+             */
+            selectable: boolean;
+            /**
+             * Deletable
+             * @description Whether the benefit is deletable.
+             */
+            deletable: boolean;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the benefit.
+             */
+            organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            properties: components["schemas"]["BenefitLicenseKeysProperties"];
+        };
+        /** BenefitLicenseKeysProperties */
+        BenefitLicenseKeysProperties: {
+            /** Prefix */
+            prefix: string | null;
+            expires: components["schemas"]["BenefitLicenseKeyExpirationProperties"] | null;
+            activations: components["schemas"]["BenefitLicenseKeyActivationProperties"] | null;
+            /** Limit Usage */
+            limit_usage: number | null;
+        };
+        /**
+         * BenefitMeterCredit
+         * @description A benefit of type `meter_unit`.
+         *
+         *     Use it to grant a number of units on a specific meter.
+         */
+        BenefitMeterCredit: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "meter_credit";
+            /**
+             * Description
+             * @description The description of the benefit.
+             */
+            description: string;
+            /**
+             * Selectable
+             * @description Whether the benefit is selectable when creating a product.
+             */
+            selectable: boolean;
+            /**
+             * Deletable
+             * @description Whether the benefit is deletable.
+             */
+            deletable: boolean;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the benefit.
+             */
+            organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            properties: components["schemas"]["BenefitMeterCreditProperties"];
+        };
+        /**
+         * BenefitMeterCreditProperties
+         * @description Properties for a benefit of type `meter_unit`.
+         */
+        BenefitMeterCreditProperties: {
+            /** Units */
+            units: number;
+            /** Rollover */
+            rollover: boolean;
+            /**
+             * Meter Id
+             * Format: uuid4
+             */
+            meter_id: string;
+        };
+        /** CountAggregation */
+        CountAggregation: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            func: "count";
+        };
+        CustomField: components["schemas"]["CustomFieldText"] | components["schemas"]["CustomFieldNumber"] | components["schemas"]["CustomFieldDate"] | components["schemas"]["CustomFieldCheckbox"] | components["schemas"]["CustomFieldSelect"];
+        /**
+         * CustomFieldCheckbox
+         * @description Schema for a custom field of type checkbox.
+         */
+        CustomFieldCheckbox: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "checkbox";
+            /**
+             * Slug
+             * @description Identifier of the custom field. It'll be used as key when storing the value.
+             */
+            slug: string;
+            /**
+             * Name
+             * @description Name of the custom field.
+             */
+            name: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the custom field.
+             * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+             */
+            organization_id: string;
+            properties: components["schemas"]["CustomFieldCheckboxProperties"];
+        };
+        /** CustomFieldCheckboxProperties */
+        CustomFieldCheckboxProperties: {
+            /** Form Label */
+            form_label?: string;
+            /** Form Help Text */
+            form_help_text?: string;
+            /** Form Placeholder */
+            form_placeholder?: string;
+        };
+        /**
+         * CustomFieldDate
+         * @description Schema for a custom field of type date.
+         */
+        CustomFieldDate: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "date";
+            /**
+             * Slug
+             * @description Identifier of the custom field. It'll be used as key when storing the value.
+             */
+            slug: string;
+            /**
+             * Name
+             * @description Name of the custom field.
+             */
+            name: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the custom field.
+             * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+             */
+            organization_id: string;
+            properties: components["schemas"]["CustomFieldDateProperties"];
+        };
+        /** CustomFieldDateProperties */
+        CustomFieldDateProperties: {
+            /** Form Label */
+            form_label?: string;
+            /** Form Help Text */
+            form_help_text?: string;
+            /** Form Placeholder */
+            form_placeholder?: string;
+            /** Ge */
+            ge?: number;
+            /** Le */
+            le?: number;
+        };
+        /**
+         * CustomFieldNumber
+         * @description Schema for a custom field of type number.
+         */
+        CustomFieldNumber: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "number";
+            /**
+             * Slug
+             * @description Identifier of the custom field. It'll be used as key when storing the value.
+             */
+            slug: string;
+            /**
+             * Name
+             * @description Name of the custom field.
+             */
+            name: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the custom field.
+             * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+             */
+            organization_id: string;
+            properties: components["schemas"]["CustomFieldNumberProperties"];
+        };
+        /** CustomFieldNumberProperties */
+        CustomFieldNumberProperties: {
+            /** Form Label */
+            form_label?: string;
+            /** Form Help Text */
+            form_help_text?: string;
+            /** Form Placeholder */
+            form_placeholder?: string;
+            /** Ge */
+            ge?: number;
+            /** Le */
+            le?: number;
+        };
+        /**
+         * CustomFieldSelect
+         * @description Schema for a custom field of type select.
+         */
+        CustomFieldSelect: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "select";
+            /**
+             * Slug
+             * @description Identifier of the custom field. It'll be used as key when storing the value.
+             */
+            slug: string;
+            /**
+             * Name
+             * @description Name of the custom field.
+             */
+            name: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the custom field.
+             * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+             */
+            organization_id: string;
+            properties: components["schemas"]["CustomFieldSelectProperties"];
+        };
+        /** CustomFieldSelectOption */
+        CustomFieldSelectOption: {
+            /** Value */
+            value: string;
+            /** Label */
+            label: string;
+        };
+        /** CustomFieldSelectProperties */
+        CustomFieldSelectProperties: {
+            /** Form Label */
+            form_label?: string;
+            /** Form Help Text */
+            form_help_text?: string;
+            /** Form Placeholder */
+            form_placeholder?: string;
+            /** Options */
+            options: components["schemas"]["CustomFieldSelectOption"][];
+        };
+        /**
+         * CustomFieldText
+         * @description Schema for a custom field of type text.
+         */
+        CustomFieldText: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text";
+            /**
+             * Slug
+             * @description Identifier of the custom field. It'll be used as key when storing the value.
+             */
+            slug: string;
+            /**
+             * Name
+             * @description Name of the custom field.
+             */
+            name: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the custom field.
+             * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+             */
+            organization_id: string;
+            properties: components["schemas"]["CustomFieldTextProperties"];
+        };
+        /** CustomFieldTextProperties */
+        CustomFieldTextProperties: {
+            /** Form Label */
+            form_label?: string;
+            /** Form Help Text */
+            form_help_text?: string;
+            /** Form Placeholder */
+            form_placeholder?: string;
+            /** Textarea */
+            textarea?: boolean;
+            /** Min Length */
+            min_length?: number;
+            /** Max Length */
+            max_length?: number;
+        };
+        /**
+         * CustomerCancellationReason
+         * @enum {string}
+         */
+        CustomerCancellationReason: "customer_service" | "low_quality" | "missing_features" | "switched_service" | "too_complex" | "too_expensive" | "unused" | "other";
         /** CustomerSessionCodeEmail */
         CustomerSessionCodeEmail: {
             /**
@@ -27,6 +851,538 @@ export interface components {
             /** Url */
             url: string;
         };
+        /**
+         * DiscountDuration
+         * @enum {string}
+         */
+        DiscountDuration: "once" | "forever" | "repeating";
+        /** DiscountFixedOnceForeverDurationBase */
+        DiscountFixedOnceForeverDurationBase: {
+            duration: components["schemas"]["DiscountDuration"];
+            type: components["schemas"]["DiscountType"];
+            /**
+             * Amount
+             * @example 1000
+             */
+            amount: number;
+            /**
+             * Currency
+             * @example usd
+             */
+            currency: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Name
+             * @description Name of the discount. Will be displayed to the customer when the discount is applied.
+             */
+            name: string;
+            /**
+             * Code
+             * @description Code customers can use to apply the discount during checkout.
+             */
+            code: string | null;
+            /**
+             * Starts At
+             * @description Timestamp after which the discount is redeemable.
+             */
+            starts_at: string | null;
+            /**
+             * Ends At
+             * @description Timestamp after which the discount is no longer redeemable.
+             */
+            ends_at: string | null;
+            /**
+             * Max Redemptions
+             * @description Maximum number of times the discount can be redeemed.
+             */
+            max_redemptions: number | null;
+            /**
+             * Redemptions Count
+             * @description Number of times the discount has been redeemed.
+             */
+            redemptions_count: number;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The organization ID.
+             * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+             */
+            organization_id: string;
+        };
+        /** DiscountFixedRepeatDurationBase */
+        DiscountFixedRepeatDurationBase: {
+            duration: components["schemas"]["DiscountDuration"];
+            /** Duration In Months */
+            duration_in_months: number;
+            type: components["schemas"]["DiscountType"];
+            /**
+             * Amount
+             * @example 1000
+             */
+            amount: number;
+            /**
+             * Currency
+             * @example usd
+             */
+            currency: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Name
+             * @description Name of the discount. Will be displayed to the customer when the discount is applied.
+             */
+            name: string;
+            /**
+             * Code
+             * @description Code customers can use to apply the discount during checkout.
+             */
+            code: string | null;
+            /**
+             * Starts At
+             * @description Timestamp after which the discount is redeemable.
+             */
+            starts_at: string | null;
+            /**
+             * Ends At
+             * @description Timestamp after which the discount is no longer redeemable.
+             */
+            ends_at: string | null;
+            /**
+             * Max Redemptions
+             * @description Maximum number of times the discount can be redeemed.
+             */
+            max_redemptions: number | null;
+            /**
+             * Redemptions Count
+             * @description Number of times the discount has been redeemed.
+             */
+            redemptions_count: number;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The organization ID.
+             * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+             */
+            organization_id: string;
+        };
+        /** DiscountPercentageOnceForeverDurationBase */
+        DiscountPercentageOnceForeverDurationBase: {
+            duration: components["schemas"]["DiscountDuration"];
+            type: components["schemas"]["DiscountType"];
+            /**
+             * Basis Points
+             * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+             * @example 1000
+             */
+            basis_points: number;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Name
+             * @description Name of the discount. Will be displayed to the customer when the discount is applied.
+             */
+            name: string;
+            /**
+             * Code
+             * @description Code customers can use to apply the discount during checkout.
+             */
+            code: string | null;
+            /**
+             * Starts At
+             * @description Timestamp after which the discount is redeemable.
+             */
+            starts_at: string | null;
+            /**
+             * Ends At
+             * @description Timestamp after which the discount is no longer redeemable.
+             */
+            ends_at: string | null;
+            /**
+             * Max Redemptions
+             * @description Maximum number of times the discount can be redeemed.
+             */
+            max_redemptions: number | null;
+            /**
+             * Redemptions Count
+             * @description Number of times the discount has been redeemed.
+             */
+            redemptions_count: number;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The organization ID.
+             * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+             */
+            organization_id: string;
+        };
+        /** DiscountPercentageRepeatDurationBase */
+        DiscountPercentageRepeatDurationBase: {
+            duration: components["schemas"]["DiscountDuration"];
+            /** Duration In Months */
+            duration_in_months: number;
+            type: components["schemas"]["DiscountType"];
+            /**
+             * Basis Points
+             * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+             * @example 1000
+             */
+            basis_points: number;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Name
+             * @description Name of the discount. Will be displayed to the customer when the discount is applied.
+             */
+            name: string;
+            /**
+             * Code
+             * @description Code customers can use to apply the discount during checkout.
+             */
+            code: string | null;
+            /**
+             * Starts At
+             * @description Timestamp after which the discount is redeemable.
+             */
+            starts_at: string | null;
+            /**
+             * Ends At
+             * @description Timestamp after which the discount is no longer redeemable.
+             */
+            ends_at: string | null;
+            /**
+             * Max Redemptions
+             * @description Maximum number of times the discount can be redeemed.
+             */
+            max_redemptions: number | null;
+            /**
+             * Redemptions Count
+             * @description Number of times the discount has been redeemed.
+             */
+            redemptions_count: number;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The organization ID.
+             * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+             */
+            organization_id: string;
+        };
+        /**
+         * DiscountType
+         * @enum {string}
+         */
+        DiscountType: "fixed" | "percentage";
+        /** EmailUpdateEmail */
+        EmailUpdateEmail: {
+            /**
+             * Template
+             * @default email_update
+             * @constant
+             */
+            template: "email_update";
+            props: components["schemas"]["EmailUpdateProps"];
+        };
+        /** EmailUpdateProps */
+        EmailUpdateProps: {
+            /** Token Lifetime Minutes */
+            token_lifetime_minutes: number;
+            /** Url */
+            url: string;
+        };
+        /** Filter */
+        Filter: {
+            conjunction: components["schemas"]["FilterConjunction"];
+            /** Clauses */
+            clauses: (components["schemas"]["FilterClause"] | components["schemas"]["Filter"])[];
+        };
+        /** FilterClause */
+        FilterClause: {
+            /** Property */
+            property: string;
+            operator: components["schemas"]["FilterOperator"];
+            /** Value */
+            value: string | number | boolean;
+        };
+        /**
+         * FilterConjunction
+         * @enum {string}
+         */
+        FilterConjunction: "and" | "or";
+        /**
+         * FilterOperator
+         * @enum {string}
+         */
+        FilterOperator: "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "like" | "not_like";
+        LegacyRecurringProductPrice: components["schemas"]["LegacyRecurringProductPriceFixed"] | components["schemas"]["LegacyRecurringProductPriceCustom"] | components["schemas"]["LegacyRecurringProductPriceFree"];
+        /**
+         * LegacyRecurringProductPriceCustom
+         * @description A pay-what-you-want recurring price for a product, i.e. a subscription.
+         *
+         *     **Deprecated**: The recurring interval should be set on the product itself.
+         */
+        LegacyRecurringProductPriceCustom: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "custom";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /**
+             * Type
+             * @description The type of the price.
+             * @constant
+             */
+            type: "recurring";
+            /** @description The recurring interval of the price. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /**
+             * Price Currency
+             * @description The currency.
+             */
+            price_currency: string;
+            /**
+             * Minimum Amount
+             * @description The minimum amount the customer can pay.
+             */
+            minimum_amount: number | null;
+            /**
+             * Maximum Amount
+             * @description The maximum amount the customer can pay.
+             */
+            maximum_amount: number | null;
+            /**
+             * Preset Amount
+             * @description The initial amount shown to the customer.
+             */
+            preset_amount: number | null;
+            /**
+             * Legacy
+             * @constant
+             */
+            readonly legacy: true;
+        };
+        /**
+         * LegacyRecurringProductPriceFixed
+         * @description A recurring price for a product, i.e. a subscription.
+         *
+         *     **Deprecated**: The recurring interval should be set on the product itself.
+         */
+        LegacyRecurringProductPriceFixed: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "fixed";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /**
+             * Type
+             * @description The type of the price.
+             * @constant
+             */
+            type: "recurring";
+            /** @description The recurring interval of the price. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /**
+             * Price Currency
+             * @description The currency.
+             */
+            price_currency: string;
+            /**
+             * Price Amount
+             * @description The price in cents.
+             */
+            price_amount: number;
+            /**
+             * Legacy
+             * @constant
+             */
+            readonly legacy: true;
+        };
+        /**
+         * LegacyRecurringProductPriceFree
+         * @description A free recurring price for a product, i.e. a subscription.
+         *
+         *     **Deprecated**: The recurring interval should be set on the product itself.
+         */
+        LegacyRecurringProductPriceFree: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "free";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /**
+             * Type
+             * @description The type of the price.
+             * @constant
+             */
+            type: "recurring";
+            /** @description The recurring interval of the price. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /**
+             * Legacy
+             * @constant
+             */
+            readonly legacy: true;
+        };
         /** LoginCodeEmail */
         LoginCodeEmail: {
             /**
@@ -43,6 +1399,206 @@ export interface components {
             code: string;
             /** Code Lifetime Minutes */
             code_lifetime_minutes: number;
+        };
+        /** MaintainerAccountReviewedNotificationPayload */
+        MaintainerAccountReviewedNotificationPayload: {
+            /** Account Type */
+            account_type: string;
+        };
+        /** MaintainerAccountUnderReviewNotificationPayload */
+        MaintainerAccountUnderReviewNotificationPayload: {
+            /** Account Type */
+            account_type: string;
+        };
+        /** MaintainerCreateAccountNotificationPayload */
+        MaintainerCreateAccountNotificationPayload: {
+            /** Organization Name */
+            organization_name: string;
+            /** Url */
+            url: string;
+        };
+        /** MaintainerNewPaidSubscriptionNotificationPayload */
+        MaintainerNewPaidSubscriptionNotificationPayload: {
+            /** Subscriber Name */
+            subscriber_name: string;
+            /** Tier Name */
+            tier_name: string;
+            /** Tier Price Amount */
+            tier_price_amount: number | null;
+            /** Tier Price Recurring Interval */
+            tier_price_recurring_interval: string;
+            /** Tier Organization Name */
+            tier_organization_name: string;
+            /** Formatted Price Amount */
+            readonly formatted_price_amount: string;
+        };
+        /** MaintainerNewProductSaleNotificationPayload */
+        MaintainerNewProductSaleNotificationPayload: {
+            /** Customer Name */
+            customer_name: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Price Amount */
+            product_price_amount: number;
+            /** Organization Name */
+            organization_name: string;
+            /** Formatted Price Amount */
+            readonly formatted_price_amount: string;
+        };
+        /** Meter */
+        Meter: {
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the meter. Will be shown on customer's invoices and usage.
+             */
+            name: string;
+            /** @description The filter to apply on events that'll be used to calculate the meter. */
+            filter: components["schemas"]["Filter"];
+            /**
+             * Aggregation
+             * @description The aggregation to apply on the filtered events to calculate the meter.
+             */
+            aggregation: components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"] | components["schemas"]["UniqueAggregation"];
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the meter.
+             */
+            organization_id: string;
+            /**
+             * Archived At
+             * @description Whether the meter is archived and the time it was archived.
+             * @default null
+             */
+            archived_at: string | null;
+        };
+        /** NotificationAccountReviewedEmail */
+        NotificationAccountReviewedEmail: {
+            /**
+             * Template
+             * @default notification_account_reviewed
+             * @constant
+             */
+            template: "notification_account_reviewed";
+            props: components["schemas"]["MaintainerAccountReviewedNotificationPayload"];
+        };
+        /** NotificationAccountUnderReviewEmail */
+        NotificationAccountUnderReviewEmail: {
+            /**
+             * Template
+             * @default notification_account_under_review
+             * @constant
+             */
+            template: "notification_account_under_review";
+            props: components["schemas"]["MaintainerAccountUnderReviewNotificationPayload"];
+        };
+        /** NotificationCreateAccountEmail */
+        NotificationCreateAccountEmail: {
+            /**
+             * Template
+             * @default notification_create_account
+             * @constant
+             */
+            template: "notification_create_account";
+            props: components["schemas"]["MaintainerCreateAccountNotificationPayload"];
+        };
+        /** NotificationNewSaleEmail */
+        NotificationNewSaleEmail: {
+            /**
+             * Template
+             * @default notification_new_sale
+             * @constant
+             */
+            template: "notification_new_sale";
+            props: components["schemas"]["MaintainerNewProductSaleNotificationPayload"];
+        };
+        /** NotificationNewSubscriptionEmail */
+        NotificationNewSubscriptionEmail: {
+            /**
+             * Template
+             * @default notification_new_subscription
+             * @constant
+             */
+            template: "notification_new_subscription";
+            props: components["schemas"]["MaintainerNewPaidSubscriptionNotificationPayload"];
+        };
+        /** OAuth2LeakedClientEmail */
+        OAuth2LeakedClientEmail: {
+            /**
+             * Template
+             * @default oauth2_leaked_client
+             * @constant
+             */
+            template: "oauth2_leaked_client";
+            props: components["schemas"]["OAuth2LeakedClientProps"];
+        };
+        /** OAuth2LeakedClientProps */
+        OAuth2LeakedClientProps: {
+            /** Token Type */
+            token_type: string;
+            /** Client Name */
+            client_name: string;
+            /** Notifier */
+            notifier: string;
+            /** Url */
+            url: string;
+        };
+        /** OAuth2LeakedTokenEmail */
+        OAuth2LeakedTokenEmail: {
+            /**
+             * Template
+             * @default oauth2_leaked_token
+             * @constant
+             */
+            template: "oauth2_leaked_token";
+            props: components["schemas"]["OAuth2LeakedTokenProps"];
+        };
+        /** OAuth2LeakedTokenProps */
+        OAuth2LeakedTokenProps: {
+            /** Client Name */
+            client_name: string;
+            /** Notifier */
+            notifier: string;
+            /** Url */
+            url: string;
+        };
+        /** OrderConfirmationEmail */
+        OrderConfirmationEmail: {
+            /**
+             * Template
+             * @default order_confirmation
+             * @constant
+             */
+            template: "order_confirmation";
+            props: components["schemas"]["OrderConfirmationProps"];
+        };
+        /** OrderConfirmationProps */
+        OrderConfirmationProps: {
+            organization: components["schemas"]["Organization"];
+            product: components["schemas"]["Product"];
+            /** Url */
+            url: string;
         };
         /** Organization */
         Organization: {
@@ -110,6 +1666,25 @@ export interface components {
             /** @description Settings related to customer emails */
             customer_email_settings: components["schemas"]["OrganizationCustomerEmailSettings"];
         };
+        /** OrganizationAccessTokenLeakedEmail */
+        OrganizationAccessTokenLeakedEmail: {
+            /**
+             * Template
+             * @default organization_access_token_leaked
+             * @constant
+             */
+            template: "organization_access_token_leaked";
+            props: components["schemas"]["OrganizationAccessTokenLeakedProps"];
+        };
+        /** OrganizationAccessTokenLeakedProps */
+        OrganizationAccessTokenLeakedProps: {
+            /** Organization Access Token */
+            organization_access_token: string;
+            /** Notifier */
+            notifier: string;
+            /** Url */
+            url: string;
+        };
         /** OrganizationCustomerEmailSettings */
         OrganizationCustomerEmailSettings: {
             /** Order Confirmation */
@@ -144,6 +1719,25 @@ export interface components {
              */
             seat_based_pricing_enabled: boolean;
         };
+        /** OrganizationInviteEmail */
+        OrganizationInviteEmail: {
+            /**
+             * Template
+             * @default organization_invite
+             * @constant
+             */
+            template: "organization_invite";
+            props: components["schemas"]["OrganizationInviteProps"];
+        };
+        /** OrganizationInviteProps */
+        OrganizationInviteProps: {
+            /** Organization Name */
+            organization_name: string;
+            /** Inviter Email */
+            inviter_email: string;
+            /** Invite Url */
+            invite_url: string;
+        };
         /** OrganizationNotificationSettings */
         OrganizationNotificationSettings: {
             /** New Order */
@@ -175,16 +1769,955 @@ export interface components {
             allow_customer_updates: boolean;
             proration_behavior: components["schemas"]["SubscriptionProrationBehavior"];
         };
+        /** PersonalAccessTokenLeakedEmail */
+        PersonalAccessTokenLeakedEmail: {
+            /**
+             * Template
+             * @default personal_access_token_leaked
+             * @constant
+             */
+            template: "personal_access_token_leaked";
+            props: components["schemas"]["PersonalAccessTokenLeakedProps"];
+        };
+        /** PersonalAccessTokenLeakedProps */
+        PersonalAccessTokenLeakedProps: {
+            /** Personal Access Token */
+            personal_access_token: string;
+            /** Notifier */
+            notifier: string;
+            /** Url */
+            url: string;
+        };
+        /**
+         * Product
+         * @description A product.
+         */
+        Product: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /** @description The interval unit for the trial period. */
+            trial_interval: components["schemas"]["TrialInterval"] | null;
+            /**
+             * Trial Interval Count
+             * @description The number of interval units for the trial period.
+             */
+            trial_interval_count: number | null;
+            /**
+             * Name
+             * @description The name of the product.
+             */
+            name: string;
+            /**
+             * Description
+             * @description The description of the product.
+             */
+            description: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
+            /**
+             * Is Recurring
+             * @description Whether the product is a subscription.
+             */
+            is_recurring: boolean;
+            /**
+             * Is Archived
+             * @description Whether the product is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the product.
+             */
+            organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Prices
+             * @description List of prices for this product.
+             */
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
+            /**
+             * Benefits
+             * @description List of benefits granted by the product.
+             */
+            benefits: components["schemas"]["Benefit"][];
+            /**
+             * Medias
+             * @description List of medias associated to the product.
+             */
+            medias: components["schemas"]["ProductMediaFileRead"][];
+            /**
+             * Attached Custom Fields
+             * @description List of custom fields attached to the product.
+             */
+            attached_custom_fields: components["schemas"]["AttachedCustomField"][];
+        };
+        /**
+         * ProductMediaFileRead
+         * @description File to be used as a product media file.
+         */
+        ProductMediaFileRead: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             */
+            organization_id: string;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Size */
+            size: number;
+            /** Storage Version */
+            storage_version: string | null;
+            /** Checksum Etag */
+            checksum_etag: string | null;
+            /** Checksum Sha256 Base64 */
+            checksum_sha256_base64: string | null;
+            /** Checksum Sha256 Hex */
+            checksum_sha256_hex: string | null;
+            /** Last Modified At */
+            last_modified_at: string | null;
+            /** Version */
+            version: string | null;
+            /**
+             * Service
+             * @constant
+             */
+            service: "product_media";
+            /** Is Uploaded */
+            is_uploaded: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Size Readable */
+            readonly size_readable: string;
+            /** Public Url */
+            readonly public_url: string;
+        };
+        ProductPrice: components["schemas"]["ProductPriceFixed"] | components["schemas"]["ProductPriceCustom"] | components["schemas"]["ProductPriceFree"] | components["schemas"]["ProductPriceSeatBased"] | components["schemas"]["ProductPriceMeteredUnit"];
+        /**
+         * ProductPriceCustom
+         * @description A pay-what-you-want price for a product.
+         */
+        ProductPriceCustom: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "custom";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /** @deprecated */
+            type: components["schemas"]["ProductPriceType"];
+            /** @deprecated */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
+            /**
+             * Price Currency
+             * @description The currency.
+             */
+            price_currency: string;
+            /**
+             * Minimum Amount
+             * @description The minimum amount the customer can pay.
+             */
+            minimum_amount: number | null;
+            /**
+             * Maximum Amount
+             * @description The maximum amount the customer can pay.
+             */
+            maximum_amount: number | null;
+            /**
+             * Preset Amount
+             * @description The initial amount shown to the customer.
+             */
+            preset_amount: number | null;
+        };
+        /**
+         * ProductPriceFixed
+         * @description A fixed price for a product.
+         */
+        ProductPriceFixed: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "fixed";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /** @deprecated */
+            type: components["schemas"]["ProductPriceType"];
+            /** @deprecated */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
+            /**
+             * Price Currency
+             * @description The currency.
+             */
+            price_currency: string;
+            /**
+             * Price Amount
+             * @description The price in cents.
+             */
+            price_amount: number;
+        };
+        /**
+         * ProductPriceFree
+         * @description A free price for a product.
+         */
+        ProductPriceFree: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "free";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /** @deprecated */
+            type: components["schemas"]["ProductPriceType"];
+            /** @deprecated */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
+        };
+        /**
+         * ProductPriceMeter
+         * @description A meter associated to a metered price.
+         */
+        ProductPriceMeter: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the meter.
+             */
+            name: string;
+        };
+        /**
+         * ProductPriceMeteredUnit
+         * @description A metered, usage-based, price for a product, with a fixed unit price.
+         */
+        ProductPriceMeteredUnit: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "metered_unit";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /** @deprecated */
+            type: components["schemas"]["ProductPriceType"];
+            /** @deprecated */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
+            /**
+             * Price Currency
+             * @description The currency.
+             */
+            price_currency: string;
+            /**
+             * Unit Amount
+             * @description The price per unit in cents.
+             */
+            unit_amount: string;
+            /**
+             * Cap Amount
+             * @description The maximum amount in cents that can be charged, regardless of the number of units consumed.
+             */
+            cap_amount: number | null;
+            /**
+             * Meter Id
+             * Format: uuid4
+             * @description The ID of the meter associated to the price.
+             */
+            meter_id: string;
+            /** @description The meter associated to the price. */
+            meter: components["schemas"]["ProductPriceMeter"];
+        };
+        /**
+         * ProductPriceSeatBased
+         * @description A seat-based price for a product.
+         */
+        ProductPriceSeatBased: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "seat_based";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /** @deprecated */
+            type: components["schemas"]["ProductPriceType"];
+            /** @deprecated */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
+            /**
+             * Price Currency
+             * @description The currency.
+             */
+            price_currency: string;
+            /** @description Tiered pricing based on seat quantity */
+            seat_tiers: components["schemas"]["ProductPriceSeatTiers"];
+        };
+        /**
+         * ProductPriceSeatTier
+         * @description A pricing tier for seat-based pricing.
+         */
+        ProductPriceSeatTier: {
+            /**
+             * Min Seats
+             * @description Minimum number of seats (inclusive)
+             */
+            min_seats: number;
+            /**
+             * Max Seats
+             * @description Maximum number of seats (inclusive). None for unlimited.
+             * @default null
+             */
+            max_seats: number | null;
+            /**
+             * Price Per Seat
+             * @description Price per seat in cents for this tier
+             */
+            price_per_seat: number;
+        };
+        /**
+         * ProductPriceSeatTiers
+         * @description List of pricing tiers for seat-based pricing.
+         */
+        ProductPriceSeatTiers: {
+            /**
+             * Tiers
+             * @description List of pricing tiers
+             */
+            tiers: components["schemas"]["ProductPriceSeatTier"][];
+        };
+        /**
+         * ProductPriceType
+         * @enum {string}
+         */
+        ProductPriceType: "one_time" | "recurring";
+        /** PropertyAggregation */
+        PropertyAggregation: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            func: "avg" | "max" | "min" | "sum";
+            /** Property */
+            property: string;
+        };
+        /** SeatInvitationEmail */
+        SeatInvitationEmail: {
+            /**
+             * Template
+             * @default seat_invitation
+             * @constant
+             */
+            template: "seat_invitation";
+            props: components["schemas"]["SeatInvitationProps"];
+        };
+        /** SeatInvitationProps */
+        SeatInvitationProps: {
+            organization: components["schemas"]["Organization"];
+            /** Product Name */
+            product_name: string;
+            /** Billing Manager Email */
+            billing_manager_email: string;
+            /** Claim Url */
+            claim_url: string;
+        };
         /**
          * Status
          * @enum {string}
          */
         Status: "created" | "onboarding_started" | "under_review" | "denied" | "active";
+        /** Subscription */
+        Subscription: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Amount
+             * @description The amount of the subscription.
+             * @example 10000
+             */
+            amount: number;
+            /**
+             * Currency
+             * @description The currency of the subscription.
+             * @example usd
+             */
+            currency: string;
+            /**
+             * @description The interval at which the subscription recurs.
+             * @example month
+             */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /**
+             * @description The status of the subscription.
+             * @example active
+             */
+            status: components["schemas"]["SubscriptionStatus"];
+            /**
+             * Current Period Start
+             * Format: date-time
+             * @description The start timestamp of the current billing period.
+             */
+            current_period_start: string;
+            /**
+             * Current Period End
+             * @description The end timestamp of the current billing period.
+             */
+            current_period_end: string | null;
+            /**
+             * Trial Start
+             * @description The start timestamp of the trial period, if any.
+             */
+            trial_start: string | null;
+            /**
+             * Trial End
+             * @description The end timestamp of the trial period, if any.
+             */
+            trial_end: string | null;
+            /**
+             * Cancel At Period End
+             * @description Whether the subscription will be canceled at the end of the current period.
+             */
+            cancel_at_period_end: boolean;
+            /**
+             * Canceled At
+             * @description The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`.
+             */
+            canceled_at: string | null;
+            /**
+             * Started At
+             * @description The timestamp when the subscription started.
+             */
+            started_at: string | null;
+            /**
+             * Ends At
+             * @description The timestamp when the subscription will end.
+             */
+            ends_at: string | null;
+            /**
+             * Ended At
+             * @description The timestamp when the subscription ended.
+             */
+            ended_at: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the subscribed customer.
+             */
+            customer_id: string;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the subscribed product.
+             */
+            product_id: string;
+            /**
+             * Discount Id
+             * @description The ID of the applied discount, if any.
+             */
+            discount_id: string | null;
+            /** Checkout Id */
+            checkout_id: string | null;
+            customer_cancellation_reason: components["schemas"]["CustomerCancellationReason"] | null;
+            /** Customer Cancellation Comment */
+            customer_cancellation_comment: string | null;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Custom Field Data
+             * @description Key-value object storing custom field values.
+             */
+            custom_field_data?: {
+                [key: string]: string | number | boolean | null;
+            };
+            customer: components["schemas"]["SubscriptionCustomer"];
+            product: components["schemas"]["Product"];
+            /** Discount */
+            discount: (components["schemas"]["DiscountFixedOnceForeverDurationBase"] | components["schemas"]["DiscountFixedRepeatDurationBase"] | components["schemas"]["DiscountPercentageOnceForeverDurationBase"] | components["schemas"]["DiscountPercentageRepeatDurationBase"]) | null;
+            /**
+             * Prices
+             * @description List of enabled prices for the subscription.
+             */
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
+            /**
+             * Meters
+             * @description List of meters associated with the subscription.
+             */
+            meters: components["schemas"]["SubscriptionMeter"][];
+        };
+        /** SubscriptionCancellationEmail */
+        SubscriptionCancellationEmail: {
+            /**
+             * Template
+             * @default subscription_cancellation
+             * @constant
+             */
+            template: "subscription_cancellation";
+            props: components["schemas"]["SubscriptionCancellationProps"];
+        };
+        /** SubscriptionCancellationProps */
+        SubscriptionCancellationProps: {
+            organization: components["schemas"]["Organization"];
+            product: components["schemas"]["Product"];
+            subscription: components["schemas"]["Subscription"];
+            /** Url */
+            url: string;
+        };
+        /** SubscriptionConfirmationEmail */
+        SubscriptionConfirmationEmail: {
+            /**
+             * Template
+             * @default subscription_confirmation
+             * @constant
+             */
+            template: "subscription_confirmation";
+            props: components["schemas"]["SubscriptionConfirmationProps"];
+        };
+        /** SubscriptionConfirmationProps */
+        SubscriptionConfirmationProps: {
+            organization: components["schemas"]["Organization"];
+            product: components["schemas"]["Product"];
+            subscription: components["schemas"]["Subscription"];
+            /** Url */
+            url: string;
+        };
+        /** SubscriptionCustomer */
+        SubscriptionCustomer: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the customer.
+             * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * External Id
+             * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+             * @example usr_1337
+             */
+            external_id: string | null;
+            /**
+             * Email
+             * @description The email address of the customer. This must be unique within the organization.
+             * @example customer@example.com
+             */
+            email: string;
+            /**
+             * Email Verified
+             * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+             * @example true
+             */
+            email_verified: boolean;
+            /**
+             * Name
+             * @description The name of the customer.
+             * @example John Doe
+             */
+            name: string | null;
+            billing_address: components["schemas"]["Address"] | null;
+            /** Tax Id */
+            tax_id: [
+                string,
+                components["schemas"]["TaxIDFormat"]
+            ] | null;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the customer.
+             * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+             */
+            organization_id: string;
+            /**
+             * Deleted At
+             * @description Timestamp for when the customer was soft deleted.
+             */
+            deleted_at: string | null;
+            /**
+             * Avatar Url
+             * @example https://www.gravatar.com/avatar/xxx?d=404
+             */
+            readonly avatar_url: string;
+        };
+        /** SubscriptionCycledEmail */
+        SubscriptionCycledEmail: {
+            /**
+             * Template
+             * @default subscription_cycled
+             * @constant
+             */
+            template: "subscription_cycled";
+            props: components["schemas"]["SubscriptionCycledProps"];
+        };
+        /** SubscriptionCycledProps */
+        SubscriptionCycledProps: {
+            organization: components["schemas"]["Organization"];
+            product: components["schemas"]["Product"];
+            subscription: components["schemas"]["Subscription"];
+            /** Url */
+            url: string;
+        };
+        /**
+         * SubscriptionMeter
+         * @description Current consumption and spending for a subscription meter.
+         */
+        SubscriptionMeter: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Consumed Units
+             * @description The number of consumed units so far in this billing period.
+             * @example 25
+             */
+            consumed_units: number;
+            /**
+             * Credited Units
+             * @description The number of credited units so far in this billing period.
+             * @example 100
+             */
+            credited_units: number;
+            /**
+             * Amount
+             * @description The amount due in cents so far in this billing period.
+             * @example 0
+             */
+            amount: number;
+            /**
+             * Meter Id
+             * Format: uuid4
+             * @description The ID of the meter.
+             * @example d498a884-e2cd-4d3e-8002-f536468a8b22
+             */
+            meter_id: string;
+            /** @description The meter associated with this subscription. */
+            meter: components["schemas"]["Meter"];
+        };
+        /** SubscriptionPastDueEmail */
+        SubscriptionPastDueEmail: {
+            /**
+             * Template
+             * @default subscription_past_due
+             * @constant
+             */
+            template: "subscription_past_due";
+            props: components["schemas"]["SubscriptionPastDueProps"];
+        };
+        /** SubscriptionPastDueProps */
+        SubscriptionPastDueProps: {
+            organization: components["schemas"]["Organization"];
+            product: components["schemas"]["Product"];
+            subscription: components["schemas"]["Subscription"];
+            /** Url */
+            url: string;
+            /**
+             * Payment Url
+             * @default null
+             */
+            payment_url: string | null;
+        };
         /**
          * SubscriptionProrationBehavior
          * @enum {string}
          */
         SubscriptionProrationBehavior: "invoice" | "prorate";
+        /**
+         * SubscriptionRecurringInterval
+         * @enum {string}
+         */
+        SubscriptionRecurringInterval: "day" | "week" | "month" | "year";
+        /** SubscriptionRevokedEmail */
+        SubscriptionRevokedEmail: {
+            /**
+             * Template
+             * @default subscription_revoked
+             * @constant
+             */
+            template: "subscription_revoked";
+            props: components["schemas"]["SubscriptionRevokedProps"];
+        };
+        /** SubscriptionRevokedProps */
+        SubscriptionRevokedProps: {
+            organization: components["schemas"]["Organization"];
+            product: components["schemas"]["Product"];
+            subscription: components["schemas"]["Subscription"];
+            /** Url */
+            url: string;
+        };
+        /**
+         * SubscriptionStatus
+         * @enum {string}
+         */
+        SubscriptionStatus: "incomplete" | "incomplete_expired" | "trialing" | "active" | "past_due" | "canceled" | "unpaid";
+        /** SubscriptionUncanceledEmail */
+        SubscriptionUncanceledEmail: {
+            /**
+             * Template
+             * @default subscription_uncanceled
+             * @constant
+             */
+            template: "subscription_uncanceled";
+            props: components["schemas"]["SubscriptionUncanceledProps"];
+        };
+        /** SubscriptionUncanceledProps */
+        SubscriptionUncanceledProps: {
+            organization: components["schemas"]["Organization"];
+            product: components["schemas"]["Product"];
+            subscription: components["schemas"]["Subscription"];
+            /** Url */
+            url: string;
+        };
+        /** SubscriptionUpdatedEmail */
+        SubscriptionUpdatedEmail: {
+            /**
+             * Template
+             * @default subscription_updated
+             * @constant
+             */
+            template: "subscription_updated";
+            props: components["schemas"]["SubscriptionUpdatedProps"];
+        };
+        /** SubscriptionUpdatedProps */
+        SubscriptionUpdatedProps: {
+            organization: components["schemas"]["Organization"];
+            product: components["schemas"]["Product"];
+            subscription: components["schemas"]["Subscription"];
+            /** Url */
+            url: string;
+            /** Proration Behavior */
+            proration_behavior: string;
+            previous_product: components["schemas"]["Product"];
+        };
+        /**
+         * TaxIDFormat
+         * @description List of supported tax ID formats.
+         *
+         *     Ref: https://docs.stripe.com/billing/customer/tax-ids#supported-tax-id
+         * @enum {string}
+         */
+        TaxIDFormat: "ad_nrt" | "ae_trn" | "ar_cuit" | "au_abn" | "au_arn" | "bg_uic" | "bh_vat" | "bo_tin" | "br_cnpj" | "br_cpf" | "ca_bn" | "ca_gst_hst" | "ca_pst_bc" | "ca_pst_mb" | "ca_pst_sk" | "ca_qst" | "ch_uid" | "ch_vat" | "cl_tin" | "cn_tin" | "co_nit" | "cr_tin" | "de_stn" | "do_rcn" | "ec_ruc" | "eg_tin" | "es_cif" | "eu_oss_vat" | "eu_vat" | "gb_vat" | "ge_vat" | "hk_br" | "hr_oib" | "hu_tin" | "id_npwp" | "il_vat" | "in_gst" | "is_vat" | "jp_cn" | "jp_rn" | "jp_trn" | "ke_pin" | "kr_brn" | "kz_bin" | "li_uid" | "mx_rfc" | "my_frp" | "my_itn" | "my_sst" | "ng_tin" | "no_vat" | "no_voec" | "nz_gst" | "om_vat" | "pe_ruc" | "ph_tin" | "ro_tin" | "rs_pib" | "ru_inn" | "ru_kpp" | "sa_vat" | "sg_gst" | "sg_uen" | "si_tin" | "sv_nit" | "th_vat" | "tr_tin" | "tw_vat" | "ua_vat" | "us_ein" | "uy_ruc" | "ve_rif" | "vn_tin" | "za_vat";
+        /**
+         * TrialInterval
+         * @enum {string}
+         */
+        TrialInterval: "day" | "week" | "month" | "year";
+        /** UniqueAggregation */
+        UniqueAggregation: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            func: "unique";
+            /** Property */
+            property: string;
+        };
     };
     responses: never;
     parameters: never;

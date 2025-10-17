@@ -3,19 +3,17 @@ import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
+import type { schemas } from '../types'
 
 export function LoginCode({
   code,
   code_lifetime_minutes,
-}: {
-  code: string
-  code_lifetime_minutes: number
-}) {
+}: schemas['LoginCodeProps']) {
   return (
     <Wrapper>
       <Preview>
         Your code to sign in is {code}. It is valid for the next{' '}
-        {code_lifetime_minutes} minutes.
+        {code_lifetime_minutes.toFixed()} minutes.
       </Preview>
       <PolarHeader />
       <IntroWithHi>

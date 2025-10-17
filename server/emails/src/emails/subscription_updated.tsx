@@ -4,23 +4,16 @@ import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
-import type { OrganizationProps, ProductProps } from '../types'
-
-interface SubscriptionUpdatedProps {
-  proration_behavior: 'always_invoice' | 'create_prorations'
-  organization: OrganizationProps
-  product: ProductProps
-  previous_product: ProductProps
-  url: string
-}
+import type { schemas } from '../types'
 
 export function SubscriptionUpdated({
   proration_behavior,
   organization,
   product,
+  subscription,
   previous_product,
   url,
-}: SubscriptionUpdatedProps) {
+}: schemas['SubscriptionUpdatedProps']) {
   return (
     <Wrapper>
       <Preview>Your subscription has been updated to {product.name}</Preview>
@@ -93,6 +86,10 @@ SubscriptionUpdated.PreviewProps = {
   previous_product: {
     name: 'Pro Plan',
     benefits: [],
+  },
+  subscription: {
+    id: '12345',
+    status: 'active',
   },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }

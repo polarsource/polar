@@ -4,19 +4,14 @@ import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
-import type { OrganizationProps, ProductProps } from '../types'
-
-interface SubscriptionRevokedProps {
-  organization: OrganizationProps
-  product: ProductProps
-  url: string
-}
+import type { schemas } from '../types'
 
 export function SubscriptionRevoked({
   organization,
   product,
+  subscription,
   url,
-}: SubscriptionRevokedProps) {
+}: schemas['SubscriptionRevokedProps']) {
   return (
     <Wrapper>
       <Preview>Your subscription to {product.name} has now ended</Preview>
@@ -63,6 +58,10 @@ SubscriptionRevoked.PreviewProps = {
   product: {
     name: 'Premium Subscription',
     benefits: [],
+  },
+  subscription: {
+    id: '12345',
+    status: 'canceled',
   },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }

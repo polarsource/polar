@@ -3,12 +3,11 @@ import BodyText from '../components/BodyText'
 import Footer from '../components/Footer'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
+import type { schemas } from '../types'
 
 export function NotificationAccountUnderReview({
   account_type,
-}: {
-  account_type: string
-}) {
+}: schemas['MaintainerAccountUnderReviewNotificationPayload']) {
   return (
     <Wrapper>
       <Preview>Your Polar account is being reviewed</Preview>

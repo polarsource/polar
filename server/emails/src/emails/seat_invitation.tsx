@@ -4,19 +4,14 @@ import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
-import type { OrganizationProps } from '../types'
+import type { schemas } from '../types'
 
 export function SeatInvitation({
   organization,
   product_name,
   billing_manager_email,
   claim_url,
-}: {
-  organization: OrganizationProps
-  product_name: string
-  billing_manager_email: string
-  claim_url: string
-}) {
+}: schemas['SeatInvitationProps']) {
   return (
     <Wrapper>
       <Preview>

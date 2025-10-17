@@ -3,20 +3,14 @@ import Footer from '../components/Footer'
 import InfoBox from '../components/InfoBox'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
-
-interface OAuth2LeakedClientProps {
-  token_type: 'client_secret' | 'client_registration_token'
-  notifier: string
-  url?: string
-  client_name: string
-}
+import type { schemas } from '../types'
 
 export function OAuth2LeakedClient({
   token_type,
   notifier,
   url,
   client_name,
-}: OAuth2LeakedClientProps) {
+}: schemas['OAuth2LeakedClientProps']) {
   return (
     <Wrapper>
       <Preview>
@@ -55,7 +49,7 @@ export function OAuth2LeakedClient({
       <InfoBox title="Leak details" variant="warning">
         <ul className="list-disc space-y-1 pl-6">
           <li>Notifier: {notifier}</li>
-          {url && <li>URL: {url}</li>}
+          <li>URL: {url}</li>
           <li>OAuth2 Client: {client_name}</li>
         </ul>
         <Text className="mb-0 mt-4 text-sm text-gray-600">
@@ -89,7 +83,7 @@ export function OAuth2LeakedClient({
 }
 
 OAuth2LeakedClient.PreviewProps = {
-  token_type: 'client_secret' as const,
+  token_type: 'client_secret',
   notifier: 'GitHub',
   url: 'https://github.com/example/repo',
   client_name: 'My OAuth2 App',

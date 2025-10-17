@@ -29,8 +29,15 @@ class NotificationPayloadBase(BaseModel):
         pass
 
     def render(self) -> tuple[str, str]:
+        from polar.email.schemas import EmailAdapter
+
         return self.subject(), render_email_template(
-            self.template_name(), self.model_dump()
+            EmailAdapter.validate_python(
+                {
+                    "template": self.template_name(),
+                    "props": self,
+                }
+            )
         )
 
 

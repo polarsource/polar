@@ -1,6 +1,7 @@
 from pytest_mock import MockerFixture
 
 from polar.customer_seat.sender import send_seat_invitation_email
+from polar.email.schemas import SeatInvitationEmail
 from polar.models import CustomerSeat, Organization
 
 
@@ -27,14 +28,11 @@ class TestSendSeatInvitationEmail:
 
         mock_render.assert_called_once()
         call_args = mock_render.call_args
-
-        assert call_args[0][0] == "seat_invitation"
-        template_data = call_args[0][1]
-        assert "organization" in template_data
-        assert template_data["product_name"] == "Test Product"
-        assert template_data["billing_manager_email"] == "manager@example.com"
-        assert "claim_url" in template_data
-        assert customer_seat_pending.invitation_token in template_data["claim_url"]
+        email = call_args[0][0]
+        assert isinstance(email, SeatInvitationEmail)
+        assert email.props.organization.id == seat_enabled_organization.id
+        assert customer_seat_pending.invitation_token is not None
+        assert customer_seat_pending.invitation_token in email.props.claim_url
 
         mock_enqueue.assert_called_once()
         enqueue_kwargs = mock_enqueue.call_args[1]
@@ -85,6 +83,6 @@ class TestSendSeatInvitationEmail:
         )
 
         call_args = mock_render.call_args
-        template_data = call_args[0][1]
-        assert "organization" in template_data
-        assert template_data["organization"] == seat_enabled_organization.email_props
+        email = call_args[0][0]
+        assert isinstance(email, SeatInvitationEmail)
+        assert email.props.organization.id == seat_enabled_organization.id

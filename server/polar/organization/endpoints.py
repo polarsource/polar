@@ -9,6 +9,7 @@ from polar.auth.models import is_anonymous, is_user
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.email.react import render_email_template
+from polar.email.schemas import OrganizationInviteEmail, OrganizationInviteProps
 from polar.email.sender import enqueue_email
 from polar.exceptions import (
     NotPermitted,
@@ -316,14 +317,15 @@ async def invite_member(
 
     # Send invitation email
     body = render_email_template(
-        "organization_invite",
-        {
-            "organization_name": organization.name,
-            "inviter_email": inviter_email or "",
-            "invite_url": settings.generate_frontend_url(
-                f"/dashboard/{organization.slug}"
-            ),
-        },
+        OrganizationInviteEmail(
+            props=OrganizationInviteProps(
+                organization_name=organization.name,
+                inviter_email=inviter_email or "",
+                invite_url=settings.generate_frontend_url(
+                    f"/dashboard/{organization.slug}"
+                ),
+            )
+        )
     )
 
     enqueue_email(

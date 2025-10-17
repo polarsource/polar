@@ -23,6 +23,7 @@ from polar.customer_portal.schemas.order import (
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.react import render_email_template
+from polar.email.schemas import OrderConfirmationEmail, OrderConfirmationProps
 from polar.email.sender import enqueue_email
 from polar.enums import PaymentProcessor
 from polar.eventstream.service import publish as eventstream_publish
@@ -1465,14 +1466,17 @@ class OrderService:
         )
 
         body = render_email_template(
-            "order_confirmation",
-            {
-                "organization": organization.email_props,
-                "product": product.email_props,
-                "url": settings.generate_frontend_url(
-                    f"/{organization.slug}/portal?customer_session_token={token}&id={order.id}"
-                ),
-            },
+            OrderConfirmationEmail(
+                props=OrderConfirmationProps.model_validate(
+                    {
+                        "organization": organization,
+                        "product": product,
+                        "url": settings.generate_frontend_url(
+                            f"/{organization.slug}/portal?customer_session_token={token}&id={order.id}"
+                        ),
+                    }
+                )
+            )
         )
 
         enqueue_email(

@@ -4,4 +4,43 @@ sidebarTitle: "PHP"
 icon: php
 ---
 
-Documentation coming soon.
+A fully-featured PHP SDK for the Polar API.
+
+### Quickstart
+
+```bash
+composer require polarsource/polar-php
+```
+
+```php
+<?php
+
+declare(strict_types=1);
+
+require 'vendor/autoload.php';
+
+use Polar\Polar;
+
+$sdk = Polar::builder()
+    ->setAccessToken('YOUR_ACCESS_TOKEN')
+    ->build();
+
+$response = $sdk->users->benefits->list();
+
+foreach ($response->result->items as $benefit) {
+    echo $benefit->id . PHP_EOL;
+}
+```
+
+[Read more](https://github.com/polarsource/polar-php)
+
+### Sandbox Environment
+
+You can configure the SDK so it hits the [sandbox environment](/integrate/sandbox) instead of the production one. You just need to set the server URL when building the client:
+
+```php
+$sdk = Polar::builder()
+    ->setServerUrl('https://sandbox-api.polar.sh')
+    ->setAccessToken('YOUR_ACCESS_TOKEN')
+    ->build();
+```

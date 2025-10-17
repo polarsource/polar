@@ -3,7 +3,7 @@ import uuid
 from collections.abc import AsyncGenerator, Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Literal, cast, overload
+from typing import Any, Literal, cast, overload
 
 import stripe as stripe_lib
 import structlog
@@ -21,7 +21,8 @@ from polar.customer_seat.service import seat_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
-from polar.email.react import JSONProperty, render_email_template
+from polar.email.react import render_email_template
+from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.service import event as event_service
@@ -1833,7 +1834,7 @@ class SubscriptionService:
                 pass
 
         # Only include payment_url if it's not None
-        extra_context: dict[str, JSONProperty] = {}
+        extra_context: dict[str, Any] = {}
         if payment_url is not None:
             extra_context["payment_url"] = payment_url
 
@@ -1861,7 +1862,7 @@ class SubscriptionService:
             template_name="subscription_updated",
             extra_context={
                 "proration_behavior": proration_behavior,
-                "previous_product": previous_product.email_props,
+                "previous_product": previous_product,
             },
         )
 
@@ -1880,7 +1881,7 @@ class SubscriptionService:
             "subscription_uncanceled",
             "subscription_updated",
         ],
-        extra_context: dict[str, JSONProperty] | None = None,
+        extra_context: dict[str, Any] | None = None,
     ) -> None:
         product = subscription.product
         organization_repository = OrganizationRepository.from_session(session)
@@ -1901,25 +1902,22 @@ class SubscriptionService:
         token, _ = await customer_session_service.create_customer_session(
             session, customer
         )
+        email = EmailAdapter.validate_python(
+            {
+                "template": template_name,
+                "props": {
+                    "organization": organization,
+                    "product": product,
+                    "subscription": subscription,
+                    "url": settings.generate_frontend_url(
+                        f"/{organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
+                    ),
+                    **(extra_context or {}),
+                },
+            }
+        )
 
-        context: dict[str, JSONProperty] = {
-            "organization": organization.email_props,
-            "product": product.email_props,
-            "subscription": {
-                "ends_at": subscription.ends_at.isoformat()
-                if subscription.ends_at
-                else "",
-            },
-            "url": settings.generate_frontend_url(
-                f"/{organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
-            ),
-        }
-
-        # Add extra context if provided
-        if extra_context:
-            context.update(extra_context)
-
-        body = render_email_template(template_name, context)
+        body = render_email_template(email)
 
         subject = subject_template.format(product=product)
 

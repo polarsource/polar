@@ -2,6 +2,7 @@ import structlog
 
 from polar.config import settings
 from polar.email.react import render_email_template
+from polar.email.schemas import SeatInvitationEmail, SeatInvitationProps
 from polar.email.sender import enqueue_email
 from polar.logging import Logger
 from polar.models import CustomerSeat, Organization
@@ -33,13 +34,16 @@ def send_seat_invitation_email(
     )
 
     html_content = render_email_template(
-        "seat_invitation",
-        {
-            "organization": organization.email_props,
-            "product_name": product_name,
-            "billing_manager_email": billing_manager_email,
-            "claim_url": claim_url,
-        },
+        SeatInvitationEmail(
+            props=SeatInvitationProps.model_validate(
+                {
+                    "organization": organization,
+                    "product_name": product_name,
+                    "billing_manager_email": billing_manager_email,
+                    "claim_url": claim_url,
+                }
+            )
+        )
     )
 
     enqueue_email(

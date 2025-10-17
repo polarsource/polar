@@ -9,7 +9,7 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.email.react import render_email_template
-from polar.email.schemas import CustomerSessionCodeEmail
+from polar.email.schemas import CustomerSessionCodeEmail, CustomerSessionCodeProps
 from polar.email.sender import enqueue_email
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
@@ -86,15 +86,17 @@ class CustomerSessionService:
         code_lifetime_minutes = int(ceil(delta.seconds / 60))
 
         body = render_email_template(
-            CustomerSessionCodeEmail.model_validate(
-                {
-                    "organization": organization,
-                    "code": code,
-                    "code_lifetime_minutes": code_lifetime_minutes,
-                    "url": settings.generate_frontend_url(
-                        f"/{organization.slug}/portal/authenticate"
-                    ),
-                },
+            CustomerSessionCodeEmail(
+                props=CustomerSessionCodeProps.model_validate(
+                    {
+                        "organization": organization,
+                        "code": code,
+                        "code_lifetime_minutes": code_lifetime_minutes,
+                        "url": settings.generate_frontend_url(
+                            f"/{organization.slug}/portal/authenticate"
+                        ),
+                    }
+                )
             )
         )
 

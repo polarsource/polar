@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import cast
 
 import structlog
 from sqlalchemy import select
@@ -6,6 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.email.react import render_email_template
+from polar.email.schemas import OAuth2LeakedClientEmail, OAuth2LeakedClientProps
 from polar.email.sender import enqueue_email
 from polar.enums import TokenType
 from polar.exceptions import PolarError
@@ -93,13 +95,14 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
 
         if client.user is not None:
             body = render_email_template(
-                "oauth2_leaked_client",
-                {
-                    "token_type": token_type,
-                    "client_name": client.client_name,
-                    "notifier": notifier,
-                    "url": url or "",
-                },
+                OAuth2LeakedClientEmail(
+                    props=OAuth2LeakedClientProps(
+                        token_type=token_type,
+                        client_name=cast(str, client.client_name),
+                        notifier=notifier,
+                        url=url or "",
+                    )
+                )
             )
 
             enqueue_email(

@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.config import settings
 from polar.email.react import render_email_template
+from polar.email.schemas import OAuth2LeakedTokenEmail, OAuth2LeakedTokenProps
 from polar.email.sender import enqueue_email
 from polar.enums import TokenType
 from polar.exceptions import PolarError
@@ -14,7 +15,6 @@ from polar.kit.crypto import get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
 from polar.models import OAuth2Token, User
-from polar.models.organization import Organization
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -97,18 +97,19 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         sub = oauth2_token.sub
         if isinstance(sub, User):
             recipients = [sub.email]
-        elif isinstance(sub, Organization):
+        else:
             members = await user_organization_service.list_by_org(session, sub.id)
             recipients = [member.user.email for member in members]
 
         oauth2_client = oauth2_token.client
         body = render_email_template(
-            "oauth2_leaked_token",
-            {
-                "client_name": oauth2_client.client_name,
-                "notifier": notifier,
-                "url": url or "",
-            },
+            OAuth2LeakedTokenEmail(
+                props=OAuth2LeakedTokenProps(
+                    client_name=cast(str, oauth2_client.client_name),
+                    notifier=notifier,
+                    url=url or "",
+                )
+            )
         )
 
         for recipient in recipients:

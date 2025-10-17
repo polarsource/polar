@@ -1,11 +1,13 @@
 import subprocess
+from typing import TYPE_CHECKING
 
 from polar.config import settings
 
-from .schemas import Email
+if TYPE_CHECKING:
+    from .schemas import Email
 
 
-def render_email_template(email: Email) -> str:
+def render_email_template(email: "Email") -> str:
     process = subprocess.Popen(
         [
             settings.EMAIL_RENDERER_BINARY_PATH,

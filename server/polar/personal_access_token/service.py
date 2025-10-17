@@ -9,6 +9,10 @@ from sqlalchemy.orm import contains_eager
 from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.email.react import render_email_template
+from polar.email.schemas import (
+    PersonalAccessTokenLeakedEmail,
+    PersonalAccessTokenLeakedProps,
+)
 from polar.email.sender import enqueue_email
 from polar.enums import TokenType
 from polar.kit.crypto import get_token_hash
@@ -104,12 +108,13 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         session.add(personal_access_token)
 
         body = render_email_template(
-            "personal_access_token_leaked",
-            {
-                "personal_access_token": personal_access_token.comment,
-                "notifier": notifier,
-                "url": url or "",
-            },
+            PersonalAccessTokenLeakedEmail(
+                props=PersonalAccessTokenLeakedProps(
+                    personal_access_token=personal_access_token.comment,
+                    notifier=notifier,
+                    url=url or "",
+                )
+            )
         )
 
         enqueue_email(

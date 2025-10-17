@@ -27,40 +27,50 @@ def upgrade() -> None:
     # Generate slugs for existing products
     connection = op.get_bind()
 
-    # Get all existing products
-    products = connection.execute(
-        sa.text("SELECT id, name FROM products ORDER BY created_at")
+    # Get all organizations
+    organizations = connection.execute(
+        sa.text("SELECT id FROM organizations")
     ).fetchall()
 
-    # Track used slugs to handle collisions
-    used_slugs = set()
+    # Process products per organization to ensure slug uniqueness within each org
+    for (organization_id,) in organizations:
+        # Get all products for this organization
+        products = connection.execute(
+            sa.text(
+                "SELECT id, name FROM products WHERE organization_id = :org_id ORDER BY created_at"
+            ),
+            {"org_id": organization_id},
+        ).fetchall()
 
-    for product_id, product_name in products:
-        # Generate base slug from name
-        base_slug = slugify(
-            product_name,
-            max_length=128,
-            word_boundary=True,
-        )
+        # Track used slugs within this organization
+        used_slugs = set()
 
-        # Handle collisions by appending a number
-        slug = base_slug
-        n = 0
-        while slug in used_slugs:
-            n += 1
-            slug = f"{base_slug}-{n}"
-            if n > 100:  # Safety check
-                raise Exception(
-                    f"Could not generate unique slug for product {product_id}"
-                )
+        for product_id, product_name in products:
+            # Generate base slug from name
+            base_slug = slugify(
+                product_name,
+                max_length=128,
+                word_boundary=True,
+            )
 
-        # Update the product with the slug
-        connection.execute(
-            sa.text("UPDATE products SET slug = :slug WHERE id = :id"),
-            {"slug": slug, "id": product_id},
-        )
+            # Handle collisions by appending a number
+            slug = base_slug
+            n = 0
+            while slug in used_slugs:
+                n += 1
+                slug = f"{base_slug}-{n}"
+                if n > 100:  # Safety check
+                    raise Exception(
+                        f"Could not generate unique slug for product {product_id} in organization {organization_id}"
+                    )
 
-        used_slugs.add(slug)
+            # Update the product with the slug
+            connection.execute(
+                sa.text("UPDATE products SET slug = :slug WHERE id = :id"),
+                {"slug": slug, "id": product_id},
+            )
+
+            used_slugs.add(slug)
 
     # Make the column non-nullable
     op.alter_column("products", "slug", nullable=False)

@@ -278,7 +278,9 @@ class TestGet:
         # then
         session.expunge_all()
 
-        retrieved_product = await product_service.get(session, auth_subject, product.id)
+        retrieved_product = await product_service.get(
+            session, auth_subject, product.id, slug=None
+        )
         assert retrieved_product is None
 
     @pytest.mark.auth
@@ -294,12 +296,12 @@ class TestGet:
         session.expunge_all()
 
         not_existing_product = await product_service.get(
-            session, auth_subject, uuid.uuid4()
+            session, auth_subject, uuid.uuid4(), slug=None
         )
         assert not_existing_product is None
 
         accessible_product = await product_service.get(
-            session, auth_subject, product.id
+            session, auth_subject, product.id, slug=None
         )
         assert accessible_product is not None
         assert accessible_product.id == product.id
@@ -315,12 +317,12 @@ class TestGet:
         session.expunge_all()
 
         not_existing_product = await product_service.get(
-            session, auth_subject, uuid.uuid4()
+            session, auth_subject, uuid.uuid4(), slug=None
         )
         assert not_existing_product is None
 
         accessible_product = await product_service.get(
-            session, auth_subject, product.id
+            session, auth_subject, product.id, slug=None
         )
         assert accessible_product is not None
         assert accessible_product.id == product.id
@@ -1977,7 +1979,7 @@ class TestSlugGeneration:
         enqueue_job_mock: AsyncMock,
         stripe_service_mock: MagicMock,
     ) -> None:
-        """Test that duplicate slugs are handled with numeric suffixes."""
+        """Test that duplicate slugs within the same organization are handled with numeric suffixes."""
         create_product_mock: MagicMock = stripe_service_mock.create_product
         create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
 
@@ -2004,7 +2006,7 @@ class TestSlugGeneration:
         )
         assert product1.slug == "test-product"
 
-        # Create second product with same name
+        # Create second product with same name in same organization
         product2 = await product_service.create(
             session,
             ProductCreateOneTime(
@@ -2022,7 +2024,7 @@ class TestSlugGeneration:
         )
         assert product2.slug == "test-product-1"
 
-        # Create third product with same name
+        # Create third product with same name in same organization
         product3 = await product_service.create(
             session,
             ProductCreateOneTime(
@@ -2039,6 +2041,75 @@ class TestSlugGeneration:
             auth_subject,
         )
         assert product3.slug == "test-product-2"
+
+    @pytest.mark.auth
+    async def test_slug_unique_per_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user: User,
+        enqueue_job_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        """Test that the same slug can be used across different organizations."""
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
+
+        # Create first organization and product
+        from tests.fixtures.random_objects import create_organization
+
+        org1 = await create_organization(save_fixture)
+        user_org1 = UserOrganization(user=user, organization=org1)
+        await save_fixture(user_org1)
+
+        product1 = await product_service.create(
+            session,
+            ProductCreateOneTime(
+                name="Premium Plan",
+                organization_id=org1.id,
+                prices=[
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=1000,
+                        price_currency="usd",
+                    )
+                ],
+            ),
+            auth_subject,
+        )
+        assert product1.slug == "premium-plan"
+        assert product1.organization_id == org1.id
+
+        # Create second organization and product with same name
+        org2 = await create_organization(save_fixture)
+        user_org2 = UserOrganization(user=user, organization=org2)
+        await save_fixture(user_org2)
+
+        product2 = await product_service.create(
+            session,
+            ProductCreateOneTime(
+                name="Premium Plan",
+                organization_id=org2.id,
+                prices=[
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=2000,
+                        price_currency="usd",
+                    )
+                ],
+            ),
+            auth_subject,
+        )
+        # Should have the same slug since it's in a different organization
+        assert product2.slug == "premium-plan"
+        assert product2.organization_id == org2.id
+        assert product1.organization_id != product2.organization_id
 
 
 @pytest.mark.asyncio

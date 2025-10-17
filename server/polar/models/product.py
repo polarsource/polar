@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
+    Index,
     String,
     Text,
     Uuid,
@@ -46,6 +47,15 @@ class ProductBillingType(StrEnum):
 
 class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "products"
+
+    __table_args__ = (
+        Index(
+            "ix_product_slug",
+            "organization_id",
+            "slug",
+            unique=True,
+        ),
+    )
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     slug: Mapped[str] = mapped_column(CITEXT(), nullable=False)

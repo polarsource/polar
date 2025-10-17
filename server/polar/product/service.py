@@ -227,7 +227,10 @@ class ProductService:
         return await repository.get_one_or_none(statement)
 
     async def slugify(
-        self, session: AsyncSession, schema: ProductCreate | ProductUpdate
+        self,
+        session: AsyncSession,
+        schema: ProductCreate | ProductUpdate,
+        organization_id: uuid.UUID,
     ) -> str:
         repository = ProductRepository.from_session(session)
 
@@ -243,13 +246,14 @@ class ProductService:
 
         orig_slug = slug
 
-        # TODO: detect and handle duplicate slugs
         for n in range(0, 100):
             test_slug = orig_slug if n == 0 else f"{orig_slug}-{n}"
 
-            exists = await repository.get_by_slug(test_slug)
+            exists = await repository.get_by_slug_and_organization(
+                test_slug, organization_id
+            )
 
-            # slug is unused, continue with creating an article with this slug
+            # slug is unused, continue with creating a product with this slug
             if exists is None:
                 slug = test_slug
                 break
@@ -295,7 +299,7 @@ class ProductService:
         )
         errors.extend(prices_errors)
 
-        slug = await self.slugify(session, create_schema)
+        slug = await self.slugify(session, create_schema, organization.id)
 
         product = await repository.create(
             Product(
@@ -569,6 +573,11 @@ class ProductService:
                     price.get_stripe_price_params(product.recurring_interval),
                 )
                 price.stripe_price_id = stripe_price.id
+
+        if update_schema.slug is not None:
+            product.slug = await self.slugify(
+                session, update_schema, product.organization_id
+            )
 
         if update_schema.is_archived:
             product = await self._archive(session, product)

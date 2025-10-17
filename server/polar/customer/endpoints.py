@@ -129,7 +129,7 @@ async def export(
                     customer.id,
                     customer.external_id,
                     customer.created_at.isoformat(),
-                    customer.email or "",
+                    customer.email,
                     customer.name,
                     customer.tax_id,
                     billing_address.line1 if billing_address else None,

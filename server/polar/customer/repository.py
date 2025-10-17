@@ -16,7 +16,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.kit.utils import utc_now
-from polar.models import Customer, UserOrganization
+from polar.models import BaseCustomer, Customer, PlaceholderCustomer, UserOrganization
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
 
@@ -44,13 +44,15 @@ def _get_changed_value(
 
 
 class CustomerRepository(
-    RepositorySoftDeletionIDMixin[Customer, UUID],
-    RepositorySoftDeletionMixin[Customer],
-    RepositoryBase[Customer],
+    RepositorySoftDeletionIDMixin[BaseCustomer, UUID],
+    RepositorySoftDeletionMixin[BaseCustomer],
+    RepositoryBase[BaseCustomer],
 ):
-    model = Customer
+    model = BaseCustomer
 
-    async def create(self, object: Customer, *, flush: bool = False) -> Customer:
+    async def create(
+        self, object: BaseCustomer, *, flush: bool = False
+    ) -> BaseCustomer:
         customer = await super().create(object, flush=flush)
 
         # We need the id to enqueue the job
@@ -172,7 +174,7 @@ class CustomerRepository(
 
     async def create_placeholder(
         self, external_id: str, organization_id: UUID
-    ) -> Customer:
+    ) -> PlaceholderCustomer:
         """
         Create a placeholder customer for event ingestion.
         This customer has no email (email=None indicates placeholder status).
@@ -181,17 +183,17 @@ class CustomerRepository(
         but skip the customer.created webhook since this is an internal placeholder.
         The webhook will be sent when the customer is promoted (via update with email).
         """
-        customer = Customer(
+        placeholder = PlaceholderCustomer(
             external_id=external_id,
             organization_id=organization_id,
             email=None,
         )
-        customer = await self.create(customer, flush=True)
+        placeholder = await self.create(placeholder, flush=True)
 
         # Enqueue meter update job to process pre-existing events with this external_id
-        enqueue_job("customer_meter.update_customer", customer.id)
+        enqueue_job("customer_meter.update_customer", placeholder.id)
 
-        return customer
+        return placeholder
 
     async def get_by_id_and_organization(
         self, id: UUID, organization_id: UUID

@@ -16,7 +16,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.kit.utils import utc_now
-from polar.models import Customer, PlaceholderCustomer, UserOrganization
+from polar.models import BaseCustomer, Customer, PlaceholderCustomer, UserOrganization
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
 
@@ -41,6 +41,49 @@ def _get_changed_value(
         return (False, None)
 
     return (True, added)
+
+
+class BaseCustomerRepository(
+    RepositorySoftDeletionIDMixin[BaseCustomer, UUID],
+    RepositorySoftDeletionMixin[BaseCustomer],
+    RepositoryBase[BaseCustomer],
+):
+    """Repository for working with all customer types (Customer and PlaceholderCustomer)."""
+
+    model = BaseCustomer
+
+    async def get_by_id_and_organization(
+        self, id: UUID, organization_id: UUID
+    ) -> BaseCustomer | None:
+        statement = self.get_base_statement().where(
+            BaseCustomer.id == id, BaseCustomer.organization_id == organization_id
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_by_external_id_and_organization(
+        self, external_id: str, organization_id: UUID
+    ) -> BaseCustomer | None:
+        statement = self.get_base_statement().where(
+            BaseCustomer.external_id == external_id,
+            BaseCustomer.organization_id == organization_id,
+        )
+        return await self.get_one_or_none(statement)
+
+    async def touch_meters(self, customers: Iterable[BaseCustomer]) -> None:
+        statement = (
+            update(BaseCustomer)
+            .where(BaseCustomer.id.in_([c.id for c in customers]))
+            .values(meters_dirtied_at=utc_now())
+        )
+        await self.session.execute(statement)
+
+    async def set_meters_updated_at(self, customers: Iterable[BaseCustomer]) -> None:
+        statement = (
+            update(BaseCustomer)
+            .where(BaseCustomer.id.in_([c.id for c in customers]))
+            .values(meters_updated_at=utc_now())
+        )
+        await self.session.execute(statement)
 
 
 class CustomerRepository(
@@ -170,29 +213,6 @@ class CustomerRepository(
         )
         await self.session.execute(statement)
 
-    async def create_placeholder(
-        self, external_id: str, organization_id: UUID
-    ) -> PlaceholderCustomer:
-        """
-        Create a placeholder customer for event ingestion.
-        This customer has no email (email=None indicates placeholder status).
-
-        Note: We enqueue the meter update job to process pre-existing events,
-        but skip the customer.created webhook since this is an internal placeholder.
-        The webhook will be sent when the customer is promoted (via update with email).
-        """
-        placeholder = PlaceholderCustomer(
-            external_id=external_id,
-            organization_id=organization_id,
-            email=None,
-        )
-        placeholder = await self.create(placeholder, flush=True)
-
-        # Enqueue meter update job to process pre-existing events with this external_id
-        enqueue_job("customer_meter.update_customer", placeholder.id)
-
-        return placeholder
-
     async def get_by_id_and_organization(
         self, id: UUID, organization_id: UUID
     ) -> Customer | None:
@@ -232,12 +252,8 @@ class CustomerRepository(
         self,
         auth_subject: AuthSubject[User | Organization],
         organization_id: Sequence[UUID] | None,
-        *,
-        include_placeholder: bool = False,
     ) -> AsyncGenerator[Customer]:
-        statement = self.get_readable_statement(
-            auth_subject, include_placeholder=include_placeholder
-        )
+        statement = self.get_readable_statement(auth_subject)
 
         if organization_id is not None:
             statement = statement.where(
@@ -278,14 +294,11 @@ class CustomerRepository(
     def get_readable_statement(
         self,
         auth_subject: AuthSubject[User | Organization],
-        *,
-        include_placeholder: bool = False,
     ) -> Select[tuple[Customer]]:
         statement = self.get_base_statement()
 
-        # Exclude placeholder customers (those without email) by default
-        if not include_placeholder:
-            statement = statement.where(Customer.email.is_not(None))
+        # Exclude placeholder customers (those without email)
+        statement = statement.where(Customer.email.is_not(None))
 
         if is_user(auth_subject):
             user = auth_subject.subject
@@ -300,6 +313,73 @@ class CustomerRepository(
         elif is_organization(auth_subject):
             statement = statement.where(
                 Customer.organization_id == auth_subject.subject.id,
+            )
+
+        return statement
+
+
+class PlaceholderCustomerRepository(
+    RepositorySoftDeletionIDMixin[PlaceholderCustomer, UUID],
+    RepositorySoftDeletionMixin[PlaceholderCustomer],
+    RepositoryBase[PlaceholderCustomer],
+):
+    model = PlaceholderCustomer
+
+    async def create_placeholder(
+        self, external_id: str, organization_id: UUID
+    ) -> PlaceholderCustomer:
+        """
+        Create a placeholder customer for event ingestion.
+        This customer has no email (email=None indicates placeholder status).
+
+        Note: We enqueue the meter update job to process pre-existing events,
+        but skip the customer.created webhook since this is an internal placeholder.
+        The webhook will be sent when the customer is promoted (via update with email).
+        """
+        placeholder = PlaceholderCustomer(
+            external_id=external_id,
+            organization_id=organization_id,
+            email=None,
+        )
+        placeholder = await self.create(placeholder, flush=True)
+
+        # Enqueue meter update job to process pre-existing events with this external_id
+        enqueue_job("customer_meter.update_customer", placeholder.id)
+
+        return placeholder
+
+    async def get_by_external_id_and_organization(
+        self, external_id: str, organization_id: UUID
+    ) -> PlaceholderCustomer | None:
+        statement = self.get_base_statement().where(
+            PlaceholderCustomer.external_id == external_id,
+            PlaceholderCustomer.organization_id == organization_id,
+            PlaceholderCustomer.email.is_(None),
+        )
+        return await self.get_one_or_none(statement)
+
+    def get_readable_statement(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> Select[tuple[PlaceholderCustomer]]:
+        statement = self.get_base_statement()
+
+        # Only include placeholder customers (those without email)
+        statement = statement.where(PlaceholderCustomer.email.is_(None))
+
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            statement = statement.where(
+                PlaceholderCustomer.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == user.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                PlaceholderCustomer.organization_id == auth_subject.subject.id,
             )
 
         return statement

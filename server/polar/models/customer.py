@@ -206,13 +206,16 @@ class BaseCustomer(MetadataMixin, RecordModel):
             foreign_keys=[cls.default_payment_method_id],  # type: ignore
         )
 
-    __mapper_args__ = {
-        "polymorphic_on": case(
-            (Column("email").is_(None), "placeholder"),
-            else_="customer",
-        ),
-        "polymorphic_identity": "base",
-    }
+    @declared_attr
+    @classmethod
+    def __mapper_args__(cls):  # type: ignore
+        return {
+            "polymorphic_on": case(
+                (cls.__table__.c.email.is_(None), "placeholder"),
+                else_="customer",
+            ),
+            "polymorphic_identity": "base",
+        }
 
     @hybrid_property
     def can_authenticate(self) -> bool:
@@ -303,12 +306,13 @@ class BaseCustomer(MetadataMixin, RecordModel):
 class Customer(BaseCustomer):
     """Regular customer with email address."""
 
-    # Type narrowing: email is always present for Customer
-    email: Mapped[str]
-
     __mapper_args__ = {
         "polymorphic_identity": "customer",
     }
+
+    if TYPE_CHECKING:
+        # Type narrowing: email is always present for Customer
+        email: Mapped[str]
 
     @property
     def legacy_user_public_name(self) -> str:
@@ -320,12 +324,13 @@ class Customer(BaseCustomer):
 class PlaceholderCustomer(BaseCustomer):
     """Placeholder customer without email, created from event ingestion."""
 
-    # Type narrowing: email is always None for PlaceholderCustomer
-    email: Mapped[None]
-
     __mapper_args__ = {
         "polymorphic_identity": "placeholder",
     }
+
+    if TYPE_CHECKING:
+        # Type narrowing: email is always None for PlaceholderCustomer
+        email: Mapped[None]
 
     @property
     def legacy_user_public_name(self) -> str:

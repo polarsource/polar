@@ -7,7 +7,7 @@ import structlog
 from sqlalchemy import String, UnaryExpression, asc, cast, desc, func, or_, select, text
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.customer.repository import CustomerRepository
+from polar.customer.repository import CustomerRepository, PlaceholderCustomerRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
@@ -424,7 +424,9 @@ class EventService:
         """
         Ensure customers exist for all external_customer_ids.
         """
-        customer_repository = CustomerRepository.from_session(session)
+        placeholder_customer_repository = PlaceholderCustomerRepository.from_session(
+            session
+        )
 
         for organization_id, external_ids in external_customer_ids_by_org.items():
             # Query existing customers for these external_ids
@@ -442,7 +444,7 @@ class EventService:
             # Create placeholder customers for missing external_ids
             for external_id in missing_external_ids:
                 try:
-                    await customer_repository.create_placeholder(
+                    await placeholder_customer_repository.create_placeholder(
                         external_id=external_id, organization_id=organization_id
                     )
                 except Exception:

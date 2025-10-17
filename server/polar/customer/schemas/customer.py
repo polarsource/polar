@@ -84,7 +84,9 @@ class CustomerUpdate(CustomerUpdateBase):
 class CustomerUpdateExternalID(CustomerUpdateBase): ...
 
 
-class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
+class BaseCustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
+    """Base class for all customer types (with and without email)."""
+
     id: UUID4 = Field(
         description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
     )
@@ -127,6 +129,18 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
 
 
+class CustomerBase(BaseCustomerBase):
+    """Customer with email address."""
+
+    email: str
+
+
+class PlaceholderCustomerBase(BaseCustomerBase):
+    """Placeholder customer without email address."""
+
+    email: None
+
+
 class CustomerBalance(Schema):
     """Customer balance information."""
 
@@ -139,5 +153,5 @@ class CustomerBalance(Schema):
     )
 
 
-class Customer(CustomerBase):
-    """A customer in an organization."""
+# Alias for backwards compatibility
+Customer = CustomerBase

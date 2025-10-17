@@ -640,7 +640,7 @@ class SubscriptionService:
                 if subscription.discount.is_repetition_expired(
                     subscription.started_at,
                     subscription.current_period_start,
-                    was_trialing=previous_status == SubscriptionStatus.trialing,
+                    previous_status == SubscriptionStatus.trialing,
                 ):
                     subscription.discount = None
 

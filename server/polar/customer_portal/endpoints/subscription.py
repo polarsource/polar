@@ -11,6 +11,7 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.kit.tax import calculate_tax
 from polar.locker import Locker, get_locker
 from polar.models import Subscription
+from polar.models.subscription import SubscriptionStatus
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
@@ -153,7 +154,9 @@ async def get_charge_preview(
         assert subscription.started_at is not None
         assert subscription.current_period_end is not None
         if not subscription.discount.is_repetition_expired(
-            subscription.started_at, subscription.current_period_end
+            subscription.started_at,
+            subscription.current_period_end,
+            subscription.status == SubscriptionStatus.trialing,
         ):
             applicable_discount = subscription.discount
 

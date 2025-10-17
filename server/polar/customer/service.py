@@ -314,7 +314,3 @@ class CustomerService:
 
 
 customer = CustomerService()
-customer = CustomerService()
-customer = CustomerService()
-customer = CustomerService()
-customer = CustomerService()

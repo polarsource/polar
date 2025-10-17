@@ -124,6 +124,9 @@ class CustomerSessionService:
             raise CustomerSessionCodeInvalidOrExpired()
 
         customer = customer_session_code.customer
+
+        assert customer.email is not None
+
         if customer_session_code.email.lower() == customer.email.lower():
             customer_repository = CustomerRepository.from_session(session)
             await customer_repository.update(

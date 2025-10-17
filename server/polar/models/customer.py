@@ -19,7 +19,6 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     Uuid,
-    case,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -92,12 +91,7 @@ class CustomerOAuthAccount:
         return time.time() > self.expires_at
 
 
-class BaseCustomer(MetadataMixin, RecordModel):
-    """
-    Base class for Customer and PlaceholderCustomer using single table inheritance.
-    Uses email IS NULL as the discriminator.
-    """
-
+class Customer(MetadataMixin, RecordModel):
     __tablename__ = "customers"
     __table_args__ = (
         Index(
@@ -206,14 +200,6 @@ class BaseCustomer(MetadataMixin, RecordModel):
             foreign_keys=[cls.default_payment_method_id],  # type: ignore
         )
 
-    __mapper_args__ = {
-        "polymorphic_on": case(
-            (Column("email").is_(None), "placeholder"),
-            else_="customer",
-        ),
-        "polymorphic_identity": "base",
-    }
-
     @hybrid_property
     def can_authenticate(self) -> bool:
         return self.deleted_at is None
@@ -265,6 +251,14 @@ class BaseCustomer(MetadataMixin, RecordModel):
         return self._legacy_user_id or self.id
 
     @property
+    def legacy_user_public_name(self) -> str:
+        if self.name:
+            return self.name[0]
+        if self.email:
+            return self.email[0]
+        return "?"
+
+    @property
     def active_subscriptions(self) -> Sequence["Subscription"] | None:
         return getattr(self, "_active_subscriptions", None)
 
@@ -298,37 +292,3 @@ class BaseCustomer(MetadataMixin, RecordModel):
 
     def touch_meters_dirtied_at(self) -> None:
         self.meters_dirtied_at = utc_now()
-
-
-class Customer(BaseCustomer):
-    """Regular customer with email address."""
-
-    # Type narrowing: email is always present for Customer
-    email: Mapped[str]  # type: ignore[assignment]
-
-    __mapper_args__ = {
-        "polymorphic_identity": "customer",
-    }
-
-    @property
-    def legacy_user_public_name(self) -> str:
-        if self.name:
-            return self.name[0]
-        return self.email[0]
-
-
-class PlaceholderCustomer(BaseCustomer):
-    """Placeholder customer without email, created from event ingestion."""
-
-    # Type narrowing: email is always None for PlaceholderCustomer
-    email: Mapped[None]  # type: ignore[assignment]
-
-    __mapper_args__ = {
-        "polymorphic_identity": "placeholder",
-    }
-
-    @property
-    def legacy_user_public_name(self) -> str:
-        if self.name:
-            return self.name[0]
-        return "?"

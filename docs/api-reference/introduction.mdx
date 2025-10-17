@@ -1,7 +1,7 @@
 ---
 title: "API Overview"
 sidebarTitle: "Introduction"
-description: "Base URLs, authentication (OAT), and the difference between the Core API and the Customer Portal API"
+description: "Base URLs, authentication, pagination, rate limits, and the difference between the Core API and the Customer Portal API"
 ---
 
 <CardGroup cols={2}>
@@ -142,6 +142,71 @@ $sdk = Polar\Polar::builder()
 ```
 
 </CodeGroup>
+
+## Pagination
+
+List endpoints in the Polar API support pagination to help you efficiently retrieve large datasets. Use the `page` and `limit` query parameters to control pagination.
+
+### Query Parameters
+
+| Parameter | Type    | Default | Max | Description                                                      |
+| --------- | ------- | ------- | --- | ---------------------------------------------------------------- |
+| `page`    | integer | `1`     | -   | Page number, starting from 1                                     |
+| `limit`   | integer | `10`    | `100` | Number of items to return per page (window size) |
+
+<Info>
+  The `page` parameter works as a window offset. For example, `page=2&limit=10`
+  means the API will skip the first 10 elements and return the next 10.
+</Info>
+
+### Response Format
+
+All paginated responses include a `pagination` object with metadata about the current page and total results:
+
+| Field         | Type    | Description                                                       |
+| ------------- | ------- | ----------------------------------------------------------------- |
+| `total_count` | integer | Total number of items matching your query across all pages       |
+| `max_page`    | integer | Total number of pages available, given the current `limit` value |
+
+### Example
+
+Let's say you want to fetch products with a limit of 100 items per page:
+
+<CodeGroup>
+```bash Request
+curl https://api.polar.sh/v1/products/?page=1&limit=100 \
+  -H "Authorization: Bearer $POLAR_OAT" \
+  -H "Accept: application/json"
+```
+
+```json Response
+{
+  "items": [
+    {
+      "id": "...",
+      "name": "Product 1",
+      ...
+    },
+    ...
+  ],
+  "pagination": {
+    "total_count": 250,
+    "max_page": 3
+  }
+}
+```
+</CodeGroup>
+
+In this example:
+- `total_count=250` indicates there are 250 total products
+- `limit=100` means each page contains up to 100 products
+- `max_page=3` means you need to make 3 requests to retrieve all products (pages 1, 2, and 3)
+
+<Tip>
+  To retrieve all pages, increment the `page` parameter from `1` to `max_page`.
+  Our SDKs provide built-in pagination helpers to automatically iterate through
+  all pages.
+</Tip>
 
 ## Rate Limits
 

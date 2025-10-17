@@ -1924,7 +1924,6 @@ class CheckoutService:
 
         stripe_customer_id = customer.stripe_customer_id
         if stripe_customer_id is None:
-            assert customer.email is not None
             create_params: stripe_lib.Customer.CreateParams = {"email": customer.email}
             if checkout.customer_billing_name is not None:
                 create_params["name"] = checkout.customer_billing_name
@@ -1939,7 +1938,6 @@ class CheckoutService:
             stripe_customer = await stripe_service.create_customer(**create_params)
             stripe_customer_id = stripe_customer.id
         else:
-            assert customer.email is not None
             update_params: stripe_lib.Customer.ModifyParams = {"email": customer.email}
             if checkout.customer_billing_name is not None:
                 update_params["name"] = checkout.customer_billing_name

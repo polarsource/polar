@@ -173,7 +173,7 @@ class CustomerService:
         )
 
         if email_being_added_or_changed:
-            assert customer_update.email is not None  # for mypy
+            assert customer_update.email is not None
 
             already_exists = await repository.get_by_email_and_organization(
                 customer_update.email, customer.organization_id
@@ -188,7 +188,7 @@ class CustomerService:
                     }
                 )
 
-            # Reset verification status when email changes
+            # Reset verification status
             customer.email_verified = False
 
         if (

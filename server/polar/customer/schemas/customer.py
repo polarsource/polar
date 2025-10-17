@@ -153,5 +153,5 @@ class CustomerBalance(Schema):
     )
 
 
-# Alias for backwards compatibility
-Customer = CustomerBase
+class Customer(CustomerBase):
+    """A customer in an organization."""

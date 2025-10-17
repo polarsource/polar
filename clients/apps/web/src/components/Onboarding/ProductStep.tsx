@@ -121,11 +121,20 @@ export const ProductStep = () => {
     [setEnabledBenefitIds],
   )
 
+  const onReorderBenefits = useCallback(
+    (benefits: schemas['Benefit'][]) => {
+      setEnabledBenefitIds(benefits.map((b) => b.id))
+    },
+    [setEnabledBenefitIds],
+  )
+
   const enabledBenefits = useMemo(
     () =>
-      organizationBenefits.filter((benefit) =>
-        enabledBenefitIds.includes(benefit.id),
-      ),
+      enabledBenefitIds
+        .map((id) => organizationBenefits.find((benefit) => benefit.id === id))
+        .filter(
+          (benefit): benefit is schemas['Benefit'] => benefit !== undefined,
+        ),
     [organizationBenefits, enabledBenefitIds],
   )
 
@@ -171,6 +180,7 @@ export const ProductStep = () => {
             benefits={enabledBenefits}
             onSelectBenefit={onSelectBenefit}
             onRemoveBenefit={onRemoveBenefit}
+            onReorderBenefits={onReorderBenefits}
           />
         </FadeUp>
         <FadeUp className="flex flex-col gap-y-2 p-8 md:p-0">

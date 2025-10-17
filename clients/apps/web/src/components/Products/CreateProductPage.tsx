@@ -123,11 +123,20 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     [setEnabledBenefitIds],
   )
 
+  const onReorderBenefits = useCallback(
+    (benefits: schemas['Benefit'][]) => {
+      setEnabledBenefitIds(benefits.map((b) => b.id))
+    },
+    [setEnabledBenefitIds],
+  )
+
   const enabledBenefits = useMemo(
     () =>
-      organizationBenefits.filter((benefit) =>
-        enabledBenefitIds.includes(benefit.id),
-      ),
+      enabledBenefitIds
+        .map((id) => organizationBenefits.find((benefit) => benefit.id === id))
+        .filter(
+          (benefit): benefit is schemas['Benefit'] => benefit !== undefined,
+        ),
     [organizationBenefits, enabledBenefitIds],
   )
 
@@ -157,6 +166,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
           benefits={enabledBenefits}
           onSelectBenefit={onSelectBenefit}
           onRemoveBenefit={onRemoveBenefit}
+          onReorderBenefits={onReorderBenefits}
         />
       </div>
       <div className="flex flex-row items-center gap-2 pb-12">

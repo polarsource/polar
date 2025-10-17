@@ -1,7 +1,17 @@
+import { useDraggable } from '@/hooks/draggable'
 import { useDeleteBenefit } from '@/hooks/queries'
+import { closestCenter, DndContext, DragOverlay } from '@dnd-kit/core'
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import Close from '@mui/icons-material/Close'
+import DragIndicatorOutlined from '@mui/icons-material/DragIndicatorOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import RemoveOutlined from '@mui/icons-material/RemoveOutlined'
 import { enums, schemas } from '@polar-sh/client'
@@ -14,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useSearchParams } from 'next/navigation'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CreateBenefitModalContent from '../Benefit/CreateBenefitModalContent'
 import UpdateBenefitModalContent from '../Benefit/UpdateBenefitModalContent'
@@ -78,7 +88,7 @@ const BenefitRow = ({
       <div className="flex flex-row items-center gap-x-3">
         <span
           className={twMerge(
-            'flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full text-2xl',
+            'flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full',
             checked
               ? 'dark:bg-polar-700 bg-blue-50 text-blue-500 dark:text-white'
               : 'dark:bg-polar-800 dark:text-polar-500 bg-gray-200 text-gray-500',
@@ -148,12 +158,73 @@ const BenefitRow = ({
   )
 }
 
+interface SortableBenefitRowProps {
+  benefit: schemas['Benefit']
+  onRemove: () => void
+}
+
+const SortableBenefitRow = ({ benefit, onRemove }: SortableBenefitRowProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: benefit.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={twMerge(
+        'dark:bg-polar-900 dark:border-polar-700 flex w-full flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-3',
+        isDragging && 'opacity-50',
+      )}
+    >
+      <div className="flex flex-row items-center gap-x-3">
+        <button
+          className="dark:text-polar-500 dark:hover:text-polar-300 cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing"
+          {...attributes}
+          {...listeners}
+        >
+          <DragIndicatorOutlined fontSize="small" />
+        </button>
+        <span
+          className={twMerge(
+            'dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-blue-500 dark:text-white',
+          )}
+        >
+          <CheckOutlined fontSize="inherit" />
+        </span>
+        <span className="text-sm">{benefit.description}</span>
+      </div>
+      <Button size="sm" variant="secondary" onClick={onRemove}>
+        <Close fontSize="small" />
+      </Button>
+    </div>
+  )
+}
+
+const DraggableSortableBenefitRow = ({
+  benefit,
+  onRemove,
+}: SortableBenefitRowProps) => {
+  return <SortableBenefitRow benefit={benefit} onRemove={onRemove} />
+}
+
 interface ProductBenefitsFormProps {
   organization: schemas['Organization']
   benefits: schemas['Benefit'][]
   organizationBenefits: schemas['Benefit'][]
   onSelectBenefit: (benefit: schemas['Benefit']) => void
   onRemoveBenefit: (benefit: schemas['Benefit']) => void
+  onReorderBenefits?: (benefits: schemas['Benefit'][]) => void
   className?: string
   compact?: boolean
 }
@@ -165,12 +236,28 @@ const ProductBenefitsForm = ({
   organizationBenefits,
   onSelectBenefit,
   onRemoveBenefit,
+  onReorderBenefits,
   compact,
 }: ProductBenefitsFormProps) => {
   const searchParams = useSearchParams()
   const [type, setType] = useState<CreatableBenefit | undefined>()
+  const [isReorderMode, setIsReorderMode] = useState(false)
   const { isShown, toggle, hide, show } = useModal(
     searchParams?.get('create_benefit') === 'true',
+  )
+
+  const {
+    sensors,
+    activeId,
+    handleDragStart,
+    handleDragEnd,
+    handleDragCancel,
+  } = useDraggable(
+    benefits,
+    (updatedBenefits) => {
+      onReorderBenefits?.(updatedBenefits)
+    },
+    () => {},
   )
 
   const handleCheckedChange = useCallback(
@@ -184,6 +271,17 @@ const ProductBenefitsForm = ({
     [onSelectBenefit, onRemoveBenefit],
   )
 
+  const activeBenefit = useMemo(
+    () => (activeId ? benefits.find((b) => b.id === activeId) : undefined),
+    [activeId, benefits],
+  )
+
+  const toggleReorderMode = () => {
+    setIsReorderMode(!isReorderMode)
+  }
+
+  const hasEnabledBenefits = benefits.length > 0
+
   return (
     <Section
       title="Automated Benefits"
@@ -192,24 +290,77 @@ const ProductBenefitsForm = ({
       className={className}
       compact={compact}
     >
-      <div className="flex w-full flex-col gap-y-2">
-        {enums.benefitTypeValues.map((type) => (
-          <BenefitsContainer
-            key={type}
-            organization={organization}
-            title={benefitsDisplayNames[type]}
-            type={type}
-            handleCheckedChange={handleCheckedChange}
-            enabledBenefits={benefits}
-            benefits={organizationBenefits.filter(
-              (benefit) => benefit.type === type,
-            )}
-            onCreateNewBenefit={() => {
-              setType(type as CreatableBenefit)
-              show()
-            }}
-          />
-        ))}
+      <div className="flex w-full flex-col gap-y-4">
+        {hasEnabledBenefits && onReorderBenefits && (
+          <div className="flex items-center justify-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={toggleReorderMode}
+              className="self-start"
+            >
+              {isReorderMode ? 'Done' : 'Reorder '}
+            </Button>
+          </div>
+        )}
+
+        {isReorderMode && hasEnabledBenefits ? (
+          <div className="flex flex-col gap-y-2">
+            <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+              Enabled Benefits Order
+            </h4>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
+            >
+              <SortableContext
+                items={benefits}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="flex flex-col gap-y-2">
+                  {benefits.map((benefit) => (
+                    <DraggableSortableBenefitRow
+                      key={benefit.id}
+                      benefit={benefit}
+                      onRemove={() => onRemoveBenefit(benefit)}
+                    />
+                  ))}
+                </div>
+                <DragOverlay adjustScale={true}>
+                  {activeBenefit ? (
+                    <SortableBenefitRow
+                      benefit={activeBenefit}
+                      onRemove={() => {}}
+                    />
+                  ) : null}
+                </DragOverlay>
+              </SortableContext>
+            </DndContext>
+          </div>
+        ) : (
+          <div className="flex w-full flex-col gap-y-2">
+            {enums.benefitTypeValues.map((type) => (
+              <BenefitsContainer
+                key={type}
+                organization={organization}
+                title={benefitsDisplayNames[type]}
+                type={type}
+                handleCheckedChange={handleCheckedChange}
+                enabledBenefits={benefits}
+                benefits={organizationBenefits.filter(
+                  (benefit) => benefit.type === type,
+                )}
+                onCreateNewBenefit={() => {
+                  setType(type as CreatableBenefit)
+                  show()
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
       <InlineModal
         isShown={isShown}

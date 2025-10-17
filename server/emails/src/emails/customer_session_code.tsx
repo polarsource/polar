@@ -19,8 +19,7 @@ export function CustomerSessionCode({
       </Preview>
       <OrganizationHeader organization={organization} />
       <IntroWithHi>
-        Here is your code to access your {organization.name} purchases. Click
-        the button below to complete the login process.{' '}
+        Here is your code to access your {organization.name}{' '}
         <span className="font-bold">
           This code is only valid for the next {code_lifetime_minutes} minutes.
         </span>

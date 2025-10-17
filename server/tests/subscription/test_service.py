@@ -2050,7 +2050,9 @@ class TestUpdateTrial:
 
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.trial_end is not None
-        assert updated_subscription.trial_end == updated_subscription.current_period_end
+        assert (
+            updated_subscription.trial_end == updated_subscription.current_period_start
+        )
         assert updated_subscription.trial_end < original_trial_end
 
     async def test_trialing_subscription_extending(

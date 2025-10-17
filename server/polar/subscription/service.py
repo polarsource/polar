@@ -1217,7 +1217,8 @@ class SubscriptionService:
             # End trial immediately
             if trial_end == "now":
                 subscription.trial_end = subscription.current_period_end = utc_now()
-                subscription.status = SubscriptionStatus.active
+                # Make sure to cycle the subscription immediately to update status and trigger order
+                subscription = await self.cycle(session, subscription)
             # Set new trial end date
             else:
                 subscription.trial_end = subscription.current_period_end = cast(

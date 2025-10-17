@@ -345,6 +345,7 @@ PriceFixtureType: TypeAlias = (
     | tuple[int | None, int | None, int | None]
     | tuple[None]
     | tuple[Meter, Decimal, int | None]
+    | tuple[Literal["seat"], int]
 )
 
 
@@ -352,6 +353,12 @@ def _is_metered_price_fixture_type(
     price: PriceFixtureType,
 ) -> TypeIs[tuple[Meter, Decimal, int | None]]:
     return isinstance(price[0], Meter)
+
+
+def _is_seat_price_fixture_type(
+    price: PriceFixtureType,
+) -> TypeIs[tuple[Literal["seat"], int]]:
+    return len(price) == 2 and price[0] == "seat"
 
 
 async def create_product(
@@ -394,6 +401,7 @@ async def create_product(
             | ProductPriceCustom
             | ProductPriceFree
             | ProductPriceMeteredUnit
+            | ProductPriceSeatUnit
         )
         if len(price) == 1:
             (amount,) = price
@@ -413,6 +421,13 @@ async def create_product(
                 meter=meter,
                 unit_amount=unit_amount,
                 cap_amount=cap_amount,
+            )
+        elif _is_seat_price_fixture_type(price):
+            _, price_per_seat = price
+            product_price = await create_product_price_seat_unit(
+                save_fixture,
+                product=product,
+                price_per_seat=price_per_seat,
             )
         else:
             (
@@ -1963,9 +1978,12 @@ async def create_subscription_with_seats(
         for price in product.all_prices
     )
     assert is_seat_based, "Product must be seat-based"
+    # Default to active status if not specified, so subscription is billable
+    if "status" not in kwargs:
+        kwargs["status"] = SubscriptionStatus.active
+    if "started_at" not in kwargs:
+        kwargs["started_at"] = utc_now()
     subscription = await create_subscription(
-        save_fixture, product=product, customer=customer, **kwargs
+        save_fixture, product=product, customer=customer, seats=seats, **kwargs
     )
-    subscription.seats = seats
-    await save_fixture(subscription)
     return subscription

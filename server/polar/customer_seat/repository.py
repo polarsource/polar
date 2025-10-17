@@ -199,6 +199,31 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_one_or_none(statement)
 
+    async def get_active_seat_for_customer(
+        self,
+        customer_id: UUID,
+        *,
+        options: tuple["_AbstractLoad", ...] = (),
+    ) -> CustomerSeat | None:
+        """
+        Get an active (claimed) seat for a customer.
+
+        Used to determine if a customer is a seat holder and should have
+        their usage charges routed to the billing manager's subscription.
+        """
+        from polar.models.customer_seat import SeatStatus
+
+        statement = (
+            select(CustomerSeat)
+            .where(
+                CustomerSeat.customer_id == customer_id,
+                CustomerSeat.status == SeatStatus.claimed,
+            )
+            .options(*options)
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_eager_options(self) -> tuple["_AbstractLoad", ...]:
         return (
             joinedload(CustomerSeat.subscription)
@@ -206,4 +231,12 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             .joinedload(Product.organization),
             joinedload(CustomerSeat.subscription).joinedload(Subscription.customer),
             joinedload(CustomerSeat.customer),
+        )
+
+    def get_eager_options_with_prices(self) -> tuple["_AbstractLoad", ...]:
+        return (
+            *self.get_eager_options(),
+            joinedload(CustomerSeat.subscription).joinedload(
+                Subscription.subscription_product_prices
+            ),
         )

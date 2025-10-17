@@ -360,6 +360,7 @@ async def create_product(
     organization: Organization,
     recurring_interval: SubscriptionRecurringInterval | None,
     name: str = "Product",
+    slug: str | None = None,
     is_archived: bool = False,
     prices: Sequence[PriceFixtureType] = [(1000,)],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
@@ -369,6 +370,7 @@ async def create_product(
 ) -> Product:
     product = Product(
         name=name,
+        slug=slug or rstr("product-slug"),
         description="Description",
         is_tax_applicable=is_tax_applicable,
         recurring_interval=recurring_interval,

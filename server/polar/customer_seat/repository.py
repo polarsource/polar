@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase
 from polar.models import CustomerSeat, Product, Subscription, UserOrganization
+from polar.models.customer_seat import SeatStatus
 from polar.subscription.repository import SubscriptionRepository
 
 if TYPE_CHECKING:
@@ -90,8 +91,6 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         options: tuple["_AbstractLoad", ...] = (),
     ) -> CustomerSeat | None:
         """Get a revoked seat for a subscription that can be reused."""
-        from polar.models.customer_seat import SeatStatus
-
         statement = (
             select(CustomerSeat)
             .where(
@@ -211,8 +210,6 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         Used to determine if a customer is a seat holder and should have
         their usage charges routed to the billing manager's subscription.
         """
-        from polar.models.customer_seat import SeatStatus
-
         statement = (
             select(CustomerSeat)
             .where(

@@ -157,12 +157,12 @@ class Discount(MetadataMixin, RecordModel):
         self,
         started_at: datetime,
         current_period_start: datetime,
-        was_trialing: bool = False,
+        trial_ended: bool = False,
     ) -> bool:
         if self.duration == DiscountDuration.once:
             # If transitioning from trial to active, this is the first billed cycle
             # so the discount should still apply
-            return not was_trialing
+            return not trial_ended
         if self.duration == DiscountDuration.forever:
             return False
         if self.duration_in_months is None:

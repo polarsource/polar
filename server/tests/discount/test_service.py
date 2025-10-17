@@ -620,7 +620,7 @@ class TestIsRepetitionExpired:
 
         now = utc_now()
         # For non-trialing subscriptions, 'once' discount should expire after first use
-        assert discount.is_repetition_expired(now, now, was_trialing=False) is True
+        assert discount.is_repetition_expired(now, now, False) is True
 
     async def test_once_was_trialing(
         self,
@@ -638,7 +638,7 @@ class TestIsRepetitionExpired:
 
         now = utc_now()
         # When transitioning from trial, 'once' discount should still apply
-        assert discount.is_repetition_expired(now, now, was_trialing=True) is False
+        assert discount.is_repetition_expired(now, now, True) is False
 
     async def test_forever_never_expires(
         self,
@@ -657,8 +657,8 @@ class TestIsRepetitionExpired:
         now = utc_now()
         future = now + timedelta(days=365)
         # Forever discounts never expire
-        assert discount.is_repetition_expired(now, future, was_trialing=False) is False
-        assert discount.is_repetition_expired(now, future, was_trialing=True) is False
+        assert discount.is_repetition_expired(now, future, False) is False
+        assert discount.is_repetition_expired(now, future, True) is False
 
     async def test_repeating_expires_after_duration(
         self,
@@ -680,17 +680,8 @@ class TestIsRepetitionExpired:
         after_duration = now + timedelta(days=120)  # ~4 months
 
         # Should not expire within duration
-        assert (
-            discount.is_repetition_expired(now, within_duration, was_trialing=False)
-            is False
-        )
+        assert discount.is_repetition_expired(now, within_duration, False) is False
         # Should expire after duration
-        assert (
-            discount.is_repetition_expired(now, after_duration, was_trialing=False)
-            is True
-        )
+        assert discount.is_repetition_expired(now, after_duration, False) is True
         # was_trialing should not affect repeating discounts
-        assert (
-            discount.is_repetition_expired(now, after_duration, was_trialing=True)
-            is True
-        )
+        assert discount.is_repetition_expired(now, after_duration, True) is True

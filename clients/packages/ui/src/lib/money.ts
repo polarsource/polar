@@ -1,3 +1,12 @@
+export const getCents = (value: string): number => {
+  let newAmount = Number.parseFloat(value)
+  if (isNaN(newAmount)) {
+    newAmount = 0
+  }
+  // Round to avoid floating point errors
+  return Math.round(newAmount * 100)
+}
+
 export const getCentsInDollarString = (
   cents: number,
   showCents = false,

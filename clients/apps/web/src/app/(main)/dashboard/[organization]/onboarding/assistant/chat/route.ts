@@ -141,7 +141,10 @@ ${sharedSystemPrompt}
 Your task is to determine whether the user request requires manual setup, follow-up questions, and if the subsequent LLM call
 will require MCP tool access to act on the users request.
 
-If you notice any frustration with the onboarding assistant from the user, also opt for manual setup.
+At the very least, we need both a specific price and a name for the product to be able to create it.
+As long as these two data points are not mentioned, follow-up questions will be needed.
+
+If you notice any frustration with the onboarding assistant from the user, immediately opt for manual setup.
 
 You will now be handed the last three user messages from the conversation, separated by "---", oldest message first.
 
@@ -178,8 +181,7 @@ So, in general, you should follow this order:
 - Do not ask for any additional pages (privacy policy, terms of service, refund policies, …) to be created as this is out of your scope.
 - The goal is to get the user to a minimal configuration fast, so once there is reasonable confidence that you have all the information you need,
   do not ask for more information. Users will always be able to add more products, descriptions, and details later.
-- If only a monthly recurring price is mentioned, ask if they also want to offer the same product at a yearly recurring price. However, continue with the preview already if relevant.
-- If only a yearly recurring price is mentioned, ask if they also want to offer the same product at a monthly recurring price. However, continue with the preview already if relevant.
+- If a user mentions a price for a software product but they don't specify a billing interval, assume it's a recurring monthly subscription.
 - If a user mentions "$x per month" for a yearly plan, or vice versa, do the math for them.
 - If a recurring price is mentioned without product specifics, assume it's a software subscription.
 - If a price is mentioned without a recurring interval, it's a one-time purchase and you should try to determine whether it's a specific benefit or a generic access through a custom benefit
@@ -297,6 +299,7 @@ export async function POST(req: Request) {
   let requiresToolAccess = false
   let requiresManualSetup = false
   let isRelevant = true // assume good faith
+  let requiresClarification = true
 
   if (!organizationId) {
     return new Response('Organization ID is required', { status: 400 })
@@ -311,7 +314,7 @@ export async function POST(req: Request) {
   }
 
   const userMessage = lastUserMessages
-    .slice(0, 3)
+    .slice(0, 5)
     .reverse()
     .map((m) =>
       m.parts
@@ -321,13 +324,21 @@ export async function POST(req: Request) {
     )
     .join('\n---\n')
 
-  const gemini = phClient
+  const geminiLite = phClient
     ? withTracing(google('gemini-2.5-flash-lite'), phClient, {
         posthogDistinctId: user.id,
         posthogTraceId: conversationId,
         posthogGroups: { organization: organizationId },
       })
     : google('gemini-2.5-flash-lite')
+
+  const gemini = phClient
+    ? withTracing(google('gemini-2.5-flash'), phClient, {
+        posthogDistinctId: user.id,
+        posthogTraceId: conversationId,
+        posthogGroups: { organization: organizationId },
+      })
+    : google('gemini-2.5-flash')
 
   const sonnet = phClient
     ? withTracing(anthropic('claude-sonnet-4-5'), phClient, {
@@ -337,45 +348,57 @@ export async function POST(req: Request) {
       })
     : anthropic('claude-sonnet-4-5')
 
-  if (!hasToolAccess) {
-    const router = await generateObject({
-      model: gemini,
-      output: 'object',
-      schema: z.object({
-        isRelevant: z
-          .boolean()
-          .describe(
-            'Whether the user request is relevant to configuring their Polar account',
-          ),
-        requiresManualSetup: z
-          .boolean()
-          .describe(
-            'Whether the user request requires manual setup due to unsupported benefit types (file download, GitHub, Discord) or too complex configuration',
-          ),
-        requiresToolAccess: z
-          .boolean()
-          .describe(
-            'Whether MCP access is required to act on the user request (get, create, update, delete products, meters or benefits)',
-          ),
-      }),
-      system: routerSystemPrompt,
-      prompt: userMessage,
-    })
+  const router = await generateObject({
+    model: geminiLite,
+    output: 'object',
+    schema: z.object({
+      isRelevant: z
+        .boolean()
+        .describe(
+          'Whether the user request is relevant to configuring their Polar account',
+        ),
+      requiresManualSetup: z
+        .boolean()
+        .describe(
+          'Whether the user request requires manual setup due to unsupported benefit types (file download, GitHub, Discord) or too complex configuration',
+        ),
+      requiresToolAccess: z
+        .boolean()
+        .describe(
+          'Whether MCP access is required to act on the user request (get, create, update, delete products, meters or benefits)',
+        ),
+      requiresClarification: z
+        .boolean()
+        .describe(
+          'Whether there is enough information to act on the user request or if we need further clarification',
+        ),
+    }),
+    system: routerSystemPrompt,
+    prompt: userMessage,
+  })
 
-    if (!router.object.isRelevant) {
-      isRelevant = false
-    } else {
-      if (router.object.requiresManualSetup) {
-        requiresManualSetup = true
-      }
+  if (!router.object.isRelevant) {
+    isRelevant = false
+  } else {
+    requiresManualSetup = router.object.requiresManualSetup
+    requiresToolAccess = router.object.requiresToolAccess
+    requiresClarification = router.object.requiresClarification
+  }
 
-      if (router.object.requiresToolAccess) {
-        requiresToolAccess = true
-      }
+  let shouldSetupTools = false
+
+  // If we'll be handling the request agentically
+  if (isRelevant && !requiresManualSetup && requiresToolAccess) {
+    if (!requiresClarification) {
+      // We have enough info to act right away, set up tools
+      shouldSetupTools = true
+    } else if (lastUserMessages.length >= 5 && hasToolAccess) {
+      // Conversation has been going on for a while and we had tool access before
+      shouldSetupTools = true
     }
   }
 
-  if (hasToolAccess || requiresToolAccess) {
+  if (shouldSetupTools) {
     const mcpClient = await getMCPClient(user.id, organizationId)
     tools = await mcpClient.tools()
   }
@@ -409,8 +432,8 @@ based on the conversation history whether you're done.
   let streamStarted = false
 
   const result = streamText({
-    // Quick & cheap models can say "no" too :-)
-    model: requiresManualSetup || !isRelevant ? gemini : sonnet,
+    // Gemini 2.5 Flash for quick & cheap responses, Sonnet 4.5 for better tool usage
+    model: shouldSetupTools ? sonnet : gemini,
     system: conversationalSystemPrompt,
     tools: {
       redirectToManualSetup,

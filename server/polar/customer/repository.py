@@ -85,8 +85,26 @@ class CustomerRepository(
     ) -> Customer:
         inspection = orm_inspect(object)
 
+        # Check if this is a placeholder promotion (adding email to placeholder)
+        was_placeholder = object.email is None
+        is_adding_email = (
+            update_dict is not None
+            and "email" in update_dict
+            and update_dict["email"] is not None
+        )
+        is_placeholder_promotion = was_placeholder and is_adding_email
+
         customer = await super().update(object, update_dict=update_dict, flush=flush)
-        enqueue_job("customer.webhook", WebhookEventType.customer_updated, customer.id)
+
+        # Send appropriate webhook: customer.created for promotion, customer.updated otherwise
+        if is_placeholder_promotion:
+            enqueue_job(
+                "customer.webhook", WebhookEventType.customer_created, customer.id
+            )
+        else:
+            enqueue_job(
+                "customer.webhook", WebhookEventType.customer_updated, customer.id
+            )
 
         # Only create an event if the customer is not being deleted
         if not customer.deleted_at:
@@ -152,6 +170,29 @@ class CustomerRepository(
         )
         await self.session.execute(statement)
 
+    async def create_placeholder(
+        self, external_id: str, organization_id: UUID
+    ) -> Customer:
+        """
+        Create a placeholder customer for event ingestion.
+        This customer has no email (email=None indicates placeholder status).
+
+        Note: We enqueue the meter update job to process pre-existing events,
+        but skip the customer.created webhook since this is an internal placeholder.
+        The webhook will be sent when the customer is promoted (via update with email).
+        """
+        customer = Customer(
+            external_id=external_id,
+            organization_id=organization_id,
+            email=None,
+        )
+        customer = await self.create(customer, flush=True)
+
+        # Enqueue meter update job to process pre-existing events with this external_id
+        enqueue_job("customer_meter.update_customer", customer.id)
+
+        return customer
+
     async def get_by_id_and_organization(
         self, id: UUID, organization_id: UUID
     ) -> Customer | None:
@@ -191,8 +232,12 @@ class CustomerRepository(
         self,
         auth_subject: AuthSubject[User | Organization],
         organization_id: Sequence[UUID] | None,
+        *,
+        include_placeholder: bool = False,
     ) -> AsyncGenerator[Customer]:
-        statement = self.get_readable_statement(auth_subject)
+        statement = self.get_readable_statement(
+            auth_subject, include_placeholder=include_placeholder
+        )
 
         if organization_id is not None:
             statement = statement.where(
@@ -231,9 +276,16 @@ class CustomerRepository(
         return await self.get_one_or_none(statement)
 
     def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        include_placeholder: bool = False,
     ) -> Select[tuple[Customer]]:
         statement = self.get_base_statement()
+
+        # Exclude placeholder customers (those without email) by default
+        if not include_placeholder:
+            statement = statement.where(Customer.email.is_not(None))
 
         if is_user(auth_subject):
             user = auth_subject.subject

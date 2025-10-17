@@ -90,7 +90,10 @@ class CustomerService:
         )
 
         if customer.stripe_customer_id is not None:
-            params: stripe_lib.Customer.ModifyParams = {"email": customer.email}
+            params: stripe_lib.Customer.ModifyParams = {}
+
+            if customer.email is not None:
+                params["email"] = customer.email
             if customer.billing_name is not None and customer.name is None:
                 params["name"] = customer.billing_name
             if customer.billing_address is not None:
@@ -136,6 +139,10 @@ class CustomerService:
         payment_method_create: CustomerPaymentMethodCreate,
     ) -> CustomerPaymentMethodCreateResponse:
         if customer.stripe_customer_id is None:
+            # Customer portal requires email authentication, so email should always be present
+            if customer.email is None:
+                raise CustomerNotReady(customer)
+
             params: stripe_lib.Customer.CreateParams = {
                 "email": customer.email,
             }

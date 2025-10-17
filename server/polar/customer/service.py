@@ -163,10 +163,16 @@ class CustomerService:
         repository = CustomerRepository.from_session(session)
 
         errors: list[ValidationError] = []
-        if (
-            customer_update.email is not None
-            and customer.email.lower() != customer_update.email.lower()
-        ):
+
+        # Check if email is being updated or added
+        email_being_added_or_changed = customer_update.email is not None and (
+            customer.email is None
+            or customer.email.lower() != customer_update.email.lower()
+        )
+
+        if email_being_added_or_changed:
+            assert customer_update.email is not None  # for mypy
+
             already_exists = await repository.get_by_email_and_organization(
                 customer_update.email, customer.organization_id
             )
@@ -180,7 +186,7 @@ class CustomerService:
                     }
                 )
 
-            # Reset verification status
+            # Reset verification status when email changes
             customer.email_verified = False
 
         if (

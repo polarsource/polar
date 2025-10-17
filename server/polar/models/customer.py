@@ -119,7 +119,7 @@ class Customer(MetadataMixin, RecordModel):
         index=True,
         server_default=sa.text("generate_customer_short_id()"),
     )
-    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True, default=None)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, unique=False
@@ -254,7 +254,9 @@ class Customer(MetadataMixin, RecordModel):
     def legacy_user_public_name(self) -> str:
         if self.name:
             return self.name[0]
-        return self.email[0]
+        if self.email:
+            return self.email[0]
+        return "?"
 
     @property
     def active_subscriptions(self) -> Sequence["Subscription"] | None:

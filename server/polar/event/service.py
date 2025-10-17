@@ -239,6 +239,8 @@ class EventService:
 
         events: list[dict[str, Any]] = []
         errors: list[ValidationError] = []
+        external_customer_ids_by_org: dict[uuid.UUID, set[str]] = {}
+
         for index, event_create in enumerate(ingest.events):
             try:
                 organization_id = validate_organization_id(
@@ -246,6 +248,13 @@ class EventService:
                 )
                 if isinstance(event_create, EventCreateCustomer):
                     validate_customer_id(index, event_create.customer_id)
+                else:
+                    # Track external_customer_id for placeholder customer creation
+                    if hasattr(event_create, "external_customer_id"):
+                        external_id = event_create.external_customer_id
+                        if organization_id not in external_customer_ids_by_org:
+                            external_customer_ids_by_org[organization_id] = set()
+                        external_customer_ids_by_org[organization_id].add(external_id)
             except EventIngestValidationError as e:
                 errors.extend(e.errors)
                 continue
@@ -262,6 +271,9 @@ class EventService:
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
+
+        # Create placeholder customers for external_customer_ids that don't exist
+        await self._ensure_placeholder_customers(session, external_customer_ids_by_org)
 
         repository = EventRepository.from_session(session)
         event_ids = await repository.insert_batch(events)
@@ -404,5 +416,43 @@ class EventService:
 
         return _validate_customer_id
 
+    async def _ensure_placeholder_customers(
+        self,
+        session: AsyncSession,
+        external_customer_ids_by_org: dict[uuid.UUID, set[str]],
+    ) -> None:
+        """
+        Ensure customers exist for all external_customer_ids.
+        """
+        customer_repository = CustomerRepository.from_session(session)
 
+        for organization_id, external_ids in external_customer_ids_by_org.items():
+            # Query existing customers for these external_ids
+            statement = select(Customer.external_id).where(
+                Customer.organization_id == organization_id,
+                Customer.external_id.in_(external_ids),
+                Customer.deleted_at.is_(None),
+            )
+            result = await session.execute(statement)
+            existing_external_ids = set(result.scalars().all())
+
+            # Find external_ids that don't have customers yet
+            missing_external_ids = external_ids - existing_external_ids
+
+            # Create placeholder customers for missing external_ids
+            for external_id in missing_external_ids:
+                try:
+                    await customer_repository.create_placeholder(
+                        external_id=external_id, organization_id=organization_id
+                    )
+                except Exception:
+                    # If creation fails (e.g., due to race condition), ignore
+                    # The customer might have been created by another request
+                    pass
+
+
+event = EventService()
+event = EventService()
+event = EventService()
+event = EventService()
 event = EventService()

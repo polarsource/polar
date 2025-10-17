@@ -328,6 +328,8 @@ class PlainService:
         self, session: AsyncSession, request: CustomerCardsRequest
     ) -> CustomerCard | None:
         email = request.customer.email
+        if email is None:
+            return None
 
         user_repository = UserRepository.from_session(session)
         user = await user_repository.get_by_email(email)
@@ -454,6 +456,8 @@ class PlainService:
         self, session: AsyncSession, request: CustomerCardsRequest
     ) -> CustomerCard | None:
         email = request.customer.email
+        if email is None:
+            return None
 
         statement = (
             select(Organization)
@@ -647,6 +651,8 @@ class PlainService:
         self, session: AsyncSession, request: CustomerCardsRequest
     ) -> CustomerCard | None:
         email = request.customer.email
+        if email is None:
+            return None
 
         # No need to filter out soft deleted. We want to see them in support.
         statement = select(Customer).where(func.lower(Customer.email) == email.lower())
@@ -814,6 +820,8 @@ class PlainService:
         self, session: AsyncSession, request: CustomerCardsRequest
     ) -> CustomerCard | None:
         email = request.customer.email
+        if email is None:
+            return None
 
         statement = (
             (
@@ -1096,6 +1104,8 @@ class PlainService:
         self, session: AsyncSession, request: CustomerCardsRequest
     ) -> CustomerCard | None:
         email = request.customer.email
+        if email is None:
+            return None
 
         statement = (
             select(Organization)

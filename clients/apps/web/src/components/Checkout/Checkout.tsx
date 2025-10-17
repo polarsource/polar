@@ -44,6 +44,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     loading: confirmLoading,
     loadingLabel,
     isUpdatePending,
+    prefilledParameters,
   } = useCheckoutForm()
   const embed = _embed === true
   const { resolvedTheme } = useTheme()
@@ -196,9 +197,11 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
         {checkout.productPrice.amountType === 'custom' && (
           <CheckoutPWYWForm
             checkout={checkout}
+            form={form}
             update={update}
             productPrice={checkout.productPrice as ProductPriceCustom}
             themePreset={themePreset}
+            prefilledParameters={prefilledParameters}
           />
         )}
         <CheckoutForm
@@ -251,9 +254,11 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
         {checkout.productPrice.amountType === 'custom' && (
           <CheckoutPWYWForm
             checkout={checkout}
+            form={form}
             update={update}
             productPrice={checkout.productPrice as ProductPriceCustom}
             themePreset={themePreset}
+            prefilledParameters={prefilledParameters}
           />
         )}
         <CheckoutCard

@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { getCents } from '../../lib/money'
 import Input from './Input'
 
 interface Props {
@@ -22,15 +23,6 @@ interface Props {
   preSlot?: React.ReactNode
   postSlot?: React.ReactNode
   step?: number
-}
-
-const getCents = (value: string): number => {
-  let newAmount = Number.parseFloat(value)
-  if (isNaN(newAmount)) {
-    newAmount = 0
-  }
-  // Round to avoid floating point errors
-  return Math.round(newAmount * 100)
 }
 
 const getInternalValue = (

@@ -10,13 +10,20 @@ import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidatione
 import { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
 import { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
 import { PaymentNotReady } from '@polar-sh/sdk/models/errors/paymentnotready.js'
+import { getCents } from '@polar-sh/ui/lib/money'
 import type {
   ConfirmationToken,
   Stripe,
   StripeElements,
   StripeError,
 } from '@stripe/stripe-js'
-import { createContext, useCallback, useContext, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
 import { setValidationErrors } from '../utils/form'
@@ -61,6 +68,7 @@ export interface CheckoutFormContextProps {
   loading: boolean
   loadingLabel: string | undefined
   isUpdatePending: boolean
+  prefilledParameters?: Record<string, string>
 }
 
 // @ts-ignore
@@ -79,13 +87,24 @@ export const CheckoutFormProvider = ({
   const [loadingLabel, setLoadingLabel] = useState<string | undefined>()
   const [isUpdatePending, setIsUpdatePending] = useState(false)
 
+  const prefilledData = useMemo(() => {
+    if (!prefilledParameters) return {}
+
+    const data = unflatten(prefilledParameters)
+    if (data.amount !== undefined) {
+      data.amount = getCents(String(data.amount))
+    }
+
+    return data
+  }, [prefilledParameters])
+
   const form = useForm<CheckoutUpdatePublic>({
     defaultValues: {
       ...checkout,
       customerBillingAddress:
         checkout.customerBillingAddress as AddressInput | null,
       discountCode: checkout.discount ? checkout.discount.code : undefined,
-      ...(prefilledParameters ? unflatten(prefilledParameters) : {}),
+      ...prefilledData,
     },
     shouldUnregister: true,
   })
@@ -266,6 +285,7 @@ export const CheckoutFormProvider = ({
         loading,
         loadingLabel,
         isUpdatePending,
+        prefilledParameters,
       }}
     >
       {children}

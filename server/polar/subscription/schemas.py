@@ -54,12 +54,17 @@ class SubscriptionUser(Schema):
 
 
 class SubscriptionBase(IDSchema, TimestampedSchema):
-    amount: int = Field(description="The amount of the subscription.")
-    currency: str = Field(description="The currency of the subscription.")
-    recurring_interval: SubscriptionRecurringInterval = Field(
-        description="The interval at which the subscription recurs."
+    amount: int = Field(description="The amount of the subscription.", examples=[10000])
+    currency: str = Field(
+        description="The currency of the subscription.", examples=["usd"]
     )
-    status: SubscriptionStatus = Field(description="The status of the subscription.")
+    recurring_interval: SubscriptionRecurringInterval = Field(
+        description="The interval at which the subscription recurs.",
+        examples=["month"],
+    )
+    status: SubscriptionStatus = Field(
+        description="The status of the subscription.", examples=["active"]
+    )
     current_period_start: datetime = Field(
         description="The start timestamp of the current billing period."
     )

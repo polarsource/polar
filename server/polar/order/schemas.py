@@ -30,15 +30,20 @@ class OrderBase(TimestampedSchema, IDSchema):
         description="Whether the order has been paid for.", examples=[True]
     )
     subtotal_amount: int = Field(
-        description="Amount in cents, before discounts and taxes."
+        description="Amount in cents, before discounts and taxes.", examples=[10000]
     )
-    discount_amount: int = Field(description="Discount amount in cents.")
+    discount_amount: int = Field(
+        description="Discount amount in cents.", examples=[1000]
+    )
     net_amount: int = Field(
-        description="Amount in cents, after discounts but before taxes."
+        description="Amount in cents, after discounts but before taxes.",
+        examples=[9000],
     )
 
-    tax_amount: int = Field(description="Sales tax amount in cents.")
-    total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
+    tax_amount: int = Field(description="Sales tax amount in cents.", examples=[720])
+    total_amount: int = Field(
+        description="Amount in cents, after discounts and taxes.", examples=[9720]
+    )
 
     applied_balance_amount: int = Field(
         description=(
@@ -46,12 +51,17 @@ class OrderBase(TimestampedSchema, IDSchema):
             "Can increase the total amount paid, if the customer has a negative balance, "
             " or decrease it, if the customer has a positive balance."
             "Amount in cents."
-        )
+        ),
+        examples=[0],
     )
-    due_amount: int = Field(description="Amount in cents that is due for this order.")
-    refunded_amount: int = Field(description="Amount refunded in cents.")
-    refunded_tax_amount: int = Field(description="Sales tax refunded in cents.")
-    currency: str
+    due_amount: int = Field(
+        description="Amount in cents that is due for this order.", examples=[0]
+    )
+    refunded_amount: int = Field(description="Amount refunded in cents.", examples=[0])
+    refunded_tax_amount: int = Field(
+        description="Sales tax refunded in cents.", examples=[0]
+    )
+    currency: str = Field(examples=["usd"])
     billing_reason: OrderBillingReason
     billing_name: str | None = Field(
         description="The name of the customer that should appear on the invoice. "
@@ -153,15 +163,23 @@ class OrderItemSchema(IDSchema, TimestampedSchema):
     An order line item.
     """
 
-    label: str = Field(description="Description of the line item charge.")
-    amount: int = Field(description="Amount in cents, before discounts and taxes.")
-    tax_amount: int = Field(description="Sales tax amount in cents.")
-    proration: bool = Field(description="Whether this charge is due to a proration.")
+    label: str = Field(
+        description="Description of the line item charge.", examples=["Pro Plan"]
+    )
+    amount: int = Field(
+        description="Amount in cents, before discounts and taxes.", examples=[10000]
+    )
+    tax_amount: int = Field(description="Sales tax amount in cents.", examples=[720])
+    proration: bool = Field(
+        description="Whether this charge is due to a proration.", examples=[False]
+    )
     product_price_id: UUID4 | None = Field(description="Associated price ID, if any.")
 
 
 class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
-    platform_fee_amount: int = Field(description="Platform fee amount in cents.")
+    platform_fee_amount: int = Field(
+        description="Platform fee amount in cents.", examples=[500]
+    )
     customer: OrderCustomer
     user_id: UUID4 = Field(
         validation_alias=AliasChoices(

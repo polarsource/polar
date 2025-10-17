@@ -197,6 +197,14 @@ class CustomerRepository(
 
         return customer
 
+    async def get_by_id_and_organization(
+        self, id: UUID, organization_id: UUID
+    ) -> Customer | None:
+        statement = self.get_base_statement().where(
+            Customer.id == id, Customer.organization_id == organization_id
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_by_email_and_organization(
         self, email: str, organization_id: UUID
     ) -> Customer | None:

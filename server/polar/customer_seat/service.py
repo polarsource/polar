@@ -657,22 +657,33 @@ class SeatService:
         if email:
             # Email lookup still needs CustomerRepository since it's specific to non-placeholder customers
             from polar.customer.repository import CustomerRepository
+
             customer_repository = CustomerRepository.from_session(session)
             customer = await customer_repository.get_by_email_and_organization(
                 email, organization_id
             )
         elif external_customer_id:
-            base_customer = await base_customer_repository.get_by_external_id_and_organization(
-                external_customer_id, organization_id
+            base_customer = (
+                await base_customer_repository.get_by_external_id_and_organization(
+                    external_customer_id, organization_id
+                )
             )
             # Assert that if we found a customer, it's a real Customer (not a placeholder)
-            customer = base_customer if base_customer and isinstance(base_customer, Customer) else None
+            customer = (
+                base_customer
+                if base_customer and isinstance(base_customer, Customer)
+                else None
+            )
         elif customer_id:
             base_customer = await base_customer_repository.get_by_id_and_organization(
                 customer_id, organization_id
             )
             # Assert that if we found a customer, it's a real Customer (not a placeholder)
-            customer = base_customer if base_customer and isinstance(base_customer, Customer) else None
+            customer = (
+                base_customer
+                if base_customer and isinstance(base_customer, Customer)
+                else None
+            )
 
         if not customer and not email:
             raise CustomerNotFound(external_customer_id or str(customer_id))

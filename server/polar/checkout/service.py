@@ -357,10 +357,10 @@ class CheckoutService:
                 session, checkout_create.subscription_id, product.organization_id
             )
         elif checkout_create.customer_id is not None:
-            base_customer = await base_customer_repository.get_by_id_and_organization(
+            customer = await customer_repository.get_by_id_and_organization(
                 checkout_create.customer_id, product.organization_id
             )
-            if base_customer is None:
+            if customer is None:
                 raise PolarRequestValidationError(
                     [
                         {
@@ -371,16 +371,20 @@ class CheckoutService:
                         }
                     ]
                 )
-            # Type narrowing: Only accept real customers (not placeholders) for checkout
-            customer = base_customer if isinstance(base_customer, Customer) else None
         elif checkout_create.external_customer_id is not None:
             # Link customer by external ID, if it exists.
             # It not, that's fine': we'll create a new customer on confirm.
-            base_customer = await base_customer_repository.get_by_external_id_and_organization(
-                checkout_create.external_customer_id, product.organization_id
+            base_customer = (
+                await base_customer_repository.get_by_external_id_and_organization(
+                    checkout_create.external_customer_id, product.organization_id
+                )
             )
-            # Type narrowing: Only accept real customers (not placeholders) for checkout
-            customer = base_customer if base_customer and isinstance(base_customer, Customer) else None
+
+            customer = (
+                base_customer
+                if base_customer and isinstance(base_customer, Customer)
+                else None
+            )
 
         amount = checkout_create.amount
         currency = None

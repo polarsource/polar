@@ -1869,7 +1869,13 @@ class TestSlugGeneration:
             ProductCreateOneTime(
                 name="Premium Subscription Plan",
                 organization_id=organization.id,
-                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=1000, price_currency="usd")],
+                prices=[
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=1000,
+                        price_currency="usd",
+                    )
+                ],
             ),
             auth_subject,
         )
@@ -1901,7 +1907,13 @@ class TestSlugGeneration:
             ProductCreateOneTime(
                 name="Pro++ Plan (2024) @ $99/mo",
                 organization_id=organization.id,
-                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=9900, price_currency="usd")],
+                prices=[
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=9900,
+                        price_currency="usd",
+                    )
+                ],
             ),
             auth_subject,
         )
@@ -1941,7 +1953,13 @@ class TestSlugGeneration:
                 name="Some Product Name",
                 slug="my-custom-slug",
                 organization_id=organization.id,
-                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=1000, price_currency="usd")],
+                prices=[
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=1000,
+                        price_currency="usd",
+                    )
+                ],
             ),
             auth_subject,
         )
@@ -1974,7 +1992,13 @@ class TestSlugGeneration:
             ProductCreateOneTime(
                 name="Test Product",
                 organization_id=organization.id,
-                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=1000, price_currency="usd")],
+                prices=[
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=1000,
+                        price_currency="usd",
+                    )
+                ],
             ),
             auth_subject,
         )
@@ -1986,7 +2010,13 @@ class TestSlugGeneration:
             ProductCreateOneTime(
                 name="Test Product",
                 organization_id=organization.id,
-                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=2000, price_currency="usd")],
+                prices=[
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=2000,
+                        price_currency="usd",
+                    )
+                ],
             ),
             auth_subject,
         )
@@ -1998,7 +2028,13 @@ class TestSlugGeneration:
             ProductCreateOneTime(
                 name="Test Product",
                 organization_id=organization.id,
-                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=3000, price_currency="usd")],
+                prices=[
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=3000,
+                        price_currency="usd",
+                    )
+                ],
             ),
             auth_subject,
         )

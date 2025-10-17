@@ -78,7 +78,7 @@ def upgrade() -> None:
     op.create_index(
         op.f("ix_product_slug"),
         "products",
-        ["slug", "organization_id"],
+        ["organization_id", "slug"],
         unique=True,
     )
 

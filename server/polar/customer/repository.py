@@ -197,44 +197,11 @@ class CustomerRepository(
 
         return customer
 
-    async def touch_meters(self, customers: Iterable[Customer]) -> None:
-        statement = (
-            update(Customer)
-            .where(Customer.id.in_([c.id for c in customers]))
-            .values(meters_dirtied_at=utc_now())
-        )
-        await self.session.execute(statement)
-
-    async def set_meters_updated_at(self, customers: Iterable[Customer]) -> None:
-        statement = (
-            update(Customer)
-            .where(Customer.id.in_([c.id for c in customers]))
-            .values(meters_updated_at=utc_now())
-        )
-        await self.session.execute(statement)
-
-    async def get_by_id_and_organization(
-        self, id: UUID, organization_id: UUID
-    ) -> Customer | None:
-        statement = self.get_base_statement().where(
-            Customer.id == id, Customer.organization_id == organization_id
-        )
-        return await self.get_one_or_none(statement)
-
     async def get_by_email_and_organization(
         self, email: str, organization_id: UUID
     ) -> Customer | None:
         statement = self.get_base_statement().where(
             func.lower(Customer.email) == email.lower(),
-            Customer.organization_id == organization_id,
-        )
-        return await self.get_one_or_none(statement)
-
-    async def get_by_external_id_and_organization(
-        self, external_id: str, organization_id: UUID
-    ) -> Customer | None:
-        statement = self.get_base_statement().where(
-            Customer.external_id == external_id,
             Customer.organization_id == organization_id,
         )
         return await self.get_one_or_none(statement)

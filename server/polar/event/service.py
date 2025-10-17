@@ -7,7 +7,10 @@ import structlog
 from sqlalchemy import String, UnaryExpression, asc, cast, desc, func, or_, select, text
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.customer.repository import CustomerRepository, PlaceholderCustomerRepository
+from polar.customer.repository import (
+    BaseCustomerRepository,
+    PlaceholderCustomerRepository,
+)
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
@@ -309,8 +312,8 @@ class EventService:
             assert event.customer is not None
             customers.add(event.customer)
 
-        customer_repository = CustomerRepository.from_session(session)
-        await customer_repository.touch_meters(customers)
+        base_customer_repository = BaseCustomerRepository.from_session(session)
+        await base_customer_repository.touch_meters(customers)
 
     async def _get_organization_validation_function(
         self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]

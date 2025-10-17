@@ -22,7 +22,7 @@ from polar.checkout.schemas import (
 )
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
-from polar.customer.repository import CustomerRepository
+from polar.customer.repository import BaseCustomerRepository, CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
@@ -351,15 +351,16 @@ class CheckoutService:
         subscription: Subscription | None = None
         customer: Customer | None = None
         customer_repository = CustomerRepository.from_session(session)
+        base_customer_repository = BaseCustomerRepository.from_session(session)
         if checkout_create.subscription_id is not None:
             subscription, customer = await self._get_validated_subscription(
                 session, checkout_create.subscription_id, product.organization_id
             )
         elif checkout_create.customer_id is not None:
-            customer = await customer_repository.get_by_id_and_organization(
+            base_customer = await base_customer_repository.get_by_id_and_organization(
                 checkout_create.customer_id, product.organization_id
             )
-            if customer is None:
+            if base_customer is None:
                 raise PolarRequestValidationError(
                     [
                         {
@@ -370,12 +371,16 @@ class CheckoutService:
                         }
                     ]
                 )
+            # Type narrowing: Only accept real customers (not placeholders) for checkout
+            customer = base_customer if isinstance(base_customer, Customer) else None
         elif checkout_create.external_customer_id is not None:
             # Link customer by external ID, if it exists.
             # It not, that's fine': we'll create a new customer on confirm.
-            customer = await customer_repository.get_by_external_id_and_organization(
+            base_customer = await base_customer_repository.get_by_external_id_and_organization(
                 checkout_create.external_customer_id, product.organization_id
             )
+            # Type narrowing: Only accept real customers (not placeholders) for checkout
+            customer = base_customer if base_customer and isinstance(base_customer, Customer) else None
 
         amount = checkout_create.amount
         currency = None

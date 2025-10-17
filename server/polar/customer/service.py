@@ -22,7 +22,7 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from .repository import CustomerRepository
+from .repository import BaseCustomerRepository, CustomerRepository
 from .schemas.customer import CustomerCreate, CustomerUpdate, CustomerUpdateExternalID
 from .schemas.state import CustomerState
 from .sorting import CustomerSortProperty
@@ -113,6 +113,7 @@ class CustomerService:
             session, auth_subject, customer_create
         )
         repository = CustomerRepository.from_session(session)
+        base_repository = BaseCustomerRepository.from_session(session)
 
         errors: list[ValidationError] = []
 
@@ -129,7 +130,7 @@ class CustomerService:
             )
 
         if customer_create.external_id is not None:
-            if await repository.get_by_external_id_and_organization(
+            if await base_repository.get_by_external_id_and_organization(
                 customer_create.external_id, organization.id
             ):
                 errors.append(
@@ -161,6 +162,7 @@ class CustomerService:
         customer_update: CustomerUpdate | CustomerUpdateExternalID,
     ) -> Customer:
         repository = CustomerRepository.from_session(session)
+        base_repository = BaseCustomerRepository.from_session(session)
 
         errors: list[ValidationError] = []
 
@@ -209,7 +211,7 @@ class CustomerService:
             and customer_update.external_id is not None
             and customer.external_id != customer_update.external_id
         ):
-            if await repository.get_by_external_id_and_organization(
+            if await base_repository.get_by_external_id_and_organization(
                 customer_update.external_id, customer.organization_id
             ):
                 errors.append(

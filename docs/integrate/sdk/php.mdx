@@ -9,26 +9,29 @@ A fully-featured PHP SDK for the Polar API.
 ### Quickstart
 
 ```bash
-composer require polarsource/polar-php
+composer require polar-sh/sdk
 ```
 
 ```php
-<?php
-
 declare(strict_types=1);
 
 require 'vendor/autoload.php';
 
-use Polar\Polar;
+use Polar;
 
-$sdk = Polar::builder()
-    ->setAccessToken('YOUR_ACCESS_TOKEN')
+$sdk = Polar\Polar::builder()
+    ->setSecurity('<YOUR_BEARER_TOKEN_HERE>')
     ->build();
 
-$response = $sdk->users->benefits->list();
+$responses = $sdk->organizations->list(
+    page: 1,
+    limit: 10
+);
 
-foreach ($response->result->items as $benefit) {
-    echo $benefit->id . PHP_EOL;
+foreach ($responses as $response) {
+    if ($response->statusCode === 200) {
+        // handle response
+    }
 }
 ```
 
@@ -36,11 +39,11 @@ foreach ($response->result->items as $benefit) {
 
 ### Sandbox Environment
 
-You can configure the SDK so it hits the [sandbox environment](/integrate/sandbox) instead of the production one. You just need to set the server URL when building the client:
+You can configure the SDK so it hits the [sandbox environment](/integrate/sandbox) instead of the production one. You just need to set the server when building the client:
 
 ```php
-$sdk = Polar::builder()
-    ->setServerUrl('https://sandbox-api.polar.sh')
-    ->setAccessToken('YOUR_ACCESS_TOKEN')
+$sdk = Polar\Polar::builder()
+    ->setServer('sandbox')
+    ->setSecurity('<YOUR_BEARER_TOKEN_HERE>')
     ->build();
 ```

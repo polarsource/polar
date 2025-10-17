@@ -325,13 +325,20 @@ class DiscountRepeatDurationBase(Schema):
 
 class DiscountFixedBase(Schema):
     type: Literal[DiscountType.fixed] = DiscountType.fixed
-    amount: int
-    currency: str
+    amount: int = Field(examples=[1000])
+    currency: str = Field(examples=["usd"])
 
 
 class DiscountPercentageBase(Schema):
     type: Literal[DiscountType.percentage] = DiscountType.percentage
-    basis_points: int
+    basis_points: int = Field(
+        examples=[1000],
+        description=(
+            "Discount percentage in basis points. "
+            "A basis point is 1/100th of a percent. "
+            "For example, 1000 basis points equals a 10% discount."
+        ),
+    )
 
 
 class DiscountFixedOnceForeverDurationBase(

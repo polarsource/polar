@@ -1855,6 +1855,14 @@ class SubscriptionService:
         proration_behavior: SubscriptionProrationBehavior,
     ) -> None:
         subject = f"Your subscription has changed to {new_product.name}"
+        product_repository = ProductRepository.from_session(session)
+        previous_product = cast(
+            Product,
+            await product_repository.get_by_id(
+                previous_product.id, options=product_repository.get_eager_options()
+            ),
+        )
+
         return await self._send_customer_email(
             session,
             subscription,
@@ -1883,6 +1891,11 @@ class SubscriptionService:
         ],
         extra_context: dict[str, Any] | None = None,
     ) -> None:
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(
+            subscription.product_id, options=product_repository.get_eager_options()
+        )
+        assert product is not None
         product = subscription.product
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(

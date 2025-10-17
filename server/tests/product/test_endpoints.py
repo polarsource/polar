@@ -481,3 +481,140 @@ class TestUpdateProductBenefits:
 
         json = response.json()
         assert len(json["benefits"]) == 1
+
+
+@pytest.mark.asyncio
+class TestProductSlug:
+    """Test slug functionality in product endpoints."""
+
+    @pytest.mark.auth
+    async def test_auto_slug_generation(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        """Test that slug is automatically generated from product name."""
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+        create_price_mock: MagicMock = stripe_service_mock.create_price_for_product
+        create_price_mock.return_value = SimpleNamespace(id="PRICE_ID")
+
+        response = await client.post(
+            "/v1/products/",
+            json={
+                "name": "Premium Subscription",
+                "organization_id": str(organization.id),
+                "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["name"] == "Premium Subscription"
+        assert json["slug"] == "premium-subscription"
+        assert "slug" in json
+
+    @pytest.mark.auth
+    async def test_custom_slug(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        """Test providing a custom slug."""
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+        create_price_mock: MagicMock = stripe_service_mock.create_price_for_product
+        create_price_mock.return_value = SimpleNamespace(id="PRICE_ID")
+
+        response = await client.post(
+            "/v1/products/",
+            json={
+                "name": "Premium Subscription",
+                "slug": "my-custom-slug",
+                "organization_id": str(organization.id),
+                "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["slug"] == "my-custom-slug"
+
+    @pytest.mark.auth
+    async def test_slug_in_list_response(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        """Test that slug is included in list response."""
+        response = await client.get(
+            "/v1/products/",
+            params={"organization_id": str(organization.id)},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert len(json["items"]) > 0
+        item = json["items"][0]
+        assert "slug" in item
+        assert isinstance(item["slug"], str)
+
+    @pytest.mark.auth
+    async def test_filter_by_slug(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        """Test filtering products by slug."""
+        response = await client.get(
+            "/v1/products/",
+            params={
+                "organization_id": str(organization.id),
+                "slug": product.slug,
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        items = json["items"]
+        assert len(items) == 1
+        assert items[0]["id"] == str(product.id)
+        assert items[0]["slug"] == product.slug
+
+    @pytest.mark.auth
+    async def test_search_by_slug(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        """Test searching products by slug using query parameter."""
+        response = await client.get(
+            "/v1/products/",
+            params={
+                "organization_id": str(organization.id),
+                "query": product.slug,
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        # Product should be found
+        product_ids = [item["id"] for item in json["items"]]
+        assert str(product.id) in product_ids

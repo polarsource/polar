@@ -1838,3 +1838,410 @@ class TestProductProperties:
 
         assert product_with_seats.has_seat_based_price is True
         assert product_without_seats.has_seat_based_price is False
+
+
+@pytest.mark.asyncio
+class TestSlugGeneration:
+    """Test slug generation and handling in product service."""
+
+    @pytest.mark.auth
+    async def test_slugify_from_name(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        enqueue_job_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        """Test automatic slug generation from product name."""
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
+
+        product = await product_service.create(
+            session,
+            ProductCreateOneTime(
+                name="Premium Subscription Plan",
+                organization_id=organization.id,
+                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=1000, price_currency="usd")],
+            ),
+            auth_subject,
+        )
+
+        assert product.slug == "premium-subscription-plan"
+
+    @pytest.mark.auth
+    async def test_slugify_with_special_characters(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        enqueue_job_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        """Test slug generation handles special characters."""
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
+
+        product = await product_service.create(
+            session,
+            ProductCreateOneTime(
+                name="Pro++ Plan (2024) @ $99/mo",
+                organization_id=organization.id,
+                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=9900, price_currency="usd")],
+            ),
+            auth_subject,
+        )
+
+        # Should strip special chars and normalize
+        assert "pro" in product.slug
+        assert "plan" in product.slug
+        assert "2024" in product.slug
+        # Special characters should be removed or replaced
+        assert "++" not in product.slug
+        assert "@" not in product.slug
+        assert "$" not in product.slug
+
+    @pytest.mark.auth
+    async def test_custom_slug(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        enqueue_job_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        """Test providing a custom slug."""
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
+
+        product = await product_service.create(
+            session,
+            ProductCreateOneTime(
+                name="Some Product Name",
+                slug="my-custom-slug",
+                organization_id=organization.id,
+                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=1000, price_currency="usd")],
+            ),
+            auth_subject,
+        )
+
+        assert product.slug == "my-custom-slug"
+
+    @pytest.mark.auth
+    async def test_duplicate_slug_handling(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        enqueue_job_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        """Test that duplicate slugs are handled with numeric suffixes."""
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
+
+        # Create first product
+        product1 = await product_service.create(
+            session,
+            ProductCreateOneTime(
+                name="Test Product",
+                organization_id=organization.id,
+                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=1000, price_currency="usd")],
+            ),
+            auth_subject,
+        )
+        assert product1.slug == "test-product"
+
+        # Create second product with same name
+        product2 = await product_service.create(
+            session,
+            ProductCreateOneTime(
+                name="Test Product",
+                organization_id=organization.id,
+                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=2000, price_currency="usd")],
+            ),
+            auth_subject,
+        )
+        assert product2.slug == "test-product-1"
+
+        # Create third product with same name
+        product3 = await product_service.create(
+            session,
+            ProductCreateOneTime(
+                name="Test Product",
+                organization_id=organization.id,
+                prices=[ProductPriceFixedCreate(amount_type=ProductPriceAmountType.fixed, price_amount=3000, price_currency="usd")],
+            ),
+            auth_subject,
+        )
+        assert product3.slug == "test-product-2"
+
+
+@pytest.mark.asyncio
+class TestListBySlug:
+    """Test filtering and searching products by slug."""
+
+    @pytest.mark.auth
+    async def test_filter_by_slug(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test filtering products by exact slug match."""
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Test Product",
+            slug="test-product-slug",
+        )
+        await session.refresh(product)
+
+        # Filter by slug
+        results, count = await product_service.list(
+            session,
+            auth_subject,
+            slug=["test-product-slug"],
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 1
+        assert len(results) == 1
+        assert results[0].id == product.id
+        assert results[0].slug == "test-product-slug"
+
+    @pytest.mark.auth
+    async def test_filter_by_multiple_slugs(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test filtering products by multiple slugs."""
+        product1 = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Product One",
+            slug="product-one",
+        )
+        product2 = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Product Two",
+            slug="product-two",
+        )
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Product Three",
+            slug="product-three",
+        )
+        await session.refresh(product1)
+        await session.refresh(product2)
+
+        # Filter by multiple slugs
+        results, count = await product_service.list(
+            session,
+            auth_subject,
+            slug=["product-one", "product-two"],
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 2
+        assert len(results) == 2
+        product_ids = {p.id for p in results}
+        assert product1.id in product_ids
+        assert product2.id in product_ids
+
+    @pytest.mark.auth
+    async def test_search_by_slug(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test searching products by slug using query parameter."""
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Different Name",
+            slug="searchable-slug-test",
+        )
+        await session.refresh(product)
+
+        # Search by slug
+        results, count = await product_service.list(
+            session,
+            auth_subject,
+            query="searchable-slug",
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count >= 1
+        product_ids = [p.id for p in results]
+        assert product.id in product_ids
+
+    @pytest.mark.auth
+    async def test_search_matches_name_and_slug(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test that query searches both name and slug."""
+        # Product with keyword in name
+        product_with_name = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Enterprise Edition",
+            slug="enterprise-slug",
+        )
+        # Product with keyword in slug
+        product_with_slug = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Pro Edition",
+            slug="pro-enterprise-plan",
+        )
+        await session.refresh(product_with_name)
+        await session.refresh(product_with_slug)
+
+        # Search for "enterprise" - should match both
+        results, count = await product_service.list(
+            session,
+            auth_subject,
+            query="enterprise",
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count >= 2
+        product_ids = [p.id for p in results]
+        assert product_with_name.id in product_ids
+        assert product_with_slug.id in product_ids
+
+
+@pytest.mark.asyncio
+class TestGetBySlug:
+    """Test getting products by slug."""
+
+    @pytest.mark.auth
+    async def test_get_by_slug(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test getting a product by slug."""
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Test Product",
+            slug="unique-test-slug",
+        )
+        await session.refresh(product)
+
+        # Get by slug
+        result = await product_service.get(
+            session,
+            auth_subject,
+            id=None,
+            slug="unique-test-slug",
+        )
+
+        assert result is not None
+        assert result.id == product.id
+        assert result.slug == "unique-test-slug"
+
+    @pytest.mark.auth
+    async def test_get_by_id_still_works(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test that getting by ID still works (backward compatibility)."""
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Test Product",
+            slug="test-slug",
+        )
+        await session.refresh(product)
+
+        # Get by ID
+        result = await product_service.get(
+            session,
+            auth_subject,
+            id=product.id,
+            slug=None,
+        )
+
+        assert result is not None
+        assert result.id == product.id
+
+    @pytest.mark.auth
+    async def test_get_nonexistent_slug(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test getting a product with non-existent slug returns None."""
+        result = await product_service.get(
+            session,
+            auth_subject,
+            id=None,
+            slug="nonexistent-slug",
+        )
+
+        assert result is None

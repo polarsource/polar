@@ -48,6 +48,7 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "products"
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
+    slug: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_tax_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True

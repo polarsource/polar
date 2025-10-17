@@ -40,6 +40,17 @@ class ProductRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_slug(
+        self,
+        slug: str,
+        *,
+        options: Options = (),
+    ) -> Product | None:
+        statement = (
+            self.get_base_statement().where(Product.slug == slug).options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_by_id_and_checkout(
         self,
         id: UUID,

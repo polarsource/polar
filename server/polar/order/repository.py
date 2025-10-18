@@ -1,8 +1,8 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import Select, case, select, update
+from sqlalchemy import CursorResult, Select, case, select, update
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import selectinload
 
@@ -102,11 +102,14 @@ class OrderRepository(
         Returns:
             True if lock was acquired, False if already locked
         """
-        result = await self.session.execute(
+        statement = (
             update(Order)
             .where(Order.id == order_id, Order.payment_lock_acquired_at.is_(None))
             .values(payment_lock_acquired_at=utc_now())
         )
+
+        # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
+        result = cast(CursorResult[Order], await self.session.execute(statement))
         return result.rowcount > 0
 
     async def release_payment_lock(self, order: Order, *, flush: bool = False) -> Order:

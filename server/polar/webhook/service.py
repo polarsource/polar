@@ -1,11 +1,11 @@
 import datetime
 import json
 from collections.abc import Sequence
-from typing import Literal, overload
+from typing import Literal, cast, overload
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, desc, func, select, text, update
+from sqlalchemy import CursorResult, Select, desc, func, select, text, update
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -606,7 +606,9 @@ class WebhookService:
                 .where(WebhookEvent.id.in_(batch_subquery))
                 .values(payload=None)
             )
-            result = await session.execute(statement)
+
+            # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
+            result = cast(CursorResult[WebhookEvent], await session.execute(statement))
             updated_count = result.rowcount
 
             await session.commit()

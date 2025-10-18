@@ -1,4 +1,5 @@
 from typing import cast
+from uuid import UUID
 
 from fastapi import Depends, Query, Response, status
 from sqlalchemy.orm import joinedload
@@ -267,6 +268,8 @@ async def members(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationMember]:
     """List members in an organization."""
+    from polar.organization.repository import OrganizationRepository
+
     organization = await organization_service.get(session, auth_subject, id)
 
     if organization is None:
@@ -274,8 +277,29 @@ async def members(
 
     members = await user_organization_service.list_by_org(session, id)
 
+    # Get admin user to mark them in the response
+    admin_user_id = None
+    if organization.account_id:
+        org_repo = OrganizationRepository.from_session(session)
+        admin_user = await org_repo.get_admin_user(
+            cast(AsyncSession, session), organization
+        )
+        if admin_user:
+            admin_user_id = admin_user.id
+
+    items = []
+    for m in members:
+        # Create a dict with all the necessary fields
+        member_data = {
+            "user_id": m.user_id,
+            "created_at": m.created_at,
+            "user": {"email": m.user.email, "avatar_url": m.user.avatar_url},
+            "is_admin": m.user_id == admin_user_id,
+        }
+        items.append(OrganizationMember.model_validate(member_data))
+
     return ListResource(
-        items=[OrganizationMember.model_validate(m) for m in members],
+        items=items,
         pagination=Pagination(total_count=len(members), max_page=1),
     )
 
@@ -344,6 +368,60 @@ async def invite_member(
 
     response.status_code = status.HTTP_201_CREATED
     return OrganizationMember.model_validate(user_org)
+
+
+@router.delete(
+    "/{id}/members/{user_id}",
+    status_code=204,
+    tags=[APITag.private],
+)
+async def remove_member(
+    id: OrganizationID,
+    user_id: UUID,
+    auth_subject: auth.OrganizationsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Remove a member from an organization.
+
+    Only the organization admin can remove members.
+    Non-admin members cannot be removed by other members.
+
+    Raises:
+        404: Organization not found or user is not a member
+        403: Only admin can remove members, or cannot remove organization admin
+    """
+    from polar.organization.repository import OrganizationRepository
+    from polar.user_organization.service import (
+        CannotRemoveOrganizationAdmin,
+        OrganizationNotFound,
+        UserNotMemberOfOrganization,
+    )
+
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    # Check if the authenticated user is the organization admin
+    if not is_user(auth_subject):
+        raise NotPermitted("Only users can remove members")
+
+    org_repo = OrganizationRepository.from_session(session)
+    admin_user = await org_repo.get_admin_user(session, organization)
+
+    if not admin_user or admin_user.id != auth_subject.subject.id:
+        raise NotPermitted("Only the organization admin can remove members")
+
+    try:
+        await user_organization_service.remove_member_safe(
+            session, user_id, organization.id
+        )
+    except OrganizationNotFound:
+        raise ResourceNotFound()
+    except UserNotMemberOfOrganization:
+        raise ResourceNotFound()
+    except CannotRemoveOrganizationAdmin:
+        raise NotPermitted("Cannot remove organization admin")
 
 
 @router.post(

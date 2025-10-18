@@ -39,14 +39,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.config import settings
 from polar.exceptions import PolarError
-from polar.models import (
-    Customer,
-    Order,
-    Organization,
-    Product,
-    User,
-    UserOrganization,
-)
+from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository

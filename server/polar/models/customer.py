@@ -16,6 +16,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     Uuid,
+    case,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -73,7 +74,12 @@ class CustomerOAuthAccount:
         return time.time() > self.expires_at
 
 
-class Customer(MetadataMixin, RecordModel):
+class BaseCustomer(MetadataMixin, RecordModel):
+    """
+    Base class for Customer and PlaceholderCustomer using single table inheritance.
+    Uses email IS NULL as the discriminator.
+    """
+
     __tablename__ = "customers"
     __table_args__ = (
         Index(
@@ -94,7 +100,7 @@ class Customer(MetadataMixin, RecordModel):
     )
 
     external_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
-    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True, default=None)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, unique=False
@@ -173,6 +179,17 @@ class Customer(MetadataMixin, RecordModel):
             foreign_keys=[cls.default_payment_method_id],  # type: ignore
         )
 
+    @declared_attr
+    @classmethod
+    def __mapper_args__(cls):  # type: ignore
+        return {
+            "polymorphic_on": case(
+                (cls.__table__.c.email.is_(None), "placeholder"),
+                else_="customer",
+            ),
+            "polymorphic_identity": "base",
+        }
+
     @hybrid_property
     def can_authenticate(self) -> bool:
         return self.deleted_at is None
@@ -219,12 +236,6 @@ class Customer(MetadataMixin, RecordModel):
         return self._legacy_user_id or self.id
 
     @property
-    def legacy_user_public_name(self) -> str:
-        if self.name:
-            return self.name[0]
-        return self.email[0]
-
-    @property
     def active_subscriptions(self) -> Sequence["Subscription"] | None:
         return getattr(self, "_active_subscriptions", None)
 
@@ -258,3 +269,39 @@ class Customer(MetadataMixin, RecordModel):
 
     def touch_meters_dirtied_at(self) -> None:
         self.meters_dirtied_at = utc_now()
+
+
+class Customer(BaseCustomer):
+    """Regular customer with email address."""
+
+    __mapper_args__ = {
+        "polymorphic_identity": "customer",
+    }
+
+    if TYPE_CHECKING:
+        # Type narrowing: email is always present for Customer
+        email: Mapped[str]
+
+    @property
+    def legacy_user_public_name(self) -> str:
+        if self.name:
+            return self.name[0]
+        return self.email[0]
+
+
+class PlaceholderCustomer(BaseCustomer):
+    """Placeholder customer without email, created from event ingestion."""
+
+    __mapper_args__ = {
+        "polymorphic_identity": "placeholder",
+    }
+
+    if TYPE_CHECKING:
+        # Type narrowing: email is always None for PlaceholderCustomer
+        email: Mapped[None]
+
+    @property
+    def legacy_user_public_name(self) -> str:
+        if self.name:
+            return self.name[0]
+        return "?"

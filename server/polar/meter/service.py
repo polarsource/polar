@@ -21,6 +21,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.event.repository import EventRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadata_clause
@@ -31,14 +32,18 @@ from polar.meter.aggregation import AggregationFunction
 from polar.models import (
     Benefit,
     BillingEntry,
+    Customer,
+    CustomerSeat,
     Event,
     Meter,
     Product,
     ProductPriceMeteredUnit,
     SubscriptionProductPrice,
 )
+from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.product.guard import is_metered_price
 from polar.subscription.repository import SubscriptionProductPriceRepository
 from polar.worker import enqueue_job
 
@@ -365,6 +370,76 @@ class MeterService:
         async for meter in repository.stream(statement):
             enqueue_job("meter.billing_entries", meter.id)
 
+    async def _get_customer_seat(
+        self,
+        session: AsyncSession,
+        customer_id: uuid.UUID,
+        customer_seat_map: dict[uuid.UUID, CustomerSeat | None],
+    ) -> CustomerSeat | None:
+        if customer_id in customer_seat_map:
+            return customer_seat_map[customer_id]
+
+        repository = CustomerSeatRepository.from_session(session)
+        seat = await repository.get_active_seat_for_customer(
+            customer_id,
+            options=repository.get_eager_options_with_prices(),
+        )
+        customer_seat_map[customer_id] = seat
+        return seat
+
+    async def _find_metered_price_for_meter(
+        self,
+        subscription_product_prices: Sequence[SubscriptionProductPrice],
+        meter_id: uuid.UUID,
+    ) -> SubscriptionProductPrice | None:
+        for spp in subscription_product_prices:
+            if (
+                is_metered_price(spp.product_price)
+                and spp.product_price.meter_id == meter_id
+            ):
+                return spp
+        return None
+
+    async def _create_seat_holder_billing_entry(
+        self,
+        session: AsyncSession,
+        event: Event,
+        seat: CustomerSeat,
+        meter_id: uuid.UUID,
+    ) -> BillingEntry | None:
+        subscription_product_price = await self._find_metered_price_for_meter(
+            seat.subscription.subscription_product_prices,
+            meter_id,
+        )
+        if subscription_product_price is None:
+            return None
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        return await billing_entry_repository.create(
+            BillingEntry(
+                start_timestamp=event.timestamp,
+                end_timestamp=event.timestamp,
+                type=BillingEntryType.metered,
+                direction=BillingEntryDirection.debit,
+                customer=seat.subscription.customer,
+                product_price=subscription_product_price.product_price,
+                subscription=seat.subscription,
+                event=event,
+            )
+        )
+
+    async def _create_subscription_holder_billing_entry(
+        self,
+        session: AsyncSession,
+        event: Event,
+        customer: "Customer",
+        subscription_product_price: SubscriptionProductPrice,
+    ) -> BillingEntry:
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        return await billing_entry_repository.create(
+            BillingEntry.from_metered_event(customer, subscription_product_price, event)
+        )
+
     async def create_billing_entries(
         self, session: AsyncSession, meter: Meter
     ) -> Sequence[BillingEntry]:
@@ -394,8 +469,8 @@ class MeterService:
             SubscriptionProductPriceRepository.from_session(session)
         )
         customer_price_map: dict[uuid.UUID, SubscriptionProductPrice | None] = {}
+        customer_seat_map: dict[uuid.UUID, CustomerSeat | None] = {}
 
-        billing_entry_repository = BillingEntryRepository.from_session(session)
         entries: list[BillingEntry] = []
         updated_subscriptions: set[uuid.UUID] = set()
         last_event: Event | None = None
@@ -412,26 +487,36 @@ class MeterService:
                     customer.id, meter.id
                 )
                 customer_price_map[customer.id] = subscription_product_price
-            if subscription_product_price is None:
+
+            if subscription_product_price is not None:
+                entry = await self._create_subscription_holder_billing_entry(
+                    session, event, customer, subscription_product_price
+                )
+                entries.append(entry)
+                if entry.subscription is not None:
+                    updated_subscriptions.add(entry.subscription.id)
                 continue
 
-            # Create a billing entry
-            entry = await billing_entry_repository.create(
-                BillingEntry.from_metered_event(
-                    customer, subscription_product_price, event
-                )
+            # Seat based billing subscriptions are attached to the billing owner
+            # Customer Holders doesn't have a subcription, so we need to map and charge to the billing manager.
+            seat = await self._get_customer_seat(
+                session, customer.id, customer_seat_map
             )
-            entries.append(entry)
-            if entry.subscription is not None:
-                updated_subscriptions.add(entry.subscription.id)
+            if seat is None or not seat.has_metered_pricing():
+                continue
 
-        # Update the last billed event
+            seat_entry = await self._create_seat_holder_billing_entry(
+                session, event, seat, meter.id
+            )
+            if seat_entry is not None:
+                entries.append(seat_entry)
+                updated_subscriptions.add(seat.subscription_id)
+
         meter.last_billed_event = (
             last_event if last_event is not None else last_billed_event
         )
         session.add(meter)
 
-        # Update subscription meters
         for subscription_id in updated_subscriptions:
             enqueue_job("subscription.update_meters", subscription_id)
 

@@ -1,4 +1,6 @@
 import { schemas } from '@polar-sh/client'
+import { CONFIG } from '@/utils/config'
+
 import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
@@ -51,7 +53,8 @@ export const MeterGetStarted = ({ meter }: MeterGetStartedProps) => {
             code={`import { Polar } from "@polar-sh/sdk";
 
 const polar = new Polar({
-  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",${CONFIG.IS_SANDBOX ? `
+  server: "sandbox",` : ''}
 });
 
 export const GET = async (req: Request, res: Response) => {

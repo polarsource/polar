@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models import Customer, Order
-from polar.models.order import OrderBillingReason
+from polar.models.order import OrderBillingReasonInternal
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -64,7 +64,7 @@ class PaymentMethodDoesNotExist(OrderTaskError):
 
 @actor(actor_name="order.create_subscription_order", priority=TaskPriority.LOW)
 async def create_subscription_order(
-    subscription_id: uuid.UUID, order_reason: OrderBillingReason
+    subscription_id: uuid.UUID, order_reason: OrderBillingReasonInternal
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)

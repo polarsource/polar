@@ -39,7 +39,7 @@ from polar.models import (
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountFixed, DiscountType
-from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization
 from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
@@ -488,7 +488,7 @@ class TestCreateFromCheckoutOneTime:
 
         assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
-        assert order.billing_reason == OrderBillingReason.purchase
+        assert order.billing_reason == OrderBillingReasonInternal.purchase
         assert order.customer == checkout.customer
         assert order.product == product_one_time
         assert len(order.items) == len(product_one_time.prices)
@@ -526,7 +526,7 @@ class TestCreateFromCheckoutOneTime:
 
         assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
-        assert order.billing_reason == OrderBillingReason.purchase
+        assert order.billing_reason == OrderBillingReasonInternal.purchase
         assert order.customer == checkout.customer
         assert order.product == product_one_time_custom_price
         assert len(order.items) == len(product_one_time_custom_price.prices)
@@ -562,7 +562,7 @@ class TestCreateFromCheckoutOneTime:
 
         assert order.net_amount == 0
         assert order.discount_amount == 0
-        assert order.billing_reason == OrderBillingReason.purchase
+        assert order.billing_reason == OrderBillingReasonInternal.purchase
         assert order.customer == checkout.customer
         assert order.product == product_one_time_free_price
         assert len(order.items) == len(product_one_time_free_price.prices)
@@ -605,7 +605,7 @@ class TestCreateFromCheckoutOneTime:
 
         assert order.net_amount == 0
         assert order.discount_amount == discount_amount
-        assert order.billing_reason == OrderBillingReason.purchase
+        assert order.billing_reason == OrderBillingReasonInternal.purchase
         assert order.customer == checkout.customer
         assert order.product == product_one_time
         assert len(order.items) == len(product_one_time.prices)
@@ -636,7 +636,10 @@ class TestCreateFromCheckoutSubscription:
         )
         with pytest.raises(NotRecurringProduct):
             await order_service.create_from_checkout_subscription(
-                session, checkout, subscription, OrderBillingReason.subscription_create
+                session,
+                checkout,
+                subscription,
+                OrderBillingReasonInternal.subscription_create,
             )
 
     async def test_missing_customer(
@@ -655,7 +658,10 @@ class TestCreateFromCheckoutSubscription:
 
         with pytest.raises(MissingCheckoutCustomer):
             await order_service.create_from_checkout_subscription(
-                session, checkout, subscription, OrderBillingReason.subscription_create
+                session,
+                checkout,
+                subscription,
+                OrderBillingReasonInternal.subscription_create,
             )
 
     async def test_fixed(
@@ -676,12 +682,15 @@ class TestCreateFromCheckoutSubscription:
         )
 
         order = await order_service.create_from_checkout_subscription(
-            session, checkout, subscription, OrderBillingReason.subscription_create
+            session,
+            checkout,
+            subscription,
+            OrderBillingReasonInternal.subscription_create,
         )
 
         assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
-        assert order.billing_reason == OrderBillingReason.subscription_create
+        assert order.billing_reason == OrderBillingReasonInternal.subscription_create
         assert order.customer == checkout.customer
         assert order.product == product
         assert len(order.items) == len(product.prices)
@@ -704,12 +713,15 @@ class TestCreateFromCheckoutSubscription:
         )
 
         order = await order_service.create_from_checkout_subscription(
-            session, checkout, subscription, OrderBillingReason.subscription_create
+            session,
+            checkout,
+            subscription,
+            OrderBillingReasonInternal.subscription_create,
         )
 
         assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
-        assert order.billing_reason == OrderBillingReason.subscription_create
+        assert order.billing_reason == OrderBillingReasonInternal.subscription_create
         assert order.customer == checkout.customer
         assert order.product == product_recurring_metered
         assert len(order.items) == len(
@@ -751,7 +763,7 @@ class TestCreateSubscriptionOrder:
     ) -> None:
         with pytest.raises(NoPendingBillingEntries):
             await order_service.create_subscription_order(
-                session, subscription, OrderBillingReason.subscription_cycle
+                session, subscription, OrderBillingReasonInternal.subscription_cycle
             )
 
     async def test_cycle_fixed_price(
@@ -784,7 +796,7 @@ class TestCreateSubscriptionOrder:
         )
 
         order = await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
         )
 
         assert len(order.items) == 1
@@ -795,7 +807,7 @@ class TestCreateSubscriptionOrder:
 
         assert order.subtotal_amount == billing_entry.amount
         assert order.status == OrderStatus.pending
-        assert order.billing_reason == OrderBillingReason.subscription_cycle
+        assert order.billing_reason == OrderBillingReasonInternal.subscription_cycle
         assert order.subscription == subscription
 
         assert billing_entry.amount is not None
@@ -847,7 +859,7 @@ class TestCreateSubscriptionOrder:
         )
 
         order = await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
         )
 
         assert order.discount == discount
@@ -901,7 +913,7 @@ class TestCreateSubscriptionOrder:
         )
 
         order = await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
         )
 
         assert order.net_amount == 0
@@ -941,7 +953,7 @@ class TestCreateSubscriptionOrder:
         )
 
         order = await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
         )
 
         calculate_tax_mock.assert_called_once_with(
@@ -1026,7 +1038,7 @@ class TestCreateSubscriptionOrder:
         )
 
         order = await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
         )
 
         assert len(order.items) == 3
@@ -1039,7 +1051,7 @@ class TestCreateSubscriptionOrder:
         assert order_items[2].amount == 3000
 
         assert order.status == OrderStatus.pending
-        assert order.billing_reason == OrderBillingReason.subscription_cycle
+        assert order.billing_reason == OrderBillingReasonInternal.subscription_cycle
         assert order.subscription == subscription
 
         assert order.subtotal_amount == 4250
@@ -1288,7 +1300,7 @@ class TestCreateSubscriptionOrder:
             await session.flush()
 
         order = await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
         )
 
         assert len(order.items) == len(setup.history)
@@ -1308,7 +1320,7 @@ class TestCreateSubscriptionOrder:
             assert order.taxability_reason == TaxabilityReason.standard_rated
             assert order.tax_transaction_processor_id is None
 
-        assert order.billing_reason == OrderBillingReason.subscription_cycle
+        assert order.billing_reason == OrderBillingReasonInternal.subscription_cycle
         assert order.subscription == subscription
 
         assert_set_order_item_ids(
@@ -1348,13 +1360,13 @@ class TestCreateSubscriptionOrder:
     @pytest.mark.parametrize(
         "billing_reason",
         [
-            OrderBillingReason.subscription_cycle,
-            OrderBillingReason.subscription_update,
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_update,
         ],
     )
     async def test_metered(
         self,
-        billing_reason: OrderBillingReason,
+        billing_reason: OrderBillingReasonInternal,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1446,7 +1458,7 @@ class TestCreateSubscriptionOrder:
         }
 
         order = await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
         )
 
         assert order.applied_balance_amount == -50_00
@@ -1509,7 +1521,7 @@ class TestCreateSubscriptionOrder:
         }
 
         order = await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
         )
 
         assert order.applied_balance_amount == 50
@@ -1571,7 +1583,7 @@ class TestCreateSubscriptionOrder:
         }
 
         order = await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
         )
 
         assert order.applied_balance_amount == 0
@@ -1634,7 +1646,7 @@ class TestCreateSubscriptionOrder:
         }
 
         order = await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
         )
 
         assert order.applied_balance_amount == 50
@@ -1657,7 +1669,7 @@ class TestCreateTrialOrder:
         )
         with pytest.raises(SubscriptionNotTrialing):
             await order_service.create_trial_order(
-                session, subscription, OrderBillingReason.subscription_create
+                session, subscription, OrderBillingReasonInternal.subscription_create
             )
 
     async def test_valid(
@@ -1672,13 +1684,13 @@ class TestCreateTrialOrder:
         )
 
         order = await order_service.create_trial_order(
-            session, subscription, OrderBillingReason.subscription_create
+            session, subscription, OrderBillingReasonInternal.subscription_create
         )
 
         assert order.total_amount == 0
         assert order.net_amount == 0
         assert order.status == OrderStatus.paid
-        assert order.billing_reason == OrderBillingReason.subscription_create
+        assert order.billing_reason == OrderBillingReasonInternal.subscription_create
         assert order.customer == subscription.customer
         assert order.product == product
         assert order.subscription == subscription
@@ -3015,6 +3027,70 @@ class TestTriggerPayment:
 
         await session.refresh(order)
         assert order.payment_lock_acquired_at is not None
+
+    async def test_statement_descriptor_regular_subscription_cycle(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+        await save_fixture(order)
+
+        await order_service.trigger_payment(session, order, payment_method)
+
+        stripe_service_mock.create_payment_intent.assert_called_once()
+        call_kwargs = stripe_service_mock.create_payment_intent.call_args[1]
+        assert (
+            call_kwargs["statement_descriptor_suffix"]
+            == organization.statement_descriptor
+        )
+
+    async def test_statement_descriptor_after_trial(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle_after_trial,
+        )
+        await save_fixture(order)
+
+        await order_service.trigger_payment(session, order, payment_method)
+
+        stripe_service_mock.create_payment_intent.assert_called_once()
+        call_kwargs = stripe_service_mock.create_payment_intent.call_args[1]
+        assert (
+            call_kwargs["statement_descriptor_suffix"]
+            == f"{organization.statement_descriptor} TRIAL OVER"
+        )
 
 
 @pytest.mark.asyncio

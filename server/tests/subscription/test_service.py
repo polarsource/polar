@@ -52,7 +52,7 @@ from polar.models import (
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.models.order import OrderBillingReason
+from polar.models.order import OrderBillingReasonInternal
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
@@ -595,7 +595,7 @@ class TestCycle:
         enqueue_job_mock.assert_any_call(
             "order.create_subscription_order",
             subscription.id,
-            OrderBillingReason.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle,
         )
 
         enqueue_email_mock.assert_called_once()
@@ -741,7 +741,7 @@ class TestCycle:
         enqueue_job_mock.assert_any_call(
             "order.create_subscription_order",
             subscription.id,
-            OrderBillingReason.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle,
         )
 
         enqueue_email_mock.assert_called_once()
@@ -782,7 +782,7 @@ class TestCycle:
         enqueue_job_mock.assert_any_call(
             "order.create_subscription_order",
             subscription.id,
-            OrderBillingReason.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
         )
 
         enqueue_email_mock.assert_called_once()

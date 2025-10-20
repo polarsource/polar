@@ -87,7 +87,7 @@ from polar.models.discount import (
 )
 from polar.models.event import EventSource
 from polar.models.notification_recipient import NotificationRecipient
-from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.models.payout import PayoutStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
@@ -788,7 +788,7 @@ async def create_order(
     order_items: list[OrderItem] | None = None,
     subscription: Subscription | None = None,
     stripe_invoice_id: str | None = "INVOICE_ID",
-    billing_reason: OrderBillingReason = OrderBillingReason.purchase,
+    billing_reason: OrderBillingReasonInternal = OrderBillingReasonInternal.purchase,
     user_metadata: dict[str, Any] | None = None,
     created_at: datetime | None = None,
     custom_field_data: dict[str, Any] | None = None,

@@ -64,3 +64,49 @@ I'm a dense thank you note with:
     },
   ],
 }
+
+export const order: DeepPartial<schemas['Order']> = {
+  status: 'paid',
+  paid: true,
+  invoice_number: 'INV-2024-001',
+  created_at: '2024-01-15T10:30:00Z',
+  subtotal_amount: 9900, // $99.00
+  discount_amount: 1000, // $10.00 discount
+  net_amount: 8900,
+  tax_amount: 712, // $7.12 tax
+  total_amount: 9612, // $96.12 total
+  applied_balance_amount: -500, // $5.00 credit applied
+  due_amount: 9112, // $91.12 due after credit
+  refunded_amount: 0,
+  refunded_tax_amount: 0,
+  currency: 'usd',
+  billing_reason: 'purchase',
+  billing_name: 'John Doe',
+  billing_address: {
+    line1: '123 Main Street',
+    line2: 'Apt 4B',
+    city: 'San Francisco',
+    state: 'CA',
+    postal_code: '94105',
+    country: 'US',
+  },
+  subscription_id: null,
+  product: product,
+  subscription: null,
+  items: [
+    {
+      id: 'item-1',
+      label: 'Premium Plan - Lifetime Access',
+      amount: 8900, // After discount
+      proration: false,
+      product_price_id: 'price123',
+    },
+    {
+      id: 'item-2',
+      label: 'Setup Fee',
+      amount: 1000,
+      proration: false,
+      product_price_id: 'price456',
+    },
+  ],
+}

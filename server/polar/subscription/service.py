@@ -696,9 +696,6 @@ class SubscriptionService:
             OrderBillingReason.subscription_cycle,
         )
 
-        if not revoke:
-            await self.send_cycled_email(session, subscription)
-
         await self._after_subscription_updated(
             session,
             subscription,
@@ -1112,7 +1109,7 @@ class SubscriptionService:
 
         # Send product change email notification
         await self.send_subscription_updated_email(
-            session, subscription, previous_product, product, proration_behavior
+            session, subscription, product, proration_behavior
         )
 
         # Trigger subscription updated events and re-evaluate benefits
@@ -1618,8 +1615,6 @@ class SubscriptionService:
             session, subscription, WebhookEventType.subscription_active
         )
 
-        await self.send_confirmation_email(session, subscription)
-
         # Only send merchant notification if the subscription is a new one,
         # not a past due that has been reactivated.
         if not reactivated:
@@ -1765,26 +1760,6 @@ class SubscriptionService:
         async for subscription in subscriptions:
             await self.enqueue_benefits_grants(session, subscription)
 
-    async def send_confirmation_email(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> None:
-        return await self._send_customer_email(
-            session,
-            subscription,
-            subject_template="Your {product.name} subscription",
-            template_name="subscription_confirmation",
-        )
-
-    async def send_cycled_email(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> None:
-        return await self._send_customer_email(
-            session,
-            subscription,
-            subject_template="Your {product.name} subscription has been renewed",
-            template_name="subscription_cycled",
-        )
-
     async def send_uncanceled_email(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
@@ -1853,18 +1828,15 @@ class SubscriptionService:
         self,
         session: AsyncSession,
         subscription: Subscription,
-        previous_product: Product,
         new_product: Product,
         proration_behavior: SubscriptionProrationBehavior,
     ) -> None:
+        # Don't send email if invoicing immediately
+        # It'll be sent after the Order has been created
+        if proration_behavior == SubscriptionProrationBehavior.invoice:
+            return
+
         subject = f"Your subscription has changed to {new_product.name}"
-        product_repository = ProductRepository.from_session(session)
-        previous_product = cast(
-            Product,
-            await product_repository.get_by_id(
-                previous_product.id, options=product_repository.get_eager_options()
-            ),
-        )
 
         return await self._send_customer_email(
             session,
@@ -1872,8 +1844,7 @@ class SubscriptionService:
             subject_template=subject,
             template_name="subscription_updated",
             extra_context={
-                "proration_behavior": proration_behavior,
-                "previous_product": previous_product,
+                "order": None,
             },
         )
 
@@ -1885,8 +1856,6 @@ class SubscriptionService:
         subject_template: str,
         template_name: Literal[
             "subscription_cancellation",
-            "subscription_confirmation",
-            "subscription_cycled",
             "subscription_past_due",
             "subscription_revoked",
             "subscription_uncanceled",

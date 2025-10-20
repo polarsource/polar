@@ -23,7 +23,9 @@ from polar.customer_portal.schemas.order import (
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.react import render_email_template
-from polar.email.schemas import OrderConfirmationEmail, OrderConfirmationProps
+from polar.email.schemas import (
+    EmailAdapter,
+)
 from polar.email.sender import enqueue_email
 from polar.enums import PaymentProcessor
 from polar.eventstream.service import publish as eventstream_publish
@@ -517,7 +519,6 @@ class OrderService:
         # Trigger notifications
         organization = checkout.organization
         await self.send_admin_notification(session, organization, order)
-        await self.send_confirmation_email(session, organization, order)
 
         return order
 
@@ -1456,33 +1457,71 @@ class OrderService:
     async def send_confirmation_email(
         self, session: AsyncSession, organization: Organization, order: Order
     ) -> None:
-        if not organization.customer_email_settings["order_confirmation"]:
+        template_name: Literal[
+            "order_confirmation",
+            "subscription_confirmation",
+            "subscription_cycled",
+            "subscription_updated",
+        ]
+        subject_template: str
+        url_path_template: str
+
+        match order.billing_reason:
+            case OrderBillingReason.purchase:
+                template_name = "order_confirmation"
+                subject_template = "Your {product} order confirmation"
+                url_path_template = (
+                    "/{organization}/portal?customer_session_token={token}&id={order}"
+                )
+            case OrderBillingReason.subscription_create:
+                template_name = "subscription_confirmation"
+                subject_template = "Your {product} subscription"
+                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}"
+            case OrderBillingReason.subscription_cycle:
+                template_name = "subscription_cycled"
+                subject_template = "Your {product} subscription has been renewed"
+                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}"
+            case OrderBillingReason.subscription_update:
+                template_name = "subscription_updated"
+                subject_template = "Your subscription has changed to {product}"
+                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}"
+
+        if not organization.customer_email_settings[template_name]:
             return
 
         product = order.product
         customer = order.customer
+        subscription = order.subscription
         token, _ = await customer_session_service.create_customer_session(
             session, customer
         )
-
-        body = render_email_template(
-            OrderConfirmationEmail(
-                props=OrderConfirmationProps.model_validate(
-                    {
-                        "organization": organization,
-                        "product": product,
-                        "url": settings.generate_frontend_url(
-                            f"/{organization.slug}/portal?customer_session_token={token}&id={order.id}"
-                        ),
-                    }
-                )
+        url = settings.generate_frontend_url(
+            url_path_template.format(
+                organization=organization.slug,
+                token=token,
+                order=order.id,
+                subscription=subscription.id if subscription else "",
             )
         )
+        subject = subject_template.format(product=product.name)
+        email = EmailAdapter.validate_python(
+            {
+                "template": template_name,
+                "props": {
+                    "organization": organization,
+                    "product": product,
+                    "order": order,
+                    "subscription": subscription,
+                    "url": url,
+                },
+            }
+        )
 
+        body = render_email_template(email)
         enqueue_email(
             **organization.email_from_reply,
             to_email_addr=customer.email,
-            subject=f"Your {product.name} order confirmation",
+            subject=subject,
             html_content=body,
         )
 
@@ -1621,6 +1660,7 @@ class OrderService:
             await webhook_service.send(session, organization, event_type, order)
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
+        await self.send_confirmation_email(session, order.organization, order)
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         if order.paid:

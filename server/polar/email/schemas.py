@@ -12,6 +12,7 @@ from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
 )
+from polar.order.schemas import Order
 from polar.organization.schemas import Organization
 from polar.product.schemas import Product
 from polar.subscription.schemas import Subscription
@@ -109,6 +110,7 @@ class OAuth2LeakedTokenEmail(BaseModel):
 class OrderConfirmationProps(EmailProps):
     organization: Organization
     product: Product
+    order: Order
     url: str
 
 
@@ -187,7 +189,8 @@ class SubscriptionCancellationEmail(BaseModel):
     props: SubscriptionCancellationProps
 
 
-class SubscriptionConfirmationProps(SubscriptionPropsBase): ...
+class SubscriptionConfirmationProps(SubscriptionPropsBase):
+    order: Order
 
 
 class SubscriptionConfirmationEmail(BaseModel):
@@ -197,7 +200,8 @@ class SubscriptionConfirmationEmail(BaseModel):
     props: SubscriptionConfirmationProps
 
 
-class SubscriptionCycledProps(SubscriptionPropsBase): ...
+class SubscriptionCycledProps(SubscriptionPropsBase):
+    order: Order
 
 
 class SubscriptionCycledEmail(BaseModel):
@@ -239,8 +243,7 @@ class SubscriptionUncanceledEmail(BaseModel):
 
 
 class SubscriptionUpdatedProps(SubscriptionPropsBase):
-    proration_behavior: str
-    previous_product: Product
+    order: Order | None
 
 
 class SubscriptionUpdatedEmail(BaseModel):

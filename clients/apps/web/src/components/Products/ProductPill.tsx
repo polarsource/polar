@@ -14,7 +14,7 @@ const ProductPill: React.FC<ProductPillProps> = ({ product }) => {
     <div className="flex items-center justify-between gap-3">
       <div
         style={{ backgroundColor: color }}
-        className="dark:text-polar-950 inline-flex gap-1 whitespace-nowrap rounded-xl px-3 py-1 text-xs text-white"
+        className="dark:text-polar-950 inline-flex gap-1 rounded-xl px-3 py-1 text-xs whitespace-nowrap text-white"
       >
         <div>{product.name}</div>
       </div>

@@ -16,7 +16,7 @@ export const MeterIngestionGuide = () => {
   return (
     <SyntaxHighlighterProvider>
       <div className="flex h-full flex-col items-center justify-center gap-6 py-12">
-        <Well className="rounded-4xl flex flex-col gap-12 p-4 md:flex-row">
+        <Well className="flex flex-col gap-12 rounded-4xl p-4 md:flex-row">
           <div className="flex w-full flex-col gap-6 p-6 md:max-w-sm">
             <WellHeader>
               <h2 className="text-2xl">Usage Billing with Meters</h2>

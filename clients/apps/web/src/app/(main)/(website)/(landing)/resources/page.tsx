@@ -61,7 +61,7 @@ export default function Resources() {
     <div className="mx-auto flex h-full min-h-screen w-full max-w-6xl flex-col gap-y-8 md:gap-y-16">
       <div className="flex flex-col gap-y-8">
         <h3 className="text-3xl md:text-5xl">Resources</h3>
-        <p className="text-pretty text-xl">
+        <p className="text-xl text-pretty">
           Get a better understanding of our platform with these handy resources
         </p>
       </div>

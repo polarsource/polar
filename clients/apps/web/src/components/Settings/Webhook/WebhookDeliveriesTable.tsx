@@ -326,15 +326,15 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
       <hr />
       <div className="font-medium">Payload</div>
       {payload ? (
-        <pre className="whitespace-pre-wrap text-xs">{payload}</pre>
+        <pre className="text-xs whitespace-pre-wrap">{payload}</pre>
       ) : (
-        <div className="text-sm italic text-gray-500">Archived event</div>
+        <div className="text-sm text-gray-500 italic">Archived event</div>
       )}
       {delivery.response && (
         <>
           <hr />
           <div className="font-medium">Response</div>
-          <pre className="whitespace-pre-wrap text-xs">{delivery.response}</pre>
+          <pre className="text-xs whitespace-pre-wrap">{delivery.response}</pre>
         </>
       )}
     </div>

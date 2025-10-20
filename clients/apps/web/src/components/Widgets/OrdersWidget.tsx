@@ -37,7 +37,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
         'dark:bg-polar-700 flex flex-col gap-y-1 rounded-2xl border-none bg-white transition-opacity hover:opacity-60',
       )}
     >
-      <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between bg-transparent p-4 pb-0 pt-2 text-sm text-gray-400">
+      <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between bg-transparent p-4 pt-2 pb-0 text-sm text-gray-400">
         <span>{displayDate}</span>
         <Status
           className={twMerge(
@@ -49,7 +49,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
           status={order.status.split('_').join(' ')}
         />
       </CardHeader>
-      <CardContent className="flex flex-row justify-between gap-x-4 p-4 pb-3 pt-0">
+      <CardContent className="flex flex-row justify-between gap-x-4 p-4 pt-0 pb-3">
         <h3 className="min-w-0 truncate">{order.product.name}</h3>
         <span className="">
           {formatCurrencyAndAmount(order.net_amount, order.currency, 0)}
@@ -71,7 +71,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 rounded-4xl relative h-full min-h-80 bg-gray-50 md:min-h-fit',
+        'dark:bg-polar-800 relative h-full min-h-80 rounded-4xl bg-gray-50 md:min-h-fit',
         className,
       )}
     >
@@ -89,7 +89,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
               </Button>
             </Link>
           </div>
-          <div className="rounded-b-4xl flex h-full flex-col gap-y-2 overflow-y-auto rounded-t-2xl pb-4">
+          <div className="flex h-full flex-col gap-y-2 overflow-y-auto rounded-t-2xl rounded-b-4xl pb-4">
             {orders.data?.items?.map((order) => (
               <Link
                 key={order.id}

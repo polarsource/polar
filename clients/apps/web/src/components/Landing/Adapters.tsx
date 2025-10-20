@@ -99,7 +99,7 @@ export const Adapters = () => {
             <span className="dark:text-polar-500 text-lg text-gray-400">
               Framework Adapters
             </span>
-            <h1 className="w-fit max-w-2xl text-pretty text-center text-3xl md:text-5xl md:leading-normal">
+            <h1 className="w-fit max-w-2xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
               Integrate in under a minute
             </h1>
             <TabsList>
@@ -126,7 +126,7 @@ export const Adapters = () => {
           {adapters.map((adapter) => (
             <TabsContent value={adapter.name} key={adapter.name}>
               <motion.div
-                className={`dark:bg-polar-900 md:rounded-4xl flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row`}
+                className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row md:rounded-4xl`}
                 variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"
@@ -135,13 +135,13 @@ export const Adapters = () => {
                 <div className="flex flex-col justify-center gap-y-8 p-8 md:w-1/2 md:p-16">
                   <div className="flex flex-col gap-y-8">
                     <motion.h2
-                      className="leading-normal! text-2xl md:text-4xl"
+                      className="text-2xl leading-normal! md:text-4xl"
                       variants={itemVariants}
                     >
                       {adapter.name} Adapter
                     </motion.h2>
                     <motion.p
-                      className="text-pretty text-lg leading-relaxed"
+                      className="text-lg leading-relaxed text-pretty"
                       variants={itemVariants}
                     >
                       Payments and Checkouts made dead simple with{' '}
@@ -153,7 +153,7 @@ export const Adapters = () => {
                         variants={itemVariants}
                       >
                         <Check className="text-emerald-500" fontSize="small" />
-                        <p className="text-pretty leading-relaxed">
+                        <p className="leading-relaxed text-pretty">
                           Secure & Simple Checkouts
                         </p>
                       </motion.li>
@@ -162,7 +162,7 @@ export const Adapters = () => {
                         variants={itemVariants}
                       >
                         <Check className="text-emerald-500" fontSize="small" />
-                        <p className="text-pretty leading-relaxed">
+                        <p className="leading-relaxed text-pretty">
                           Integrated Customer Portal
                         </p>
                       </motion.li>
@@ -171,7 +171,7 @@ export const Adapters = () => {
                         variants={itemVariants}
                       >
                         <Check className="text-emerald-500" fontSize="small" />
-                        <p className="text-pretty leading-relaxed">
+                        <p className="leading-relaxed text-pretty">
                           Granular & Reliable Webhook Handler
                         </p>
                       </motion.li>
@@ -181,7 +181,7 @@ export const Adapters = () => {
                         variants={itemVariants}
                       >
                         <Check className="text-emerald-500" fontSize="small" />
-                        <p className="text-pretty leading-relaxed">
+                        <p className="leading-relaxed text-pretty">
                           Global Merchant of Record
                         </p>
                       </motion.li>

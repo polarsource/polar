@@ -215,7 +215,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               />
             </div>
             <Input
-              className="shadow-none! w-full rounded-none border-none bg-transparent p-0 ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
+              className="w-full rounded-none border-none bg-transparent p-0 shadow-none! ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
               placeholder="Search Events"
               value={query ?? undefined}
               onChange={(e) => setQuery(e.target.value)}
@@ -275,7 +275,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           </div>
 
           {events?.items.length === 0 ? (
-            <div className="rounded-4xl dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 border border-gray-200 p-24">
+            <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
               <h1 className="text-2xl font-normal">No Events Found</h1>
               <p className="dark:text-polar-500 text-gray-500">
                 There are no events matching your current filters

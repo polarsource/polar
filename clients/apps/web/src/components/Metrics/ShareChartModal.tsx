@@ -103,14 +103,14 @@ export const ShareChartModal = ({
         variant="ghost"
         size="icon"
         onClick={hide}
-        className="absolute right-6 top-6"
+        className="absolute top-6 right-6"
       >
         <Close />
       </Button>
       <div className="flex flex-col items-start gap-8">
         <div
           ref={chartRef}
-          className="rounded-4xl dark:bg-polar-950 flex w-full max-w-4xl flex-col items-center justify-center gap-12 bg-blue-50 p-12"
+          className="dark:bg-polar-950 flex w-full max-w-4xl flex-col items-center justify-center gap-12 rounded-4xl bg-blue-50 p-12"
           style={{
             backgroundImage:
               theme === 'mono'

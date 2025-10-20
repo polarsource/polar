@@ -19,7 +19,7 @@
     }
   },
   "devDependencies": {
-    "openapi-typescript": "^7.9.1",
+    "openapi-typescript": "^7.10.1",
     "@polar-sh/typescript-config": "workspace:*",
     "tsup": "^8.5.0",
     "typescript": "latest"
@@ -28,7 +28,7 @@
     "access": "public"
   },
   "dependencies": {
-    "openapi-fetch": "^0.14.1",
+    "openapi-fetch": "^0.15.0",
     "openapi-typescript-helpers": "^0.0.15"
   }
 }

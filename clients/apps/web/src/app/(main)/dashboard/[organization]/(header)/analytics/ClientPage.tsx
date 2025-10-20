@@ -179,14 +179,14 @@ export default function ClientPage({
               <h3 className="text-2xl">Cancellations</h3>
               <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
                 <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-3">
-                  <div className="dark:border-polar-700 col-span-2 border-b border-l-0 border-r border-t-0 border-gray-200 p-4">
+                  <div className="dark:border-polar-700 col-span-2 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
                     <CancellationsStackedChart
                       data={data}
                       interval={interval}
                       height={400}
                     />
                   </div>
-                  <div className="dark:border-polar-700 border-b border-l-0 border-r border-t-0 border-gray-200 p-4">
+                  <div className="dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
                     <CancellationsDistributionChart
                       data={data}
                       interval={interval}
@@ -249,7 +249,7 @@ const MetricGroup = ({
               className={twMerge(
                 'rounded-none! bg-transparent dark:bg-transparent',
                 index === 0 && 'lg:col-span-2',
-                'dark:border-polar-700 border-b border-l-0 border-r border-t-0 border-gray-200 shadow-none',
+                'dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200 shadow-none',
               )}
             />
           ))}

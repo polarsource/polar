@@ -26,7 +26,7 @@ export const CheckoutLinkQRCodeModal = ({
         variant="ghost"
         size="icon"
         onClick={hide}
-        className="absolute right-6 top-6"
+        className="absolute top-6 right-6"
       >
         <Close />
       </Button>

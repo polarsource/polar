@@ -20,7 +20,7 @@ export default function Error({ error }: { error: Error }) {
 
           <p className="pt-24 text-gray-400"></p>
 
-          <pre className="whitespace-break-spaces text-sm text-gray-400">
+          <pre className="text-sm whitespace-break-spaces text-gray-400">
             Error digest: {'digest' in error ? <>{error.digest}</> : 'oh oh'}
           </pre>
         </div>

@@ -12,7 +12,7 @@ const Card = ({
   <div
     ref={ref}
     className={cn(
-      'bg-card text-card-foreground shadow-xs rounded-lg border',
+      'bg-card text-card-foreground rounded-lg border shadow-xs',
       className,
     )}
     {...props}
@@ -45,7 +45,7 @@ const CardTitle = ({
   <div
     ref={ref}
     className={cn(
-      'text-2xl font-semibold leading-none tracking-tight',
+      'text-2xl leading-none font-semibold tracking-tight',
       className,
     )}
     {...props}

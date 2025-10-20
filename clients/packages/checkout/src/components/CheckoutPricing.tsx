@@ -36,11 +36,11 @@ const CheckoutProductAmountLabel = ({
           <ProductPriceLabel product={product} price={productPrice} />
         </div>
 
-        <div className="rounded-xs bg-linear-to-br relative from-gray-400 to-gray-500 px-3 py-0.5 text-center text-sm text-white shadow-md dark:from-gray-600 dark:to-gray-700">
+        <div className="relative rounded-xs bg-linear-to-br from-gray-400 to-gray-500 px-3 py-0.5 text-center text-sm text-white shadow-md dark:from-gray-600 dark:to-gray-700">
           <span>{getDiscountDisplay(discount)}</span>
 
-          <div className="dark:bg-polar-800 absolute left-0 top-1/2 -ml-1 flex h-2 w-2 -translate-y-1/2 transform rounded-full bg-gray-50"></div>
-          <div className="dark:bg-polar-800 absolute right-0 top-1/2 -mr-1 flex h-2 w-2 -translate-y-1/2 transform rounded-full bg-gray-50"></div>
+          <div className="dark:bg-polar-800 absolute top-1/2 left-0 -ml-1 flex h-2 w-2 -translate-y-1/2 transform rounded-full bg-gray-50"></div>
+          <div className="dark:bg-polar-800 absolute top-1/2 right-0 -mr-1 flex h-2 w-2 -translate-y-1/2 transform rounded-full bg-gray-50"></div>
         </div>
       </div>
     </div>

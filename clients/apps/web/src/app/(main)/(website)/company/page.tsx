@@ -37,7 +37,7 @@ export default function PitchPage() {
       <div className="relative flex flex-grow flex-col gap-y-16 overflow-y-auto pt-12">
         <AnimatePresence key={index}>
           <motion.div
-            className="bg-polar-900 pointer-events-none absolute bottom-0 left-0 right-0 z-20 h-3/4"
+            className="bg-polar-900 pointer-events-none absolute right-0 bottom-0 left-0 z-20 h-3/4"
             initial={{ opacity: 1 }}
             animate={{ opacity: 0 }}
             transition={{ duration: 0.07, delay: 0.06 }}

@@ -280,7 +280,7 @@ export const OrganizationStep = ({
                             <div className="flex flex-col gap-y-2 text-sm">
                               <label
                                 htmlFor="terms"
-                                className="cursor-pointer font-medium leading-relaxed"
+                                className="cursor-pointer leading-relaxed font-medium"
                               >
                                 I understand the restrictions above and agree to
                                 Polar&apos;s terms

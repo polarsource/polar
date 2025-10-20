@@ -344,7 +344,7 @@ export const CheckoutLinkForm = ({
             render={({ field }) => {
               return (
                 <FormItem>
-                  <div className="flex flex-row items-center justify-between space-x-2 space-y-0">
+                  <div className="flex flex-row items-center justify-between space-y-0 space-x-2">
                     <FormLabel>Allow discount codes</FormLabel>
                     <FormControl>
                       <Switch
@@ -369,7 +369,7 @@ export const CheckoutLinkForm = ({
             render={({ field }) => {
               return (
                 <FormItem>
-                  <div className="flex flex-row items-center justify-between space-x-2 space-y-0">
+                  <div className="flex flex-row items-center justify-between space-y-0 space-x-2">
                     <FormLabel>Require billing address</FormLabel>
                     <FormControl>
                       <Switch

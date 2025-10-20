@@ -129,11 +129,11 @@ export const Benefits = () => {
 
   return (
     <div
-      className={`dark:bg-polar-900 md:rounded-4xl flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row-reverse md:items-stretch`}
+      className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row-reverse md:items-stretch md:rounded-4xl`}
     >
       <div className="flex flex-1 grow flex-col gap-y-10 p-8 md:p-16">
         <div className="flex flex-col gap-y-4">
-          <h2 className="leading-normal! text-2xl md:text-3xl">
+          <h2 className="text-2xl leading-normal! md:text-3xl">
             Automated Product Benefits
           </h2>
           <p className="dark:text-polar-500 text-lg text-gray-500">

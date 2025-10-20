@@ -98,7 +98,7 @@ export const MeterContextView = ({ meter }: MeterContextViewProps) => {
                 </span>
                 <div className="relative h-8 w-8">
                   <svg
-                    className="absolute left-0 top-0 h-full w-full -rotate-90"
+                    className="absolute top-0 left-0 h-full w-full -rotate-90"
                     viewBox="0 0 36 36"
                   >
                     {(value / alert.threshold) * 100 >= 100 && (

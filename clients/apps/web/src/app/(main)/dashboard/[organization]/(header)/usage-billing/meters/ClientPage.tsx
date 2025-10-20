@@ -146,7 +146,7 @@ const ClientPage = ({
             <h2 className="text-2xl">{selectedMeter.name}</h2>
             <div className="flex flex-row items-center gap-x-2">
               <Status
-                className="bg-emerald-50 capitalize text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500"
+                className="bg-emerald-50 text-emerald-500 capitalize dark:bg-emerald-950 dark:text-emerald-500"
                 status={`${selectedMeter.aggregation.func} Aggregation`}
               />
               {'property' in selectedMeter.aggregation && (
@@ -270,7 +270,7 @@ const ClientPage = ({
               />
             </div>
             <Input
-              className="shadow-none! w-full rounded-none border-none bg-transparent p-0 ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
+              className="w-full rounded-none border-none bg-transparent p-0 shadow-none! ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
               placeholder="Search Meters"
               value={query ?? undefined}
               onChange={(e) => setQuery(e.target.value)}
@@ -291,7 +291,7 @@ const ClientPage = ({
                   <div className="flex items-center gap-x-2">
                     <div className="w-full truncate text-sm">{meter.name}</div>
                   </div>
-                  <div className="w-full truncate text-xs capitalize text-gray-500 dark:text-gray-500">
+                  <div className="w-full truncate text-xs text-gray-500 capitalize dark:text-gray-500">
                     {meter.aggregation.func}
                   </div>
                 </div>

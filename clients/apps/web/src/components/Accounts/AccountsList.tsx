@@ -32,25 +32,25 @@ const AccountsList = ({ accounts }: AccountsListProps) => {
         <tr className="text-sm">
           <th
             scope="col"
-            className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
+            className="relative isolate px-4 py-3.5 pr-2 text-left font-normal whitespace-nowrap"
           >
             Type
           </th>
           <th
             scope="col"
-            className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
+            className="relative isolate px-4 py-3.5 pr-2 text-left font-normal whitespace-nowrap"
           >
             Status
           </th>
           <th
             scope="col"
-            className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
+            className="relative isolate px-4 py-3.5 pr-2 text-left font-normal whitespace-nowrap"
           >
             Used by
           </th>
           <th
             scope="col"
-            className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 font-normal"
+            className="relative isolate px-4 py-3.5 pr-2 font-normal whitespace-nowrap"
           >
             Actions
           </th>

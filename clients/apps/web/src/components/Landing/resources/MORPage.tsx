@@ -17,9 +17,9 @@ const Benefit = ({
       )}
     >
       {positive ? (
-        <CheckOutlined className="mr-2 mt-1" fontSize="inherit" />
+        <CheckOutlined className="mt-1 mr-2" fontSize="inherit" />
       ) : (
-        <CloseOutlined className="mr-2 mt-1" fontSize="inherit" />
+        <CloseOutlined className="mt-1 mr-2" fontSize="inherit" />
       )}
       <span>{children}</span>
     </li>

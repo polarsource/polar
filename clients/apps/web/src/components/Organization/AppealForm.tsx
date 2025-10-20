@@ -128,7 +128,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
                 Your Appeal:
               </h4>
               <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
-                <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
+                <p className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300">
                   {appealReason}
                 </p>
               </div>

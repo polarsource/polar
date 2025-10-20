@@ -31,7 +31,7 @@ const UpsellCard = ({
         <h3 className="text-xl">{title}</h3>
       </div>
       <div className="flex flex-1 flex-col justify-start gap-2">
-        <p className="dark:text-polar-500 text-balance text-lg text-gray-500">
+        <p className="dark:text-polar-500 text-lg text-balance text-gray-500">
           {description}
         </p>
       </div>

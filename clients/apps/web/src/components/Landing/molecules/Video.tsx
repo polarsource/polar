@@ -54,7 +54,7 @@ export const Video = ({ src }: VideoProps) => {
         playsInline
         muted={isMuted}
       />
-      <div className="absolute right-8 top-8 hidden cursor-pointer md:block">
+      <div className="absolute top-8 right-8 hidden cursor-pointer md:block">
         {isMuted ? (
           <VolumeMute onClick={() => setIsMuted(false)} fontSize="large" />
         ) : (

@@ -17,7 +17,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     ...components,
     BodyWrapper(props) {
       return (
-        <ProseWrapper className="md:max-w-7xl! flex w-full flex-col items-center">
+        <ProseWrapper className="flex w-full flex-col items-center md:max-w-7xl!">
           {props.children}
         </ProseWrapper>
       )
@@ -26,7 +26,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
       return (
         <div
           className={twMerge(
-            'prose-headings:font-normal prose-h1:leading-tight prose-headings:text-balance pt-6 text-center md:max-w-3xl md:pb-6 md:pt-0',
+            'prose-headings:font-normal prose-h1:leading-tight prose-headings:text-balance pt-6 text-center md:max-w-3xl md:pt-0 md:pb-6',
             props.className,
           )}
         >

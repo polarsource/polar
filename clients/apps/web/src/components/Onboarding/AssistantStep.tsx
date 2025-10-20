@@ -204,7 +204,7 @@ export const AssistantStep = ({
                         return (
                           <p
                             key={`${message.id}-${index}`}
-                            className="dark:text-polar-500 animate-pulse text-sm italic text-gray-500"
+                            className="dark:text-polar-500 animate-pulse text-sm text-gray-500 italic"
                           >
                             Thinking…
                           </p>
@@ -315,7 +315,7 @@ export const AssistantStep = ({
                   : 'Reply…'
               }
               rows={1}
-              className="max-h-[240px] min-h-[72px] resize-none overflow-y-auto border-none px-6 pb-0 pt-5 text-sm/5 shadow-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-50 dark:bg-transparent"
+              className="max-h-[240px] min-h-[72px] resize-none overflow-y-auto border-none px-6 pt-5 pb-0 text-sm/5 shadow-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none disabled:opacity-50 dark:bg-transparent"
             />
             <div className="flex items-center justify-end gap-2 px-4 pb-4">
               <Button

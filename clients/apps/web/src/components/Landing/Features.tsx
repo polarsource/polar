@@ -39,12 +39,12 @@ const FeatureCard = ({
         href={linkHref}
         target={linkHref.startsWith('http') ? '_blank' : undefined}
         className={twMerge(
-          'dark:border-polar-700 dark:bg-polar-900 p-6! flex h-full flex-col justify-between gap-x-6 gap-y-6 rounded-2xl border border-transparent bg-white transition-transform hover:translate-y-[-4px] md:p-10 xl:gap-y-0',
+          'dark:border-polar-700 dark:bg-polar-900 flex h-full flex-col justify-between gap-x-6 gap-y-6 rounded-2xl border border-transparent bg-white p-6! transition-transform hover:translate-y-[-4px] md:p-10 xl:gap-y-0',
         )}
       >
         <div className="flex h-full flex-col gap-y-6">
           <div className="flex h-full flex-col gap-y-2 md:gap-y-6">
-            <h3 className="md:leading-tight! text-pretty text-xl text-black md:text-3xl dark:text-white">
+            <h3 className="text-xl text-pretty text-black md:text-3xl md:leading-tight! dark:text-white">
               {title}
             </h3>
             {typeof description === 'string' ? (
@@ -153,13 +153,13 @@ const Features = ({ className }: FeaturesProps) => {
       linkHref: '/features/customers',
       children: (
         <div className="relative h-[120px] md:h-[200px]">
-          <div className="absolute bottom-8 left-0 right-0 scale-90 transition-transform hover:-translate-y-1">
+          <div className="absolute right-0 bottom-8 left-0 scale-90 transition-transform hover:-translate-y-1">
             <CustomerCard />
           </div>
-          <div className="absolute bottom-4 left-0 right-0 scale-95 transition-transform hover:-translate-y-1">
+          <div className="absolute right-0 bottom-4 left-0 scale-95 transition-transform hover:-translate-y-1">
             <CustomerCard />
           </div>
-          <div className="absolute bottom-0 left-0 right-0 transition-transform hover:-translate-y-1">
+          <div className="absolute right-0 bottom-0 left-0 transition-transform hover:-translate-y-1">
             <CustomerCard />
           </div>
         </div>

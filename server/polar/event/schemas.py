@@ -82,7 +82,6 @@ class LLMMetadata(TypedDict):
     cached_input_tokens: Annotated[
         NotRequired[int],
         Field(
-            default=None,
             description="The number of LLM cached tokens that were used for the event.",
         ),
     ]

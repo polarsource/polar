@@ -128,14 +128,14 @@ const CheckoutSeatSelector = ({
               autoFocus
               min={1}
               max={1000}
-              className="h-auto min-w-[3.5rem] max-w-[4.5rem] py-1.5 text-center text-2xl font-light tabular-nums"
+              className="h-auto max-w-[4.5rem] min-w-[3.5rem] py-1.5 text-center text-2xl font-light tabular-nums"
             />
           ) : (
             <button
               type="button"
               onClick={handleSeatClick}
               disabled={isUpdating}
-              className="dark:hover:bg-polar-800 group relative min-w-[3.5rem] rounded-xl px-3 py-1.5 text-center text-2xl font-light tabular-nums text-gray-900 transition-all hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
+              className="dark:hover:bg-polar-800 group relative min-w-[3.5rem] rounded-xl px-3 py-1.5 text-center text-2xl font-light text-gray-900 tabular-nums transition-all hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
               aria-label="Click to edit seat count"
               title="Click to edit"
             >

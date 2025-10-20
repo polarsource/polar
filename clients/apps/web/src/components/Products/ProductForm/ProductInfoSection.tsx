@@ -65,7 +65,7 @@ export const ProductInfoSection = ({
               </div>
               <FormControl>
                 <TextArea
-                  className="text-xs! min-h-44 resize-none rounded-2xl font-mono"
+                  className="min-h-44 resize-none rounded-2xl font-mono text-xs!"
                   {...field}
                   value={field.value || ''}
                 />

@@ -52,7 +52,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
       <FocusLock>
         <div
           ref={ref}
-          className="fixed bottom-0 left-0 right-0 top-0 z-50 overflow-hidden focus-within:outline-none dark:text-white"
+          className="fixed top-0 right-0 bottom-0 left-0 z-50 overflow-hidden focus-within:outline-none dark:text-white"
           aria-modal
           tabIndex={-1}
           role="dialog"
@@ -66,10 +66,10 @@ export const Modal: FunctionComponent<ModalProps> = ({
               hide()
             }}
           >
-            <div className="lg:grow-2 block h-[80px] w-2 lg:max-h-[10%]"></div>
+            <div className="block h-[80px] w-2 lg:max-h-[10%] lg:grow-2"></div>
             <motion.div
               className={twMerge(
-                'dark:bg-polar-900 dark:border-polar-800 rounded-4xl relative z-10 flex max-h-full w-full flex-col overflow-y-auto overflow-x-hidden bg-white shadow-sm lg:w-[800px] lg:max-w-full dark:border',
+                'dark:bg-polar-900 dark:border-polar-800 relative z-10 flex max-h-full w-full flex-col overflow-x-hidden overflow-y-auto rounded-4xl bg-white shadow-sm lg:w-[800px] lg:max-w-full dark:border',
                 className,
               )}
               initial={{ opacity: 0, scale: 0.99 }}

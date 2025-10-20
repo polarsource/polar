@@ -26,11 +26,11 @@ export const ResourceLayout = ({
       <main>
         <div className="mx-auto flex w-full max-w-6xl flex-col px-2 md:px-0">
           {/* Content Card */}
-          <div className="dark:md:bg-polar-900 shadow-xs flex flex-col gap-y-8 rounded-lg border-gray-200 md:gap-y-12 md:border md:bg-white md:p-24 md:px-16 dark:border-gray-800">
+          <div className="dark:md:bg-polar-900 flex flex-col gap-y-8 rounded-lg border-gray-200 shadow-xs md:gap-y-12 md:border md:bg-white md:p-24 md:px-16 dark:border-gray-800">
             {/* Top Section */}
             <div className="flex flex-col">
               <div className={twMerge('flex flex-col gap-y-8')}>
-                <h1 className="leading-tight! text-balance text-5xl md:text-6xl lg:w-2/3">
+                <h1 className="text-5xl leading-tight! text-balance md:text-6xl lg:w-2/3">
                   {title}
                 </h1>
               </div>

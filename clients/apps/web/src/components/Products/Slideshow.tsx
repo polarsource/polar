@@ -84,14 +84,14 @@ export const Slideshow = ({ images }: SlideshowProps) => {
       {hasMultipleImages && (
         <div className="absolute bottom-6 left-6 z-10 flex flex-row items-center justify-between gap-x-2">
           <Button
-            className="shadow-xs h-8 w-8 rounded-full bg-gray-50"
+            className="h-8 w-8 rounded-full bg-gray-50 shadow-xs"
             variant="secondary"
             onClick={() => paginate(-1)}
           >
             <ChevronLeftRounded fontSize="inherit" />
           </Button>
           <Button
-            className="shadow-xs h-8 w-8 rounded-full bg-gray-50"
+            className="h-8 w-8 rounded-full bg-gray-50 shadow-xs"
             variant="secondary"
             onClick={() => paginate(1)}
           >

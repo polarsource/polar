@@ -97,7 +97,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
         <Link
           href="https://testflight.apple.com/join/CwVdc1Jt"
           target="_blank"
-          className="dark:bg-polar-800 dark:hover:bg-polar-700 rounded-xs self-start bg-gray-100 p-1 text-xs transition-colors hover:bg-gray-200"
+          className="dark:bg-polar-800 dark:hover:bg-polar-700 self-start rounded-xs bg-gray-100 p-1 text-xs transition-colors hover:bg-gray-200"
         >
           <span>Join Beta</span>
           <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />

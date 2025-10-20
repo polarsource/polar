@@ -25,7 +25,7 @@ export const SettingsGroupItem: React.FC<
         : 'flex-col md:flex-row md:items-start md:justify-between',
     )}
   >
-    <div className="md:max-w-1/2 flex w-full flex-col">
+    <div className="flex w-full flex-col md:max-w-1/2">
       <h3 className="text-sm font-medium">{title}</h3>
       {description && (
         <p className="dark:text-polar-500 text-xs text-gray-500">

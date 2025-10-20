@@ -108,7 +108,7 @@ const CustomerCancellationModal = ({
         <div className="flex flex-col gap-y-6 p-6 sm:p-12">
           <div className="flex flex-col gap-y-2">
             <h3 className="text-2xl">We&apos;re sorry to see you go!</h3>
-            <p className="dark:text-polar-500 text-balance leading-relaxed text-gray-500">
+            <p className="dark:text-polar-500 leading-relaxed text-balance text-gray-500">
               You&apos;re always welcome back! Let us know why you&apos;re
               leaving to help us improve our product.
             </p>

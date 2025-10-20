@@ -320,7 +320,7 @@ const LandingPageTopbar = () => {
   return (
     <div className="z-30 flex w-full flex-row items-center justify-between px-6 py-6 md:hidden md:px-12">
       <PolarLogotype
-        className="ml-2 mt-1 md:hidden"
+        className="mt-1 ml-2 md:hidden"
         logoVariant="logotype"
         size={100}
       />

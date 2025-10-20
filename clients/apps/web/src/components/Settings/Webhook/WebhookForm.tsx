@@ -115,7 +115,7 @@ export const FieldEvents = () => {
   const form = useFormContext<CreateOrUpdate>()
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-md font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+      <h2 className="text-md leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
         Events
       </h2>
       <div className="flex flex-col gap-y-2">
@@ -128,7 +128,7 @@ export const FieldEvents = () => {
               const href = `https://polar.sh/docs/api-reference/webhooks/${event}`
 
               return (
-                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                <FormItem className="flex flex-row items-center space-y-0 space-x-3">
                   <FormControl>
                     <Checkbox
                       defaultChecked={

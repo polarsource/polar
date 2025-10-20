@@ -28,13 +28,13 @@ const FeatureItem = ({
       )}
       href={link ?? '#'}
     >
-      <div className="flex flex-row items-center gap-x-3 space-y-0 pb-4">
+      <div className="flex flex-row items-center space-y-0 gap-x-3 pb-4">
         {icon && (
-          <span className="dark:bg-polar-700 shadow-xs dark flex h-10 w-10 flex-col items-center justify-center rounded-full bg-gray-50 text-xl transition-colors">
+          <span className="dark:bg-polar-700 dark flex h-10 w-10 flex-col items-center justify-center rounded-full bg-gray-50 text-xl shadow-xs transition-colors">
             {React.cloneElement(icon, { fontSize: 'inherit' })}
           </span>
         )}
-        <h3 className="text-lg font-medium leading-snug">{title}</h3>
+        <h3 className="text-lg leading-snug font-medium">{title}</h3>
       </div>
       <div className="flex flex-col gap-y-4 pb-6">
         <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500 transition-colors group-hover:text-black dark:group-hover:text-white">

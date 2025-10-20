@@ -42,13 +42,13 @@ export const Checkout = () => {
   return (
     <div
       ref={ref}
-      className="dark:bg-polar-900 rounded-4xl hidden w-full flex-col overflow-hidden bg-white md:flex"
+      className="dark:bg-polar-900 hidden w-full flex-col overflow-hidden rounded-4xl bg-white md:flex"
     >
       <div className="flex flex-col items-center gap-y-8 px-8 pt-8 md:px-16 md:pt-16">
         <span className="dark:text-polar-500 text-lg text-gray-400">
           Built for simplicity
         </span>
-        <h1 className="w-fit max-w-2xl text-pretty text-center text-2xl md:text-4xl md:leading-normal">
+        <h1 className="w-fit max-w-2xl text-center text-2xl text-pretty md:text-4xl md:leading-normal">
           Powerful Checkouts made simple
         </h1>
         <Link href="https://polar.sh/docs/documentation/features/checkouts/checkout-links">
@@ -64,7 +64,7 @@ export const Checkout = () => {
         </Link>
       </div>
       <div className="relative h-[490px] overflow-hidden">
-        <div className="shadow-3xl rounded-4xl pointer-events-none absolute left-8 right-8 top-16 flex flex-col items-center md:left-16 md:right-16">
+        <div className="shadow-3xl pointer-events-none absolute top-16 right-8 left-8 flex flex-col items-center rounded-4xl md:right-16 md:left-16">
           <Suspense
             fallback={
               <div className="dark:bg-polar-700 h-full w-full animate-pulse rounded-lg bg-gray-300" />

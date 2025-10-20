@@ -92,7 +92,7 @@ const MobileNav = ({
   }, [pathname])
 
   const header = (
-    <div className="dark:bg-polar-900 sticky left-0 right-0 top-0 flex w-full flex-row items-center justify-between bg-gray-50 p-4">
+    <div className="dark:bg-polar-900 sticky top-0 right-0 left-0 flex w-full flex-row items-center justify-between bg-gray-50 p-4">
       <a
         href="/"
         className="shrink-0 items-center font-semibold text-black dark:text-white"
@@ -191,7 +191,7 @@ export const DashboardBody = ({
       animate="animate"
       exit="exit"
     >
-      <div className="dark:md:bg-polar-900 dark:border-polar-800 md:shadow-xs relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8">
+      <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-xs">
         <div
           className={twMerge(
             'flex h-full w-full flex-col',
@@ -200,7 +200,7 @@ export const DashboardBody = ({
           )}
         >
           <div className="flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:py-8">
-            <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
+            <h4 className="text-2xl font-medium whitespace-nowrap dark:text-white">
               {title ?? current?.title}
             </h4>
 
@@ -231,7 +231,7 @@ export const DashboardBody = ({
             exit: { opacity: 0, transition: { duration: 0.3 } },
           }}
           className={twMerge(
-            'dark:bg-polar-900 dark:border-polar-800 md:shadow-xs w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white md:max-w-[320px] xl:max-w-[440px]',
+            'dark:bg-polar-900 dark:border-polar-800 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white md:max-w-[320px] md:shadow-xs xl:max-w-[440px]',
             contextViewClassName,
           )}
         >

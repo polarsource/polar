@@ -84,7 +84,7 @@ export const MeterPage = ({
           <TabsTrigger value="customers">Customers</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="flex flex-col gap-y-12 pb-12">
-          <Well className="rounded-4xl flex flex-col p-2">
+          <Well className="flex flex-col rounded-4xl p-2">
             <WellHeader className="flex flex-col gap-4 px-4 pt-4 md:flex-row md:items-center md:justify-between">
               <h2 className="text-xl">Meter Quantities</h2>
               <div className="w-full lg:w-auto">

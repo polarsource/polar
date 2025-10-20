@@ -9,7 +9,7 @@ export const Pricing = () => {
         <span className="dark:text-polar-500 text-lg text-gray-400">
           Early Member Pricing
         </span>
-        <h1 className="w-fit max-w-xl text-pretty pb-12 pt-8 text-center text-2xl md:text-4xl">
+        <h1 className="w-fit max-w-xl pt-8 pb-12 text-center text-2xl text-pretty md:text-4xl">
           4% + 40¢ per transaction
         </h1>
         <Link href="/resources/pricing" target="_blank">

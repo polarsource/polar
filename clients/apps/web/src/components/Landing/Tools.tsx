@@ -7,12 +7,12 @@ import Link from 'next/link'
 
 export const Tools = () => {
   return (
-    <div className="dark:bg-polar-900 rounded-4xl flex w-full flex-col gap-y-16 bg-white p-8 md:p-16">
+    <div className="dark:bg-polar-900 flex w-full flex-col gap-y-16 rounded-4xl bg-white p-8 md:p-16">
       <div className="flex flex-col items-center gap-y-8">
         <span className="dark:text-polar-500 text-lg text-gray-400">
           Command Line Tools
         </span>
-        <h1 className="w-fit max-w-2xl text-pretty text-center text-2xl md:text-4xl md:leading-normal">
+        <h1 className="w-fit max-w-2xl text-center text-2xl text-pretty md:text-4xl md:leading-normal">
           The fastest way to add SaaS & digital products to your stack
         </h1>
         <Link href="https://polar.sh/docs/documentation/tools/polar-init">

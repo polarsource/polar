@@ -55,7 +55,7 @@ export const FinancePage = () => {
           <div className="flex flex-1 grow flex-col gap-y-10 p-8 md:p-16">
             <div className="flex flex-col gap-y-4">
               <div className="flex items-center gap-x-3">
-                <h2 className="leading-normal! text-2xl md:text-3xl">
+                <h2 className="text-2xl leading-normal! md:text-3xl">
                   Transparent financial reporting
                 </h2>
               </div>

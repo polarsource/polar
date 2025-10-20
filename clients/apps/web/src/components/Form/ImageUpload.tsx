@@ -124,7 +124,7 @@ const ImageUpload = ({
                 width={width}
               />
               {isLoading ? (
-                <div className="absolute bottom-0 left-0 right-0 top-0 flex items-center justify-center">
+                <div className="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center">
                   <SpinnerNoMargin />
                 </div>
               ) : null}

@@ -98,11 +98,11 @@ const ProgressIndicator = ({
   return (
     <div className="relative">
       {/* Progress bar background */}
-      <div className="absolute left-6 right-6 top-6 h-0.5 bg-gray-200 dark:bg-gray-700" />
+      <div className="absolute top-6 right-6 left-6 h-0.5 bg-gray-200 dark:bg-gray-700" />
 
       {/* Progress bar fill */}
       <div
-        className="absolute left-6 top-6 h-0.5 bg-gray-500 transition-all duration-500 ease-out dark:bg-gray-400"
+        className="absolute top-6 left-6 h-0.5 bg-gray-500 transition-all duration-500 ease-out dark:bg-gray-400"
         style={{
           width: `calc(${calculateProgress()}% - 24px)`,
         }}

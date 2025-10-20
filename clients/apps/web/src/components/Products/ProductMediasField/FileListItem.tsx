@@ -80,13 +80,13 @@ export const FileListItem = ({
         <button
           type="button"
           onClick={onDelete}
-          className="absolute right-4 top-4 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white"
+          className="absolute top-4 right-4 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white"
         >
           <ClearOutlined fontSize="inherit" />
         </button>
       )}
       {isUploading && (
-        <div className="absolute left-0 top-0 h-full w-full bg-black opacity-50"></div>
+        <div className="absolute top-0 left-0 h-full w-full bg-black opacity-50"></div>
       )}
     </div>
   )

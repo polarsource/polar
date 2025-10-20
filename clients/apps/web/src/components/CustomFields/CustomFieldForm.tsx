@@ -307,7 +307,7 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
                 name="properties.textarea"
                 render={({ field }) => {
                   return (
-                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                    <FormItem className="flex flex-row items-center space-y-0 space-x-2">
                       <FormControl>
                         <Switch
                           checked={field.value}

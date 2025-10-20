@@ -32,7 +32,7 @@ export const Section = ({
       )}
     >
       <div className="flex max-w-lg flex-col gap-y-8">
-        <h1 className="text-balance text-4xl leading-tight">{title}</h1>
+        <h1 className="text-4xl leading-tight text-balance">{title}</h1>
         <div className="flex flex-col gap-y-8 text-justify">{children}</div>
       </div>
       <div className="flex flex-col gap-y-8">{context}</div>

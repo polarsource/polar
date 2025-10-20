@@ -42,7 +42,7 @@ export const SplitPromo: React.FC<SplitPromoProps> = ({
 }) => {
   return (
     <motion.div
-      className={`md:rounded-4xl flex w-full flex-col overflow-hidden rounded-2xl md:flex-row ${reverse ? 'md:flex-row-reverse' : ''} dark:bg-polar-900 bg-white md:items-stretch`}
+      className={`flex w-full flex-col overflow-hidden rounded-2xl md:flex-row md:rounded-4xl ${reverse ? 'md:flex-row-reverse' : ''} dark:bg-polar-900 bg-white md:items-stretch`}
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"
@@ -50,13 +50,13 @@ export const SplitPromo: React.FC<SplitPromoProps> = ({
     >
       <div className="flex flex-1 flex-col justify-center gap-y-8 p-8 md:aspect-square md:p-16">
         <motion.h2
-          className="leading-normal! text-2xl md:text-3xl"
+          className="text-2xl leading-normal! md:text-3xl"
           variants={itemVariants}
         >
           {title}
         </motion.h2>
         <motion.p
-          className="text-pretty text-lg leading-relaxed"
+          className="text-lg leading-relaxed text-pretty"
           variants={itemVariants}
         >
           {description}
@@ -70,7 +70,7 @@ export const SplitPromo: React.FC<SplitPromoProps> = ({
                 variants={itemVariants}
               >
                 <Check className="h-4 w-4 text-emerald-500" />
-                <p className="text-pretty leading-relaxed">{bullet}</p>
+                <p className="leading-relaxed text-pretty">{bullet}</p>
               </motion.li>
             ))}
           </ul>

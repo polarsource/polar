@@ -387,7 +387,7 @@ const BaseCheckoutForm = ({
                     name="isBusinessCustomer"
                     render={({ field }) => (
                       <FormItem>
-                        <div className="flex flex-row items-center space-x-3 space-y-0">
+                        <div className="flex flex-row items-center space-y-0 space-x-3">
                           <FormControl>
                             <Checkbox
                               checked={field.value ? field.value : false}

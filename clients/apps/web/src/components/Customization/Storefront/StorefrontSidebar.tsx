@@ -134,7 +134,7 @@ const StorefrontForm = ({
               />
               <div
                 className={twMerge(
-                  'absolute left-0 top-0 h-16 w-16 cursor-pointer items-center justify-center group-hover:flex',
+                  'absolute top-0 left-0 h-16 w-16 cursor-pointer items-center justify-center group-hover:flex',
                   isDragActive ? 'flex' : 'hidden',
                 )}
               >

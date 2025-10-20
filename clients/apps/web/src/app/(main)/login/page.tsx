@@ -17,7 +17,7 @@ export default async function Page(props: {
 
   return (
     <div className="flex h-screen w-full grow items-center justify-center">
-      <div className="rounded-4xl dark:bg-polar-900 flex w-full max-w-md flex-col justify-between gap-16 bg-gray-50 p-12">
+      <div className="dark:bg-polar-900 flex w-full max-w-md flex-col justify-between gap-16 rounded-4xl bg-gray-50 p-12">
         <div className="flex flex-col gap-y-8">
           <PolarLogotype logoVariant="icon" size={60} />
           <div className="flex flex-col gap-4">

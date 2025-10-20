@@ -58,7 +58,7 @@ export const MetersList = ({
       cell: ({ row: { original: meter } }) => {
         return (
           <Status
-            className="dark:bg-polar-700 dark:text-polar-300 w-fit bg-gray-200 capitalize text-gray-500"
+            className="dark:bg-polar-700 dark:text-polar-300 w-fit bg-gray-200 text-gray-500 capitalize"
             status={meter.aggregation.func}
           />
         )

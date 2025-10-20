@@ -285,7 +285,7 @@ export const FieldScopes = () => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-row items-center">
-        <h2 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+        <h2 className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
           Scopes
         </h2>
 
@@ -304,7 +304,7 @@ export const FieldScopes = () => {
             name="scope"
             render={({ field }) => {
               return (
-                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                <FormItem className="flex flex-row items-center space-y-0 space-x-3">
                   <FormControl>
                     <Checkbox
                       checked={field.value?.includes(scope)}

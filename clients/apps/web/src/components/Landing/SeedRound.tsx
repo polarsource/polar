@@ -6,12 +6,12 @@ import { PolarLogotype } from '../Layout/Public/PolarLogotype'
 export const SeedRound = () => {
   return (
     <Link href="/blog/polar-seed-announcement" target="_blank">
-      <div className="dark:bg-polar-900 md:rounded-4xl flex w-full flex-col gap-y-12 overflow-hidden rounded-2xl bg-white">
+      <div className="dark:bg-polar-900 flex w-full flex-col gap-y-12 overflow-hidden rounded-2xl bg-white md:rounded-4xl">
         <div className="flex flex-col items-center gap-y-8 px-8 pt-8 md:px-16 md:pt-16">
           <span className="dark:text-polar-500 text-lg text-gray-400">
             Seed Investment
           </span>
-          <h1 className="w-fit max-w-2xl text-pretty text-center text-2xl md:text-4xl md:leading-normal">
+          <h1 className="w-fit max-w-2xl text-center text-2xl text-pretty md:text-4xl md:leading-normal">
             Announcing our $10M Seed Round
           </h1>
           <Button

@@ -77,7 +77,7 @@ export const TrialConfigurationForm = ({
   return (
     <div className="flex w-full flex-col gap-y-6">
       <FormItem>
-        <div className="flex flex-row items-center justify-between space-x-2 space-y-0">
+        <div className="flex flex-row items-center justify-between space-y-0 space-x-2">
           <FormLabel htmlFor="trial-enable">Enable free trial period</FormLabel>
           <Switch
             id="trial-enable"

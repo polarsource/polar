@@ -328,7 +328,7 @@ export const Testimonials = () => {
         <span className="dark:text-polar-500 text-lg text-gray-400">
           Testimonials
         </span>
-        <h1 className="w-fit max-w-2xl text-pretty text-center text-3xl md:text-5xl md:leading-normal">
+        <h1 className="w-fit max-w-2xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
           Why people love Polar
         </h1>
       </div>
@@ -358,7 +358,7 @@ const VerifiedBadge = () => {
       >
         <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path>
       </svg>
-      <div className="absolute inset-0 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+      <div className="absolute inset-0 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="8"

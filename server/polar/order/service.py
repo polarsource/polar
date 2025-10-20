@@ -1455,8 +1455,11 @@ class OrderService:
         return order
 
     async def send_confirmation_email(
-        self, session: AsyncSession, organization: Organization, order: Order
+        self, session: AsyncSession, order: Order
     ) -> None:
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_customer(order.customer_id)
+
         template_name: Literal[
             "order_confirmation",
             "subscription_confirmation",
@@ -1660,7 +1663,7 @@ class OrderService:
             await webhook_service.send(session, organization, event_type, order)
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
-        await self.send_confirmation_email(session, order.organization, order)
+        await self.send_confirmation_email(session, order)
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         if order.paid:

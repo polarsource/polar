@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.product.guard import is_metered_price
 
 if TYPE_CHECKING:
     from .customer import Customer
@@ -77,3 +78,12 @@ class CustomerSeat(RecordModel):
 
     def is_revoked(self) -> bool:
         return self.status == SeatStatus.revoked
+
+    def has_metered_pricing(self) -> bool:
+        if not self.subscription:
+            return False
+
+        return any(
+            is_metered_price(spp.product_price)
+            for spp in self.subscription.subscription_product_prices
+        )

@@ -31,6 +31,7 @@ from polar.meter.aggregation import AggregationFunction
 from polar.models import (
     Benefit,
     BillingEntry,
+    Customer,
     Event,
     Meter,
     Product,
@@ -39,7 +40,10 @@ from polar.models import (
 )
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.subscription.repository import SubscriptionProductPriceRepository
+from polar.subscription.repository import (
+    CustomerSubscriptionProductPrice,
+    SubscriptionProductPriceRepository,
+)
 from polar.worker import enqueue_job
 
 from .repository import MeterRepository
@@ -365,6 +369,18 @@ class MeterService:
         async for meter in repository.stream(statement):
             enqueue_job("meter.billing_entries", meter.id)
 
+    async def _create_subscription_holder_billing_entry(
+        self,
+        session: AsyncSession,
+        event: Event,
+        customer: "Customer",
+        subscription_product_price: SubscriptionProductPrice,
+    ) -> BillingEntry:
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        return await billing_entry_repository.create(
+            BillingEntry.from_metered_event(customer, subscription_product_price, event)
+        )
+
     async def create_billing_entries(
         self, session: AsyncSession, meter: Meter
     ) -> Sequence[BillingEntry]:
@@ -393,9 +409,10 @@ class MeterService:
         subscription_product_price_repository = (
             SubscriptionProductPriceRepository.from_session(session)
         )
-        customer_price_map: dict[uuid.UUID, SubscriptionProductPrice | None] = {}
+        customer_price_map: dict[
+            uuid.UUID, CustomerSubscriptionProductPrice | None
+        ] = {}
 
-        billing_entry_repository = BillingEntryRepository.from_session(session)
         entries: list[BillingEntry] = []
         updated_subscriptions: set[uuid.UUID] = set()
         last_event: Event | None = None
@@ -404,34 +421,38 @@ class MeterService:
             customer = event.customer
             assert customer is not None
 
-            # Retrieve an active price for the customer and meter
+            # Retrieve the paying customer and subscription product price
             try:
-                subscription_product_price = customer_price_map[customer.id]
+                customer_price = customer_price_map[customer.id]
             except KeyError:
-                subscription_product_price = await subscription_product_price_repository.get_by_customer_and_meter(
+                customer_price = await subscription_product_price_repository.get_by_customer_and_meter(
                     customer.id, meter.id
                 )
-                customer_price_map[customer.id] = subscription_product_price
-            if subscription_product_price is None:
+                customer_price_map[customer.id] = customer_price
+
+            if customer_price is None:
                 continue
 
-            # Create a billing entry
-            entry = await billing_entry_repository.create(
-                BillingEntry.from_metered_event(
-                    customer, subscription_product_price, event
-                )
+            # Get the paying customer (billing manager) from the subscription
+            paying_customer = (
+                customer_price.subscription_product_price.subscription.customer
+            )
+
+            entry = await self._create_subscription_holder_billing_entry(
+                session,
+                event,
+                paying_customer,
+                customer_price.subscription_product_price,
             )
             entries.append(entry)
             if entry.subscription is not None:
                 updated_subscriptions.add(entry.subscription.id)
 
-        # Update the last billed event
         meter.last_billed_event = (
             last_event if last_event is not None else last_billed_event
         )
         session.add(meter)
 
-        # Update subscription meters
         for subscription_id in updated_subscriptions:
             enqueue_job("subscription.update_meters", subscription_id)
 

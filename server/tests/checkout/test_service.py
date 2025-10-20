@@ -61,7 +61,7 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.models.order import OrderBillingReason
+from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
@@ -4045,7 +4045,7 @@ class TestHandleSuccess:
             ANY,
             checkout,
             subscription_mock,
-            OrderBillingReason.subscription_create,
+            OrderBillingReasonInternal.subscription_create,
             payment,
         )
 

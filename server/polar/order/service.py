@@ -65,7 +65,11 @@ from polar.models import (
     User,
 )
 from polar.models.held_balance import HeldBalance
-from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.order import (
+    OrderBillingReason,
+    OrderBillingReasonInternal,
+    OrderStatus,
+)
 from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
@@ -316,6 +320,16 @@ def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
 
 
 class OrderService:
+    def get_statement_descriptor_suffix(
+        self, order: Order, organization: Organization
+    ) -> str:
+        if (
+            order.billing_reason
+            == OrderBillingReasonInternal.subscription_cycle_after_trial
+        ):
+            return f"{organization.statement_descriptor} TRIAL OVER"
+        return organization.statement_descriptor
+
     @asynccontextmanager
     async def acquire_payment_lock(
         self, session: AsyncSession, order: Order, *, release_on_success: bool = True
@@ -504,7 +518,7 @@ class OrderService:
             raise RecurringProduct(checkout, product)
 
         order = await self._create_order_from_checkout(
-            session, checkout, OrderBillingReason.purchase, payment
+            session, checkout, OrderBillingReasonInternal.purchase, payment
         )
 
         # Enqueue benefits grants
@@ -528,8 +542,8 @@ class OrderService:
         checkout: Checkout,
         subscription: Subscription,
         billing_reason: Literal[
-            OrderBillingReason.subscription_create,
-            OrderBillingReason.subscription_update,
+            OrderBillingReasonInternal.subscription_create,
+            OrderBillingReasonInternal.subscription_update,
         ],
         payment: Payment | None = None,
     ) -> Order:
@@ -550,7 +564,7 @@ class OrderService:
         self,
         session: AsyncSession,
         checkout: Checkout,
-        billing_reason: OrderBillingReason,
+        billing_reason: OrderBillingReasonInternal,
         payment: Payment | None = None,
         subscription: Subscription | None = None,
     ) -> Order:
@@ -655,7 +669,7 @@ class OrderService:
         self,
         session: AsyncSession,
         subscription: Subscription,
-        billing_reason: OrderBillingReason,
+        billing_reason: OrderBillingReasonInternal,
     ) -> Order:
         items = await billing_entry_service.create_order_items_from_pending(
             session, subscription
@@ -764,8 +778,9 @@ class OrderService:
 
         # Reset the associated meters, if any
         if billing_reason in {
-            OrderBillingReason.subscription_cycle,
-            OrderBillingReason.subscription_update,
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+            OrderBillingReasonInternal.subscription_update,
         }:
             await subscription_service.reset_meters(session, subscription)
 
@@ -790,8 +805,8 @@ class OrderService:
         session: AsyncSession,
         subscription: Subscription,
         billing_reason: Literal[
-            OrderBillingReason.subscription_create,
-            OrderBillingReason.subscription_update,
+            OrderBillingReasonInternal.subscription_create,
+            OrderBillingReasonInternal.subscription_update,
         ],
         checkout: Checkout | None = None,
     ) -> Order:
@@ -889,7 +904,9 @@ class OrderService:
                         customer=stripe_customer_id,
                         confirm=True,
                         off_session=True,
-                        statement_descriptor_suffix=order.organization.statement_descriptor,
+                        statement_descriptor_suffix=self.get_statement_descriptor_suffix(
+                            order, order.organization
+                        ),
                         description=f"{order.organization.name} — {order.product.name}",
                         metadata=metadata,
                     )
@@ -998,7 +1015,9 @@ class OrderService:
                         payment_method=saved_payment_method.processor_id,
                         customer=customer.stripe_customer_id,
                         confirm=True,
-                        statement_descriptor_suffix=organization.statement_descriptor,
+                        statement_descriptor_suffix=self.get_statement_descriptor_suffix(
+                            order, organization
+                        ),
                         description=f"{organization.name} — {order.product.name}",
                         metadata=metadata,
                         return_url=settings.generate_frontend_url(
@@ -1016,7 +1035,9 @@ class OrderService:
                         confirmation_token=confirmation_token_id,
                         customer=customer.stripe_customer_id,
                         setup_future_usage="off_session",
-                        statement_descriptor_suffix=organization.statement_descriptor,
+                        statement_descriptor_suffix=self.get_statement_descriptor_suffix(
+                            order, organization
+                        ),
                         description=f"{organization.name} — {order.product.name}",
                         metadata=metadata,
                         return_url=settings.generate_frontend_url(
@@ -1695,9 +1716,9 @@ class OrderService:
 
         await self.send_webhook(session, order, WebhookEventType.order_paid)
 
-        if (
-            order.subscription_id is not None
-            and order.billing_reason == OrderBillingReason.subscription_cycle
+        if order.subscription_id is not None and order.billing_reason in (
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
         ):
             enqueue_job(
                 "benefit.enqueue_benefit_grant_cycles",

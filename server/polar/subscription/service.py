@@ -61,7 +61,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.order import OrderBillingReason
+from polar.models.order import OrderBillingReasonInternal
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -690,10 +690,15 @@ class SubscriptionService:
             subscription, update_dict={"scheduler_locked_at": None}
         )
 
+        billing_reason = (
+            OrderBillingReasonInternal.subscription_cycle_after_trial
+            if previous_status == SubscriptionStatus.trialing
+            else OrderBillingReasonInternal.subscription_cycle
+        )
         enqueue_job(
             "order.create_subscription_order",
             subscription.id,
-            OrderBillingReason.subscription_cycle,
+            billing_reason,
         )
 
         await self._after_subscription_updated(
@@ -1099,7 +1104,7 @@ class SubscriptionService:
                 enqueue_job(
                     "order.create_subscription_order",
                     subscription.id,
-                    OrderBillingReason.subscription_update,
+                    OrderBillingReasonInternal.subscription_update,
                 )
             elif proration_behavior == SubscriptionProrationBehavior.prorate:
                 # Add prorations to next invoice

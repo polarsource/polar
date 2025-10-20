@@ -41,6 +41,18 @@ if TYPE_CHECKING:
     )
 
 
+class OrderBillingReasonInternal(StrEnum):
+    """
+    Internal billing reasons with additional granularity.
+    """
+
+    purchase = "purchase"
+    subscription_create = "subscription_create"
+    subscription_cycle = "subscription_cycle"
+    subscription_cycle_after_trial = "subscription_cycle_after_trial"
+    subscription_update = "subscription_update"
+
+
 class OrderBillingReason(StrEnum):
     purchase = "purchase"
     subscription_create = "subscription_create"
@@ -90,7 +102,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         Integer, nullable=False, default=0
     )
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
-    billing_reason: Mapped[OrderBillingReason] = mapped_column(
+    billing_reason: Mapped[OrderBillingReasonInternal] = mapped_column(
         String, nullable=False, index=True
     )
 

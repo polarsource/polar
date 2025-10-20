@@ -8,7 +8,7 @@ from pytest_mock import MockerFixture
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import Organization, Product
-from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
@@ -215,7 +215,7 @@ class TestProcessDunningOrder:
             customer=customer,
             subscription=subscription,
             status=OrderStatus.pending,
-            billing_reason=OrderBillingReason.subscription_cycle,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
         )
 
         # When
@@ -251,7 +251,7 @@ class TestProcessDunningOrder:
             customer=customer,
             subscription=subscription,
             status=OrderStatus.pending,
-            billing_reason=OrderBillingReason.subscription_cycle,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
         )
 
         enqueue_job_mock = mocker.patch("polar.order.service.enqueue_job")
@@ -294,7 +294,7 @@ class TestProcessDunningOrder:
             customer=customer,
             subscription=subscription,
             status=OrderStatus.pending,
-            billing_reason=OrderBillingReason.subscription_cycle,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
         )
         order.next_payment_attempt_at = past_time
         await save_fixture(order)
@@ -344,7 +344,7 @@ class TestProcessDunningOrder:
             customer=customer,
             subscription=subscription,
             status=OrderStatus.pending,
-            billing_reason=OrderBillingReason.subscription_cycle,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
         )
         order.next_payment_attempt_at = first_retry_time
         await save_fixture(order)
@@ -394,7 +394,7 @@ class TestProcessDunningOrder:
             customer=customer,
             subscription=subscription,
             status=OrderStatus.pending,
-            billing_reason=OrderBillingReason.subscription_cycle,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
         )
         order.next_payment_attempt_at = very_old_time
         await save_fixture(order)

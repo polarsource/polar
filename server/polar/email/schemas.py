@@ -12,10 +12,10 @@ from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
 )
-from polar.order.schemas import Order
+from polar.order.schemas import OrderBase, OrderItemSchema
 from polar.organization.schemas import Organization
-from polar.product.schemas import Product
-from polar.subscription.schemas import Subscription
+from polar.product.schemas import BenefitList, ProductBase
+from polar.subscription.schemas import SubscriptionBase
 
 
 class EmailTemplate(StrEnum):
@@ -41,6 +41,17 @@ class EmailTemplate(StrEnum):
     notification_new_sale = "notification_new_sale"
     notification_new_subscription = "notification_new_subscription"
     notification_create_account = "notification_create_account"
+
+
+class SubscriptionEmail(SubscriptionBase): ...
+
+
+class ProductEmail(ProductBase):
+    benefits: BenefitList
+
+
+class OrderEmail(OrderBase):
+    items: list[OrderItemSchema]
 
 
 class EmailProps(BaseModel): ...
@@ -109,8 +120,8 @@ class OAuth2LeakedTokenEmail(BaseModel):
 
 class OrderConfirmationProps(EmailProps):
     organization: Organization
-    product: Product
-    order: Order
+    product: ProductEmail
+    order: OrderEmail
     url: str
 
 
@@ -174,8 +185,8 @@ class SeatInvitationEmail(BaseModel):
 
 class SubscriptionPropsBase(EmailProps):
     organization: Organization
-    product: Product
-    subscription: Subscription
+    product: ProductEmail
+    subscription: SubscriptionEmail
     url: str
 
 
@@ -190,7 +201,7 @@ class SubscriptionCancellationEmail(BaseModel):
 
 
 class SubscriptionConfirmationProps(SubscriptionPropsBase):
-    order: Order
+    order: OrderEmail
 
 
 class SubscriptionConfirmationEmail(BaseModel):
@@ -201,7 +212,7 @@ class SubscriptionConfirmationEmail(BaseModel):
 
 
 class SubscriptionCycledProps(SubscriptionPropsBase):
-    order: Order
+    order: OrderEmail
 
 
 class SubscriptionCycledEmail(BaseModel):
@@ -243,7 +254,7 @@ class SubscriptionUncanceledEmail(BaseModel):
 
 
 class SubscriptionUpdatedProps(SubscriptionPropsBase):
-    order: Order | None
+    order: OrderEmail | None
 
 
 class SubscriptionUpdatedEmail(BaseModel):

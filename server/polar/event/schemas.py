@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import Annotated, Literal
+from typing import Annotated, Literal, NotRequired
 
 from fastapi import Path
 from pydantic import (
@@ -80,7 +80,7 @@ class LLMMetadata(TypedDict):
         Field(description="The number of LLM input tokens used for the event."),
     ]
     cached_input_tokens: Annotated[
-        int | None,
+        NotRequired[int],
         Field(
             default=None,
             description="The number of LLM cached tokens that were used for the event.",

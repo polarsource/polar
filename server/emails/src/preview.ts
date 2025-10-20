@@ -14,7 +14,7 @@ export const organization: Partial<schemas['Organization']> = {
   website: 'https://www.example.com',
 }
 
-export const product: DeepPartial<schemas['Product']> = {
+export const product: DeepPartial<schemas['ProductEmail']> = {
   name: 'Premium Subscription',
   benefits: [
     {
@@ -65,7 +65,7 @@ I'm a dense thank you note with:
   ],
 }
 
-export const order: DeepPartial<schemas['Order']> = {
+export const order: DeepPartial<schemas['OrderEmail']> = {
   status: 'paid',
   paid: true,
   invoice_number: 'INV-2024-001',
@@ -91,8 +91,6 @@ export const order: DeepPartial<schemas['Order']> = {
     country: 'US',
   },
   subscription_id: null,
-  product: product,
-  subscription: null,
   items: [
     {
       id: 'item-1',

@@ -2,7 +2,7 @@ import { Column, Heading, Hr, Row, Section } from '@react-email/components'
 import type { schemas } from '../types'
 
 interface OrderSummaryProps {
-  order: schemas['Order']
+  order: schemas['OrderEmail']
 }
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {

@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Select, select
@@ -7,19 +6,17 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase
+from polar.kit.repository.base import Options
 from polar.models import CustomerSeat, Product, Subscription, UserOrganization
 from polar.models.customer_seat import SeatStatus
 from polar.subscription.repository import SubscriptionRepository
-
-if TYPE_CHECKING:
-    from sqlalchemy.orm.strategy_options import _AbstractLoad
 
 
 class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
     model = CustomerSeat
 
     async def list_by_subscription_id(
-        self, subscription_id: UUID, *, options: tuple["_AbstractLoad", ...] = ()
+        self, subscription_id: UUID, *, options: Options = ()
     ) -> Sequence[CustomerSeat]:
         statement = (
             select(CustomerSeat)
@@ -29,7 +26,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         return await self.get_all(statement)
 
     async def get_by_invitation_token(
-        self, token: str, *, options: tuple["_AbstractLoad", ...] = ()
+        self, token: str, *, options: Options = ()
     ) -> CustomerSeat | None:
         statement = (
             select(CustomerSeat)
@@ -58,7 +55,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         return max(0, subscription.seats - len(claimed_seats))
 
     async def list_by_customer_id(
-        self, customer_id: UUID, *, options: tuple["_AbstractLoad", ...] = ()
+        self, customer_id: UUID, *, options: Options = ()
     ) -> Sequence[CustomerSeat]:
         statement = (
             select(CustomerSeat)
@@ -72,7 +69,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         subscription_id: UUID,
         customer_id: UUID,
         *,
-        options: tuple["_AbstractLoad", ...] = (),
+        options: Options = (),
     ) -> CustomerSeat | None:
         statement = (
             select(CustomerSeat)
@@ -88,7 +85,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         self,
         subscription_id: UUID,
         *,
-        options: tuple["_AbstractLoad", ...] = (),
+        options: Options = (),
     ) -> CustomerSeat | None:
         """Get a revoked seat for a subscription that can be reused."""
         statement = (
@@ -106,7 +103,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         self,
         seat_id: UUID,
         *,
-        options: tuple["_AbstractLoad", ...] = (),
+        options: Options = (),
     ) -> CustomerSeat | None:
         """Get a seat by ID."""
         statement = (
@@ -119,7 +116,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         seat_id: UUID,
         customer_id: UUID,
         *,
-        options: tuple["_AbstractLoad", ...] = (),
+        options: Options = (),
     ) -> CustomerSeat | None:
         """Get a seat by ID and verify it belongs to a subscription owned by the customer."""
         statement = (
@@ -169,7 +166,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         auth_subject: AuthSubject[User | Organization],
         seat_id: UUID,
         *,
-        options: tuple["_AbstractLoad", ...] = (),
+        options: Options = (),
     ) -> CustomerSeat | None:
         """Get a seat by ID filtered by auth subject."""
         statement = (
@@ -185,7 +182,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         seat_id: UUID,
         subscription_id: UUID,
         *,
-        options: tuple["_AbstractLoad", ...] = (),
+        options: Options = (),
     ) -> CustomerSeat | None:
         """Get a seat by ID and subscription ID filtered by auth subject."""
         statement = (
@@ -202,7 +199,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         self,
         customer_id: UUID,
         *,
-        options: tuple["_AbstractLoad", ...] = (),
+        options: Options = (),
     ) -> CustomerSeat | None:
         """
         Get an active (claimed) seat for a customer.
@@ -221,7 +218,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_one_or_none(statement)
 
-    def get_eager_options(self) -> tuple["_AbstractLoad", ...]:
+    def get_eager_options(self) -> Options:
         return (
             joinedload(CustomerSeat.subscription)
             .joinedload(Subscription.product)
@@ -230,7 +227,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             joinedload(CustomerSeat.customer),
         )
 
-    def get_eager_options_with_prices(self) -> tuple["_AbstractLoad", ...]:
+    def get_eager_options_with_prices(self) -> Options:
         return (
             *self.get_eager_options(),
             joinedload(CustomerSeat.subscription).joinedload(

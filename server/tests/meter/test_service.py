@@ -1183,3 +1183,120 @@ class TestCreateBillingEntriesWithSeats:
         enqueue_job_mock.assert_called_once_with(
             "subscription.update_meters", billing_manager_subscription.id
         )
+
+    async def test_billing_manager_is_seat_holder(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+    ) -> None:
+        seat_org = await create_organization(
+            save_fixture, feature_settings={"seat_based_pricing_enabled": True}
+        )
+
+        meter = await create_meter(
+            save_fixture,
+            name="Lite Model Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+            organization=seat_org,
+        )
+
+        billing_manager = await create_customer(save_fixture, organization=seat_org)
+
+        seat_product = await create_product(
+            save_fixture,
+            organization=seat_org,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None), ("seat", 1000)],
+        )
+
+        billing_manager_subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=seat_product,
+            customer=billing_manager,
+            seats=5,
+        )
+        await session.refresh(
+            billing_manager_subscription, ["subscription_product_prices"]
+        )
+
+        seat_holder_2 = await create_customer(
+            save_fixture,
+            organization=seat_org,
+            email="seat_holder_2@example.com",
+        )
+
+        seat1 = await create_customer_seat(
+            save_fixture,
+            subscription=billing_manager_subscription,
+            customer=billing_manager,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+        await session.refresh(seat1, ["subscription", "customer"])
+        await session.refresh(
+            seat1.subscription, ["product", "customer", "subscription_product_prices"]
+        )
+        await session.refresh(seat1.subscription.product, ["organization"])
+
+        seat2 = await create_customer_seat(
+            save_fixture,
+            subscription=billing_manager_subscription,
+            customer=seat_holder_2,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+        await session.refresh(seat2, ["subscription", "customer"])
+        await session.refresh(
+            seat2.subscription, ["product", "customer", "subscription_product_prices"]
+        )
+        await session.refresh(seat2.subscription.product, ["organization"])
+
+        timestamp = utc_now()
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=timestamp + timedelta(seconds=1),
+                organization=seat_org,
+                customer=billing_manager,
+                metadata={"tokens": 20, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp + timedelta(seconds=2),
+                organization=seat_org,
+                customer=seat_holder_2,
+                metadata={"tokens": 10, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp + timedelta(seconds=3),
+                organization=seat_org,
+                customer=billing_manager,
+                metadata={"tokens": 15, "model": "lite"},
+            ),
+        ]
+
+        entries = await meter_service.create_billing_entries(session, meter)
+
+        assert len(entries) == 3
+        for entry in entries:
+            assert entry.event is not None
+            assert entry.customer == billing_manager
+            assert entry.subscription == billing_manager_subscription
+            assert entry.product_price == seat_product.prices[0]
+            assert entry.direction == BillingEntryDirection.debit
+
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.update_meters", billing_manager_subscription.id
+        )

@@ -1872,6 +1872,175 @@ export interface components {
       /** Url */
       url: string
     }
+    /** Order */
+    Order: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /** @example paid */
+      status: components['schemas']['OrderStatus']
+      /**
+       * Paid
+       * @description Whether the order has been paid for.
+       * @example true
+       */
+      paid: boolean
+      /**
+       * Subtotal Amount
+       * @description Amount in cents, before discounts and taxes.
+       * @example 10000
+       */
+      subtotal_amount: number
+      /**
+       * Discount Amount
+       * @description Discount amount in cents.
+       * @example 1000
+       */
+      discount_amount: number
+      /**
+       * Net Amount
+       * @description Amount in cents, after discounts but before taxes.
+       * @example 9000
+       */
+      net_amount: number
+      /**
+       * Tax Amount
+       * @description Sales tax amount in cents.
+       * @example 720
+       */
+      tax_amount: number
+      /**
+       * Total Amount
+       * @description Amount in cents, after discounts and taxes.
+       * @example 9720
+       */
+      total_amount: number
+      /**
+       * Applied Balance Amount
+       * @description Customer's balance amount applied to this invoice. Can increase the total amount paid, if the customer has a negative balance,  or decrease it, if the customer has a positive balance.Amount in cents.
+       * @example 0
+       */
+      applied_balance_amount: number
+      /**
+       * Due Amount
+       * @description Amount in cents that is due for this order.
+       * @example 0
+       */
+      due_amount: number
+      /**
+       * Refunded Amount
+       * @description Amount refunded in cents.
+       * @example 0
+       */
+      refunded_amount: number
+      /**
+       * Refunded Tax Amount
+       * @description Sales tax refunded in cents.
+       * @example 0
+       */
+      refunded_tax_amount: number
+      /**
+       * Currency
+       * @example usd
+       */
+      currency: string
+      billing_reason: components['schemas']['OrderBillingReason']
+      /**
+       * Billing Name
+       * @description The name of the customer that should appear on the invoice.
+       */
+      billing_name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /**
+       * Invoice Number
+       * @description The invoice number associated with this order.
+       */
+      invoice_number: string
+      /**
+       * Is Invoice Generated
+       * @description Whether an invoice has been generated for this order.
+       */
+      is_invoice_generated: boolean
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /**
+       * Product Id
+       * Format: uuid4
+       */
+      product_id: string
+      /** Discount Id */
+      discount_id: string | null
+      /** Subscription Id */
+      subscription_id: string | null
+      /** Checkout Id */
+      checkout_id: string | null
+      /** Metadata */
+      metadata: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Platform Fee Amount
+       * @description Platform fee amount in cents.
+       * @example 500
+       */
+      platform_fee_amount: number
+      customer: components['schemas']['OrderCustomer']
+      /**
+       * User Id
+       * Format: uuid4
+       * @deprecated
+       */
+      user_id: string
+      product: components['schemas']['OrderProduct']
+      /** Discount */
+      discount:
+        | (
+            | components['schemas']['DiscountFixedOnceForeverDurationBase']
+            | components['schemas']['DiscountFixedRepeatDurationBase']
+            | components['schemas']['DiscountPercentageOnceForeverDurationBase']
+            | components['schemas']['DiscountPercentageRepeatDurationBase']
+          )
+        | null
+      subscription: components['schemas']['OrderSubscription'] | null
+      /**
+       * Items
+       * @description Line items composing the order.
+       */
+      items: components['schemas']['OrderItemSchema'][]
+    }
+    /**
+     * OrderBillingReason
+     * @enum {string}
+     */
+    OrderBillingReason:
+      | 'purchase'
+      | 'subscription_create'
+      | 'subscription_cycle'
+      | 'subscription_update'
     /** OrderConfirmationEmail */
     OrderConfirmationEmail: {
       /**
@@ -1886,8 +2055,312 @@ export interface components {
     OrderConfirmationProps: {
       organization: components['schemas']['Organization']
       product: components['schemas']['Product']
+      order: components['schemas']['Order']
       /** Url */
       url: string
+    }
+    /** OrderCustomer */
+    OrderCustomer: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /** Metadata */
+      metadata: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email: string
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      readonly avatar_url: string
+    }
+    /**
+     * OrderItemSchema
+     * @description An order line item.
+     */
+    OrderItemSchema: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Label
+       * @description Description of the line item charge.
+       * @example Pro Plan
+       */
+      label: string
+      /**
+       * Amount
+       * @description Amount in cents, before discounts and taxes.
+       * @example 10000
+       */
+      amount: number
+      /**
+       * Tax Amount
+       * @description Sales tax amount in cents.
+       * @example 720
+       */
+      tax_amount: number
+      /**
+       * Proration
+       * @description Whether this charge is due to a proration.
+       * @example false
+       */
+      proration: boolean
+      /**
+       * Product Price Id
+       * @description Associated price ID, if any.
+       */
+      product_price_id: string | null
+    }
+    /** OrderProduct */
+    OrderProduct: {
+      /** Metadata */
+      metadata: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /** @description The interval unit for the trial period. */
+      trial_interval: components['schemas']['TrialInterval'] | null
+      /**
+       * Trial Interval Count
+       * @description The number of interval units for the trial period.
+       */
+      trial_interval_count: number | null
+      /**
+       * Name
+       * @description The name of the product.
+       */
+      name: string
+      /**
+       * Description
+       * @description The description of the product.
+       */
+      description: string | null
+      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+      recurring_interval:
+        | components['schemas']['SubscriptionRecurringInterval']
+        | null
+      /**
+       * Is Recurring
+       * @description Whether the product is a subscription.
+       */
+      is_recurring: boolean
+      /**
+       * Is Archived
+       * @description Whether the product is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the product.
+       */
+      organization_id: string
+    }
+    /**
+     * OrderStatus
+     * @enum {string}
+     */
+    OrderStatus: 'pending' | 'paid' | 'refunded' | 'partially_refunded'
+    /** OrderSubscription */
+    OrderSubscription: {
+      /** Metadata */
+      metadata: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Amount
+       * @description The amount of the subscription.
+       * @example 10000
+       */
+      amount: number
+      /**
+       * Currency
+       * @description The currency of the subscription.
+       * @example usd
+       */
+      currency: string
+      /**
+       * @description The interval at which the subscription recurs.
+       * @example month
+       */
+      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      /**
+       * @description The status of the subscription.
+       * @example active
+       */
+      status: components['schemas']['SubscriptionStatus']
+      /**
+       * Current Period Start
+       * Format: date-time
+       * @description The start timestamp of the current billing period.
+       */
+      current_period_start: string
+      /**
+       * Current Period End
+       * @description The end timestamp of the current billing period.
+       */
+      current_period_end: string | null
+      /**
+       * Trial Start
+       * @description The start timestamp of the trial period, if any.
+       */
+      trial_start: string | null
+      /**
+       * Trial End
+       * @description The end timestamp of the trial period, if any.
+       */
+      trial_end: string | null
+      /**
+       * Cancel At Period End
+       * @description Whether the subscription will be canceled at the end of the current period.
+       */
+      cancel_at_period_end: boolean
+      /**
+       * Canceled At
+       * @description The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`.
+       */
+      canceled_at: string | null
+      /**
+       * Started At
+       * @description The timestamp when the subscription started.
+       */
+      started_at: string | null
+      /**
+       * Ends At
+       * @description The timestamp when the subscription will end.
+       */
+      ends_at: string | null
+      /**
+       * Ended At
+       * @description The timestamp when the subscription ended.
+       */
+      ended_at: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the subscribed customer.
+       */
+      customer_id: string
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the subscribed product.
+       */
+      product_id: string
+      /**
+       * Discount Id
+       * @description The ID of the applied discount, if any.
+       */
+      discount_id: string | null
+      /** Checkout Id */
+      checkout_id: string | null
+      customer_cancellation_reason:
+        | components['schemas']['CustomerCancellationReason']
+        | null
+      /** Customer Cancellation Comment */
+      customer_cancellation_comment: string | null
     }
     /** Organization */
     Organization: {
@@ -2795,6 +3268,7 @@ export interface components {
       subscription: components['schemas']['Subscription']
       /** Url */
       url: string
+      order: components['schemas']['Order']
     }
     /** SubscriptionCustomer */
     SubscriptionCustomer: {
@@ -2882,6 +3356,7 @@ export interface components {
       subscription: components['schemas']['Subscription']
       /** Url */
       url: string
+      order: components['schemas']['Order']
     }
     /**
      * SubscriptionMeter
@@ -3031,9 +3506,7 @@ export interface components {
       subscription: components['schemas']['Subscription']
       /** Url */
       url: string
-      /** Proration Behavior */
-      proration_behavior: string
-      previous_product: components['schemas']['Product']
+      order: components['schemas']['Order'] | null
     }
     /**
      * TaxIDFormat

@@ -598,9 +598,7 @@ class TestCycle:
             OrderBillingReason.subscription_cycle,
         )
 
-        enqueue_email_mock.assert_called_once()
-        subject = enqueue_email_mock.call_args.kwargs["subject"]
-        assert "renewed" in subject.lower()
+        enqueue_email_mock.assert_not_called()
 
     async def test_free_price(
         self,
@@ -785,9 +783,7 @@ class TestCycle:
             OrderBillingReason.subscription_cycle,
         )
 
-        enqueue_email_mock.assert_called_once()
-        subject = enqueue_email_mock.call_args.kwargs["subject"]
-        assert "renewed" in subject.lower()
+        enqueue_email_mock.assert_not_called()
 
     async def test_trial_end_with_once_discount(
         self,
@@ -2163,21 +2159,6 @@ class TestUpdateTrial:
 
 
 @pytest.mark.asyncio
-async def test_send_confirmation_email(
-    mocker: MockerFixture,
-    save_fixture: SaveFixture,
-    session: AsyncSession,
-    product: Product,
-    customer: Customer,
-) -> None:
-    subscription = await create_subscription(
-        save_fixture, product=product, customer=customer
-    )
-
-    await subscription_service.send_confirmation_email(session, subscription)
-
-
-@pytest.mark.asyncio
 async def test_send_past_due_email(
     mocker: MockerFixture,
     save_fixture: SaveFixture,
@@ -2190,23 +2171,6 @@ async def test_send_past_due_email(
     )
 
     await subscription_service.send_past_due_email(session, subscription)
-
-
-@pytest.mark.asyncio
-async def test_send_change_email(
-    mocker: MockerFixture,
-    save_fixture: SaveFixture,
-    session: AsyncSession,
-    product: Product,
-    customer: Customer,
-) -> None:
-    subscription = await create_subscription(
-        save_fixture, product=product, customer=customer
-    )
-
-    await subscription_service.send_subscription_updated_email(
-        session, subscription, product, product, SubscriptionProrationBehavior.prorate
-    )
 
 
 @pytest.mark.asyncio

@@ -1511,6 +1511,7 @@ class OrderService:
             {
                 "template": template_name,
                 "props": {
+                    "email": customer.email,
                     "organization": organization,
                     "product": product,
                     "order": order,

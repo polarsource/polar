@@ -37,7 +37,7 @@ export function NotificationAccountUnderReview({
         We'll reach out shortly in case we need any further information from you
         for our review.
       </BodyText>
-      <Footer />
+      <Footer email={null} />
     </Wrapper>
   )
 }

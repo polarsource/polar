@@ -22,12 +22,15 @@ class PushMessageExtra(TypedDict, total=False):
     notification_id: str
 
 
+_push_client = PushClient()
+
+
 def send_push_message(
     token: str, message: str, extra: PushMessageExtra | None = None
 ) -> None:
     """Send a push message to a specific device token."""
     try:
-        response = PushClient().publish(
+        response = _push_client.publish(
             PushMessage(
                 to=token,
                 body=message,

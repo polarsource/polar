@@ -6,6 +6,7 @@ import Wrapper from '../components/Wrapper'
 import type { schemas } from '../types'
 
 export function OrganizationAccessTokenLeaked({
+  email,
   notifier,
   url,
   organization_access_token,
@@ -66,12 +67,13 @@ export function OrganizationAccessTokenLeaked({
           .
         </Text>
       </Section>
-      <Footer />
+      <Footer email={email} />
     </Wrapper>
   )
 }
 
 OrganizationAccessTokenLeaked.PreviewProps = {
+  email: 'john@example.com',
   notifier: 'GitHub',
   url: 'https://github.com/example/repo',
   organization_access_token: 'token_abc123',

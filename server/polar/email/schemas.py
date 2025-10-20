@@ -54,7 +54,8 @@ class OrderEmail(OrderBase):
     items: list[OrderItemSchema]
 
 
-class EmailProps(BaseModel): ...
+class EmailProps(BaseModel):
+    email: str
 
 
 class LoginCodeProps(EmailProps):

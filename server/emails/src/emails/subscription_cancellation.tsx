@@ -1,7 +1,7 @@
 import { Heading, Link, Preview, Section, Text } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
-import Footer from '../components/Footer'
+import FooterCustomer from '../components/FooterCustomer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
 import { organization, product } from '../preview'
@@ -27,6 +27,7 @@ function BenefitsSection({ benefits }: { benefits: any[] }) {
 }
 
 export function SubscriptionCancellation({
+  email,
   organization,
   product,
   subscription,
@@ -72,12 +73,13 @@ export function SubscriptionCancellation({
           </Link>
         </Text>
       </Section>
-      <Footer />
+      <FooterCustomer organization={organization} email={email} />
     </Wrapper>
   )
 }
 
 SubscriptionCancellation.PreviewProps = {
+  email: 'john@example.com',
   organization,
   product,
   subscription: {

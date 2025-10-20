@@ -107,9 +107,12 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         personal_access_token.set_deleted_at()
         session.add(personal_access_token)
 
+        email = personal_access_token.user.email
+
         body = render_email_template(
             PersonalAccessTokenLeakedEmail(
                 props=PersonalAccessTokenLeakedProps(
+                    email=email,
                     personal_access_token=personal_access_token.comment,
                     notifier=notifier,
                     url=url or "",
@@ -118,7 +121,7 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         )
 
         enqueue_email(
-            to_email_addr=personal_access_token.user.email,
+            to_email_addr=email,
             subject="Security Notice - Your Polar Personal Access Token has been leaked",
             html_content=body,
         )

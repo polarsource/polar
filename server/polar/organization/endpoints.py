@@ -316,9 +316,11 @@ async def invite_member(
     inviter_email = auth_subject.subject.email
 
     # Send invitation email
+    email = invite_body.email
     body = render_email_template(
         OrganizationInviteEmail(
             props=OrganizationInviteProps(
+                email=email,
                 organization_name=organization.name,
                 inviter_email=inviter_email or "",
                 invite_url=settings.generate_frontend_url(
@@ -329,7 +331,7 @@ async def invite_member(
     )
 
     enqueue_email(
-        to_email_addr=invite_body.email,
+        to_email_addr=email,
         subject=f"You've been invited to {organization.name} on Polar",
         html_content=body,
     )

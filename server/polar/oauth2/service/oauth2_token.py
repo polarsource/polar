@@ -102,17 +102,18 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
             recipients = [member.user.email for member in members]
 
         oauth2_client = oauth2_token.client
-        body = render_email_template(
-            OAuth2LeakedTokenEmail(
-                props=OAuth2LeakedTokenProps(
-                    client_name=cast(str, oauth2_client.client_name),
-                    notifier=notifier,
-                    url=url or "",
-                )
-            )
-        )
 
         for recipient in recipients:
+            body = render_email_template(
+                OAuth2LeakedTokenEmail(
+                    props=OAuth2LeakedTokenProps(
+                        email=recipient,
+                        client_name=cast(str, oauth2_client.client_name),
+                        notifier=notifier,
+                        url=url or "",
+                    )
+                )
+            )
             enqueue_email(
                 to_email_addr=recipient,
                 subject="Security Notice - Your Polar Access Token has been leaked",

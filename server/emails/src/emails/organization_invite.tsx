@@ -7,6 +7,7 @@ import Wrapper from '../components/Wrapper'
 import type { schemas } from '../types'
 
 export function OrganizationInvite({
+  email,
   organization_name,
   inviter_email,
   invite_url,
@@ -28,12 +29,13 @@ export function OrganizationInvite({
       <Section className="text-center">
         <Button href={invite_url}>Go to the Polar dashboard</Button>
       </Section>
-      <Footer />
+      <Footer email={email} />
     </Wrapper>
   )
 }
 
 OrganizationInvite.PreviewProps = {
+  email: 'john@example.com',
   organization_name: 'Acme Inc.',
   inviter_email: 'admin@acme.com',
   invite_url: 'https://polar.sh/dashboard/acme-inc',

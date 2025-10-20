@@ -62,19 +62,19 @@ class LoginCodeService:
         delta = login_code.expires_at - utc_now()
         code_lifetime_minutes = int(ceil(delta.seconds / 60))
 
+        email = login_code.email
         subject = "Sign in to Polar"
         body = render_email_template(
             LoginCodeEmail(
                 props=LoginCodeProps(
+                    email=email,
                     code=code,
                     code_lifetime_minutes=code_lifetime_minutes,
                 )
             )
         )
 
-        enqueue_email(
-            to_email_addr=login_code.email, subject=subject, html_content=body
-        )
+        enqueue_email(to_email_addr=email, subject=subject, html_content=body)
 
     async def authenticate(
         self,

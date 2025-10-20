@@ -37,6 +37,7 @@ def send_seat_invitation_email(
         SeatInvitationEmail(
             props=SeatInvitationProps.model_validate(
                 {
+                    "email": customer_email,
                     "organization": organization,
                     "product_name": product_name,
                     "billing_manager_email": billing_manager_email,

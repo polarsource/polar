@@ -77,7 +77,7 @@ class LoggingEmailSender(EmailSender):
 class ResendEmailSender(EmailSender):
     def __init__(self) -> None:
         self.client = httpx.AsyncClient(
-            base_url="https://api.resend.com",
+            base_url=settings.RESEND_API_BASE_URL,
             headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
         )
 

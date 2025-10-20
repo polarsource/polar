@@ -21,7 +21,7 @@ export function NotificationAccountReviewed({
         We appreciate your patience throughout this process and are excited to
         grow together!
       </BodyText>
-      <Footer />
+      <Footer email={null} />
     </Wrapper>
   )
 }

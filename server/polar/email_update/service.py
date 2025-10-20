@@ -78,10 +78,12 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
         delta = email_update_record.expires_at - utc_now()
         token_lifetime_minutes = int(ceil(delta.seconds / 60))
 
+        email = email_update_record.email
         url_params = {"token": token, **extra_url_params}
         body = render_email_template(
             EmailUpdateEmail(
                 props=EmailUpdateProps(
+                    email=email,
                     token_lifetime_minutes=token_lifetime_minutes,
                     url=f"{base_url}?{urlencode(url_params)}",
                 )
@@ -89,9 +91,7 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
         )
 
         enqueue_email(
-            to_email_addr=email_update_record.email,
-            subject="Update your email",
-            html_content=body,
+            to_email_addr=email, subject="Update your email", html_content=body
         )
 
     async def verify(self, session: AsyncSession, token: str) -> User:

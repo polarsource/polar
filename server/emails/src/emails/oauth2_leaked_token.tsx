@@ -6,6 +6,7 @@ import Wrapper from '../components/Wrapper'
 import type { schemas } from '../types'
 
 export function OAuth2LeakedToken({
+  email,
   notifier,
   url,
   client_name,
@@ -62,12 +63,13 @@ export function OAuth2LeakedToken({
           .
         </Text>
       </Section>
-      <Footer />
+      <Footer email={email} />
     </Wrapper>
   )
 }
 
 OAuth2LeakedToken.PreviewProps = {
+  email: 'john@example.com',
   notifier: 'GitHub',
   url: 'https://github.com/example/repo',
   client_name: 'My OAuth2 App',

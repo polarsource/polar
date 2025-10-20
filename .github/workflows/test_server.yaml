@@ -107,7 +107,7 @@ jobs:
           package_json_file: server/emails/package.json
 
       - name: 📬 Setup Node.js environment for server/emails
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version-file: server/emails/.node-version
           cache: "pnpm"

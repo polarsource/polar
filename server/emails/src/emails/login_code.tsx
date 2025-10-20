@@ -6,6 +6,7 @@ import Wrapper from '../components/Wrapper'
 import type { schemas } from '../types'
 
 export function LoginCode({
+  email,
   code,
   code_lifetime_minutes,
 }: schemas['LoginCodeProps']) {
@@ -30,12 +31,13 @@ export function LoginCode({
       <Text className="text-gray-500">
         If you didn't request this email, you can safely ignore it.
       </Text>
-      <Footer />
+      <Footer email={email} />
     </Wrapper>
   )
 }
 
 LoginCode.PreviewProps = {
+  email: 'john@example.com',
   code: 'ABC123',
   code_lifetime_minutes: 30,
 }

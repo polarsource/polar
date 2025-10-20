@@ -3,29 +3,33 @@ from uuid import UUID
 
 from pydantic import BaseModel, TypeAdapter
 from sqlalchemy import desc
+from sqlalchemy.orm import joinedload
 
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models.notification import Notification
-from polar.models.pledge import Pledge
 from polar.models.user_notification import UserNotification
-from polar.notifications.notification import Notification as NotificationSchema
-from polar.notifications.notification import NotificationPayload, NotificationType
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 from polar.worker import enqueue_job
 
+from .notification import Notification as NotificationSchema
+from .notification import NotificationPayload, NotificationType
+
 
 class PartialNotification(BaseModel):
-    pledge_id: UUID | None = None
     type: NotificationType
     payload: NotificationPayload
 
 
 class NotificationsService:
     async def get(self, session: AsyncSession, id: UUID) -> Notification | None:
-        stmt = sql.select(Notification).where(Notification.id == id)
+        stmt = (
+            sql.select(Notification)
+            .where(Notification.id == id)
+            .options(joinedload(Notification.user))
+        )
 
         res = await session.execute(stmt)
         return res.scalars().unique().one_or_none()
@@ -35,7 +39,6 @@ class NotificationsService:
     ) -> Sequence[Notification]:
         stmt = (
             sql.select(Notification)
-            .join(Pledge, Pledge.id == Notification.pledge_id, isouter=True)
             .where(Notification.user_id == user_id)
             .order_by(desc(Notification.created_at))
             .limit(100)
@@ -53,7 +56,6 @@ class NotificationsService:
         notification = Notification(
             user_id=user_id,
             type=notif.type,
-            pledge_id=notif.pledge_id,
             payload=notif.payload.model_dump(mode="json"),
         )
 
@@ -76,53 +78,6 @@ class NotificationsService:
                 user_id=member.user_id,
                 notif=notif,
             )
-
-    async def send_to_anonymous_email(
-        self,
-        session: AsyncSession,
-        email_addr: str,
-        notif: PartialNotification,
-    ) -> None:
-        notification = Notification(
-            email_addr=email_addr,
-            type=notif.type,
-            pledge_id=notif.pledge_id,
-            payload=notif.payload.model_dump(mode="json"),
-        )
-
-        session.add(notification)
-        await session.flush()
-        enqueue_job("notifications.send", notification_id=notification.id)
-
-    async def send_to_pledger(
-        self,
-        session: AsyncSession,
-        pledge: Pledge,
-        notif: PartialNotification,
-    ) -> None:
-        if pledge.by_organization_id:
-            await self.send_to_org_members(
-                session=session,
-                org_id=pledge.by_organization_id,
-                notif=notif,
-            )
-            return
-
-        if pledge.by_user_id:
-            await self.send_to_user(
-                session=session,
-                user_id=pledge.by_user_id,
-                notif=notif,
-            )
-            return
-
-        if pledge.email:
-            await self.send_to_anonymous_email(
-                session=session,
-                email_addr=pledge.email,
-                notif=notif,
-            )
-            return
 
     def parse_payload(self, n: Notification) -> NotificationPayload:
         NotificationTypeAdapter: TypeAdapter[NotificationSchema] = TypeAdapter(

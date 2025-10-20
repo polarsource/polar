@@ -1888,6 +1888,7 @@ class SubscriptionService:
             {
                 "template": template_name,
                 "props": {
+                    "email": subscription.customer.email,
                     "organization": organization,
                     "product": product,
                     "subscription": subscription,

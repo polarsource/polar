@@ -89,6 +89,7 @@ class CustomerSessionService:
             CustomerSessionCodeEmail(
                 props=CustomerSessionCodeProps.model_validate(
                     {
+                        "email": customer.email,
                         "organization": organization,
                         "code": code,
                         "code_lifetime_minutes": code_lifetime_minutes,

@@ -759,6 +759,8 @@ export interface components {
     }
     /** CustomerSessionCodeProps */
     CustomerSessionCodeProps: {
+      /** Email */
+      email: string
       organization: components['schemas']['Organization']
       /** Code */
       code: string
@@ -779,6 +781,8 @@ export interface components {
     }
     /** EmailUpdateProps */
     EmailUpdateProps: {
+      /** Email */
+      email: string
       /** Token Lifetime Minutes */
       token_lifetime_minutes: number
       /** Url */
@@ -796,6 +800,8 @@ export interface components {
     }
     /** LoginCodeProps */
     LoginCodeProps: {
+      /** Email */
+      email: string
       /** Code */
       code: string
       /** Code Lifetime Minutes */
@@ -908,6 +914,8 @@ export interface components {
     }
     /** OAuth2LeakedClientProps */
     OAuth2LeakedClientProps: {
+      /** Email */
+      email: string
       /** Token Type */
       token_type: string
       /** Client Name */
@@ -929,6 +937,8 @@ export interface components {
     }
     /** OAuth2LeakedTokenProps */
     OAuth2LeakedTokenProps: {
+      /** Email */
+      email: string
       /** Client Name */
       client_name: string
       /** Notifier */
@@ -957,6 +967,8 @@ export interface components {
     }
     /** OrderConfirmationProps */
     OrderConfirmationProps: {
+      /** Email */
+      email: string
       organization: components['schemas']['Organization']
       product: components['schemas']['ProductEmail']
       order: components['schemas']['OrderEmail']
@@ -1222,6 +1234,8 @@ export interface components {
     }
     /** OrganizationAccessTokenLeakedProps */
     OrganizationAccessTokenLeakedProps: {
+      /** Email */
+      email: string
       /** Organization Access Token */
       organization_access_token: string
       /** Notifier */
@@ -1275,6 +1289,8 @@ export interface components {
     }
     /** OrganizationInviteProps */
     OrganizationInviteProps: {
+      /** Email */
+      email: string
       /** Organization Name */
       organization_name: string
       /** Inviter Email */
@@ -1333,6 +1349,8 @@ export interface components {
     }
     /** PersonalAccessTokenLeakedProps */
     PersonalAccessTokenLeakedProps: {
+      /** Email */
+      email: string
       /** Personal Access Token */
       personal_access_token: string
       /** Notifier */
@@ -1414,6 +1432,8 @@ export interface components {
     }
     /** SeatInvitationProps */
     SeatInvitationProps: {
+      /** Email */
+      email: string
       organization: components['schemas']['Organization']
       /** Product Name */
       product_name: string
@@ -1444,6 +1464,8 @@ export interface components {
     }
     /** SubscriptionCancellationProps */
     SubscriptionCancellationProps: {
+      /** Email */
+      email: string
       organization: components['schemas']['Organization']
       product: components['schemas']['ProductEmail']
       subscription: components['schemas']['SubscriptionEmail']
@@ -1462,6 +1484,8 @@ export interface components {
     }
     /** SubscriptionConfirmationProps */
     SubscriptionConfirmationProps: {
+      /** Email */
+      email: string
       organization: components['schemas']['Organization']
       product: components['schemas']['ProductEmail']
       subscription: components['schemas']['SubscriptionEmail']
@@ -1481,6 +1505,8 @@ export interface components {
     }
     /** SubscriptionCycledProps */
     SubscriptionCycledProps: {
+      /** Email */
+      email: string
       organization: components['schemas']['Organization']
       product: components['schemas']['ProductEmail']
       subscription: components['schemas']['SubscriptionEmail']
@@ -1612,6 +1638,8 @@ export interface components {
     }
     /** SubscriptionPastDueProps */
     SubscriptionPastDueProps: {
+      /** Email */
+      email: string
       organization: components['schemas']['Organization']
       product: components['schemas']['ProductEmail']
       subscription: components['schemas']['SubscriptionEmail']
@@ -1645,6 +1673,8 @@ export interface components {
     }
     /** SubscriptionRevokedProps */
     SubscriptionRevokedProps: {
+      /** Email */
+      email: string
       organization: components['schemas']['Organization']
       product: components['schemas']['ProductEmail']
       subscription: components['schemas']['SubscriptionEmail']
@@ -1675,6 +1705,8 @@ export interface components {
     }
     /** SubscriptionUncanceledProps */
     SubscriptionUncanceledProps: {
+      /** Email */
+      email: string
       organization: components['schemas']['Organization']
       product: components['schemas']['ProductEmail']
       subscription: components['schemas']['SubscriptionEmail']
@@ -1693,6 +1725,8 @@ export interface components {
     }
     /** SubscriptionUpdatedProps */
     SubscriptionUpdatedProps: {
+      /** Email */
+      email: string
       organization: components['schemas']['Organization']
       product: components['schemas']['ProductEmail']
       subscription: components['schemas']['SubscriptionEmail']

@@ -60,6 +60,7 @@ from polar.email.schemas import CustomerGreetingsEmail, CustomerGreetingsProps
 
 body = render_email_template(CustomerGreetingsEmail(
     props=CustomerGreetingsProps.model_validate({
+        "email": "john@example.com",
         "organization": organization,
         "url": "https://example.com/welcome",
     })

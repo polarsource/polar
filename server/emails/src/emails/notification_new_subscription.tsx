@@ -22,7 +22,7 @@ export function NotificationNewSubscription({
         {tier_price_amount ? formatted_price_amount : 'free'}/
         {tier_price_recurring_interval}.
       </IntroWithHi>
-      <Footer />
+      <Footer email={null} />
     </Wrapper>
   )
 }

@@ -7,6 +7,7 @@ import Wrapper from '../components/Wrapper'
 import type { schemas } from '../types'
 
 export function EmailUpdate({
+  email,
   token_lifetime_minutes,
   url,
 }: schemas['EmailUpdateProps']) {
@@ -36,12 +37,13 @@ export function EmailUpdate({
           </Link>
         </Text>
       </Section>
-      <Footer />
+      <Footer email={email} />
     </Wrapper>
   )
 }
 
 EmailUpdate.PreviewProps = {
+  email: 'john@example.com',
   token_lifetime_minutes: 30,
   url: 'https://polar.sh/settings/account/email/update?token=abc123',
 }

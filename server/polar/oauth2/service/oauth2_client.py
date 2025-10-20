@@ -94,9 +94,11 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
         session.add(client)
 
         if client.user is not None:
+            email = client.user.email
             body = render_email_template(
                 OAuth2LeakedClientEmail(
                     props=OAuth2LeakedClientProps(
+                        email=email,
                         token_type=token_type,
                         client_name=cast(str, client.client_name),
                         notifier=notifier,
@@ -105,9 +107,7 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
                 )
             )
 
-            enqueue_email(
-                to_email_addr=client.user.email, subject=subject, html_content=body
-            )
+            enqueue_email(to_email_addr=email, subject=subject, html_content=body)
 
         log.info(
             "Revoke leaked OAuth2 client",

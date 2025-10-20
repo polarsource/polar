@@ -6,6 +6,7 @@ import Wrapper from '../components/Wrapper'
 import type { schemas } from '../types'
 
 export function PersonalAccessTokenLeaked({
+  email,
   notifier,
   url,
   personal_access_token,
@@ -65,7 +66,7 @@ export function PersonalAccessTokenLeaked({
           .
         </Text>
       </Section>
-      <Footer />
+      <Footer email={email} />
     </Wrapper>
   )
 }

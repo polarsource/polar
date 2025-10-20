@@ -171,22 +171,23 @@ class OrganizationAccessTokenService:
         repository = OrganizationAccessTokenRepository.from_session(session)
         await repository.soft_delete(organization_access_token)
 
-        body = render_email_template(
-            OrganizationAccessTokenLeakedEmail(
-                props=OrganizationAccessTokenLeakedProps(
-                    organization_access_token=organization_access_token.comment,
-                    notifier=notifier,
-                    url=url or "",
-                )
-            )
-        )
-
         organization_members = await user_organization_service.list_by_org(
             session, organization_access_token.organization_id
         )
         for organization_member in organization_members:
+            email = organization_member.user.email
+            body = render_email_template(
+                OrganizationAccessTokenLeakedEmail(
+                    props=OrganizationAccessTokenLeakedProps(
+                        email=email,
+                        organization_access_token=organization_access_token.comment,
+                        notifier=notifier,
+                        url=url or "",
+                    )
+                )
+            )
             enqueue_email(
-                to_email_addr=organization_member.user.email,
+                to_email_addr=email,
                 subject="Security Notice - Your Polar Organization Access Token has been leaked",
                 html_content=body,
             )

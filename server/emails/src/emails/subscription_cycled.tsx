@@ -8,7 +8,7 @@ import {
 } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
-import Footer from '../components/Footer'
+import FooterCustomer from '../components/FooterCustomer'
 import OrderSummary from '../components/OrderSummary'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
@@ -16,6 +16,7 @@ import { order, organization, product } from '../preview'
 import type { schemas } from '../types'
 
 export function SubscriptionCycled({
+  email,
   organization,
   product,
   subscription,
@@ -52,12 +53,13 @@ export function SubscriptionCycled({
           </Link>
         </Text>
       </Section>
-      <Footer />
+      <FooterCustomer organization={organization} email={email} />
     </Wrapper>
   )
 }
 
 SubscriptionCycled.PreviewProps = {
+  email: 'john@example.com',
   organization,
   product,
   subscription: {

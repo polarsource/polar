@@ -9,7 +9,7 @@ import {
 import Benefits from '../components/Benefits'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
-import Footer from '../components/Footer'
+import FooterCustomer from '../components/FooterCustomer'
 import OrderSummary from '../components/OrderSummary'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
@@ -17,6 +17,7 @@ import { order, organization, product } from '../preview'
 import type { schemas } from '../types'
 
 export function SubscriptionUpdated({
+  email,
   organization,
   product,
   subscription,
@@ -71,12 +72,13 @@ export function SubscriptionUpdated({
           </Link>
         </Text>
       </Section>
-      <Footer />
+      <FooterCustomer organization={organization} email={email} />
     </Wrapper>
   )
 }
 
 SubscriptionUpdated.PreviewProps = {
+  email: 'john@example.com',
   organization,
   product,
   subscription: {

@@ -20,7 +20,7 @@ export function NotificationNewSale({
         {customer_name} purchased <strong>{product_name}</strong> for{' '}
         {formatted_price_amount}.
       </IntroWithHi>
-      <Footer />
+      <Footer email={null} />
     </Wrapper>
   )
 }

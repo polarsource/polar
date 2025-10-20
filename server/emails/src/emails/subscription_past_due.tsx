@@ -1,13 +1,14 @@
 import { Heading, Link, Preview, Section, Text } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
-import Footer from '../components/Footer'
+import FooterCustomer from '../components/FooterCustomer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
 export function SubscriptionPastDue({
+  email,
   organization,
   product,
   subscription,
@@ -52,12 +53,13 @@ export function SubscriptionPastDue({
           </Link>
         </Text>
       </Section>
-      <Footer />
+      <FooterCustomer organization={organization} email={email} />
     </Wrapper>
   )
 }
 
 SubscriptionPastDue.PreviewProps = {
+  email: 'john@example.com',
   organization,
   product,
   subscription: {

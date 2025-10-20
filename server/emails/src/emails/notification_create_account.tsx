@@ -29,7 +29,7 @@ export function NotificationCreateAccount({
         below into your web browser.
       </Text>
       <Link href={url}>{url}</Link>
-      <Footer />
+      <Footer email={null} />
     </Wrapper>
   )
 }

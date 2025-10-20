@@ -1,6 +1,6 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
-import Footer from '../components/Footer'
+import FooterCustomer from '../components/FooterCustomer'
 import IntroWithHi from '../components/IntroWithHi'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
@@ -8,6 +8,7 @@ import { organization } from '../preview'
 import type { schemas } from '../types'
 
 export function SeatInvitation({
+  email,
   organization,
   product_name,
   billing_manager_email,
@@ -46,12 +47,13 @@ export function SeatInvitation({
           </Link>
         </Text>
       </Section>
-      <Footer />
+      <FooterCustomer organization={organization} email={email} />
     </Wrapper>
   )
 }
 
 SeatInvitation.PreviewProps = {
+  email: 'john@example.com',
   organization,
   product_name: 'Premium Plan',
   billing_manager_email: 'admin@acme.com',

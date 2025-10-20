@@ -12,7 +12,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.repository.base import Options
-from polar.models import Account, Organization, User, UserOrganization
+from polar.models import Account, Customer, Organization, User, UserOrganization
 from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
 
@@ -49,6 +49,14 @@ class OrganizationRepository(
     async def get_by_slug(self, slug: str) -> Organization | None:
         statement = self.get_base_statement().where(Organization.slug == slug)
         return await self.get_one_or_none(statement)
+
+    async def get_by_customer(self, customer_id: UUID) -> Organization:
+        statement = (
+            self.get_base_statement()
+            .join(Customer, Customer.organization_id == Organization.id)
+            .where(Customer.id == customer_id)
+        )
+        return await self.get_one(statement)
 
     async def get_all_by_user(self, user: UUID) -> Sequence[Organization]:
         statement = (

@@ -34,6 +34,8 @@ Options: TypeAlias = Sequence[ExecutableOption]
 class RepositoryProtocol[M](Protocol):
     model: type[M]
 
+    async def get_one(self, statement: Select[tuple[M]]) -> M: ...
+
     async def get_one_or_none(self, statement: Select[tuple[M]]) -> M | None: ...
 
     async def get_all(self, statement: Select[tuple[M]]) -> Sequence[M]: ...
@@ -60,6 +62,10 @@ class RepositoryBase[M]:
 
     def __init__(self, session: AsyncSession | AsyncReadSession) -> None:
         self.session = session
+
+    async def get_one(self, statement: Select[tuple[M]]) -> M:
+        result = await self.session.execute(statement)
+        return result.unique().scalar_one()
 
     async def get_one_or_none(self, statement: Select[tuple[M]]) -> M | None:
         result = await self.session.execute(statement)

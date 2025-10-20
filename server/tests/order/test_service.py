@@ -2154,7 +2154,7 @@ async def test_send_confirmation_email(
 ) -> None:
     order = await create_order(save_fixture, product=product, customer=customer)
 
-    await order_service.send_confirmation_email(session, organization, order)
+    await order_service.send_confirmation_email(session, order)
 
 
 @pytest.mark.asyncio

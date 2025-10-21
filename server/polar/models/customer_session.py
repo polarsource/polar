@@ -43,5 +43,5 @@ class CustomerSession(RecordModel):
     @property
     def customer_portal_url(self) -> str:
         return settings.generate_frontend_url(
-            f"/{self.customer.organization.slug}/portal?customer_session_token={self.raw_token}"
+            f"/{self.customer.organization.slug}/portal?customer_session_token={self.raw_token}&email={self.customer.email}"
         )

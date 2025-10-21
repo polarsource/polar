@@ -1473,21 +1473,19 @@ class OrderService:
             case OrderBillingReason.purchase:
                 template_name = "order_confirmation"
                 subject_template = "Your {product} order confirmation"
-                url_path_template = (
-                    "/{organization}/portal?customer_session_token={token}&id={order}"
-                )
+                url_path_template = "/{organization}/portal?customer_session_token={token}&id={order}&email={email}"
             case OrderBillingReason.subscription_create:
                 template_name = "subscription_confirmation"
                 subject_template = "Your {product} subscription"
-                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}"
+                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
             case OrderBillingReason.subscription_cycle:
                 template_name = "subscription_cycled"
                 subject_template = "Your {product} subscription has been renewed"
-                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}"
+                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
             case OrderBillingReason.subscription_update:
                 template_name = "subscription_updated"
                 subject_template = "Your subscription has changed to {product}"
-                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}"
+                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
 
         if not organization.customer_email_settings[template_name]:
             return
@@ -1504,6 +1502,7 @@ class OrderService:
                 token=token,
                 order=order.id,
                 subscription=subscription.id if subscription else "",
+                email=customer.email,
             )
         )
         subject = subject_template.format(product=product.name)

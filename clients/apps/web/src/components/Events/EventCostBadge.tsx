@@ -6,9 +6,10 @@ import { twMerge } from 'tailwind-merge'
 
 const getIndicatorColor = (cost: number) => {
   const colors = {
-    positive: 'bg-emerald-500 dark:bg-emerald-950',
-    negative: 'bg-red-100 dark:bg-red-950',
-    neutral: 'bg-gray-200 dark:bg-polar-700',
+    positive:
+      'bg-emerald-500 dark:bg-emerald-950 text-emerald-500 dark:text-emerald-500',
+    negative: 'bg-red-100 dark:bg-red-950 text-red-500 dark:text-red-500',
+    neutral: 'bg-gray-200 dark:bg-polar-700 text-gray-500 dark:text-gray-500',
   }
 
   if (cost > 0) {
@@ -56,8 +57,8 @@ export const EventCostBadge = ({
 }) => {
   return (
     <div className="flex flex-row items-center gap-x-4 font-mono">
-      <EventCostIndicator cost={cost} />
       {formatCurrencyAndAmount(cost, currency, 2)}
+      <EventCostIndicator cost={cost} />
     </div>
   )
 }

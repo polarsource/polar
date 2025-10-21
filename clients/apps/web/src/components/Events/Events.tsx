@@ -1,7 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { EventCostBadge } from './EventCostBadge'
 import { EventSourceBadge } from './EventSourceBadge'
 
@@ -18,15 +18,26 @@ const EventRow = ({
     setIsExpanded(!isExpanded)
   }
 
-  const formattedTimestamp = new Date(event.timestamp).toLocaleDateString(
-    'en-US',
-    {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-    },
+  const formattedTimestamp = useMemo(
+    () =>
+      new Date(event.timestamp).toLocaleDateString(
+        'en-US',
+        isExpanded
+          ? {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: 'numeric',
+              second: 'numeric',
+            }
+          : {
+              month: 'short',
+              day: '2-digit',
+              year: 'numeric',
+            },
+      ),
+    [event, isExpanded],
   )
 
   const cost = (event.metadata as schemas['EventMetadataOutput'])._cost
@@ -35,14 +46,14 @@ const EventRow = ({
     <div className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col rounded-xl border border-gray-200 bg-white font-mono text-sm transition-colors duration-75 hover:bg-gray-50">
       <div
         onClick={handleToggleExpand}
-        className="flex cursor-pointer flex-row items-center justify-between px-4 py-2"
+        className="flex cursor-pointer select-none flex-row items-center justify-between px-4 py-2"
       >
         <div className="flex flex-row items-center gap-x-8">
           <div className="flex flex-row items-center gap-x-4">
             <span>{event.name}</span>
             <EventSourceBadge source={event.source} />
           </div>
-          <span className="dark:text-polar-500 capitalize text-gray-500">
+          <span className="dark:text-polar-500 text-sm capitalize text-gray-500">
             {formattedTimestamp}
           </span>
         </div>

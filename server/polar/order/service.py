@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -398,6 +398,37 @@ class OrderService:
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
         )
+
+    async def list_stream(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        product_id: Sequence[uuid.UUID] | None = None,
+    ) -> AsyncGenerator[Order]:
+        repository = OrderRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
+
+        statement = (
+            statement.join(Order.discount, isouter=True)
+            .join(Order.product)
+            .options(
+                *repository.get_eager_options(
+                    customer_load=contains_eager(Order.customer),
+                    product_load=contains_eager(Order.product),
+                    discount_load=contains_eager(Order.discount),
+                )
+            )
+        )
+
+        if organization_id is not None:
+            statement = statement.where(Customer.organization_id.in_(organization_id))
+
+        if product_id is not None:
+            statement = statement.where(Order.product_id.in_(product_id))
+
+        return repository.stream(statement)
 
     async def get(
         self,

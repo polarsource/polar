@@ -167,6 +167,120 @@ class TestGetOrder:
 
 
 @pytest.mark.asyncio
+class TestExportOrders:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/orders/export")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_not_organization_member(
+        self, client: AsyncClient, orders: list[Order]
+    ) -> None:
+        response = await client.get("/v1/orders/export")
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        assert (
+            response.headers["content-disposition"]
+            == "attachment; filename=polar-orders.csv"
+        )
+
+        # Should only have header row since user is not a member
+        csv_lines = response.text.strip().split("\r\n")
+        assert len(csv_lines) == 1
+        assert (
+            csv_lines[0]
+            == "Email,Created At,Product,Amount,Currency,Status,Invoice number"
+        )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.web_read}),
+        AuthSubjectFixture(scopes={Scope.orders_read}),
+    )
+    async def test_user_valid(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        orders: list[Order],
+    ) -> None:
+        response = await client.get("/v1/orders/export")
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        assert (
+            response.headers["content-disposition"]
+            == "attachment; filename=polar-orders.csv"
+        )
+
+        csv_lines = response.text.strip().split("\r\n")
+        assert len(csv_lines) == len(orders) + 1  # +1 for header
+
+        # Verify header
+        assert (
+            csv_lines[0]
+            == "Email,Created At,Product,Amount,Currency,Status,Invoice number"
+        )
+
+        # Verify data row contains expected fields
+        order = orders[0]
+        data_row = csv_lines[1]
+        assert order.customer.email in data_row
+        assert order.product.name in data_row
+        assert order.currency in data_row
+        assert order.status.value in data_row
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.orders_read}),
+    )
+    async def test_organization(self, client: AsyncClient, orders: list[Order]) -> None:
+        response = await client.get("/v1/orders/export")
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+
+        csv_lines = response.text.strip().split("\r\n")
+        assert len(csv_lines) == len(orders) + 1
+
+    @pytest.mark.auth
+    async def test_filter_by_product(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        order1 = await create_order(
+            save_fixture,
+            stripe_invoice_id="INVOICE_1",
+            product=product,
+            customer=customer,
+        )
+        order2 = await create_order(
+            save_fixture,
+            stripe_invoice_id="INVOICE_2",
+            product=product_second,
+            customer=customer,
+        )
+
+        # Filter by product - should only get order1
+        response = await client.get(
+            "/v1/orders/export",
+            params={"product_id": str(product.id)},
+        )
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert len(csv_lines) == 2  # Header + 1 order
+
+        # Verify only the filtered order is in the export by checking invoice numbers
+        assert order1.invoice_number in csv_lines[1]
+        assert order2.invoice_number not in response.text
+
+
+@pytest.mark.asyncio
 class TesGetOrdersStatistics:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/orders/statistics")

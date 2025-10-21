@@ -1010,6 +1010,33 @@ class TestUncancel:
         with pytest.raises(ResourceUnavailable):
             await subscription_service.uncancel(session, subscription)
 
+    async def test_uncancel_past_due(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            cancel_at_period_end=True,
+            stripe_subscription_id=None,
+        )
+
+        updated_subscription = await subscription_service.uncancel(
+            session, subscription
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.past_due
+        assert updated_subscription.cancel_at_period_end is False
+        assert updated_subscription.ends_at is None
+        assert updated_subscription.canceled_at is None
+
 
 @pytest.mark.asyncio
 class TestUpdateFromStripe:

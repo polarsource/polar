@@ -1271,7 +1271,11 @@ class SubscriptionService:
         if subscription.ended_at:
             raise ResourceUnavailable()
 
-        if not (subscription.active and subscription.cancel_at_period_end):
+        is_cancelable_status = subscription.status in {
+            SubscriptionStatus.active,
+            SubscriptionStatus.past_due,
+        }
+        if not (is_cancelable_status and subscription.cancel_at_period_end):
             raise BadRequest()
 
         previous_status = subscription.status

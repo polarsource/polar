@@ -79,7 +79,9 @@ def downgrade() -> None:
     op.drop_index("ix_customer_seats_order_id", "customer_seats")
 
     # Step 3: Drop foreign key constraint
-    op.drop_constraint("customer_seats_order_id_fkey", "customer_seats", type_="foreignkey")
+    op.drop_constraint(
+        "customer_seats_order_id_fkey", "customer_seats", type_="foreignkey"
+    )
 
     # Step 2: Remove order_id column
     op.drop_column("customer_seats", "order_id")

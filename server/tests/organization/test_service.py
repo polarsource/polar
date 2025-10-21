@@ -166,15 +166,35 @@ class TestCreate:
 async def test_get_next_invoice_number(
     session: AsyncSession,
     organization: Organization,
+    organization_second: Organization,
 ) -> None:
     assert organization.customer_invoice_next_number == 1
+    assert organization_second.customer_invoice_next_number == 1
 
-    next_invoice_number = await organization_service.get_next_invoice_number(
+    # Get invoice from first organization
+    invoice_org1 = await organization_service.get_next_invoice_number(
         session, organization
     )
 
-    assert next_invoice_number == f"{organization.customer_invoice_prefix}-0001"
+    # Get invoice from second organization
+    invoice_org2 = await organization_service.get_next_invoice_number(
+        session, organization_second
+    )
+
+    # Extract numbers from format "PREFIX-0001"
+    number_1 = int(invoice_org1.split("-")[1])
+    number_2 = int(invoice_org2.split("-")[1])
+
+    # Verify sequential global numbering across organizations
+    assert number_2 == number_1 + 1
+
+    # Verify each uses their own prefix
+    assert invoice_org1.startswith(organization.customer_invoice_prefix)
+    assert invoice_org2.startswith(organization_second.customer_invoice_prefix)
+
+    # Verify per-org counter still increments (behind the scenes)
     assert organization.customer_invoice_next_number == 2
+    assert organization_second.customer_invoice_next_number == 2
 
 
 @pytest.mark.asyncio

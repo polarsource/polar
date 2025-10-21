@@ -7,6 +7,7 @@ from uuid import UUID
 
 import structlog
 from pydantic import BaseModel, Field
+from sqlalchemy import text
 from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -362,16 +363,20 @@ class OrganizationService:
         session: AsyncSession,
         organization: Organization,
     ) -> str:
-        invoice_number = f"{organization.customer_invoice_prefix}-{organization.customer_invoice_next_number:04d}"
+        result = await session.execute(text("SELECT nextval('invoice_number_seq')"))
+        number = result.scalar_one()
+
+        # Backward compatability
         repository = OrganizationRepository.from_session(session)
-        organization = await repository.update(
+        await repository.update(
             organization,
             update_dict={
                 "customer_invoice_next_number": organization.customer_invoice_next_number
                 + 1
             },
         )
-        return invoice_number
+
+        return f"{organization.customer_invoice_prefix}-{number:04d}"
 
     async def _after_update(
         self,

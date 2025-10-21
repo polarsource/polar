@@ -46,6 +46,10 @@ async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
         await conn.run_sync(Model.metadata.create_all)
+        # Create global invoice number sequence (from migration)
+        await conn.execute(
+            text("CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START WITH 1")
+        )
     await engine.dispose()
 
     yield

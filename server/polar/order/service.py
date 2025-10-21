@@ -318,16 +318,6 @@ def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
 
 
 class OrderService:
-    def get_statement_descriptor_suffix(
-        self, order: Order, organization: Organization
-    ) -> str:
-        if (
-            order.billing_reason
-            == OrderBillingReasonInternal.subscription_cycle_after_trial
-        ):
-            return f"{organization.statement_descriptor} TRIAL OVER"
-        return organization.statement_descriptor
-
     @asynccontextmanager
     async def acquire_payment_lock(
         self, session: AsyncSession, order: Order, *, release_on_success: bool = True
@@ -903,9 +893,7 @@ class OrderService:
                         customer=stripe_customer_id,
                         confirm=True,
                         off_session=True,
-                        statement_descriptor_suffix=self.get_statement_descriptor_suffix(
-                            order, order.organization
-                        ),
+                        statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{order.organization.name} — {order.product.name}",
                         metadata=metadata,
                     )
@@ -1014,9 +1002,7 @@ class OrderService:
                         payment_method=saved_payment_method.processor_id,
                         customer=customer.stripe_customer_id,
                         confirm=True,
-                        statement_descriptor_suffix=self.get_statement_descriptor_suffix(
-                            order, organization
-                        ),
+                        statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{organization.name} — {order.product.name}",
                         metadata=metadata,
                         return_url=settings.generate_frontend_url(
@@ -1034,9 +1020,7 @@ class OrderService:
                         confirmation_token=confirmation_token_id,
                         customer=customer.stripe_customer_id,
                         setup_future_usage="off_session",
-                        statement_descriptor_suffix=self.get_statement_descriptor_suffix(
-                            order, organization
-                        ),
+                        statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{organization.name} — {order.product.name}",
                         metadata=metadata,
                         return_url=settings.generate_frontend_url(

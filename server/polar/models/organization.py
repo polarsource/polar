@@ -292,14 +292,17 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_active(self) -> bool:
         return self.status == Organization.Status.ACTIVE
 
-    @property
-    def statement_descriptor(self) -> str:
-        return self.slug[: settings.stripe_descriptor_suffix_max_length]
+    def statement_descriptor(self, suffix: str = "") -> str:
+        max_length = settings.stripe_descriptor_suffix_max_length
+        if suffix:
+            space_for_slug = max_length - len(suffix)
+            return self.slug[:space_for_slug] + suffix
+        return self.slug[:max_length]
 
     @property
     def statement_descriptor_prefixed(self) -> str:
         # Cannot use *. Setting separator to # instead.
-        return f"{settings.STRIPE_STATEMENT_DESCRIPTOR}# {self.statement_descriptor}"
+        return f"{settings.STRIPE_STATEMENT_DESCRIPTOR}# {self.statement_descriptor()}"
 
     @property
     def email_from_reply(self) -> EmailFromReply:

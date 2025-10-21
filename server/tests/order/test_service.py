@@ -3057,7 +3057,7 @@ class TestTriggerPayment:
         call_kwargs = stripe_service_mock.create_payment_intent.call_args[1]
         assert (
             call_kwargs["statement_descriptor_suffix"]
-            == organization.statement_descriptor
+            == organization.statement_descriptor()
         )
 
     async def test_statement_descriptor_after_trial(
@@ -3087,10 +3087,13 @@ class TestTriggerPayment:
 
         stripe_service_mock.create_payment_intent.assert_called_once()
         call_kwargs = stripe_service_mock.create_payment_intent.call_args[1]
-        assert (
-            call_kwargs["statement_descriptor_suffix"]
-            == f"{organization.statement_descriptor} TRIAL OVER"
-        )
+
+        descriptor = call_kwargs["statement_descriptor_suffix"]
+        assert descriptor.endswith(" TRIAL OVER")
+        from polar.config import settings
+
+        assert len(descriptor) <= settings.stripe_descriptor_suffix_max_length
+        assert descriptor.startswith(organization.slug[:4])
 
 
 @pytest.mark.asyncio

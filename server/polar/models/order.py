@@ -305,3 +305,12 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @property
     def is_invoice_generated(self) -> bool:
         return self.invoice_path is not None
+
+    @property
+    def statement_descriptor_suffix(self) -> str:
+        if (
+            self.billing_reason
+            == OrderBillingReasonInternal.subscription_cycle_after_trial
+        ):
+            return self.organization.statement_descriptor(" TRIAL OVER")
+        return self.organization.statement_descriptor()

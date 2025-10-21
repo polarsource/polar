@@ -342,10 +342,10 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return True
 
     def can_uncancel(self) -> bool:
-        return self.cancel_at_period_end and self.status in {
-            SubscriptionStatus.active,
-            SubscriptionStatus.past_due,
-        }
+        return (
+            self.cancel_at_period_end
+            and self.status in SubscriptionStatus.billable_statuses()
+        )
 
     def set_started_at(self) -> None:
         """

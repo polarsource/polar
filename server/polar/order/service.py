@@ -26,7 +26,7 @@ from polar.email.react import render_email_template
 from polar.email.schemas import (
     EmailAdapter,
 )
-from polar.email.sender import enqueue_email
+from polar.email.sender import Attachment, enqueue_email
 from polar.enums import PaymentProcessor
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
@@ -1499,12 +1499,31 @@ class OrderService:
             }
         )
 
+        # Generate invoice to attach to the email
+        invoice_path: str | None = None
+        if invoice_path is None:
+            if order.billing_name is None or order.billing_address is None:
+                log.warning(
+                    "Cannot generate invoice, missing billing info", order_id=order.id
+                )
+            else:
+                order = await self.generate_invoice(session, order)
+                invoice_path = order.invoice_path
+
+        attachments: list[Attachment] = []
+        if invoice_path is not None:
+            invoice = await self.get_order_invoice(order)
+            attachments = [
+                {"remote_url": invoice.url, "filename": order.invoice_filename}
+            ]
+
         body = render_email_template(email)
         enqueue_email(
             **organization.email_from_reply,
             to_email_addr=customer.email,
             subject=subject,
             html_content=body,
+            attachments=attachments,
         )
 
     async def update_product_benefits_grants(
@@ -1642,7 +1661,7 @@ class OrderService:
             await webhook_service.send(session, organization, event_type, order)
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
-        await self.send_confirmation_email(session, order)
+        enqueue_job("order.confirmation_email", order.id)
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         if order.paid:

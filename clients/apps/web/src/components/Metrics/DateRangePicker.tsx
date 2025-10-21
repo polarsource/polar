@@ -16,12 +16,11 @@ import {
   subMonths,
   subYears,
 } from 'date-fns'
-import { CalendarIcon } from 'lucide-react'
 import * as React from 'react'
 import { useContext, useEffect } from 'react'
 
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
 import {
   Calendar,
   DateRange as InternalDateRange,
@@ -70,49 +69,17 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   }, [internalDate])
 
   return (
-    <div className={twMerge('grid gap-2', className)}>
+    <div
+      className={twMerge(
+        'dark:border-polar-700 dark:bg-polar-800 shadow-xs dark:divide-polar-700 flex flex-row divide-x divide-gray-200 overflow-hidden rounded-xl border border-gray-200 bg-white',
+        className,
+      )}
+    >
       <Popover>
-        <PopoverTrigger
-          asChild
-          className="dark:bg-polar-800 rounded-xl! border-gray-200 bg-white shadow-xs"
-        >
-          <Button
-            id="date"
-            variant={'outline'}
-            className={twMerge(
-              'h-10 justify-start rounded-md text-left font-normal',
-              !date && 'text-muted-foreground',
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to ? (
-                <>
-                  {format(date.from, 'LLL dd, y')} -{' '}
-                  {format(date.to, 'LLL dd, y')}
-                </>
-              ) : (
-                format(date.from, 'LLL dd, y')
-              )
-            ) : (
-              <span>Pick a date</span>
-            )}
-          </Button>
+        <PopoverTrigger className="dark:hover:bg-polar-700 flex cursor-pointer items-center justify-center px-4 py-3 duration-150 hover:bg-gray-100">
+          <CalendarMonthOutlined fontSize="inherit" />
         </PopoverTrigger>
-        <PopoverContent
-          className="flex w-auto flex-col p-0 md:flex-row"
-          align="start"
-        >
-          <DateRangeIntervals
-            interval={interval}
-            onIntervalChange={(int) => {
-              setInterval(int)
-              setInternalDate({
-                from: int.value[0],
-                to: int.value[1],
-              })
-            }}
-          />
+        <PopoverContent>
           <Calendar
             autoFocus
             mode="range"
@@ -123,6 +90,37 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             onSelect={(v) => {
               setInternalDate(v)
               setInterval(undefined)
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+
+      <Popover>
+        <PopoverTrigger className="dark:hover:bg-polar-700 flex-1 cursor-pointer text-sm duration-150 hover:bg-gray-100">
+          {interval ? (
+            interval.label
+          ) : date?.from ? (
+            date.to ? (
+              <>
+                {format(date.from, 'LLL dd, y')} -{' '}
+                {format(date.to, 'LLL dd, y')}
+              </>
+            ) : (
+              format(date.from, 'LLL dd, y')
+            )
+          ) : (
+            <span>Pick a date</span>
+          )}
+        </PopoverTrigger>
+        <PopoverContent className="p-2">
+          <DateRangeIntervals
+            interval={interval}
+            onIntervalChange={(int) => {
+              setInterval(int)
+              setInternalDate({
+                from: int.value[0],
+                to: int.value[1],
+              })
             }}
           />
         </PopoverContent>
@@ -213,14 +211,14 @@ const DateRangeIntervals = ({
   ]
 
   return (
-    <div className="flex w-48 flex-col gap-1 p-4">
+    <div className="flex w-full flex-col gap-1">
       {intervals.map((int) => (
         <div
           key={int.slug}
           onClick={() => onIntervalChange(int)}
           role="button"
           className={twMerge(
-            'dark:hover:bg-polar-800 dark:text-polar-500 flex w-full items-center justify-between rounded-xs border border-transparent px-2 py-1 text-sm text-gray-500 hover:bg-gray-100',
+            'dark:hover:bg-polar-800 dark:text-polar-500 flex w-full items-center justify-between rounded-sm border border-transparent px-3 py-2 text-sm text-gray-500 hover:bg-gray-100',
             interval?.slug === int.slug &&
               'dark:bg-polar-800 dark:border-polar-700 bg-gray-100 text-black dark:text-white',
           )}

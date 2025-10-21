@@ -50,6 +50,21 @@ def test_invalid_metadata_value_too_long() -> None:
             }
         )
 
+def test_invalid_cost_metadata() -> None:
+    with pytest.raises(ValidationError) as e:
+        EventCreateExternalCustomer.model_validate(
+            {
+                "external_customer_id": "CUSTOMER",
+                "name": "EVENT",
+                "metadata": {"_cost": {"amount": 1, "currency": "eur"}},
+            }
+        )
+
+    errors = e.value.errors()
+    assert len(errors) == 1
+    assert errors[0]["loc"] == ("metadata", "_cost", "currency")
+    assert errors[0]["type"] == "string_pattern_mismatch"
+    assert errors[0]["msg"] == "String should match pattern '^usd$'"
 
 def test_invalid_llm_metadata() -> None:
     with pytest.raises(ValidationError) as e:

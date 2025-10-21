@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
+from sqlalchemy import TIMESTAMP, CheckConstraint, ForeignKey, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -12,6 +12,7 @@ from polar.product.guard import is_metered_price
 
 if TYPE_CHECKING:
     from .customer import Customer
+    from .order import Order
     from .subscription import Subscription
 
 
@@ -22,12 +23,45 @@ class SeatStatus(StrEnum):
 
 
 class CustomerSeat(RecordModel):
-    __tablename__ = "customer_seats"
+    """
+    Represents a seat that can be assigned to a customer for access to benefits. It's
+    mainly used for the seat-based billing.
 
-    subscription_id: Mapped[UUID] = mapped_column(
+    Seats can be associated with either:
+    - A recurring subscription (subscription_id) for ongoing seat-based billing
+    - A one-time order (order_id) for perpetual seat-based purchases
+
+    Lifecycle:
+    1. pending: Seat created but not yet assigned/claimed by an end customer
+    2. claimed: Customer has accepted the invitation and benefits are granted
+    3. revoked: Seat has been revoked, benefits removed, can be reassigned
+
+    Key constraints:
+    - Exactly one of subscription_id OR order_id must be set (enforced by seat_source_check)
+    - For subscriptions: seats are tied to billing cycle, revoked when subscription ends
+    - For orders: seats are perpetual, never expire once claimed
+    """
+
+    __tablename__ = "customer_seats"
+    __table_args__ = (
+        CheckConstraint(
+            "(subscription_id IS NOT NULL AND order_id IS NULL) OR "
+            "(subscription_id IS NULL AND order_id IS NOT NULL)",
+            name="seat_source_check",
+        ),
+    )
+
+    subscription_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("subscriptions.id", ondelete="cascade"),
-        nullable=False,
+        nullable=True,
+        index=True,
+    )
+
+    order_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("orders.id", ondelete="cascade"),
+        nullable=True,
         index=True,
     )
 
@@ -63,8 +97,12 @@ class CustomerSeat(RecordModel):
     )
 
     @declared_attr
-    def subscription(cls) -> Mapped["Subscription"]:
+    def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise")
+
+    @declared_attr
+    def order(cls) -> Mapped["Order | None"]:
+        return relationship("Order", lazy="raise")
 
     @declared_attr
     def customer(cls) -> Mapped["Customer | None"]:

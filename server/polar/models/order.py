@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from polar.models import (
         Checkout,
         Customer,
+        CustomerSeat,
         Discount,
         Organization,
         Product,
@@ -177,6 +178,8 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def checkout(cls) -> Mapped["Checkout | None"]:
         return relationship("Checkout", lazy="raise")
 
+    seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+
     items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem",
         back_populates="order",
@@ -184,6 +187,15 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         # Items are almost always needed, so eager loading makes sense
         lazy="selectin",
     )
+
+    @declared_attr
+    def customer_seats(cls) -> Mapped[list["CustomerSeat"]]:
+        return relationship(
+            "CustomerSeat",
+            lazy="raise",
+            back_populates="order",
+            cascade="all, delete-orphan",
+        )
 
     @property
     def legacy_product_price(self) -> "ProductPrice":

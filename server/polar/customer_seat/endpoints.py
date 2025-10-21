@@ -181,6 +181,9 @@ async def revoke_seat(
     if not seat:
         raise ResourceNotFound("Seat not found")
 
+    if not seat.subscription or not seat.subscription.product:
+        raise ResourceNotFound("Seat not found")
+
     seat_service.check_seat_feature_enabled(seat.subscription.product.organization)
 
     revoked_seat = await seat_service.revoke_seat(session, seat)
@@ -220,6 +223,9 @@ async def resend_invitation(
     if not seat:
         raise ResourceNotFound("Seat not found")
 
+    if not seat.subscription or not seat.subscription.product:
+        raise ResourceNotFound("Seat not found")
+
     seat_service.check_seat_feature_enabled(seat.subscription.product.organization)
 
     resent_seat = await seat_service.resend_invitation(session, seat)
@@ -245,6 +251,9 @@ async def get_claim_info(
     seat = await seat_service.get_seat_by_token(session, invitation_token)
 
     if not seat:
+        raise ResourceNotFound("Invalid or expired invitation token")
+
+    if not seat.subscription or not seat.subscription.product:
         raise ResourceNotFound("Invalid or expired invitation token")
 
     seat_service.check_seat_feature_enabled(seat.subscription.product.organization)

@@ -230,6 +230,9 @@ class SeatService:
         if seat.is_claimed():
             raise InvalidInvitationToken(invitation_token)
 
+        if not seat.subscription or not seat.subscription.product:
+            raise InvalidInvitationToken(invitation_token)
+
         self.check_seat_feature_enabled(seat.subscription.product.organization)
 
         if not seat.customer_id or not seat.customer:
@@ -286,7 +289,7 @@ class SeatService:
         original_customer_id = seat.customer_id
 
         # Revoke benefits from the customer before clearing the customer_id
-        if original_customer_id:
+        if original_customer_id and seat.subscription:
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
                 task="revoke",
@@ -324,6 +327,9 @@ class SeatService:
         if not seat:
             return None
 
+        if not seat.subscription or not seat.subscription.product:
+            return None
+
         if isinstance(auth_subject.subject, Organization):
             if seat.subscription.product.organization_id != auth_subject.subject.id:
                 return None
@@ -338,8 +344,13 @@ class SeatService:
         session: AsyncSession,
         seat: CustomerSeat,
     ) -> CustomerSeat:
-        if seat.subscription and seat.subscription.product:
-            self.check_seat_feature_enabled(seat.subscription.product.organization)
+        if not seat.subscription or not seat.subscription.product:
+            raise InvalidInvitationToken(seat.invitation_token or "")
+
+        if not seat.subscription.customer:
+            raise InvalidInvitationToken(seat.invitation_token or "")
+
+        self.check_seat_feature_enabled(seat.subscription.product.organization)
 
         if not seat.is_pending():
             raise SeatNotPending()

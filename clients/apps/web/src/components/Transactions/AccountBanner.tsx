@@ -129,7 +129,7 @@ const OrganizationAccountBanner: React.FC<{
   if (isNotAdmin) {
     return (
       <Banner color="default">
-        <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
+        <CircleAlertIcon className="h-6 w-6 text-red-500" />
         <span className="text-sm">
           You are not the admin of the account. Only the admin can manage payout
           settings.

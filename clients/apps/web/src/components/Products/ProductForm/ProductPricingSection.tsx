@@ -265,7 +265,7 @@ export const ProductPriceSeatBasedItem: React.FC<
                   type="button"
                   size="icon"
                   variant="ghost"
-                  className="dark:text-polar-400 -mr-2 h-7 w-7 text-gray-400 opacity-0 transition-opacity hover:text-gray-600 group-hover:opacity-100 dark:hover:text-gray-300"
+                  className="dark:text-polar-400 -mr-2 h-7 w-7 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-600 dark:hover:text-gray-300"
                   onClick={() => removeTier(tierIndex)}
                   aria-label={`Remove ${getTierTitle(tierIndex, currentTier)}`}
                 >
@@ -917,7 +917,7 @@ export const ProductPricingSection = ({
           ))}
 
           {update && recurringInterval && (
-            <ShadowBox className="dark:bg-polar-800 rounded-2xl! border-none! flex flex-col gap-2 p-4">
+            <ShadowBox className="dark:bg-polar-800 flex flex-col gap-2 rounded-2xl! border-none! p-4">
               <h3 className="text-sm font-medium">Updating pricing model</h3>
               <p className="dark:text-polar-500 text-gray-5 00 text-sm">
                 Changing pricing model on subscription products will only affect

@@ -62,9 +62,6 @@ importers:
       '@emotion/styled':
         specifier: ^11.14.1
         version: 11.14.1(@emotion/react@11.14.0(@types/react@19.2.2)(react@19.2.0))(@types/react@19.2.2)(react@19.2.0)
-      '@heroicons/react':
-        specifier: ^2.2.0
-        version: 2.2.0(react@19.2.0)
       '@hookform/error-message':
         specifier: ^2.0.1
         version: 2.0.1(react-dom@19.2.0(react@19.2.0))(react-hook-form@7.65.0(react@19.2.0))(react@19.2.0)
@@ -1173,11 +1170,6 @@ packages:
     peerDependenciesMeta:
       '@modelcontextprotocol/sdk':
         optional: true
-
-  '@heroicons/react@2.2.0':
-    resolution: {integrity: sha512-LMcepvRaS9LYHJGsF0zzmgKCUim/X3N/DQKc4jepAXJ7l8QxJ1PmxJzqplF2Z3FE4PqBAIGyJAQ/w4B5dsqbtQ==}
-    peerDependencies:
-      react: '>= 16 || ^19.0.0-rc'
 
   '@hookform/error-message@2.0.1':
     resolution: {integrity: sha512-U410sAr92xgxT1idlu9WWOVjndxLdgPUHEB8Schr27C9eh7/xUnITWpCMF93s+lGiG++D4JnbSnrb5A21AdSNg==}
@@ -8102,10 +8094,6 @@ snapshots:
       - encoding
       - supports-color
       - utf-8-validate
-
-  '@heroicons/react@2.2.0(react@19.2.0)':
-    dependencies:
-      react: 19.2.0
 
   '@hookform/error-message@2.0.1(react-dom@19.2.0(react@19.2.0))(react-hook-form@7.65.0(react@19.2.0))(react@19.2.0)':
     dependencies:

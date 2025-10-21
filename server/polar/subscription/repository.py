@@ -307,7 +307,7 @@ class SubscriptionProductPriceRepository(
         to a metered price for the specified meter.
         """
         seat = await self._get_active_seat_for_customer(customer_id)
-        if seat is None:
+        if seat is None or seat.subscription is None:
             return None
 
         # Find matching metered price in billing manager's subscription

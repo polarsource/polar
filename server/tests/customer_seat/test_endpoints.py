@@ -438,6 +438,7 @@ class TestGetClaimInfo:
             customer=customer,
         )
         await session.refresh(seat, ["subscription"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
@@ -531,8 +532,8 @@ class TestClaimSeat:
             subscription=subscription_with_seats,
             customer=customer,
         )
-        assert seat.subscription is not None
         await session.refresh(seat, ["subscription", "customer"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
         await session.refresh(seat.subscription.product, ["organization"])
 

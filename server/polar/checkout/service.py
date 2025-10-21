@@ -65,7 +65,7 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.discount import DiscountDuration
-from polar.models.order import OrderBillingReason
+from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
@@ -979,7 +979,7 @@ class CheckoutService:
                                 "confirm": True,
                                 "confirmation_token": checkout_confirm.confirmation_token_id,
                                 "customer": stripe_customer_id,
-                                "statement_descriptor_suffix": checkout.organization.statement_descriptor,
+                                "statement_descriptor_suffix": checkout.organization.statement_descriptor(),
                                 "description": f"{checkout.organization.name} — {checkout.product.name}",
                                 "metadata": intent_metadata,
                                 "return_url": settings.generate_frontend_url(
@@ -1074,9 +1074,9 @@ class CheckoutService:
                     session,
                     checkout,
                     subscription,
-                    OrderBillingReason.subscription_create
+                    OrderBillingReasonInternal.subscription_create
                     if created
-                    else OrderBillingReason.subscription_update,
+                    else OrderBillingReasonInternal.subscription_update,
                     payment,
                 )
         else:

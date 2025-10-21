@@ -1,6 +1,5 @@
 'use client'
 
-import { ArrowPathIcon, TrashIcon } from '@heroicons/react/24/outline'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -10,7 +9,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+
+const seatStatusToDisplayName = {
+  pending: [
+    'Pending',
+    'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',
+  ],
+  claimed: [
+    'Claimed',
+    'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
+  ],
+  revoked: [
+    'Revoked',
+    'bg-gray-100 text-gray-500 dark:bg-polar-700 dark:text-polar-500',
+  ],
+} as const
 
 interface CustomerSeat {
   id: string
@@ -75,7 +91,7 @@ export const SeatManagementTable = ({
           accessorKey: 'customer_email',
           header: 'Email',
           cell: ({ row }) => (
-            <span className="font-medium">
+            <span className="text-sm">
               {row.original.customer_email || '—'}
             </span>
           ),
@@ -85,15 +101,12 @@ export const SeatManagementTable = ({
           header: 'Status',
           cell: ({ row }) => {
             const status = row.original.status
-            const labels = {
-              pending: 'Pending',
-              claimed: 'Claimed',
-              revoked: 'Revoked',
-            }
+            const [label, className] = seatStatusToDisplayName[status]
             return (
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                {labels[status]}
-              </span>
+              <Status
+                className={twMerge(className, 'w-fit text-xs')}
+                status={label}
+              />
             )
           },
         },
@@ -122,7 +135,6 @@ export const SeatManagementTable = ({
                         onClick={() => handleResend(seat.id)}
                         disabled={isLoading}
                       >
-                        <ArrowPathIcon className="mr-2 h-4 w-4" />
                         Resend Invitation
                       </DropdownMenuItem>
                     )}
@@ -130,7 +142,6 @@ export const SeatManagementTable = ({
                       onClick={() => handleRevoke(seat.id)}
                       disabled={isLoading}
                     >
-                      <TrashIcon className="mr-2 h-4 w-4" />
                       Revoke Seat
                     </DropdownMenuItem>
                   </DropdownMenuContent>

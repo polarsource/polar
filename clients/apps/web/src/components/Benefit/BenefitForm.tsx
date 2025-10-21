@@ -94,7 +94,7 @@ export const BenefitForm = ({
                 </span>
               </div>
               <FormControl>
-                <Input {...field} />
+                <Input {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -1,8 +1,8 @@
 'use client'
 
-import { CommandLineIcon } from '@heroicons/react/24/outline'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { SquareTerminalIcon } from 'lucide-react'
 import Link from 'next/link'
 
 export const Tools = () => {
@@ -25,7 +25,7 @@ export const Tools = () => {
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
         <div className="dark:bg-polar-800 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
           <div className="flex flex-row items-center gap-x-3">
-            <CommandLineIcon className="h-5 w-5" />
+            <SquareTerminalIcon className="h-5 w-5" />
             <h1 className="text-xl">npx polar-init</h1>
           </div>
           <p className="dark:text-polar-400 text-gray-500">
@@ -35,7 +35,7 @@ export const Tools = () => {
         </div>
         <div className="dark:bg-polar-800 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
           <div className="flex flex-row items-center gap-x-3">
-            <CommandLineIcon className="h-5 w-5" />
+            <SquareTerminalIcon className="h-5 w-5" />
             <h1 className="text-xl">npx polar-migrate</h1>
           </div>
           <p className="dark:text-polar-400 text-gray-500">
@@ -44,7 +44,7 @@ export const Tools = () => {
         </div>
         <div className="dark:bg-polar-800 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
           <div className="flex flex-row items-center gap-x-3">
-            <CommandLineIcon className="h-5 w-5" />
+            <SquareTerminalIcon className="h-5 w-5" />
             <h1 className="text-xl">npx checkout-link</h1>
           </div>
           <p className="dark:text-polar-400 text-gray-500">

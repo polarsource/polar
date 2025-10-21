@@ -2,7 +2,14 @@ from typing import Annotated
 
 from babel.numbers import format_currency
 from fastapi import Path
-from pydantic import UUID4, AliasChoices, AliasPath, Field, computed_field
+from pydantic import (
+    UUID4,
+    AliasChoices,
+    AliasPath,
+    Field,
+    computed_field,
+    field_serializer,
+)
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
@@ -12,7 +19,11 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address, AddressInput
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
-from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.order import (
+    OrderBillingReason,
+    OrderBillingReasonInternal,
+    OrderStatus,
+)
 from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
 
@@ -62,11 +73,19 @@ class OrderBase(TimestampedSchema, IDSchema):
         description="Sales tax refunded in cents.", examples=[0]
     )
     currency: str = Field(examples=["usd"])
-    billing_reason: OrderBillingReason
+    billing_reason: OrderBillingReasonInternal
     billing_name: str | None = Field(
         description="The name of the customer that should appear on the invoice. "
     )
     billing_address: Address | None
+
+    @field_serializer("billing_reason")
+    def serialize_billing_reason(
+        self, value: OrderBillingReasonInternal
+    ) -> OrderBillingReason:
+        if value == OrderBillingReasonInternal.subscription_cycle_after_trial:
+            return OrderBillingReason.subscription_cycle
+        return OrderBillingReason(value)
 
     invoice_number: str = Field(
         description="The invoice number associated with this order."

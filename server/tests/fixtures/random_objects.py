@@ -87,7 +87,7 @@ from polar.models.discount import (
 )
 from polar.models.event import EventSource
 from polar.models.notification_recipient import NotificationRecipient
-from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.models.payout import PayoutStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
@@ -803,7 +803,7 @@ async def create_order(
     order_items: list[OrderItem] | None = None,
     subscription: Subscription | None = None,
     stripe_invoice_id: str | None = "INVOICE_ID",
-    billing_reason: OrderBillingReason = OrderBillingReason.purchase,
+    billing_reason: OrderBillingReasonInternal = OrderBillingReasonInternal.purchase,
     user_metadata: dict[str, Any] | None = None,
     created_at: datetime | None = None,
     custom_field_data: dict[str, Any] | None = None,
@@ -1962,7 +1962,8 @@ async def create_billing_entry(
 async def create_customer_seat(
     save_fixture: SaveFixture,
     *,
-    subscription: Subscription,
+    subscription: Subscription | None = None,
+    order: Order | None = None,
     status: SeatStatus = SeatStatus.pending,
     customer: Customer | None = None,
     invitation_token: str | None = None,
@@ -1970,18 +1971,29 @@ async def create_customer_seat(
     claimed_at: datetime | None = None,
     revoked_at: datetime | None = None,
 ) -> CustomerSeat:
+    if subscription is None and order is None:
+        raise ValueError("Either subscription or order must be provided")
+    if subscription is not None and order is not None:
+        raise ValueError("Only one of subscription or order can be provided")
+
     if invitation_token is None and status == SeatStatus.pending:
         invitation_token = secrets.token_urlsafe(32)
 
-    seat = CustomerSeat(
-        subscription_id=subscription.id,
-        status=status,
-        customer_id=customer.id if customer else None,
-        invitation_token=invitation_token,
-        claimed_at=claimed_at,
-        revoked_at=revoked_at,
-        seat_metadata=metadata or {},
-    )
+    seat_data = {
+        "status": status,
+        "customer_id": customer.id if customer else None,
+        "invitation_token": invitation_token,
+        "claimed_at": claimed_at,
+        "revoked_at": revoked_at,
+        "seat_metadata": metadata or {},
+    }
+
+    if subscription is not None:
+        seat_data["subscription_id"] = subscription.id
+    else:
+        seat_data["order_id"] = order.id
+
+    seat = CustomerSeat(**seat_data)
     await save_fixture(seat)
     return seat
 

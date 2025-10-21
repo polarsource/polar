@@ -351,6 +351,7 @@ class TestAssignSeat:
             claimed_at=utc_now(),
         )
         await session.refresh(revoked_seat, ["subscription"])
+        assert revoked_seat.subscription is not None
         await session.refresh(revoked_seat.subscription, ["product"])
         assert revoked_seat.subscription is not None
         await session.refresh(revoked_seat.subscription.product, ["organization"])
@@ -459,6 +460,7 @@ class TestClaimSeat:
             customer=customer,
         )
         await session.refresh(seat_pending, ["subscription"])
+        assert seat_pending.subscription is not None
         await session.refresh(seat_pending.subscription, ["product"])
         assert seat_pending.subscription is not None
         await session.refresh(seat_pending.subscription.product, ["organization"])
@@ -548,6 +550,7 @@ class TestClaimSeat:
             customer=customer,
         )
         await session.refresh(seat, ["subscription"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
@@ -714,6 +717,7 @@ class TestResendInvitation:
             status=SeatStatus.pending,
         )
         await session.refresh(seat, ["subscription", "customer"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product", "customer"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
@@ -771,6 +775,7 @@ class TestResendInvitation:
         )
         await save_fixture(seat)
         await session.refresh(seat, ["subscription", "customer"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
@@ -796,6 +801,7 @@ class TestResendInvitation:
         )
         await save_fixture(seat)
         await session.refresh(seat, ["subscription", "customer"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
@@ -820,6 +826,7 @@ class TestResendInvitation:
             status=SeatStatus.pending,
         )
         await session.refresh(seat, ["subscription", "customer"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
@@ -848,6 +855,7 @@ class TestResendInvitation:
             status=SeatStatus.revoked,
         )
         await session.refresh(seat, ["subscription", "customer"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
@@ -874,6 +882,7 @@ class TestBenefitGranting:
             customer=customer,
         )
         await session.refresh(seat, ["subscription"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
@@ -941,6 +950,7 @@ class TestBenefitGranting:
             customer=customer,
         )
         await session.refresh(seat, ["subscription"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])

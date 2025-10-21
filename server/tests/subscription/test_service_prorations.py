@@ -20,7 +20,7 @@ from polar.models import (
     Subscription,
 )
 from polar.models.billing_entry import BillingEntryDirection
-from polar.models.order import OrderBillingReason
+from polar.models.order import OrderBillingReasonInternal
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_fixed_price,
@@ -429,14 +429,14 @@ class TestUpdateProductProrations:
                 enqueue_job_mock.assert_any_call(
                     "order.create_subscription_order",
                     subscription.id,
-                    OrderBillingReason.subscription_cycle,
+                    OrderBillingReasonInternal.subscription_cycle,
                 )
                 assert len(calls) == 1
             elif expected_proration == SubscriptionProrationBehavior.invoice:
                 enqueue_job_mock.assert_any_call(
                     "order.create_subscription_order",
                     subscription.id,
-                    OrderBillingReason.subscription_update,
+                    OrderBillingReasonInternal.subscription_update,
                 )
                 assert len(calls) == 1
             else:
@@ -726,7 +726,7 @@ class TestUpdateProductProrations:
                 enqueue_job_mock.assert_any_call(
                     "order.create_subscription_order",
                     subscription.id,
-                    OrderBillingReason.subscription_update,
+                    OrderBillingReasonInternal.subscription_update,
                 )
                 assert len(calls) == 1
             else:
@@ -865,7 +865,7 @@ class TestUpdateProductProrations:
             enqueue_job_mock.assert_any_call(
                 "order.create_subscription_order",
                 subscriptions[1].id,
-                OrderBillingReason.subscription_update,
+                OrderBillingReasonInternal.subscription_update,
             )
             assert len(calls) == 1
 

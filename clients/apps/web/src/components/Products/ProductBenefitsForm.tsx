@@ -7,7 +7,6 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import Close from '@mui/icons-material/Close'
@@ -23,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
+import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

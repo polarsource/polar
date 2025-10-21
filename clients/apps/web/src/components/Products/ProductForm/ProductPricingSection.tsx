@@ -11,7 +11,6 @@ import {
   isMeteredPrice,
   isStaticPrice,
 } from '@/utils/product'
-import { PlusIcon } from '@heroicons/react/20/solid'
 import { ErrorMessage } from '@hookform/error-message'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { schemas } from '@polar-sh/client'
@@ -34,6 +33,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { PlusIcon } from 'lucide-react'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   useFieldArray,

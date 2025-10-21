@@ -1,4 +1,4 @@
-import { InformationCircleIcon } from '@heroicons/react/24/outline'
+import { InfoIcon } from 'lucide-react'
 import { ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -47,7 +47,7 @@ const SettingsCheckbox = ({
             id={`${id}-description`}
             className="dark:text-polar-400 inline-flex items-center space-x-1 text-gray-500"
           >
-            <InformationCircleIcon className="h-6 w-6" />
+            <InfoIcon className="h-6 w-6" />
             <span>{description}</span>
           </span>
         )}

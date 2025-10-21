@@ -85,6 +85,7 @@ async def customer_seat_pending(
         save_fixture, subscription=subscription_with_seats
     )
     await session.refresh(seat, ["subscription"])
+    assert seat.subscription is not None
     await session.refresh(seat.subscription, ["product"])
     assert seat.subscription is not None
     await session.refresh(seat.subscription.product, ["organization"])
@@ -106,6 +107,7 @@ async def customer_seat_claimed(
         claimed_at=utc_now(),
     )
     await session.refresh(seat, ["subscription"])
+    assert seat.subscription is not None
     await session.refresh(seat.subscription, ["product"])
     assert seat.subscription is not None
     await session.refresh(seat.subscription.product, ["organization"])

@@ -11,14 +11,12 @@ import {
   useRevokeSeat,
 } from '@/hooks/queries'
 import { validateEmail } from '@/utils/validation'
-import { PlusIcon } from '@heroicons/react/24/outline'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useState } from 'react'
@@ -26,7 +24,6 @@ import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import AmountLabel from '../Shared/AmountLabel'
 import { DetailRow } from '../Shared/DetailRow'
-import { Well, WellContent, WellHeader } from '../Shared/Well'
 import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { toast } from '../Toast/use-toast'
@@ -247,56 +244,45 @@ const CustomerPortalSubscription = ({
 
       {hasSeatBasedPricing && (
         <div className="flex flex-col gap-6">
-          <h3 className="text-lg">Seats</h3>
-          <Well className="flex flex-col gap-y-6">
-            <WellHeader>
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-xl">Manage Seats</h3>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  {availableSeats} of {totalSeats} seats available
-                </p>
-              </div>
-            </WellHeader>
-            <Separator className="dark:bg-polar-700" />
-            <WellContent className="gap-y-4">
-              <div className="flex flex-col gap-y-3">
-                <div className="flex items-start gap-2">
-                  <div className="flex-1">
-                    <Input
-                      type="email"
-                      placeholder="email@example.com"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value)
-                        setError(undefined)
-                      }}
-                      disabled={isSending || availableSeats === 0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAssignSeat()
-                        }
-                      }}
-                    />
-                    {error && (
-                      <p className="dark:text-polar-400 mt-1 text-xs text-gray-500">
-                        {error}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    onClick={handleAssignSeat}
-                    disabled={
-                      !email.trim() || availableSeats === 0 || isSending
+          <div className="flex flex-col gap-y-2">
+            <h3 className="text-lg">Seats</h3>
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              {availableSeats} of {totalSeats} seats available
+            </p>
+          </div>
+          <div className="flex flex-col gap-y-3">
+            <div className="flex items-start gap-4">
+              <div className="flex-1">
+                <Input
+                  type="email"
+                  placeholder="email@example.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    setError(undefined)
+                  }}
+                  disabled={isSending || availableSeats === 0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAssignSeat()
                     }
-                    loading={isSending}
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                    Invite
-                  </Button>
-                </div>
+                  }}
+                />
+                {error && (
+                  <p className="dark:text-polar-400 mt-1 text-xs text-gray-500">
+                    {error}
+                  </p>
+                )}
               </div>
-            </WellContent>
-          </Well>
+              <Button
+                onClick={handleAssignSeat}
+                disabled={!email.trim() || availableSeats === 0 || isSending}
+                loading={isSending}
+              >
+                Invite
+              </Button>
+            </div>
+          </div>
 
           {!isLoadingSeats && seats.length > 0 && (
             <div className="flex flex-col gap-4">

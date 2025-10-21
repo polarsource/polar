@@ -946,6 +946,7 @@ class TestCreateBillingEntriesWithSeats:
             claimed_at=utc_now(),
         )
         await session.refresh(seat, ["subscription", "customer"])
+        assert seat.subscription is not None
         await session.refresh(
             seat.subscription, ["product", "customer", "subscription_product_prices"]
         )
@@ -1041,6 +1042,7 @@ class TestCreateBillingEntriesWithSeats:
             claimed_at=utc_now(),
         )
         await session.refresh(seat, ["subscription", "customer"])
+        assert seat.subscription is not None
         await session.refresh(
             seat.subscription, ["product", "customer", "subscription_product_prices"]
         )
@@ -1129,6 +1131,7 @@ class TestCreateBillingEntriesWithSeats:
             claimed_at=utc_now(),
         )
         await session.refresh(seat1, ["subscription", "customer"])
+        assert seat1.subscription is not None
         await session.refresh(
             seat1.subscription, ["product", "customer", "subscription_product_prices"]
         )
@@ -1143,6 +1146,7 @@ class TestCreateBillingEntriesWithSeats:
             claimed_at=utc_now(),
         )
         await session.refresh(seat2, ["subscription", "customer"])
+        assert seat2.subscription is not None
         await session.refresh(
             seat2.subscription, ["product", "customer", "subscription_product_prices"]
         )
@@ -1248,6 +1252,7 @@ class TestCreateBillingEntriesWithSeats:
             claimed_at=utc_now(),
         )
         await session.refresh(seat1, ["subscription", "customer"])
+        assert seat1.subscription is not None
         await session.refresh(
             seat1.subscription, ["product", "customer", "subscription_product_prices"]
         )
@@ -1262,6 +1267,7 @@ class TestCreateBillingEntriesWithSeats:
             claimed_at=utc_now(),
         )
         await session.refresh(seat2, ["subscription", "customer"])
+        assert seat2.subscription is not None
         await session.refresh(
             seat2.subscription, ["product", "customer", "subscription_product_prices"]
         )

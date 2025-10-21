@@ -1,5 +1,5 @@
-import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
+import { CircleAlertIcon } from 'lucide-react'
 
 export interface AccessRestrictedProps {
   message?: string
@@ -12,7 +12,7 @@ export default function AccessRestricted({
 }: AccessRestrictedProps) {
   const content = (
     <div className="flex items-center gap-4 p-8">
-      <ExclamationCircleIcon className="h-8 w-8 shrink-0 text-red-500" />
+      <CircleAlertIcon className="h-8 w-8 shrink-0 text-red-500" />
       <div className="flex flex-col gap-2">
         <h2 className="text-lg font-medium">Access Restricted</h2>
         <p className="dark:text-polar-500 text-gray-500">{message}</p>

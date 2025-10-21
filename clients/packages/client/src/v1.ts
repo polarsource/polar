@@ -7751,9 +7751,15 @@ export interface components {
     CheckoutDiscountFixedOnceForeverDuration: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Id
@@ -7776,9 +7782,15 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Id
@@ -7798,7 +7810,11 @@ export interface components {
     CheckoutDiscountPercentageOnceForeverDuration: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Id
@@ -7821,7 +7837,11 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Id
@@ -11169,49 +11189,61 @@ export interface components {
       /**
        * Subtotal Amount
        * @description Amount in cents, before discounts and taxes.
+       * @example 10000
        */
       subtotal_amount: number
       /**
        * Discount Amount
        * @description Discount amount in cents.
+       * @example 1000
        */
       discount_amount: number
       /**
        * Net Amount
        * @description Amount in cents, after discounts but before taxes.
+       * @example 9000
        */
       net_amount: number
       /**
        * Tax Amount
        * @description Sales tax amount in cents.
+       * @example 720
        */
       tax_amount: number
       /**
        * Total Amount
        * @description Amount in cents, after discounts and taxes.
+       * @example 9720
        */
       total_amount: number
       /**
        * Applied Balance Amount
        * @description Customer's balance amount applied to this invoice. Can increase the total amount paid, if the customer has a negative balance,  or decrease it, if the customer has a positive balance.Amount in cents.
+       * @example 0
        */
       applied_balance_amount: number
       /**
        * Due Amount
        * @description Amount in cents that is due for this order.
+       * @example 0
        */
       due_amount: number
       /**
        * Refunded Amount
        * @description Amount refunded in cents.
+       * @example 0
        */
       refunded_amount: number
       /**
        * Refunded Tax Amount
        * @description Sales tax refunded in cents.
+       * @example 0
        */
       refunded_tax_amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       billing_reason: components['schemas']['OrderBillingReason']
       /**
@@ -11447,16 +11479,24 @@ export interface components {
       /**
        * Amount
        * @description The amount of the subscription.
+       * @example 10000
        */
       amount: number
       /**
        * Currency
        * @description The currency of the subscription.
+       * @example usd
        */
       currency: string
-      /** @description The interval at which the subscription recurs. */
+      /**
+       * @description The interval at which the subscription recurs.
+       * @example month
+       */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /** @description The status of the subscription. */
+      /**
+       * @description The status of the subscription.
+       * @example active
+       */
       status: components['schemas']['SubscriptionStatus']
       /**
        * Current Period Start
@@ -12308,16 +12348,24 @@ export interface components {
       /**
        * Amount
        * @description The amount of the subscription.
+       * @example 10000
        */
       amount: number
       /**
        * Currency
        * @description The currency of the subscription.
+       * @example usd
        */
       currency: string
-      /** @description The interval at which the subscription recurs. */
+      /**
+       * @description The interval at which the subscription recurs.
+       * @example month
+       */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /** @description The status of the subscription. */
+      /**
+       * @description The status of the subscription.
+       * @example active
+       */
       status: components['schemas']['SubscriptionStatus']
       /**
        * Current Period Start
@@ -12732,9 +12780,15 @@ export interface components {
     DiscountFixedOnceForeverDuration: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Created At
@@ -12801,9 +12855,15 @@ export interface components {
     DiscountFixedOnceForeverDurationBase: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Created At
@@ -12943,9 +13003,15 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Created At
@@ -13014,9 +13080,15 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Created At
@@ -13162,7 +13234,11 @@ export interface components {
     DiscountPercentageOnceForeverDuration: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Created At
@@ -13229,7 +13305,11 @@ export interface components {
     DiscountPercentageOnceForeverDurationBase: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Created At
@@ -13366,7 +13446,11 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Created At
@@ -13435,7 +13519,11 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Created At
@@ -14320,6 +14408,11 @@ export interface components {
        * @description The number of LLM input tokens used for the event.
        */
       input_tokens: number
+      /**
+       * Cached Input Tokens
+       * @description The number of LLM cached tokens that were used for the event.
+       */
+      cached_input_tokens?: number
       /**
        * Output Tokens
        * @description The number of LLM output tokens used for the event.
@@ -16134,49 +16227,61 @@ export interface components {
       /**
        * Subtotal Amount
        * @description Amount in cents, before discounts and taxes.
+       * @example 10000
        */
       subtotal_amount: number
       /**
        * Discount Amount
        * @description Discount amount in cents.
+       * @example 1000
        */
       discount_amount: number
       /**
        * Net Amount
        * @description Amount in cents, after discounts but before taxes.
+       * @example 9000
        */
       net_amount: number
       /**
        * Tax Amount
        * @description Sales tax amount in cents.
+       * @example 720
        */
       tax_amount: number
       /**
        * Total Amount
        * @description Amount in cents, after discounts and taxes.
+       * @example 9720
        */
       total_amount: number
       /**
        * Applied Balance Amount
        * @description Customer's balance amount applied to this invoice. Can increase the total amount paid, if the customer has a negative balance,  or decrease it, if the customer has a positive balance.Amount in cents.
+       * @example 0
        */
       applied_balance_amount: number
       /**
        * Due Amount
        * @description Amount in cents that is due for this order.
+       * @example 0
        */
       due_amount: number
       /**
        * Refunded Amount
        * @description Amount refunded in cents.
+       * @example 0
        */
       refunded_amount: number
       /**
        * Refunded Tax Amount
        * @description Sales tax refunded in cents.
+       * @example 0
        */
       refunded_tax_amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       billing_reason: components['schemas']['OrderBillingReason']
       /**
@@ -16225,6 +16330,7 @@ export interface components {
       /**
        * Platform Fee Amount
        * @description Platform fee amount in cents.
+       * @example 500
        */
       platform_fee_amount: number
       customer: components['schemas']['OrderCustomer']
@@ -16259,6 +16365,17 @@ export interface components {
       | 'purchase'
       | 'subscription_create'
       | 'subscription_cycle'
+      | 'subscription_update'
+    /**
+     * OrderBillingReasonInternal
+     * @description Internal billing reasons with additional granularity.
+     * @enum {string}
+     */
+    OrderBillingReasonInternal:
+      | 'purchase'
+      | 'subscription_create'
+      | 'subscription_cycle'
+      | 'subscription_cycle_after_trial'
       | 'subscription_update'
     /** OrderCustomer */
     OrderCustomer: {
@@ -16365,21 +16482,25 @@ export interface components {
       /**
        * Label
        * @description Description of the line item charge.
+       * @example Pro Plan
        */
       label: string
       /**
        * Amount
        * @description Amount in cents, before discounts and taxes.
+       * @example 10000
        */
       amount: number
       /**
        * Tax Amount
        * @description Sales tax amount in cents.
+       * @example 720
        */
       tax_amount: number
       /**
        * Proration
        * @description Whether this charge is due to a proration.
+       * @example false
        */
       proration: boolean
       /**
@@ -16514,16 +16635,24 @@ export interface components {
       /**
        * Amount
        * @description The amount of the subscription.
+       * @example 10000
        */
       amount: number
       /**
        * Currency
        * @description The currency of the subscription.
+       * @example usd
        */
       currency: string
-      /** @description The interval at which the subscription recurs. */
+      /**
+       * @description The interval at which the subscription recurs.
+       * @example month
+       */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /** @description The status of the subscription. */
+      /**
+       * @description The status of the subscription.
+       * @example active
+       */
       status: components['schemas']['SubscriptionStatus']
       /**
        * Current Period Start
@@ -19032,16 +19161,24 @@ export interface components {
       /**
        * Amount
        * @description The amount of the subscription.
+       * @example 10000
        */
       amount: number
       /**
        * Currency
        * @description The currency of the subscription.
+       * @example usd
        */
       currency: string
-      /** @description The interval at which the subscription recurs. */
+      /**
+       * @description The interval at which the subscription recurs.
+       * @example month
+       */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /** @description The status of the subscription. */
+      /**
+       * @description The status of the subscription.
+       * @example active
+       */
       status: components['schemas']['SubscriptionStatus']
       /**
        * Current Period Start
@@ -33137,6 +33274,15 @@ export const orderBillingReasonValues: ReadonlyArray<
   'purchase',
   'subscription_create',
   'subscription_cycle',
+  'subscription_update',
+]
+export const orderBillingReasonInternalValues: ReadonlyArray<
+  components['schemas']['OrderBillingReasonInternal']
+> = [
+  'purchase',
+  'subscription_create',
+  'subscription_cycle',
+  'subscription_cycle_after_trial',
   'subscription_update',
 ]
 export const orderSortPropertyValues: ReadonlyArray<

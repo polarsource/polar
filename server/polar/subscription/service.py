@@ -1271,7 +1271,10 @@ class SubscriptionService:
         if subscription.ended_at:
             raise ResourceUnavailable()
 
-        if not (subscription.active and subscription.cancel_at_period_end):
+        if not (
+            subscription.status in SubscriptionStatus.billable_statuses()
+            and subscription.cancel_at_period_end
+        ):
             raise BadRequest()
 
         previous_status = subscription.status

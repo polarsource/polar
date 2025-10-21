@@ -221,14 +221,20 @@ async def redirect(
         utm_content=utm_content,
     )
 
-    # Add the query parameters from the request to the URL except the ones that were used to prefill
+    validated_custom_field_keys = (
+        set(checkout.custom_field_data.keys()) if checkout.custom_field_data else set()
+    )
+
     checkout_url = URL(checkout.url)
     query_params = {
         k: v
         for k, v in request.query_params.items()
-        if k not in {"embed_origin"}
-        and k not in query_prefill
-        and not k.startswith("custom_field_data.")
+        if k != "embed_origin"
+        and (k not in query_prefill or query_prefill[k] is None)
+        and not (
+            k.startswith("custom_field_data.")
+            and k.replace("custom_field_data.", "") in validated_custom_field_keys
+        )
     }
     checkout_url = checkout_url.include_query_params(**query_params)
 

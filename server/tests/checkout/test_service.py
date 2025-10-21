@@ -2041,13 +2041,24 @@ class TestCheckoutLinkCreate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        product_one_time: Product,
+        organization: Organization,
         discount_fixed_once: Discount,
     ) -> None:
-        checkout_link = await create_checkout_link(
-            save_fixture, products=[product_one_time]
+        # Create a custom field for the product
+        company_field = await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            organization=organization,
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            attached_custom_fields=[(company_field, False)],
         )
 
+        checkout_link = await create_checkout_link(save_fixture, products=[product])
         checkout = await checkout_service.checkout_link_create(
             session,
             checkout_link,
@@ -2055,7 +2066,10 @@ class TestCheckoutLinkCreate:
                 "customer_email": "test@example.com",
                 "customer_name": "John Doe",
                 "discount_code": discount_fixed_once.code,
-                "custom_field_data": {"company": "Acme Inc"},
+                "custom_field_data": {
+                    "company": "Acme Inc",
+                    "invalid_field": "This should be ignored",
+                },
             },
         )
 
@@ -2063,6 +2077,7 @@ class TestCheckoutLinkCreate:
         assert checkout.customer_name == "John Doe"
         assert checkout.discount == discount_fixed_once
         assert checkout.custom_field_data == {"company": "Acme Inc"}
+        assert "invalid_field" not in checkout.custom_field_data
 
 
 @pytest.mark.asyncio

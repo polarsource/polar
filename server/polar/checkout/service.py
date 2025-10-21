@@ -782,10 +782,30 @@ class CheckoutService:
             if custom_field_data_value is not None and isinstance(
                 custom_field_data_value, dict
             ):
-                checkout.custom_field_data = {
-                    **(checkout.custom_field_data or {}),
-                    **custom_field_data_value,
+                valid_slugs = {
+                    cf.custom_field.slug for cf in product.attached_custom_fields
                 }
+
+                filtered_data = {
+                    slug: value
+                    for slug, value in custom_field_data_value.items()
+                    if slug in valid_slugs
+                }
+
+                if filtered_data:
+                    try:
+                        validated_data = validate_custom_field_data(
+                            product.attached_custom_fields,
+                            filtered_data,
+                            validate_required=False,
+                        )
+                        checkout.custom_field_data = {
+                            **(checkout.custom_field_data or {}),
+                            **validated_data,
+                        }
+                    except PolarRequestValidationError:
+                        # If validation fails, just ignore the custom field data
+                        pass
 
         for key, value in query_metadata.items():
             if value is not None and key not in checkout.user_metadata:

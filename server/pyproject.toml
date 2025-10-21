@@ -5,7 +5,7 @@ readme = "README.md"
 requires-python = "==3.14.0"
 dependencies = [
   "certifi<=2025.1.31", # Remove this pin when CI tells us it's safe
-  "fastapi>=0.115.2",
+  "fastapi<0.119.0",
   "uvicorn[standard]>=0.31.1",
   "asyncpg>=0.29.0",
   "alembic>=1.9.2",

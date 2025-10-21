@@ -39,16 +39,17 @@ class InvoiceService:
 
         s3 = S3Service(settings.S3_CUSTOMER_INVOICES_BUCKET_NAME)
         return s3.upload(
-            bytes(invoice_bytes), f"Invoice-{invoice.number}.pdf", "application/pdf"
+            bytes(invoice_bytes), order.invoice_filename, "application/pdf"
         )
 
     async def get_order_invoice_url(self, order: Order) -> tuple[str, datetime]:
         invoice_path = order.invoice_path
         assert invoice_path is not None
-        filename = f"Invoice-{order.invoice_number}.pdf"
         s3 = S3Service(settings.S3_CUSTOMER_INVOICES_BUCKET_NAME)
         return s3.generate_presigned_download_url(
-            path=invoice_path, filename=filename, mime_type="application/pdf"
+            path=invoice_path,
+            filename=order.invoice_filename,
+            mime_type="application/pdf",
         )
 
     async def create_payout_invoice(self, session: AsyncSession, payout: Payout) -> str:

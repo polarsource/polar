@@ -319,6 +319,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return self.invoice_path is not None
 
     @property
+    def invoice_filename(self) -> str:
+        return f"Invoice-{self.invoice_number}.pdf"
+
+    @property
     def statement_descriptor_suffix(self) -> str:
         if (
             self.billing_reason

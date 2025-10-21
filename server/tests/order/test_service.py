@@ -151,6 +151,11 @@ def enqueue_job_mock_billing_entry(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
+def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.order.service.enqueue_email", autospec=True)
+
+
+@pytest.fixture
 def publish_checkout_event_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.order.service.publish_checkout_event")
 
@@ -2156,17 +2161,52 @@ class TestCreateOrderBalance:
 
 
 @pytest.mark.asyncio
-async def test_send_confirmation_email(
-    mocker: MockerFixture,
-    save_fixture: SaveFixture,
-    session: AsyncSession,
-    product: Product,
-    customer: Customer,
-    organization: Organization,
-) -> None:
-    order = await create_order(save_fixture, product=product, customer=customer)
+class TestSendConfirmationEmail:
+    async def test_billing_not_set(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
 
-    await order_service.send_confirmation_email(session, order)
+        await order_service.send_confirmation_email(session, order)
+
+        assert order.invoice_path is None
+        enqueue_email_mock.assert_called_once()
+        attachments = enqueue_email_mock.call_args[1]["attachments"]
+        assert len(attachments) == 0
+
+    async def test_billing_set(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        assert order.invoice_path is not None
+        enqueue_email_mock.assert_called_once()
+        attachments = enqueue_email_mock.call_args[1]["attachments"]
+        assert len(attachments) == 1
 
 
 @pytest.mark.asyncio

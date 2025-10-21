@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 
 import stripe as stripe_lib
 import structlog
+from pydantic import UUID4
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
@@ -287,36 +288,7 @@ class CheckoutService:
             raise NotPermitted()
 
         if checkout_create.amount is not None and is_custom_price(price):
-            if (
-                price.minimum_amount is not None
-                and checkout_create.amount < price.minimum_amount
-            ):
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "greater_than_equal",
-                            "loc": ("body", "amount"),
-                            "msg": "Amount is below minimum.",
-                            "input": checkout_create.amount,
-                            "ctx": {"ge": price.minimum_amount},
-                        }
-                    ]
-                )
-            elif (
-                price.maximum_amount is not None
-                and checkout_create.amount > price.maximum_amount
-            ):
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "less_than_equal",
-                            "loc": ("body", "amount"),
-                            "msg": "Amount is above maximum.",
-                            "input": checkout_create.amount,
-                            "ctx": {"le": price.maximum_amount},
-                        }
-                    ]
-                )
+            self._validate_custom_price_amount(price, checkout_create.amount)
 
         discount: Discount | None = None
         if checkout_create.discount_id is not None:
@@ -685,7 +657,7 @@ class CheckoutService:
         embed_origin: str | None = None,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
-        product_id: uuid.UUID | None = None,
+        query_prefill: dict[str, str | UUID4 | dict[str, str] | None] | None = None,
         **query_metadata: str | None,
     ) -> Checkout:
         products: list[Product] = []
@@ -707,6 +679,11 @@ class CheckoutService:
 
         # Pre-select product if product_id is provided and matches a configured product
         product = products[0]
+        query_product_id = query_prefill.get("product_id") if query_prefill else None
+        product_id = (
+            query_product_id if isinstance(query_product_id, uuid.UUID) else None
+        )
+
         if product_id is not None:
             for p in products:
                 if p.id == product_id:
@@ -723,8 +700,21 @@ class CheckoutService:
             currency = price.price_currency
         elif is_custom_price(price):
             currency = price.price_currency
+            query_amount_str = query_prefill.get("amount") if query_prefill else None
+
+            # Try to parse and validate query amount
+            valid_query_amount = None
+            if query_amount_str is not None and isinstance(query_amount_str, str):
+                try:
+                    query_amount_int = int(float(query_amount_str))
+                    self._validate_custom_price_amount(price, query_amount_int)
+                    valid_query_amount = query_amount_int
+                except (ValueError, TypeError, PolarRequestValidationError):
+                    pass
+
             amount = (
-                price.preset_amount
+                valid_query_amount
+                or price.preset_amount
                 or price.minimum_amount
                 or settings.CUSTOM_PRICE_PRESET_FALLBACK
             )
@@ -767,6 +757,35 @@ class CheckoutService:
             success_url=checkout_link.success_url,
             user_metadata=checkout_link.user_metadata,
         )
+
+        # Handle query parameter prefill
+        if query_prefill:
+            customer_email = query_prefill.get("customer_email")
+            if customer_email is not None and isinstance(customer_email, str):
+                checkout.customer_email = customer_email
+
+            customer_name = query_prefill.get("customer_name")
+            if customer_name is not None and isinstance(customer_name, str):
+                checkout.customer_name = customer_name
+
+            discount_code = query_prefill.get("discount_code")
+            if discount_code is not None and isinstance(discount_code, str):
+                try:
+                    discount = await self._get_validated_discount(
+                        session, product, price, discount_code=discount_code
+                    )
+                    checkout.discount = discount
+                except PolarRequestValidationError:
+                    pass
+
+            custom_field_data_value = query_prefill.get("custom_field_data")
+            if custom_field_data_value is not None and isinstance(
+                custom_field_data_value, dict
+            ):
+                checkout.custom_field_data = {
+                    **(checkout.custom_field_data or {}),
+                    **custom_field_data_value,
+                }
 
         for key, value in query_metadata.items():
             if value is not None and key not in checkout.user_metadata:
@@ -1544,37 +1563,7 @@ class CheckoutService:
 
         price = checkout.product_price
         if checkout_update.amount is not None and is_custom_price(price):
-            if (
-                price.minimum_amount is not None
-                and checkout_update.amount < price.minimum_amount
-            ):
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "greater_than_equal",
-                            "loc": ("body", "amount"),
-                            "msg": "Amount is below minimum.",
-                            "input": checkout_update.amount,
-                            "ctx": {"ge": price.minimum_amount},
-                        }
-                    ]
-                )
-            elif (
-                price.maximum_amount is not None
-                and checkout_update.amount > price.maximum_amount
-            ):
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "less_than_equal",
-                            "loc": ("body", "amount"),
-                            "msg": "Amount is above maximum.",
-                            "input": checkout_update.amount,
-                            "ctx": {"le": price.maximum_amount},
-                        }
-                    ]
-                )
-
+            self._validate_custom_price_amount(price, checkout_update.amount)
             checkout.amount = checkout_update.amount
 
         # Handle seat updates for seat-based pricing
@@ -1831,6 +1820,42 @@ class CheckoutService:
 
         if len(existing_subscriptions) > 0:
             raise AlreadyActiveSubscriptionError()
+
+    def _validate_custom_price_amount(
+        self,
+        price: ProductPrice,
+        amount: int,
+        loc: tuple[str, ...] = ("body", "amount"),
+    ) -> None:
+        """Validate that an amount is within the min/max bounds for a custom price."""
+        if not is_custom_price(price):
+            return
+
+        if price.minimum_amount is not None and amount < price.minimum_amount:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "greater_than_equal",
+                        "loc": loc,
+                        "msg": "Amount is below minimum.",
+                        "input": amount,
+                        "ctx": {"ge": price.minimum_amount},
+                    }
+                ]
+            )
+
+        if price.maximum_amount is not None and amount > price.maximum_amount:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "less_than_equal",
+                        "loc": loc,
+                        "msg": "Amount is above maximum.",
+                        "input": amount,
+                        "ctx": {"le": price.maximum_amount},
+                    }
+                ]
+            )
 
     def _get_required_confirm_fields(self, checkout: Checkout) -> set[tuple[str, ...]]:
         fields: set[tuple[str, ...]] = {("customer_email",)}

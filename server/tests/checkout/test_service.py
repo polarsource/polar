@@ -2001,6 +2001,69 @@ class TestCheckoutLinkCreate:
         assert checkout.trial_interval_count == 7
         assert checkout.trial_end is not None
 
+    async def test_query_prefill_discount_code_invalid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session,
+            checkout_link,
+            query_prefill={"discount_code": "INVALID_CODE"},
+        )
+
+        assert checkout.discount is None
+
+    async def test_query_prefill_amount_custom_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time_custom_price: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time_custom_price]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session,
+            checkout_link,
+            query_prefill={"amount": "1000"},
+        )
+
+        assert checkout.amount == 1000
+
+    async def test_query_prefill_multiple_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        discount_fixed_once: Discount,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session,
+            checkout_link,
+            query_prefill={
+                "customer_email": "test@example.com",
+                "customer_name": "John Doe",
+                "discount_code": discount_fixed_once.code,
+                "custom_field_data": {"company": "Acme Inc"},
+            },
+        )
+
+        assert checkout.customer_email == "test@example.com"
+        assert checkout.customer_name == "John Doe"
+        assert checkout.discount == discount_fixed_once
+        assert checkout.custom_field_data == {"company": "Acme Inc"}
+
 
 @pytest.mark.asyncio
 class TestUpdate:

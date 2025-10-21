@@ -1,8 +1,8 @@
 'use client'
 
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
-import { PhotoIcon } from '@heroicons/react/24/outline'
 import { upload } from '@vercel/blob/client'
+import { ImageIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -124,7 +124,7 @@ const ImageUpload = ({
                 width={width}
               />
               {isLoading ? (
-                <div className="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center">
+                <div className="absolute bottom-0 left-0 right-0 top-0 flex items-center justify-center">
                   <SpinnerNoMargin />
                 </div>
               ) : null}
@@ -145,7 +145,7 @@ const ImageUpload = ({
                 aspectRatio: `${width} / ${height}`,
               }}
             >
-              <PhotoIcon className="h-6 w-6 text-gray-600" />
+              <ImageIcon className="h-6 w-6 text-gray-600" />
               {height && width ? (
                 <div className="text-xs text-gray-600">
                   {height} x {width}px

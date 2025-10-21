@@ -1,6 +1,5 @@
 'use client'
 
-import { ArrowPathIcon, TrashIcon } from '@heroicons/react/24/outline'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -10,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
+import { RefreshCwIcon, TrashIcon } from 'lucide-react'
 import { useState } from 'react'
 
 interface CustomerSeat {
@@ -122,7 +122,7 @@ export const SeatManagementTable = ({
                         onClick={() => handleResend(seat.id)}
                         disabled={isLoading}
                       >
-                        <ArrowPathIcon className="mr-2 h-4 w-4" />
+                        <RefreshCwIcon className="mr-2 h-4 w-4" />
                         Resend Invitation
                       </DropdownMenuItem>
                     )}

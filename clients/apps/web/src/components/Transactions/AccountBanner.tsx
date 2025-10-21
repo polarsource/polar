@@ -1,9 +1,9 @@
 import { useOrganizationAccount } from '@/hooks/queries'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
-import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
+import { CircleAlertIcon } from 'lucide-react'
 import Link from 'next/link'
 import Icon from '../Icons/Icon'
 
@@ -27,7 +27,7 @@ const GenericAccountBanner: React.FC<{
             </Link>
           }
         >
-          <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
+          <CircleAlertIcon className="h-6 w-6 text-red-500" />
           <span className="text-sm">
             You need to set up a <strong>payout account</strong> to receive
             payouts

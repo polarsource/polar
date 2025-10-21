@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
-from tagflow import classes, tag, text
+from tagflow import attr, classes, tag, text
 
+from polar.invoice.service import invoice as invoice_service
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Customer, Order, Organization, Product
@@ -53,6 +54,26 @@ class TaxIDItem(description_list.DescriptionListAttrItem[Order]):
         if value is None:
             return None
         return formatters.tax_id(value)
+
+
+class InvoicePDFItem(description_list.DescriptionListItem[Order]):
+    def __init__(self, url: str | None):
+        super().__init__("Invoice PDF")
+        self.url = url
+
+    def render(self, request: Request, item: Order) -> Generator[None] | None:
+        with tag.div(classes="flex items-center gap-1"):
+            if self.url is not None:
+                with tag.a(href=self.url, classes="link flex flex-row gap-1"):
+                    attr("target", "_blank")
+                    attr("rel", "noopener noreferrer")
+                    text("Download PDF")
+                    with tag.div(classes="icon-external-link"):
+                        pass
+            else:
+                with tag.span(classes="text-gray-500"):
+                    text("Not generated")
+        return None
 
 
 # Table Columns
@@ -213,6 +234,15 @@ async def get(
     if order is None:
         raise HTTPException(status_code=404)
 
+    # Get invoice URL if it exists
+    invoice_url: str | None = None
+    if order.invoice_path is not None:
+        try:
+            invoice_url, _ = await invoice_service.get_order_invoice_url(order)
+        except Exception:
+            # If there's an error getting the URL, we'll show "Not generated"
+            pass
+
     with layout(
         request,
         [
@@ -260,6 +290,7 @@ async def get(
                                 i: f"https://dashboard.stripe.com/invoices/{i.stripe_invoice_id}",
                                 external=True,
                             ),
+                            InvoicePDFItem(invoice_url),
                         ).render(request, order):
                             pass
 

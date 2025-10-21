@@ -70,7 +70,7 @@ const EventRow = ({
       </div>
       {isExpanded && (
         <div className="dark:border-polar-700 border-t border-gray-200 p-2">
-          <pre className="dark:bg-polar-800 w-full rounded-md bg-gray-100 p-2">
+          <pre className="dark:bg-polar-800 w-full rounded-md bg-white p-2">
             {JSON.stringify(event.metadata, null, 2)}
           </pre>
         </div>

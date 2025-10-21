@@ -93,10 +93,7 @@ class LLMMetadata(TypedDict):
         int,
         Field(description="The total number of LLM tokens used for the event."),
     ]
-    cost: Annotated[
-        CostMetadata | None,
-        Field(default=None, description="Optional cost associated with the event."),
-    ]
+
 
 
 class EventMetadataInput(  # type: ignore[call-arg]
@@ -104,6 +101,7 @@ class EventMetadataInput(  # type: ignore[call-arg]
     total=False,
     extra_items=MetadataValue,
 ):
+    _cost: CostMetadata
     _llm: LLMMetadata
 
 
@@ -302,6 +300,7 @@ class EventMetadataOutput(  # type: ignore[call-arg]
     total=False,
     extra_items=str | int | float | bool,
 ):
+    _cost: CostMetadata
     _llm: LLMMetadata
 
 

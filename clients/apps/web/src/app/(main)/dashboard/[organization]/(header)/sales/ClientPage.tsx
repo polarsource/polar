@@ -6,6 +6,7 @@ import { OrderStatus } from '@/components/Orders/OrderStatus'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
+import { getServerURL } from '@/utils/api'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -13,8 +14,10 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { getChartRangeParams } from '@/utils/metrics'
+import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
   DataTableColumnDef,
@@ -246,6 +249,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
     product_id: productId,
   })
 
+  const onExport = () => {
+    const productIds =
+      productId?.map((id) => `&product_id=${id}`).join('') || ''
+    const url = new URL(
+      `${getServerURL()}/v1/orders/export?organization_id=${organization.id}${productIds}`,
+    )
+
+    window.open(url, '_blank')
+  }
+
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
@@ -259,6 +272,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
               includeArchived
             />
           </div>
+          <Button
+            onClick={onExport}
+            className="flex flex-row items-center"
+            variant={'secondary'}
+            wrapperClassNames="gap-x-2"
+          >
+            <FileDownloadOutlined fontSize="inherit" />
+            <span>Export</span>
+          </Button>
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <MiniMetricChartBox

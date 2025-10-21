@@ -5,6 +5,7 @@ import { cache } from 'react'
 const _getOrganizationOrNotFound = async (
   api: Client,
   slug: string,
+  searchParams?: Record<string, string>,
 ): Promise<schemas['CustomerOrganization']> => {
   return unwrap(
     api.GET('/v1/customer-portal/organizations/{slug}', {
@@ -21,7 +22,10 @@ const _getOrganizationOrNotFound = async (
     {
       404: notFound,
       429: () => redirect(`/too-many-requests`),
-      401: () => redirect(`/${slug}/portal/request`),
+      401: () =>
+        redirect(
+          `/${slug}/portal/request?${new URLSearchParams(searchParams)}`,
+        ),
     },
   )
 }

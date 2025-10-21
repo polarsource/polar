@@ -23,19 +23,15 @@ export default async function Page(props: {
   searchParams: Promise<{ token?: string }>
 }) {
   const params = await props.params
-  const searchParams = await props.searchParams
+  const { token, ...searchParams } = await props.searchParams
 
   // Get organization without requiring authentication (like /request page)
   const api = await getServerSideAPI()
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
+    searchParams,
   )
 
-  return (
-    <ClientPage
-      organization={organization}
-      invitationToken={searchParams.token}
-    />
-  )
+  return <ClientPage organization={organization} invitationToken={token} />
 }

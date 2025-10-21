@@ -48,12 +48,13 @@ export default async function Page(props: {
   params: Promise<{ organization: string }>
   searchParams: Promise<{ customer_session_token?: string }>
 }) {
-  const searchParams = await props.searchParams
+  const { customer_session_token, ...searchParams } = await props.searchParams
   const params = await props.params
-  const api = await getServerSideAPI(searchParams.customer_session_token)
+  const api = await getServerSideAPI(customer_session_token)
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
+    searchParams,
   )
 
   return <ClientPage organization={organization} />

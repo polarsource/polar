@@ -46,14 +46,14 @@ const EventRow = ({
     <div className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col rounded-xl border border-gray-200 bg-white font-mono text-sm transition-colors duration-75 hover:bg-gray-50">
       <div
         onClick={handleToggleExpand}
-        className="flex cursor-pointer select-none flex-row items-center justify-between px-4 py-2"
+        className="flex cursor-pointer flex-row items-center justify-between px-4 py-2 select-none"
       >
         <div className="flex flex-row items-center gap-x-8">
           <div className="flex flex-row items-center gap-x-4">
             <span>{event.name}</span>
             <EventSourceBadge source={event.source} />
           </div>
-          <span className="dark:text-polar-500 text-sm capitalize text-gray-500">
+          <span className="dark:text-polar-500 text-sm text-gray-500 capitalize">
             {formattedTimestamp}
           </span>
         </div>

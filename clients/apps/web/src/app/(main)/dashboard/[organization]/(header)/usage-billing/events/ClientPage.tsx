@@ -33,7 +33,7 @@ import {
 } from 'nuqs'
 import React, { useCallback, useMemo } from 'react'
 
-const PAGE_SIZE = 50
+const PAGE_SIZE = 300
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -165,36 +165,38 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-col gap-y-2">
-              <h3 className="text-sm">Event</h3>
-              <List size="small" className="rounded-xl">
-                {eventNames.map((eventName) => (
-                  <ListItem
-                    key={eventName.name}
-                    size="small"
-                    className="justify-between px-3 font-mono text-sm"
-                    inactiveClassName="text-gray-500 dark:text-polar-500"
-                    selected={selectedEventNames?.includes(eventName.name)}
-                    onSelect={() =>
-                      setSelectedEventNames((prev) =>
-                        prev && prev.includes(eventName.name)
-                          ? prev.filter((name) => name !== eventName.name)
-                          : ([...(prev ?? []), eventName.name] as string[]),
-                      )
-                    }
-                  >
-                    <span className="w-full truncate">{eventName.name}</span>
-                    <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                      {Number(eventName.occurrences).toLocaleString('en-US', {
-                        style: 'decimal',
-                        compactDisplay: 'short',
-                        notation: 'compact',
-                      })}
-                    </span>
-                  </ListItem>
-                ))}
-              </List>
-            </div>
+            {eventNames.length > 0 && (
+              <div className="flex flex-col gap-y-2">
+                <h3 className="text-sm">Event</h3>
+                <List size="small" className="rounded-xl">
+                  {eventNames.map((eventName) => (
+                    <ListItem
+                      key={eventName.name}
+                      size="small"
+                      className="justify-between px-3 font-mono text-sm"
+                      inactiveClassName="text-gray-500 dark:text-polar-500"
+                      selected={selectedEventNames?.includes(eventName.name)}
+                      onSelect={() =>
+                        setSelectedEventNames((prev) =>
+                          prev && prev.includes(eventName.name)
+                            ? prev.filter((name) => name !== eventName.name)
+                            : ([...(prev ?? []), eventName.name] as string[]),
+                        )
+                      }
+                    >
+                      <span className="w-full truncate">{eventName.name}</span>
+                      <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
+                        {Number(eventName.occurrences).toLocaleString('en-US', {
+                          style: 'decimal',
+                          compactDisplay: 'short',
+                          notation: 'compact',
+                        })}
+                      </span>
+                    </ListItem>
+                  ))}
+                </List>
+              </div>
+            )}
           </div>
           <Modal
             isShown={isEventCreationGuideShown}

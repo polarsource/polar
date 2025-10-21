@@ -22,7 +22,7 @@ from polar.routing import APIRouter
 from . import auth, sorting
 from .schemas import Order as OrderSchema
 from .schemas import OrderID, OrderInvoice, OrderNotFound, OrderUpdate
-from .service import InvoiceAlreadyExists, MissingInvoiceBillingDetails, NotPaidOrder
+from .service import MissingInvoiceBillingDetails, NotPaidOrder
 from .service import order as order_service
 
 router = APIRouter(prefix="/orders", tags=["orders", APITag.public, APITag.mcp])
@@ -134,10 +134,6 @@ async def update(
     status_code=202,
     summary="Generate Order Invoice",
     responses={
-        409: {
-            "description": "Order already has an invoice.",
-            "model": InvoiceAlreadyExists.schema(),
-        },
         422: {
             "description": "Order is not paid or is missing billing name or address.",
             "model": MissingInvoiceBillingDetails.schema() | NotPaidOrder.schema(),

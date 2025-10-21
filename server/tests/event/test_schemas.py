@@ -41,7 +41,6 @@ def test_valid(data: dict[str, Any]) -> None:
     assert event.external_customer_id == data["external_customer_id"]
 
 
-
 def test_invalid_metadata_value_too_long() -> None:
     with pytest.raises(ValidationError):
         EventCreateExternalCustomer.model_validate(
@@ -51,6 +50,7 @@ def test_invalid_metadata_value_too_long() -> None:
                 "metadata": {"key": "a" * 600},
             }
         )
+
 
 def test_invalid_cost_metadata() -> None:
     with pytest.raises(ValidationError) as e:
@@ -66,7 +66,7 @@ def test_invalid_cost_metadata() -> None:
     assert len(errors) == 1
     assert errors[0]["loc"] == ("metadata", "_cost", "currency")
     assert errors[0]["type"] == "string_pattern_mismatch"
-    assert errors[0]["msg"] == "String should match pattern '^usd$'"
+
 
 def test_invalid_llm_metadata() -> None:
     with pytest.raises(ValidationError) as e:

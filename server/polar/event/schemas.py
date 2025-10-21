@@ -95,7 +95,6 @@ class LLMMetadata(TypedDict):
     ]
 
 
-
 class EventMetadataInput(  # type: ignore[call-arg]
     TypedDict,
     total=False,

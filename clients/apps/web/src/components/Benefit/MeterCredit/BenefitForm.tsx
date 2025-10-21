@@ -1,6 +1,5 @@
 'use client'
 
-import { PlusIcon } from '@heroicons/react/20/solid'
 import { schemas } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -19,6 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { PlusIcon } from 'lucide-react'
 import { useCallback } from 'react'
 import { useFormContext } from 'react-hook-form'
 

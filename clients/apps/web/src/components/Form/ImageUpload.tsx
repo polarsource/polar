@@ -1,8 +1,8 @@
 'use client'
 
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
-import { PhotoIcon } from '@heroicons/react/24/outline'
 import { upload } from '@vercel/blob/client'
+import { ImageIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -145,7 +145,7 @@ const ImageUpload = ({
                 aspectRatio: `${width} / ${height}`,
               }}
             >
-              <PhotoIcon className="h-6 w-6 text-gray-600" />
+              <ImageIcon className="h-6 w-6 text-gray-600" />
               {height && width ? (
                 <div className="text-xs text-gray-600">
                   {height} x {width}px

@@ -13,11 +13,11 @@ const getIndicatorColor = (cost: number) => {
   }
 
   if (cost > 0) {
-    return colors.positive
+    return colors.negative
   }
 
   if (cost < 0) {
-    return colors.negative
+    return colors.positive
   }
 
   return colors.neutral
@@ -27,10 +27,11 @@ export const EventCostIndicator = ({ cost }: { cost: number }) => {
   const color = getIndicatorColor(cost)
 
   const icon = useMemo(() => {
-    if (cost > 0) {
+    if (cost < 0) {
       return <KeyboardArrowUp fontSize="inherit" />
     }
-    if (cost < 0) {
+
+    if (cost > 0) {
       return <KeyboardArrowDown fontSize="inherit" />
     }
     return '—'

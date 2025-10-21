@@ -162,6 +162,8 @@ async def redirect(
     ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     embed_origin: str | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
+    # Product pre-selection
+    product_id: UUID4 | None = Query(None),
     # Metadata that can be set from query parameters
     reference_id: str | None = Query(None),
     utm_source: str | None = Query(None),
@@ -186,6 +188,7 @@ async def redirect(
         embed_origin,
         ip_geolocation_client,
         ip_address,
+        product_id,
         reference_id=reference_id,
         utm_source=utm_source,
         utm_medium=utm_medium,
@@ -197,7 +200,9 @@ async def redirect(
     # Add the query parameters from the request to the URL
     checkout_url = URL(checkout.url)
     query_params = {
-        k: v for k, v in request.query_params.items() if k not in {"embed_origin"}
+        k: v
+        for k, v in request.query_params.items()
+        if k not in {"embed_origin", "product_id"}
     }
     checkout_url = checkout_url.include_query_params(**query_params)
 

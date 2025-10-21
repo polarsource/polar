@@ -685,6 +685,7 @@ class CheckoutService:
         embed_origin: str | None = None,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
+        product_id: uuid.UUID | None = None,
         **query_metadata: str | None,
     ) -> Checkout:
         products: list[Product] = []
@@ -704,7 +705,13 @@ class CheckoutService:
                 ]
             )
 
+        # Pre-select product if product_id is provided and matches a configured product
         product = products[0]
+        if product_id is not None:
+            for p in products:
+                if p.id == product_id:
+                    product = p
+                    break
         # Select the static price in priority, as it determines the amount and specific behavior
         price = product.get_static_price() or product.prices[0]
 

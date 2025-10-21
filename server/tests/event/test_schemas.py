@@ -18,6 +18,11 @@ from polar.event.schemas import EventCreateExternalCustomer
         {
             "external_customer_id": "CUSTOMER",
             "name": "EVENT",
+            "metadata": {"_cost": {"amount": 100, "currency": "usd"}},
+        },
+        {
+            "external_customer_id": "CUSTOMER",
+            "name": "EVENT",
             "metadata": {
                 "_llm": {
                     "vendor": "mistral",
@@ -25,10 +30,6 @@ from polar.event.schemas import EventCreateExternalCustomer
                     "input_tokens": 10,
                     "output_tokens": 20,
                     "total_tokens": 30,
-                    "cost": {
-                        "amount": 1,
-                        "currency": "usd",
-                    },
                 },
                 "key": "value",
             },
@@ -38,6 +39,7 @@ from polar.event.schemas import EventCreateExternalCustomer
 def test_valid(data: dict[str, Any]) -> None:
     event = EventCreateExternalCustomer.model_validate(data)
     assert event.external_customer_id == data["external_customer_id"]
+
 
 
 def test_invalid_metadata_value_too_long() -> None:

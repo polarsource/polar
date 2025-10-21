@@ -39,22 +39,17 @@ const OrganizationSelectionPage = ({
         <div className="flex w-80 flex-col items-center gap-6">
           <div className="flex flex-row items-center gap-2">
             <LogoType className="h-10" />
-            <AddOutlined className="h-5" />
-            {client.logo_uri ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={client.logo_uri} className="h-10" alt={clientName} />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500">
-                {clientName[0].toUpperCase()}
-              </div>
+            {client.logo_uri && (
+              <>
+                <AddOutlined className="h-5" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={client.logo_uri} className="h-10" alt={clientName} />
+              </>
             )}
           </div>
           <div className="w-full text-center">
             <span className="font-medium">{clientName}</span> wants to access
-            one of your Polar&apos;s organization.
-          </div>
-          <div className="w-full text-center">
-            Select one of your organization:
+            one of your Polar organizations. Select one:
           </div>
           <div className="flex w-full flex-col gap-2">
             {organizations.map((organization) => (
@@ -62,7 +57,7 @@ const OrganizationSelectionPage = ({
                 key={organization.id}
                 href={buildOrganizationSelectionURL(organization)}
               >
-                <div className="hover:bg-polar-600 flex w-full flex-row items-center gap-2 rounded-md border px-4 py-3 text-sm transition-colors">
+                <div className="dark:bg-polar-700 dark:hover:bg-polar-600 flex w-full flex-row items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-3 text-sm transition-colors hover:border-gray-300 dark:border-white/5 dark:hover:border-white/5">
                   <Avatar
                     className="h-8 w-8"
                     avatar_url={organization.avatar_url}
@@ -75,7 +70,7 @@ const OrganizationSelectionPage = ({
           </div>
           <div className="grid w-full">
             <Button
-              variant="outline"
+              variant="secondary"
               className="grow"
               type="submit"
               name="action"

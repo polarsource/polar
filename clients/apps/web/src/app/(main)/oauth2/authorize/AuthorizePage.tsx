@@ -54,7 +54,7 @@ const AuthorizePage = ({
             <>
               <div className="w-full text-center">
                 <span className="font-medium">{clientName}</span> wants to
-                access one of your Polar&apos;s organization.
+                access one of your Polar organizations.
               </div>
               <div className="flex w-full flex-row items-center justify-center gap-2 text-sm">
                 <Avatar

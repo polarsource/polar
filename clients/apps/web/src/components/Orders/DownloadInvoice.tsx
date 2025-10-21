@@ -25,6 +25,7 @@ import {
 import EventEmitter from 'eventemitter3'
 import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { twMerge } from 'tailwind-merge'
 
 type Variant = NonNullable<Parameters<typeof buttonVariants>[0]>['variant']
 type Size = NonNullable<Parameters<typeof buttonVariants>[0]>['size']
@@ -150,17 +151,32 @@ const DownloadInvoice = ({
 
   return (
     <>
-      <Button
-        type="button"
-        onClick={onDownload}
-        loading={loading}
-        disabled={loading}
-        variant={variant}
-        size={size}
-        className={className}
-      >
-        Download Invoice
-      </Button>
+      <div className="flex flex-col gap-2 lg:flex-row">
+        <Button
+          type="button"
+          onClick={onDownload}
+          loading={loading}
+          disabled={loading}
+          variant={variant}
+          size={size}
+          className={twMerge('w-full', className)}
+        >
+          Download Invoice
+        </Button>
+        {order.is_invoice_generated && (
+          <Button
+            type="button"
+            loading={loading}
+            disabled={loading}
+            size={size}
+            variant="secondary"
+            onClick={() => show()}
+            className={twMerge('w-full', className)}
+          >
+            Edit Invoice
+          </Button>
+        )}
+      </div>
       <InlineModal
         isShown={isShown}
         hide={hide}

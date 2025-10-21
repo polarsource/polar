@@ -104,54 +104,12 @@ export const DashboardSidebar = ({
       </SidebarContent>
       <SidebarFooter>
         <Link
-          href="#"
+          href="mailto:support@polar.sh"
           className={twMerge(
             'mt-2 flex cursor-pointer flex-row items-center rounded-lg border border-transparent px-2 text-sm transition-colors dark:border-transparent',
             'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
             isCollapsed && '!dark:text-polar-600',
           )}
-          onClick={(e) => {
-            e.preventDefault()
-            if (window.Plain) window.Plain.open()
-            else {
-              let script = document.createElement('script')
-              script.async = false
-              script.onload = function () {
-                window.Plain.init({
-                  theme: 'auto',
-                  hideBranding: true,
-                  links: [
-                    {
-                      icon: 'book',
-                      text: 'Documentation Portal',
-                      url: 'https://polar.sh/docs',
-                    },
-                    {
-                      icon: 'discord',
-                      text: 'Join our Discord',
-                      url: 'https://dub.sh/polar-discord',
-                    },
-                    {
-                      text: 'Join the conversation',
-                      url: 'https://x.com/polar_sh',
-                    },
-                  ],
-                  appId: 'liveChatApp_01K55GCP6V4FJ0DKDP604MZYDV',
-                  ...(currentUser && currentUser.email_hash
-                    ? {
-                        customerDetails: {
-                          email: currentUser.email,
-                          emailHash: currentUser.email_hash,
-                        },
-                      }
-                    : {}),
-                })
-                window.Plain.open()
-              }
-              script.src = 'https://chat.cdn-plain.com/index.js'
-              document.getElementsByTagName('head')[0].appendChild(script)
-            }
-          }}
         >
           <SupportIcon fontSize="inherit" />
           {!isCollapsed && <span className="ml-4 font-medium">Support</span>}

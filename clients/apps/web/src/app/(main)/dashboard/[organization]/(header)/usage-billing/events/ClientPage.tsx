@@ -209,7 +209,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       }
       wide
     >
-      <div className="flex flex-col gap-y-8">
+      <div className="flex h-full flex-col gap-y-4">
         {events?.items.length === 0 ? (
           <div className="dark:border-polar-700 rounded-4xl flex min-h-96 w-full flex-col items-center justify-center gap-4 border border-gray-200 p-24">
             <h1 className="text-2xl font-normal">No Events Found</h1>

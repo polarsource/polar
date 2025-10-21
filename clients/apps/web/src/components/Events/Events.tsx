@@ -47,10 +47,12 @@ const EventRow = ({
           </span>
         </div>
         <div className="flex flex-row items-center gap-x-6">
-          <EventCostBadge
-            cost={cost?.amount ?? 0}
-            currency={cost?.currency ?? 'USD'}
-          />
+          {cost && (
+            <EventCostBadge
+              cost={cost?.amount ?? 0}
+              currency={cost?.currency ?? 'USD'}
+            />
+          )}
           <Link
             href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}`}
             className="flex items-center gap-x-3"

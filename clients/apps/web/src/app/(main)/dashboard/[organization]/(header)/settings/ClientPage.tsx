@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import FeatureSettings from '@/components/Settings/FeatureSettings'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
 import OrganizationCustomerEmailSettings from '@/components/Settings/OrganizationCustomerEmailSettings'
 import OrganizationNotificationSettings from '@/components/Settings/OrganizationNotificationSettings'
@@ -38,6 +39,14 @@ export default function ClientPage({
         <Section id="notifications">
           <SectionDescription title="Notifications" />
           <OrganizationNotificationSettings organization={org} />
+        </Section>
+
+        <Section id="features">
+          <SectionDescription
+            title="Features"
+            description="Manage alpha & beta features for your organization"
+          />
+          <FeatureSettings organization={org} />
         </Section>
 
         <Section id="developers">

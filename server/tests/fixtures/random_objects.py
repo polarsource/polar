@@ -1990,7 +1990,7 @@ async def create_customer_seat(
 
     if subscription is not None:
         seat_data["subscription_id"] = subscription.id
-    else:
+    elif order is not None:
         seat_data["order_id"] = order.id
 
     seat = CustomerSeat(**seat_data)

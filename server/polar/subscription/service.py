@@ -1893,7 +1893,7 @@ class SubscriptionService:
                     "product": product,
                     "subscription": subscription,
                     "url": settings.generate_frontend_url(
-                        f"/{organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
+                        f"/{organization.slug}/portal?customer_session_token={token}&id={subscription.id}&email={customer.email}"
                     ),
                     **(extra_context or {}),
                 },

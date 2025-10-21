@@ -44,7 +44,7 @@ class TestCreate:
 
         assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
         assert json["customer_id"] == str(customer.id)
-        assert json["customer_portal_url"].endswith(json["token"])
+        assert json["token"] in json["customer_portal_url"]
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -66,7 +66,7 @@ class TestCreate:
 
         assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
         assert json["customer_id"] == str(customer_external_id.id)
-        assert json["customer_portal_url"].endswith(json["token"])
+        assert json["token"] in json["customer_portal_url"]
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -91,5 +91,5 @@ class TestCreate:
 
         assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
         assert json["customer_id"] == str(customer_external_id.id)
-        assert json["customer_portal_url"].endswith(json["token"])
+        assert json["token"] in json["customer_portal_url"]
         assert json["return_url"] == "https://example.com/return"

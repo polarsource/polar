@@ -7412,15 +7412,15 @@ export interface components {
       }
       /** @description Payment processor used. */
       payment_processor: components['schemas']['PaymentProcessor']
-      /** @description
-       *             Status of the checkout session.
+      /**
+       * @description Status of the checkout session.
        *
        *             - Open: the checkout session was opened.
        *             - Expired: the checkout session was expired and is no more accessible.
        *             - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
        *             - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
        *             - Succeeded: the payment on the checkout was performed successfully.
-       *              */
+       */
       status: components['schemas']['CheckoutStatus']
       /**
        * Client Secret
@@ -7751,9 +7751,15 @@ export interface components {
     CheckoutDiscountFixedOnceForeverDuration: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Id
@@ -7776,9 +7782,15 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Id
@@ -7798,7 +7810,11 @@ export interface components {
     CheckoutDiscountPercentageOnceForeverDuration: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Id
@@ -7821,7 +7837,11 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Id
@@ -8803,15 +8823,15 @@ export interface components {
       }
       /** @description Payment processor used. */
       payment_processor: components['schemas']['PaymentProcessor']
-      /** @description
-       *             Status of the checkout session.
+      /**
+       * @description Status of the checkout session.
        *
        *             - Open: the checkout session was opened.
        *             - Expired: the checkout session was expired and is no more accessible.
        *             - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
        *             - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
        *             - Succeeded: the payment on the checkout was performed successfully.
-       *              */
+       */
       status: components['schemas']['CheckoutStatus']
       /**
        * Client Secret
@@ -11169,49 +11189,61 @@ export interface components {
       /**
        * Subtotal Amount
        * @description Amount in cents, before discounts and taxes.
+       * @example 10000
        */
       subtotal_amount: number
       /**
        * Discount Amount
        * @description Discount amount in cents.
+       * @example 1000
        */
       discount_amount: number
       /**
        * Net Amount
        * @description Amount in cents, after discounts but before taxes.
+       * @example 9000
        */
       net_amount: number
       /**
        * Tax Amount
        * @description Sales tax amount in cents.
+       * @example 720
        */
       tax_amount: number
       /**
        * Total Amount
        * @description Amount in cents, after discounts and taxes.
+       * @example 9720
        */
       total_amount: number
       /**
        * Applied Balance Amount
        * @description Customer's balance amount applied to this invoice. Can increase the total amount paid, if the customer has a negative balance,  or decrease it, if the customer has a positive balance.Amount in cents.
+       * @example 0
        */
       applied_balance_amount: number
       /**
        * Due Amount
        * @description Amount in cents that is due for this order.
+       * @example 0
        */
       due_amount: number
       /**
        * Refunded Amount
        * @description Amount refunded in cents.
+       * @example 0
        */
       refunded_amount: number
       /**
        * Refunded Tax Amount
        * @description Sales tax refunded in cents.
+       * @example 0
        */
       refunded_tax_amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       billing_reason: components['schemas']['OrderBillingReason']
       /**
@@ -11447,16 +11479,24 @@ export interface components {
       /**
        * Amount
        * @description The amount of the subscription.
+       * @example 10000
        */
       amount: number
       /**
        * Currency
        * @description The currency of the subscription.
+       * @example usd
        */
       currency: string
-      /** @description The interval at which the subscription recurs. */
+      /**
+       * @description The interval at which the subscription recurs.
+       * @example month
+       */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /** @description The status of the subscription. */
+      /**
+       * @description The status of the subscription.
+       * @example active
+       */
       status: components['schemas']['SubscriptionStatus']
       /**
        * Current Period Start
@@ -12308,16 +12348,24 @@ export interface components {
       /**
        * Amount
        * @description The amount of the subscription.
+       * @example 10000
        */
       amount: number
       /**
        * Currency
        * @description The currency of the subscription.
+       * @example usd
        */
       currency: string
-      /** @description The interval at which the subscription recurs. */
+      /**
+       * @description The interval at which the subscription recurs.
+       * @example month
+       */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /** @description The status of the subscription. */
+      /**
+       * @description The status of the subscription.
+       * @example active
+       */
       status: components['schemas']['SubscriptionStatus']
       /**
        * Current Period Start
@@ -12418,7 +12466,8 @@ export interface components {
        *     Or uncancel a subscription currently set to be revoked at period end.
        */
       cancel_at_period_end?: boolean | null
-      /** @description Customers reason for cancellation.
+      /**
+       * @description Customers reason for cancellation.
        *
        *     * `too_expensive`: Too expensive for the customer.
        *     * `missing_features`: Customer is missing certain features.
@@ -12427,7 +12476,8 @@ export interface components {
        *     * `customer_service`: Customer is not satisfied with the customer service.
        *     * `low_quality`: Customer is unhappy with the quality.
        *     * `too_complex`: Customer considers the service too complicated.
-       *     * `other`: Other reason(s). */
+       *     * `other`: Other reason(s).
+       */
       cancellation_reason?:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -12732,9 +12782,15 @@ export interface components {
     DiscountFixedOnceForeverDuration: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Created At
@@ -12801,9 +12857,15 @@ export interface components {
     DiscountFixedOnceForeverDurationBase: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Created At
@@ -12943,9 +13005,15 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Created At
@@ -13014,9 +13082,15 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Amount */
+      /**
+       * Amount
+       * @example 1000
+       */
       amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       /**
        * Created At
@@ -13162,7 +13236,11 @@ export interface components {
     DiscountPercentageOnceForeverDuration: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Created At
@@ -13229,7 +13307,11 @@ export interface components {
     DiscountPercentageOnceForeverDurationBase: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Created At
@@ -13366,7 +13448,11 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Created At
@@ -13435,7 +13521,11 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /** Basis Points */
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points. A basis point is 1/100th of a percent. For example, 1000 basis points equals a 10% discount.
+       * @example 1000
+       */
       basis_points: number
       /**
        * Created At
@@ -13830,7 +13920,8 @@ export interface components {
        * @description The ID of the organization owning the event. **Required unless you use an organization token.**
        */
       organization_id?: string | null
-      /** @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+      /**
+       * @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
        *
        *     The key must be a string with a maximum length of **40 characters**.
        *     The value must be either:
@@ -13840,7 +13931,8 @@ export interface components {
        *     * A floating-point number
        *     * A boolean
        *
-       *     You can store up to **50 key-value pairs**. */
+       *     You can store up to **50 key-value pairs**.
+       */
       metadata?: components['schemas']['EventMetadataInput']
       /**
        * Customer Id
@@ -13867,7 +13959,8 @@ export interface components {
        * @description The ID of the organization owning the event. **Required unless you use an organization token.**
        */
       organization_id?: string | null
-      /** @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+      /**
+       * @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
        *
        *     The key must be a string with a maximum length of **40 characters**.
        *     The value must be either:
@@ -13877,7 +13970,8 @@ export interface components {
        *     * A floating-point number
        *     * A boolean
        *
-       *     You can store up to **50 key-value pairs**. */
+       *     You can store up to **50 key-value pairs**.
+       */
       metadata?: components['schemas']['EventMetadataInput']
       /**
        * External Customer Id
@@ -14320,6 +14414,11 @@ export interface components {
        * @description The number of LLM input tokens used for the event.
        */
       input_tokens: number
+      /**
+       * Cached Input Tokens
+       * @description The number of LLM cached tokens that were used for the event.
+       */
+      cached_input_tokens?: number
       /**
        * Output Tokens
        * @description The number of LLM output tokens used for the event.
@@ -16134,49 +16233,61 @@ export interface components {
       /**
        * Subtotal Amount
        * @description Amount in cents, before discounts and taxes.
+       * @example 10000
        */
       subtotal_amount: number
       /**
        * Discount Amount
        * @description Discount amount in cents.
+       * @example 1000
        */
       discount_amount: number
       /**
        * Net Amount
        * @description Amount in cents, after discounts but before taxes.
+       * @example 9000
        */
       net_amount: number
       /**
        * Tax Amount
        * @description Sales tax amount in cents.
+       * @example 720
        */
       tax_amount: number
       /**
        * Total Amount
        * @description Amount in cents, after discounts and taxes.
+       * @example 9720
        */
       total_amount: number
       /**
        * Applied Balance Amount
        * @description Customer's balance amount applied to this invoice. Can increase the total amount paid, if the customer has a negative balance,  or decrease it, if the customer has a positive balance.Amount in cents.
+       * @example 0
        */
       applied_balance_amount: number
       /**
        * Due Amount
        * @description Amount in cents that is due for this order.
+       * @example 0
        */
       due_amount: number
       /**
        * Refunded Amount
        * @description Amount refunded in cents.
+       * @example 0
        */
       refunded_amount: number
       /**
        * Refunded Tax Amount
        * @description Sales tax refunded in cents.
+       * @example 0
        */
       refunded_tax_amount: number
-      /** Currency */
+      /**
+       * Currency
+       * @example usd
+       */
       currency: string
       billing_reason: components['schemas']['OrderBillingReason']
       /**
@@ -16225,6 +16336,7 @@ export interface components {
       /**
        * Platform Fee Amount
        * @description Platform fee amount in cents.
+       * @example 500
        */
       platform_fee_amount: number
       customer: components['schemas']['OrderCustomer']
@@ -16259,6 +16371,17 @@ export interface components {
       | 'purchase'
       | 'subscription_create'
       | 'subscription_cycle'
+      | 'subscription_update'
+    /**
+     * OrderBillingReasonInternal
+     * @description Internal billing reasons with additional granularity.
+     * @enum {string}
+     */
+    OrderBillingReasonInternal:
+      | 'purchase'
+      | 'subscription_create'
+      | 'subscription_cycle'
+      | 'subscription_cycle_after_trial'
       | 'subscription_update'
     /** OrderCustomer */
     OrderCustomer: {
@@ -16365,21 +16488,25 @@ export interface components {
       /**
        * Label
        * @description Description of the line item charge.
+       * @example Pro Plan
        */
       label: string
       /**
        * Amount
        * @description Amount in cents, before discounts and taxes.
+       * @example 10000
        */
       amount: number
       /**
        * Tax Amount
        * @description Sales tax amount in cents.
+       * @example 720
        */
       tax_amount: number
       /**
        * Proration
        * @description Whether this charge is due to a proration.
+       * @example false
        */
       proration: boolean
       /**
@@ -16514,16 +16641,24 @@ export interface components {
       /**
        * Amount
        * @description The amount of the subscription.
+       * @example 10000
        */
       amount: number
       /**
        * Currency
        * @description The currency of the subscription.
+       * @example usd
        */
       currency: string
-      /** @description The interval at which the subscription recurs. */
+      /**
+       * @description The interval at which the subscription recurs.
+       * @example month
+       */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /** @description The status of the subscription. */
+      /**
+       * @description The status of the subscription.
+       * @example active
+       */
       status: components['schemas']['SubscriptionStatus']
       /**
        * Current Period Start
@@ -19032,16 +19167,24 @@ export interface components {
       /**
        * Amount
        * @description The amount of the subscription.
+       * @example 10000
        */
       amount: number
       /**
        * Currency
        * @description The currency of the subscription.
+       * @example usd
        */
       currency: string
-      /** @description The interval at which the subscription recurs. */
+      /**
+       * @description The interval at which the subscription recurs.
+       * @example month
+       */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /** @description The status of the subscription. */
+      /**
+       * @description The status of the subscription.
+       * @example active
+       */
       status: components['schemas']['SubscriptionStatus']
       /**
        * Current Period Start
@@ -19151,7 +19294,8 @@ export interface components {
     }
     /** SubscriptionCancel */
     SubscriptionCancel: {
-      /** @description Customer reason for cancellation.
+      /**
+       * @description Customer reason for cancellation.
        *
        *     Helpful to monitor reasons behind churn for future improvements.
        *
@@ -19166,7 +19310,8 @@ export interface components {
        *     * `customer_service`: Customer is not satisfied with the customer service.
        *     * `low_quality`: Customer is unhappy with the quality.
        *     * `too_complex`: Customer considers the service too complicated.
-       *     * `other`: Other reason(s). */
+       *     * `other`: Other reason(s).
+       */
       customer_cancellation_reason?:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -19461,7 +19606,8 @@ export interface components {
     SubscriptionRecurringInterval: 'day' | 'week' | 'month' | 'year'
     /** SubscriptionRevoke */
     SubscriptionRevoke: {
-      /** @description Customer reason for cancellation.
+      /**
+       * @description Customer reason for cancellation.
        *
        *     Helpful to monitor reasons behind churn for future improvements.
        *
@@ -19476,7 +19622,8 @@ export interface components {
        *     * `customer_service`: Customer is not satisfied with the customer service.
        *     * `low_quality`: Customer is unhappy with the quality.
        *     * `too_complex`: Customer considers the service too complicated.
-       *     * `other`: Other reason(s). */
+       *     * `other`: Other reason(s).
+       */
       customer_cancellation_reason?:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -23420,7 +23567,7 @@ export interface operations {
   'benefits:grants': {
     parameters: {
       query?: {
-        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.  */
+        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned. */
         is_granted?: boolean | null
         /** @description Filter by customer. */
         customer_id?: string | string[] | null
@@ -23473,7 +23620,7 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
-        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.  */
+        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned. */
         is_granted?: boolean | null
         /** @description Page number, defaults to 1. */
         page?: number
@@ -23835,7 +23982,7 @@ export interface operations {
         query?: string | null
         /** @description Filter on archived products. */
         is_archived?: boolean | null
-        /** @description Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.  */
+        /** @description Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. */
         is_recurring?: boolean | null
         /** @description Filter products granting specific benefit. */
         benefit_id?: string | string[] | null
@@ -29479,7 +29626,7 @@ export interface operations {
   'events:list': {
     parameters: {
       query?: {
-        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause.  */
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
         filter?: string | null
         /** @description Filter events after this timestamp. */
         start_timestamp?: string | null
@@ -33137,6 +33284,15 @@ export const orderBillingReasonValues: ReadonlyArray<
   'purchase',
   'subscription_create',
   'subscription_cycle',
+  'subscription_update',
+]
+export const orderBillingReasonInternalValues: ReadonlyArray<
+  components['schemas']['OrderBillingReasonInternal']
+> = [
+  'purchase',
+  'subscription_create',
+  'subscription_cycle',
+  'subscription_cycle_after_trial',
   'subscription_update',
 ]
 export const orderSortPropertyValues: ReadonlyArray<

@@ -4265,7 +4265,7 @@ export interface components {
        */
       id: string
       account_type: components['schemas']['AccountType']
-      status: components['schemas']['Status']
+      status: components['schemas']['polar__models__organization__Organization__Status']
       /** Stripe Id */
       stripe_id: string | null
       /** Open Collective Slug */
@@ -4886,17 +4886,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** AlreadyCanceledSubscription */
-    AlreadyCanceledSubscription: {
-      /**
-       * Error
-       * @example AlreadyCanceledSubscription
-       * @constant
-       */
-      error: 'AlreadyCanceledSubscription'
-      /** Detail */
-      detail: string
-    }
     /**
      * AppealDecision
      * @enum {string}
@@ -4906,7 +4895,31 @@ export interface components {
      * AttachedCustomField
      * @description Schema of a custom field attached to a resource.
      */
-    AttachedCustomField: {
+    'AttachedCustomField-Input': {
+      /**
+       * Custom Field Id
+       * Format: uuid4
+       * @description ID of the custom field.
+       */
+      custom_field_id: string
+      /** CustomField */
+      custom_field: components['schemas']['CustomField']
+      /**
+       * Order
+       * @description Order of the custom field in the resource.
+       */
+      order: number
+      /**
+       * Required
+       * @description Whether the value is required for this custom field.
+       */
+      required: boolean
+    }
+    /**
+     * AttachedCustomField
+     * @description Schema of a custom field attached to a resource.
+     */
+    'AttachedCustomField-Output': {
       /**
        * Custom Field Id
        * Format: uuid4
@@ -5380,7 +5393,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      properties: components['schemas']['BenefitDiscordProperties']
+      properties: components['schemas']['BenefitDiscordProperties-Output']
     }
     /** BenefitDiscordCreate */
     BenefitDiscordCreate: {
@@ -5440,7 +5453,28 @@ export interface components {
      * BenefitDiscordProperties
      * @description Properties for a benefit of type `discord`.
      */
-    BenefitDiscordProperties: {
+    'BenefitDiscordProperties-Input': {
+      /**
+       * Guild Id
+       * @description The ID of the Discord server.
+       */
+      guild_id: string
+      /**
+       * Role Id
+       * @description The ID of the Discord role to grant.
+       */
+      role_id: string
+      /**
+       * Kick Member
+       * @description Whether to kick the member from the Discord server on revocation.
+       */
+      kick_member: boolean
+    }
+    /**
+     * BenefitDiscordProperties
+     * @description Properties for a benefit of type `discord`.
+     */
+    'BenefitDiscordProperties-Output': {
       /**
        * Guild Id
        * @description The ID of the Discord server.
@@ -7620,8 +7654,8 @@ export interface components {
        * @description Price of the selected product.
        */
       product_price:
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       /** Discount */
       discount:
         | (
@@ -7634,7 +7668,7 @@ export interface components {
       /** Subscription Id */
       subscription_id: string | null
       /** Attached Custom Fields */
-      attached_custom_fields: components['schemas']['AttachedCustomField'][]
+      attached_custom_fields: components['schemas']['AttachedCustomField-Output'][]
       /** Customer Metadata */
       customer_metadata: {
         [key: string]: string | number | boolean
@@ -8224,8 +8258,8 @@ export interface components {
        * @description List of prices for this product.
        */
       prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       )[]
       /**
        * BenefitPublic
@@ -8508,8 +8542,8 @@ export interface components {
        * @description List of prices for this product.
        */
       prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       )[]
       /**
        * BenefitPublic
@@ -9010,8 +9044,8 @@ export interface components {
        * @description Price of the selected product.
        */
       product_price:
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       /** Discount */
       discount:
         | (
@@ -9023,7 +9057,7 @@ export interface components {
         | null
       organization: components['schemas']['Organization']
       /** Attached Custom Fields */
-      attached_custom_fields: components['schemas']['AttachedCustomField'][]
+      attached_custom_fields: components['schemas']['AttachedCustomField-Output'][]
     }
     /**
      * CheckoutPublicConfirmed
@@ -9241,8 +9275,8 @@ export interface components {
        * @description Price of the selected product.
        */
       product_price:
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       /** Discount */
       discount:
         | (
@@ -9254,7 +9288,7 @@ export interface components {
         | null
       organization: components['schemas']['Organization']
       /** Attached Custom Fields */
-      attached_custom_fields: components['schemas']['AttachedCustomField'][]
+      attached_custom_fields: components['schemas']['AttachedCustomField-Output'][]
       /** Customer Session Token */
       customer_session_token: string
     }
@@ -9674,6 +9708,255 @@ export interface components {
       | 'SV'
       | 'SX'
       | 'SY'
+      | 'SZ'
+      | 'TC'
+      | 'TD'
+      | 'TF'
+      | 'TG'
+      | 'TH'
+      | 'TJ'
+      | 'TK'
+      | 'TL'
+      | 'TM'
+      | 'TN'
+      | 'TO'
+      | 'TR'
+      | 'TT'
+      | 'TV'
+      | 'TW'
+      | 'TZ'
+      | 'UA'
+      | 'UG'
+      | 'UM'
+      | 'US'
+      | 'UY'
+      | 'UZ'
+      | 'VA'
+      | 'VC'
+      | 'VE'
+      | 'VG'
+      | 'VI'
+      | 'VN'
+      | 'VU'
+      | 'WF'
+      | 'WS'
+      | 'YE'
+      | 'YT'
+      | 'ZA'
+      | 'ZM'
+      | 'ZW'
+    /**
+     * CountryAlpha2Input
+     * @enum {string}
+     */
+    CountryAlpha2Input:
+      | 'AD'
+      | 'AE'
+      | 'AF'
+      | 'AG'
+      | 'AI'
+      | 'AL'
+      | 'AM'
+      | 'AO'
+      | 'AQ'
+      | 'AR'
+      | 'AS'
+      | 'AT'
+      | 'AU'
+      | 'AW'
+      | 'AX'
+      | 'AZ'
+      | 'BA'
+      | 'BB'
+      | 'BD'
+      | 'BE'
+      | 'BF'
+      | 'BG'
+      | 'BH'
+      | 'BI'
+      | 'BJ'
+      | 'BL'
+      | 'BM'
+      | 'BN'
+      | 'BO'
+      | 'BQ'
+      | 'BR'
+      | 'BS'
+      | 'BT'
+      | 'BV'
+      | 'BW'
+      | 'BY'
+      | 'BZ'
+      | 'CA'
+      | 'CC'
+      | 'CD'
+      | 'CF'
+      | 'CG'
+      | 'CH'
+      | 'CI'
+      | 'CK'
+      | 'CL'
+      | 'CM'
+      | 'CN'
+      | 'CO'
+      | 'CR'
+      | 'CV'
+      | 'CW'
+      | 'CX'
+      | 'CY'
+      | 'CZ'
+      | 'DE'
+      | 'DJ'
+      | 'DK'
+      | 'DM'
+      | 'DO'
+      | 'DZ'
+      | 'EC'
+      | 'EE'
+      | 'EG'
+      | 'EH'
+      | 'ER'
+      | 'ES'
+      | 'ET'
+      | 'FI'
+      | 'FJ'
+      | 'FK'
+      | 'FM'
+      | 'FO'
+      | 'FR'
+      | 'GA'
+      | 'GB'
+      | 'GD'
+      | 'GE'
+      | 'GF'
+      | 'GG'
+      | 'GH'
+      | 'GI'
+      | 'GL'
+      | 'GM'
+      | 'GN'
+      | 'GP'
+      | 'GQ'
+      | 'GR'
+      | 'GS'
+      | 'GT'
+      | 'GU'
+      | 'GW'
+      | 'GY'
+      | 'HK'
+      | 'HM'
+      | 'HN'
+      | 'HR'
+      | 'HT'
+      | 'HU'
+      | 'ID'
+      | 'IE'
+      | 'IL'
+      | 'IM'
+      | 'IN'
+      | 'IO'
+      | 'IQ'
+      | 'IS'
+      | 'IT'
+      | 'JE'
+      | 'JM'
+      | 'JO'
+      | 'JP'
+      | 'KE'
+      | 'KG'
+      | 'KH'
+      | 'KI'
+      | 'KM'
+      | 'KN'
+      | 'KR'
+      | 'KW'
+      | 'KY'
+      | 'KZ'
+      | 'LA'
+      | 'LB'
+      | 'LC'
+      | 'LI'
+      | 'LK'
+      | 'LR'
+      | 'LS'
+      | 'LT'
+      | 'LU'
+      | 'LV'
+      | 'LY'
+      | 'MA'
+      | 'MC'
+      | 'MD'
+      | 'ME'
+      | 'MF'
+      | 'MG'
+      | 'MH'
+      | 'MK'
+      | 'ML'
+      | 'MM'
+      | 'MN'
+      | 'MO'
+      | 'MP'
+      | 'MQ'
+      | 'MR'
+      | 'MS'
+      | 'MT'
+      | 'MU'
+      | 'MV'
+      | 'MW'
+      | 'MX'
+      | 'MY'
+      | 'MZ'
+      | 'NA'
+      | 'NC'
+      | 'NE'
+      | 'NF'
+      | 'NG'
+      | 'NI'
+      | 'NL'
+      | 'NO'
+      | 'NP'
+      | 'NR'
+      | 'NU'
+      | 'NZ'
+      | 'OM'
+      | 'PA'
+      | 'PE'
+      | 'PF'
+      | 'PG'
+      | 'PH'
+      | 'PK'
+      | 'PL'
+      | 'PM'
+      | 'PN'
+      | 'PR'
+      | 'PS'
+      | 'PT'
+      | 'PW'
+      | 'PY'
+      | 'QA'
+      | 'RE'
+      | 'RO'
+      | 'RS'
+      | 'RW'
+      | 'SA'
+      | 'SB'
+      | 'SC'
+      | 'SD'
+      | 'SE'
+      | 'SG'
+      | 'SH'
+      | 'SI'
+      | 'SJ'
+      | 'SK'
+      | 'SL'
+      | 'SM'
+      | 'SN'
+      | 'SO'
+      | 'SR'
+      | 'SS'
+      | 'ST'
+      | 'SV'
+      | 'SX'
       | 'SZ'
       | 'TC'
       | 'TD'
@@ -11427,8 +11710,8 @@ export interface components {
        * @description List of prices for this product.
        */
       prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       )[]
       /**
        * BenefitPublic
@@ -11621,10 +11904,20 @@ export interface components {
       client_secret: string
     }
     CustomerPaymentMethodCreateResponse:
-      | components['schemas']['CustomerPaymentMethodCreateSucceededResponse']
+      | components['schemas']['CustomerPaymentMethodCreateSucceededResponse-Output']
       | components['schemas']['CustomerPaymentMethodCreateRequiresActionResponse']
     /** CustomerPaymentMethodCreateSucceededResponse */
-    CustomerPaymentMethodCreateSucceededResponse: {
+    'CustomerPaymentMethodCreateSucceededResponse-Input': {
+      /**
+       * Status
+       * @constant
+       */
+      status: 'succeeded'
+      /** CustomerPaymentMethod */
+      payment_method: components['schemas']['CustomerPaymentMethod']
+    }
+    /** CustomerPaymentMethodCreateSucceededResponse */
+    'CustomerPaymentMethodCreateSucceededResponse-Output': {
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -11749,8 +12042,8 @@ export interface components {
        * @description List of available prices for this product.
        */
       prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       )[]
       /**
        * BenefitPublic
@@ -12443,8 +12736,8 @@ export interface components {
        * @description List of enabled prices for the subscription.
        */
       prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       )[]
       /**
        * Meters
@@ -12619,8 +12912,8 @@ export interface components {
        * @description List of prices for this product.
        */
       prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       )[]
       /**
        * BenefitPublic
@@ -14376,17 +14669,6 @@ export interface components {
       /** Iat */
       iat: number
     }
-    /** InvoiceAlreadyExists */
-    InvoiceAlreadyExists: {
-      /**
-       * Error
-       * @example InvoiceAlreadyExists
-       * @constant
-       */
-      error: 'InvoiceAlreadyExists'
-      /** Detail */
-      detail: string
-    }
     /** LLMMetadata */
     LLMMetadata: {
       /**
@@ -14432,17 +14714,90 @@ export interface components {
       /** @description Optional cost associated with the event. */
       cost?: components['schemas']['CostMetadata'] | null
     }
-    LegacyRecurringProductPrice:
-      | components['schemas']['LegacyRecurringProductPriceFixed']
-      | components['schemas']['LegacyRecurringProductPriceCustom']
-      | components['schemas']['LegacyRecurringProductPriceFree']
+    'LegacyRecurringProductPrice-Input':
+      | components['schemas']['LegacyRecurringProductPriceFixed-Input']
+      | components['schemas']['LegacyRecurringProductPriceCustom-Input']
+      | components['schemas']['LegacyRecurringProductPriceFree-Input']
+    'LegacyRecurringProductPrice-Output':
+      | components['schemas']['LegacyRecurringProductPriceFixed-Output']
+      | components['schemas']['LegacyRecurringProductPriceCustom-Output']
+      | components['schemas']['LegacyRecurringProductPriceFree-Output']
     /**
      * LegacyRecurringProductPriceCustom
      * @description A pay-what-you-want recurring price for a product, i.e. a subscription.
      *
      *     **Deprecated**: The recurring interval should be set on the product itself.
      */
-    LegacyRecurringProductPriceCustom: {
+    'LegacyRecurringProductPriceCustom-Input': {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the price.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'custom'
+      /**
+       * Is Archived
+       * @description Whether the price is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the product owning the price.
+       */
+      product_id: string
+      /**
+       * Type
+       * @description The type of the price.
+       * @constant
+       */
+      type: 'recurring'
+      /** @description The recurring interval of the price. */
+      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
+       * Minimum Amount
+       * @description The minimum amount the customer can pay.
+       */
+      minimum_amount: number | null
+      /**
+       * Maximum Amount
+       * @description The maximum amount the customer can pay.
+       */
+      maximum_amount: number | null
+      /**
+       * Preset Amount
+       * @description The initial amount shown to the customer.
+       */
+      preset_amount: number | null
+    }
+    /**
+     * LegacyRecurringProductPriceCustom
+     * @description A pay-what-you-want recurring price for a product, i.e. a subscription.
+     *
+     *     **Deprecated**: The recurring interval should be set on the product itself.
+     */
+    'LegacyRecurringProductPriceCustom-Output': {
       /**
        * Created At
        * Format: date-time
@@ -14516,7 +14871,66 @@ export interface components {
      *
      *     **Deprecated**: The recurring interval should be set on the product itself.
      */
-    LegacyRecurringProductPriceFixed: {
+    'LegacyRecurringProductPriceFixed-Input': {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the price.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'fixed'
+      /**
+       * Is Archived
+       * @description Whether the price is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the product owning the price.
+       */
+      product_id: string
+      /**
+       * Type
+       * @description The type of the price.
+       * @constant
+       */
+      type: 'recurring'
+      /** @description The recurring interval of the price. */
+      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
+       * Price Amount
+       * @description The price in cents.
+       */
+      price_amount: number
+    }
+    /**
+     * LegacyRecurringProductPriceFixed
+     * @description A recurring price for a product, i.e. a subscription.
+     *
+     *     **Deprecated**: The recurring interval should be set on the product itself.
+     */
+    'LegacyRecurringProductPriceFixed-Output': {
       /**
        * Created At
        * Format: date-time
@@ -14580,7 +14994,56 @@ export interface components {
      *
      *     **Deprecated**: The recurring interval should be set on the product itself.
      */
-    LegacyRecurringProductPriceFree: {
+    'LegacyRecurringProductPriceFree-Input': {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the price.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'free'
+      /**
+       * Is Archived
+       * @description Whether the price is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the product owning the price.
+       */
+      product_id: string
+      /**
+       * Type
+       * @description The type of the price.
+       * @constant
+       */
+      type: 'recurring'
+      /** @description The recurring interval of the price. */
+      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+    }
+    /**
+     * LegacyRecurringProductPriceFree
+     * @description A free recurring price for a product, i.e. a subscription.
+     *
+     *     **Deprecated**: The recurring interval should be set on the product itself.
+     */
+    'LegacyRecurringProductPriceFree-Output': {
       /**
        * Created At
        * Format: date-time
@@ -14886,7 +15349,21 @@ export interface components {
       expires_at?: string | null
     }
     /** LicenseKeyUser */
-    LicenseKeyUser: {
+    'LicenseKeyUser-Input': {
+      /**
+       * Legacy User Id
+       * Format: uuid4
+       */
+      legacy_user_id: string
+      /** Email */
+      email: string
+      /** Legacy User Public Name */
+      legacy_user_public_name: string
+      /** Avatar Url */
+      avatar_url?: string | null
+    }
+    /** LicenseKeyUser */
+    'LicenseKeyUser-Output': {
       /**
        * Id
        * Format: uuid4
@@ -15290,7 +15767,26 @@ export interface components {
       url: string
     }
     /** MaintainerNewPaidSubscriptionNotification */
-    MaintainerNewPaidSubscriptionNotification: {
+    'MaintainerNewPaidSubscriptionNotification-Input': {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /**
+       * Type
+       * @constant
+       */
+      type: 'MaintainerNewPaidSubscriptionNotification'
+      payload: components['schemas']['MaintainerNewPaidSubscriptionNotificationPayload-Input']
+    }
+    /** MaintainerNewPaidSubscriptionNotification */
+    'MaintainerNewPaidSubscriptionNotification-Output': {
       /**
        * Id
        * Format: uuid4
@@ -15306,10 +15802,23 @@ export interface components {
        * @enum {string}
        */
       type: 'MaintainerNewPaidSubscriptionNotification'
-      payload: components['schemas']['MaintainerNewPaidSubscriptionNotificationPayload']
+      payload: components['schemas']['MaintainerNewPaidSubscriptionNotificationPayload-Output']
     }
     /** MaintainerNewPaidSubscriptionNotificationPayload */
-    MaintainerNewPaidSubscriptionNotificationPayload: {
+    'MaintainerNewPaidSubscriptionNotificationPayload-Input': {
+      /** Subscriber Name */
+      subscriber_name: string
+      /** Tier Name */
+      tier_name: string
+      /** Tier Price Amount */
+      tier_price_amount: number | null
+      /** Tier Price Recurring Interval */
+      tier_price_recurring_interval: string
+      /** Tier Organization Name */
+      tier_organization_name: string
+    }
+    /** MaintainerNewPaidSubscriptionNotificationPayload */
+    'MaintainerNewPaidSubscriptionNotificationPayload-Output': {
       /** Subscriber Name */
       subscriber_name: string
       /** Tier Name */
@@ -15324,7 +15833,26 @@ export interface components {
       readonly formatted_price_amount: string
     }
     /** MaintainerNewProductSaleNotification */
-    MaintainerNewProductSaleNotification: {
+    'MaintainerNewProductSaleNotification-Input': {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /**
+       * Type
+       * @constant
+       */
+      type: 'MaintainerNewProductSaleNotification'
+      payload: components['schemas']['MaintainerNewProductSaleNotificationPayload-Input']
+    }
+    /** MaintainerNewProductSaleNotification */
+    'MaintainerNewProductSaleNotification-Output': {
       /**
        * Id
        * Format: uuid4
@@ -15340,10 +15868,21 @@ export interface components {
        * @enum {string}
        */
       type: 'MaintainerNewProductSaleNotification'
-      payload: components['schemas']['MaintainerNewProductSaleNotificationPayload']
+      payload: components['schemas']['MaintainerNewProductSaleNotificationPayload-Output']
     }
     /** MaintainerNewProductSaleNotificationPayload */
-    MaintainerNewProductSaleNotificationPayload: {
+    'MaintainerNewProductSaleNotificationPayload-Input': {
+      /** Customer Name */
+      customer_name: string
+      /** Product Name */
+      product_name: string
+      /** Product Price Amount */
+      product_price_amount: number
+      /** Organization Name */
+      organization_name: string
+    }
+    /** MaintainerNewProductSaleNotificationPayload */
+    'MaintainerNewProductSaleNotificationPayload-Output': {
       /** Customer Name */
       customer_name: string
       /** Product Name */
@@ -15726,7 +16265,41 @@ export interface components {
      */
     MetricType: 'scalar' | 'currency' | 'percentage'
     /** Metrics */
-    Metrics: {
+    'Metrics-Input': {
+      orders: components['schemas']['Metric']
+      revenue: components['schemas']['Metric']
+      net_revenue: components['schemas']['Metric']
+      cumulative_revenue: components['schemas']['Metric']
+      net_cumulative_revenue: components['schemas']['Metric']
+      average_order_value: components['schemas']['Metric']
+      net_average_order_value: components['schemas']['Metric']
+      one_time_products: components['schemas']['Metric']
+      one_time_products_revenue: components['schemas']['Metric']
+      one_time_products_net_revenue: components['schemas']['Metric']
+      new_subscriptions: components['schemas']['Metric']
+      new_subscriptions_revenue: components['schemas']['Metric']
+      new_subscriptions_net_revenue: components['schemas']['Metric']
+      renewed_subscriptions: components['schemas']['Metric']
+      renewed_subscriptions_revenue: components['schemas']['Metric']
+      renewed_subscriptions_net_revenue: components['schemas']['Metric']
+      active_subscriptions: components['schemas']['Metric']
+      monthly_recurring_revenue: components['schemas']['Metric']
+      committed_monthly_recurring_revenue: components['schemas']['Metric']
+      checkouts: components['schemas']['Metric']
+      succeeded_checkouts: components['schemas']['Metric']
+      checkouts_conversion: components['schemas']['Metric']
+      canceled_subscriptions: components['schemas']['Metric']
+      canceled_subscriptions_customer_service: components['schemas']['Metric']
+      canceled_subscriptions_low_quality: components['schemas']['Metric']
+      canceled_subscriptions_missing_features: components['schemas']['Metric']
+      canceled_subscriptions_switched_service: components['schemas']['Metric']
+      canceled_subscriptions_too_complex: components['schemas']['Metric']
+      canceled_subscriptions_too_expensive: components['schemas']['Metric']
+      canceled_subscriptions_unused: components['schemas']['Metric']
+      canceled_subscriptions_other: components['schemas']['Metric']
+    }
+    /** Metrics */
+    'Metrics-Output': {
       orders: components['schemas']['Metric']
       revenue: components['schemas']['Metric']
       net_revenue: components['schemas']['Metric']
@@ -15813,7 +16386,7 @@ export interface components {
       /** @description Totals for the whole selected period. */
       totals: components['schemas']['MetricsTotals']
       /** @description Information about the returned metrics. */
-      metrics: components['schemas']['Metrics']
+      metrics: components['schemas']['Metrics-Output']
     }
     /** MetricsTotals */
     MetricsTotals: {
@@ -15880,17 +16453,6 @@ export interface components {
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other: number
     }
-    /** MissingInvoiceBillingDetails */
-    MissingInvoiceBillingDetails: {
-      /**
-       * Error
-       * @example MissingInvoiceBillingDetails
-       * @constant
-       */
-      error: 'MissingInvoiceBillingDetails'
-      /** Detail */
-      detail: string
-    }
     /** NotOpenCheckout */
     NotOpenCheckout: {
       /**
@@ -15899,28 +16461,6 @@ export interface components {
        * @constant
        */
       error: 'NotOpenCheckout'
-      /** Detail */
-      detail: string
-    }
-    /** NotPaidOrder */
-    NotPaidOrder: {
-      /**
-       * Error
-       * @example NotPaidOrder
-       * @constant
-       */
-      error: 'NotPaidOrder'
-      /** Detail */
-      detail: string
-    }
-    /** NotPermitted */
-    NotPermitted: {
-      /**
-       * Error
-       * @example NotPermitted
-       * @constant
-       */
-      error: 'NotPermitted'
       /** Detail */
       detail: string
     }
@@ -15977,8 +16517,8 @@ export interface components {
       notifications: (
         | components['schemas']['MaintainerAccountUnderReviewNotification']
         | components['schemas']['MaintainerAccountReviewedNotification']
-        | components['schemas']['MaintainerNewPaidSubscriptionNotification']
-        | components['schemas']['MaintainerNewProductSaleNotification']
+        | components['schemas']['MaintainerNewPaidSubscriptionNotification-Output']
+        | components['schemas']['MaintainerNewProductSaleNotification-Output']
         | components['schemas']['MaintainerCreateAccountNotification']
       )[]
       /** Last Read Notification Id */
@@ -16745,7 +17285,23 @@ export interface components {
       billing_address: components['schemas']['AddressInput'] | null
     }
     /** OrderUser */
-    OrderUser: {
+    'OrderUser-Input': {
+      /**
+       * Legacy User Id
+       * Format: uuid4
+       */
+      legacy_user_id: string
+      /** Email */
+      email: string
+      /** Legacy User Public Name */
+      legacy_user_public_name: string
+      /** Avatar Url */
+      avatar_url?: string | null
+      /** Github Username */
+      github_username?: string | null
+    }
+    /** OrderUser */
+    'OrderUser-Output': {
       /**
        * Id
        * Format: uuid4
@@ -16811,7 +17367,7 @@ export interface components {
        */
       socials: components['schemas']['OrganizationSocialLink'][]
       /** @description Current organization status */
-      status: components['schemas']['Status']
+      status: components['schemas']['polar__models__organization__Organization__Status']
       /**
        * Details Submitted At
        * @description When the business details were submitted.
@@ -17173,7 +17729,7 @@ export interface components {
        */
       steps: components['schemas']['OrganizationPaymentStep'][]
       /** @description Current organization status */
-      organization_status: components['schemas']['Status']
+      organization_status: components['schemas']['polar__models__organization__Organization__Status']
     }
     /** OrganizationPaymentStep */
     OrganizationPaymentStep: {
@@ -17197,6 +17753,50 @@ export interface components {
        * @description Whether the step is completed
        */
       completed: boolean
+    }
+    /** OrganizationProfileSettings */
+    OrganizationProfileSettings: {
+      /**
+       * Enabled
+       * @description If this organization has a profile enabled
+       */
+      enabled?: boolean | null
+      /**
+       * Description
+       * @description A description of the organization
+       */
+      description?: string | null
+      /**
+       * Featured Projects
+       * @description A list of featured projects
+       */
+      featured_projects?: string[] | null
+      /**
+       * Featured Organizations
+       * @description A list of featured organizations
+       */
+      featured_organizations?: string[] | null
+      /**
+       * Links
+       * @description A list of links associated with the organization
+       */
+      links?: string[] | null
+      /**
+       * @description Subscription promotion settings
+       * @default {
+       *       "promote": true,
+       *       "show_count": true,
+       *       "count_free": true
+       *     }
+       */
+      subscribe:
+        | components['schemas']['OrganizationSubscribePromoteSettings']
+        | null
+      /**
+       * Accent Color
+       * @description Accent color for the organization
+       */
+      accent_color?: string | null
     }
     /** OrganizationReviewStatus */
     OrganizationReviewStatus: {
@@ -17278,6 +17878,27 @@ export interface components {
       | '-next_review_threshold'
       | 'days_in_status'
       | '-days_in_status'
+    /** OrganizationSubscribePromoteSettings */
+    OrganizationSubscribePromoteSettings: {
+      /**
+       * Promote
+       * @description Promote email subscription (free)
+       * @default true
+       */
+      promote: boolean
+      /**
+       * Show Count
+       * @description Show subscription count publicly
+       * @default true
+       */
+      show_count: boolean
+      /**
+       * Count Free
+       * @description Include free subscribers in total count
+       * @default true
+       */
+      count_free: boolean
+    }
     /** OrganizationSubscriptionSettings */
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
@@ -17706,8 +18327,8 @@ export interface components {
        * @description List of prices for this product.
        */
       prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       )[]
       /**
        * Benefits
@@ -17723,7 +18344,7 @@ export interface components {
        * Attached Custom Fields
        * @description List of custom fields attached to the product.
        */
-      attached_custom_fields: components['schemas']['AttachedCustomField'][]
+      attached_custom_fields: components['schemas']['AttachedCustomField-Output'][]
     }
     /**
      * ProductBenefitsUpdate
@@ -17953,17 +18574,88 @@ export interface components {
       /** Public Url */
       readonly public_url: string
     }
-    ProductPrice:
-      | components['schemas']['ProductPriceFixed']
-      | components['schemas']['ProductPriceCustom']
-      | components['schemas']['ProductPriceFree']
-      | components['schemas']['ProductPriceSeatBased']
-      | components['schemas']['ProductPriceMeteredUnit']
+    'ProductPrice-Input':
+      | components['schemas']['ProductPriceFixed-Input']
+      | components['schemas']['ProductPriceCustom-Input']
+      | components['schemas']['ProductPriceFree-Input']
+      | components['schemas']['ProductPriceSeatBased-Input']
+      | components['schemas']['ProductPriceMeteredUnit-Input']
+    'ProductPrice-Output':
+      | components['schemas']['ProductPriceFixed-Output']
+      | components['schemas']['ProductPriceCustom-Output']
+      | components['schemas']['ProductPriceFree-Output']
+      | components['schemas']['ProductPriceSeatBased-Output']
+      | components['schemas']['ProductPriceMeteredUnit-Output']
     /**
      * ProductPriceCustom
      * @description A pay-what-you-want price for a product.
      */
-    ProductPriceCustom: {
+    'ProductPriceCustom-Input': {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the price.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'custom'
+      /**
+       * Is Archived
+       * @description Whether the price is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the product owning the price.
+       */
+      product_id: string
+      /** @deprecated */
+      legacy_type: components['schemas']['ProductPriceType']
+      /** @deprecated */
+      legacy_recurring_interval:
+        | components['schemas']['SubscriptionRecurringInterval']
+        | null
+      /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
+       * Minimum Amount
+       * @description The minimum amount the customer can pay.
+       */
+      minimum_amount: number | null
+      /**
+       * Maximum Amount
+       * @description The maximum amount the customer can pay.
+       */
+      maximum_amount: number | null
+      /**
+       * Preset Amount
+       * @description The initial amount shown to the customer.
+       */
+      preset_amount: number | null
+    }
+    /**
+     * ProductPriceCustom
+     * @description A pay-what-you-want price for a product.
+     */
+    'ProductPriceCustom-Output': {
       /**
        * Created At
        * Format: date-time
@@ -18060,7 +18752,62 @@ export interface components {
      * ProductPriceFixed
      * @description A fixed price for a product.
      */
-    ProductPriceFixed: {
+    'ProductPriceFixed-Input': {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the price.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'fixed'
+      /**
+       * Is Archived
+       * @description Whether the price is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the product owning the price.
+       */
+      product_id: string
+      /** @deprecated */
+      legacy_type: components['schemas']['ProductPriceType']
+      /** @deprecated */
+      legacy_recurring_interval:
+        | components['schemas']['SubscriptionRecurringInterval']
+        | null
+      /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
+       * Price Amount
+       * @description The price in cents.
+       */
+      price_amount: number
+    }
+    /**
+     * ProductPriceFixed
+     * @description A fixed price for a product.
+     */
+    'ProductPriceFixed-Output': {
       /**
        * Created At
        * Format: date-time
@@ -18137,7 +18884,52 @@ export interface components {
      * ProductPriceFree
      * @description A free price for a product.
      */
-    ProductPriceFree: {
+    'ProductPriceFree-Input': {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the price.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'free'
+      /**
+       * Is Archived
+       * @description Whether the price is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the product owning the price.
+       */
+      product_id: string
+      /** @deprecated */
+      legacy_type: components['schemas']['ProductPriceType']
+      /** @deprecated */
+      legacy_recurring_interval:
+        | components['schemas']['SubscriptionRecurringInterval']
+        | null
+    }
+    /**
+     * ProductPriceFree
+     * @description A free price for a product.
+     */
+    'ProductPriceFree-Output': {
       /**
        * Created At
        * Format: date-time
@@ -18210,7 +19002,75 @@ export interface components {
      * ProductPriceMeteredUnit
      * @description A metered, usage-based, price for a product, with a fixed unit price.
      */
-    ProductPriceMeteredUnit: {
+    'ProductPriceMeteredUnit-Input': {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the price.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_unit'
+      /**
+       * Is Archived
+       * @description Whether the price is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the product owning the price.
+       */
+      product_id: string
+      /** @deprecated */
+      legacy_type: components['schemas']['ProductPriceType']
+      /** @deprecated */
+      legacy_recurring_interval:
+        | components['schemas']['SubscriptionRecurringInterval']
+        | null
+      /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
+       * Unit Amount
+       * @description The price per unit in cents.
+       */
+      unit_amount: number | string
+      /**
+       * Cap Amount
+       * @description The maximum amount in cents that can be charged, regardless of the number of units consumed.
+       */
+      cap_amount: number | null
+      /**
+       * Meter Id
+       * Format: uuid4
+       * @description The ID of the meter associated to the price.
+       */
+      meter_id: string
+      /** @description The meter associated to the price. */
+      meter: components['schemas']['ProductPriceMeter']
+    }
+    /**
+     * ProductPriceMeteredUnit
+     * @description A metered, usage-based, price for a product, with a fixed unit price.
+     */
+    'ProductPriceMeteredUnit-Output': {
       /**
        * Created At
        * Format: date-time
@@ -18311,7 +19171,59 @@ export interface components {
      * ProductPriceSeatBased
      * @description A seat-based price for a product.
      */
-    ProductPriceSeatBased: {
+    'ProductPriceSeatBased-Input': {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the price.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'seat_based'
+      /**
+       * Is Archived
+       * @description Whether the price is archived and no longer available.
+       */
+      is_archived: boolean
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the product owning the price.
+       */
+      product_id: string
+      /** @deprecated */
+      legacy_type: components['schemas']['ProductPriceType']
+      /** @deprecated */
+      legacy_recurring_interval:
+        | components['schemas']['SubscriptionRecurringInterval']
+        | null
+      /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /** @description Tiered pricing based on seat quantity */
+      seat_tiers: components['schemas']['ProductPriceSeatTiers']
+    }
+    /**
+     * ProductPriceSeatBased
+     * @description A seat-based price for a product.
+     */
+    'ProductPriceSeatBased-Output': {
       /**
        * Created At
        * Format: date-time
@@ -18492,8 +19404,8 @@ export interface components {
        * @description List of available prices for this product.
        */
       prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       )[]
       /**
        * BenefitPublic
@@ -18725,17 +19637,6 @@ export interface components {
        * @constant
        */
       error: 'RefundedAlready'
-      /** Detail */
-      detail: string
-    }
-    /** ResourceNotFound */
-    ResourceNotFound: {
-      /**
-       * Error
-       * @example ResourceNotFound
-       * @constant
-       */
-      error: 'ResourceNotFound'
       /** Detail */
       detail: string
     }
@@ -18983,16 +19884,6 @@ export interface components {
        */
       total_seats: number
     }
-    /**
-     * Status
-     * @enum {string}
-     */
-    Status:
-      | 'created'
-      | 'onboarding_started'
-      | 'under_review'
-      | 'denied'
-      | 'active'
     /**
      * Storefront
      * @description Schema of a public storefront.
@@ -19283,8 +20174,8 @@ export interface components {
        * @description List of enabled prices for the subscription.
        */
       prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | components['schemas']['LegacyRecurringProductPrice-Output']
+        | components['schemas']['ProductPrice-Output']
       )[]
       /**
        * Meters
@@ -19474,17 +20365,6 @@ export interface components {
     SubscriptionCycledMetadata: {
       /** Subscription Id */
       subscription_id: string
-    }
-    /** SubscriptionLocked */
-    SubscriptionLocked: {
-      /**
-       * Error
-       * @example SubscriptionLocked
-       * @constant
-       */
-      error: 'SubscriptionLocked'
-      /** Detail */
-      detail: string
     }
     /**
      * SubscriptionMeter
@@ -19769,7 +20649,23 @@ export interface components {
       trial_end: string | 'now'
     }
     /** SubscriptionUser */
-    SubscriptionUser: {
+    'SubscriptionUser-Input': {
+      /**
+       * Legacy User Id
+       * Format: uuid4
+       */
+      legacy_user_id: string
+      /** Email */
+      email: string
+      /** Legacy User Public Name */
+      legacy_user_public_name: string
+      /** Avatar Url */
+      avatar_url?: string | null
+      /** Github Username */
+      github_username?: string | null
+    }
+    /** SubscriptionUser */
+    'SubscriptionUser-Output': {
       /**
        * Id
        * Format: uuid4
@@ -21267,6 +22163,93 @@ export interface components {
       timestamp: string
       data: components['schemas']['Subscription']
     }
+    /** AlreadyCanceledSubscription */
+    polar__exceptions__AlreadyCanceledSubscription: {
+      /**
+       * Error
+       * @example AlreadyCanceledSubscription
+       * @constant
+       */
+      error: 'AlreadyCanceledSubscription'
+      /** Detail */
+      detail: string
+    }
+    /** InvoiceAlreadyExists */
+    polar__exceptions__InvoiceAlreadyExists: {
+      /**
+       * Error
+       * @example InvoiceAlreadyExists
+       * @constant
+       */
+      error: 'InvoiceAlreadyExists'
+      /** Detail */
+      detail: string
+    }
+    /** MissingInvoiceBillingDetails */
+    polar__exceptions__MissingInvoiceBillingDetails: {
+      /**
+       * Error
+       * @example MissingInvoiceBillingDetails
+       * @constant
+       */
+      error: 'MissingInvoiceBillingDetails'
+      /** Detail */
+      detail: string
+    }
+    /** NotPaidOrder */
+    polar__exceptions__NotPaidOrder: {
+      /**
+       * Error
+       * @example NotPaidOrder
+       * @constant
+       */
+      error: 'NotPaidOrder'
+      /** Detail */
+      detail: string
+    }
+    /** NotPermitted */
+    polar__exceptions__NotPermitted: {
+      /**
+       * Error
+       * @example NotPermitted
+       * @constant
+       */
+      error: 'NotPermitted'
+      /** Detail */
+      detail: string
+    }
+    /** ResourceNotFound */
+    polar__exceptions__ResourceNotFound: {
+      /**
+       * Error
+       * @example ResourceNotFound
+       * @constant
+       */
+      error: 'ResourceNotFound'
+      /** Detail */
+      detail: string
+    }
+    /** SubscriptionLocked */
+    polar__exceptions__SubscriptionLocked: {
+      /**
+       * Error
+       * @example SubscriptionLocked
+       * @constant
+       */
+      error: 'SubscriptionLocked'
+      /** Detail */
+      detail: string
+    }
+    /**
+     * Status
+     * @enum {string}
+     */
+    polar__models__organization__Organization__Status:
+      | 'created'
+      | 'onboarding_started'
+      | 'under_review'
+      | 'denied'
+      | 'active'
     /** MetadataQuery */
     MetadataQuery: {
       [key: string]: string | number | boolean | string[] | number[] | boolean[]
@@ -22306,7 +23289,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -22350,7 +23333,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json': components['schemas']['polar__exceptions__NotPermitted']
         }
       }
       /** @description Organization not found. */
@@ -22359,7 +23342,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -22399,7 +23382,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json': components['schemas']['polar__exceptions__NotPermitted']
         }
       }
       /** @description Organization not found or account not set. */
@@ -22408,7 +23391,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -22451,7 +23434,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -22557,7 +23540,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -22608,7 +23591,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -22648,7 +23631,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -22771,7 +23754,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -22812,7 +23795,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AlreadyCanceledSubscription']
+          'application/json': components['schemas']['polar__exceptions__AlreadyCanceledSubscription']
         }
       }
       /** @description Subscription not found. */
@@ -22821,7 +23804,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Subscription is pending an update. */
@@ -22830,7 +23813,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SubscriptionLocked']
+          'application/json': components['schemas']['polar__exceptions__SubscriptionLocked']
         }
       }
       /** @description Validation Error */
@@ -22875,7 +23858,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AlreadyCanceledSubscription']
+          'application/json': components['schemas']['polar__exceptions__AlreadyCanceledSubscription']
         }
       }
       /** @description Subscription not found. */
@@ -22884,7 +23867,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Subscription is pending an update. */
@@ -22893,7 +23876,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SubscriptionLocked']
+          'application/json': components['schemas']['polar__exceptions__SubscriptionLocked']
         }
       }
       /** @description Validation Error */
@@ -23453,7 +24436,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -23491,7 +24474,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json': components['schemas']['polar__exceptions__NotPermitted']
         }
       }
       /** @description Benefit not found. */
@@ -23500,7 +24483,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -23550,7 +24533,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -23599,7 +24582,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -23751,7 +24734,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -23790,7 +24773,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -23835,7 +24818,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -23876,7 +24859,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -23957,7 +24940,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -24080,7 +25063,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -24124,7 +25107,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json': components['schemas']['polar__exceptions__NotPermitted']
         }
       }
       /** @description Product not found. */
@@ -24133,7 +25116,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -24177,7 +25160,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json': components['schemas']['polar__exceptions__NotPermitted']
         }
       }
       /** @description Product not found. */
@@ -24186,7 +25169,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -24280,7 +25263,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -24325,7 +25308,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -24366,7 +25349,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -24407,7 +25390,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['InvoiceAlreadyExists']
+          'application/json': components['schemas']['polar__exceptions__InvoiceAlreadyExists']
         }
       }
       /** @description Order is not paid or is missing billing name or address. */
@@ -24417,8 +25400,8 @@ export interface operations {
         }
         content: {
           'application/json':
-            | components['schemas']['MissingInvoiceBillingDetails']
-            | components['schemas']['NotPaidOrder']
+            | components['schemas']['polar__exceptions__MissingInvoiceBillingDetails']
+            | components['schemas']['polar__exceptions__NotPaidOrder']
         }
       }
     }
@@ -24638,7 +25621,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -24692,7 +25675,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -24733,7 +25716,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description The checkout session is expired. */
@@ -24796,7 +25779,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description The checkout session is expired. */
@@ -24901,7 +25884,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description The checkout session is expired. */
@@ -25029,7 +26012,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json': components['schemas']['polar__exceptions__NotPermitted']
         }
       }
       /** @description File not found. */
@@ -25038,7 +26021,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -25076,7 +26059,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json': components['schemas']['polar__exceptions__NotPermitted']
         }
       }
       /** @description File not found. */
@@ -25085,7 +26068,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -25133,7 +26116,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json': components['schemas']['polar__exceptions__NotPermitted']
         }
       }
       /** @description File not found. */
@@ -25142,7 +26125,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -25931,7 +26914,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -25980,7 +26963,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26033,7 +27016,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26083,7 +27066,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26125,7 +27108,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26167,7 +27150,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json': components['schemas']['polar__exceptions__NotPermitted']
         }
       }
       /** @description License key not found. */
@@ -26176,7 +27159,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26216,7 +27199,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26330,7 +27313,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26369,7 +27352,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26414,7 +27397,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26454,7 +27437,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26494,7 +27477,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26534,7 +27517,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26653,7 +27636,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26692,7 +27675,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26737,7 +27720,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26851,7 +27834,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26890,7 +27873,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -26935,7 +27918,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27085,7 +28068,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27124,7 +28107,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27169,7 +28152,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27210,7 +28193,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27249,7 +28232,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27294,7 +28277,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27335,7 +28318,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27376,7 +28359,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27417,7 +28400,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27511,7 +28494,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27556,7 +28539,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json': components['schemas']['polar__exceptions__NotPermitted']
         }
       }
       /** @description Benefit grant not found. */
@@ -27565,7 +28548,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27774,7 +28757,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -27857,7 +28840,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -28357,7 +29340,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -28397,7 +29380,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -28439,7 +29422,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -28481,7 +29464,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json': components['schemas']['polar__exceptions__NotPermitted']
         }
       }
       /** @description License key not found. */
@@ -28490,7 +29473,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -28530,7 +29513,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -28686,7 +29669,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -28731,7 +29714,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -28772,7 +29755,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -28813,7 +29796,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['InvoiceAlreadyExists']
+          'application/json': components['schemas']['polar__exceptions__InvoiceAlreadyExists']
         }
       }
       /** @description Order is not paid or is missing billing name or address. */
@@ -28823,8 +29806,8 @@ export interface operations {
         }
         content: {
           'application/json':
-            | components['schemas']['MissingInvoiceBillingDetails']
-            | components['schemas']['NotPaidOrder']
+            | components['schemas']['polar__exceptions__MissingInvoiceBillingDetails']
+            | components['schemas']['polar__exceptions__NotPaidOrder']
         }
       }
     }
@@ -28856,7 +29839,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -28901,7 +29884,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Payment already in progress. */
@@ -28951,7 +29934,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -29038,7 +30021,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -29079,7 +30062,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AlreadyCanceledSubscription']
+          'application/json': components['schemas']['polar__exceptions__AlreadyCanceledSubscription']
         }
       }
       /** @description Customer subscription was not found. */
@@ -29088,7 +30071,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -29133,7 +30116,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AlreadyCanceledSubscription']
+          'application/json': components['schemas']['polar__exceptions__AlreadyCanceledSubscription']
         }
       }
       /** @description Customer subscription was not found. */
@@ -29142,7 +30125,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -29183,7 +30166,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -29758,7 +30741,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -29909,7 +30892,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -29954,7 +30937,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -30012,7 +30995,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -30234,7 +31217,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -30326,7 +31309,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['polar__exceptions__ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -32975,6 +33958,254 @@ export const countryAlpha2Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const countryAlpha2InputValues: ReadonlyArray<
+  components['schemas']['CountryAlpha2Input']
+> = [
+  'AD',
+  'AE',
+  'AF',
+  'AG',
+  'AI',
+  'AL',
+  'AM',
+  'AO',
+  'AQ',
+  'AR',
+  'AS',
+  'AT',
+  'AU',
+  'AW',
+  'AX',
+  'AZ',
+  'BA',
+  'BB',
+  'BD',
+  'BE',
+  'BF',
+  'BG',
+  'BH',
+  'BI',
+  'BJ',
+  'BL',
+  'BM',
+  'BN',
+  'BO',
+  'BQ',
+  'BR',
+  'BS',
+  'BT',
+  'BV',
+  'BW',
+  'BY',
+  'BZ',
+  'CA',
+  'CC',
+  'CD',
+  'CF',
+  'CG',
+  'CH',
+  'CI',
+  'CK',
+  'CL',
+  'CM',
+  'CN',
+  'CO',
+  'CR',
+  'CV',
+  'CW',
+  'CX',
+  'CY',
+  'CZ',
+  'DE',
+  'DJ',
+  'DK',
+  'DM',
+  'DO',
+  'DZ',
+  'EC',
+  'EE',
+  'EG',
+  'EH',
+  'ER',
+  'ES',
+  'ET',
+  'FI',
+  'FJ',
+  'FK',
+  'FM',
+  'FO',
+  'FR',
+  'GA',
+  'GB',
+  'GD',
+  'GE',
+  'GF',
+  'GG',
+  'GH',
+  'GI',
+  'GL',
+  'GM',
+  'GN',
+  'GP',
+  'GQ',
+  'GR',
+  'GS',
+  'GT',
+  'GU',
+  'GW',
+  'GY',
+  'HK',
+  'HM',
+  'HN',
+  'HR',
+  'HT',
+  'HU',
+  'ID',
+  'IE',
+  'IL',
+  'IM',
+  'IN',
+  'IO',
+  'IQ',
+  'IS',
+  'IT',
+  'JE',
+  'JM',
+  'JO',
+  'JP',
+  'KE',
+  'KG',
+  'KH',
+  'KI',
+  'KM',
+  'KN',
+  'KR',
+  'KW',
+  'KY',
+  'KZ',
+  'LA',
+  'LB',
+  'LC',
+  'LI',
+  'LK',
+  'LR',
+  'LS',
+  'LT',
+  'LU',
+  'LV',
+  'LY',
+  'MA',
+  'MC',
+  'MD',
+  'ME',
+  'MF',
+  'MG',
+  'MH',
+  'MK',
+  'ML',
+  'MM',
+  'MN',
+  'MO',
+  'MP',
+  'MQ',
+  'MR',
+  'MS',
+  'MT',
+  'MU',
+  'MV',
+  'MW',
+  'MX',
+  'MY',
+  'MZ',
+  'NA',
+  'NC',
+  'NE',
+  'NF',
+  'NG',
+  'NI',
+  'NL',
+  'NO',
+  'NP',
+  'NR',
+  'NU',
+  'NZ',
+  'OM',
+  'PA',
+  'PE',
+  'PF',
+  'PG',
+  'PH',
+  'PK',
+  'PL',
+  'PM',
+  'PN',
+  'PR',
+  'PS',
+  'PT',
+  'PW',
+  'PY',
+  'QA',
+  'RE',
+  'RO',
+  'RS',
+  'RW',
+  'SA',
+  'SB',
+  'SC',
+  'SD',
+  'SE',
+  'SG',
+  'SH',
+  'SI',
+  'SJ',
+  'SK',
+  'SL',
+  'SM',
+  'SN',
+  'SO',
+  'SR',
+  'SS',
+  'ST',
+  'SV',
+  'SX',
+  'SZ',
+  'TC',
+  'TD',
+  'TF',
+  'TG',
+  'TH',
+  'TJ',
+  'TK',
+  'TL',
+  'TM',
+  'TN',
+  'TO',
+  'TR',
+  'TT',
+  'TV',
+  'TW',
+  'TZ',
+  'UA',
+  'UG',
+  'UM',
+  'US',
+  'UY',
+  'UZ',
+  'VA',
+  'VC',
+  'VE',
+  'VG',
+  'VI',
+  'VN',
+  'VU',
+  'WF',
+  'WS',
+  'YE',
+  'YT',
+  'ZA',
+  'ZM',
+  'ZW',
+]
 export const customFieldCheckboxTypeValues: ReadonlyArray<
   components['schemas']['CustomFieldCheckbox']['type']
 > = ['checkbox']
@@ -33135,8 +34366,8 @@ export const customerOrderSortPropertyValues: ReadonlyArray<
 export const customerPaymentMethodCreateRequiresActionResponseStatusValues: ReadonlyArray<
   components['schemas']['CustomerPaymentMethodCreateRequiresActionResponse']['status']
 > = ['requires_action']
-export const customerPaymentMethodCreateSucceededResponseStatusValues: ReadonlyArray<
-  components['schemas']['CustomerPaymentMethodCreateSucceededResponse']['status']
+export const customerPaymentMethodCreateSucceededResponseOutputStatusValues: ReadonlyArray<
+  components['schemas']['CustomerPaymentMethodCreateSucceededResponse-Output']['status']
 > = ['succeeded']
 export const customerSortPropertyValues: ReadonlyArray<
   components['schemas']['CustomerSortProperty']
@@ -33215,14 +34446,23 @@ export const identityVerificationStatusValues: ReadonlyArray<
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   components['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
-export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
-  components['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
+export const legacyRecurringProductPriceCustomInputAmount_typeValues: ReadonlyArray<
+  components['schemas']['LegacyRecurringProductPriceCustom-Input']['amount_type']
 > = ['custom']
-export const legacyRecurringProductPriceFixedAmount_typeValues: ReadonlyArray<
-  components['schemas']['LegacyRecurringProductPriceFixed']['amount_type']
+export const legacyRecurringProductPriceCustomOutputAmount_typeValues: ReadonlyArray<
+  components['schemas']['LegacyRecurringProductPriceCustom-Output']['amount_type']
+> = ['custom']
+export const legacyRecurringProductPriceFixedInputAmount_typeValues: ReadonlyArray<
+  components['schemas']['LegacyRecurringProductPriceFixed-Input']['amount_type']
 > = ['fixed']
-export const legacyRecurringProductPriceFreeAmount_typeValues: ReadonlyArray<
-  components['schemas']['LegacyRecurringProductPriceFree']['amount_type']
+export const legacyRecurringProductPriceFixedOutputAmount_typeValues: ReadonlyArray<
+  components['schemas']['LegacyRecurringProductPriceFixed-Output']['amount_type']
+> = ['fixed']
+export const legacyRecurringProductPriceFreeInputAmount_typeValues: ReadonlyArray<
+  components['schemas']['LegacyRecurringProductPriceFree-Input']['amount_type']
+> = ['free']
+export const legacyRecurringProductPriceFreeOutputAmount_typeValues: ReadonlyArray<
+  components['schemas']['LegacyRecurringProductPriceFree-Output']['amount_type']
 > = ['free']
 export const licenseKeyStatusValues: ReadonlyArray<
   components['schemas']['LicenseKeyStatus']
@@ -33236,11 +34476,11 @@ export const maintainerAccountUnderReviewNotificationTypeValues: ReadonlyArray<
 export const maintainerCreateAccountNotificationTypeValues: ReadonlyArray<
   components['schemas']['MaintainerCreateAccountNotification']['type']
 > = ['MaintainerCreateAccountNotification']
-export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<
-  components['schemas']['MaintainerNewPaidSubscriptionNotification']['type']
+export const maintainerNewPaidSubscriptionNotificationOutputTypeValues: ReadonlyArray<
+  components['schemas']['MaintainerNewPaidSubscriptionNotification-Output']['type']
 > = ['MaintainerNewPaidSubscriptionNotification']
-export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
-  components['schemas']['MaintainerNewProductSaleNotification']['type']
+export const maintainerNewProductSaleNotificationOutputTypeValues: ReadonlyArray<
+  components['schemas']['MaintainerNewProductSaleNotification-Output']['type']
 > = ['MaintainerNewProductSaleNotification']
 export const meterCreditEventNameValues: ReadonlyArray<
   components['schemas']['MeterCreditEvent']['name']
@@ -33443,32 +34683,47 @@ export const productMediaFileCreateServiceValues: ReadonlyArray<
 export const productMediaFileReadServiceValues: ReadonlyArray<
   components['schemas']['ProductMediaFileRead']['service']
 > = ['product_media']
-export const productPriceCustomAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceCustom']['amount_type']
+export const productPriceCustomInputAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceCustom-Input']['amount_type']
+> = ['custom']
+export const productPriceCustomOutputAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceCustom-Output']['amount_type']
 > = ['custom']
 export const productPriceCustomCreateAmount_typeValues: ReadonlyArray<
   components['schemas']['ProductPriceCustomCreate']['amount_type']
 > = ['custom']
-export const productPriceFixedAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceFixed']['amount_type']
+export const productPriceFixedInputAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceFixed-Input']['amount_type']
+> = ['fixed']
+export const productPriceFixedOutputAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceFixed-Output']['amount_type']
 > = ['fixed']
 export const productPriceFixedCreateAmount_typeValues: ReadonlyArray<
   components['schemas']['ProductPriceFixedCreate']['amount_type']
 > = ['fixed']
-export const productPriceFreeAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceFree']['amount_type']
+export const productPriceFreeInputAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceFree-Input']['amount_type']
+> = ['free']
+export const productPriceFreeOutputAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceFree-Output']['amount_type']
 > = ['free']
 export const productPriceFreeCreateAmount_typeValues: ReadonlyArray<
   components['schemas']['ProductPriceFreeCreate']['amount_type']
 > = ['free']
-export const productPriceMeteredUnitAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceMeteredUnit']['amount_type']
+export const productPriceMeteredUnitInputAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceMeteredUnit-Input']['amount_type']
+> = ['metered_unit']
+export const productPriceMeteredUnitOutputAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceMeteredUnit-Output']['amount_type']
 > = ['metered_unit']
 export const productPriceMeteredUnitCreateAmount_typeValues: ReadonlyArray<
   components['schemas']['ProductPriceMeteredUnitCreate']['amount_type']
 > = ['metered_unit']
-export const productPriceSeatBasedAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceSeatBased']['amount_type']
+export const productPriceSeatBasedInputAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceSeatBased-Input']['amount_type']
+> = ['seat_based']
+export const productPriceSeatBasedOutputAmount_typeValues: ReadonlyArray<
+  components['schemas']['ProductPriceSeatBased-Output']['amount_type']
 > = ['seat_based']
 export const productPriceSeatBasedCreateAmount_typeValues: ReadonlyArray<
   components['schemas']['ProductPriceSeatBasedCreate']['amount_type']
@@ -33569,13 +34824,6 @@ export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
 export const seatStatusValues: ReadonlyArray<
   components['schemas']['SeatStatus']
 > = ['pending', 'claimed', 'revoked']
-export const statusValues: ReadonlyArray<components['schemas']['Status']> = [
-  'created',
-  'onboarding_started',
-  'under_review',
-  'denied',
-  'active',
-]
 export const stripeAccountCountryValues: ReadonlyArray<
   components['schemas']['StripeAccountCountry']
 > = [
@@ -33889,6 +35137,9 @@ export const webhookEventTypeValues: ReadonlyArray<
 export const webhookFormatValues: ReadonlyArray<
   components['schemas']['WebhookFormat']
 > = ['raw', 'discord', 'slack']
+export const polar__models__organization__Organization__StatusValues: ReadonlyArray<
+  components['schemas']['polar__models__organization__Organization__Status']
+> = ['created', 'onboarding_started', 'under_review', 'denied', 'active']
 export const webTokenRequestSub_typeValues: ReadonlyArray<
   components['schemas']['WebTokenRequest']['sub_type']
 > = ['user', 'organization']

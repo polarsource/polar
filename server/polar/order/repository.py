@@ -6,7 +6,14 @@ from sqlalchemy import CursorResult, Select, case, select, update
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import selectinload
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.auth.models import (
+    AuthSubject,
+    Organization,
+    User,
+    is_customer,
+    is_organization,
+    is_user,
+)
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -119,7 +126,7 @@ class OrderRepository(
         )
 
     def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+        self, auth_subject: AuthSubject[User | Organization | Customer]
     ) -> Select[tuple[Order]]:
         statement = self.get_base_statement().join(
             Customer, Order.customer_id == Customer.id
@@ -138,6 +145,12 @@ class OrderRepository(
         elif is_organization(auth_subject):
             statement = statement.where(
                 Customer.organization_id == auth_subject.subject.id,
+            )
+        elif is_customer(auth_subject):
+            customer = auth_subject.subject
+            statement = statement.where(
+                Order.customer_id == customer.id,
+                Order.deleted_at.is_(None),
             )
 
         return statement

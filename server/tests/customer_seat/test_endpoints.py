@@ -411,6 +411,7 @@ class TestGetClaimInfo:
 
         assert response.status_code == 200
         data = response.json()
+        assert customer_seat_pending.subscription is not None
         assert data["product_name"] == customer_seat_pending.subscription.product.name
         assert data["product_id"] == str(customer_seat_pending.subscription.product_id)
         assert (
@@ -438,6 +439,7 @@ class TestGetClaimInfo:
         )
         await session.refresh(seat, ["subscription"])
         await session.refresh(seat.subscription, ["product"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
         assert seat.invitation_token is not None
@@ -502,6 +504,7 @@ class TestGetClaimInfo:
         save_fixture: SaveFixture,
         customer_seat_pending: CustomerSeat,
     ) -> None:
+        assert customer_seat_pending.subscription is not None
         customer_seat_pending.subscription.product.organization.feature_settings = {}
         await save_fixture(customer_seat_pending.subscription.product.organization)
 
@@ -528,6 +531,7 @@ class TestClaimSeat:
             subscription=subscription_with_seats,
             customer=customer,
         )
+        assert seat.subscription is not None
         await session.refresh(seat, ["subscription", "customer"])
         await session.refresh(seat.subscription, ["product"])
         await session.refresh(seat.subscription.product, ["organization"])
@@ -600,6 +604,7 @@ class TestClaimSeat:
         save_fixture: SaveFixture,
         customer_seat_pending: CustomerSeat,
     ) -> None:
+        assert customer_seat_pending.subscription is not None
         customer_seat_pending.subscription.product.organization.feature_settings = {}
         await save_fixture(customer_seat_pending.subscription.product.organization)
 

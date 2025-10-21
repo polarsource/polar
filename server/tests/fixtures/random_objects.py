@@ -876,6 +876,27 @@ async def create_order_and_payment(
     return order, payment
 
 
+async def create_order_with_seats(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    customer: Customer,
+    seats: int = 5,
+    **kwargs: Any,
+) -> Order:
+    is_seat_based = any(
+        price.amount_type == ProductPriceAmountType.seat_based
+        for price in product.all_prices
+    )
+    assert is_seat_based, "Product must be seat-based"
+    order = await create_order(
+        save_fixture, product=product, customer=customer, **kwargs
+    )
+    order.seats = seats
+    await save_fixture(order)
+    return order
+
+
 async def create_benefit(
     save_fixture: SaveFixture,
     *,

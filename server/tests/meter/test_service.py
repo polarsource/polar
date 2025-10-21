@@ -949,6 +949,7 @@ class TestCreateBillingEntriesWithSeats:
         await session.refresh(
             seat.subscription, ["product", "customer", "subscription_product_prices"]
         )
+        assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
         timestamp = utc_now()
@@ -1043,6 +1044,7 @@ class TestCreateBillingEntriesWithSeats:
         await session.refresh(
             seat.subscription, ["product", "customer", "subscription_product_prices"]
         )
+        assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
         timestamp = utc_now()
@@ -1130,6 +1132,7 @@ class TestCreateBillingEntriesWithSeats:
         await session.refresh(
             seat1.subscription, ["product", "customer", "subscription_product_prices"]
         )
+        assert seat1.subscription is not None
         await session.refresh(seat1.subscription.product, ["organization"])
 
         seat2 = await create_customer_seat(
@@ -1143,6 +1146,7 @@ class TestCreateBillingEntriesWithSeats:
         await session.refresh(
             seat2.subscription, ["product", "customer", "subscription_product_prices"]
         )
+        assert seat2.subscription is not None
         await session.refresh(seat2.subscription.product, ["organization"])
 
         timestamp = utc_now()
@@ -1247,6 +1251,7 @@ class TestCreateBillingEntriesWithSeats:
         await session.refresh(
             seat1.subscription, ["product", "customer", "subscription_product_prices"]
         )
+        assert seat1.subscription is not None
         await session.refresh(seat1.subscription.product, ["organization"])
 
         seat2 = await create_customer_seat(
@@ -1260,6 +1265,7 @@ class TestCreateBillingEntriesWithSeats:
         await session.refresh(
             seat2.subscription, ["product", "customer", "subscription_product_prices"]
         )
+        assert seat2.subscription is not None
         await session.refresh(seat2.subscription.product, ["organization"])
 
         timestamp = utc_now()

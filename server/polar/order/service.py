@@ -1475,19 +1475,22 @@ class OrderService:
         url_path_template: str
 
         match order.billing_reason:
-            case OrderBillingReason.purchase:
+            case OrderBillingReasonInternal.purchase:
                 template_name = "order_confirmation"
                 subject_template = "Your {product} order confirmation"
                 url_path_template = "/{organization}/portal?customer_session_token={token}&id={order}&email={email}"
-            case OrderBillingReason.subscription_create:
+            case OrderBillingReasonInternal.subscription_create:
                 template_name = "subscription_confirmation"
                 subject_template = "Your {product} subscription"
                 url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
-            case OrderBillingReason.subscription_cycle:
+            case (
+                OrderBillingReasonInternal.subscription_cycle
+                | OrderBillingReasonInternal.subscription_cycle_after_trial
+            ):
                 template_name = "subscription_cycled"
                 subject_template = "Your {product} subscription has been renewed"
                 url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
-            case OrderBillingReason.subscription_update:
+            case OrderBillingReasonInternal.subscription_update:
                 template_name = "subscription_updated"
                 subject_template = "Your subscription has changed to {product}"
                 url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"

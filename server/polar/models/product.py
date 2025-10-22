@@ -21,8 +21,9 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import StrEnumType
+from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.metadata import MetadataMixin
+from polar.kit.tax import TaxCode
 from polar.kit.trial import TrialConfigurationMixin
 from polar.models.product_price import ProductPriceAmountType, ProductPriceType
 
@@ -49,15 +50,21 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    is_tax_applicable: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True
-    )
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(
-        StrEnumType(SubscriptionRecurringInterval),
+        StringEnum(SubscriptionRecurringInterval),
         nullable=True,
         index=True,
         default=None,
+    )
+
+    is_tax_applicable: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+    tax_code: Mapped[TaxCode] = mapped_column(
+        StringEnum(TaxCode),
+        nullable=False,
+        default=TaxCode.general_electronically_supplied_services,
     )
 
     stripe_product_id: Mapped[str | None] = mapped_column(

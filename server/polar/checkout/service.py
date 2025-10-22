@@ -1720,16 +1720,13 @@ class CheckoutService:
             checkout.tax_processor_id = None
             return checkout
 
-        if (
-            checkout.customer_billing_address is not None
-            and checkout.product.stripe_product_id is not None
-        ):
+        if checkout.customer_billing_address is not None:
             try:
                 tax_calculation = await calculate_tax(
                     checkout.id,
                     checkout.currency,
                     checkout.net_amount,
-                    checkout.product.stripe_product_id,
+                    checkout.product.tax_code,
                     checkout.customer_billing_address,
                     (
                         [checkout.customer_tax_id]

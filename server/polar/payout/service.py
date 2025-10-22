@@ -521,11 +521,7 @@ class PayoutService:
                 elif transaction.pledge is not None:
                     description = f"Pledge to {transaction.pledge.issue_reference}"
                 elif transaction.order is not None:
-                    product = transaction.order.product
-                    if transaction.order.subscription_id is not None:
-                        description = f"Subscription to {product.name}"
-                    else:
-                        description = f"Order of {product.name}"
+                    description = transaction.order.description
 
                 transaction_id = (
                     str(transaction.id)

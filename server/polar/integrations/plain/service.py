@@ -839,7 +839,6 @@ class PlainService:
             return None
 
         def _get_order_container(order: Order) -> ComponentContainerInput:
-            product = order.product
             organization = order.customer.organization
 
             return ComponentContainerInput(
@@ -848,7 +847,9 @@ class PlainService:
                         component_row=ComponentRowInput(
                             row_main_content=[
                                 ComponentRowContentInput(
-                                    component_text=ComponentTextInput(text=product.name)
+                                    component_text=ComponentTextInput(
+                                        text=order.description
+                                    )
                                 ),
                             ],
                             row_aside_content=[

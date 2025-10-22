@@ -37,8 +37,8 @@ class CustomerOrder(OrderBase):
         ),
         deprecated="Use `customer_id`.",
     )
-    product: CustomerOrderProduct
-    product_price: SkipJsonSchema[ProductPrice] = Field(
+    product: CustomerOrderProduct | None
+    product_price: SkipJsonSchema[ProductPrice | None] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -49,6 +49,9 @@ class CustomerOrder(OrderBase):
     )
     subscription: CustomerOrderSubscription | None
     items: list[OrderItemSchema] = Field(description="Line items composing the order.")
+    description: str = Field(
+        description="A summary description of the order.", examples=["Pro Plan"]
+    )
     next_payment_attempt_at: datetime | None = Field(
         None, description="When the next payment retry is scheduled"
     )

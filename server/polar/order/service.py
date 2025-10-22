@@ -411,9 +411,7 @@ class OrderService:
             .options(
                 *repository.get_eager_options(
                     customer_load=contains_eager(Order.customer),
-                    product_load=joinedload(Order.product).joinedload(
-                        Product.organization
-                    ),
+                    product_load=joinedload(Order.product),
                 )
             )
             .where(Order.id == id)
@@ -457,7 +455,7 @@ class OrderService:
             "order.invoice_generated",
             {"order_id": order.id},
             customer_id=order.customer_id,
-            organization_id=order.product.organization_id,
+            organization_id=order.organization.id,
         )
 
         await self.send_webhook(session, order, WebhookEventType.order_updated)
@@ -869,7 +867,7 @@ class OrderService:
                         confirm=True,
                         off_session=True,
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
-                        description=f"{order.organization.name} — {order.product.name}",
+                        description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
                     )
                 except stripe_lib.CardError as e:
@@ -978,7 +976,7 @@ class OrderService:
                         customer=customer.stripe_customer_id,
                         confirm=True,
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
-                        description=f"{organization.name} — {order.product.name}",
+                        description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
                         return_url=settings.generate_frontend_url(
                             f"/portal/orders/{str(order.id)}"
@@ -996,7 +994,7 @@ class OrderService:
                         customer=customer.stripe_customer_id,
                         setup_future_usage="off_session",
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
-                        description=f"{organization.name} — {order.product.name}",
+                        description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
                         return_url=settings.generate_frontend_url(
                             f"/portal/orders/{str(order.id)}"
@@ -1391,10 +1389,13 @@ class OrderService:
     ) -> None:
         product = order.product
 
+        if product is None:
+            return
+
         if organization.notification_settings["new_order"]:
             await notifications_service.send_to_org_members(
                 session,
-                org_id=product.organization_id,
+                org_id=organization.id,
                 notif=PartialNotification(
                     type=NotificationType.maintainer_new_product_sale,
                     payload=MaintainerNewProductSaleNotificationPayload(
@@ -1450,22 +1451,22 @@ class OrderService:
         match order.billing_reason:
             case OrderBillingReasonInternal.purchase:
                 template_name = "order_confirmation"
-                subject_template = "Your {product} order confirmation"
+                subject_template = "Your {description} order confirmation"
                 url_path_template = "/{organization}/portal?customer_session_token={token}&id={order}&email={email}"
             case OrderBillingReasonInternal.subscription_create:
                 template_name = "subscription_confirmation"
-                subject_template = "Your {product} subscription"
+                subject_template = "Your {description} subscription"
                 url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
             case (
                 OrderBillingReasonInternal.subscription_cycle
                 | OrderBillingReasonInternal.subscription_cycle_after_trial
             ):
                 template_name = "subscription_cycled"
-                subject_template = "Your {product} subscription has been renewed"
+                subject_template = "Your {description} subscription has been renewed"
                 url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
             case OrderBillingReasonInternal.subscription_update:
                 template_name = "subscription_updated"
-                subject_template = "Your subscription has changed to {product}"
+                subject_template = "Your subscription has changed to {description}"
                 url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
 
         if not organization.customer_email_settings[template_name]:
@@ -1486,7 +1487,7 @@ class OrderService:
                 email=customer.email,
             )
         )
-        subject = subject_template.format(product=product.name)
+        subject = subject_template.format(description=order.description)
         email = EmailAdapter.validate_python(
             {
                 "template": template_name,
@@ -1651,6 +1652,7 @@ class OrderService:
             WebhookEventType.order_paid,
         ],
     ) -> None:
+        await session.refresh(order.customer, {"organization"})
         await session.refresh(order.product, {"prices"})
 
         # Refresh order items with their product_price.product relationship loaded
@@ -1659,12 +1661,8 @@ class OrderService:
             if item.product_price:
                 await session.refresh(item.product_price, {"product"})
 
-        organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(
-            order.product.organization_id
-        )
-        if organization is not None:
-            await webhook_service.send(session, organization, event_type, order)
+        organization = order.organization
+        await webhook_service.send(session, organization, event_type, order)
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
         enqueue_job("order.confirmation_email", order.id)

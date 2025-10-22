@@ -111,10 +111,10 @@ async def list(
         repository.get_base_statement()
         .join(Customer, Order.customer_id == Customer.id)
         .join(Product, Order.product_id == Product.id)
-        .join(Organization, Product.organization_id == Organization.id)
+        .join(Organization, Customer.organization_id == Organization.id)
         .options(
-            contains_eager(Order.customer),
-            contains_eager(Order.product).contains_eager(Product.organization),
+            contains_eager(Order.customer).contains_eager(Customer.organization),
+            contains_eager(Order.product),
         )
     )
 
@@ -224,8 +224,8 @@ async def get(
     order = await order_repository.get_by_id(
         id,
         options=(
-            joinedload(Order.customer),
-            joinedload(Order.product).joinedload(Product.organization),
+            joinedload(Order.customer).joinedload(Customer.organization),
+            joinedload(Order.product),
             joinedload(Order.discount),
             joinedload(Order.subscription),
         ),
@@ -349,12 +349,12 @@ async def get(
                                 "product.name", "Name"
                             ),
                             description_list.DescriptionListLinkItem[Order](
-                                "product.organization.name",
+                                "organization.name",
                                 "Organization",
                                 href_getter=lambda r, i: str(
                                     r.url_for(
                                         "organizations:get",
-                                        id=i.product.organization_id,
+                                        id=i.organization.id,
                                     )
                                 ),
                             ),

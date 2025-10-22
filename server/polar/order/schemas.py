@@ -99,8 +99,8 @@ class OrderBase(TimestampedSchema, IDSchema):
     )
 
     customer_id: UUID4
-    product_id: UUID4
-    product_price_id: SkipJsonSchema[UUID4] = Field(
+    product_id: UUID4 | None
+    product_price_id: SkipJsonSchema[UUID4 | None] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -222,8 +222,8 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
         ),
         deprecated="Use `customer`.",
     )
-    product: OrderProduct
-    product_price: SkipJsonSchema[ProductPrice] = Field(
+    product: OrderProduct | None
+    product_price: SkipJsonSchema[ProductPrice | None] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -235,6 +235,9 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
     discount: OrderDiscount | None
     subscription: OrderSubscription | None
     items: list[OrderItemSchema] = Field(description="Line items composing the order.")
+    description: str = Field(
+        description="A summary description of the order.", examples=["Pro Plan"]
+    )
 
 
 class OrderUpdateBase(Schema):

@@ -49,9 +49,7 @@ router = APIRouter(
             "description": "Authentication required for direct subscription or order assignment"
         },
         403: {"description": "Not permitted or seat-based pricing not enabled"},
-        404: {
-            "description": "Subscription, order, checkout, or customer not found"
-        },
+        404: {"description": "Subscription, order, checkout, or customer not found"},
     },
 )
 async def assign_seat(

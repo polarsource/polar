@@ -888,9 +888,7 @@ class TestOrderBasedSeats:
         await session.refresh(seat.order.product, ["organization"])
 
         assert seat.invitation_token is not None
-        response = await client.get(
-            f"/v1/customer-seats/claim/{seat.invitation_token}"
-        )
+        response = await client.get(f"/v1/customer-seats/claim/{seat.invitation_token}")
 
         assert response.status_code == 200
         data = response.json()

@@ -427,24 +427,33 @@ export const useCustomerOrderPaymentStatus = (api: Client) =>
 
 export const useCustomerSeats = (
   api: Client,
-  subscriptionId: string | undefined,
+  parameters?: { subscriptionId?: string; orderId?: string },
 ) =>
   useQuery({
-    queryKey: ['customer_seats', { subscription_id: subscriptionId }],
+    queryKey: ['customer_seats', parameters],
     queryFn: () =>
       unwrap(
         api.GET('/v1/customer-portal/seats', {
-          params: { query: { subscription_id: subscriptionId! } },
+          params: {
+            query: {
+              ...(parameters?.subscriptionId && {
+                subscription_id: parameters.subscriptionId,
+              }),
+              ...(parameters?.orderId && { order_id: parameters.orderId }),
+            },
+          },
         }),
       ),
     retry: defaultRetry,
-    enabled: !!subscriptionId,
+    enabled: !!parameters?.subscriptionId || !!parameters?.orderId,
   })
 
 export const useAssignSeat = (api: Client) =>
   useMutation({
     mutationFn: async (variables: {
-      subscription_id: string
+      subscription_id?: string
+      order_id?: string
+      checkout_id?: string
       email?: string
       external_customer_id?: string
       customer_id?: string

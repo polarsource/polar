@@ -94,6 +94,10 @@ class OrderBase(TimestampedSchema, IDSchema):
         description="Whether an invoice has been generated for this order."
     )
 
+    seats: int | None = Field(
+        None, description="Number of seats purchased (for seat-based one-time orders)."
+    )
+
     customer_id: UUID4
     product_id: UUID4
     product_price_id: SkipJsonSchema[UUID4] = Field(

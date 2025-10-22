@@ -73,7 +73,7 @@ const CustomerPortalSubscription = ({
 
   const { data: seatsData, isLoading: isLoadingSeats } = useCustomerSeats(
     api,
-    hasSeatBasedPricing ? subscription.id : undefined,
+    hasSeatBasedPricing ? { subscriptionId: subscription.id } : undefined,
   )
   const assignSeat = useAssignSeat(api)
   const revokeSeat = useRevokeSeat(api)

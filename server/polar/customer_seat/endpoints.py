@@ -81,12 +81,14 @@ async def assign_seat(
 
     elif seat_assign.checkout_id:
         subscription_repository = SubscriptionRepository.from_session(session)
+        order_repository = OrderRepository.from_session(session)
         checkout_repository = CheckoutRepository.from_session(session)
         checkout = await checkout_repository.get_by_id(seat_assign.checkout_id)
 
         if not checkout:
             raise ResourceNotFound("Checkout not found")
 
+        # First try to find a subscription (for recurring products)
         subscription = await subscription_repository.get_by_checkout_id(
             seat_assign.checkout_id,
             options=(
@@ -95,8 +97,17 @@ async def assign_seat(
             ),
         )
 
+        # If no subscription, check for an order (for one-time products)
         if not subscription:
-            raise ResourceNotFound("No subscription found for this checkout")
+            order = await order_repository.get_earliest_by_checkout_id(
+                seat_assign.checkout_id,
+                options=order_repository.get_eager_options(),
+            )
+
+            if not order:
+                raise ResourceNotFound(
+                    "No subscription or order found for this checkout"
+                )
 
     elif seat_assign.order_id:
         if isinstance(auth_subject.subject, Anonymous):

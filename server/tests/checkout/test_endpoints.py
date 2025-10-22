@@ -227,6 +227,7 @@ class TestCreateCheckout:
         assert response.status_code == 403
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    @pytest.mark.keep_session_state
     async def test_blocked_organization(
         self,
         api_prefix: str,

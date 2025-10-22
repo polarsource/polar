@@ -131,6 +131,7 @@ class TestUpdate:
                 ),
             )
 
+    @pytest.mark.keep_session_state
     async def test_not_existing_stripe_subscription(
         self,
         session: AsyncSession,
@@ -180,6 +181,7 @@ class TestUpdate:
                 updates=CustomerSubscriptionUpdateProduct(product_id=product_second.id),
             )
 
+    @pytest.mark.keep_session_state
     async def test_valid(
         self,
         session: AsyncSession,

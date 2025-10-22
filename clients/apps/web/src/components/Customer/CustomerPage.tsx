@@ -271,14 +271,14 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             data={orders?.items ?? []}
             columns={[
               {
-                header: 'Product Name',
-                accessorKey: 'product.name',
+                header: 'Description',
+                accessorKey: 'description',
                 cell: ({ row: { original } }) => (
                   <Link
                     href={`/dashboard/${organization?.slug}/sales/${original.id}`}
                     key={original.id}
                   >
-                    <span>{original.product.name}</span>
+                    <span>{original.description}</span>
                   </Link>
                 ),
               },

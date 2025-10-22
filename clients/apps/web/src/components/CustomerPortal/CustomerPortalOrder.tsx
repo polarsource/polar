@@ -54,7 +54,7 @@ const CustomerPortalOrder = ({
     <div className="flex h-full flex-col gap-12">
       <div className="flex w-full flex-col gap-8">
         <div className="flex flex-row flex-wrap gap-x-4">
-          <h3 className="text-2xl">{order.product.name}</h3>
+          <h3 className="text-2xl">{order.description}</h3>
           <Status
             status={order.status.split('_').join(' ')}
             className={twMerge(statusColors[order.status], 'capitalize')}
@@ -75,10 +75,12 @@ const CustomerPortalOrder = ({
 
         <div className="flex flex-col gap-8">
           <div className="flex flex-col">
-            <DetailRow
-              label="Product"
-              value={<span>{order.product.name}</span>}
-            />
+            {order.product && (
+              <DetailRow
+                label="Product"
+                value={<span>{order.product.name}</span>}
+              />
+            )}
             <DetailRow label="Invoice number" value={order.invoice_number} />
             <DetailRow
               label="Date"

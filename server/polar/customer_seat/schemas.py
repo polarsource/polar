@@ -16,7 +16,7 @@ class SeatAssign(Schema):
     )
     checkout_id: UUID | None = Field(
         None,
-        description="Checkout ID. Used to look up subscription from the checkout page.",
+        description="Checkout ID. Used to look up subscription or order from the checkout page.",
     )
     order_id: UUID | None = Field(
         None,

@@ -7,8 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.auth.scope import Scope
 from polar.models import (
+    Checkout,
     Customer,
     CustomerSeat,
+    Order,
     Subscription,
     UserOrganization,
 )
@@ -736,3 +738,163 @@ class TestRevokeSeat:
         response = await client.delete(f"/v1/customer-seats/{customer_seat_claimed.id}")
 
         assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+class TestOrderBasedSeats:
+    """Tests for order-based seat management (one-time purchases)."""
+
+    @pytest.mark.auth(SEAT_AUTH)
+    async def test_list_seats_for_order(
+        self,
+        client: AsyncClient,
+        order_with_seats: Order,
+        customer_seat_order_pending: CustomerSeat,
+        user_organization_seat_enabled: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            "/v1/customer-seats",
+            params={"order_id": str(order_with_seats.id)},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "seats" in data
+        assert "available_seats" in data
+        assert "total_seats" in data
+        assert len(data["seats"]) == 1
+        assert data["available_seats"] == 4
+        assert data["total_seats"] == 5
+
+    @pytest.mark.auth(SEAT_AUTH)
+    async def test_assign_seat_with_order_id(
+        self,
+        client: AsyncClient,
+        order_with_seats: Order,
+        user_organization_seat_enabled: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                "order_id": str(order_with_seats.id),
+                "email": "newuser@example.com",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["order_id"] == str(order_with_seats.id)
+        assert data["subscription_id"] is None
+        assert data["status"] == "pending"
+
+    async def test_assign_seat_from_checkout_with_order(
+        self,
+        client: AsyncClient,
+        checkout_with_order: Checkout,
+        order_with_seats: Order,
+    ) -> None:
+        """Test anonymous seat assignment via checkout_id for orders."""
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                "checkout_id": str(checkout_with_order.id),
+                "email": "holder@example.com",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["order_id"] == str(order_with_seats.id)
+        assert data["subscription_id"] is None
+        assert data["status"] == "pending"
+
+    @pytest.mark.auth(SEAT_AUTH)
+    async def test_revoke_seat_for_order(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        order_with_seats: Order,
+        customer_seat_order_pending: CustomerSeat,
+        user_organization_seat_enabled: UserOrganization,
+        customer: Customer,
+        session: AsyncSession,
+    ) -> None:
+        # First claim the seat
+        customer_seat_order_pending.status = SeatStatus.claimed
+        customer_seat_order_pending.claimed_at = datetime.now(UTC)
+        customer_seat_order_pending.customer_id = customer.id
+        await save_fixture(customer_seat_order_pending)
+
+        # Now revoke it
+        response = await client.delete(
+            f"/v1/customer-seats/{customer_seat_order_pending.id}",
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "revoked"
+        assert data["revoked_at"] is not None
+        assert data["customer_id"] is None
+
+    async def test_claim_seat_for_order(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        order_with_seats: Order,
+        customer: Customer,
+        session: AsyncSession,
+    ) -> None:
+        seat = await create_customer_seat(
+            save_fixture,
+            order=order_with_seats,
+            customer=customer,
+        )
+        await session.refresh(seat, ["order", "customer"])
+        assert seat.order is not None
+        await session.refresh(seat.order, ["product"])
+        await session.refresh(seat.order.product, ["organization"])
+
+        assert seat.invitation_token is not None
+        response = await client.post(
+            "/v1/customer-seats/claim",
+            json={"invitation_token": seat.invitation_token},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "seat" in data
+        assert "customer_session_token" in data
+        assert data["seat"]["status"] == "claimed"
+        assert data["seat"]["claimed_at"] is not None
+        assert data["seat"]["order_id"] == str(order_with_seats.id)
+        assert data["seat"]["subscription_id"] is None
+
+    async def test_get_claim_info_for_order(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        order_with_seats: Order,
+        customer: Customer,
+        session: AsyncSession,
+    ) -> None:
+        seat = await create_customer_seat(
+            save_fixture,
+            order=order_with_seats,
+            customer=customer,
+        )
+        await session.refresh(seat, ["order", "customer"])
+        assert seat.order is not None
+        await session.refresh(seat.order, ["product"])
+        await session.refresh(seat.order.product, ["organization"])
+
+        assert seat.invitation_token is not None
+        response = await client.get(
+            f"/v1/customer-seats/claim/{seat.invitation_token}"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["product_name"] == order_with_seats.product.name
+        assert data["product_id"] == str(order_with_seats.product.id)
+        assert data["organization_name"] == order_with_seats.product.organization.name
+        assert data["can_claim"] is True

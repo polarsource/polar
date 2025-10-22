@@ -125,9 +125,7 @@ const Paginator = ({
           size="sm"
           disabled={currentPage >= lastPage}
           className={twMerge(
-            currentPage >= lastPage
-              ? 'border-gray-200 bg-transparent text-gray-500 hover:bg-transparent dark:border-gray-400 dark:text-gray-400'
-              : '',
+            currentPage >= lastPage ? 'cursor-default opacity-50' : '',
           )}
         >
           <ChevronRight fontSize="small" />

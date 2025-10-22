@@ -147,32 +147,41 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               '—'
             )}
           </CustomerStatBox>
-          <CustomerStatBox title="Cumulative Costs" size="lg">
-            {typeof metricsData?.totals.cumulative_costs === 'number' ? (
-              <AmountLabel
-                amount={metricsData?.totals.cumulative_costs ?? 0}
-                currency="USD"
-                minimumFractionDigits={2}
-              />
-            ) : (
-              '—'
-            )}
-          </CustomerStatBox>
-          <CustomerStatBox title="Profit" size="lg">
-            {metricsData?.totals.cumulative_revenue &&
-            metricsData?.totals.cumulative_costs ? (
-              <AmountLabel
-                amount={
-                  metricsData.totals.cumulative_revenue -
-                  metricsData.totals.cumulative_costs
-                }
-                currency="USD"
-                minimumFractionDigits={2}
-              />
-            ) : (
-              '—'
-            )}
-          </CustomerStatBox>
+
+          {organization.feature_settings?.revops_enabled ? (
+            <>
+              <CustomerStatBox title="Cumulative Costs" size="lg">
+                {typeof metricsData?.totals.cumulative_costs === 'number' ? (
+                  <AmountLabel
+                    amount={metricsData?.totals.cumulative_costs ?? 0}
+                    currency="USD"
+                    minimumFractionDigits={2}
+                  />
+                ) : (
+                  '—'
+                )}
+              </CustomerStatBox>
+              <CustomerStatBox title="Profit" size="lg">
+                {metricsData?.totals.cumulative_revenue &&
+                metricsData?.totals.cumulative_costs ? (
+                  <AmountLabel
+                    amount={
+                      metricsData.totals.cumulative_revenue -
+                      metricsData.totals.cumulative_costs
+                    }
+                    currency="USD"
+                    minimumFractionDigits={2}
+                  />
+                ) : (
+                  '—'
+                )}
+              </CustomerStatBox>
+            </>
+          ) : (
+            <CustomerStatBox title="Orders" size="lg">
+              {metricsData?.totals.orders ?? '—'}
+            </CustomerStatBox>
+          )}
           <CustomerStatBox title="Customer Balance" size="lg">
             <AmountLabel
               amount={customerBalance?.balance ?? 0}
@@ -181,13 +190,14 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             />
           </CustomerStatBox>
         </div>
-
-        <ProfitChart
-          loading={metricsLoading}
-          data={relevantMetricsData}
-          interval={interval}
-          height={250}
-        />
+        {organization.feature_settings?.revops_enabled && (
+          <ProfitChart
+            loading={metricsLoading}
+            data={relevantMetricsData}
+            interval={interval}
+            height={300}
+          />
+        )}
 
         <MetricChartBox
           metric={selectedMetric}

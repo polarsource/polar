@@ -7414,15 +7414,15 @@ export interface components {
       }
       /** @description Payment processor used. */
       payment_processor: components['schemas']['PaymentProcessor']
-      /**
-       * @description Status of the checkout session.
+      /** @description
+       *             Status of the checkout session.
        *
        *             - Open: the checkout session was opened.
        *             - Expired: the checkout session was expired and is no more accessible.
        *             - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
        *             - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
        *             - Succeeded: the payment on the checkout was performed successfully.
-       */
+       *              */
       status: components['schemas']['CheckoutStatus']
       /**
        * Client Secret
@@ -8825,15 +8825,15 @@ export interface components {
       }
       /** @description Payment processor used. */
       payment_processor: components['schemas']['PaymentProcessor']
-      /**
-       * @description Status of the checkout session.
+      /** @description
+       *             Status of the checkout session.
        *
        *             - Open: the checkout session was opened.
        *             - Expired: the checkout session was expired and is no more accessible.
        *             - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
        *             - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
        *             - Succeeded: the payment on the checkout was performed successfully.
-       */
+       *              */
       status: components['schemas']['CheckoutStatus']
       /**
        * Client Secret
@@ -12472,8 +12472,7 @@ export interface components {
        *     Or uncancel a subscription currently set to be revoked at period end.
        */
       cancel_at_period_end?: boolean | null
-      /**
-       * @description Customers reason for cancellation.
+      /** @description Customers reason for cancellation.
        *
        *     * `too_expensive`: Too expensive for the customer.
        *     * `missing_features`: Customer is missing certain features.
@@ -12482,8 +12481,7 @@ export interface components {
        *     * `customer_service`: Customer is not satisfied with the customer service.
        *     * `low_quality`: Customer is unhappy with the quality.
        *     * `too_complex`: Customer considers the service too complicated.
-       *     * `other`: Other reason(s).
-       */
+       *     * `other`: Other reason(s). */
       cancellation_reason?:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -13926,8 +13924,7 @@ export interface components {
        * @description The ID of the organization owning the event. **Required unless you use an organization token.**
        */
       organization_id?: string | null
-      /**
-       * @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+      /** @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
        *
        *     The key must be a string with a maximum length of **40 characters**.
        *     The value must be either:
@@ -13937,8 +13934,7 @@ export interface components {
        *     * A floating-point number
        *     * A boolean
        *
-       *     You can store up to **50 key-value pairs**.
-       */
+       *     You can store up to **50 key-value pairs**. */
       metadata?: components['schemas']['EventMetadataInput']
       /**
        * Customer Id
@@ -13965,8 +13961,7 @@ export interface components {
        * @description The ID of the organization owning the event. **Required unless you use an organization token.**
        */
       organization_id?: string | null
-      /**
-       * @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+      /** @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
        *
        *     The key must be a string with a maximum length of **40 characters**.
        *     The value must be either:
@@ -13976,8 +13971,7 @@ export interface components {
        *     * A floating-point number
        *     * A boolean
        *
-       *     You can store up to **50 key-value pairs**.
-       */
+       *     You can store up to **50 key-value pairs**. */
       metadata?: components['schemas']['EventMetadataInput']
       /**
        * External Customer Id
@@ -17135,6 +17129,12 @@ export interface components {
        * @default false
        */
       seat_based_pricing_enabled: boolean
+      /**
+       * Revops Enabled
+       * @description If this organization has RevOps enabled
+       * @default false
+       */
+      revops_enabled: boolean
     }
     /** OrganizationMember */
     OrganizationMember: {
@@ -19306,8 +19306,7 @@ export interface components {
     }
     /** SubscriptionCancel */
     SubscriptionCancel: {
-      /**
-       * @description Customer reason for cancellation.
+      /** @description Customer reason for cancellation.
        *
        *     Helpful to monitor reasons behind churn for future improvements.
        *
@@ -19322,8 +19321,7 @@ export interface components {
        *     * `customer_service`: Customer is not satisfied with the customer service.
        *     * `low_quality`: Customer is unhappy with the quality.
        *     * `too_complex`: Customer considers the service too complicated.
-       *     * `other`: Other reason(s).
-       */
+       *     * `other`: Other reason(s). */
       customer_cancellation_reason?:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -19618,8 +19616,7 @@ export interface components {
     SubscriptionRecurringInterval: 'day' | 'week' | 'month' | 'year'
     /** SubscriptionRevoke */
     SubscriptionRevoke: {
-      /**
-       * @description Customer reason for cancellation.
+      /** @description Customer reason for cancellation.
        *
        *     Helpful to monitor reasons behind churn for future improvements.
        *
@@ -19634,8 +19631,7 @@ export interface components {
        *     * `customer_service`: Customer is not satisfied with the customer service.
        *     * `low_quality`: Customer is unhappy with the quality.
        *     * `too_complex`: Customer considers the service too complicated.
-       *     * `other`: Other reason(s).
-       */
+       *     * `other`: Other reason(s). */
       customer_cancellation_reason?:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -23579,7 +23575,7 @@ export interface operations {
   'benefits:grants': {
     parameters: {
       query?: {
-        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned. */
+        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.  */
         is_granted?: boolean | null
         /** @description Filter by customer. */
         customer_id?: string | string[] | null
@@ -23632,7 +23628,7 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
-        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned. */
+        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.  */
         is_granted?: boolean | null
         /** @description Page number, defaults to 1. */
         page?: number
@@ -23994,7 +23990,7 @@ export interface operations {
         query?: string | null
         /** @description Filter on archived products. */
         is_archived?: boolean | null
-        /** @description Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. */
+        /** @description Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.  */
         is_recurring?: boolean | null
         /** @description Filter products granting specific benefit. */
         benefit_id?: string | string[] | null
@@ -29623,7 +29619,7 @@ export interface operations {
   'events:list': {
     parameters: {
       query?: {
-        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause.  */
         filter?: string | null
         /** @description Filter events after this timestamp. */
         start_timestamp?: string | null

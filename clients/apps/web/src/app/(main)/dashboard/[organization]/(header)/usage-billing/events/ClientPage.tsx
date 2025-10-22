@@ -7,38 +7,33 @@ import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
-import Spinner from '@/components/Shared/Spinner'
 import { useEventNames, useEvents } from '@/hooks/queries/events'
-import { useInViewport } from '@/hooks/utils'
-
 import AddOutlined from '@mui/icons-material/AddOutlined'
-import ArrowDownward from '@mui/icons-material/ArrowDownward'
-import ArrowUpward from '@mui/icons-material/ArrowUpward'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import FilterList from '@mui/icons-material/FilterList'
 import Search from '@mui/icons-material/Search'
 import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@polar-sh/ui/components/ui/dropdown-menu'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
 import { endOfToday } from 'date-fns'
 import { useSearchParams } from 'next/navigation'
 import {
+  parseAsArrayOf,
   parseAsInteger,
   parseAsIsoDateTime,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
-import React, { useCallback, useEffect, useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
+import React, { useCallback, useMemo } from 'react'
 
-const PAGE_SIZE = 50
+const PAGE_SIZE = 300
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -47,17 +42,14 @@ interface ClientPageProps {
 const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const [sorting, setSorting] = useQueryState(
     'sorting',
-    parseAsStringLiteral([
-      'last_seen',
-      '-last_seen',
-      'occurrences',
-      '-occurrences',
-    ] as const).withDefault('-last_seen'),
+    parseAsStringLiteral(['-timestamp', 'timestamp'] as const).withDefault(
+      '-timestamp',
+    ),
   )
   const [query, setQuery] = useQueryState('query', parseAsString)
-  const [selectedEventName, setSelectedEventName] = useQueryState(
-    'eventName',
-    parseAsString,
+  const [selectedEventNames, setSelectedEventNames] = useQueryState(
+    'eventNames',
+    parseAsArrayOf(parseAsString),
   )
   const [startDate, setStartDate] = useQueryState(
     'startDate',
@@ -71,12 +63,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     'page',
     parseAsInteger.withDefault(1),
   )
-  const [source, setSource] = useQueryState(
-    'source',
-    parseAsStringLiteral(['user', 'system', 'all'] as const).withDefault(
-      'user',
-    ),
-  )
 
   const {
     isShown: isEventCreationGuideShown,
@@ -84,10 +70,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     hide: hideEventCreationGuide,
   } = useModal()
 
-  const { data, fetchNextPage, hasNextPage } = useEventNames(organization.id, {
-    query,
-    sorting: [sorting],
-    source: source === 'all' ? undefined : source,
+  const { data } = useEventNames(organization.id, {
+    sorting: ['-occurrences'],
   })
 
   const eventNames = useMemo(
@@ -98,17 +82,18 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const eventParameters = useMemo(():
     | operations['events:list']['parameters']['query']
     | undefined => {
-    return selectedEventName
-      ? {
-          name: [selectedEventName],
-          page: currentPage,
-          limit: PAGE_SIZE,
-          start_timestamp: startDate.toISOString(),
-          end_timestamp: endDate.toISOString(),
-          source: source === 'all' ? undefined : source,
-        }
-      : undefined
-  }, [selectedEventName, currentPage, startDate, endDate, source])
+    return {
+      name:
+        selectedEventNames && selectedEventNames.length > 0
+          ? selectedEventNames
+          : null,
+      page: currentPage,
+      limit: PAGE_SIZE,
+      sorting: [sorting],
+      start_timestamp: startDate.toISOString(),
+      end_timestamp: endDate.toISOString(),
+    }
+  }, [selectedEventNames, currentPage, startDate, endDate, sorting])
 
   const { data: events } = useEvents(organization.id, eventParameters)
 
@@ -127,77 +112,16 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     to: endDate,
   }
 
-  const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
-
-  useEffect(() => {
-    if (inViewport && hasNextPage) {
-      fetchNextPage()
-    }
-  }, [inViewport, hasNextPage, fetchNextPage])
-
   return (
     <DashboardBody
-      title={selectedEventName ? selectedEventName : 'Events'}
+      title="Events"
       contextViewPlacement="left"
       contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
       contextView={
-        <div className="dark:divide-polar-800 flex h-full flex-col divide-y divide-gray-200">
-          <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
+        <div className="flex h-full flex-col gap-y-4 px-4 py-4">
+          <div className="flex flex-row items-center justify-between gap-6">
             <div>Events</div>
             <div className="flex flex-row items-center gap-4">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="icon" className="h-6 w-6" variant="ghost">
-                    <FilterList fontSize="small" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setSource('all')}>
-                    <CheckOutlined
-                      className={twMerge(
-                        'h-4 w-4',
-                        source !== 'all' && 'invisible',
-                      )}
-                    />
-                    <span>All</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSource('user')}>
-                    <CheckOutlined
-                      className={twMerge(
-                        'h-4 w-4',
-                        source !== 'user' && 'invisible',
-                      )}
-                    />
-                    <span>User</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSource('system')}>
-                    <CheckOutlined
-                      className={twMerge(
-                        'h-4 w-4',
-                        source !== 'system' && 'invisible',
-                      )}
-                    />
-                    <span>System</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() =>
-                  setSorting(
-                    sorting === '-last_seen' ? 'last_seen' : '-last_seen',
-                  )
-                }
-              >
-                {sorting === 'last_seen' ? (
-                  <ArrowUpward fontSize="small" />
-                ) : (
-                  <ArrowDownward fontSize="small" />
-                )}
-              </Button>
               <Button
                 size="icon"
                 className="h-6 w-6"
@@ -207,50 +131,70 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               </Button>
             </div>
           </div>
-          <div className="flex flex-row items-center gap-3 px-4 py-2">
-            <div className="dark:bg-polar-800 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-              <Search
-                fontSize="inherit"
-                className="dark:text-polar-500 text-gray-500"
-              />
-            </div>
+          <div className="flex flex-row items-center gap-3">
             <Input
-              className="w-full rounded-none border-none bg-transparent p-0 shadow-none! ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
               placeholder="Search Events"
               value={query ?? undefined}
               onChange={(e) => setQuery(e.target.value)}
+              preSlot={<Search fontSize="small" />}
+              disabled
             />
           </div>
-          <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
-            {eventNames.map((eventName) => (
-              <div
-                key={eventName.name}
-                onClick={() => setSelectedEventName(eventName.name)}
-                className={twMerge(
-                  'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
-                  selectedEventName === eventName.name &&
-                    'dark:bg-polar-800 bg-gray-100',
-                )}
+          <div className="flex h-full grow flex-col gap-y-6">
+            <div className="flex flex-col gap-y-2">
+              <h3 className="text-sm">Timeline</h3>
+              <DateRangePicker
+                date={dateRange}
+                onDateChange={onDateRangeChange}
+              />
+            </div>
+            <div className="flex flex-col gap-y-2">
+              <h3 className="text-sm">Sorting</h3>
+              <Select
+                value={sorting}
+                onValueChange={(value) =>
+                  setSorting(value as '-timestamp' | 'timestamp')
+                }
               >
-                <div className="flex flex-row items-center gap-3 px-4 py-3">
-                  <div className="flex flex-col">
-                    <div>{eventName.name}</div>
-                    <div className="dark:text-polar-500 text-sm text-gray-500">
-                      {new Intl.NumberFormat('en-US', {
-                        notation: 'compact',
-                      }).format(eventName.occurrences)}{' '}
-                      Ingested Events
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {hasNextPage && (
-              <div
-                ref={loadingRef}
-                className="flex w-full items-center justify-center py-8"
-              >
-                <Spinner />
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="-timestamp">Newest</SelectItem>
+                  <SelectItem value="timestamp">Oldest</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {eventNames.length > 0 && (
+              <div className="flex flex-col gap-y-2">
+                <h3 className="text-sm">Event</h3>
+                <List size="small" className="rounded-xl">
+                  {eventNames.map((eventName) => (
+                    <ListItem
+                      key={eventName.name}
+                      size="small"
+                      className="justify-between px-3 font-mono text-sm"
+                      inactiveClassName="text-gray-500 dark:text-polar-500"
+                      selected={selectedEventNames?.includes(eventName.name)}
+                      onSelect={() =>
+                        setSelectedEventNames((prev) =>
+                          prev && prev.includes(eventName.name)
+                            ? prev.filter((name) => name !== eventName.name)
+                            : ([...(prev ?? []), eventName.name] as string[]),
+                        )
+                      }
+                    >
+                      <span className="w-full truncate">{eventName.name}</span>
+                      <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
+                        {Number(eventName.occurrences).toLocaleString('en-US', {
+                          style: 'decimal',
+                          compactDisplay: 'short',
+                          notation: 'compact',
+                        })}
+                      </span>
+                    </ListItem>
+                  ))}
+                </List>
               </div>
             )}
           </div>
@@ -265,47 +209,28 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       }
       wide
     >
-      {selectedEventName ? (
-        <div className="flex flex-col gap-y-8">
-          <div className="flex flex-row items-center gap-4">
-            <DateRangePicker
-              date={dateRange}
-              onDateChange={onDateRangeChange}
-            />
+      <div className="flex h-full flex-col gap-y-4">
+        {events?.items.length === 0 ? (
+          <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
+            <h1 className="text-2xl font-normal">No Events Found</h1>
+            <p className="dark:text-polar-500 text-gray-500">
+              There are no events matching your current filters
+            </p>
           </div>
-
-          {events?.items.length === 0 ? (
-            <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
-              <h1 className="text-2xl font-normal">No Events Found</h1>
-              <p className="dark:text-polar-500 text-gray-500">
-                There are no events matching your current filters
-              </p>
-            </div>
-          ) : (
-            <>
-              <Events
-                events={events?.items ?? []}
-                organization={organization}
-              />
-              <Pagination
-                className="self-end"
-                totalCount={events?.pagination.total_count ?? 0}
-                pageSize={PAGE_SIZE}
-                currentPage={currentPage}
-                onPageChange={setCurrentPage}
-                currentURL={searchParams}
-              />
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="mt-96 flex w-full flex-col items-center justify-center gap-4">
-          <h1 className="text-2xl font-normal">No Event Entity Selected</h1>
-          <p className="dark:text-polar-500 text-gray-500">
-            Select an event entity to view its details
-          </p>
-        </div>
-      )}
+        ) : (
+          <>
+            <Events events={events?.items ?? []} organization={organization} />
+            <Pagination
+              className="self-end"
+              totalCount={events?.pagination.total_count ?? 0}
+              pageSize={PAGE_SIZE}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              currentURL={searchParams}
+            />
+          </>
+        )}
+      </div>
     </DashboardBody>
   )
 }

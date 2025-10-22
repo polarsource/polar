@@ -3,7 +3,7 @@ import contextvars
 import itertools
 import uuid
 from collections import defaultdict
-from collections.abc import AsyncIterator, Iterable, Mapping, Sequence
+from collections.abc import AsyncIterator, Iterable, Mapping
 from typing import Any, Self, TypeAlias
 
 import dramatiq
@@ -17,7 +17,7 @@ log: Logger = structlog.get_logger()
 
 JSONSerializable: TypeAlias = (
     Mapping[str, "JSONSerializable"]
-    | Sequence["JSONSerializable"]
+    | Iterable["JSONSerializable"]
     | str
     | int
     | float

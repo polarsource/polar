@@ -112,6 +112,7 @@ export const MeterPage = ({
                     display_name: 'Quantity',
                     type: 'scalar',
                   }}
+                  chartType="bar"
                 />
               ) : (
                 <div className="flex h-[300px] flex-col items-center justify-center">

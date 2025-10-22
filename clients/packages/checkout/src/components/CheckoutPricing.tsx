@@ -30,6 +30,7 @@ const CheckoutProductAmountLabel = ({
             ? productPrice.recurringInterval
             : product.recurringInterval
         }
+        intervalCount={product.recurringIntervalCount}
       />
       <div className="flex flex-row items-center gap-x-2 text-lg">
         <div className="text-gray-400 line-through">

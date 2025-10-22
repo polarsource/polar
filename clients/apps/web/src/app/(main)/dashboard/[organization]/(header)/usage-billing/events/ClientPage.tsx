@@ -147,7 +147,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           </div>
           <div
             className={twMerge(
-              'flex flex-col gap-y-6 overflow-y-auto px-4 pb-4 pt-2',
+              'flex flex-col gap-y-6 overflow-y-auto px-4 pt-2 pb-4',
               hasScrolled && 'dark:border-polar-700 border-t border-gray-200',
             )}
             onScroll={handleScroll}
@@ -238,7 +238,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     >
       <div className="flex h-full flex-col gap-y-4">
         {events?.items.length === 0 ? (
-          <div className="dark:border-polar-700 rounded-4xl flex min-h-96 w-full flex-col items-center justify-center gap-4 border border-gray-200 p-24">
+          <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
             <h1 className="text-2xl font-normal">No Events Found</h1>
             <p className="dark:text-polar-500 text-gray-500">
               There are no events matching your current filters

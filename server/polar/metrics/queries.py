@@ -42,6 +42,8 @@ class MetricQuery(StrEnum):
     active_subscriptions = "active_subscriptions"
     checkouts = "checkouts"
     canceled_subscriptions = "canceled_subscriptions"
+    costs = "costs"
+    cumulative_costs = "cumulative_costs"
 
 
 def _get_metrics_columns(

@@ -1,7 +1,7 @@
 import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server'
 import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { config, middleware } from './middleware'
+import { config, proxy } from './proxy'
 
 vi.mock('./utils/client', () => ({
   createServerSideAPI: vi.fn(),
@@ -9,7 +9,7 @@ vi.mock('./utils/client', () => ({
 
 const nextConfig = {}
 
-describe('middleware matcher configuration', () => {
+describe('proxy matcher configuration', () => {
   it('should run for dashboard routes', () => {
     expect(
       unstable_doesMiddlewareMatch({
@@ -195,7 +195,7 @@ describe('middleware function', () => {
   it('should redirect unauthenticated users from protected routes', async () => {
     const request = new NextRequest('https://example.com/dashboard')
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBe(307)
     expect(response.headers.get('location')).toContain('/login')
@@ -214,7 +214,7 @@ describe('middleware function', () => {
     const request = new NextRequest('https://example.com/dashboard')
     request.cookies.set('polar_session', 'valid-session-token')
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBe(200)
     expect(response.headers.get('x-polar-user')).toBe(JSON.stringify(mockUser))
@@ -223,7 +223,7 @@ describe('middleware function', () => {
   it('should allow unauthenticated access to public routes', async () => {
     const request = new NextRequest('https://example.com/')
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBe(200)
     expect(response.headers.get('x-polar-user')).toBeNull()
@@ -234,7 +234,7 @@ describe('middleware function', () => {
       'https://example.com/dashboard?foo=bar&baz=qux',
     )
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBe(307)
     const location = response.headers.get('location')
@@ -253,7 +253,7 @@ describe('middleware function', () => {
     const request = new NextRequest('https://example.com/dashboard')
     request.cookies.set('polar_session', 'valid-session-token')
 
-    await expect(middleware(request)).rejects.toThrow(
+    await expect(proxy(request)).rejects.toThrow(
       'Unexpected response status while fetching authenticated user',
     )
   })
@@ -269,7 +269,7 @@ describe('middleware function', () => {
     const request = new NextRequest('https://example.com/dashboard')
     request.cookies.set('polar_session', 'invalid-session-token')
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBe(307)
     expect(response.headers.get('location')).toContain('/login')

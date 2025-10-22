@@ -53,7 +53,7 @@ const getLoginResponse = (request: NextRequest): NextResponse => {
   return NextResponse.redirect(redirectURL)
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Do not run middleware for forwarded routes
   // @pieterbeulque added this because the `config.matcher` behavior below
   // doesn't appear to be working consistently with Vercel rewrites

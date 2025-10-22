@@ -1,5 +1,10 @@
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { EventCostBadge } from './EventCostBadge'
@@ -64,19 +69,38 @@ const EventRow = ({
               currency={cost?.currency ?? 'USD'}
             />
           )}
-          <Link
-            href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}`}
-            className="flex items-center gap-x-3"
-            onClick={(e) => {
-              e.stopPropagation()
-            }}
-          >
-            <Avatar
-              className="dark:bg-polar-900 text-xxs h-8 w-8 bg-white"
-              name={event.customer?.name ?? event.customer?.email ?? '—'}
-              avatar_url={event.customer?.avatar_url ?? null}
-            />
-          </Link>
+          <Tooltip>
+            <TooltipTrigger>
+              <Link
+                href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}`}
+                className="flex items-center gap-x-3"
+                onClick={(e) => {
+                  e.stopPropagation()
+                }}
+              >
+                <Avatar
+                  className="dark:bg-polar-900 text-xxs h-8 w-8 bg-white"
+                  name={event.customer?.name ?? event.customer?.email ?? '—'}
+                  avatar_url={event.customer?.avatar_url ?? null}
+                />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="top" align="end">
+              <div className="flex flex-row items-center gap-x-2 font-sans">
+                <Avatar
+                  className="dark:bg-polar-900 text-xxs h-8 w-8 bg-white"
+                  name={event.customer?.name ?? event.customer?.email ?? '—'}
+                  avatar_url={event.customer?.avatar_url ?? null}
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs">{event.customer?.name ?? '—'}</span>
+                  <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
+                    {event.customer?.email}
+                  </span>
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
       {isExpanded && (

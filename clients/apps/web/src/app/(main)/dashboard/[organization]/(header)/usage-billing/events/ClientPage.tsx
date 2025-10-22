@@ -93,8 +93,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       sorting: [sorting],
       start_timestamp: startDate.toISOString(),
       end_timestamp: endDate.toISOString(),
+      query: query ?? null,
     }
-  }, [selectedEventNames, currentPage, startDate, endDate, sorting])
+  }, [selectedEventNames, currentPage, startDate, endDate, sorting, query])
 
   const { data: events } = useEvents(organization.id, eventParameters)
 
@@ -158,7 +159,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 value={query ?? undefined}
                 onChange={(e) => setQuery(e.target.value)}
                 preSlot={<Search fontSize="small" />}
-                disabled
               />
             </div>
             <div className="flex h-full grow flex-col gap-y-6">

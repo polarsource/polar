@@ -10,7 +10,7 @@ from polar.auth.models import AuthSubject as AuthSubjectType
 from polar.checkout.repository import CheckoutRepository
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.models import Order, Product, Subscription
 from polar.models.customer_seat import SeatStatus
 from polar.openapi import APITag
@@ -115,7 +115,7 @@ async def assign_seat(
             raise ResourceNotFound("Order not found")
 
     if not subscription and not order:
-        raise ResourceNotFound("Subscription or order not found")
+        raise BadRequest("Either subscription_id, checkout_id, or order_id must be provided")
 
     container = subscription or order
     assert container is not None  # Already validated above
@@ -188,7 +188,7 @@ async def list_seats(
         total_seats = order.seats or 0
 
     else:
-        raise ResourceNotFound("Either subscription_id or order_id must be provided")
+        raise BadRequest("Either subscription_id or order_id must be provided")
 
     container = subscription or order
     assert container is not None  # Already validated above

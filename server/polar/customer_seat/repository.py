@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, case, select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -108,7 +108,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             return 0
         claimed_statement = select(CustomerSeat).where(
             CustomerSeat.subscription_id == subscription_id,
-            CustomerSeat.status.in_(["claimed", "pending"]),
+            CustomerSeat.status.in_([SeatStatus.claimed, SeatStatus.pending]),
         )
         claimed_seats = await self.get_all(claimed_statement)
 
@@ -124,7 +124,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
         claimed_statement = select(CustomerSeat).where(
             CustomerSeat.order_id == order_id,
-            CustomerSeat.status.in_(["claimed", "pending"]),
+            CustomerSeat.status.in_([SeatStatus.claimed, SeatStatus.pending]),
         )
         claimed_seats = await self.get_all(claimed_statement)
 
@@ -259,17 +259,11 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             self.get_base_statement()
             .outerjoin(Subscription, CustomerSeat.subscription_id == Subscription.id)
             .outerjoin(Order, CustomerSeat.order_id == Order.id)
-        )
-
-        product_id = case(
-            (CustomerSeat.subscription_id.is_not(None), Subscription.product_id),
-            else_=Order.product_id,
-        )
-
-        product_org_id = (
-            select(Product.organization_id)
-            .where(Product.id == product_id)
-            .scalar_subquery()
+            .outerjoin(
+                Product,
+                (Subscription.product_id == Product.id)
+                | (Order.product_id == Product.id),
+            )
         )
 
         if is_user(auth_subject):
@@ -277,9 +271,11 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
                 UserOrganization.user_id == auth_subject.subject.id,
                 UserOrganization.deleted_at.is_(None),
             )
-            statement = statement.where(product_org_id.in_(user_org_ids))
+            statement = statement.where(Product.organization_id.in_(user_org_ids))
         elif is_organization(auth_subject):
-            statement = statement.where(product_org_id == auth_subject.subject.id)
+            statement = statement.where(
+                Product.organization_id == auth_subject.subject.id
+            )
 
         return statement
 

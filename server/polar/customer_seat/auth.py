@@ -10,6 +10,7 @@ _SeatRead = Authenticator(
     required_scopes={
         Scope.web_read,
         Scope.subscriptions_read,
+        Scope.orders_read,
     },
     allowed_subjects={User, Organization},
 )
@@ -19,6 +20,7 @@ _SeatWrite = Authenticator(
     required_scopes={
         Scope.web_write,
         Scope.subscriptions_write,
+        Scope.orders_write,
     },
     allowed_subjects={User, Organization},
 )
@@ -28,6 +30,7 @@ _SeatWriteOrAnonymous = Authenticator(
     required_scopes={
         Scope.web_write,
         Scope.subscriptions_write,
+        Scope.orders_write,
     },
     allowed_subjects={User, Organization, Anonymous},
 )

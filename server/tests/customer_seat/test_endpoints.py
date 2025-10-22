@@ -538,7 +538,6 @@ class TestClaimSeat:
         await session.refresh(seat.subscription.product, ["organization"])
 
         assert seat.invitation_token is not None
-
         response = await client.post(
             "/v1/customer-seats/claim",
             json={"invitation_token": seat.invitation_token},

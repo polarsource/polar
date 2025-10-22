@@ -25,6 +25,7 @@ from polar.models import (
     User,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.order import OrderStatus
 from polar.postgres import AsyncReadSession
 from polar.worker import enqueue_job
 
@@ -37,9 +38,9 @@ class SeatError(PolarError): ...
 
 
 class SeatNotAvailable(SeatError):
-    def __init__(self, subscription_id: uuid.UUID) -> None:
-        self.subscription_id = subscription_id
-        message = f"No available seats for subscription {subscription_id}"
+    def __init__(self, source_id: uuid.UUID, reason: str | None = None) -> None:
+        self.source_id = source_id
+        message = reason or f"No available seats for {source_id}"
         super().__init__(message, 400)
 
 
@@ -146,6 +147,13 @@ class SeatService:
         is_subscription = self._is_subscription(container)
 
         self.check_seat_feature_enabled(organization)
+
+        # Validate order payment status
+        if isinstance(container, Order):
+            if container.status == OrderStatus.pending:
+                raise SeatNotAvailable(
+                    source_id, "Order must be paid before assigning seats"
+                )
 
         repository = CustomerSeatRepository.from_session(session)
 

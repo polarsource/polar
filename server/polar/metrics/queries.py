@@ -462,7 +462,9 @@ def _get_readable_cost_events_statement(
     organization_id: Sequence[uuid.UUID] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> Select[tuple[uuid.UUID]]:
-    statement = select(Event.id).where(Event.cost.is_not(None))
+    statement = select(Event.id).where(
+        Event.user_metadata["_cost"]["cost"].is_not(None)
+    )
 
     if organization_id is not None:
         statement = statement.where(Event.organization_id.in_(organization_id))

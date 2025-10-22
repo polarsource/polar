@@ -74,7 +74,8 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
           (acc, { key, value }) => ({ ...acc, [key]: value }),
           {},
         ),
-      })
+      } as schemas['ProductCreate'])
+
       if (error) {
         if (error.detail) {
           setProductValidationErrors(error.detail, setError)

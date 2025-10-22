@@ -4,17 +4,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
 from polar.models import (
+    Checkout,
     Customer,
+    Order,
     Organization,
     Subscription,
     User,
     UserOrganization,
 )
 from polar.models.customer_seat import CustomerSeat, SeatStatus
+from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_checkout,
     create_customer_seat,
+    create_order_with_seats,
     create_product,
     create_product_price_seat_unit,
     create_subscription_with_seats,
@@ -111,4 +116,66 @@ async def customer_seat_claimed(
     await session.refresh(seat.subscription, ["product"])
     assert seat.subscription is not None
     await session.refresh(seat.subscription.product, ["organization"])
+    return seat
+
+
+@pytest_asyncio.fixture
+async def order_with_seats(
+    save_fixture: SaveFixture,
+    seat_enabled_organization: Organization,
+    customer: Customer,
+) -> Order:
+    product = await create_product(
+        save_fixture,
+        organization=seat_enabled_organization,
+        recurring_interval=None,  # One-time purchase
+        prices=[],
+    )
+
+    await create_product_price_seat_unit(
+        save_fixture, product=product, price_per_seat=1000
+    )
+
+    order = await create_order_with_seats(
+        save_fixture,
+        product=product,
+        customer=customer,
+        seats=5,
+        status=OrderStatus.paid,
+    )
+    return order
+
+
+@pytest_asyncio.fixture
+async def checkout_with_order(
+    save_fixture: SaveFixture,
+    order_with_seats: Order,
+    session: AsyncSession,
+) -> Checkout:
+    # Refresh product to load prices
+    await session.refresh(order_with_seats.product, ["prices"])
+
+    checkout = await create_checkout(
+        save_fixture,
+        products=[order_with_seats.product],
+        customer=order_with_seats.customer,
+    )
+    # Link order to checkout
+    order_with_seats.checkout_id = checkout.id
+    await save_fixture(order_with_seats)
+    return checkout
+
+
+@pytest_asyncio.fixture
+async def customer_seat_order_pending(
+    save_fixture: SaveFixture,
+    order_with_seats: Order,
+    session: AsyncSession,
+) -> CustomerSeat:
+    seat = await create_customer_seat(save_fixture, order=order_with_seats)
+    await session.refresh(seat, ["order"])
+    assert seat.order is not None
+    await session.refresh(seat.order, ["product"])
+    assert seat.order is not None
+    await session.refresh(seat.order.product, ["organization"])
     return seat

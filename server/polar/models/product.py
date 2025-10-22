@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
+    Integer,
     String,
     Text,
     Uuid,
@@ -56,6 +57,9 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
         nullable=True,
         index=True,
         default=None,
+    )
+    recurring_interval_count: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
     )
 
     is_tax_applicable: Mapped[bool] = mapped_column(

@@ -46,10 +46,10 @@ router = APIRouter(
     responses={
         400: {"description": "No available seats or customer already has a seat"},
         401: {
-            "description": "Authentication required for subscription-based assignment"
+            "description": "Authentication required for direct subscription or order assignment"
         },
         403: {"description": "Not permitted or seat-based pricing not enabled"},
-        404: {"description": "Subscription, checkout, or customer not found"},
+        404: {"description": "Subscription, order, checkout, or customer not found"},
     },
 )
 async def assign_seat(
@@ -88,7 +88,7 @@ async def assign_seat(
         if not checkout:
             raise ResourceNotFound("Checkout not found")
 
-        # First try to find a subscription (for recurring products)
+        # Try to find subscription first (for recurring purchases)
         subscription = await subscription_repository.get_by_checkout_id(
             seat_assign.checkout_id,
             options=(
@@ -97,13 +97,12 @@ async def assign_seat(
             ),
         )
 
-        # If no subscription, check for an order (for one-time products)
+        # If no subscription, try to find order (for one-time purchases)
         if not subscription:
             order = await order_repository.get_earliest_by_checkout_id(
                 seat_assign.checkout_id,
                 options=order_repository.get_eager_options(),
             )
-
             if not order:
                 raise ResourceNotFound(
                     "No subscription or order found for this checkout"

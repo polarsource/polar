@@ -31,24 +31,33 @@ from tests.fixtures.random_objects import (
 )
 
 
+@pytest.mark.asyncio
 class TestCheckSeatFeatureEnabled:
-    def test_feature_enabled(self) -> None:
-        organization = Organization(
-            feature_settings={"seat_based_pricing_enabled": True}
-        )
-        seat_service.check_seat_feature_enabled(organization)
+    async def test_feature_enabled(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
+        organization = await create_organization(save_fixture)
+        organization.feature_settings = {"seat_based_pricing_enabled": True}
+        await save_fixture(organization)
+        await seat_service.check_seat_feature_enabled(session, organization.id)
 
-    def test_feature_disabled(self) -> None:
-        organization = Organization(
-            feature_settings={"seat_based_pricing_enabled": False}
-        )
+    async def test_feature_disabled(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
+        organization = await create_organization(save_fixture)
+        organization.feature_settings = {"seat_based_pricing_enabled": False}
+        await save_fixture(organization)
         with pytest.raises(FeatureNotEnabled):
-            seat_service.check_seat_feature_enabled(organization)
+            await seat_service.check_seat_feature_enabled(session, organization.id)
 
-    def test_feature_missing(self) -> None:
-        organization = Organization(feature_settings={})
+    async def test_feature_missing(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
+        organization = await create_organization(save_fixture)
+        organization.feature_settings = {}
+        await save_fixture(organization)
         with pytest.raises(FeatureNotEnabled):
-            seat_service.check_seat_feature_enabled(organization)
+            await seat_service.check_seat_feature_enabled(session, organization.id)
 
 
 class TestListSeats:

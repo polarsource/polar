@@ -30,7 +30,8 @@ const seatStatusToDisplayName = {
 
 interface CustomerSeat {
   id: string
-  subscription_id: string
+  subscription_id?: string | null
+  order_id?: string | null
   status: 'pending' | 'claimed' | 'revoked'
   customer_id?: string | null
   customer_email?: string | null

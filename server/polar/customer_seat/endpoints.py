@@ -15,6 +15,7 @@ from polar.models import Order, Product, Subscription
 from polar.models.customer_seat import SeatStatus
 from polar.openapi import APITag
 from polar.order.repository import OrderRepository
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
@@ -236,13 +237,13 @@ async def revoke_seat(
         raise ResourceNotFound("Seat not found")
 
     if seat.subscription:
-        organization = seat.subscription.product.organization
+        organization_id = seat.subscription.product.organization_id
     elif seat.order:
-        organization = seat.order.product.organization
+        organization_id = seat.order.product.organization_id
     else:
         raise ResourceNotFound("Seat has no subscription or order")
 
-    seat_service.check_seat_feature_enabled(organization)
+    await seat_service.check_seat_feature_enabled(session, organization_id)
 
     revoked_seat = await seat_service.revoke_seat(session, seat)
     await session.commit()
@@ -282,13 +283,13 @@ async def resend_invitation(
         raise ResourceNotFound("Seat not found")
 
     if seat.subscription:
-        organization = seat.subscription.product.organization
+        organization_id = seat.subscription.product.organization_id
     elif seat.order:
-        organization = seat.order.product.organization
+        organization_id = seat.order.product.organization_id
     else:
         raise ResourceNotFound("Seat has no subscription or order")
 
-    seat_service.check_seat_feature_enabled(organization)
+    await seat_service.check_seat_feature_enabled(session, organization_id)
 
     resent_seat = await seat_service.resend_invitation(session, seat)
     await session.commit()
@@ -322,13 +323,18 @@ async def get_claim_info(
     else:
         raise ResourceNotFound("Seat has no subscription or order")
 
-    seat_service.check_seat_feature_enabled(product.organization)
+    await seat_service.check_seat_feature_enabled(session, product.organization_id)
+
+    organization_repository = OrganizationRepository.from_session(session)
+    organization = await organization_repository.get_by_id(product.organization_id)
+    if not organization:
+        raise ResourceNotFound("Organization not found")
 
     return SeatClaimInfo(
         product_name=product.name,
         product_id=product.id,
-        organization_name=product.organization.name,
-        organization_slug=product.organization.slug,
+        organization_name=organization.name,
+        organization_slug=organization.slug,
         customer_email=seat.customer.email if seat.customer else "",
         can_claim=seat.status == SeatStatus.pending,
     )

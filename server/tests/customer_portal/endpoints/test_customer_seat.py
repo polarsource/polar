@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
+from sqlalchemy.orm import attributes
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.models import Customer, CustomerSeat, Organization, Subscription
@@ -80,6 +81,7 @@ class TestListSeats:
     ) -> None:
         # Enable seat-based pricing feature
         organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
         # Create a seat-based product
@@ -132,6 +134,7 @@ class TestAssignSeat:
     ) -> None:
         # Enable seat-based pricing feature
         organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
         # Create a seat-based product
@@ -172,6 +175,7 @@ class TestAssignSeat:
     ) -> None:
         # Enable seat-based pricing feature
         organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
         # Create a seat-based product
@@ -197,10 +201,6 @@ class TestAssignSeat:
             organization_id=organization.id,
         )
         await save_fixture(new_customer)
-
-        # Ensure changes are committed
-        await session.commit()
-        await session.refresh(subscription)
 
         response = await client.post(
             "/v1/customer-portal/seats",
@@ -236,6 +236,7 @@ class TestRevokeSeat:
     ) -> None:
         # Enable seat-based pricing feature
         organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
         # Create a seat-based product
@@ -280,6 +281,7 @@ class TestRevokeSeat:
     ) -> None:
         # Enable seat-based pricing feature
         organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
         # Create a seat-based product
@@ -336,6 +338,7 @@ class TestResendInvitation:
     ) -> None:
         # Enable seat-based pricing feature
         organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
         # Create a seat-based product
@@ -380,6 +383,7 @@ class TestResendInvitation:
     ) -> None:
         # Enable seat-based pricing feature
         organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
         # Create a seat-based product
@@ -424,6 +428,7 @@ class TestResendInvitation:
     ) -> None:
         # Enable seat-based pricing feature
         organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
         # Create a seat-based product
@@ -680,12 +685,12 @@ class TestListSeatsForOrder:
     async def test_valid_order(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
     ) -> None:
         organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
         product = await create_product(
@@ -722,12 +727,12 @@ class TestAssignSeatForOrder:
     async def test_valid_order(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
     ) -> None:
         organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
         product = await create_product(
@@ -750,9 +755,6 @@ class TestAssignSeatForOrder:
             organization_id=organization.id,
         )
         await save_fixture(new_customer)
-
-        await session.commit()
-        await session.refresh(order)
 
         response = await client.post(
             "/v1/customer-portal/seats",
@@ -777,12 +779,12 @@ class TestRevokeSeatForOrder:
     async def test_valid_order(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
     ) -> None:
         organization.feature_settings["seat_based_pricing_enabled"] = True
+        attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
         product = await create_product(

@@ -1,6 +1,6 @@
 import { useOrganizationSSE } from '@/hooks/sse'
 import { setValidationErrors } from '@/utils/api/errors'
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { isValidationError, type schemas } from '@polar-sh/client'
 import { useCallback, useEffect, useState } from 'react'
@@ -99,7 +99,7 @@ export const useInvoiceDownload = ({
         return
       }
 
-      await queryClient.invalidateQueries({
+      await getQueryClient().invalidateQueries({
         queryKey: ['organizations', 'account'],
       })
 

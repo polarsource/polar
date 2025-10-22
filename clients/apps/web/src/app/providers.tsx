@@ -1,7 +1,7 @@
 'use client'
 
 import { cookieConsentGiven } from '@/components/Privacy/CookieConsent'
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryStreamedHydration } from '@tanstack/react-query-next-experimental'
@@ -15,7 +15,7 @@ import { PropsWithChildren, useEffect } from 'react'
 export function PolarPostHogProvider({
   children,
 }: {
-  children: React.ReactElement
+  children: React.ReactNode
 }) {
   useEffect(() => {
     if (!CONFIG.POSTHOG_TOKEN) {
@@ -37,7 +37,7 @@ export function PolarThemeProvider({
   children,
   forceTheme,
 }: {
-  children: React.ReactElement<any>
+  children: React.ReactNode
   forceTheme?: 'light' | 'dark'
 }) {
   const pathname = usePathname()
@@ -66,8 +66,10 @@ export function PolarThemeProvider({
 export function PolarQueryClientProvider({
   children,
 }: {
-  children: React.ReactElement<any>
+  children: React.ReactNode
 }) {
+  const queryClient = getQueryClient()
+
   return (
     <QueryClientProvider client={queryClient}>
       <ReactQueryStreamedHydration>{children}</ReactQueryStreamedHydration>

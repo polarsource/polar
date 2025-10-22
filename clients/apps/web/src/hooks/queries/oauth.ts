@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -20,7 +20,7 @@ export const useCreateOAuth2Client = () =>
       if (data.error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['oauth2Clients'],
       })
     },
@@ -43,7 +43,7 @@ export const useUpdateOAuth2Client = () =>
       if (data.error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['oauth2Clients'],
       })
     },
@@ -59,7 +59,7 @@ export const useDeleteOAuthClient = () =>
       if (data.error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['oauth2Clients'],
       })
     },

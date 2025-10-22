@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
@@ -80,7 +80,7 @@ export const useCreateCustomer = (organizationId: string) =>
     mutationFn: (body: schemas['CustomerCreate']) =>
       api.POST('/v1/customers/', { body }),
     onSuccess: async (_result, _variables, _ctx) => {
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['customers', organizationId],
       })
     },
@@ -94,7 +94,7 @@ export const useUpdateCustomer = (customerId: string, organizationId: string) =>
         body,
       }),
     onSuccess: async (_result, _variables, _ctx) => {
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['customers', organizationId],
       })
     },
@@ -107,7 +107,7 @@ export const useDeleteCustomer = (customerId: string, organizationId: string) =>
         params: { path: { id: customerId } },
       }),
     onSuccess: async (_result, _variables, _ctx) => {
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['customers', organizationId],
       })
     },

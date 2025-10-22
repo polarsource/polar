@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -53,6 +53,7 @@ export const useUpdateSubscription = (id: string) =>
       if (error) {
         return
       }
+      const queryClient = getQueryClient()
       queryClient.setQueriesData<schemas['Subscription']>(
         {
           queryKey: ['subscriptions', { id }],
@@ -103,6 +104,7 @@ export const useUncancelSubscription = (id: string) =>
       if (error) {
         return
       }
+      const queryClient = getQueryClient()
       queryClient.setQueriesData<schemas['Subscription']>(
         {
           queryKey: ['subscriptions', { id }],

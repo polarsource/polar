@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -56,6 +56,6 @@ export const useNotificationsMarkRead = () =>
       if (result.error) {
         return
       }
-      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      getQueryClient().invalidateQueries({ queryKey: ['notifications'] })
     },
   })

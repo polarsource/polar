@@ -1,5 +1,5 @@
 import revalidate from '@/app/actions'
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
@@ -109,7 +109,7 @@ export const useCreateProduct = (organization: schemas['Organization']) =>
         return
       }
 
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['products', { organizationId: organization.id }],
       })
 
@@ -135,6 +135,7 @@ export const useUpdateProduct = (organization: schemas['Organization']) =>
       if (result.error) {
         return
       }
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['products', { organizationId: organization.id }],
       })
@@ -165,6 +166,7 @@ export const useUpdateProductBenefits = (
       if (result.error) {
         return
       }
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['products', { organizationId: organization.id }],
       })

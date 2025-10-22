@@ -15,8 +15,18 @@ from polar.customer_session.service import (
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Customer, CustomerSeat, Organization, Subscription, User
+from polar.models import (
+    Customer,
+    CustomerSeat,
+    Order,
+    Organization,
+    Product,
+    Subscription,
+    User,
+)
 from polar.models.customer_seat import SeatStatus
+from polar.models.order import OrderStatus
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.worker import enqueue_job
 
@@ -29,9 +39,9 @@ class SeatError(PolarError): ...
 
 
 class SeatNotAvailable(SeatError):
-    def __init__(self, subscription_id: uuid.UUID) -> None:
-        self.subscription_id = subscription_id
-        message = f"No available seats for subscription {subscription_id}"
+    def __init__(self, source_id: uuid.UUID, reason: str | None = None) -> None:
+        self.source_id = source_id
+        message = reason or f"No available seats for {source_id}"
         super().__init__(message, 400)
 
 
@@ -74,63 +84,111 @@ class CustomerNotFound(SeatError):
         super().__init__(message, 404)
 
 
+SeatContainer = Subscription | Order
+
+
 class SeatService:
-    def check_seat_feature_enabled(self, organization: Organization) -> None:
+    def _get_customer_id(self, container: SeatContainer) -> uuid.UUID:
+        return container.customer_id
+
+    def _get_product(self, container: SeatContainer) -> Product:
+        return container.product
+
+    def _get_organization_id(self, container: SeatContainer) -> uuid.UUID:
+        return container.product.organization_id
+
+    def _get_seats_count(self, container: SeatContainer) -> int:
+        return container.seats or 0
+
+    def _get_container_id(self, container: SeatContainer) -> uuid.UUID:
+        return container.id
+
+    def _is_subscription(self, container: SeatContainer) -> bool:
+        return isinstance(container, Subscription)
+
+    async def check_seat_feature_enabled(
+        self, session: AsyncReadSession, organization_id: uuid.UUID
+    ) -> None:
+        from polar.organization.repository import OrganizationRepository
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
+        if not organization:
+            raise FeatureNotEnabled()
         if not organization.feature_settings.get("seat_based_pricing_enabled", False):
             raise FeatureNotEnabled()
 
     async def list_seats(
         self,
         session: AsyncReadSession,
-        subscription: Subscription,
+        container: SeatContainer,
     ) -> Sequence[CustomerSeat]:
-        self.check_seat_feature_enabled(subscription.product.organization)
-
+        await self.check_seat_feature_enabled(
+            session, self._get_organization_id(container)
+        )
         repository = CustomerSeatRepository.from_session(session)
-        return await repository.list_by_subscription_id(
-            subscription.id,
+        return await repository.list_by_container(
+            container,
             options=repository.get_eager_options(),
         )
 
     async def get_available_seats_count(
         self,
         session: AsyncReadSession,
-        subscription: Subscription,
+        container: SeatContainer,
     ) -> int:
-        self.check_seat_feature_enabled(subscription.product.organization)
-
+        await self.check_seat_feature_enabled(
+            session, self._get_organization_id(container)
+        )
         repository = CustomerSeatRepository.from_session(session)
-        return await repository.get_available_seats_count(subscription.id)
+        return await repository.get_available_seats_count_for_container(container)
 
     async def assign_seat(
         self,
         session: AsyncSession,
-        subscription: Subscription,
+        container: SeatContainer,
         *,
         email: str | None = None,
         external_customer_id: str | None = None,
         customer_id: uuid.UUID | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> CustomerSeat:
-        self.check_seat_feature_enabled(subscription.product.organization)
+        organization_id = self._get_organization_id(container)
+        product = self._get_product(container)
+        source_id = self._get_container_id(container)
+        billing_manager_customer = container.customer
+        is_subscription = self._is_subscription(container)
+
+        await self.check_seat_feature_enabled(session, organization_id)
+
+        # Validate order payment status
+        if isinstance(container, Order):
+            if container.status == OrderStatus.pending:
+                raise SeatNotAvailable(
+                    source_id, "Order must be paid before assigning seats"
+                )
 
         repository = CustomerSeatRepository.from_session(session)
 
-        available_seats = await repository.get_available_seats_count(subscription.id)
+        available_seats = await repository.get_available_seats_count_for_container(
+            container
+        )
+
         if available_seats <= 0:
-            raise SeatNotAvailable(subscription.id)
+            raise SeatNotAvailable(source_id)
 
         customer = await self._find__or_create_customer(
             session,
-            subscription.product.organization_id,
+            organization_id,
             email,
             external_customer_id,
             customer_id,
         )
 
-        existing_seat = await repository.get_by_subscription_and_customer(
-            subscription.id, customer.id
+        existing_seat = await repository.get_by_container_and_customer(
+            container, customer.id
         )
+
         if existing_seat and not existing_seat.is_revoked():
             identifier = email or external_customer_id or str(customer_id)
             raise SeatAlreadyAssigned(identifier)
@@ -138,10 +196,8 @@ class SeatService:
         invitation_token = secrets.token_urlsafe(32)
         token_expires_at = datetime.now(UTC) + timedelta(days=1)
 
-        # First, try to reuse a revoked seat from this subscription
-        revoked_seat = await repository.get_revoked_seat_by_subscription(
-            subscription.id
-        )
+        revoked_seat = await repository.get_revoked_seat_by_container(container)
+
         if revoked_seat:
             seat = revoked_seat
             seat.status = SeatStatus.pending
@@ -152,33 +208,42 @@ class SeatService:
             seat.revoked_at = None
             seat.claimed_at = None
         else:
-            seat = CustomerSeat(
-                subscription_id=subscription.id,
-                status=SeatStatus.pending,
-                invitation_token=invitation_token,
-                invitation_token_expires_at=token_expires_at,
-                customer_id=customer.id,
-                seat_metadata=metadata or {},
-            )
+            seat_data = {
+                "status": SeatStatus.pending,
+                "invitation_token": invitation_token,
+                "invitation_token_expires_at": token_expires_at,
+                "customer_id": customer.id,
+                "seat_metadata": metadata or {},
+            }
+            if is_subscription:
+                seat_data["subscription_id"] = source_id
+            else:
+                seat_data["order_id"] = source_id
+
+            seat = CustomerSeat(**seat_data)
             session.add(seat)
 
         await session.flush()
 
         log.info(
             "Seat assigned",
-            subscription_id=subscription.id,
+            subscription_id=seat.subscription_id,
+            order_id=seat.order_id,
             email=email,
             customer_id=customer.id,
             invitation_token=invitation_token,
         )
 
-        send_seat_invitation_email(
-            customer_email=customer.email,
-            seat=seat,
-            organization=subscription.product.organization,
-            product_name=subscription.product.name,
-            billing_manager_email=subscription.customer.email,
-        )
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
+        if organization:
+            send_seat_invitation_email(
+                customer_email=customer.email,
+                seat=seat,
+                organization=organization,
+                product_name=product.name,
+                billing_manager_email=billing_manager_customer.email,
+            )
 
         return seat
 
@@ -230,10 +295,19 @@ class SeatService:
         if seat.is_claimed():
             raise InvalidInvitationToken(invitation_token)
 
-        if not seat.subscription or not seat.subscription.product:
+        # Get product and organization_id from either subscription or order
+        if seat.subscription_id and seat.subscription:
+            product = seat.subscription.product
+            organization_id = product.organization_id
+            product_id = product.id
+        elif seat.order_id and seat.order:
+            product = seat.order.product
+            organization_id = product.organization_id
+            product_id = product.id
+        else:
             raise InvalidInvitationToken(invitation_token)
 
-        self.check_seat_feature_enabled(seat.subscription.product.organization)
+        await self.check_seat_feature_enabled(session, organization_id)
 
         if not seat.customer_id or not seat.customer:
             raise InvalidInvitationToken(invitation_token)
@@ -248,20 +322,32 @@ class SeatService:
             "customer_seat.claimed",
             {
                 "seat_id": str(seat.id),
-                "subscription_id": str(seat.subscription_id),
-                "product_id": str(seat.subscription.product_id),
+                "subscription_id": str(seat.subscription_id)
+                if seat.subscription_id
+                else None,
+                "order_id": str(seat.order_id) if seat.order_id else None,
+                "product_id": str(product_id),
             },
             customer_id=seat.customer_id,
         )
 
         # Grant benefits to the assigned customer
-        enqueue_job(
-            "benefit.enqueue_benefits_grants",
-            task="grant",
-            customer_id=seat.customer_id,
-            product_id=seat.subscription.product_id,
-            subscription_id=seat.subscription_id,
-        )
+        if seat.subscription_id:
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                customer_id=seat.customer_id,
+                product_id=product_id,
+                subscription_id=seat.subscription_id,
+            )
+        else:
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                customer_id=seat.customer_id,
+                product_id=product_id,
+                order_id=seat.order_id,
+            )
 
         session_token, _ = await customer_session_service.create_customer_session(
             session, seat.customer
@@ -282,21 +368,39 @@ class SeatService:
         session: AsyncSession,
         seat: CustomerSeat,
     ) -> CustomerSeat:
-        if seat.subscription and seat.subscription.product:
-            self.check_seat_feature_enabled(seat.subscription.product.organization)
+        # Get product from either subscription or order
+        if seat.subscription_id and seat.subscription and seat.subscription.product:
+            organization_id = seat.subscription.product.organization_id
+            product_id = seat.subscription.product_id
+        elif seat.order_id and seat.order and seat.order.product:
+            organization_id = seat.order.product.organization_id
+            product_id = seat.order.product_id
+        else:
+            raise ValueError("Seat must have either subscription or order")
+
+        await self.check_seat_feature_enabled(session, organization_id)
 
         # Capture customer_id before clearing to avoid race condition
         original_customer_id = seat.customer_id
 
         # Revoke benefits from the customer before clearing the customer_id
-        if original_customer_id and seat.subscription:
-            enqueue_job(
-                "benefit.enqueue_benefits_grants",
-                task="revoke",
-                customer_id=original_customer_id,
-                product_id=seat.subscription.product_id,
-                subscription_id=seat.subscription_id,
-            )
+        if original_customer_id:
+            if seat.subscription_id:
+                enqueue_job(
+                    "benefit.enqueue_benefits_grants",
+                    task="revoke",
+                    customer_id=original_customer_id,
+                    product_id=product_id,
+                    subscription_id=seat.subscription_id,
+                )
+            else:
+                enqueue_job(
+                    "benefit.enqueue_benefits_grants",
+                    task="revoke",
+                    customer_id=original_customer_id,
+                    product_id=product_id,
+                    order_id=seat.order_id,
+                )
 
         seat.status = SeatStatus.revoked
         seat.revoked_at = datetime.now(UTC)
@@ -307,6 +411,7 @@ class SeatService:
             "Seat revoked",
             seat_id=seat.id,
             subscription_id=seat.subscription_id,
+            order_id=seat.order_id,
         )
 
         return seat
@@ -327,16 +432,21 @@ class SeatService:
         if not seat:
             return None
 
-        if not seat.subscription or not seat.subscription.product:
+        # Get organization_id from either subscription or order
+        if seat.subscription_id and seat.subscription:
+            organization_id = seat.subscription.product.organization_id
+        elif seat.order_id and seat.order:
+            organization_id = seat.order.product.organization_id
+        else:
             return None
 
         if isinstance(auth_subject.subject, Organization):
-            if seat.subscription.product.organization_id != auth_subject.subject.id:
+            if organization_id != auth_subject.subject.id:
                 return None
         elif isinstance(auth_subject.subject, User):
             pass
 
-        self.check_seat_feature_enabled(seat.subscription.product.organization)
+        await self.check_seat_feature_enabled(session, organization_id)
         return seat
 
     async def resend_invitation(
@@ -344,13 +454,19 @@ class SeatService:
         session: AsyncSession,
         seat: CustomerSeat,
     ) -> CustomerSeat:
-        if not seat.subscription or not seat.subscription.product:
-            raise InvalidInvitationToken(seat.invitation_token or "")
+        # Get product info from either subscription or order
+        if seat.subscription_id and seat.subscription and seat.subscription.product:
+            organization_id = seat.subscription.product.organization_id
+            product_name = seat.subscription.product.name
+            billing_manager_email = seat.subscription.customer.email
+        elif seat.order_id and seat.order and seat.order.product:
+            organization_id = seat.order.product.organization_id
+            product_name = seat.order.product.name
+            billing_manager_email = seat.order.customer.email
+        else:
+            raise ValueError("Seat must have either subscription or order")
 
-        if not seat.subscription.customer:
-            raise InvalidInvitationToken(seat.invitation_token or "")
-
-        self.check_seat_feature_enabled(seat.subscription.product.organization)
+        await self.check_seat_feature_enabled(session, organization_id)
 
         if not seat.is_pending():
             raise SeatNotPending()
@@ -363,15 +479,19 @@ class SeatService:
             seat_id=seat.id,
             customer_id=seat.customer_id,
             subscription_id=seat.subscription_id,
+            order_id=seat.order_id,
         )
 
-        send_seat_invitation_email(
-            customer_email=seat.customer.email,
-            seat=seat,
-            organization=seat.subscription.product.organization,
-            product_name=seat.subscription.product.name,
-            billing_manager_email=seat.subscription.customer.email,
-        )
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
+        if organization:
+            send_seat_invitation_email(
+                customer_email=seat.customer.email,
+                seat=seat,
+                organization=organization,
+                product_name=product_name,
+                billing_manager_email=billing_manager_email,
+            )
 
         return seat
 
@@ -381,7 +501,7 @@ class SeatService:
         customer: Customer,
         seat_id: uuid.UUID,
     ) -> CustomerSeat | None:
-        """Get a seat and verify it belongs to a subscription owned by the customer."""
+        """Get a seat and verify it belongs to a subscription or order owned by the customer."""
         repository = CustomerSeatRepository.from_session(session)
 
         seat = await repository.get_by_id_for_customer(

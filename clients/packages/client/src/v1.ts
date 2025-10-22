@@ -3085,13 +3085,13 @@ export interface paths {
     }
     /**
      * List Seats
-     * @description **Scopes**: `subscriptions:write`
+     * @description **Scopes**: `customer_seats:write`
      */
     get: operations['customer-seats:list_seats']
     put?: never
     /**
      * Assign Seat
-     * @description **Scopes**: `subscriptions:write`
+     * @description **Scopes**: `customer_seats:write`
      */
     post: operations['customer-seats:assign_seat']
     delete?: never
@@ -3112,7 +3112,7 @@ export interface paths {
     post?: never
     /**
      * Revoke Seat
-     * @description **Scopes**: `subscriptions:write`
+     * @description **Scopes**: `customer_seats:write`
      */
     delete: operations['customer-seats:revoke_seat']
     options?: never
@@ -3131,7 +3131,7 @@ export interface paths {
     put?: never
     /**
      * Resend Invitation
-     * @description **Scopes**: `subscriptions:write`
+     * @description **Scopes**: `customer_seats:write`
      */
     post: operations['customer-seats:resend_invitation']
     delete?: never
@@ -5040,6 +5040,8 @@ export interface components {
       | 'customers:write'
       | 'customer_meters:read'
       | 'customer_sessions:write'
+      | 'customer_seats:read'
+      | 'customer_seats:write'
       | 'orders:read'
       | 'orders:write'
       | 'refunds:read'
@@ -7412,15 +7414,15 @@ export interface components {
       }
       /** @description Payment processor used. */
       payment_processor: components['schemas']['PaymentProcessor']
-      /** @description
-       *             Status of the checkout session.
+      /**
+       * @description Status of the checkout session.
        *
        *             - Open: the checkout session was opened.
        *             - Expired: the checkout session was expired and is no more accessible.
        *             - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
        *             - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
        *             - Succeeded: the payment on the checkout was performed successfully.
-       *              */
+       */
       status: components['schemas']['CheckoutStatus']
       /**
        * Client Secret
@@ -8823,15 +8825,15 @@ export interface components {
       }
       /** @description Payment processor used. */
       payment_processor: components['schemas']['PaymentProcessor']
-      /** @description
-       *             Status of the checkout session.
+      /**
+       * @description Status of the checkout session.
        *
        *             - Open: the checkout session was opened.
        *             - Expired: the checkout session was expired and is no more accessible.
        *             - Confirmed: the user on the checkout session clicked Pay. This is not indicative of the payment's success status.
        *             - Failed: the checkout definitely failed for technical reasons and cannot be retried. In most cases, this state is never reached.
        *             - Succeeded: the payment on the checkout was performed successfully.
-       *              */
+       */
       status: components['schemas']['CheckoutStatus']
       /**
        * Client Secret
@@ -11784,10 +11786,14 @@ export interface components {
       id: string
       /**
        * Subscription Id
-       * Format: uuid
-       * @description The subscription ID
+       * @description The subscription ID (for recurring seats)
        */
-      subscription_id: string
+      subscription_id?: string | null
+      /**
+       * Order Id
+       * @description The order ID (for one-time purchase seats)
+       */
+      order_id?: string | null
       /** @description Status of the seat */
       status: components['schemas']['SeatStatus']
       /**
@@ -12466,7 +12472,8 @@ export interface components {
        *     Or uncancel a subscription currently set to be revoked at period end.
        */
       cancel_at_period_end?: boolean | null
-      /** @description Customers reason for cancellation.
+      /**
+       * @description Customers reason for cancellation.
        *
        *     * `too_expensive`: Too expensive for the customer.
        *     * `missing_features`: Customer is missing certain features.
@@ -12475,7 +12482,8 @@ export interface components {
        *     * `customer_service`: Customer is not satisfied with the customer service.
        *     * `low_quality`: Customer is unhappy with the quality.
        *     * `too_complex`: Customer considers the service too complicated.
-       *     * `other`: Other reason(s). */
+       *     * `other`: Other reason(s).
+       */
       cancellation_reason?:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -13918,7 +13926,8 @@ export interface components {
        * @description The ID of the organization owning the event. **Required unless you use an organization token.**
        */
       organization_id?: string | null
-      /** @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+      /**
+       * @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
        *
        *     The key must be a string with a maximum length of **40 characters**.
        *     The value must be either:
@@ -13928,7 +13937,8 @@ export interface components {
        *     * A floating-point number
        *     * A boolean
        *
-       *     You can store up to **50 key-value pairs**. */
+       *     You can store up to **50 key-value pairs**.
+       */
       metadata?: components['schemas']['EventMetadataInput']
       /**
        * Customer Id
@@ -13955,7 +13965,8 @@ export interface components {
        * @description The ID of the organization owning the event. **Required unless you use an organization token.**
        */
       organization_id?: string | null
-      /** @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
+      /**
+       * @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
        *
        *     The key must be a string with a maximum length of **40 characters**.
        *     The value must be either:
@@ -13965,7 +13976,8 @@ export interface components {
        *     * A floating-point number
        *     * A boolean
        *
-       *     You can store up to **50 key-value pairs**. */
+       *     You can store up to **50 key-value pairs**.
+       */
       metadata?: components['schemas']['EventMetadataInput']
       /**
        * External Customer Id
@@ -16005,7 +16017,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -16070,7 +16082,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -16116,7 +16128,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -18841,6 +18853,8 @@ export interface components {
       | 'customers:write'
       | 'customer_meters:read'
       | 'customer_sessions:write'
+      | 'customer_seats:read'
+      | 'customer_seats:write'
       | 'orders:read'
       | 'orders:write'
       | 'refunds:read'
@@ -18866,14 +18880,19 @@ export interface components {
     SeatAssign: {
       /**
        * Subscription Id
-       * @description Subscription ID. Required if checkout_id is not provided.
+       * @description Subscription ID. Required if checkout_id and order_id are not provided.
        */
       subscription_id?: string | null
       /**
        * Checkout Id
-       * @description Checkout ID. Used to look up subscription. Required if subscription_id is not provided.
+       * @description Checkout ID. Used to look up subscription from the checkout page.
        */
       checkout_id?: string | null
+      /**
+       * Order Id
+       * @description Order ID for one-time purchases. Required if subscription_id and checkout_id are not provided.
+       */
+      order_id?: string | null
       /**
        * Email
        * @description Email of the customer to assign the seat to
@@ -19277,7 +19296,8 @@ export interface components {
     }
     /** SubscriptionCancel */
     SubscriptionCancel: {
-      /** @description Customer reason for cancellation.
+      /**
+       * @description Customer reason for cancellation.
        *
        *     Helpful to monitor reasons behind churn for future improvements.
        *
@@ -19292,7 +19312,8 @@ export interface components {
        *     * `customer_service`: Customer is not satisfied with the customer service.
        *     * `low_quality`: Customer is unhappy with the quality.
        *     * `too_complex`: Customer considers the service too complicated.
-       *     * `other`: Other reason(s). */
+       *     * `other`: Other reason(s).
+       */
       customer_cancellation_reason?:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -19587,7 +19608,8 @@ export interface components {
     SubscriptionRecurringInterval: 'day' | 'week' | 'month' | 'year'
     /** SubscriptionRevoke */
     SubscriptionRevoke: {
-      /** @description Customer reason for cancellation.
+      /**
+       * @description Customer reason for cancellation.
        *
        *     Helpful to monitor reasons behind churn for future improvements.
        *
@@ -19602,7 +19624,8 @@ export interface components {
        *     * `customer_service`: Customer is not satisfied with the customer service.
        *     * `low_quality`: Customer is unhappy with the quality.
        *     * `too_complex`: Customer considers the service too complicated.
-       *     * `other`: Other reason(s). */
+       *     * `other`: Other reason(s).
+       */
       customer_cancellation_reason?:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -23546,7 +23569,7 @@ export interface operations {
   'benefits:grants': {
     parameters: {
       query?: {
-        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.  */
+        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned. */
         is_granted?: boolean | null
         /** @description Filter by customer. */
         customer_id?: string | string[] | null
@@ -23599,7 +23622,7 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
-        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned.  */
+        /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned. */
         is_granted?: boolean | null
         /** @description Page number, defaults to 1. */
         page?: number
@@ -23961,7 +23984,7 @@ export interface operations {
         query?: string | null
         /** @description Filter on archived products. */
         is_archived?: boolean | null
-        /** @description Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.  */
+        /** @description Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. */
         is_recurring?: boolean | null
         /** @description Filter products granting specific benefit. */
         benefit_id?: string | string[] | null
@@ -27843,9 +27866,11 @@ export interface operations {
   }
   'customer_portal:seats:list_seats': {
     parameters: {
-      query: {
+      query?: {
         /** @description Subscription ID */
-        subscription_id: string
+        subscription_id?: string | null
+        /** @description Order ID */
+        order_id?: string | null
       }
       header?: never
       path?: never
@@ -27876,7 +27901,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Subscription not found */
+      /** @description Subscription or order not found */
       404: {
         headers: {
           [name: string]: unknown
@@ -27937,7 +27962,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Subscription or customer not found */
+      /** @description Subscription, order, or customer not found */
       404: {
         headers: {
           [name: string]: unknown
@@ -29160,8 +29185,9 @@ export interface operations {
   }
   'customer-seats:list_seats': {
     parameters: {
-      query: {
-        subscription_id: string
+      query?: {
+        subscription_id?: string | null
+        order_id?: string | null
       }
       header?: never
       path?: never
@@ -29192,7 +29218,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Subscription not found */
+      /** @description Subscription or order not found */
       404: {
         headers: {
           [name: string]: unknown
@@ -29587,7 +29613,7 @@ export interface operations {
   'events:list': {
     parameters: {
       query?: {
-        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause.  */
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
         filter?: string | null
         /** @description Filter events after this timestamp. */
         start_timestamp?: string | null
@@ -32557,6 +32583,8 @@ export const availableScopeValues: ReadonlyArray<
   'customers:write',
   'customer_meters:read',
   'customer_sessions:write',
+  'customer_seats:read',
+  'customer_seats:write',
   'orders:read',
   'orders:write',
   'refunds:read',
@@ -33507,6 +33535,8 @@ export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'customers:write',
   'customer_meters:read',
   'customer_sessions:write',
+  'customer_seats:read',
+  'customer_seats:write',
   'orders:read',
   'orders:write',
   'refunds:read',

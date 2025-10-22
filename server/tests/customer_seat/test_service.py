@@ -31,24 +31,33 @@ from tests.fixtures.random_objects import (
 )
 
 
+@pytest.mark.asyncio
 class TestCheckSeatFeatureEnabled:
-    def test_feature_enabled(self) -> None:
-        organization = Organization(
-            feature_settings={"seat_based_pricing_enabled": True}
-        )
-        seat_service.check_seat_feature_enabled(organization)
+    async def test_feature_enabled(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
+        organization = await create_organization(save_fixture)
+        organization.feature_settings = {"seat_based_pricing_enabled": True}
+        await save_fixture(organization)
+        await seat_service.check_seat_feature_enabled(session, organization.id)
 
-    def test_feature_disabled(self) -> None:
-        organization = Organization(
-            feature_settings={"seat_based_pricing_enabled": False}
-        )
+    async def test_feature_disabled(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
+        organization = await create_organization(save_fixture)
+        organization.feature_settings = {"seat_based_pricing_enabled": False}
+        await save_fixture(organization)
         with pytest.raises(FeatureNotEnabled):
-            seat_service.check_seat_feature_enabled(organization)
+            await seat_service.check_seat_feature_enabled(session, organization.id)
 
-    def test_feature_missing(self) -> None:
-        organization = Organization(feature_settings={})
+    async def test_feature_missing(
+        self, session: AsyncSession, save_fixture: SaveFixture
+    ) -> None:
+        organization = await create_organization(save_fixture)
+        organization.feature_settings = {}
+        await save_fixture(organization)
         with pytest.raises(FeatureNotEnabled):
-            seat_service.check_seat_feature_enabled(organization)
+            await seat_service.check_seat_feature_enabled(session, organization.id)
 
 
 class TestListSeats:
@@ -353,6 +362,7 @@ class TestAssignSeat:
         await session.refresh(revoked_seat, ["subscription"])
         assert revoked_seat.subscription is not None
         await session.refresh(revoked_seat.subscription, ["product"])
+        assert revoked_seat.subscription is not None
         await session.refresh(revoked_seat.subscription.product, ["organization"])
 
         revoked_seat = await seat_service.revoke_seat(session, revoked_seat)
@@ -461,6 +471,7 @@ class TestClaimSeat:
         await session.refresh(seat_pending, ["subscription"])
         assert seat_pending.subscription is not None
         await session.refresh(seat_pending.subscription, ["product"])
+        assert seat_pending.subscription is not None
         await session.refresh(seat_pending.subscription.product, ["organization"])
 
         assert seat_pending.invitation_token is not None
@@ -550,6 +561,7 @@ class TestClaimSeat:
         await session.refresh(seat, ["subscription"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
         assert seat.invitation_token is not None
@@ -565,7 +577,6 @@ class TestRevokeSeat:
     async def test_revoke_seat_success(
         self, session: AsyncSession, customer_seat_claimed: CustomerSeat
     ) -> None:
-        original_customer_id = customer_seat_claimed.customer_id
         seat = await seat_service.revoke_seat(session, customer_seat_claimed)
 
         assert seat.status == SeatStatus.revoked
@@ -717,6 +728,7 @@ class TestResendInvitation:
         await session.refresh(seat, ["subscription", "customer"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product", "customer"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
         original_token = seat.invitation_token
@@ -774,6 +786,7 @@ class TestResendInvitation:
         await session.refresh(seat, ["subscription", "customer"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
         with pytest.raises(InvalidInvitationToken):
@@ -799,6 +812,7 @@ class TestResendInvitation:
         await session.refresh(seat, ["subscription", "customer"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
         with pytest.raises(InvalidInvitationToken):
@@ -823,6 +837,7 @@ class TestResendInvitation:
         await session.refresh(seat, ["subscription", "customer"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
         # Disable feature
@@ -851,6 +866,7 @@ class TestResendInvitation:
         await session.refresh(seat, ["subscription", "customer"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
         with pytest.raises(SeatNotPending):
@@ -877,6 +893,7 @@ class TestBenefitGranting:
         await session.refresh(seat, ["subscription"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
         assert seat.invitation_token is not None
@@ -944,6 +961,7 @@ class TestBenefitGranting:
         await session.refresh(seat, ["subscription"])
         assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
         assert seat.invitation_token is not None

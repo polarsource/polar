@@ -11,6 +11,7 @@ from polar.auth.models import (
     AuthSubject,
     Organization,
     User,
+    is_customer,
     is_organization,
     is_user,
 )
@@ -145,7 +146,7 @@ class SubscriptionRepository(
         )
 
     def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+        self, auth_subject: AuthSubject[User | Organization | Customer]
     ) -> Select[tuple[Subscription]]:
         statement = self.get_base_statement().join(Product)
 
@@ -162,6 +163,12 @@ class SubscriptionRepository(
         elif is_organization(auth_subject):
             statement = statement.where(
                 Product.organization_id == auth_subject.subject.id,
+            )
+        elif is_customer(auth_subject):
+            customer = auth_subject.subject
+            statement = statement.where(
+                Subscription.customer_id == customer.id,
+                Subscription.deleted_at.is_(None),
             )
 
         return statement
@@ -304,6 +311,7 @@ class SubscriptionProductPriceRepository(
             return None
 
         # Find matching metered price in billing manager's subscription
+        assert seat.subscription is not None
         metered_price = self._find_metered_price_in_subscription(
             seat.subscription, meter_id
         )

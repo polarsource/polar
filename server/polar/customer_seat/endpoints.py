@@ -1,7 +1,7 @@
-from typing import cast
+from typing import Annotated, cast
 from uuid import UUID
 
-from fastapi import Depends, Request
+from fastapi import Depends, Query, Request
 from sqlalchemy.orm import joinedload
 from sse_starlette import EventSourceResponse
 
@@ -10,10 +10,12 @@ from polar.auth.models import AuthSubject as AuthSubjectType
 from polar.checkout.repository import CheckoutRepository
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
-from polar.exceptions import NotPermitted, ResourceNotFound
-from polar.models import Product, Subscription
+from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
+from polar.models import Order, Product, Subscription
 from polar.models.customer_seat import SeatStatus
 from polar.openapi import APITag
+from polar.order.repository import OrderRepository
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
@@ -55,8 +57,8 @@ async def assign_seat(
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatSchema:
-    subscription_repository = SubscriptionRepository.from_session(session)
     subscription: Subscription | None = None
+    order: Order | None = None
 
     if seat_assign.subscription_id:
         if isinstance(auth_subject.subject, Anonymous):
@@ -65,16 +67,20 @@ async def assign_seat(
             )
 
         typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
-        statement = subscription_repository.get_readable_statement(
-            typed_auth_subject
-        ).where(Subscription.id == seat_assign.subscription_id)
+        subscription_repository = SubscriptionRepository.from_session(session)
 
+        statement = (
+            subscription_repository.get_readable_statement(typed_auth_subject)
+            .options(*subscription_repository.get_eager_options())
+            .where(Subscription.id == seat_assign.subscription_id)
+        )
         subscription = await subscription_repository.get_one_or_none(statement)
 
         if not subscription:
             raise ResourceNotFound("Subscription not found")
 
     elif seat_assign.checkout_id:
+        subscription_repository = SubscriptionRepository.from_session(session)
         checkout_repository = CheckoutRepository.from_session(session)
         checkout = await checkout_repository.get_by_id(seat_assign.checkout_id)
 
@@ -92,12 +98,34 @@ async def assign_seat(
         if not subscription:
             raise ResourceNotFound("No subscription found for this checkout")
 
-    if not subscription:
-        raise ResourceNotFound("Subscription not found")
+    elif seat_assign.order_id:
+        if isinstance(auth_subject.subject, Anonymous):
+            raise NotPermitted("Authentication required for order-based assignment")
+
+        typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
+        order_repository = OrderRepository.from_session(session)
+
+        order_statement = (
+            order_repository.get_readable_statement(typed_auth_subject)
+            .options(*order_repository.get_eager_options())
+            .where(Order.id == seat_assign.order_id)
+        )
+        order = await order_repository.get_one_or_none(order_statement)
+
+        if not order:
+            raise ResourceNotFound("Order not found")
+
+    if not subscription and not order:
+        raise BadRequest(
+            "Either subscription_id, checkout_id, or order_id must be provided"
+        )
+
+    container = subscription or order
+    assert container is not None  # Already validated above
 
     seat = await seat_service.assign_seat(
         session,
-        subscription,
+        container,
         email=seat_assign.email,
         external_customer_id=seat_assign.external_customer_id,
         customer_id=seat_assign.customer_id,
@@ -114,40 +142,67 @@ async def assign_seat(
     responses={
         401: {"description": "Authentication required"},
         403: {"description": "Not permitted or seat-based pricing not enabled"},
-        404: {"description": "Subscription not found"},
+        404: {"description": "Subscription or order not found"},
     },
 )
 async def list_seats(
-    subscription_id: str,
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
+    subscription_id: Annotated[str | None, Query()] = None,
+    order_id: Annotated[str | None, Query()] = None,
 ) -> SeatsList:
     if isinstance(auth_subject.subject, Anonymous):
         raise NotPermitted("Authentication required")
 
     typed_auth_subject = cast(AuthSubjectType[User | Organization], auth_subject)
-    subscription_repository = SubscriptionRepository.from_session(session)
 
-    statement = (
-        subscription_repository.get_readable_statement(typed_auth_subject)
-        .where(Subscription.id == UUID(subscription_id))
-        .options(joinedload(Subscription.product).joinedload(Product.organization))
-    )
+    subscription: Subscription | None = None
+    order: Order | None = None
+    total_seats = 0
 
-    subscription = await subscription_repository.get_one_or_none(statement)
+    if subscription_id:
+        subscription_repository = SubscriptionRepository.from_session(session)
 
-    if not subscription:
-        raise ResourceNotFound("Subscription not found")
+        statement = (
+            subscription_repository.get_readable_statement(typed_auth_subject)
+            .options(*subscription_repository.get_eager_options())
+            .where(Subscription.id == UUID(subscription_id))
+        )
+        subscription = await subscription_repository.get_one_or_none(statement)
 
-    seats = await seat_service.list_seats(session, subscription)
-    available_seats = await seat_service.get_available_seats_count(
-        session, subscription
-    )
+        if not subscription:
+            raise ResourceNotFound("Subscription not found")
+
+        total_seats = subscription.seats or 0
+
+    elif order_id:
+        order_repository = OrderRepository.from_session(session)
+
+        order_statement = (
+            order_repository.get_readable_statement(typed_auth_subject)
+            .options(*order_repository.get_eager_options())
+            .where(Order.id == UUID(order_id))
+        )
+        order = await order_repository.get_one_or_none(order_statement)
+
+        if not order:
+            raise ResourceNotFound("Order not found")
+
+        total_seats = order.seats or 0
+
+    else:
+        raise BadRequest("Either subscription_id or order_id must be provided")
+
+    container = subscription or order
+    assert container is not None  # Already validated above
+
+    seats = await seat_service.list_seats(session, container)
+    available_seats = await seat_service.get_available_seats_count(session, container)
 
     return SeatsList(
         seats=[CustomerSeatSchema.model_validate(seat) for seat in seats],
         available_seats=available_seats,
-        total_seats=subscription.seats or 0,
+        total_seats=total_seats,
     )
 
 
@@ -181,10 +236,14 @@ async def revoke_seat(
     if not seat:
         raise ResourceNotFound("Seat not found")
 
-    if not seat.subscription or not seat.subscription.product:
-        raise ResourceNotFound("Seat not found")
+    if seat.subscription:
+        organization_id = seat.subscription.product.organization_id
+    elif seat.order:
+        organization_id = seat.order.product.organization_id
+    else:
+        raise ResourceNotFound("Seat has no subscription or order")
 
-    seat_service.check_seat_feature_enabled(seat.subscription.product.organization)
+    await seat_service.check_seat_feature_enabled(session, organization_id)
 
     revoked_seat = await seat_service.revoke_seat(session, seat)
     await session.commit()
@@ -223,10 +282,14 @@ async def resend_invitation(
     if not seat:
         raise ResourceNotFound("Seat not found")
 
-    if not seat.subscription or not seat.subscription.product:
-        raise ResourceNotFound("Seat not found")
+    if seat.subscription:
+        organization_id = seat.subscription.product.organization_id
+    elif seat.order:
+        organization_id = seat.order.product.organization_id
+    else:
+        raise ResourceNotFound("Seat has no subscription or order")
 
-    seat_service.check_seat_feature_enabled(seat.subscription.product.organization)
+    await seat_service.check_seat_feature_enabled(session, organization_id)
 
     resent_seat = await seat_service.resend_invitation(session, seat)
     await session.commit()
@@ -253,16 +316,25 @@ async def get_claim_info(
     if not seat:
         raise ResourceNotFound("Invalid or expired invitation token")
 
-    if not seat.subscription or not seat.subscription.product:
-        raise ResourceNotFound("Invalid or expired invitation token")
+    if seat.subscription:
+        product = seat.subscription.product
+    elif seat.order:
+        product = seat.order.product
+    else:
+        raise ResourceNotFound("Seat has no subscription or order")
 
-    seat_service.check_seat_feature_enabled(seat.subscription.product.organization)
+    await seat_service.check_seat_feature_enabled(session, product.organization_id)
+
+    organization_repository = OrganizationRepository.from_session(session)
+    organization = await organization_repository.get_by_id(product.organization_id)
+    if not organization:
+        raise ResourceNotFound("Organization not found")
 
     return SeatClaimInfo(
-        product_name=seat.subscription.product.name,
-        product_id=seat.subscription.product.id,
-        organization_name=seat.subscription.product.organization.name,
-        organization_slug=seat.subscription.product.organization.slug,
+        product_name=product.name,
+        product_id=product.id,
+        organization_name=organization.name,
+        organization_slug=organization.slug,
         customer_email=seat.customer.email if seat.customer else "",
         can_claim=seat.status == SeatStatus.pending,
     )

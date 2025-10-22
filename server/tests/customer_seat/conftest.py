@@ -87,6 +87,7 @@ async def customer_seat_pending(
     await session.refresh(seat, ["subscription"])
     assert seat.subscription is not None
     await session.refresh(seat.subscription, ["product"])
+    assert seat.subscription is not None
     await session.refresh(seat.subscription.product, ["organization"])
     return seat
 
@@ -108,5 +109,6 @@ async def customer_seat_claimed(
     await session.refresh(seat, ["subscription"])
     assert seat.subscription is not None
     await session.refresh(seat.subscription, ["product"])
+    assert seat.subscription is not None
     await session.refresh(seat.subscription.product, ["organization"])
     return seat

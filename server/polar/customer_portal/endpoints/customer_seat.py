@@ -9,10 +9,11 @@ from polar.customer_seat.repository import CustomerSeatRepository
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
 from polar.customer_seat.schemas import SeatAssign, SeatsList
 from polar.customer_seat.service import seat_service
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import BadRequest, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
-from polar.models import CustomerSeat, Product, Subscription
+from polar.models import CustomerSeat, Order, Product, Subscription
 from polar.openapi import APITag
+from polar.order.repository import OrderRepository
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
 from polar.subscription.repository import SubscriptionRepository
@@ -32,40 +33,68 @@ router = APIRouter(prefix="/seats", tags=["seats", APITag.public])
     responses={
         401: {"description": "Authentication required"},
         403: {"description": "Not permitted or seat-based pricing not enabled"},
-        404: {"description": "Subscription not found"},
+        404: {"description": "Subscription or order not found"},
     },
 )
 async def list_seats(
-    subscription_id: Annotated[str, Query(description="Subscription ID")],
     auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
+    subscription_id: Annotated[str | None, Query(description="Subscription ID")] = None,
+    order_id: Annotated[str | None, Query(description="Order ID")] = None,
 ) -> SeatsList:
     customer = auth_subject.subject
-    subscription_repository = SubscriptionRepository.from_session(session)
 
-    statement = (
-        subscription_repository.get_base_statement()
-        .where(Subscription.id == UUID(subscription_id))
-        .where(Subscription.customer_id == customer.id)
-        .options(
-            joinedload(Subscription.product).joinedload(Product.organization),
+    subscription: Subscription | None = None
+    order: Order | None = None
+    total_seats = 0
+
+    if subscription_id:
+        subscription_repository = SubscriptionRepository.from_session(session)
+
+        statement = (
+            subscription_repository.get_readable_statement(auth_subject)
+            .options(*subscription_repository.get_eager_options())
+            .where(
+                Subscription.id == UUID(subscription_id),
+            )
         )
-    )
+        subscription = await subscription_repository.get_one_or_none(statement)
 
-    subscription = await subscription_repository.get_one_or_none(statement)
+        if not subscription:
+            raise ResourceNotFound("Subscription not found")
 
-    if not subscription:
-        raise ResourceNotFound("Subscription not found")
+        total_seats = subscription.seats or 0
 
-    seats = await seat_service.list_seats(session, subscription)
-    available_seats = await seat_service.get_available_seats_count(
-        session, subscription
-    )
+    elif order_id:
+        order_repository = OrderRepository.from_session(session)
+
+        order_statement = (
+            order_repository.get_readable_statement(auth_subject)
+            .options(*order_repository.get_eager_options())
+            .where(
+                Order.id == UUID(order_id),
+            )
+        )
+        order = await order_repository.get_one_or_none(order_statement)
+
+        if not order:
+            raise ResourceNotFound("Order not found")
+
+        total_seats = order.seats or 0
+
+    else:
+        raise BadRequest("Either subscription_id or order_id must be provided")
+
+    container = subscription or order
+    assert container is not None  # Already validated above
+
+    seats = await seat_service.list_seats(session, container)
+    available_seats = await seat_service.get_available_seats_count(session, container)
 
     return SeatsList(
         seats=[CustomerSeatSchema.model_validate(seat) for seat in seats],
         available_seats=available_seats,
-        total_seats=subscription.seats or 0,
+        total_seats=total_seats,
     )
 
 
@@ -77,7 +106,7 @@ async def list_seats(
         400: {"description": "No available seats or customer already has a seat"},
         401: {"description": "Authentication required"},
         403: {"description": "Not permitted or seat-based pricing not enabled"},
-        404: {"description": "Subscription or customer not found"},
+        404: {"description": "Subscription, order, or customer not found"},
     },
 )
 async def assign_seat(
@@ -87,29 +116,50 @@ async def assign_seat(
 ) -> CustomerSeatSchema:
     customer = auth_subject.subject
 
-    if not seat_assign.subscription_id:
-        raise ResourceNotFound("Subscription ID is required")
+    subscription: Subscription | None = None
+    order: Order | None = None
 
-    subscription_repository = SubscriptionRepository.from_session(session)
+    if seat_assign.subscription_id:
+        subscription_repository = SubscriptionRepository.from_session(session)
 
-    statement = (
-        subscription_repository.get_base_statement()
-        .where(Subscription.id == seat_assign.subscription_id)
-        .where(Subscription.customer_id == customer.id)
-        .options(
-            joinedload(Subscription.product).joinedload(Product.organization),
-            joinedload(Subscription.customer),
+        statement = (
+            subscription_repository.get_base_statement()
+            .options(*subscription_repository.get_eager_options())
+            .where(
+                Subscription.id == seat_assign.subscription_id,
+                Subscription.customer_id == customer.id,
+            )
         )
-    )
+        subscription = await subscription_repository.get_one_or_none(statement)
 
-    subscription = await subscription_repository.get_one_or_none(statement)
+        if not subscription:
+            raise ResourceNotFound("Subscription not found")
 
-    if not subscription:
-        raise ResourceNotFound("Subscription not found")
+    elif seat_assign.order_id:
+        order_repository = OrderRepository.from_session(session)
+
+        order_statement = (
+            order_repository.get_base_statement()
+            .options(*order_repository.get_eager_options())
+            .where(
+                Order.id == seat_assign.order_id,
+                Order.customer_id == customer.id,
+            )
+        )
+        order = await order_repository.get_one_or_none(order_statement)
+
+        if not order:
+            raise ResourceNotFound("Order not found")
+
+    else:
+        raise BadRequest("Either subscription_id or order_id is required")
+
+    container = subscription or order
+    assert container is not None  # Already validated above
 
     seat = await seat_service.assign_seat(
         session,
-        subscription,
+        container,
         email=seat_assign.email,
         external_customer_id=seat_assign.external_customer_id,
         customer_id=seat_assign.customer_id,

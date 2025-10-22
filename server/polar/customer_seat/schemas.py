@@ -12,11 +12,15 @@ from polar.models.customer_seat import SeatStatus
 class SeatAssign(Schema):
     subscription_id: UUID | None = Field(
         None,
-        description="Subscription ID. Required if checkout_id is not provided.",
+        description="Subscription ID. Required if checkout_id and order_id are not provided.",
     )
     checkout_id: UUID | None = Field(
         None,
-        description="Checkout ID. Used to look up subscription. Required if subscription_id is not provided.",
+        description="Checkout ID. Used to look up subscription from the checkout page.",
+    )
+    order_id: UUID | None = Field(
+        None,
+        description="Order ID for one-time purchases. Required if subscription_id and checkout_id are not provided.",
     )
     email: EmailStr | None = Field(
         None, description="Email of the customer to assign the seat to"
@@ -46,14 +50,18 @@ class SeatAssign(Schema):
 
     @model_validator(mode="after")
     def validate_identifiers(self) -> "SeatAssign":
-        subscription_identifiers = [self.subscription_id, self.checkout_id]
-        subscription_count = sum(
-            1 for identifier in subscription_identifiers if identifier is not None
+        seat_source_identifiers = [
+            self.subscription_id,
+            self.checkout_id,
+            self.order_id,
+        ]
+        seat_source_count = sum(
+            1 for identifier in seat_source_identifiers if identifier is not None
         )
 
-        if subscription_count != 1:
+        if seat_source_count != 1:
             raise ValueError(
-                "Exactly one of subscription_id or checkout_id must be provided"
+                "Exactly one of subscription_id, checkout_id, or order_id must be provided"
             )
 
         customer_identifiers = [self.email, self.external_customer_id, self.customer_id]
@@ -75,7 +83,12 @@ class SeatClaim(Schema):
 
 class CustomerSeat(TimestampedSchema):
     id: UUID = Field(..., description="The seat ID")
-    subscription_id: UUID = Field(..., description="The subscription ID")
+    subscription_id: UUID | None = Field(
+        None, description="The subscription ID (for recurring seats)"
+    )
+    order_id: UUID | None = Field(
+        None, description="The order ID (for one-time purchase seats)"
+    )
     status: SeatStatus = Field(..., description="Status of the seat")
     customer_id: UUID | None = Field(None, description="The assigned customer ID")
     customer_email: str | None = Field(None, description="The assigned customer email")

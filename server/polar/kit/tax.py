@@ -465,6 +465,17 @@ def from_stripe_tax_rate_details(
     }
 
 
+class TaxCode(StrEnum):
+    general_electronically_supplied_services = (
+        "general_electronically_supplied_services"
+    )
+
+    def to_stripe(self) -> str:
+        match self:
+            case TaxCode.general_electronically_supplied_services:
+                return "txcd_10000000"
+
+
 class TaxCalculation(TypedDict):
     processor_id: str
     amount: int
@@ -476,7 +487,7 @@ async def calculate_tax(
     identifier: uuid.UUID | str,
     currency: str,
     amount: int,
-    stripe_product_id: str,
+    tax_code: TaxCode,
     address: Address,
     tax_ids: list[TaxID],
     customer_exempt: bool,
@@ -487,7 +498,7 @@ async def calculate_tax(
     taxability_override: Literal["customer_exempt", "none"] = (
         "customer_exempt" if customer_exempt else "none"
     )
-    idempotency_key_str = f"{identifier}:{currency}:{amount}:{stripe_product_id}:{address_str}:{tax_ids_str}:{taxability_override}"
+    idempotency_key_str = f"{identifier}:{currency}:{amount}:{tax_code}:{address_str}:{tax_ids_str}:{taxability_override}"
     idempotency_key = hashlib.sha256(idempotency_key_str.encode()).hexdigest()
 
     try:
@@ -496,9 +507,9 @@ async def calculate_tax(
             line_items=[
                 {
                     "amount": amount,
-                    "product": stripe_product_id,
+                    "tax_code": tax_code.to_stripe(),
                     "quantity": 1,
-                    "reference": stripe_product_id,
+                    "reference": str(identifier),
                 }
             ],
             customer_details={

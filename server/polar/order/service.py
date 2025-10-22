@@ -668,14 +668,13 @@ class OrderService:
             taxable_amount != 0
             and product.is_tax_applicable
             and billing_address is not None
-            and product.stripe_product_id is not None
         ):
             tax_calculation = await calculate_tax(
                 order_id,
                 subscription.currency,
                 # Stripe doesn't support calculating negative tax amounts
                 taxable_amount if taxable_amount >= 0 else -taxable_amount,
-                product.stripe_product_id,
+                product.tax_code,
                 billing_address,
                 [tax_id] if tax_id is not None else [],
                 subscription.tax_exempted,
@@ -1297,13 +1296,12 @@ class OrderService:
         if subscription.tax_exempted:
             product = subscription.product
             assert invoice.id is not None
-            assert product.stripe_product_id is not None
             assert customer.billing_address is not None
             tax_calculation = await calculate_tax(
                 invoice.id,
                 invoice.currency,
                 invoice.subtotal,
-                product.stripe_product_id,
+                product.tax_code,
                 customer.billing_address,
                 [customer.tax_id] if customer.tax_id is not None else [],
                 subscription.tax_exempted,

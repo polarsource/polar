@@ -213,13 +213,13 @@ const MetricChart = ({
             <Bar
               dataKey="previous"
               fill="var(--color-previous)"
-              radius={4}
+              radius={0}
             />
           )}
           <Bar
             dataKey="current"
             fill="var(--color-current)"
-            radius={4}
+            radius={0}
           />
         </BarChart>
       )

@@ -10,7 +10,11 @@ import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { useMetrics, useOrganizationPaymentStatus } from '@/hooks/queries'
-import { getChartRangeParams, getPreviousParams } from '@/utils/metrics'
+import {
+  getChartRangeParams,
+  getMetricChartType,
+  getPreviousParams,
+} from '@/utils/metrics'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import { motion } from 'framer-motion'
@@ -69,6 +73,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
       previousData={previousPeriodMetricsData}
       interval={interval}
       loading={metricLoading}
+      chartType={getMetricChartType(selectedMetric)}
     />
   )
 }

@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import UnaryExpression, asc, desc, select, text
+from sqlalchemy import String, UnaryExpression, asc, cast, desc, func, or_, select, text
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.customer.repository import CustomerRepository
@@ -56,6 +56,7 @@ class EventService:
         sorting: list[Sorting[EventSortProperty]] = [
             (EventSortProperty.timestamp, True)
         ],
+        query: str | None = None,
     ) -> tuple[Sequence[Event], int]:
         repository = EventRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).options(
@@ -105,6 +106,28 @@ class EventService:
 
         if source is not None:
             statement = statement.where(Event.source.in_(source))
+
+        if query is not None:
+            statement = statement.where(
+                or_(
+                    Event.name.ilike(f"%{query}%"),
+                    Event.source.ilike(f"%{query}%"),
+                    # Load customers and match against their name/email
+                    Event.customer_id.in_(
+                        select(Customer.id).where(
+                            or_(
+                                cast(Customer.id, String).ilike(f"%{query}%"),
+                                Customer.external_id.ilike(f"%{query}%"),
+                                Customer.name.ilike(f"%{query}%"),
+                                Customer.email.ilike(f"%{query}%"),
+                            )
+                        )
+                    ),
+                    func.to_tsvector("simple", cast(Event.user_metadata, String)).op(
+                        "@@"
+                    )(func.plainto_tsquery(query)),
+                )
+            )
 
         if metadata is not None:
             statement = apply_metadata_clause(Event, statement, metadata)

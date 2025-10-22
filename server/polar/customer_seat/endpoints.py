@@ -115,7 +115,9 @@ async def assign_seat(
             raise ResourceNotFound("Order not found")
 
     if not subscription and not order:
-        raise BadRequest("Either subscription_id, checkout_id, or order_id must be provided")
+        raise BadRequest(
+            "Either subscription_id, checkout_id, or order_id must be provided"
+        )
 
     container = subscription or order
     assert container is not None  # Already validated above

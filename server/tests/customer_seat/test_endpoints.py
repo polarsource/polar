@@ -104,6 +104,7 @@ class TestListSeats:
 
 
 @pytest.mark.asyncio
+@pytest.mark.keep_session_state
 class TestAssignSeat:
     @pytest.mark.auth(SEAT_AUTH)
     async def test_assign_seat_with_email_success(

@@ -85,6 +85,7 @@ class TestCustomerSubscriptionProductUpdate:
         assert response.status_code == 422
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_non_existing_stripe_subscription(
         self,
         client: AsyncClient,
@@ -109,6 +110,7 @@ class TestCustomerSubscriptionProductUpdate:
         stripe_service_mock.update_subscription_price.assert_not_called()
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_valid(
         self,
         client: AsyncClient,

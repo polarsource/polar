@@ -56,6 +56,7 @@ class TestDeletePaymentMethod:
         assert response.status_code == 404
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_delete_payment_method_success(
         self,
         client: AsyncClient,
@@ -76,6 +77,7 @@ class TestDeletePaymentMethod:
         assert payment_method.deleted_at is not None
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_delete_payment_method_with_active_subscription_and_alternative_succeeds(
         self,
         client: AsyncClient,
@@ -111,6 +113,7 @@ class TestDeletePaymentMethod:
         assert subscription.payment_method_id == payment_method_2.id
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_delete_payment_method_with_active_subscription_fails(
         self,
         client: AsyncClient,
@@ -146,6 +149,7 @@ class TestDeletePaymentMethod:
         assert payment_method.deleted_at is None
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_delete_payment_method_with_canceled_subscription_succeeds(
         self,
         client: AsyncClient,

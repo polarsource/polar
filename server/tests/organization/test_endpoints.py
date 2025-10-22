@@ -217,6 +217,7 @@ class TestInviteOrganization:
         assert set(members_after) == set(members_before)
 
     @pytest.mark.auth
+    @pytest.mark.keep_session_state
     async def test_inviter_part_of_org(
         self,
         client: AsyncClient,
@@ -246,6 +247,7 @@ class TestInviteOrganization:
         assert list(new_members)[0].user.email == email_to_invite
 
     @pytest.mark.auth
+    @pytest.mark.keep_session_state
     async def test_already_invited(
         self,
         client: AsyncClient,

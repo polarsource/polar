@@ -1,5 +1,8 @@
 import { getServerURL } from '@/utils/api'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from '@/utils/client'
+import { unwrap } from '@polar-sh/client'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { defaultRetry } from './retry'
 
 export const useAssignSeatFromCheckout = (checkoutId: string) => {
   const queryClient = useQueryClient()
@@ -39,3 +42,29 @@ export const useAssignSeatFromCheckout = (checkoutId: string) => {
     },
   })
 }
+
+/**
+ * Dashboard hook to fetch seats for a subscription or order
+ */
+export const useOrganizationSeats = (parameters?: {
+  subscriptionId?: string
+  orderId?: string
+}) =>
+  useQuery({
+    queryKey: ['organization_seats', parameters],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-seats', {
+          params: {
+            query: {
+              ...(parameters?.subscriptionId && {
+                subscription_id: parameters.subscriptionId,
+              }),
+              ...(parameters?.orderId && { order_id: parameters.orderId }),
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!parameters?.subscriptionId || !!parameters?.orderId,
+  })

@@ -15,11 +15,13 @@ import {
   RefundStatusDisplayColor,
   RefundStatusDisplayTitle,
 } from '@/components/Refunds/utils'
+import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
 import { DetailRow } from '@/components/Shared/DetailRow'
 import { useCustomFields, useProduct } from '@/hooks/queries'
 import { useOrder } from '@/hooks/queries/orders'
 import { usePayments } from '@/hooks/queries/payments'
 import { useRefunds } from '@/hooks/queries/refunds'
+import { useOrganizationSeats } from '@/hooks/queries/seats'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -72,6 +74,17 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const canRefund =
     order?.paid && (order?.refunded_amount ?? 0) < (order?.net_amount ?? 0)
+
+  // Seat management for seat-based orders (view-only)
+  const hasSeatBasedOrder = !!order?.seats && order.seats > 0
+
+  const { data: seatsData, isLoading: isLoadingSeats } = useOrganizationSeats(
+    hasSeatBasedOrder ? { orderId: order?.id } : undefined,
+  )
+
+  const totalSeats = seatsData?.total_seats || 0
+  const availableSeats = seatsData?.available_seats || 0
+  const seats = seatsData?.seats || []
 
   if (!order || !product) {
     return null
@@ -378,6 +391,30 @@ const ClientPage: React.FC<ClientPageProps> = ({
             ]}
             data={refunds?.items ?? []}
           />
+        </div>
+      )}
+
+      {hasSeatBasedOrder && (
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-y-2">
+            <h3 className="text-lg">Seats</h3>
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              {availableSeats} of {totalSeats} seats available
+            </p>
+          </div>
+
+          {!isLoadingSeats && seats.length > 0 && (
+            <div className="flex flex-col gap-4">
+              <h4 className="text-base font-medium">Assigned Seats</h4>
+              <SeatViewOnlyTable seats={seats} />
+            </div>
+          )}
+
+          {!isLoadingSeats && seats.length === 0 && (
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              No seats have been assigned yet.
+            </p>
+          )}
         </div>
       )}
 

@@ -4,7 +4,8 @@ from collections.abc import Sequence
 from typing import Any, Literal
 
 import stripe
-from sqlalchemy import UnaryExpression, asc, case, desc, func, select
+from slugify import slugify
+from sqlalchemy import UnaryExpression, asc, case, desc, func, or_, select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject, is_user
@@ -68,6 +69,7 @@ class ProductService:
         *,
         id: Sequence[uuid.UUID] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
+        slug: Sequence[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
@@ -104,8 +106,13 @@ class ProductService:
         if organization_id is not None:
             statement = statement.where(Product.organization_id.in_(organization_id))
 
+        if slug is not None:
+            statement = statement.where(Product.slug.in_(slug))
+
         if query is not None:
-            statement = statement.where(Product.name.ilike(f"%{query}%"))
+            statement = statement.where(
+                or_(Product.name.ilike(f"%{query}%"), Product.slug.ilike(f"%{query}%"))
+            )
 
         if is_archived is not None:
             statement = statement.where(Product.is_archived.is_(is_archived))
@@ -187,14 +194,25 @@ class ProductService:
         self,
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
-        id: uuid.UUID,
+        id: uuid.UUID | None,
+        slug: str | None,
     ) -> Product | None:
         repository = ProductRepository.from_session(session)
-        statement = (
-            repository.get_readable_statement(auth_subject)
-            .where(Product.id == id)
-            .options(*repository.get_eager_options())
-        )
+        if id is not None:
+            statement = (
+                repository.get_readable_statement(auth_subject)
+                .where(Product.id == id)
+                .options(*repository.get_eager_options())
+            )
+        elif slug is not None:
+            statement = (
+                repository.get_readable_statement(auth_subject)
+                .where(Product.slug == slug)
+                .options(*repository.get_eager_options())
+            )
+        else:
+            raise ValueError("Either id or slug must be provided")
+
         return await repository.get_one_or_none(statement)
 
     async def get_embed(
@@ -207,6 +225,47 @@ class ProductService:
             .options(selectinload(Product.product_medias))
         )
         return await repository.get_one_or_none(statement)
+
+    async def slugify(
+        self,
+        session: AsyncSession,
+        schema: ProductCreate | ProductUpdate,
+        organization_id: uuid.UUID,
+    ) -> str:
+        repository = ProductRepository.from_session(session)
+
+        slug = (
+            slugify(
+                schema.name,
+                max_length=128,  # arbitrary
+                word_boundary=True,
+            )
+            if schema.slug is None
+            else schema.slug
+        )
+
+        orig_slug = slug
+
+        for n in range(0, 100):
+            test_slug = orig_slug if n == 0 else f"{orig_slug}-{n}"
+
+            exists = await repository.get_by_slug_and_organization(
+                test_slug, organization_id
+            )
+
+            # slug is unused, continue with creating a product with this slug
+            if exists is None:
+                slug = test_slug
+                break
+
+            # continue until a free slug has been found
+        else:
+            # if no free slug has been found in 100 attempts, error out
+            raise Exception(
+                "This slug has been used more than 100 times in this organization."
+            )
+
+        return slug
 
     async def create(
         self,
@@ -240,6 +299,8 @@ class ProductService:
         )
         errors.extend(prices_errors)
 
+        slug = await self.slugify(session, create_schema, organization.id)
+
         product = await repository.create(
             Product(
                 organization=organization,
@@ -248,12 +309,14 @@ class ProductService:
                 product_benefits=[],
                 product_medias=[],
                 attached_custom_fields=[],
+                slug=slug,
                 **create_schema.model_dump(
                     exclude={
                         "organization_id",
                         "prices",
                         "medias",
                         "attached_custom_fields",
+                        "slug",
                     },
                     by_alias=True,
                 ),
@@ -510,6 +573,11 @@ class ProductService:
                     price.get_stripe_price_params(product.recurring_interval),
                 )
                 price.stripe_price_id = stripe_price.id
+
+        if update_schema.slug is not None:
+            product.slug = await self.slugify(
+                session, update_schema, product.organization_id
+            )
 
         if update_schema.is_archived:
             product = await self._archive(session, product)

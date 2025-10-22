@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
+    Index,
     String,
     Text,
     Uuid,
@@ -48,7 +49,17 @@ class ProductBillingType(StrEnum):
 class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "products"
 
+    __table_args__ = (
+        Index(
+            "ix_product_slug",
+            "organization_id",
+            "slug",
+            unique=True,
+        ),
+    )
+
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
+    slug: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(

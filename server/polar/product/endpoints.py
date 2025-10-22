@@ -59,7 +59,10 @@ async def list(
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
-    query: str | None = Query(None, description="Filter by product name."),
+    slug: MultipleQueryFilter[str] | None = Query(
+        None, title="Slug Filter", description="Filter by product slug."
+    ),
+    query: str | None = Query(None, description="Filter by product name or slug."),
     is_archived: bool | None = Query(None, description="Filter on archived products."),
     is_recurring: bool | None = Query(
         None,
@@ -82,6 +85,7 @@ async def list(
         auth_subject,
         id=id,
         organization_id=organization_id,
+        slug=slug,
         query=query,
         is_archived=is_archived,
         is_recurring=is_recurring,
@@ -110,7 +114,7 @@ async def get(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Product:
     """Get a product by ID."""
-    product = await product_service.get(session, auth_subject, id)
+    product = await product_service.get(session, auth_subject, id=id)
 
     if product is None:
         raise ResourceNotFound()
@@ -154,7 +158,7 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Update a product."""
-    product = await product_service.get(session, auth_subject, id)
+    product = await product_service.get(session, auth_subject, id=id)
 
     if product is None:
         raise ResourceNotFound()
@@ -182,7 +186,7 @@ async def update_benefits(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Update benefits granted by a product."""
-    product = await product_service.get(session, auth_subject, id)
+    product = await product_service.get(session, auth_subject, id=id)
 
     if product is None:
         raise ResourceNotFound()

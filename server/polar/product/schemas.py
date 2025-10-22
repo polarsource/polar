@@ -25,6 +25,7 @@ from polar.kit.schemas import (
     Schema,
     SelectorWidget,
     SetSchemaReference,
+    SlugValidator,
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
@@ -50,6 +51,7 @@ from polar.models.product_price import (
 from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
+PRODUCT_SLUG_MIN_LENGTH = 3
 
 # PostgreSQL int4 range limit
 INT_MAX_VALUE = 2_147_483_647
@@ -89,6 +91,14 @@ ProductName = Annotated[
         min_length=PRODUCT_NAME_MIN_LENGTH,
         description="The name of the product.",
     ),
+]
+ProductSlug = Annotated[
+    str,
+    Field(
+        min_length=PRODUCT_SLUG_MIN_LENGTH,
+        description="The slug of the product.",
+    ),
+    SlugValidator,
 ]
 ProductDescription = Annotated[
     str | None,
@@ -295,6 +305,7 @@ ProductPriceCreateList = Annotated[
 
 class ProductCreateBase(MetadataInputMixin, Schema):
     name: ProductName
+    slug: ProductSlug = None
     description: ProductDescription = None
     prices: ProductPriceCreateList = Field(
         ...,
@@ -363,6 +374,7 @@ class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
     """
 
     name: ProductName | None = None
+    slug: ProductSlug | None = None
     description: ProductDescription = None
     recurring_interval: SubscriptionRecurringInterval | None = Field(
         default=None,
@@ -632,6 +644,7 @@ ProductPrice = Annotated[
 
 class ProductBase(TrialConfigurationOutputMixin, TimestampedSchema, IDSchema):
     name: str = Field(description="The name of the product.")
+    slug: str = Field(description="The slug of the product.")
     description: str | None = Field(description="The description of the product.")
     recurring_interval: SubscriptionRecurringInterval | None = Field(
         description=(

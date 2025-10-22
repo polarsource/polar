@@ -86,7 +86,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
-from polar.product.guard import is_custom_price, is_static_price
+from polar.product.guard import is_custom_price, is_seat_price, is_static_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
@@ -482,14 +482,17 @@ class OrderService:
             session, checkout, OrderBillingReasonInternal.purchase, payment
         )
 
-        # Enqueue benefits grants
-        enqueue_job(
-            "benefit.enqueue_benefits_grants",
-            task="grant",
-            customer_id=order.customer.id,
-            product_id=product.id,
-            order_id=order.id,
-        )
+        # For seat-based orders, benefits are granted when seats are claimed
+        # For non-seat orders, grant benefits immediately
+        price = checkout.product_price
+        if not is_seat_price(price):
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                customer_id=order.customer.id,
+                product_id=product.id,
+                order_id=order.id,
+            )
 
         # Trigger notifications
         organization = checkout.organization
@@ -600,6 +603,7 @@ class OrderService:
                 user_metadata=checkout.user_metadata,
                 custom_field_data=checkout.custom_field_data,
                 items=items,
+                seats=checkout.seats,
             ),
             flush=True,
         )
@@ -1537,6 +1541,10 @@ class OrderService:
             execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
         )
         async for order in orders:
+            # Skip seat-based orders - benefits are granted when seats are claimed
+            if order.seats is not None:
+                continue
+
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
                 task="grant",

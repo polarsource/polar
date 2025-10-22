@@ -93,6 +93,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       'checkouts',
       'checkouts_conversion',
       'committed_monthly_recurring_revenue',
+      'costs',
+      'cumulative_costs',
       'cumulative_revenue',
       'monthly_recurring_revenue',
       'net_average_order_value',
@@ -143,10 +145,29 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               '—'
             )}
           </CustomerStatBox>
-          <CustomerStatBox title="Orders" size="lg">
-            {typeof metricsData?.totals.orders === 'number'
-              ? metricsData.totals.orders
-              : '—'}
+          <CustomerStatBox title="Cumulative Costs" size="lg">
+            {typeof metricsData?.totals.cumulative_costs === 'number' ? (
+              <AmountLabel
+                amount={metricsData?.totals.cumulative_costs ?? 0}
+                currency="USD"
+              />
+            ) : (
+              '—'
+            )}
+          </CustomerStatBox>
+          <CustomerStatBox title="Profit" size="lg">
+            {metricsData?.totals.cumulative_revenue &&
+            metricsData?.totals.cumulative_costs ? (
+              <AmountLabel
+                amount={
+                  metricsData.totals.cumulative_revenue -
+                  metricsData.totals.cumulative_costs
+                }
+                currency="USD"
+              />
+            ) : (
+              '—'
+            )}
           </CustomerStatBox>
           <CustomerStatBox title="Customer Balance" size="lg">
             <AmountLabel

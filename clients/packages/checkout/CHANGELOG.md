@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.1.13
+
+### Patch Changes
+
+- f22a0d1: Update Polar SDK
+
 ## 0.1.12
 
 ### Patch Changes

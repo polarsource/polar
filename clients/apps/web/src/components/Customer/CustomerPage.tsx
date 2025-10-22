@@ -29,6 +29,7 @@ import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
+import ProfitChart from '../Metrics/ProfitChart'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerStatBox } from './CustomerStatBox'
 
@@ -140,6 +141,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               <AmountLabel
                 amount={metricsData?.totals.cumulative_revenue ?? 0}
                 currency="USD"
+                minimumFractionDigits={2}
               />
             ) : (
               '—'
@@ -150,6 +152,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               <AmountLabel
                 amount={metricsData?.totals.cumulative_costs ?? 0}
                 currency="USD"
+                minimumFractionDigits={2}
               />
             ) : (
               '—'
@@ -164,6 +167,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                   metricsData.totals.cumulative_costs
                 }
                 currency="USD"
+                minimumFractionDigits={2}
               />
             ) : (
               '—'
@@ -173,9 +177,17 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             <AmountLabel
               amount={customerBalance?.balance ?? 0}
               currency="USD"
+              minimumFractionDigits={2}
             />
           </CustomerStatBox>
         </div>
+
+        <ProfitChart
+          loading={metricsLoading}
+          data={relevantMetricsData}
+          interval={interval}
+          height={250}
+        />
 
         <MetricChartBox
           metric={selectedMetric}

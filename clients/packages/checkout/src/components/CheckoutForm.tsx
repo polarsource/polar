@@ -38,7 +38,11 @@ import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
-import { getMeteredPrices, hasLegacyRecurringPrices } from '../utils/product'
+import {
+  formatRecurringInterval,
+  getMeteredPrices,
+  hasLegacyRecurringPrices,
+} from '../utils/product'
 import AmountLabel from './AmountLabel'
 import CustomFieldInput from './CustomFieldInput'
 import MeteredPriceLabel from './MeteredPriceLabel'
@@ -106,6 +110,7 @@ const BaseCheckoutForm = ({
   const interval = hasLegacyRecurringPrices(checkout.product)
     ? checkout.productPrice.recurringInterval
     : checkout.product.recurringInterval
+  const intervalCount = checkout.product.recurringIntervalCount
   const {
     control,
     handleSubmit,
@@ -276,6 +281,11 @@ const BaseCheckoutForm = ({
     }
 
     if (checkout.discount.duration === 'once') {
+      // For "once" with an interval count > 1, describe the actual billing period
+      if (intervalCount && intervalCount > 1) {
+        const pluralInterval = `${interval}${intervalCount > 1 ? 's' : ''}`
+        return `for the first ${intervalCount} ${pluralInterval}`
+      }
       return `for the first ${interval}`
     }
 
@@ -293,19 +303,25 @@ const BaseCheckoutForm = ({
       interval === 'year' ? Math.ceil(durationInMonths / 12) : durationInMonths
 
     if (calculatedDuration <= 1) {
+      // For single period with interval count > 1, describe the actual billing period
+      if (intervalCount && intervalCount > 1) {
+        const pluralInterval = `${interval}${intervalCount > 1 ? 's' : ''}`
+        return `for the first ${intervalCount} ${pluralInterval}`
+      }
       return `for the first ${interval}`
     }
 
     return `for the first ${calculatedDuration} ${interval === 'year' ? 'years' : 'months'}`
-  }, [checkout.discount, interval])
+  }, [checkout.discount, interval, intervalCount])
 
   const totalLabel = useMemo(() => {
     if (interval) {
-      return `Every ${interval}`
+      const formatted = formatRecurringInterval(interval, intervalCount, 'long')
+      return `Every ${formatted}`
     }
 
     return 'Total'
-  }, [interval])
+  }, [interval, intervalCount])
 
   const checkoutLabel = useMemo(() => {
     if (checkout.activeTrialInterval) {
@@ -773,6 +789,7 @@ const BaseCheckoutForm = ({
                         amount={checkout.amount}
                         currency={checkout.currency}
                         interval={interval}
+                        intervalCount={intervalCount}
                       />
                     </DetailRow>
                     {checkout.discount && (
@@ -803,6 +820,7 @@ const BaseCheckoutForm = ({
                           amount={checkout.totalAmount}
                           currency={checkout.currency}
                           interval={interval}
+                          intervalCount={intervalCount}
                         />
                         {formattedDiscountDuration && (
                           <span className="text-xs font-normal text-gray-500">

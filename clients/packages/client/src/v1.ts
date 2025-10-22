@@ -11284,11 +11284,8 @@ export interface components {
        * Format: uuid4
        */
       customer_id: string
-      /**
-       * Product Id
-       * Format: uuid4
-       */
-      product_id: string
+      /** Product Id */
+      product_id: string | null
       /** Discount Id */
       discount_id: string | null
       /** Subscription Id */
@@ -11301,13 +11298,19 @@ export interface components {
        * @deprecated
        */
       user_id: string
-      product: components['schemas']['CustomerOrderProduct']
+      product: components['schemas']['CustomerOrderProduct'] | null
       subscription: components['schemas']['CustomerOrderSubscription'] | null
       /**
        * Items
        * @description Line items composing the order.
        */
       items: components['schemas']['OrderItemSchema'][]
+      /**
+       * Description
+       * @description A summary description of the order.
+       * @example Pro Plan
+       */
+      description: string
       /**
        * Next Payment Attempt At
        * @description When the next payment retry is scheduled
@@ -16366,11 +16369,8 @@ export interface components {
        * Format: uuid4
        */
       customer_id: string
-      /**
-       * Product Id
-       * Format: uuid4
-       */
-      product_id: string
+      /** Product Id */
+      product_id: string | null
       /** Discount Id */
       discount_id: string | null
       /** Subscription Id */
@@ -16401,7 +16401,7 @@ export interface components {
        * @deprecated
        */
       user_id: string
-      product: components['schemas']['OrderProduct']
+      product: components['schemas']['OrderProduct'] | null
       /** Discount */
       discount:
         | (
@@ -16417,6 +16417,12 @@ export interface components {
        * @description Line items composing the order.
        */
       items: components['schemas']['OrderItemSchema'][]
+      /**
+       * Description
+       * @description A summary description of the order.
+       * @example Pro Plan
+       */
+      description: string
     }
     /**
      * OrderBillingReason

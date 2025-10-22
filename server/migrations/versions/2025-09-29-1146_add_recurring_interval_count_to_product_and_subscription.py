@@ -1,7 +1,7 @@
 """Add recurring_interval_count to Product and Subscription models
 
 Revision ID: bbdc673dc236
-Revises: 1ec8eb5dcb44
+Revises: 902dd5c6c2b7
 Create Date: 2025-09-29 11:46:22.707113
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "bbdc673dc236"
-down_revision = "1ec8eb5dcb44"
+down_revision = "902dd5c6c2b7"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -96,7 +96,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       </Popover>
 
       <Popover>
-        <PopoverTrigger className="dark:hover:bg-polar-700 flex-1 cursor-pointer text-sm duration-150 hover:bg-gray-100">
+        <PopoverTrigger className="dark:hover:bg-polar-700 flex-1 cursor-pointer px-6 text-sm duration-150 hover:bg-gray-100">
           {interval ? (
             interval.label
           ) : date?.from ? (

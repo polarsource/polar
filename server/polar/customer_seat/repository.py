@@ -7,7 +7,14 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase
 from polar.kit.repository.base import Options
-from polar.models import CustomerSeat, Order, Product, Subscription, UserOrganization
+from polar.models import (
+    Customer,
+    CustomerSeat,
+    Order,
+    Product,
+    Subscription,
+    UserOrganization,
+)
 from polar.models.customer_seat import SeatStatus
 from polar.order.repository import OrderRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -338,14 +345,14 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
     def get_eager_options(self) -> Options:
         return (
-            joinedload(CustomerSeat.subscription)
-            .joinedload(Subscription.product)
-            .joinedload(Product.organization),
-            joinedload(CustomerSeat.subscription).joinedload(Subscription.customer),
-            joinedload(CustomerSeat.order)
-            .joinedload(Order.product)
-            .joinedload(Product.organization),
-            joinedload(CustomerSeat.order).joinedload(Order.customer),
+            joinedload(CustomerSeat.subscription).options(
+                joinedload(Subscription.product).joinedload(Product.organization),
+                joinedload(Subscription.customer),
+            ),
+            joinedload(CustomerSeat.order).options(
+                joinedload(Order.product),
+                joinedload(Order.customer).joinedload(Customer.organization),
+            ),
             joinedload(CustomerSeat.customer),
         )
 

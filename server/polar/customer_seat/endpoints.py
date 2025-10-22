@@ -249,7 +249,7 @@ async def revoke_seat(
     if seat.subscription:
         organization_id = seat.subscription.product.organization_id
     elif seat.order:
-        organization_id = seat.order.product.organization_id
+        organization_id = seat.order.organization.id
     else:
         raise ResourceNotFound("Seat has no subscription or order")
 
@@ -295,7 +295,7 @@ async def resend_invitation(
     if seat.subscription:
         organization_id = seat.subscription.product.organization_id
     elif seat.order:
-        organization_id = seat.order.product.organization_id
+        organization_id = seat.order.organization.id
     else:
         raise ResourceNotFound("Seat has no subscription or order")
 
@@ -328,7 +328,7 @@ async def get_claim_info(
 
     if seat.subscription:
         product = seat.subscription.product
-    elif seat.order:
+    elif seat.order and seat.order.product:
         product = seat.order.product
     else:
         raise ResourceNotFound("Seat has no subscription or order")

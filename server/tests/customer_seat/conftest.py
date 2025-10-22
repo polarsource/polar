@@ -155,6 +155,7 @@ async def checkout_with_order(
     # Refresh product to load prices
     await session.refresh(order_with_seats.product, ["prices"])
 
+    assert order_with_seats.product is not None
     checkout = await create_checkout(
         save_fixture,
         products=[order_with_seats.product],

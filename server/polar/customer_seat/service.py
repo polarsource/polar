@@ -91,11 +91,11 @@ class SeatService:
     def _get_customer_id(self, container: SeatContainer) -> uuid.UUID:
         return container.customer_id
 
-    def _get_product(self, container: SeatContainer) -> Product:
+    def _get_product(self, container: SeatContainer) -> Product | None:
         return container.product
 
     def _get_organization_id(self, container: SeatContainer) -> uuid.UUID:
-        return container.product.organization_id
+        return container.organization.id
 
     def _get_seats_count(self, container: SeatContainer) -> int:
         return container.seats or 0
@@ -153,9 +153,16 @@ class SeatService:
         customer_id: uuid.UUID | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> CustomerSeat:
-        organization_id = self._get_organization_id(container)
         product = self._get_product(container)
         source_id = self._get_container_id(container)
+
+        if product is None:
+            raise SeatNotAvailable(
+                source_id,
+                "Container has no associated product",
+            )
+
+        organization_id = self._get_organization_id(container)
         billing_manager_customer = container.customer
         is_subscription = self._is_subscription(container)
 
@@ -301,6 +308,7 @@ class SeatService:
             organization_id = product.organization_id
             product_id = product.id
         elif seat.order_id and seat.order:
+            assert seat.order.product is not None
             product = seat.order.product
             organization_id = product.organization_id
             product_id = product.id
@@ -369,11 +377,11 @@ class SeatService:
         seat: CustomerSeat,
     ) -> CustomerSeat:
         # Get product from either subscription or order
-        if seat.subscription_id and seat.subscription and seat.subscription.product:
+        if seat.subscription_id and seat.subscription:
             organization_id = seat.subscription.product.organization_id
             product_id = seat.subscription.product_id
-        elif seat.order_id and seat.order and seat.order.product:
-            organization_id = seat.order.product.organization_id
+        elif seat.order_id and seat.order and seat.order.product_id:
+            organization_id = seat.order.organization.id
             product_id = seat.order.product_id
         else:
             raise ValueError("Seat must have either subscription or order")
@@ -436,7 +444,7 @@ class SeatService:
         if seat.subscription_id and seat.subscription:
             organization_id = seat.subscription.product.organization_id
         elif seat.order_id and seat.order:
-            organization_id = seat.order.product.organization_id
+            organization_id = seat.order.organization.id
         else:
             return None
 

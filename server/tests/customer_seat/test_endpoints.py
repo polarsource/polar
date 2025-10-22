@@ -892,6 +892,7 @@ class TestOrderBasedSeats:
 
         assert response.status_code == 200
         data = response.json()
+        assert order_with_seats.product is not None
         assert data["product_name"] == order_with_seats.product.name
         assert data["product_id"] == str(order_with_seats.product.id)
         assert data["organization_name"] == order_with_seats.product.organization.name

@@ -28,27 +28,6 @@ const stub = (): never => {
   )
 }
 
-const unflatten = (entries: Record<string, string>): Record<string, any> =>
-  Object.entries(entries).reduce(
-    (acc, [key, value]) =>
-      key.split('.').reduceRight(
-        (current, part, index, parts) => ({
-          ...current,
-          // Transform each loc to camelCase, since the schema from our SDK converts everything to camelCase
-          // Don't camel case customFieldData properties, as they are dynamic and non converted to camelCase
-          [index > 0 &&
-          parts[index - 1].match('custom_field_data|customFieldData')
-            ? part
-            : part.replace(/_([a-z])/g, (g) => g[1].toUpperCase())]:
-            index === parts.length - 1
-              ? value
-              : { ...current[part], ...current },
-        }),
-        acc,
-      ),
-    {} as Record<string, any>,
-  )
-
 export interface CheckoutFormContextProps {
   checkout: CheckoutPublic
   form: UseFormReturn<CheckoutUpdatePublic>
@@ -66,14 +45,7 @@ export interface CheckoutFormContextProps {
 // @ts-ignore
 export const CheckoutFormContext = createContext<CheckoutFormContextProps>(stub)
 
-interface CheckoutFormProviderProps {
-  prefilledParameters?: Record<string, string>
-}
-
-export const CheckoutFormProvider = ({
-  prefilledParameters,
-  children,
-}: React.PropsWithChildren<CheckoutFormProviderProps>) => {
+export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
   const { checkout, update: updateOuter, confirm: confirmOuter } = useCheckout()
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState<string | undefined>()
@@ -85,7 +57,6 @@ export const CheckoutFormProvider = ({
       customerBillingAddress:
         checkout.customerBillingAddress as AddressInput | null,
       discountCode: checkout.discount ? checkout.discount.code : undefined,
-      ...(prefilledParameters ? unflatten(prefilledParameters) : {}),
     },
     shouldUnregister: true,
   })

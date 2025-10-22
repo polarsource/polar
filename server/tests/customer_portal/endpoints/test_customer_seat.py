@@ -69,6 +69,7 @@ class TestListSeats:
         assert response.status_code == 404
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_valid(
         self,
         client: AsyncClient,
@@ -160,6 +161,7 @@ class TestAssignSeat:
         assert response.status_code == 404
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_valid(
         self,
         client: AsyncClient,
@@ -267,6 +269,7 @@ class TestRevokeSeat:
         assert response.status_code == 404
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_valid(
         self,
         client: AsyncClient,
@@ -366,6 +369,7 @@ class TestResendInvitation:
         assert response.status_code == 404
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_not_pending(
         self,
         client: AsyncClient,
@@ -409,6 +413,7 @@ class TestResendInvitation:
         assert response.status_code == 400
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
     async def test_valid(
         self,
         client: AsyncClient,

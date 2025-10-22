@@ -10,7 +10,6 @@ import { GeistMono } from 'geist/font/mono'
 import { GeistSans } from 'geist/font/sans'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Metadata } from 'next/types'
-import { twMerge } from 'tailwind-merge'
 import {
   PolarNuqsProvider,
   PolarPostHogProvider,
@@ -102,7 +101,11 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`antialiased ${GeistSans.variable} ${GeistMono.variable}`}
+    >
       <head>
         <link
           href="/favicon.png"
@@ -116,11 +119,6 @@ export default async function RootLayout({
         ></link>
       </head>
       <body
-        className={twMerge(
-          `antialiased`,
-          GeistSans.className,
-          GeistMono.variable,
-        )}
         style={{
           textRendering: 'optimizeLegibility',
         }}

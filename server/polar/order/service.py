@@ -26,10 +26,10 @@ from polar.email.react import render_email_template
 from polar.email.schemas import (
     EmailAdapter,
 )
-from polar.email.sender import enqueue_email
+from polar.email.sender import Attachment, enqueue_email
 from polar.enums import PaymentProcessor
 from polar.eventstream.service import publish as eventstream_publish
-from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
+from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -223,13 +223,6 @@ class AlreadyBalancedOrder(OrderError):
             "has already been balanced."
         )
         super().__init__(message)
-
-
-class InvoiceAlreadyExists(OrderError):
-    def __init__(self, order: Order) -> None:
-        self.order = order
-        message = f"An invoice already exists for order {order.id}."
-        super().__init__(message, 409)
 
 
 class NotPaidOrder(OrderError):
@@ -433,25 +426,6 @@ class OrderService:
         order: Order,
         order_update: OrderUpdate | CustomerOrderUpdate,
     ) -> Order:
-        errors: list[ValidationError] = []
-        invoice_locked_fields = {"billing_name", "billing_address"}
-        if order.invoice_path is not None:
-            for field in invoice_locked_fields:
-                if field in order_update.model_fields_set and getattr(
-                    order_update, field
-                ) != getattr(order, field):
-                    errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": ("body", field),
-                            "msg": "This field cannot be updated after the invoice is generated.",
-                            "input": getattr(order_update, field),
-                        }
-                    )
-
-        if errors:
-            raise PolarRequestValidationError(errors)
-
         repository = OrderRepository.from_session(session)
         order = await repository.update(
             order, update_dict=order_update.model_dump(exclude_unset=True)
@@ -464,9 +438,6 @@ class OrderService:
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order
     ) -> None:
-        if order.invoice_path is not None:
-            raise InvoiceAlreadyExists(order)
-
         if not order.paid:
             raise NotPaidOrder(order)
 
@@ -1528,12 +1499,31 @@ class OrderService:
             }
         )
 
+        # Generate invoice to attach to the email
+        invoice_path: str | None = None
+        if invoice_path is None:
+            if order.billing_name is None or order.billing_address is None:
+                log.warning(
+                    "Cannot generate invoice, missing billing info", order_id=order.id
+                )
+            else:
+                order = await self.generate_invoice(session, order)
+                invoice_path = order.invoice_path
+
+        attachments: list[Attachment] = []
+        if invoice_path is not None:
+            invoice = await self.get_order_invoice(order)
+            attachments = [
+                {"remote_url": invoice.url, "filename": order.invoice_filename}
+            ]
+
         body = render_email_template(email)
         enqueue_email(
             **organization.email_from_reply,
             to_email_addr=customer.email,
             subject=subject,
             html_content=body,
+            attachments=attachments,
         )
 
     async def update_product_benefits_grants(
@@ -1671,7 +1661,7 @@ class OrderService:
             await webhook_service.send(session, organization, event_type, order)
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
-        await self.send_confirmation_email(session, order)
+        enqueue_job("order.confirmation_email", order.id)
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         if order.paid:

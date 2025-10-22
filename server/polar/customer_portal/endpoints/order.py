@@ -12,7 +12,6 @@ from polar.models.product import ProductBillingType
 from polar.openapi import APITag
 from polar.order.schemas import OrderID
 from polar.order.service import (
-    InvoiceAlreadyExists,
     MissingInvoiceBillingDetails,
     NotPaidOrder,
     PaymentAlreadyInProgress,
@@ -141,10 +140,6 @@ async def update(
     status_code=202,
     summary="Generate Order Invoice",
     responses={
-        409: {
-            "description": "Order already has an invoice.",
-            "model": InvoiceAlreadyExists.schema(),
-        },
         422: {
             "description": "Order is not paid or is missing billing name or address.",
             "model": MissingInvoiceBillingDetails.schema() | NotPaidOrder.schema(),

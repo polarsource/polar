@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { defaultRetry } from './retry'
@@ -12,6 +12,7 @@ const _invalidateBenefitsQueries = ({
   id?: string
   orgId?: string
 }) => {
+  const queryClient = getQueryClient()
   if (id) {
     queryClient.invalidateQueries({
       queryKey: ['benefits', 'id', id],

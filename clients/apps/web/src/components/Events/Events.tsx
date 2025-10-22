@@ -1,10 +1,14 @@
-import MoreHorizOutlined from '@mui/icons-material/MoreHorizOutlined'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import { List } from '@polar-sh/ui/components/atoms/List'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import Link from 'next/link'
-import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useMemo, useState } from 'react'
+import { EventCostBadge } from './EventCostBadge'
+import { EventSourceBadge } from './EventSourceBadge'
 
 const EventRow = ({
   event,
@@ -19,79 +23,94 @@ const EventRow = ({
     setIsExpanded(!isExpanded)
   }
 
-  const formattedTimestamp = new Date(event.timestamp).toLocaleDateString(
-    'en-US',
-    {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-    },
+  const formattedTimestamp = useMemo(
+    () =>
+      new Date(event.timestamp).toLocaleDateString(
+        'en-US',
+        isExpanded
+          ? {
+              year: 'numeric',
+              month: 'short',
+              day: '2-digit',
+              hour: 'numeric',
+              minute: 'numeric',
+              second: 'numeric',
+            }
+          : {
+              month: 'short',
+              day: '2-digit',
+              year: 'numeric',
+            },
+      ),
+    [event, isExpanded],
   )
 
+  const cost = (event.metadata as schemas['EventMetadataOutput'])._cost
+
   return (
-    <>
-      <tr
+    <div className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col rounded-xl border border-gray-200 bg-white font-mono text-sm transition-colors duration-75 hover:bg-gray-50">
+      <div
         onClick={handleToggleExpand}
-        className={twMerge(
-          'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-50',
-          isExpanded && 'dark:bg-polar-800 bg-gray-50',
-        )}
+        className="flex cursor-pointer flex-row items-center justify-between px-4 py-2 select-none"
       >
-        <td className="px-4 py-2">
-          <div className="flex w-[180px] shrink-0">
-            <span className="font-mono text-xs capitalize">
-              {formattedTimestamp}
-            </span>
-          </div>
-        </td>
-        <td className="px-4 py-2">
-          <div className="w-[120px] shrink-0 font-mono text-xs">
+        <div className="flex flex-row items-center gap-x-8">
+          <div className="flex flex-row items-center gap-x-4">
             <span>{event.name}</span>
+            <EventSourceBadge source={event.source} />
           </div>
-        </td>
-        <td className="px-4 py-2">
-          <Link
-            href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}`}
-            className="flex w-[180px] shrink-0 items-center gap-x-3"
-            onClick={(e) => {
-              e.stopPropagation()
-            }}
-          >
-            <Avatar
-              className="dark:bg-polar-900 text-xxs h-8 w-8 bg-white"
-              name={event.customer?.name ?? event.customer?.email ?? '—'}
-              avatar_url={event.customer?.avatar_url ?? null}
-            />
-            <div className="flex flex-col">
-              <span className="text-xs">
-                {event.customer
-                  ? (event.customer.name ?? '—')
-                  : (event.external_customer_id ?? '—')}
-              </span>
-              <span className="dark:text-polar-500 text-xxs text-gray-500">
-                {event.customer?.email ?? '—'}
-              </span>
-            </div>
-          </Link>
-        </td>
-        <td className="px-4 py-2">
-          <span className="dark:bg-polar-700 dark:text-polar-500 w-fit items-center justify-center rounded-md bg-gray-100 px-1.5 py-0.5 text-gray-500">
-            <MoreHorizOutlined className="small" />
+          <span className="dark:text-polar-500 text-sm text-gray-500 capitalize">
+            {formattedTimestamp}
           </span>
-        </td>
-      </tr>
+        </div>
+        <div className="flex flex-row items-center gap-x-6">
+          {cost && (
+            <EventCostBadge
+              cost={cost?.amount ?? 0}
+              currency={cost?.currency ?? 'USD'}
+            />
+          )}
+          <Tooltip>
+            <TooltipTrigger>
+              <Link
+                href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}`}
+                className="flex items-center gap-x-3"
+                onClick={(e) => {
+                  e.stopPropagation()
+                }}
+              >
+                <Avatar
+                  className="dark:bg-polar-900 text-xxs h-8 w-8 bg-white"
+                  name={event.customer?.name ?? event.customer?.email ?? '—'}
+                  avatar_url={event.customer?.avatar_url ?? null}
+                />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="top" align="end">
+              <div className="flex flex-row items-center gap-x-2 font-sans">
+                <Avatar
+                  className="dark:bg-polar-900 text-xxs h-8 w-8 bg-white"
+                  name={event.customer?.name ?? event.customer?.email ?? '—'}
+                  avatar_url={event.customer?.avatar_url ?? null}
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs">{event.customer?.name ?? '—'}</span>
+                  <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
+                    {event.customer?.email}
+                  </span>
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
       {isExpanded && (
-        <tr>
-          <td className="px-2 pb-2" colSpan={4}>
-            <pre className="dark:bg-polar-800 mt-2 w-full rounded-md bg-gray-100 p-4 font-mono text-xs">
-              {JSON.stringify(event.metadata, null, 2)}
-            </pre>
-          </td>
-        </tr>
+        <div className="dark:border-polar-700 border-t border-gray-200 p-2">
+          <pre className="dark:bg-polar-800 w-full rounded-md bg-white p-2">
+            {JSON.stringify(event.metadata, null, 2)}
+          </pre>
+        </div>
       )}
-    </>
+    </div>
   )
 }
 
@@ -103,41 +122,10 @@ export const Events = ({
   organization: schemas['Organization']
 }) => {
   return (
-    <List className="flex flex-col" size="small">
-      <table className="w-full">
-        <thead>
-          <tr className="dark:bg-polar-800 bg-gray-50">
-            <th className="px-4 py-2 text-left font-normal">
-              <span className="font-mono text-xs capitalize">Timestamp</span>
-            </th>
-            <th className="px-4 py-2 text-left font-normal">
-              <span className="font-mono text-xs capitalize">Event</span>
-            </th>
-            <th className="px-4 py-2 text-left font-normal">
-              <span className="font-mono text-xs capitalize">Customer</span>
-            </th>
-            <th className="px-4 py-2 text-left font-normal">
-              <span className="font-mono text-xs capitalize">Metadata</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((event) => (
-            <EventRow
-              key={event.id}
-              event={event}
-              organization={organization}
-            />
-          ))}
-          {events.length === 0 && (
-            <tr>
-              <td colSpan={4} className="py-6 text-center text-sm">
-                No events found
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </List>
+    <div className="flex flex-col gap-y-2">
+      {events.map((event) => (
+        <EventRow key={event.id} event={event} organization={organization} />
+      ))}
+    </div>
   )
 }

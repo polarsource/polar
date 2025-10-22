@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
@@ -64,7 +64,7 @@ export const useCreateCheckoutLink = () =>
         return
       }
 
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['checkout_links', { organizationId: data.organization_id }],
       })
     },
@@ -90,6 +90,7 @@ export const useUpdateCheckoutLink = () =>
         return
       }
 
+      const queryClient = getQueryClient()
       queryClient.setQueriesData<{
         pages: schemas['ListResource_CheckoutLink_'][]
         pageParams: unknown[]
@@ -143,6 +144,7 @@ export const useDeleteCheckoutLink = () =>
         return
       }
 
+      const queryClient = getQueryClient()
       queryClient.setQueriesData<{
         pages: schemas['ListResource_CheckoutLink_'][]
         pageParams: unknown[]

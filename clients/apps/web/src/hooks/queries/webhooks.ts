@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -70,7 +70,7 @@ export const useRedeliverWebhookEvent = () =>
       if (result.error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['webhookDeliveries', 'list'],
       })
     },
@@ -97,7 +97,7 @@ export const useCreateWebhookEndpoint = () =>
       if (result.error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['webhookEndpoints', 'list'],
       })
     },
@@ -121,6 +121,7 @@ export const useEditWebhookEndpoint = () =>
       if (result.error) {
         return
       }
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['webhookEndpoints', 'list'],
       })
@@ -142,6 +143,7 @@ export const useResetSecretWebhookEndpoint = () =>
         },
       }),
     onSuccess: (_result, _variables, _ctx) => {
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['webhookEndpoints', 'list'],
       })
@@ -167,6 +169,7 @@ export const useDeleteWebhookEndpoint = () =>
         },
       }),
     onSuccess: (_result, _variables, _ctx) => {
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['webhookEndpoints', 'list'],
       })

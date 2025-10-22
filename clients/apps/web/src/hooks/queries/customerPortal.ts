@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { Client, operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
@@ -64,7 +64,7 @@ export const useUpdateCustomerPortal = (api: Client) =>
       if (result.error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['customer'],
       })
     },
@@ -88,7 +88,7 @@ export const useAddCustomerPaymentMethod = (api: Client) =>
       if (result.error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['customer_payment_methods'],
       })
     },
@@ -104,7 +104,7 @@ export const useConfirmCustomerPaymentMethod = (api: Client) =>
       if (result.error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['customer_payment_methods'],
       })
     },
@@ -129,7 +129,7 @@ export const useDeleteCustomerPaymentMethod = (api: Client) =>
       return result
     },
     onSuccess: async (_result, _variables, _ctx) => {
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['customer_payment_methods'],
       })
     },
@@ -164,7 +164,7 @@ export const useCustomerBenefitGrantUpdate = (api: Client) =>
       if (result.error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['customer_benefit_grants'],
       })
     },
@@ -215,7 +215,7 @@ export const useCustomerLicenseKeyDeactivate = (api: Client, id: string) =>
       if (result.error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['customer_license_keys', { id }],
       })
     },
@@ -309,6 +309,7 @@ export const useCustomerUpdateSubscription = (api: Client) =>
       if (result.error) {
         return
       }
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
       })
@@ -332,6 +333,7 @@ export const useCustomerCancelSubscription = (api: Client) =>
       if (result.error) {
         return
       }
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
       })
@@ -353,6 +355,7 @@ export const useCustomerUncancelSubscription = (api: Client) =>
         },
       }),
     onSuccess: (_result, _variables, _ctx) => {
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],
       })
@@ -404,6 +407,7 @@ export const useCustomerOrderConfirmPayment = (api: Client) =>
         return
       }
       // Invalidate order queries to refresh data
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['customer_order', { id: variables.orderId }],
       })
@@ -453,7 +457,7 @@ export const useAssignSeat = (api: Client) =>
       if (result.error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['customer_seats'],
       })
     },
@@ -475,7 +479,7 @@ export const useRevokeSeat = (api: Client) =>
       return result
     },
     onSuccess: async (_result, _variables, _ctx) => {
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['customer_seats'],
       })
     },

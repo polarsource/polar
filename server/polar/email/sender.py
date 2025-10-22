@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from typing import Any, TypedDict
 
 import httpx
@@ -35,6 +36,11 @@ class SendEmailError(EmailSenderError):
         super().__init__(message)
 
 
+class Attachment(TypedDict):
+    remote_url: str
+    filename: str
+
+
 class EmailSender(ABC):
     @abstractmethod
     async def send(
@@ -45,9 +51,10 @@ class EmailSender(ABC):
         html_content: str,
         from_name: str = DEFAULT_FROM_NAME,
         from_email_addr: str = DEFAULT_FROM_EMAIL_ADDRESS,
-        email_headers: dict[str, str] = {},
+        email_headers: dict[str, str] | None = None,
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
+        attachments: Iterable[Attachment] | None = None,
     ) -> None:
         pass
 
@@ -61,9 +68,10 @@ class LoggingEmailSender(EmailSender):
         html_content: str,
         from_name: str = DEFAULT_FROM_NAME,
         from_email_addr: str = DEFAULT_FROM_EMAIL_ADDRESS,
-        email_headers: dict[str, str] = {},
+        email_headers: dict[str, str] | None = None,
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
+        attachments: Iterable[Attachment] | None = None,
     ) -> None:
         log.info(
             "Sending an email",
@@ -89,9 +97,10 @@ class ResendEmailSender(EmailSender):
         html_content: str,
         from_name: str = DEFAULT_FROM_NAME,
         from_email_addr: str = DEFAULT_FROM_EMAIL_ADDRESS,
-        email_headers: dict[str, str] = {},
+        email_headers: dict[str, str] | None = None,
         reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
+        attachments: Iterable[Attachment] | None = None,
     ) -> None:
         to_email_addr_ascii = to_ascii_email(to_email_addr)
         payload: dict[str, Any] = {
@@ -99,7 +108,16 @@ class ResendEmailSender(EmailSender):
             "to": [to_email_addr_ascii],
             "subject": subject,
             "html": html_content,
-            "headers": email_headers,
+            "headers": email_headers or {},
+            "attachments": [
+                {
+                    "path": attachment["remote_url"],
+                    "filename": attachment["filename"],
+                }
+                for attachment in attachments
+            ]
+            if attachments
+            else [],
         }
         if reply_to_name and reply_to_email_addr:
             payload["reply_to"] = (
@@ -140,9 +158,10 @@ def enqueue_email(
     html_content: str,
     from_name: str = DEFAULT_FROM_NAME,
     from_email_addr: str = DEFAULT_FROM_EMAIL_ADDRESS,
-    email_headers: dict[str, str] = {},
+    email_headers: dict[str, str] | None = None,
     reply_to_name: str | None = DEFAULT_REPLY_TO_NAME,
     reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
+    attachments: Iterable[Attachment] | None = None,
 ) -> None:
     enqueue_job(
         "email.send",
@@ -154,6 +173,7 @@ def enqueue_email(
         email_headers=email_headers,
         reply_to_name=reply_to_name,
         reply_to_email_addr=reply_to_email_addr,
+        attachments=attachments,
     )
 
 

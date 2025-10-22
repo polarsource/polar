@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -22,6 +22,7 @@ export const useCreateRefund = () =>
       if (result.error) {
         return
       }
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['refunds'],
       })

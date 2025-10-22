@@ -77,6 +77,9 @@ async def list(
     source: MultipleQueryFilter[EventSource] | None = Query(
         None, title="Source Filter", description="Filter by event source."
     ),
+    query: str | None = Query(
+        None, title="Query", description="Query to filter events."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[EventSchema]:
     """List events."""
@@ -89,6 +92,16 @@ async def list(
             parsed_filter = Filter.model_validate_json(filter)
         except ValidationError as e:
             raise RequestValidationError(e.errors()) from e
+
+    if query is not None and organization_id is None:
+        raise RequestValidationError(
+            [
+                {
+                    "type": "query",
+                    "msg": "Query is only supported when organization_id is provided.",
+                }
+            ]
+        )
 
     results, count = await event_service.list(
         session,
@@ -105,6 +118,7 @@ async def list(
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,
+        query=query,
     )
 
     return ListResource.from_paginated_results(

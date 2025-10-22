@@ -137,9 +137,6 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.90.5
         version: 5.90.5(react@19.2.0)
-      '@tanstack/react-query-next-experimental':
-        specifier: ^5.90.2
-        version: 5.90.2(@tanstack/react-query@5.90.5(react@19.2.0))(next@15.5.6(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.92.1))(react@19.2.0)
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -376,8 +373,8 @@ importers:
   packages/checkout:
     dependencies:
       '@polar-sh/sdk':
-        specifier: ^0.37.0
-        version: 0.37.0
+        specifier: ^0.38.1
+        version: 0.38.1
       '@polar-sh/ui':
         specifier: workspace:^
         version: link:../ui
@@ -1878,6 +1875,9 @@ packages:
   '@polar-sh/sdk@0.37.0':
     resolution: {integrity: sha512-sNAZjHurF3Teew+YKGudXqWvWvaSAkMAttdQUDDBvHfGm6KA7Dkyjoo83n8TmpTMuQVM5sycTUrrfPlPMNDXoQ==}
 
+  '@polar-sh/sdk@0.38.1':
+    resolution: {integrity: sha512-UdTaHqmRrY4aOCsfGaI+OM7NMNNXxaHFr4KomDgwuJ7JT4gZn4geCDvM8qf64GGLOXikiAtq+uOcpVPlGk0C9Q==}
+
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
 
@@ -2923,13 +2923,6 @@ packages:
 
   '@tanstack/query-core@5.90.5':
     resolution: {integrity: sha512-wLamYp7FaDq6ZnNehypKI5fNvxHPfTYylE0m/ZpuuzJfJqhR5Pxg9gvGBHZx4n7J+V5Rg5mZxHHTlv25Zt5u+w==}
-
-  '@tanstack/react-query-next-experimental@5.90.2':
-    resolution: {integrity: sha512-f7vJ9SHRO5GjiTBIpaSdLTczPlDybu6OzLG2thcNev55Qi69JkYsSOyUVWKpa3tGgufyJx1kDAO5lJjv4jF/bw==}
-    peerDependencies:
-      '@tanstack/react-query': ^5.90.2
-      next: ^13 || ^14 || ^15
-      react: ^18 || ^19
 
   '@tanstack/react-query@5.90.5':
     resolution: {integrity: sha512-pN+8UWpxZkEJ/Rnnj2v2Sxpx1WFlaa9L6a4UO89p6tTQbeo+m0MS8oYDjbggrR8QcTyjKoYWKS3xJQGr3ExT8Q==}
@@ -8860,6 +8853,11 @@ snapshots:
       standardwebhooks: 1.0.0
       zod: 3.25.76
 
+  '@polar-sh/sdk@0.38.1':
+    dependencies:
+      standardwebhooks: 1.0.0
+      zod: 3.25.76
+
   '@polka/url@1.0.0-next.29': {}
 
   '@popperjs/core@2.11.8': {}
@@ -9967,12 +9965,6 @@ snapshots:
       tailwindcss: 4.1.14
 
   '@tanstack/query-core@5.90.5': {}
-
-  '@tanstack/react-query-next-experimental@5.90.2(@tanstack/react-query@5.90.5(react@19.2.0))(next@15.5.6(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.92.1))(react@19.2.0)':
-    dependencies:
-      '@tanstack/react-query': 5.90.5(react@19.2.0)
-      next: 15.5.6(@babel/core@7.28.4)(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.92.1)
-      react: 19.2.0
 
   '@tanstack/react-query@5.90.5(react@19.2.0)':
     dependencies:

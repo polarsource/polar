@@ -13975,12 +13975,14 @@ export interface components {
     }
     /** EventMetadataInput */
     EventMetadataInput: {
+      _cost?: components['schemas']['CostMetadata']
       _llm?: components['schemas']['LLMMetadata']
     } & {
       [key: string]: string | number | boolean
     }
     /** EventMetadataOutput */
     EventMetadataOutput: {
+      _cost?: components['schemas']['CostMetadata']
       _llm?: components['schemas']['LLMMetadata']
     } & {
       [key: string]: string | number | boolean
@@ -14370,17 +14372,6 @@ export interface components {
       /** Iat */
       iat: number
     }
-    /** InvoiceAlreadyExists */
-    InvoiceAlreadyExists: {
-      /**
-       * Error
-       * @example InvoiceAlreadyExists
-       * @constant
-       */
-      error: 'InvoiceAlreadyExists'
-      /** Detail */
-      detail: string
-    }
     /** LLMMetadata */
     LLMMetadata: {
       /**
@@ -14423,8 +14414,6 @@ export interface components {
        * @description The total number of LLM tokens used for the event.
        */
       total_tokens: number
-      /** @description Optional cost associated with the event. */
-      cost?: components['schemas']['CostMetadata'] | null
     }
     LegacyRecurringProductPrice:
       | components['schemas']['LegacyRecurringProductPriceFixed']
@@ -24391,15 +24380,6 @@ export interface operations {
           'application/json': unknown
         }
       }
-      /** @description Order already has an invoice. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['InvoiceAlreadyExists']
-        }
-      }
       /** @description Order is not paid or is missing billing name or address. */
       422: {
         headers: {
@@ -28797,15 +28777,6 @@ export interface operations {
           'application/json': unknown
         }
       }
-      /** @description Order already has an invoice. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['InvoiceAlreadyExists']
-        }
-      }
       /** @description Order is not paid or is missing billing name or address. */
       422: {
         headers: {
@@ -29637,6 +29608,8 @@ export interface operations {
           | components['schemas']['EventSource']
           | components['schemas']['EventSource'][]
           | null
+        /** @description Query to filter events. */
+        query?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

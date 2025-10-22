@@ -70,9 +70,7 @@ const Paginator = ({
           asChild
           disabled={currentPage === 1}
           className={twMerge(
-            currentPage === 1
-              ? 'border-gray-200 bg-transparent text-gray-500 hover:bg-transparent dark:border-gray-400 dark:text-gray-400'
-              : '',
+            currentPage === 1 ? 'cursor-default opacity-50' : '',
           )}
         >
           <ChevronLeft fontSize="small" />

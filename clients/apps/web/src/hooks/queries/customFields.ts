@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -11,6 +11,7 @@ const invalidateCustomFieldsQueries = ({
   id?: string
   organizationId?: string
 }) => {
+  const queryClient = getQueryClient()
   if (id) {
     queryClient.invalidateQueries({
       queryKey: ['custom_fields', 'id', id],

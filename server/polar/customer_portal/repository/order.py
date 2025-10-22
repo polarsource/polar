@@ -4,14 +4,21 @@ from uuid import UUID
 from sqlalchemy import Select
 from sqlalchemy.orm import joinedload, selectinload
 
-from polar.auth.models import AuthSubject, Customer
+from polar.auth.models import AuthSubject
 from polar.kit.repository import (
     Options,
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Order, OrderItem, Product, ProductPrice, Subscription
+from polar.models import (
+    Customer,
+    Order,
+    OrderItem,
+    Product,
+    ProductPrice,
+    Subscription,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
@@ -37,7 +44,7 @@ class CustomerOrderRepository(
         if product_load is None:
             product_load = joinedload(Order.product)
         return (
-            joinedload(Order.customer),
+            joinedload(Order.customer).joinedload(Customer.organization),
             joinedload(Order.discount),
             joinedload(Order.subscription).joinedload(Subscription.customer),
             product_load.options(

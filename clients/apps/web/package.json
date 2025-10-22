@@ -49,7 +49,6 @@
     "@tailwindcss/postcss": "^4.1.14",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.90.5",
-    "@tanstack/react-query-next-experimental": "^5.90.2",
     "@tanstack/react-table": "^8.21.3",
     "@vercel/blob": "^0.23.4",
     "ai": "^5.0.76",

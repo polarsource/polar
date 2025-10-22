@@ -18,6 +18,11 @@ from polar.event.schemas import EventCreateExternalCustomer
         {
             "external_customer_id": "CUSTOMER",
             "name": "EVENT",
+            "metadata": {"_cost": {"amount": 100, "currency": "usd"}},
+        },
+        {
+            "external_customer_id": "CUSTOMER",
+            "name": "EVENT",
             "metadata": {
                 "_llm": {
                     "vendor": "mistral",
@@ -25,10 +30,6 @@ from polar.event.schemas import EventCreateExternalCustomer
                     "input_tokens": 10,
                     "output_tokens": 20,
                     "total_tokens": 30,
-                    "cost": {
-                        "amount": 1,
-                        "currency": "usd",
-                    },
                 },
                 "key": "value",
             },
@@ -49,6 +50,22 @@ def test_invalid_metadata_value_too_long() -> None:
                 "metadata": {"key": "a" * 600},
             }
         )
+
+
+def test_invalid_cost_metadata() -> None:
+    with pytest.raises(ValidationError) as e:
+        EventCreateExternalCustomer.model_validate(
+            {
+                "external_customer_id": "CUSTOMER",
+                "name": "EVENT",
+                "metadata": {"_cost": {"amount": 1, "currency": "eur"}},
+            }
+        )
+
+    errors = e.value.errors()
+    assert len(errors) == 1
+    assert errors[0]["loc"] == ("metadata", "_cost", "currency")
+    assert errors[0]["type"] == "string_pattern_mismatch"
 
 
 def test_invalid_llm_metadata() -> None:

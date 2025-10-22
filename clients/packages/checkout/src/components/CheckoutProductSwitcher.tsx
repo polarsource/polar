@@ -11,7 +11,10 @@ import {
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { cn } from '@polar-sh/ui/lib/utils'
 import { useCallback } from 'react'
-import { hasLegacyRecurringPrices } from '../utils/product'
+import {
+  formatRecurringFrequency,
+  hasLegacyRecurringPrices,
+} from '../utils/product'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface CheckoutProductSwitcherProps {
@@ -56,20 +59,16 @@ const CheckoutProductSwitcher = ({
   }
 
   const getDescription = (
+    product: CheckoutPublic['product'],
     price: ProductPrice | LegacyRecurringProductPrice,
   ) => {
-    let recurringLabel = ''
-    if (price.recurringInterval === 'day') {
-      recurringLabel = 'daily'
-    } else if (price.recurringInterval === 'week') {
-      recurringLabel = 'weekly'
-    } else if (price.recurringInterval === 'month') {
-      recurringLabel = 'monthly'
-    } else if (price.recurringInterval === 'year') {
-      recurringLabel = 'yearly'
-    }
+    const interval = hasLegacyRecurringPrices(product)
+      ? price.recurringInterval
+      : product.recurringInterval
+    const intervalCount = product.recurringIntervalCount
 
-    if (price.recurringInterval) {
+    if (interval) {
+      const recurringLabel = formatRecurringFrequency(interval, intervalCount)
       return `Billed ${recurringLabel}`
     }
 
@@ -109,7 +108,7 @@ const CheckoutProductSwitcher = ({
                 </div>
                 <div className="flex grow flex-row items-center justify-between p-4 text-sm">
                   <p className="dark:text-polar-500 text-gray-500">
-                    {getDescription(price)}
+                    {getDescription(product, price)}
                   </p>
                 </div>
               </label>
@@ -142,7 +141,7 @@ const CheckoutProductSwitcher = ({
             </div>
             <div className="flex grow flex-row items-center justify-between p-4 text-sm">
               <p className="dark:text-polar-500 text-gray-500">
-                {getDescription(product.prices[0])}
+                {getDescription(product, product.prices[0])}
               </p>
             </div>
           </label>

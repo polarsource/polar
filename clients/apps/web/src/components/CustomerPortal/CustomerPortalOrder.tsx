@@ -1,19 +1,29 @@
 'use client'
 
 import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
-import { useCustomerBenefitGrants } from '@/hooks/queries'
+import {
+  useAssignSeat,
+  useCustomerBenefitGrants,
+  useCustomerSeats,
+  useResendSeatInvitation,
+  useRevokeSeat,
+} from '@/hooks/queries'
 import { canRetryOrderPayment } from '@/utils/order'
+import { validateEmail } from '@/utils/validation'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import { DetailRow } from '../Shared/DetailRow'
+import { toast } from '../Toast/use-toast'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
+import { SeatManagementTable } from './SeatManagementTable'
 
 const statusColors = {
   paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
@@ -49,6 +59,94 @@ const CustomerPortalOrder = ({
   const isPartiallyOrFullyRefunded = useMemo(() => {
     return order.status === 'partially_refunded' || order.status === 'refunded'
   }, [order])
+
+  // Seats management
+  const hasSeatBasedOrder = order.seats && order.seats > 0
+
+  const { data: seatsData, isLoading: isLoadingSeats } = useCustomerSeats(
+    api,
+    hasSeatBasedOrder ? { orderId: order.id } : undefined,
+  )
+  const assignSeat = useAssignSeat(api)
+  const revokeSeat = useRevokeSeat(api)
+  const resendInvitation = useResendSeatInvitation(api)
+
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState<string>()
+  const [isSending, setIsSending] = useState(false)
+
+  const handleAssignSeat = async () => {
+    if (!email.trim()) {
+      setError('Email is required')
+      return
+    }
+    if (!validateEmail(email)) {
+      setError('Invalid email format')
+      return
+    }
+
+    setIsSending(true)
+    setError(undefined)
+
+    try {
+      const result = await assignSeat.mutateAsync({
+        order_id: order.id,
+        email,
+      })
+
+      if (result.error) {
+        const errorMessage =
+          typeof result.error.detail === 'string'
+            ? result.error.detail
+            : 'Failed to assign seat'
+        setError(errorMessage)
+      } else {
+        setEmail('')
+      }
+    } catch {
+      setError('Failed to send invitation')
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  const handleRevokeSeat = async (seatId: string) => {
+    try {
+      await revokeSeat.mutateAsync(seatId)
+      toast({
+        title: 'Seat revoked successfully',
+        description: 'The seat has been revoked and is now available.',
+      })
+    } catch (error) {
+      toast({
+        title: 'Failed to revoke seat',
+        description:
+          error instanceof Error ? error.message : 'An error occurred.',
+        variant: 'error',
+      })
+    }
+  }
+
+  const handleResendInvitation = async (seatId: string) => {
+    try {
+      await resendInvitation.mutateAsync(seatId)
+      toast({
+        title: 'Invitation resent',
+        description: 'The invitation email has been sent again.',
+      })
+    } catch (error) {
+      toast({
+        title: 'Failed to resend invitation',
+        description:
+          error instanceof Error ? error.message : 'An error occurred.',
+        variant: 'error',
+      })
+    }
+  }
+
+  const totalSeats = seatsData?.total_seats || 0
+  const availableSeats = seatsData?.available_seats || 0
+  const seats = seatsData?.seats || []
 
   return (
     <div className="flex h-full flex-col gap-12">
@@ -181,6 +279,61 @@ const CustomerPortalOrder = ({
             </div>
           )}
         </div>
+
+        {hasSeatBasedOrder && (
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-y-2">
+              <h3 className="text-lg">Seats</h3>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                {availableSeats} of {totalSeats} seats available
+              </p>
+            </div>
+            <div className="flex flex-col gap-y-3">
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <Input
+                    type="email"
+                    placeholder="email@example.com"
+                    value={email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setEmail(e.target.value)
+                      setError(undefined)
+                    }}
+                    disabled={isSending || availableSeats === 0}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                      if (e.key === 'Enter') {
+                        handleAssignSeat()
+                      }
+                    }}
+                  />
+                  {error && (
+                    <p className="dark:text-polar-400 mt-1 text-xs text-gray-500">
+                      {error}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  onClick={handleAssignSeat}
+                  disabled={!email.trim() || availableSeats === 0 || isSending}
+                  loading={isSending}
+                >
+                  Invite
+                </Button>
+              </div>
+            </div>
+
+            {!isLoadingSeats && seats.length > 0 && (
+              <div className="flex flex-col gap-4">
+                <h3 className="text-lg">Assigned Seats</h3>
+                <SeatManagementTable
+                  seats={seats}
+                  onRevokeSeat={handleRevokeSeat}
+                  onResendInvitation={handleResendInvitation}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex w-full flex-col gap-4">
           <h3 className="text-lg">Benefit Grants</h3>

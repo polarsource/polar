@@ -15662,6 +15662,10 @@ export interface components {
       cumulative_revenue: number
       /** Net Cumulative Revenue */
       net_cumulative_revenue: number
+      /** Costs */
+      costs: number
+      /** Cumulative Costs */
+      cumulative_costs: number
       /** Average Order Value */
       average_order_value: number
       /** Net Average Order Value */
@@ -15727,6 +15731,8 @@ export interface components {
       net_revenue: components['schemas']['Metric']
       cumulative_revenue: components['schemas']['Metric']
       net_cumulative_revenue: components['schemas']['Metric']
+      costs: components['schemas']['Metric']
+      cumulative_costs: components['schemas']['Metric']
       average_order_value: components['schemas']['Metric']
       net_average_order_value: components['schemas']['Metric']
       one_time_products: components['schemas']['Metric']
@@ -15822,6 +15828,10 @@ export interface components {
       cumulative_revenue: number
       /** Net Cumulative Revenue */
       net_cumulative_revenue: number
+      /** Costs */
+      costs: number
+      /** Cumulative Costs */
+      cumulative_costs: number
       /** Average Order Value */
       average_order_value: number
       /** Net Average Order Value */

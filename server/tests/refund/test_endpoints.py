@@ -77,6 +77,7 @@ class TestListRefunds(StripeRefund):
         product: Product,
         customer: Customer,
         customer_second: Customer,
+        customer_organization_second: Customer,
     ) -> tuple[Order, Order, Order]:
         order, _ = await create_order_and_payment(
             save_fixture,
@@ -96,7 +97,7 @@ class TestListRefunds(StripeRefund):
         order_second_org, _ = await create_order_and_payment(
             save_fixture,
             product=product_organization_second,
-            customer=customer,
+            customer=customer_organization_second,
             amount=1000,
             tax_amount=250,
             stripe_invoice_id="STRIPE_SECOND_ORG_INVOICE_ID",
@@ -188,6 +189,7 @@ class TestListRefunds(StripeRefund):
         product: Product,
         customer: Customer,
         customer_second: Customer,
+        customer_organization_second: Customer,
     ) -> None:
         order, order_second, _ = await self.seed_refunds(
             session,
@@ -200,6 +202,7 @@ class TestListRefunds(StripeRefund):
             product,
             customer,
             customer_second,
+            customer_organization_second,
         )
 
         # Get all for organization

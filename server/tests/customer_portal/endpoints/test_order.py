@@ -203,7 +203,7 @@ class TestConfirmRetryPayment:
         await save_fixture(order)
 
         subscription = await create_subscription(
-            save_fixture, customer=order.customer, product=order.product
+            save_fixture, customer=order.customer, product=product
         )
         order.subscription = subscription
         await save_fixture(order)
@@ -244,7 +244,7 @@ class TestConfirmRetryPayment:
         await save_fixture(order)
 
         subscription = await create_subscription(
-            save_fixture, customer=order.customer, product=order.product
+            save_fixture, customer=order.customer, product=product
         )
         order.subscription = subscription
         await save_fixture(order)
@@ -285,7 +285,7 @@ class TestConfirmRetryPayment:
         await save_fixture(order)
 
         subscription = await create_subscription(
-            save_fixture, customer=order.customer, product=order.product
+            save_fixture, customer=order.customer, product=product
         )
         order.subscription = subscription
         await save_fixture(order)
@@ -328,7 +328,7 @@ class TestConfirmRetryPayment:
         await save_fixture(order)
 
         subscription = await create_subscription(
-            save_fixture, customer=order.customer, product=order.product
+            save_fixture, customer=order.customer, product=product
         )
         order.subscription = subscription
         await save_fixture(order)

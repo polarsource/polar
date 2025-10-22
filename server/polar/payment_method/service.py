@@ -107,7 +107,7 @@ class PaymentMethodService:
         if payment_intent.payment_method is None:
             return None
 
-        if not order.product.is_recurring:
+        if order.product and not order.product.is_recurring:
             return None
 
         stripe_payment_method = await stripe_service.get_payment_method(

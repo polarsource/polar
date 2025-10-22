@@ -154,12 +154,12 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def customer(cls) -> Mapped["Customer"]:
         return relationship("Customer", lazy="raise")
 
-    product_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("products.id"), nullable=False, index=True
+    product_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("products.id"), nullable=True, index=True
     )
 
     @declared_attr
-    def product(cls) -> Mapped["Product"]:
+    def product(cls) -> Mapped["Product | None"]:
         return relationship("Product", lazy="raise")
 
     discount_id: Mapped[UUID | None] = mapped_column(
@@ -210,11 +210,13 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         )
 
     @property
-    def legacy_product_price(self) -> "ProductPrice":
+    def legacy_product_price(self) -> "ProductPrice | None":
         """
         Dummy method to keep API backward compatibility
         by fetching a product price at all costs.
         """
+        if self.product is None:
+            return None
         for item in self.items:
             if item.product_price:
                 return item.product_price
@@ -330,3 +332,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         ):
             return self.organization.statement_descriptor(" TRIAL OVER")
         return self.organization.statement_descriptor()
+
+    @property
+    def description(self) -> str:
+        if self.product is not None:
+            return self.product.name
+        return "TODO"

@@ -147,8 +147,12 @@ class RefundService(ResourceServiceReader[Refund]):
         auth_subject: AuthSubject[User | Organization],
         create_schema: RefundCreate,
     ) -> Refund:
-        order_id = create_schema.order_id
-        order = await order_service.get(session, auth_subject, order_id)
+        order_repository = OrderRepository.from_session(session)
+        order = await order_repository.get_one_or_none(
+            order_repository.get_readable_statement(auth_subject)
+            .where(Order.id == create_schema.order_id)
+            .options(*order_repository.get_eager_options())
+        )
         if not order:
             raise PolarRequestValidationError(
                 [
@@ -156,7 +160,7 @@ class RefundService(ResourceServiceReader[Refund]):
                         "type": "value_error",
                         "loc": ("body", "order_id"),
                         "msg": "Order not found",
-                        "input": order_id,
+                        "input": create_schema.order_id,
                     }
                 ]
             )
@@ -325,9 +329,7 @@ class RefundService(ResourceServiceReader[Refund]):
             return refund
 
         organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(
-            order.product.organization_id
-        )
+        organization = await organization_repository.get_by_id(order.organization.id)
         if organization is None:
             return refund
 
@@ -344,6 +346,9 @@ class RefundService(ResourceServiceReader[Refund]):
             order.customer_id, include_deleted=True
         )
         if customer is None:
+            return
+
+        if not order.product:
             return
 
         await benefit_grant_service.enqueue_benefits_grants(
@@ -407,7 +412,7 @@ class RefundService(ResourceServiceReader[Refund]):
             order_id = order.id
             subscription_id = order.subscription_id
             customer_id = order.customer_id
-            organization_id = order.product.organization_id
+            organization_id = order.organization.id
             refunded_amount, refunded_tax_amount = self.calculate_tax_from_stripe(
                 order,
                 stripe_amount=stripe_refund.amount,
@@ -501,12 +506,7 @@ class RefundService(ResourceServiceReader[Refund]):
         if order is None:
             return instance
 
-        organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(
-            order.product.organization_id
-        )
-        if organization is None:
-            return instance
+        organization = order.organization
 
         await self._on_created(session, organization, instance)
         if instance.succeeded:

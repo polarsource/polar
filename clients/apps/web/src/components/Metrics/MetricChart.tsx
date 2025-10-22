@@ -203,9 +203,9 @@ const MetricChart = ({
           {xAxis}
           {tooltip}
           {previousData && (
-            <Bar dataKey="previous" fill="var(--color-previous)" radius={0} />
+            <Bar dataKey="previous" fill="var(--color-previous)" radius={1} />
           )}
-          <Bar dataKey="current" fill="var(--color-current)" radius={0} />
+          <Bar dataKey="current" fill="var(--color-current)" radius={1} />
         </BarChart>
       )
     }

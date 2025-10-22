@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import {
@@ -132,6 +132,7 @@ export const useCreateMeter = (organizationId: string) =>
       if (result.error) {
         return
       }
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['meters', { organizationId }],
       })
@@ -153,6 +154,7 @@ export const useUpdateMeter = (id: string) =>
       if (error) {
         return
       }
+      const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['meters', { id }],
       })

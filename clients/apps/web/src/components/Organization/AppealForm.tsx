@@ -4,7 +4,7 @@ import {
   useOrganizationAppeal,
   useOrganizationReviewStatus,
 } from '@/hooks/queries/org'
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Card } from '@polar-sh/ui/components/ui/card'
@@ -59,7 +59,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
       setIsSubmitted(true)
 
       // Invalidate the review status query to refresh the data
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['organizationReviewStatus', organization.id],
       })
     } catch (error) {

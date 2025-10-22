@@ -1,4 +1,4 @@
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -66,7 +66,7 @@ export const usePatchFile = (
       if (onSuccessCallback) {
         onSuccessCallback(response.data)
       }
-      queryClient.invalidateQueries({ queryKey: ['user', 'files'] })
+      getQueryClient().invalidateQueries({ queryKey: ['user', 'files'] })
     },
   })
 
@@ -86,6 +86,6 @@ export const useDeleteFile = (id: string, onSuccessCallback?: () => void) =>
       if (onSuccessCallback) {
         onSuccessCallback()
       }
-      queryClient.invalidateQueries({ queryKey: ['user', 'files'] })
+      getQueryClient().invalidateQueries({ queryKey: ['user', 'files'] })
     },
   })

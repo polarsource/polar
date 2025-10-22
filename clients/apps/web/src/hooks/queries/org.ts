@@ -1,5 +1,5 @@
 import revalidate from '@/app/actions'
-import { queryClient } from '@/utils/api/query'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -24,7 +24,7 @@ export const useInviteOrganizationMember = (id: string) =>
       })
     },
     onSuccess: async (_result, _variables, _ctx) => {
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['organizationMembers', id],
       })
     },
@@ -52,7 +52,7 @@ export const useCreateOrganization = () =>
       if (error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['organizations', data.id],
       })
       await revalidate(`organizations:${data.id}`)
@@ -77,7 +77,7 @@ export const useUpdateOrganization = () =>
       if (error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['organizations', data.id],
       })
       await revalidate(`organizations:${data.id}`)
@@ -157,7 +157,7 @@ export const useCreateOrganizationAccessToken = (organization_id: string) =>
       if (error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: ['organization_access_tokens', { organization_id }],
       })
     },
@@ -176,7 +176,7 @@ export const useUpdateOrganizationAccessToken = (id: string) =>
       if (error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: [
           'organization_access_tokens',
           { organization_id: data.organization_id },
@@ -197,7 +197,7 @@ export const useDeleteOrganizationAccessToken = () =>
       if (error) {
         return
       }
-      queryClient.invalidateQueries({
+      getQueryClient().invalidateQueries({
         queryKey: [
           'organization_access_tokens',
           { organization_id: variables.organization_id },

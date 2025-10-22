@@ -338,8 +338,8 @@ export const OrderPaymentRetry = ({
         <h3 className="mb-2 font-medium">Order Summary</h3>
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
-            <span>Product:</span>
-            <span>{order.product.name}</span>
+            <span>Description:</span>
+            <span>{order.description}</span>
           </div>
           <div className="flex justify-between">
             <span>Amount:</span>

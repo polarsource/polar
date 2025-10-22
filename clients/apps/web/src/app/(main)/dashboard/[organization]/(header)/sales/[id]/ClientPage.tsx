@@ -58,7 +58,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   order: _order,
 }) => {
   const { data: order, refetch: refetchOrder } = useOrder(_order.id, _order)
-  const { data: product } = useProduct(_order.product.id)
+  const { data: product } = useProduct(_order.product_id)
   const { data: customFields } = useCustomFields(organization.id)
   const { data: payments, isLoading: paymentsLoading } = usePayments(
     organization.id,
@@ -86,7 +86,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const availableSeats = seatsData?.available_seats || 0
   const seats = seatsData?.seats || []
 
-  if (!order || !product) {
+  if (!order) {
     return null
   }
 
@@ -123,9 +123,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
     >
-      <List size="small">
-        <ProductListItem organization={organization} product={product} />
-      </List>
+      {product && (
+        <List size="small">
+          <ProductListItem organization={organization} product={product} />
+        </List>
+      )}
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-4 md:p-8">
           <div className="flex flex-col gap-4 md:gap-1">

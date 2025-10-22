@@ -88,7 +88,7 @@ export const useBenefitProducts = (
     enabled: !!organizationId && !!benefitId,
   })
 
-export const useProduct = (id?: string) =>
+export const useProduct = (id?: string | null) =>
   useQuery({
     queryKey: ['products', { id }],
     queryFn: () =>

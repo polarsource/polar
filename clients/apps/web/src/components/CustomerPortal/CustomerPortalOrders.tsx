@@ -54,9 +54,8 @@ export const CustomerPortalOrders = ({
         isLoading={false}
         columns={[
           {
-            accessorKey: 'product.name',
-            header: 'Product',
-            cell: ({ row }) => row.original.product.name,
+            accessorKey: 'description',
+            header: 'Description',
           },
           {
             accessorKey: 'status',

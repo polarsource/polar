@@ -4,7 +4,6 @@ import { cookieConsentGiven } from '@/components/Privacy/CookieConsent'
 import { getQueryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryStreamedHydration } from '@tanstack/react-query-next-experimental'
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
@@ -71,9 +70,7 @@ export function PolarQueryClientProvider({
   const queryClient = getQueryClient()
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ReactQueryStreamedHydration>{children}</ReactQueryStreamedHydration>
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   )
 }
 

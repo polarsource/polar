@@ -12,13 +12,11 @@ import ClientPage from './ClientPage'
 
 export default async function Page(props: {
   params: Promise<{ clientSecret: string }>
-  searchParams: Promise<
-    { embed?: string; theme?: 'light' | 'dark' } & Record<string, string>
-  >
+  searchParams: Promise<{ embed?: string; theme?: 'light' | 'dark' }>
 }) {
   const searchParams = await props.searchParams
 
-  const { embed: _embed, theme, ...prefilledParameters } = searchParams
+  const { embed: _embed, theme } = searchParams
 
   const params = await props.params
 
@@ -82,7 +80,7 @@ export default async function Page(props: {
       clientSecret={checkout.clientSecret}
       serverURL={getServerURL()}
     >
-      <CheckoutFormProvider prefilledParameters={prefilledParameters}>
+      <CheckoutFormProvider>
         <ClientPage theme={theme} embed={embed} />
       </CheckoutFormProvider>
     </CheckoutProvider>

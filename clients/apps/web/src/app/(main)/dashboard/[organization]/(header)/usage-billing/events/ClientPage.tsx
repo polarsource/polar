@@ -8,6 +8,7 @@ import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
 import { useEventNames, useEvents } from '@/hooks/queries/events'
+import useDebounce from '@/utils/useDebounce'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import Search from '@mui/icons-material/Search'
 import { operations, schemas } from '@polar-sh/client'
@@ -80,6 +81,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     [data],
   )
 
+  const debouncedQuery = useDebounce(query, 250)
+
   const eventParameters = useMemo(():
     | operations['events:list']['parameters']['query']
     | undefined => {
@@ -93,9 +96,16 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       sorting: [sorting],
       start_timestamp: startDate.toISOString(),
       end_timestamp: endDate.toISOString(),
-      query: query ?? null,
+      query: debouncedQuery ?? null,
     }
-  }, [selectedEventNames, currentPage, startDate, endDate, sorting, query])
+  }, [
+    selectedEventNames,
+    currentPage,
+    startDate,
+    endDate,
+    sorting,
+    debouncedQuery,
+  ])
 
   const { data: events } = useEvents(organization.id, eventParameters)
 

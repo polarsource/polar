@@ -125,7 +125,7 @@ export const SeatManagementTable = ({
             return (
               <div className="flex justify-end">
                 <DropdownMenu>
-                  <DropdownMenuTrigger disabled={isLoading}>
+                  <DropdownMenuTrigger asChild disabled={isLoading}>
                     <Button className="h-8 w-8" variant="secondary">
                       <MoreVertOutlined fontSize="inherit" />
                     </Button>

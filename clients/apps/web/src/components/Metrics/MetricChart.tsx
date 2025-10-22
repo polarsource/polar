@@ -2,6 +2,8 @@ import { ParsedMetricPeriod } from '@/hooks/queries'
 import { getFormattedMetricValue, getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
   ChartContainer,
   ChartTooltip,
@@ -25,6 +27,7 @@ interface MetricChartProps {
   grid?: boolean
   onDataIndexHover?: (index: number | undefined) => void
   simple?: boolean
+  chartType?: 'line' | 'bar'
 }
 
 const MetricChart = ({
@@ -37,6 +40,7 @@ const MetricChart = ({
   width: _width,
   onDataIndexHover,
   simple = false,
+  chartType = 'line',
 }: MetricChartProps & {
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -118,61 +122,91 @@ const MetricChart = ({
     [metric],
   )
 
-  return (
-    <ChartContainer
-      ref={ref}
-      style={{ height: _height, width: _width || '100%' }}
-      config={config}
-    >
-      <LineChart
-        accessibilityLayer
-        data={mergedData}
-        margin={{
-          left: 24,
-          right: 24,
-          top: 24,
-        }}
-        onMouseMove={(state) => {
-          if (onDataIndexHover) {
-            const index = state.activeTooltipIndex
-            onDataIndexHover(typeof index === 'number' ? index : undefined)
-          }
-        }}
-        onMouseLeave={() => {
-          if (onDataIndexHover) {
-            onDataIndexHover(undefined)
-          }
-        }}
-      >
-        {simple ? undefined : (
-          <CartesianGrid
-            horizontal={false}
-            vertical={true}
-            stroke={isDark ? '#222225' : '#ccc'}
-            strokeDasharray="6 6"
+  const chartContent = useMemo(() => {
+    const commonProps = {
+      accessibilityLayer: true,
+      data: mergedData,
+      margin: {
+        left: 24,
+        right: 24,
+        top: 24,
+      },
+      onMouseMove: (state: any) => {
+        if (onDataIndexHover) {
+          const index = state.activeTooltipIndex
+          onDataIndexHover(typeof index === 'number' ? index : undefined)
+        }
+      },
+      onMouseLeave: () => {
+        if (onDataIndexHover) {
+          onDataIndexHover(undefined)
+        }
+      },
+    }
+
+    const grid = simple ? undefined : (
+      <CartesianGrid
+        horizontal={false}
+        vertical={true}
+        stroke={isDark ? '#222225' : '#ccc'}
+        strokeDasharray="6 6"
+      />
+    )
+
+    const xAxis = (
+      <XAxis
+        dataKey="timestamp"
+        tickLine={false}
+        axisLine={false}
+        tickMargin={8}
+        interval="equidistantPreserveStart"
+        ticks={ticks}
+        tickFormatter={timestampFormatter}
+      />
+    )
+
+    const tooltip = (
+      <ChartTooltip<number, string>
+        cursor={true}
+        content={(props) => (
+          <ChartTooltipContent
+            {...props}
+            className="text-black dark:text-white"
+            indicator="dot"
+            labelKey="metric"
+            formatter={formatter}
           />
         )}
-        <XAxis
-          dataKey="timestamp"
-          tickLine={false}
-          axisLine={false}
-          tickMargin={8}
-          interval="equidistantPreserveStart"
-          ticks={ticks}
-          tickFormatter={timestampFormatter}
-        />
-        <ChartTooltip<number, string>
-          cursor={true}
-          content={(props) => (
-            <ChartTooltipContent
-              {...props}
-              className="text-black dark:text-white"
-              indicator="dot"
-              labelKey="metric"
-              formatter={formatter}
+      />
+    )
+
+    if (chartType === 'bar') {
+      return (
+        <BarChart {...commonProps}>
+          {grid}
+          {xAxis}
+          {tooltip}
+          {previousData && (
+            <Bar
+              dataKey="previous"
+              fill="var(--color-previous)"
+              radius={4}
             />
           )}
-        />
+          <Bar
+            dataKey="current"
+            fill="var(--color-current)"
+            radius={4}
+          />
+        </BarChart>
+      )
+    }
+
+    return (
+      <LineChart {...commonProps}>
+        {grid}
+        {xAxis}
+        {tooltip}
         {previousData && (
           <Line
             dataKey="previous"
@@ -190,6 +224,16 @@ const MetricChart = ({
           strokeWidth={1.5}
         />
       </LineChart>
+    )
+  }, [chartType, mergedData, simple, isDark, ticks, timestampFormatter, formatter, previousData, onDataIndexHover])
+
+  return (
+    <ChartContainer
+      ref={ref}
+      style={{ height: _height, width: _width || '100%' }}
+      config={config}
+    >
+      {chartContent}
     </ChartContainer>
   )
 }

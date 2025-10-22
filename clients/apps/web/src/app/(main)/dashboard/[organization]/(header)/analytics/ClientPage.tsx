@@ -8,7 +8,7 @@ import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { ParsedMetricsResponse, useMetrics } from '@/hooks/queries'
-import { fromISODate, toISODate } from '@/utils/metrics'
+import { fromISODate, getMetricChartType, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
@@ -246,6 +246,7 @@ const MetricGroup = ({
               interval={interval}
               metric={metricKey}
               height={200}
+              chartType={getMetricChartType(metricKey)}
               className={twMerge(
                 'rounded-none! bg-transparent dark:bg-transparent',
                 index === 0 && 'lg:col-span-2',

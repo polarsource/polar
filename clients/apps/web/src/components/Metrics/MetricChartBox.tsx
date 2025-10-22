@@ -41,6 +41,7 @@ interface MetricChartBoxProps {
   compact?: boolean
   shareable?: boolean
   simple?: boolean
+  chartType?: 'line' | 'bar'
 }
 
 const MetricChartBox = ({
@@ -57,6 +58,7 @@ const MetricChartBox = ({
   compact = false,
   shareable = true,
   simple = false,
+  chartType = 'line',
 }: MetricChartBoxProps & {
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -279,6 +281,7 @@ const MetricChartBox = ({
               setHoveredPeriodIndex(period as number)
             }}
             simple={simple}
+            chartType={chartType}
           />
         ) : (
           <div

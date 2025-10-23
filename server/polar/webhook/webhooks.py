@@ -22,6 +22,7 @@ from polar.benefit.schemas import BenefitGrantWebhook
 from polar.checkout.schemas import Checkout as CheckoutSchema
 from polar.customer.schemas.customer import Customer as CustomerSchema
 from polar.customer.schemas.state import CustomerState as CustomerStateSchema
+from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
 from polar.exceptions import PolarError
 from polar.integrations.discord.webhook import (
     DiscordEmbedField,
@@ -34,6 +35,7 @@ from polar.models import (
     BenefitGrant,
     Checkout,
     Customer,
+    CustomerSeat,
     Order,
     Organization,
     Product,
@@ -59,6 +61,9 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.customer_updated], Customer]
     | tuple[Literal[WebhookEventType.customer_deleted], Customer]
     | tuple[Literal[WebhookEventType.customer_state_changed], CustomerStateSchema]
+    | tuple[Literal[WebhookEventType.customer_seat_assigned], CustomerSeat]
+    | tuple[Literal[WebhookEventType.customer_seat_claimed], CustomerSeat]
+    | tuple[Literal[WebhookEventType.customer_seat_revoked], CustomerSeat]
     | tuple[Literal[WebhookEventType.order_created], Order]
     | tuple[Literal[WebhookEventType.order_updated], Order]
     | tuple[Literal[WebhookEventType.order_paid], Order]
@@ -271,6 +276,42 @@ class WebhookCustomerStateChangedPayload(BaseWebhookPayload):
 
     type: Literal[WebhookEventType.customer_state_changed]
     data: CustomerStateSchema
+
+
+class WebhookCustomerSeatAssignedPayload(BaseWebhookPayload):
+    """
+    Sent when a new customer seat is assigned.
+
+    This event is triggered when a seat is assigned to a customer by the organization.
+    The customer will receive an invitation email to claim the seat.
+
+    """
+
+    type: Literal[WebhookEventType.customer_seat_assigned]
+    data: CustomerSeatSchema  # type: ignore[assignment]
+
+
+class WebhookCustomerSeatClaimedPayload(BaseWebhookPayload):
+    """
+    Sent when a customer seat is claimed.
+
+    This event is triggered when a customer accepts the seat invitation and claims their access.
+
+    """
+
+    type: Literal[WebhookEventType.customer_seat_claimed]
+    data: CustomerSeatSchema  # type: ignore[assignment]
+
+
+class WebhookCustomerSeatRevokedPayload(BaseWebhookPayload):
+    """
+    Sent when a customer seat is revoked.
+
+    This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
+    """
+
+    type: Literal[WebhookEventType.customer_seat_revoked]
+    data: CustomerSeatSchema  # type: ignore[assignment]
 
 
 class WebhookOrderPayloadBase(BaseWebhookPayload):
@@ -1107,6 +1148,9 @@ WebhookPayload = Annotated[
     | WebhookCustomerUpdatedPayload
     | WebhookCustomerDeletedPayload
     | WebhookCustomerStateChangedPayload
+    | WebhookCustomerSeatAssignedPayload
+    | WebhookCustomerSeatClaimedPayload
+    | WebhookCustomerSeatRevokedPayload
     | WebhookOrderCreatedPayload
     | WebhookOrderUpdatedPayload
     | WebhookOrderPaidPayload

@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Annotated, Literal, NotRequired
 
 from fastapi import Path
@@ -7,7 +8,6 @@ from pydantic import (
     AfterValidator,
     AliasChoices,
     AwareDatetime,
-    Decimal,
     Discriminator,
     Field,
 )

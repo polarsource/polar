@@ -50,6 +50,7 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
+    Event,
     Organization,
     Payment,
     PaymentMethod,
@@ -62,7 +63,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.order import OrderBillingReasonInternal
-from polar.models.product_price import ProductPriceSeatUnit, SeatTier
+from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -260,12 +261,13 @@ class SubscriptionService:
 
     def _get_minimum_seats_from_tiers(self, seat_price: ProductPriceSeatUnit) -> int:
         """Get the absolute minimum seats from the first tier."""
-        tiers: list[SeatTier] = seat_price.seat_tiers.tiers
+        if seat_price.seat_tiers is None:
+            return 1
+        tiers = seat_price.seat_tiers["tiers"]
         if not tiers:
             return 1
-
-        sorted_tiers = sorted(tiers, key=lambda t: t.min_seats)
-        return sorted_tiers[0].min_seats
+        sorted_tiers = sorted(tiers, key=lambda t: t["min_seats"])
+        return sorted_tiers[0]["min_seats"]
 
     async def list(
         self,
@@ -880,8 +882,12 @@ class SubscriptionService:
             )
 
         if isinstance(update, SubscriptionUpdateSeats):
-            # TODO: Implement in Phase 3
-            raise NotImplementedError("Seat quantity updates not yet implemented")
+            return await self.update_seats(
+                session,
+                subscription,
+                seats=update.seats,
+                proration_behavior=update.proration_behavior,
+            )
 
         if isinstance(update, SubscriptionCancel):
             uncancel = update.cancel_at_period_end is False
@@ -1343,6 +1349,225 @@ class SubscriptionService:
 
         repository = SubscriptionRepository.from_session(session)
         return await repository.update(subscription)
+
+    async def update_seats(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        seats: int,
+        proration_behavior: SubscriptionProrationBehavior | None = None,
+    ) -> Subscription:
+        """
+        Update the number of seats for a seat-based subscription.
+
+        Validates:
+        - Subscription is seat-based
+        - Subscription is active (not canceled/trialing)
+        - New seat count >= minimum from pricing tiers
+        - New seat count >= currently assigned seats
+
+        Creates proration billing entry for the cost difference.
+        """
+        if subscription.stripe_subscription_id is not None:
+            raise SubscriptionManagedByStripe(subscription)
+
+        if subscription.revoked or subscription.cancel_at_period_end:
+            raise AlreadyCanceledSubscription(subscription)
+
+        if subscription.trialing:
+            raise TrialingSubscription(subscription)
+
+        seat_price = self._get_seat_based_price(subscription)
+        if seat_price is None:
+            raise NotASeatBasedSubscription(subscription)
+
+        minimum_seats = self._get_minimum_seats_from_tiers(seat_price)
+        if seats < minimum_seats:
+            raise BelowMinimumSeats(subscription, minimum_seats, seats)
+
+        assigned_count = await seat_service.count_assigned_seats_for_subscription(
+            session, subscription
+        )
+
+        if seats < assigned_count:
+            raise SeatsAlreadyAssigned(subscription, assigned_count, seats)
+
+        old_seats = subscription.seats or 1
+        old_amount = subscription.amount
+
+        subscription.seats = seats
+
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(spp.product_price, seats=seats)
+            for spp in subscription.subscription_product_prices
+        ]
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            subscription.product.organization_id
+        )
+        assert organization is not None
+
+        if proration_behavior is None:
+            proration_behavior = organization.proration_behavior
+
+        event = await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_seats_updated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_seats": old_seats,
+                    "new_seats": seats,
+                    "proration_behavior": proration_behavior.value,
+                },
+            ),
+        )
+
+        await self._create_seat_proration_entry(
+            session,
+            subscription,
+            old_seats=old_seats,
+            new_seats=seats,
+            old_amount=old_amount,
+            new_amount=subscription.amount,
+            proration_behavior=proration_behavior,
+            event=event,
+        )
+
+        session.add(subscription)
+        await session.flush()
+
+        log.info(
+            "subscription.seats_updated",
+            subscription_id=subscription.id,
+            old_seats=old_seats,
+            new_seats=seats,
+            old_amount=old_amount,
+            new_amount=subscription.amount,
+        )
+
+        # Send webhooks and notifications
+        previous_status = subscription.status
+        previous_is_canceled = subscription.canceled
+
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_is_canceled=previous_is_canceled,
+        )
+
+        return subscription
+
+    async def _create_seat_proration_entry(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        old_seats: int,
+        new_seats: int,
+        old_amount: int,
+        new_amount: int,
+        proration_behavior: SubscriptionProrationBehavior,
+        event: "Event",
+    ) -> None:
+        """
+        Create a billing entry for the seat quantity change proration.
+
+        Prorates based on remaining time in current billing period.
+        """
+        now = datetime.now(UTC)
+        period_start = subscription.current_period_start
+        period_end = subscription.current_period_end
+
+        if period_end is None:
+            log.warning(
+                "subscription.seats_proration_skipped",
+                subscription_id=subscription.id,
+                reason="no_period_end",
+            )
+            return
+
+        period_total = (period_end - period_start).total_seconds()
+        time_remaining = (period_end - now).total_seconds()
+
+        if time_remaining <= 0:
+            return
+
+        proration_factor = Decimal(time_remaining) / Decimal(period_total)
+
+        # Calculate the raw amounts for the seat counts (before discount)
+        seat_price = self._get_seat_based_price(subscription)
+        assert seat_price is not None
+
+        old_base_amount = seat_price.calculate_amount(old_seats)
+        new_base_amount = seat_price.calculate_amount(new_seats)
+        base_amount_delta = new_base_amount - old_base_amount
+
+        # Calculate discount on the delta amount
+        discount_amount = 0
+        if subscription.discount and subscription.discount.is_applicable(
+            subscription.product
+        ):
+            discount_amount = subscription.discount.get_discount_amount(
+                abs(base_amount_delta)
+            )
+
+        # Calculate the net amount delta after discount
+        if base_amount_delta > 0:
+            # Increase: reduce the charge by discount
+            amount_delta = base_amount_delta - discount_amount
+        else:
+            # Decrease: reduce the credit by discount
+            amount_delta = base_amount_delta + discount_amount
+
+        prorated_amount = int(Decimal(amount_delta) * proration_factor)
+
+        if prorated_amount == 0:
+            return
+
+        if prorated_amount > 0:
+            direction = BillingEntryDirection.debit
+            entry_type = BillingEntryType.subscription_seats_increase
+        else:
+            direction = BillingEntryDirection.credit
+            entry_type = BillingEntryType.subscription_seats_decrease
+            prorated_amount = abs(prorated_amount)
+
+        # Calculate prorated discount amount
+        prorated_discount_amount = 0
+        if discount_amount > 0:
+            prorated_discount_amount = int(Decimal(discount_amount) * proration_factor)
+
+        billing_entry = BillingEntry(
+            start_timestamp=now,
+            end_timestamp=period_end,
+            subscription=subscription,
+            customer=subscription.customer,
+            product_price=seat_price,
+            amount=prorated_amount,
+            discount_amount=prorated_discount_amount
+            if prorated_discount_amount > 0
+            else None,
+            discount=subscription.discount if discount_amount > 0 else None,
+            currency=subscription.currency,
+            direction=direction,
+            type=entry_type,
+            event=event,
+        )
+
+        session.add(billing_entry)
+
+        if proration_behavior == SubscriptionProrationBehavior.invoice:
+            enqueue_job(
+                "order.create_subscription_order",
+                subscription.id,
+                OrderBillingReasonInternal.subscription_update,
+            )
 
     async def uncancel(
         self, session: AsyncSession, subscription: Subscription

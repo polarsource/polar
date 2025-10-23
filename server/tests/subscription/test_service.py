@@ -51,8 +51,10 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
+from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal
+from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
@@ -63,9 +65,12 @@ from polar.product.guard import (
 )
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
+    BelowMinimumSeats,
     InactiveSubscription,
     MissingCheckoutCustomer,
     NotARecurringProduct,
+    NotASeatBasedSubscription,
+    SeatsAlreadyAssigned,
     SubscriptionDoesNotExist,
     TrialingSubscription,
 )
@@ -77,12 +82,14 @@ from tests.fixtures.random_objects import (
     create_canceled_subscription,
     create_checkout,
     create_customer,
+    create_customer_seat,
     create_discount,
     create_event,
     create_meter,
     create_product,
     create_product_price_seat_unit,
     create_subscription,
+    create_subscription_with_seats,
     create_trialing_subscription,
     set_product_benefits,
 )
@@ -2475,3 +2482,697 @@ class TestUpdatePaymentMethodFromRetry:
 
         # And: Local subscription record is updated
         assert updated_subscription.payment_method == new_payment_method
+
+
+@pytest.mark.asyncio
+class TestUpdateSeats:
+    async def test_seat_increase_same_tier(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with 5 seats at $10/seat = $50
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],  # $10 per seat
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+        assert subscription.seats == 5
+        assert subscription.amount == 5000
+
+        # When: Increase to 10 seats
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: Seats and amount updated
+        assert updated.seats == 10
+        assert updated.amount == 10000
+
+        # And: Proration entry created
+        billing_entry_repo = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
+        proration_entries = [
+            e for e in entries if e.type == BillingEntryType.subscription_seats_increase
+        ]
+        assert len(proration_entries) == 1
+        entry = proration_entries[0]
+        assert entry.direction == BillingEntryDirection.debit
+        assert entry.amount is not None
+        assert entry.amount > 0
+
+    async def test_seat_increase_tier_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Product with tiered pricing
+        # Tier 1: 1-10 seats at $10/seat
+        # Tier 2: 11-50 seats at $8/seat
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        seat_price = ProductPriceSeatUnit(
+            price_currency="usd",
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
+                    {"min_seats": 11, "max_seats": None, "price_per_seat": 800},
+                ]
+            },
+            product=product,
+        )
+        await save_fixture(seat_price)
+        product.prices.append(seat_price)
+        await save_fixture(product)
+
+        # Subscription with 5 seats = 5 * $10 = $50
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+        assert subscription.amount == 5000
+
+        # When: Increase to 15 seats (crosses to tier 2)
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=15,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: Amount = 15 * $8 = $120 (tier 2 pricing)
+        assert updated.seats == 15
+        assert updated.amount == 12000
+
+    async def test_seat_decrease_blocked_by_assignments(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with 10 seats, 7 assigned
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=10,
+        )
+
+        # Create 7 assigned seats (mix of claimed and pending)
+        for i in range(5):
+            await create_customer_seat(
+                save_fixture,
+                subscription=subscription,
+                status=SeatStatus.claimed,
+                customer=await create_customer(
+                    save_fixture,
+                    organization=organization,
+                    email=f"customer-{i}@example.com",
+                ),
+            )
+        for i in range(2):
+            await create_customer_seat(
+                save_fixture,
+                subscription=subscription,
+                status=SeatStatus.pending,
+            )
+
+        # When: Try to decrease to 5 seats
+        # Then: Raises error
+        with pytest.raises(SeatsAlreadyAssigned) as exc_info:
+            await subscription_service.update_seats(session, subscription, seats=5)
+
+        assert exc_info.value.assigned_count == 7
+        assert exc_info.value.requested_seats == 5
+
+    async def test_seat_decrease_successful(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with 10 seats, 3 assigned
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=10,
+        )
+
+        # Create only 3 assigned seats
+        for i in range(3):
+            await create_customer_seat(
+                save_fixture,
+                subscription=subscription,
+                status=SeatStatus.claimed,
+                customer=await create_customer(
+                    save_fixture,
+                    organization=organization,
+                    email=f"customer-{i}@example.com",
+                ),
+            )
+
+        # When: Decrease to 5 seats (above assigned count)
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=5,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: Successfully updated
+        assert updated.seats == 5
+        assert updated.amount == 5000
+
+        # And: Credit entry created
+        billing_entry_repo = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
+        credit_entries = [
+            e for e in entries if e.type == BillingEntryType.subscription_seats_decrease
+        ]
+        assert len(credit_entries) == 1
+        entry = credit_entries[0]
+        assert entry.direction == BillingEntryDirection.credit
+        assert entry.amount is not None
+        assert entry.amount > 0
+
+    async def test_below_minimum_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Product with minimum 1 seat
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        # When: Try to set seats=0
+        # Then: Raises error
+        with pytest.raises(BelowMinimumSeats) as exc_info:
+            await subscription_service.update_seats(session, subscription, seats=0)
+
+        assert exc_info.value.minimum_seats == 1
+        assert exc_info.value.requested_seats == 0
+
+    async def test_not_seat_based_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,  # This is a fixed price product
+    ) -> None:
+        # Given: Subscription without seat-based pricing
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        # When: Try to update seats
+        # Then: Raises error
+        with pytest.raises(NotASeatBasedSubscription):
+            await subscription_service.update_seats(session, subscription, seats=10)
+
+    async def test_trialing_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Trialing subscription
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        # Create using create_subscription directly to set seats
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trialing,
+            trial_start=utc_now(),
+            trial_end=utc_now() + timedelta(days=30),
+            stripe_subscription_id=None,
+            seats=5,
+        )
+
+        # When: Try to update seats
+        # Then: Raises error
+        with pytest.raises(TrialingSubscription):
+            await subscription_service.update_seats(session, subscription, seats=10)
+
+    async def test_canceled_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Canceled subscription
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        # Create using create_subscription directly to set seats
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            cancel_at_period_end=True,
+            stripe_subscription_id=None,
+            seats=5,
+        )
+
+        # When: Try to update seats
+        # Then: Raises error
+        with pytest.raises(AlreadyCanceledSubscription):
+            await subscription_service.update_seats(session, subscription, seats=10)
+
+    async def test_proration_invoice_behavior(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with 5 seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        # When: Update with invoice behavior
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.invoice,
+        )
+        await session.flush()
+
+        # Then: Order creation job enqueued
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReasonInternal.subscription_update,
+        )
+
+    async def test_proration_prorate_behavior(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with 5 seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        # When: Update with prorate behavior
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: Order creation job NOT enqueued for immediate invoice
+        # (prorate means add to next invoice, not create immediately)
+        for call_args in enqueue_job_mock.call_args_list:
+            assert call_args[0][0] != "order.create_subscription_order"
+
+    async def test_no_proration_at_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription at end of period
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+        # Set period end to past
+        subscription.current_period_end = utc_now() - timedelta(hours=1)
+        await save_fixture(subscription)
+
+        # When: Update seats
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: Seats updated but no billing entry created
+        assert updated.seats == 10
+        billing_entry_repo = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
+        proration_entries = [
+            e
+            for e in entries
+            if e.type
+            in [
+                BillingEntryType.subscription_seats_increase,
+                BillingEntryType.subscription_seats_decrease,
+            ]
+        ]
+        assert len(proration_entries) == 0
+
+    async def test_seat_increase_with_fixed_discount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Mock webhook calls to avoid serialization issues with discount
+        mocker.patch.object(
+            subscription_service, "_after_subscription_updated", new=AsyncMock()
+        )
+
+        # Given: Subscription with 5 seats and $10 fixed discount
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],  # $10 per seat
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amount=1000,  # $10 discount
+            currency="usd",
+            duration=DiscountDuration.repeating,
+            organization=organization,
+            products=[product],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+            discount=discount,
+        )
+        assert subscription.seats == 5
+        # $50 (5 seats * $10) - $10 discount = $40
+        assert subscription.amount == 4000
+
+        # When: Increase to 10 seats (delta = $50)
+        updated = await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: Discount applied to billing entry
+        billing_entry_repo = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
+        proration_entries = [
+            e for e in entries if e.type == BillingEntryType.subscription_seats_increase
+        ]
+        assert len(proration_entries) == 1
+        entry = proration_entries[0]
+        assert entry.direction == BillingEntryDirection.debit
+        assert entry.discount_amount is not None
+        # Base delta is $50, fixed discount of $10 on the delta
+        # Since we're at the start of the period (100% time remaining),
+        # proration factor is 1.0, so full discount applies
+        assert entry.discount_amount == 1000  # $10 in cents
+        assert entry.discount == discount
+        # Net charge: $50 - $10 = $40
+        assert entry.amount is not None
+        assert entry.amount == 4000  # $40 in cents
+
+    async def test_seat_increase_with_percentage_discount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Mock webhook calls to avoid serialization issues with discount
+        mocker.patch.object(
+            subscription_service, "_after_subscription_updated", new=AsyncMock()
+        )
+
+        # Given: Subscription with 5 seats and 20% discount
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],  # $10 per seat
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2000,  # 20% discount
+            duration=DiscountDuration.repeating,
+            organization=organization,
+            products=[product],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+            discount=discount,
+        )
+
+        # When: Increase to 10 seats (delta = $50, 20% discount = $10 off)
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: Percentage discount applied
+        billing_entry_repo = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
+        proration_entries = [
+            e for e in entries if e.type == BillingEntryType.subscription_seats_increase
+        ]
+        assert len(proration_entries) == 1
+        entry = proration_entries[0]
+        assert entry.discount_amount is not None
+        # Base delta is $50, 20% discount is $10
+        # Since we're at the start of the period (100% time remaining),
+        # proration factor is 1.0, so full discount applies
+        assert entry.discount_amount == 1000  # $10 in cents (20% of $50)
+        assert entry.discount == discount
+        # Net charge: $50 - $10 = $40
+        assert entry.amount is not None
+        assert entry.amount == 4000  # $40 in cents
+
+    async def test_seat_decrease_with_discount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Mock webhook calls to avoid serialization issues with discount
+        mocker.patch.object(
+            subscription_service, "_after_subscription_updated", new=AsyncMock()
+        )
+
+        # Given: Subscription with 10 seats and $10 fixed discount
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amount=1000,  # $10 discount
+            currency="usd",
+            duration=DiscountDuration.repeating,
+            organization=organization,
+            products=[product],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=10,
+            discount=discount,
+        )
+
+        # When: Decrease to 5 seats (credit delta = -$50)
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=5,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: Discount reduces the credit amount
+        billing_entry_repo = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
+        credit_entries = [
+            e for e in entries if e.type == BillingEntryType.subscription_seats_decrease
+        ]
+        assert len(credit_entries) == 1
+        entry = credit_entries[0]
+        assert entry.direction == BillingEntryDirection.credit
+        assert entry.discount_amount is not None
+        # Base credit delta is -$50, discount of $10 on the delta
+        # reduces the credit to -$40 (customer gets less credit)
+        # Since we're at the start of the period (100% time remaining),
+        # proration factor is 1.0, so full discount applies
+        assert entry.discount_amount == 1000  # $10 in cents
+        assert entry.discount == discount
+        # Net credit: $50 - $10 = $40
+        assert entry.amount is not None
+        assert entry.amount == 4000  # $40 in cents
+
+    async def test_seat_increase_without_discount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription without discount
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+        assert subscription.discount is None
+
+        # When: Increase seats
+        await subscription_service.update_seats(
+            session,
+            subscription,
+            seats=10,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        # Then: No discount in billing entry
+        billing_entry_repo = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
+        proration_entries = [
+            e for e in entries if e.type == BillingEntryType.subscription_seats_increase
+        ]
+        assert len(proration_entries) == 1
+        entry = proration_entries[0]
+        assert entry.discount is None
+        assert entry.discount_amount is None

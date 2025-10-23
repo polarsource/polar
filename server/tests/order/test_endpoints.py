@@ -225,6 +225,7 @@ class TestExportOrders:
         # Verify data row contains expected fields
         order = orders[0]
         data_row = csv_lines[1]
+        assert order.product is not None
         assert order.customer.email in data_row
         assert order.product.name in data_row
         assert order.currency in data_row

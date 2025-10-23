@@ -34,7 +34,7 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
     def create_token_response(self) -> tuple[int, Any, Iterable[tuple[str, str]]]:
         client = self.request.client
         sub_type_value = self.request.user
-        scope = self.request.scope or client.scope
+        scope = self.request.payload.scope or client.scope
 
         token = self.generate_token(
             user=sub_type_value, scope=scope, include_refresh_token=False

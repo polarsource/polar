@@ -53,13 +53,13 @@ export const EventCostBadge = ({
   cost,
   currency,
 }: {
-  cost: number
+  cost: number | string
   currency: string
 }) => {
   return (
     <div className="flex flex-row items-center gap-x-4 font-mono">
-      {formatCurrencyAndAmount(cost, currency, 2)}
-      <EventCostIndicator cost={cost} />
+      {formatCurrencyAndAmount(Number(cost), currency, 2)}
+      <EventCostIndicator cost={Number(cost)} />
     </div>
   )
 }

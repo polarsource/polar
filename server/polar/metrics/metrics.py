@@ -1,4 +1,3 @@
-import statistics
 from collections import deque
 from collections.abc import Iterable
 from datetime import datetime
@@ -42,10 +41,6 @@ def cumulative_sum(periods: Iterable["MetricsPeriod"], slug: str) -> int | float
 def cumulative_last(periods: Iterable["MetricsPeriod"], slug: str) -> int | float:
     dd = deque((getattr(p, slug) for p in periods), maxlen=1)
     return dd.pop()
-
-
-def cumulative_mean(periods: Iterable["MetricsPeriod"], slug: str) -> float:
-    return statistics.fmean(getattr(p, slug) for p in periods)
 
 
 class Metric(Protocol):
@@ -162,7 +157,9 @@ class AverageOrderValueMetric(Metric):
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        return cumulative_mean(periods, cls.slug)
+        total_orders = sum(getattr(p, "orders") for p in periods)
+        revenue = sum(getattr(p, "revenue") for p in periods)
+        return revenue / total_orders if total_orders > 0 else 0.0
 
 
 class NetAverageOrderValueMetric(Metric):
@@ -179,7 +176,9 @@ class NetAverageOrderValueMetric(Metric):
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        return cumulative_mean(periods, cls.slug)
+        total_orders = sum(getattr(p, "orders") for p in periods)
+        revenue = sum(getattr(p, "net_revenue") for p in periods)
+        return revenue / total_orders if total_orders > 0 else 0.0
 
 
 class OneTimeProductsMetric(Metric):

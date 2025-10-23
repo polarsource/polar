@@ -1,3 +1,5 @@
+import json
+from decimal import Decimal
 from typing import Any, NewType, TypeAlias
 
 from sqlalchemy import Engine
@@ -32,6 +34,16 @@ access and helps prevent accidental reads in write-only contexts.
 """
 
 
+def _json_obj_serializer(obj: Any) -> Any:
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+
+def json_serializer(obj: Any) -> str:
+    return json.dumps(obj, default=_json_obj_serializer)
+
+
 def create_async_engine(
     *,
     dsn: str,
@@ -53,6 +65,7 @@ def create_async_engine(
         connect_args=connect_args,
         pool_size=pool_size,
         pool_recycle=pool_recycle,
+        json_serializer=json_serializer,
     )
 
 

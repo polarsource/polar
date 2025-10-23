@@ -1,6 +1,6 @@
 import statistics
 from collections import deque
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, ClassVar, Protocol, cast
@@ -35,20 +35,17 @@ class MetricType(StrEnum):
     percentage = "percentage"
 
 
-CumulativeFunction = Callable[[Iterable["MetricsPeriod"]], int | float]
+def cumulative_sum(periods: Iterable["MetricsPeriod"], slug: str) -> int | float:
+    return sum(getattr(p, slug) for p in periods)
 
 
-def weighted_conversion_rate(
-    periods: Iterable["MetricsPeriod"],
-    numerator: str,
-    denominator: str,
-) -> float:
-    numerator_count = 0
-    denominator_count = 0
-    for period in periods:
-        numerator_count += getattr(period, numerator, 0)
-        denominator_count += getattr(period, denominator, 0)
-    return numerator_count / denominator_count if denominator_count > 0 else 0.0
+def cumulative_last(periods: Iterable["MetricsPeriod"], slug: str) -> int | float:
+    dd = deque((getattr(p, slug) for p in periods), maxlen=1)
+    return dd.pop()
+
+
+def cumulative_mean(periods: Iterable["MetricsPeriod"], slug: str) -> float:
+    return statistics.fmean(getattr(p, slug) for p in periods)
 
 
 class Metric(Protocol):
@@ -63,29 +60,7 @@ class Metric(Protocol):
     ) -> ColumnElement[int] | ColumnElement[float]: ...
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction: ...
-
-    @classmethod
-    def _sum(cls) -> CumulativeFunction:
-        def cumulative(periods: Iterable["MetricsPeriod"]) -> int | float:
-            return sum(getattr(p, cls.slug) for p in periods)
-
-        return cumulative
-
-    @classmethod
-    def _last(cls) -> CumulativeFunction:
-        def cumulative(periods: Iterable["MetricsPeriod"]) -> int | float:
-            dd = deque((getattr(p, cls.slug) for p in periods), maxlen=1)
-            return dd.pop()
-
-        return cumulative
-
-    @classmethod
-    def _mean(cls) -> CumulativeFunction:
-        def cumulative(periods: Iterable["MetricsPeriod"]) -> float:
-            return statistics.fmean(getattr(p, cls.slug) for p in periods)
-
-        return cumulative
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float: ...
 
 
 class OrdersMetric(Metric):
@@ -101,8 +76,8 @@ class OrdersMetric(Metric):
         return func.count(Order.id)
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class RevenueMetric(Metric):
@@ -118,8 +93,8 @@ class RevenueMetric(Metric):
         return func.sum(Order.net_amount)
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class NetRevenueMetric(Metric):
@@ -135,8 +110,8 @@ class NetRevenueMetric(Metric):
         return func.sum(Order.payout_amount)
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CumulativeRevenueMetric(Metric):
@@ -152,8 +127,8 @@ class CumulativeRevenueMetric(Metric):
         return func.sum(Order.net_amount)
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._last()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
 
 
 class NetCumulativeRevenueMetric(Metric):
@@ -169,8 +144,8 @@ class NetCumulativeRevenueMetric(Metric):
         return func.sum(Order.payout_amount)
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._last()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
 
 
 class AverageOrderValueMetric(Metric):
@@ -186,8 +161,8 @@ class AverageOrderValueMetric(Metric):
         return func.cast(func.ceil(func.avg(Order.net_amount)), Integer)
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._mean()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
+        return cumulative_mean(periods, cls.slug)
 
 
 class NetAverageOrderValueMetric(Metric):
@@ -203,8 +178,8 @@ class NetAverageOrderValueMetric(Metric):
         return func.cast(func.ceil(func.avg(Order.payout_amount)), Integer)
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._mean()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
+        return cumulative_mean(periods, cls.slug)
 
 
 class OneTimeProductsMetric(Metric):
@@ -220,8 +195,8 @@ class OneTimeProductsMetric(Metric):
         return func.count(Order.id).filter(Order.subscription_id.is_(None))
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class OneTimeProductsRevenueMetric(Metric):
@@ -237,8 +212,8 @@ class OneTimeProductsRevenueMetric(Metric):
         return func.sum(Order.net_amount).filter(Order.subscription_id.is_(None))
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class OneTimeProductsNetRevenueMetric(Metric):
@@ -254,8 +229,8 @@ class OneTimeProductsNetRevenueMetric(Metric):
         return func.sum(Order.payout_amount).filter(Order.subscription_id.is_(None))
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class NewSubscriptionsMetric(Metric):
@@ -276,8 +251,8 @@ class NewSubscriptionsMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class NewSubscriptionsRevenueMetric(Metric):
@@ -298,8 +273,8 @@ class NewSubscriptionsRevenueMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class NewSubscriptionsNetRevenueMetric(Metric):
@@ -320,8 +295,8 @@ class NewSubscriptionsNetRevenueMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class RenewedSubscriptionsMetric(Metric):
@@ -342,8 +317,8 @@ class RenewedSubscriptionsMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class RenewedSubscriptionsRevenueMetric(Metric):
@@ -364,8 +339,8 @@ class RenewedSubscriptionsRevenueMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class RenewedSubscriptionsNetRevenueMetric(Metric):
@@ -386,8 +361,8 @@ class RenewedSubscriptionsNetRevenueMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class ActiveSubscriptionsMetric(Metric):
@@ -403,8 +378,8 @@ class ActiveSubscriptionsMetric(Metric):
         return func.count(Subscription.id)
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._last()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
 
 
 class MonthlyRecurringRevenueMetric(Metric):
@@ -436,8 +411,8 @@ class MonthlyRecurringRevenueMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._last()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
 
 
 class CommittedMonthlyRecurringRevenueMetric(Metric):
@@ -482,8 +457,8 @@ class CommittedMonthlyRecurringRevenueMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._last()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
 
 
 class CheckoutsMetric(Metric):
@@ -499,8 +474,8 @@ class CheckoutsMetric(Metric):
         return func.count(Checkout.id)
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class SucceededCheckoutsMetric(Metric):
@@ -518,8 +493,8 @@ class SucceededCheckoutsMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CheckoutsConversionMetric(Metric):
@@ -544,11 +519,10 @@ class CheckoutsConversionMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        def cumulative(periods: Iterable["MetricsPeriod"]) -> float:
-            return weighted_conversion_rate(periods, "succeeded_checkouts", "checkouts")
-
-        return cumulative
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
+        total_checkouts = sum(getattr(p, "checkouts") for p in periods)
+        total_succeeded = sum(getattr(p, "succeeded_checkouts") for p in periods)
+        return total_succeeded / total_checkouts if total_checkouts > 0 else 0.0
 
 
 class CanceledSubscriptionsMetric(Metric):
@@ -564,8 +538,8 @@ class CanceledSubscriptionsMetric(Metric):
         return func.count(Subscription.id)
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CanceledSubscriptionsCustomerServiceMetric(Metric):
@@ -584,8 +558,8 @@ class CanceledSubscriptionsCustomerServiceMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CanceledSubscriptionsLowQualityMetric(Metric):
@@ -604,8 +578,8 @@ class CanceledSubscriptionsLowQualityMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CanceledSubscriptionsMissingFeaturesMetric(Metric):
@@ -624,8 +598,8 @@ class CanceledSubscriptionsMissingFeaturesMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CanceledSubscriptionsSwitchedServiceMetric(Metric):
@@ -644,8 +618,8 @@ class CanceledSubscriptionsSwitchedServiceMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CanceledSubscriptionsTooComplexMetric(Metric):
@@ -664,8 +638,8 @@ class CanceledSubscriptionsTooComplexMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CanceledSubscriptionsTooExpensiveMetric(Metric):
@@ -684,8 +658,8 @@ class CanceledSubscriptionsTooExpensiveMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CanceledSubscriptionsUnusedMetric(Metric):
@@ -704,8 +678,8 @@ class CanceledSubscriptionsUnusedMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CanceledSubscriptionsOtherMetric(Metric):
@@ -724,8 +698,8 @@ class CanceledSubscriptionsOtherMetric(Metric):
         )
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CostsMetric(Metric):
@@ -741,8 +715,8 @@ class CostsMetric(Metric):
         return func.sum(Event.user_metadata["_cost"]["amount"].as_integer())
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._sum()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
 
 
 class CumulativeCostsMetric(Metric):
@@ -758,8 +732,8 @@ class CumulativeCostsMetric(Metric):
         return func.sum(Event.user_metadata["_cost"]["amount"].as_integer())
 
     @classmethod
-    def get_cumulative_function(cls) -> CumulativeFunction:
-        return cls._last()
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
 
 
 METRICS: list[type[Metric]] = [

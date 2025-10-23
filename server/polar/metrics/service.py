@@ -87,7 +87,7 @@ class MetricsService:
 
         totals: dict[str, int | float] = {}
         for metric in METRICS:
-            totals[metric.slug] = metric.get_cumulative_function()(periods)
+            totals[metric.slug] = metric.get_cumulative(periods)
 
         return MetricsResponse.model_validate(
             {

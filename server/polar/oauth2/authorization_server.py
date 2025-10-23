@@ -7,7 +7,6 @@ import structlog
 from authlib.oauth2 import AuthorizationServer as _AuthorizationServer
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6749.errors import (
-    InvalidScopeError,
     UnsupportedResponseTypeError,
 )
 from authlib.oauth2.rfc6750 import BearerTokenGenerator
@@ -274,14 +273,6 @@ class AuthorizationServer(_AuthorizationServer):
         authorization_server.register_endpoint(ClientConfigurationEndpoint)
         register_grants(authorization_server)
         return authorization_server
-
-    def validate_requested_scope(
-        self, scope: str | None, state: str | None = None
-    ) -> None:
-        # We require scope to be provided
-        if scope is None:
-            raise InvalidScopeError(state=state)
-        return super().validate_requested_scope(scope)
 
     def query_client(self, client_id: str) -> OAuth2Client | None:
         statement = select(OAuth2Client).where(

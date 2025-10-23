@@ -1,5 +1,6 @@
 'use client'
 
+import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import { EventCreationGuideModal } from '@/components/Events/EventCreationGuideModal'
 import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -10,6 +11,7 @@ import Pagination from '@/components/Pagination/Pagination'
 import { useEventNames, useEvents } from '@/hooks/queries/events'
 import useDebounce from '@/utils/useDebounce'
 import AddOutlined from '@mui/icons-material/AddOutlined'
+import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
 import Search from '@mui/icons-material/Search'
 import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -22,8 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import { endOfToday } from 'date-fns'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   parseAsArrayOf,
   parseAsInteger,
@@ -61,10 +68,16 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     'endDate',
     parseAsIsoDateTime.withDefault(endOfToday()),
   )
+  const [selectedCustomerIds, setSelectedCustomerIds] = useQueryState(
+    'customerIds',
+    parseAsArrayOf(parseAsString),
+  )
   const [currentPage, setCurrentPage] = useQueryState(
     'page',
     parseAsInteger.withDefault(1),
   )
+
+  const router = useRouter()
 
   const {
     isShown: isEventCreationGuideShown,
@@ -102,6 +115,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           ? selectedEventNames
           : null,
       page: currentPage,
+      customer_id: selectedCustomerIds ?? null,
       limit: PAGE_SIZE,
       sorting: [sorting],
       start_timestamp: startDate.toISOString(),
@@ -115,6 +129,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     endDate,
     sorting,
     debouncedQuery,
+    selectedCustomerIds,
   ])
 
   const { data: events } = useEvents(organization.id, eventParameters)
@@ -157,6 +172,25 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
             <div>Events</div>
             <div className="flex flex-row items-center gap-4">
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    size="icon"
+                    className="h-6 w-6 rounded-full"
+                    variant="ghost"
+                    onClick={() => {
+                      router.replace(
+                        `/dashboard/${organization.slug}/usage-billing/events`,
+                      )
+                    }}
+                  >
+                    <RefreshOutlined fontSize="inherit" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Reset Filters</p>
+                </TooltipContent>
+              </Tooltip>
               <Button
                 size="icon"
                 className="h-6 w-6"
@@ -257,6 +291,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                     </div>
                   )
                 })}
+              <CustomerSelector
+                organizationId={organization.id}
+                selectedCustomerIds={selectedCustomerIds}
+                onSelectCustomerIds={setSelectedCustomerIds}
+              />
             </div>
           </div>
           <Modal

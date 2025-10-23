@@ -1,6 +1,5 @@
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -56,9 +55,17 @@ export const EventCostBadge = ({
   cost: number | string
   currency: string
 }) => {
+  const currencyNumberFormat = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 17,
+    notation: 'standard',
+  })
+
   return (
     <div className="flex flex-row items-center gap-x-4 font-mono">
-      {formatCurrencyAndAmount(Number(cost), currency, 2)}
+      {currencyNumberFormat.format(Number(cost))}
       <EventCostIndicator cost={Number(cost)} />
     </div>
   )

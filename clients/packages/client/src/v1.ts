@@ -8207,7 +8207,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -8496,7 +8496,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -11428,7 +11428,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -11522,7 +11522,7 @@ export interface components {
        * Recurring Interval Count
        * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
        */
-      recurring_interval_count: number | null
+      recurring_interval_count: number
       /**
        * @description The status of the subscription.
        * @example active
@@ -11598,6 +11598,11 @@ export interface components {
         | null
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
+      /**
+       * Seats
+       * @description Number of seats included in the subscription (for seat-based pricing).
+       */
+      seats?: number | null
     }
     /**
      * CustomerOrderUpdate
@@ -11760,7 +11765,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -12405,7 +12410,7 @@ export interface components {
        * Recurring Interval Count
        * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
        */
-      recurring_interval_count: number | null
+      recurring_interval_count: number
       /**
        * @description The status of the subscription.
        * @example active
@@ -12481,6 +12486,11 @@ export interface components {
         | null
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
+      /**
+       * Seats
+       * @description Number of seats included in the subscription (for seat-based pricing).
+       */
+      seats?: number | null
       product: components['schemas']['CustomerSubscriptionProduct']
       /**
        * Prices
@@ -12644,7 +12654,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -13759,7 +13769,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -16633,7 +16643,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -16725,7 +16735,7 @@ export interface components {
        * Recurring Interval Count
        * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
        */
-      recurring_interval_count: number | null
+      recurring_interval_count: number
       /**
        * @description The status of the subscription.
        * @example active
@@ -16801,6 +16811,11 @@ export interface components {
         | null
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
+      /**
+       * Seats
+       * @description Number of seats included in the subscription (for seat-based pricing).
+       */
+      seats?: number | null
     }
     /**
      * OrderUpdate
@@ -17760,7 +17775,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -17888,7 +17903,7 @@ export interface components {
       recurring_interval?: null
       /**
        * Recurring Interval Count
-       * @description States that the product is a one-time purchase.
+       * @description One-time products don't have a recurring interval count.
        */
       recurring_interval_count?: null
     }
@@ -18566,7 +18581,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -19295,7 +19310,7 @@ export interface components {
        * Recurring Interval Count
        * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
        */
-      recurring_interval_count: number | null
+      recurring_interval_count: number
       /**
        * @description The status of the subscription.
        * @example active
@@ -19371,6 +19386,11 @@ export interface components {
         | null
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
+      /**
+       * Seats
+       * @description Number of seats included in the subscription (for seat-based pricing).
+       */
+      seats?: number | null
       /** Metadata */
       metadata: {
         [key: string]: string | number | boolean
@@ -29378,7 +29398,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Authentication required for subscription-based assignment */
+      /** @description Authentication required for direct subscription or order assignment */
       401: {
         headers: {
           [name: string]: unknown
@@ -29392,7 +29412,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Subscription, checkout, or customer not found */
+      /** @description Subscription, order, checkout, or customer not found */
       404: {
         headers: {
           [name: string]: unknown

@@ -21,7 +21,9 @@ export interface BenefitGrantEventCardProps {
 
 export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
   const { organization } = useContext(OrganizationContext)
-  const { data: benefit } = useBenefit(event.metadata.benefit_id)
+  const { data: benefit, isLoading: isLoadingBenefit } = useBenefit(
+    event.metadata.benefit_id,
+  )
 
   const status = useMemo(() => {
     switch (event.name) {
@@ -55,13 +57,13 @@ export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
   }
 
   return (
-    <EventCardBase>
+    <EventCardBase loading={isLoadingBenefit}>
       <Link
         href={`/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}`}
         className="flex flex-grow flex-row items-center justify-between gap-x-12"
       >
-        <div className="flex flex-row items-center gap-x-4 p-2">
-          <div className="flex flex-row items-center gap-x-2">
+        <div className="flex flex-row items-center gap-x-4 px-1.5 py-2">
+          <div className="flex flex-row items-center gap-x-6">
             {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
             <span className="">{benefit.description ?? '—'}</span>
           </div>

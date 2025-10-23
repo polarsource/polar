@@ -7,9 +7,9 @@ import { twMerge } from 'tailwind-merge'
 const getIndicatorColor = (cost: number) => {
   const colors = {
     positive:
-      'bg-emerald-500 dark:bg-emerald-950 text-emerald-500 dark:text-emerald-500',
-    negative: 'bg-red-100 dark:bg-red-950 text-red-500 dark:text-red-500',
-    neutral: 'bg-gray-200 dark:bg-polar-700 text-gray-500 dark:text-gray-500',
+      'bg-emerald-50 dark:bg-emerald-950 text-emerald-500 dark:text-emerald-500',
+    negative: 'bg-red-50 dark:bg-red-950 text-red-500 dark:text-red-500',
+    neutral: 'bg-gray-100 dark:bg-polar-700 text-gray-500 dark:text-gray-500',
   }
 
   if (cost > 0) {

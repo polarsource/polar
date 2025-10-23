@@ -74,10 +74,20 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
 
   const { data } = useEventNames(organization.id, {
     sorting: ['-occurrences'],
+    limit: 500,
   })
 
   const eventNames = useMemo(
-    () => data?.pages.flatMap((page) => page.items) ?? [],
+    () =>
+      data?.pages
+        .flatMap((page) => page.items)
+        .reduce(
+          (acc, curr) => {
+            acc[curr.source] = [...(acc[curr.source] ?? []), curr]
+            return acc
+          },
+          {} as Record<schemas['EventSource'], schemas['EventName'][]>,
+        ),
     [data],
   )
 
@@ -196,43 +206,57 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   </SelectContent>
                 </Select>
               </div>
-              {eventNames.length > 0 && (
-                <div className="flex flex-col gap-y-2">
-                  <h3 className="text-sm">Event</h3>
-                  <List size="small" className="rounded-xl">
-                    {eventNames.map((eventName) => (
-                      <ListItem
-                        key={eventName.name}
-                        size="small"
-                        className="justify-between px-3 font-mono text-sm"
-                        inactiveClassName="text-gray-500 dark:text-polar-500"
-                        selected={selectedEventNames?.includes(eventName.name)}
-                        onSelect={() =>
-                          setSelectedEventNames((prev) =>
-                            prev && prev.includes(eventName.name)
-                              ? prev.filter((name) => name !== eventName.name)
-                              : ([...(prev ?? []), eventName.name] as string[]),
-                          )
-                        }
-                      >
-                        <span className="w-full truncate">
-                          {eventName.name}
-                        </span>
-                        <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                          {Number(eventName.occurrences).toLocaleString(
-                            'en-US',
-                            {
-                              style: 'decimal',
-                              compactDisplay: 'short',
-                              notation: 'compact',
-                            },
-                          )}
-                        </span>
-                      </ListItem>
-                    ))}
-                  </List>
-                </div>
-              )}
+
+              {Object.entries(eventNames ?? {})
+                .sort((a) => (a[0] === 'system' ? 1 : -1))
+                .map(([source, eventNames]) => {
+                  if (eventNames.length === 0) return null
+
+                  return (
+                    <div className="flex flex-col gap-y-2" key={source}>
+                      <h3 className="text-sm capitalize">{source} Events</h3>
+                      <List size="small" className="rounded-xl">
+                        {eventNames.map((eventName) => (
+                          <ListItem
+                            key={eventName.name}
+                            size="small"
+                            className="justify-between px-3 font-mono text-xs"
+                            inactiveClassName="text-gray-500 dark:text-polar-500"
+                            selected={selectedEventNames?.includes(
+                              eventName.name,
+                            )}
+                            onSelect={() =>
+                              setSelectedEventNames((prev) =>
+                                prev && prev.includes(eventName.name)
+                                  ? prev.filter(
+                                      (name) => name !== eventName.name,
+                                    )
+                                  : ([
+                                      ...(prev ?? []),
+                                      eventName.name,
+                                    ] as string[]),
+                              )
+                            }
+                          >
+                            <span className="w-full truncate">
+                              {eventName.name}
+                            </span>
+                            <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
+                              {Number(eventName.occurrences).toLocaleString(
+                                'en-US',
+                                {
+                                  style: 'decimal',
+                                  compactDisplay: 'short',
+                                  notation: 'compact',
+                                },
+                              )}
+                            </span>
+                          </ListItem>
+                        ))}
+                      </List>
+                    </div>
+                  )
+                })}
             </div>
           </div>
           <Modal

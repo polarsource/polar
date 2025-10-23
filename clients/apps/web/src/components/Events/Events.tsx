@@ -69,10 +69,10 @@ const EventRow = ({
             )}
           </div>
           <div className="flex flex-row items-center gap-x-4">
-            <span>{eventDisplayName}</span>
+            <span className="text-xs">{eventDisplayName}</span>
             <EventSourceBadge source={event.source} />
           </div>
-          <span className="dark:text-polar-500 text-sm text-gray-500 capitalize">
+          <span className="dark:text-polar-500 text-xs text-gray-500 capitalize">
             {formattedTimestamp}
           </span>
         </div>

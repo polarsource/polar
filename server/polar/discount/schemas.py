@@ -2,7 +2,7 @@ import inspect
 from datetime import datetime
 from typing import Annotated, Any, Literal, Self
 
-from annotated_types import Ge
+from annotated_types import Ge, Le
 from pydantic import (
     UUID4,
     AfterValidator,
@@ -124,6 +124,7 @@ DurationInMonths = Annotated[
         """)
     ),
     Ge(1),
+    Le(999),
 ]
 Amount = Annotated[
     int,

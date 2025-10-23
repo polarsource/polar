@@ -156,6 +156,8 @@ class TestOAuth2Register:
         assert "registration_access_token" in json
         assert json["token_endpoint_auth_method"] == "client_secret_post"
         assert json["scope"] == "openid email"
+        for value in json.values():
+            assert value is not None
 
 
 @pytest.mark.asyncio
@@ -198,6 +200,8 @@ class TestOAuth2ConfigureGet:
         assert response.status_code == 200
         json = response.json()
         assert json["client_id"] == oauth2_client.client_id
+        for value in json.values():
+            assert value is not None
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_user_not_owner(
@@ -216,6 +220,8 @@ class TestOAuth2ConfigureGet:
         assert response.status_code == 200
         json = response.json()
         assert json["client_id"] == oauth2_client.client_id
+        for value in json.values():
+            assert value is not None
 
 
 @pytest.mark.asyncio
@@ -240,6 +246,8 @@ class TestOAuth2ConfigurePut:
         assert json["client_id"] == oauth2_client.client_id
         assert json["client_name"] == "Test Client Updated"
         assert json["redirect_uris"] == ["https://example.com/callback"]
+        for value in json.values():
+            assert value is not None
 
     @pytest.mark.auth
     async def test_user_valid(
@@ -259,6 +267,8 @@ class TestOAuth2ConfigurePut:
         assert json["client_id"] == oauth2_client.client_id
         assert json["client_name"] == "Test Client Updated"
         assert json["redirect_uris"] == ["https://example.com/callback"]
+        for value in json.values():
+            assert value is not None
 
 
 @pytest.mark.asyncio

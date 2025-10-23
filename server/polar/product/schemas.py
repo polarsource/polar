@@ -333,8 +333,8 @@ class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
         ge=1,
         le=999,
         description=(
-            "Number of interval units of the subscription."
-            "If this is set to 1 the charge will happen every interval (e.g. every month),"
+            "Number of interval units of the subscription. "
+            "If this is set to 1 the charge will happen every interval (e.g. every month), "
             "if set to 2 it will be every other month, and so on."
         ),
     )
@@ -392,8 +392,8 @@ class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
         ge=1,
         le=999,
         description=(
-            "Number of interval units of the subscription."
-            "If this is set to 1 the charge will happen every interval (e.g. every month),"
+            "Number of interval units of the subscription. "
+            "If this is set to 1 the charge will happen every interval (e.g. every month), "
             "if set to 2 it will be every other month, and so on."
         ),
     )
@@ -665,8 +665,8 @@ class ProductBase(TrialConfigurationOutputMixin, TimestampedSchema, IDSchema):
     )
     recurring_interval_count: int | None = Field(
         description=(
-            "Number of interval units of the subscription."
-            "If this is set to 1 the charge will happen every interval (e.g. every month),"
+            "Number of interval units of the subscription. "
+            "If this is set to 1 the charge will happen every interval (e.g. every month), "
             "if set to 2 it will be every other month, and so on. "
             "None for one-time products."
         )

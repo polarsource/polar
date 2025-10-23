@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { EventCardBase } from './EventCardBase'
+import { UserEventCard } from './UserEventCard'
 
 export interface BenefitGrantEventCardProps {
   event:
@@ -52,32 +53,32 @@ export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
     }
   }, [event.name])
 
-  if (!benefit) {
-    return null
-  }
-
   return (
     <EventCardBase loading={isLoadingBenefit}>
-      <Link
-        href={`/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}`}
-        className="flex flex-grow flex-row items-center justify-between gap-x-12"
-      >
-        <div className="flex flex-row items-center gap-x-4 px-1.5 py-2">
-          <div className="flex flex-row items-center gap-x-6">
-            {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
-            <span className="">{benefit.description ?? '—'}</span>
+      {benefit ? (
+        <Link
+          href={`/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}`}
+          className="flex flex-grow flex-row items-center justify-between gap-x-12"
+        >
+          <div className="flex flex-row items-center gap-x-4 px-1.5 py-2">
+            <div className="flex flex-row items-center gap-x-6">
+              {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
+              <span className="">{benefit.description ?? '—'}</span>
+            </div>
+            <span className="dark:text-polar-500 text-gray-500">
+              {benefitsDisplayNames[benefit.type]}
+            </span>
           </div>
-          <span className="dark:text-polar-500 text-gray-500">
-            {benefitsDisplayNames[benefit.type]}
-          </span>
-        </div>
-        {status ? (
-          <Status
-            status={status[0]}
-            className={twMerge(status[1], 'text-xs')}
-          />
-        ) : null}
-      </Link>
+          {status ? (
+            <Status
+              status={status[0]}
+              className={twMerge(status[1], 'text-xs')}
+            />
+          ) : null}
+        </Link>
+      ) : (
+        <UserEventCard event={event} />
+      )}
     </EventCardBase>
   )
 }

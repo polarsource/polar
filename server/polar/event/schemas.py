@@ -7,6 +7,7 @@ from pydantic import (
     AfterValidator,
     AliasChoices,
     AwareDatetime,
+    Decimal,
     Discriminator,
     Field,
 )
@@ -54,7 +55,14 @@ def is_past_timestamp(timestamp: datetime) -> datetime:
 
 
 class CostMetadata(TypedDict):
-    amount: Annotated[int, Field(description="The amount in cents.")]
+    amount: Annotated[
+        Decimal,
+        Field(
+            description="The amount in cents.",
+            max_digits=17,
+            decimal_places=12,
+        ),
+    ]
     currency: Annotated[
         str,
         Field(

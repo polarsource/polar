@@ -62,6 +62,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.order import OrderBillingReasonInternal
+from polar.models.product_price import ProductPriceSeatUnit, SeatTier
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -90,6 +91,7 @@ from .schemas import (
     SubscriptionUpdate,
     SubscriptionUpdateDiscount,
     SubscriptionUpdateProduct,
+    SubscriptionUpdateSeats,
     SubscriptionUpdateTrial,
 )
 from .sorting import SubscriptionSortProperty
@@ -192,6 +194,46 @@ class SubscriptionNotReadyForMigration(SubscriptionError):
         super().__init__(message)
 
 
+class NotASeatBasedSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription does not support seat-based pricing."
+        super().__init__(message, 400)
+
+
+class SeatsAlreadyAssigned(SubscriptionError):
+    def __init__(
+        self, subscription: Subscription, assigned_count: int, requested_seats: int
+    ) -> None:
+        self.subscription = subscription
+        self.assigned_count = assigned_count
+        self.requested_seats = requested_seats
+        message = (
+            f"Cannot decrease seats to {requested_seats}. "
+            f"Currently {assigned_count} seats are assigned. "
+            f"Revoke seats first."
+        )
+        super().__init__(message, 400)
+
+
+class BelowMinimumSeats(SubscriptionError):
+    def __init__(
+        self, subscription: Subscription, minimum_seats: int, requested_seats: int
+    ) -> None:
+        self.subscription = subscription
+        self.minimum_seats = minimum_seats
+        self.requested_seats = requested_seats
+        message = f"Minimum seat count is {minimum_seats} based on pricing tiers."
+        super().__init__(message, 400)
+
+
+class OneTimeOrderNotSupported(SubscriptionError):
+    def __init__(
+        self, message: str = "This operation is not supported for one-time orders"
+    ) -> None:
+        super().__init__(message, 403)
+
+
 @overload
 def _from_timestamp(t: int) -> datetime: ...
 
@@ -207,6 +249,24 @@ def _from_timestamp(t: int | None) -> datetime | None:
 
 
 class SubscriptionService:
+    def _get_seat_based_price(
+        self, subscription: Subscription
+    ) -> ProductPriceSeatUnit | None:
+        """Get the seat-based price from subscription, if any."""
+        for spp in subscription.subscription_product_prices:
+            if isinstance(spp.product_price, ProductPriceSeatUnit):
+                return spp.product_price
+        return None
+
+    def _get_minimum_seats_from_tiers(self, seat_price: ProductPriceSeatUnit) -> int:
+        """Get the absolute minimum seats from the first tier."""
+        tiers: list[SeatTier] = seat_price.seat_tiers.tiers
+        if not tiers:
+            return 1
+
+        sorted_tiers = sorted(tiers, key=lambda t: t.min_seats)
+        return sorted_tiers[0].min_seats
+
     async def list(
         self,
         session: AsyncReadSession,
@@ -818,6 +878,10 @@ class SubscriptionService:
             return await self.update_trial(
                 session, subscription, trial_end=update.trial_end
             )
+
+        if isinstance(update, SubscriptionUpdateSeats):
+            # TODO: Implement in Phase 3
+            raise NotImplementedError("Seat quantity updates not yet implemented")
 
         if isinstance(update, SubscriptionCancel):
             uncancel = update.cancel_at_period_end is False

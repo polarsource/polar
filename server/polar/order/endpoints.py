@@ -133,7 +133,7 @@ async def export(
                 (
                     order.customer.email,
                     order.created_at.isoformat(),
-                    order.product.name,
+                    order.product.name if order.product is not None else "",
                     order.net_amount / 100,
                     order.currency,
                     order.status,

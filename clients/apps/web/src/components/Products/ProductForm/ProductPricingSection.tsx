@@ -871,7 +871,7 @@ export const ProductPricingSection = ({
           </Button>
         </div>
       ) : (
-        <div className="flex w-full flex-col gap-4">
+        <div className="flex w-full flex-col gap-6">
           <FormField
             control={control}
             name="recurring_interval"
@@ -923,16 +923,15 @@ export const ProductPricingSection = ({
               }}
               render={({ field }) => {
                 return (
-                  <FormItem>
-                    <FormLabel>Billing frequency</FormLabel>
+                  <FormItem className="flex flex-col gap-1">
+                    <FormLabel>Billing Frequency</FormLabel>
                     <FormControl>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Every</span>
-                        <input
+                      <div className="flex items-center gap-4">
+                        <span className="text-gray-600">Every</span>
+                        <Input
                           type="number"
                           min="1"
                           max="999"
-                          className="w-20 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                           value={field.value || 1}
                           onChange={(e) => {
                             const value = parseInt(e.target.value) || 1
@@ -940,17 +939,14 @@ export const ProductPricingSection = ({
                           }}
                           disabled={update && !legacyMigration}
                         />
-                        <span className="text-sm text-gray-600">
+                        <span className="text-gray-600">
                           {field.value === 1 || !field.value
                             ? recurringInterval
                             : `${recurringInterval}s`}
                         </span>
                       </div>
                     </FormControl>
-                    <FormDescription>
-                      Set how often customers are billed (e.g., &quot;every 2
-                      months&quot;)
-                    </FormDescription>
+
                     <FormMessage />
                   </FormItem>
                 )

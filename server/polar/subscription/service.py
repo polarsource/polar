@@ -269,6 +269,45 @@ class SubscriptionService:
         sorted_tiers = sorted(tiers, key=lambda t: t["min_seats"])
         return sorted_tiers[0]["min_seats"]
 
+    @staticmethod
+    def _calculate_time_proration(
+        period_start: datetime, period_end: datetime, now: datetime
+    ) -> Decimal | None:
+        """
+        Calculate proration factor for a time period.
+
+        Returns:
+            Decimal between 0 and 1 representing percentage of time remaining,
+            or None if no time is remaining.
+        """
+        period_total = (period_end - period_start).total_seconds()
+        time_remaining = (period_end - now).total_seconds()
+
+        if time_remaining <= 0:
+            return None
+
+        return Decimal(time_remaining) / Decimal(period_total)
+
+    def _calculate_proration_factor(
+        self, subscription: Subscription, *, now: datetime | None = None
+    ) -> Decimal | None:
+        """
+        Calculate proration factor for subscription's current billing period.
+
+        Returns:
+            Decimal between 0 and 1 representing percentage of time remaining,
+            or None if period has ended or no period_end exists.
+        """
+        if now is None:
+            now = datetime.now(UTC)
+
+        period_end = subscription.current_period_end
+        if period_end is None:
+            return None
+
+        period_start = subscription.current_period_start
+        return self._calculate_time_proration(period_start, period_end, now)
+
     async def list(
         self,
         session: AsyncReadSession,
@@ -1080,13 +1119,17 @@ class SubscriptionService:
                 subscription.current_period_start, subscription.recurring_interval_count
             )
 
-            old_cycle_remaining_time = (old_cycle_end - now).total_seconds()
-            old_cycle_total_time = (old_cycle_end - old_cycle_start).total_seconds()
-            old_cycle_pct_remaining = old_cycle_remaining_time / old_cycle_total_time
+            old_cycle_pct_remaining = self._calculate_time_proration(
+                old_cycle_start, old_cycle_end, now
+            )
+            new_cycle_pct_remaining = self._calculate_time_proration(
+                new_cycle_start, new_cycle_end, now
+            )
 
-            new_cycle_remaining_time = (new_cycle_end - now).total_seconds()
-            new_cycle_total_time = (new_cycle_end - new_cycle_start).total_seconds()
-            new_cycle_pct_remaining = new_cycle_remaining_time / new_cycle_total_time
+            # If no time remaining, skip prorations
+            if old_cycle_pct_remaining is None or new_cycle_pct_remaining is None:
+                old_cycle_pct_remaining = Decimal(0)
+                new_cycle_pct_remaining = Decimal(0)
 
             subscription.current_period_end = new_cycle_end
 
@@ -1481,24 +1524,18 @@ class SubscriptionService:
         Prorates based on remaining time in current billing period.
         """
         now = datetime.now(UTC)
-        period_start = subscription.current_period_start
-        period_end = subscription.current_period_end
+        proration_factor = self._calculate_proration_factor(subscription, now=now)
 
-        if period_end is None:
+        if proration_factor is None:
             log.warning(
                 "subscription.seats_proration_skipped",
                 subscription_id=subscription.id,
-                reason="no_period_end",
+                reason="no_time_remaining",
             )
             return
 
-        period_total = (period_end - period_start).total_seconds()
-        time_remaining = (period_end - now).total_seconds()
-
-        if time_remaining <= 0:
-            return
-
-        proration_factor = Decimal(time_remaining) / Decimal(period_total)
+        period_end = subscription.current_period_end
+        assert period_end is not None  # Already checked by _calculate_proration_factor
 
         # Calculate the raw amounts for the seat counts (before discount)
         seat_price = self._get_seat_based_price(subscription)

@@ -1,3 +1,5 @@
+import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
+import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -7,18 +9,16 @@ import {
 } from '@polar-sh/ui/components/ui/tooltip'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { BenefitEventCard } from './EventCard/BenefitEventCard'
-import { UserEventCard } from './EventCard/UserEventCard'
 import { EventCostBadge } from './EventCostBadge'
+import { EventCustomer } from './EventCustomer'
 import { EventSourceBadge } from './EventSourceBadge'
-
-type Event = schemas['Event']
+import { useEventCard, useEventDisplayName } from './utils'
 
 const EventRow = ({
   event,
   organization,
 }: {
-  event: Event
+  event: schemas['Event']
   organization: schemas['Organization']
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -51,32 +51,25 @@ const EventRow = ({
 
   const cost = (event.metadata as schemas['EventMetadataOutput'])._cost
 
-  const eventCard = useMemo(() => {
-    switch (event.source) {
-      case 'system':
-        switch (event.name) {
-          case 'benefit.granted':
-          case 'benefit.cycled':
-          case 'benefit.updated':
-          case 'benefit.revoked':
-            return <BenefitEventCard event={event} />
-          default:
-            return <UserEventCard event={event} />
-        }
-      default:
-        return <UserEventCard event={event} />
-    }
-  }, [event])
+  const eventDisplayName = useEventDisplayName(event)
+  const eventCard = useEventCard(event)
 
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 group dark:hover:bg-polar-700 flex flex-col rounded-xl border border-gray-200 bg-white font-mono text-sm transition-colors duration-150 hover:bg-gray-50">
       <div
         onClick={handleToggleExpand}
-        className="flex cursor-pointer flex-row items-center justify-between px-4 py-2 select-none"
+        className="flex cursor-pointer flex-row items-center justify-between p-3 select-none"
       >
-        <div className="flex flex-row items-center gap-x-8">
+        <div className="flex flex-row items-center gap-x-4">
+          <div className="dark:bg-polar-700 flex flex-row items-center justify-center rounded-sm border border-gray-200 bg-gray-100 p-1 dark:border-white/5">
+            {isExpanded ? (
+              <KeyboardArrowDownOutlined fontSize="inherit" />
+            ) : (
+              <KeyboardArrowRightOutlined fontSize="inherit" />
+            )}
+          </div>
           <div className="flex flex-row items-center gap-x-4">
-            <span>{event.name}</span>
+            <span>{eventDisplayName}</span>
             <EventSourceBadge source={event.source} />
           </div>
           <span className="dark:text-polar-500 text-sm text-gray-500 capitalize">
@@ -90,41 +83,46 @@ const EventRow = ({
               currency={cost?.currency ?? 'USD'}
             />
           )}
-          <Tooltip>
-            <TooltipTrigger>
-              <Link
-                href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}&query=${event.customer?.email}`}
-                className="flex items-center gap-x-3"
-                onClick={(e) => {
-                  e.stopPropagation()
-                }}
-              >
-                <Avatar
-                  className="dark:bg-polar-900 text-xxs h-8 w-8 bg-white"
-                  name={event.customer?.name ?? event.customer?.email ?? '—'}
-                  avatar_url={event.customer?.avatar_url ?? null}
-                />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="top" align="end">
-              <div className="flex flex-row items-center gap-x-2 font-sans">
-                <Avatar
-                  className="dark:bg-polar-900 text-xxs h-8 w-8 bg-white"
-                  name={event.customer?.name ?? event.customer?.email ?? '—'}
-                  avatar_url={event.customer?.avatar_url ?? null}
-                />
-                <div className="flex flex-col">
-                  <span className="text-xs">{event.customer?.name ?? '—'}</span>
-                  <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
-                    {event.customer?.email}
-                  </span>
+          {!isExpanded ? (
+            <Tooltip>
+              <TooltipTrigger>
+                <Link
+                  href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}&query=${event.customer?.email}`}
+                  className="flex items-center gap-x-3"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                  }}
+                >
+                  <Avatar
+                    className="text-xxs h-6 w-6 font-sans"
+                    name={event.customer?.name ?? event.customer?.email ?? '—'}
+                    avatar_url={event.customer?.avatar_url ?? null}
+                  />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="end">
+                <div className="flex flex-row items-center gap-x-2 font-sans">
+                  <Avatar
+                    className="text-xxs h-8 w-8 font-sans"
+                    name={event.customer?.name ?? event.customer?.email ?? '—'}
+                    avatar_url={event.customer?.avatar_url ?? null}
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xs">
+                      {event.customer?.name ?? '—'}
+                    </span>
+                    <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
+                      {event.customer?.email}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
         </div>
       </div>
       {isExpanded ? eventCard : null}
+      {isExpanded ? <EventCustomer event={event} /> : null}
     </div>
   )
 }

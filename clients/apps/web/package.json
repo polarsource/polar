@@ -35,7 +35,7 @@
     "@polar-sh/checkout": "workspace:^",
     "@polar-sh/client": "workspace:*",
     "@polar-sh/mdx": "workspace:*",
-    "@polar-sh/sdk": "^0.38.1",
+    "@polar-sh/sdk": "^0.39.0",
     "@polar-sh/ui": "workspace:*",
     "@posthog/ai": "^6.4.4",
     "@posthog/core": "^1.3.1",

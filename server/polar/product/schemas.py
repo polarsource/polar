@@ -394,7 +394,8 @@ class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
         description=(
             "Number of interval units of the subscription. "
             "If this is set to 1 the charge will happen every interval (e.g. every month), "
-            "if set to 2 it will be every other month, and so on."
+            "if set to 2 it will be every other month, and so on. "
+            "Once set, it can't be changed.**"
         ),
     )
     is_archived: bool | None = Field(

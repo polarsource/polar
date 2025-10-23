@@ -938,6 +938,7 @@ export const ProductPricingSection = ({
                             const value = parseInt(e.target.value) || 1
                             field.onChange(value)
                           }}
+                          disabled={update && !legacyMigration}
                         />
                         <span className="text-sm text-gray-600">
                           {field.value === 1 || !field.value

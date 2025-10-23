@@ -35,7 +35,7 @@ from .service import seat_service
 
 router = APIRouter(
     prefix="/customer-seats",
-    tags=["customer-seats", APITag.private],
+    tags=["customer-seats", APITag.public],
 )
 
 

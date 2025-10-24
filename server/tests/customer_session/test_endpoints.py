@@ -4,8 +4,10 @@ import pytest
 from httpx import AsyncClient
 
 from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
-from polar.models import Customer, UserOrganization
+from polar.models import Customer, Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_customer
 
 
 @pytest.mark.asyncio
@@ -100,24 +102,19 @@ class TestCreate:
     )
     async def test_email_url_encoding(
         self,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         user_organization: UserOrganization,
-        save_fixture,
-        organization,
+        organization: Organization,
     ) -> None:
-        """Test that email addresses with special characters are properly URL-encoded"""
-        from tests.fixtures.random_objects import create_customer, lstr
-
-        # Create a customer with an email containing a plus sign
-        customer_with_plus = await create_customer(
+        customer = await create_customer(
             save_fixture,
             organization=organization,
-            email=lstr("contact+test@example.com"),
-            stripe_customer_id=lstr("STRIPE_CUSTOMER_ID_PLUS"),
+            email="contact+test@example.com",
         )
 
         response = await client.post(
-            "/v1/customer-sessions/", json={"customer_id": str(customer_with_plus.id)}
+            "/v1/customer-sessions/", json={"customer_id": str(customer.id)}
         )
         assert response.status_code == 201
 

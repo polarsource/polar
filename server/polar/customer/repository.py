@@ -7,6 +7,7 @@ from sqlalchemy import Select, func, select, update
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
+    Options,
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
@@ -138,6 +139,34 @@ class CustomerRepository(
 
         async for customer in self.stream(statement):
             yield customer
+
+    async def get_readable_by_id(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        id: UUID,
+        *,
+        options: Options = (),
+    ) -> Customer | None:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .where(Customer.id == id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_readable_by_external_id(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        external_id: str,
+        *,
+        options: Options = (),
+    ) -> Customer | None:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .where(Customer.external_id == external_id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

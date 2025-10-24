@@ -25,7 +25,7 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Subscription as SubscriptionSchema
-from .schemas import SubscriptionID, SubscriptionUpdate
+from .schemas import SubscriptionCreate, SubscriptionID, SubscriptionUpdate
 from .service import AlreadyCanceledSubscription, SubscriptionLocked
 from .service import subscription as subscription_service
 
@@ -167,6 +167,29 @@ async def get(
         raise ResourceNotFound()
 
     return subscription
+
+
+@router.post(
+    "/",
+    response_model=SubscriptionSchema,
+    status_code=201,
+    summary="Create Subscription",
+    responses={201: {"description": "Subscription created."}},
+)
+async def create(
+    subscription_create: SubscriptionCreate,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """
+    Create a subscription programmatically.
+
+    This endpoint only allows to create subscription on free products.
+    For paid products, use the checkout flow.
+
+    No initial order will be created and no confirmation email will be sent.
+    """
+    return await subscription_service.create(session, subscription_create, auth_subject)
 
 
 @router.patch(

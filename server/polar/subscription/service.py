@@ -16,6 +16,7 @@ from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.customer_seat.service import seat_service
 from polar.customer_session.service import customer_session as customer_session_service
@@ -32,6 +33,7 @@ from polar.exceptions import (
     PolarError,
     PolarRequestValidationError,
     ResourceUnavailable,
+    ValidationError,
 )
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -80,12 +82,15 @@ from polar.product.guard import (
     is_static_price,
 )
 from polar.product.repository import ProductRepository
+from polar.product.service import product as product_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .repository import SubscriptionRepository
 from .schemas import (
     SubscriptionCancel,
+    SubscriptionCreate,
+    SubscriptionCreateCustomer,
     SubscriptionRevoke,
     SubscriptionUpdate,
     SubscriptionUpdateDiscount,
@@ -292,6 +297,143 @@ class SubscriptionService:
             )
         )
         return await repository.get_one_or_none(statement)
+
+    async def create(
+        self,
+        session: AsyncSession,
+        subscription_create: SubscriptionCreate,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> Subscription:
+        errors: list[ValidationError] = []
+
+        product = await product_service.get(
+            session, auth_subject, subscription_create.product_id
+        )
+        if product is None:
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "product_id"),
+                    "msg": "Product does not exist.",
+                    "input": subscription_create.product_id,
+                }
+            )
+        elif not product.is_recurring:
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "product_id"),
+                    "msg": "Product is not a recurring product.",
+                    "input": subscription_create.product_id,
+                }
+            )
+        elif product.is_legacy_recurring_price:
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "product_id"),
+                    "msg": "Legacy recurring products are not supported.",
+                    "input": subscription_create.product_id,
+                }
+            )
+        elif (static_price := product.get_static_price()) and not is_free_price(
+            static_price
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "product_id"),
+                    "msg": (
+                        "Product is not free. "
+                        "The customer should go through a checkout to create a paid subscription."
+                    ),
+                    "input": subscription_create.product_id,
+                }
+            )
+
+        customer: Customer | None = None
+        customer_repository = CustomerRepository.from_session(session)
+        error_loc: str
+        input_value: uuid.UUID | str
+        if isinstance(subscription_create, SubscriptionCreateCustomer):
+            error_loc = "customer_id"
+            input_value = subscription_create.customer_id
+            customer = await customer_repository.get_readable_by_id(
+                auth_subject, input_value
+            )
+        else:
+            error_loc = "external_customer_id"
+            input_value = subscription_create.external_customer_id
+            customer = await customer_repository.get_readable_by_external_id(
+                auth_subject, input_value
+            )
+
+        if customer is None:
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", error_loc),
+                    "msg": "Customer does not exist.",
+                    "input": input_value,
+                }
+            )
+
+        if len(errors) > 0:
+            raise PolarRequestValidationError(errors)
+
+        assert product is not None
+        assert customer is not None
+
+        prices = product.prices
+        assert product.recurring_interval is not None
+        assert product.recurring_interval_count is not None
+        recurring_interval = product.recurring_interval
+        recurring_interval_count = product.recurring_interval_count
+
+        subscription_product_prices: list[SubscriptionProductPrice] = []
+        for price in prices:
+            subscription_product_prices.append(
+                SubscriptionProductPrice.from_price(price)
+            )
+
+        status = SubscriptionStatus.active
+        current_period_start = utc_now()
+        current_period_end = recurring_interval.get_next_period(
+            current_period_start, recurring_interval_count
+        )
+
+        subscription = Subscription(
+            status=SubscriptionStatus.active,
+            started_at=current_period_start,
+            current_period_start=current_period_start,
+            current_period_end=current_period_end,
+            cancel_at_period_end=False,
+            recurring_interval=recurring_interval,
+            recurring_interval_count=recurring_interval_count,
+            product=product,
+            customer=customer,
+            subscription_product_prices=subscription_product_prices,
+            user_metadata=subscription_create.metadata,
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.create(subscription, flush=True)
+
+        await self._after_subscription_created(session, subscription)
+        # ⚠️ Some users are relying on `subscription.updated` for everything
+        # It was working before with Stripe since it always triggered an update
+        # after creation.
+        # But that's not the case with our new engine.
+        # So we manually trigger it here to keep the same behavior.
+        await self._on_subscription_updated(session, subscription)
+
+        # Reset the subscription meters to start fresh
+        await self.reset_meters(session, subscription)
+
+        # Enqueue the benefits grants for the subscription
+        await self.enqueue_benefits_grants(session, subscription)
+
+        return subscription
 
     async def create_or_update_from_checkout(
         self,

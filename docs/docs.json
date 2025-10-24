@@ -327,6 +327,17 @@
                 ]
               },
               {
+                "group": "Customer Seats",
+                "pages": [
+                  "api-reference/customer-seats/assign",
+                  "api-reference/customer-seats/list",
+                  "api-reference/customer-seats/revoke",
+                  "api-reference/customer-seats/resend",
+                  "api-reference/customer-seats/get-claim-info",
+                  "api-reference/customer-seats/claim"
+                ]
+              },
+              {
                 "group": "Files",
                 "pages": [
                   "api-reference/files/create",

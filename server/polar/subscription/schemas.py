@@ -114,13 +114,13 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     )
     checkout_id: UUID4 | None
 
+    seats: int | None = Field(
+        default=None,
+        description="The number of seats for seat-based subscriptions. None for non-seat subscriptions.",
+    )
+
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
-
-    seats: int | None = Field(
-        None,
-        description="Number of seats included in the subscription (for seat-based pricing).",
-    )
 
     price_id: SkipJsonSchema[UUID4] = Field(
         deprecated="Use `prices` instead.",
@@ -286,6 +286,20 @@ class SubscriptionUpdateTrial(Schema):
     )
 
 
+class SubscriptionUpdateSeats(Schema):
+    seats: int = Field(
+        description="Update the number of seats for this subscription.",
+        ge=1,
+    )
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
+
+
 class SubscriptionCancelBase(Schema):
     customer_cancellation_reason: CustomerCancellationReason | None = Field(
         None,
@@ -351,6 +365,7 @@ SubscriptionUpdate = Annotated[
     SubscriptionUpdateProduct
     | SubscriptionUpdateDiscount
     | SubscriptionUpdateTrial
+    | SubscriptionUpdateSeats
     | SubscriptionCancel
     | SubscriptionRevoke,
     SetSchemaReference("SubscriptionUpdate"),

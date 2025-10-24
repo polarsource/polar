@@ -27,6 +27,7 @@ import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { toast } from '../Toast/use-toast'
+import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
 import { SeatManagementTable } from './SeatManagementTable'
 
 const CustomerPortalSubscription = ({
@@ -245,10 +246,21 @@ const CustomerPortalSubscription = ({
 
       {hasSeatBasedPricing && (
         <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h3 className="text-lg">Seat Management</h3>
+            <CustomerSeatQuantityManager
+              api={api}
+              subscription={subscription}
+              totalSeats={totalSeats}
+              assignedSeats={totalSeats - availableSeats}
+              themingPreset={themingPreset}
+            />
+          </div>
+
           <div className="flex flex-col gap-y-2">
-            <h3 className="text-lg">Seats</h3>
+            <h3 className="text-lg">Invite Members</h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">
-              {availableSeats} of {totalSeats} seats available
+              Send invitations to claim available seats
             </p>
           </div>
           <div className="flex flex-col gap-y-3">

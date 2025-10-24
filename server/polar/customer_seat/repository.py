@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -101,6 +101,14 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+    async def count_assigned_seats_for_subscription(self, subscription_id: UUID) -> int:
+        statement = select(func.count(CustomerSeat.id)).where(
+            CustomerSeat.subscription_id == subscription_id,
+            CustomerSeat.status.in_([SeatStatus.pending, SeatStatus.claimed]),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
 
     async def get_available_seats_count(self, subscription_id: UUID) -> int:
         subscription_statement = select(Subscription).where(

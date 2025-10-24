@@ -2040,6 +2040,9 @@ async def create_subscription_with_seats(
         kwargs["status"] = SubscriptionStatus.active
     if "started_at" not in kwargs:
         kwargs["started_at"] = utc_now()
+    # Seat management is Polar-only, not Stripe-managed
+    if "stripe_subscription_id" not in kwargs:
+        kwargs["stripe_subscription_id"] = None
     subscription = await create_subscription(
         save_fixture, product=product, customer=customer, seats=seats, **kwargs
     )

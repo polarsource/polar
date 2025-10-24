@@ -145,6 +145,14 @@ class SeatService:
         repository = CustomerSeatRepository.from_session(session)
         return await repository.get_available_seats_count_for_container(container)
 
+    async def count_assigned_seats_for_subscription(
+        self,
+        session: AsyncReadSession,
+        subscription: Subscription,
+    ) -> int:
+        repository = CustomerSeatRepository.from_session(session)
+        return await repository.count_assigned_seats_for_subscription(subscription.id)
+
     async def assign_seat(
         self,
         session: AsyncSession,

@@ -25,6 +25,7 @@ from polar.subscription.service import subscription as subscription_service
 from ..schemas.subscription import (
     CustomerSubscriptionUpdate,
     CustomerSubscriptionUpdateProduct,
+    CustomerSubscriptionUpdateSeats,
 )
 
 
@@ -151,6 +152,16 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 session,
                 subscription,
                 product_id=updates.product_id,
+            )
+
+        if isinstance(updates, CustomerSubscriptionUpdateSeats):
+            organization = subscription.product.organization
+
+            return await subscription_service.update_seats(
+                session,
+                subscription,
+                seats=updates.seats,
+                proration_behavior=updates.proration_behavior,
             )
 
         cancel = updates.cancel_at_period_end is True

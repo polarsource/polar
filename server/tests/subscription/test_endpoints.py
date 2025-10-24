@@ -6,6 +6,7 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
 from polar.models import (
     Customer,
@@ -14,6 +15,7 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
+from polar.models.customer_seat import SeatStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import is_static_price
@@ -21,8 +23,11 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
+    create_customer,
+    create_customer_seat,
     create_product,
     create_subscription,
+    create_subscription_with_seats,
 )
 from tests.fixtures.stripe import (
     cloned_stripe_canceled_subscription,
@@ -799,3 +804,179 @@ class TestSubscriptionRevoke:
 
         updated_subscription = response.json()
         assert updated_subscription["status"] == SubscriptionStatus.canceled
+
+
+@pytest.mark.asyncio
+class TestSubscriptionUpdateSeats:
+    async def test_anonymous(
+        self, client: AsyncClient, subscription: Subscription
+    ) -> None:
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"seats": 10},
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_seat_increase(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with 5 seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+        assert subscription.seats == 5
+        assert subscription.amount == 5000
+
+        # When: Increase to 10 seats
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"seats": 10},
+        )
+
+        # Then: Successfully updated
+        assert response.status_code == 200
+        updated = response.json()
+        assert updated["seats"] == 10
+        assert updated["amount"] == 10000
+
+    @pytest.mark.auth
+    async def test_seat_decrease(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with 10 seats, 3 assigned
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=10,
+        )
+
+        # Create 3 assigned seats
+        for i in range(3):
+            from tests.fixtures.random_objects import create_customer
+
+            seat_customer = await create_customer(
+                save_fixture,
+                organization=organization,
+                email=f"customer-{i}@example.com",
+            )
+            await create_customer_seat(
+                save_fixture,
+                subscription=subscription,
+                status=SeatStatus.claimed,
+                customer=seat_customer,
+            )
+
+        # When: Decrease to 5 seats (above assigned count)
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"seats": 5},
+        )
+
+        # Then: Successfully updated
+        assert response.status_code == 200
+        updated = response.json()
+        assert updated["seats"] == 5
+        assert updated["amount"] == 5000
+
+    @pytest.mark.auth
+    async def test_seat_decrease_blocked_by_assignments(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Subscription with 10 seats, 7 assigned
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=10,
+        )
+
+        # Create 7 assigned seats
+        for i in range(7):
+            seat_customer = await create_customer(
+                save_fixture,
+                organization=organization,
+                email=f"customer-{i}@example.com",
+            )
+            await create_customer_seat(
+                save_fixture,
+                subscription=subscription,
+                status=SeatStatus.claimed,
+                customer=seat_customer,
+            )
+
+        # When: Try to decrease to 5 seats
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"seats": 5},
+        )
+
+        # Then: Error response
+        assert response.status_code == 400
+        error = response.json()
+        assert "7 seats are assigned" in error["detail"]
+
+    @pytest.mark.auth
+    async def test_not_seat_based_subscription(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        product: Product,  # This is a fixed price product
+    ) -> None:
+        # Given: Subscription without seat-based pricing
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        # When: Try to update seats
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"seats": 10},
+        )
+
+        # Then: Error response
+        assert response.status_code == 400
+        error = response.json()
+        assert "not support seat-based pricing" in error["detail"]

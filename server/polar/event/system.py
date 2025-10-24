@@ -19,6 +19,7 @@ class SystemEvent(StrEnum):
     subscription_cycled = "subscription.cycled"
     subscription_revoked = "subscription.revoked"
     subscription_product_updated = "subscription.product_updated"
+    subscription_seats_updated = "subscription.seats_updated"
 
 
 class MeterCreditedMetadata(TypedDict):
@@ -114,6 +115,20 @@ class SubscriptionProductUpdatedEvent(Event):
         user_metadata: Mapped[SubscriptionProductUpdatedMetadata]  # type: ignore[assignment]
 
 
+class SubscriptionSeatsUpdatedMetadata(TypedDict):
+    subscription_id: str
+    old_seats: int
+    new_seats: int
+    proration_behavior: str
+
+
+class SubscriptionSeatsUpdatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_seats_updated]]
+        user_metadata: Mapped[SubscriptionSeatsUpdatedMetadata]  # type: ignore[assignment]
+
+
 @overload
 def build_system_event(
     name: Literal[SystemEvent.meter_credited],
@@ -192,6 +207,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionProductUpdatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_seats_updated],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionSeatsUpdatedMetadata,
 ) -> Event: ...
 
 

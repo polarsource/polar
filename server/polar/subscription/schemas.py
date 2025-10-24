@@ -122,11 +122,6 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
 
-    seats: int | None = Field(
-        None,
-        description="Number of seats included in the subscription (for seat-based pricing).",
-    )
-
     price_id: SkipJsonSchema[UUID4] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(

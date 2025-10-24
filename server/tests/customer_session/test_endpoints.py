@@ -93,3 +93,42 @@ class TestCreate:
         assert json["customer_id"] == str(customer_external_id.id)
         assert json["token"] in json["customer_portal_url"]
         assert json["return_url"] == "https://example.com/return"
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_email_url_encoding(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        save_fixture,
+        organization,
+    ) -> None:
+        """Test that email addresses with special characters are properly URL-encoded"""
+        from tests.fixtures.random_objects import create_customer, lstr
+
+        # Create a customer with an email containing a plus sign
+        customer_with_plus = await create_customer(
+            save_fixture,
+            organization=organization,
+            email=lstr("contact+test@example.com"),
+            stripe_customer_id=lstr("STRIPE_CUSTOMER_ID_PLUS"),
+        )
+
+        response = await client.post(
+            "/v1/customer-sessions/", json={"customer_id": str(customer_with_plus.id)}
+        )
+        assert response.status_code == 201
+
+        json = response.json()
+        portal_url = json["customer_portal_url"]
+
+        # The email should be URL-encoded in the portal URL
+        # The + should be encoded as %2B, not left as +
+        assert (
+            "contact%2Btest%40example.com" in portal_url
+            or "contact%2Btest@example.com" in portal_url
+        )
+        # Ensure it's not incorrectly using the unencoded + sign
+        assert "contact+test@example.com" not in portal_url

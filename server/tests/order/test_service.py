@@ -13,7 +13,11 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
-from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
+from polar.enums import (
+    InvoiceNumbering,
+    PaymentProcessor,
+    SubscriptionRecurringInterval,
+)
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
@@ -3870,4 +3874,89 @@ class TestCustomerBalance:
         assert (
             await order_service.customer_balance(session, customer)
             == setup.expected_balance
+        )
+
+
+@pytest.mark.asyncio
+class TestCustomerBasedInvoiceNumbering:
+    async def test_different_customers_different_invoice_numbers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        # Set organization to use customer-based invoice numbering
+        organization.order_settings = {
+            **organization.order_settings,
+            "invoice_numbering": InvoiceNumbering.customer,
+        }
+        await save_fixture(organization)
+
+        # Create two different customers
+        customer_1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+            name="Customer 1",
+            stripe_customer_id="STRIPE_CUSTOMER_1",
+        )
+        customer_2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer2@example.com",
+            name="Customer 2",
+            stripe_customer_id="STRIPE_CUSTOMER_2",
+        )
+
+        # Create checkout and order for customer 1
+        checkout_1 = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            status=CheckoutStatus.confirmed,
+            customer=customer_1,
+        )
+        order_1 = await order_service.create_from_checkout_one_time(session, checkout_1)
+
+        # Create checkout and order for customer 2
+        checkout_2 = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            status=CheckoutStatus.confirmed,
+            customer=customer_2,
+        )
+        order_2 = await order_service.create_from_checkout_one_time(session, checkout_2)
+
+        # Refresh to get the invoice numbers
+        await session.refresh(order_1)
+        await session.refresh(order_2)
+
+        # Both customers should have different invoice number sequences
+        # They should both start with the organization prefix but have customer-specific numbering
+        assert order_1.invoice_number is not None
+        assert order_2.invoice_number is not None
+        assert order_1.invoice_number != order_2.invoice_number
+
+        # Verify they both start with organization prefix
+        assert order_1.invoice_number.startswith(organization.customer_invoice_prefix)
+        assert order_2.invoice_number.startswith(organization.customer_invoice_prefix)
+
+        # Each customer should start at 0001
+        assert order_1.invoice_number.endswith("-0001")
+        assert order_2.invoice_number.endswith("-0001")
+
+        # Verify invoice numbers contain customer-specific suffix
+        customer_1_suffix = str(customer_1.id).split("-")[0].upper()
+        customer_2_suffix = str(customer_2.id).split("-")[0].upper()
+        assert customer_1_suffix in order_1.invoice_number
+        assert customer_2_suffix in order_2.invoice_number
+
+        # Verify format: PREFIX-CUSTOMER_SUFFIX-0001
+        assert (
+            order_1.invoice_number
+            == f"{organization.customer_invoice_prefix}-{customer_1_suffix}-0001"
+        )
+        assert (
+            order_2.invoice_number
+            == f"{organization.customer_invoice_prefix}-{customer_2_suffix}-0001"
         )

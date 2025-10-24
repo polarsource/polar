@@ -41,6 +41,7 @@ interface MetricChartBoxProps {
   compact?: boolean
   shareable?: boolean
   simple?: boolean
+  chartType?: 'line' | 'bar'
 }
 
 const MetricChartBox = ({
@@ -57,6 +58,7 @@ const MetricChartBox = ({
   compact = false,
   shareable = true,
   simple = false,
+  chartType = 'line',
 }: MetricChartBoxProps & {
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -125,7 +127,7 @@ const MetricChartBox = ({
     <ShadowBox
       ref={ref}
       className={twMerge(
-        'dark:bg-polar-800 flex w-full flex-col bg-gray-50 p-2 shadow-xs',
+        'dark:bg-polar-800 group flex w-full flex-col justify-between bg-gray-50 p-2 shadow-xs',
         className,
       )}
     >
@@ -243,7 +245,7 @@ const MetricChartBox = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hidden rounded-full md:block"
+                  className="hidden rounded-full opacity-0 transition-opacity group-hover:opacity-100 md:block"
                   onClick={showModal}
                 >
                   <ArrowOutwardOutlined fontSize="small" />
@@ -279,6 +281,7 @@ const MetricChartBox = ({
               setHoveredPeriodIndex(period as number)
             }}
             simple={simple}
+            chartType={chartType}
           />
         ) : (
           <div

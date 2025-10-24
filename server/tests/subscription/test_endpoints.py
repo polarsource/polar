@@ -113,6 +113,94 @@ class TestListSubscriptions:
 
 
 @pytest.mark.asyncio
+class TestCreateSubscription:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        product_recurring_free_price: Product,
+        customer: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/subscriptions/",
+            json={
+                "product_id": str(product_recurring_free_price.id),
+                "customer_id": str(customer.id),
+            },
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_valid_with_customer_id(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_recurring_free_price: Product,
+        customer: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/subscriptions/",
+            json={
+                "product_id": str(product_recurring_free_price.id),
+                "customer_id": str(customer.id),
+            },
+        )
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["product_id"] == str(product_recurring_free_price.id)
+        assert json["customer_id"] == str(customer.id)
+        assert json["status"] == SubscriptionStatus.active
+        assert "user" in json
+        assert "customer" in json
+
+    @pytest.mark.auth
+    async def test_valid_with_external_customer_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_recurring_free_price: Product,
+        organization: Organization,
+        customer_external_id: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/subscriptions/",
+            json={
+                "product_id": str(product_recurring_free_price.id),
+                "external_customer_id": customer_external_id.external_id,
+            },
+        )
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["product_id"] == str(product_recurring_free_price.id)
+        assert json["customer_id"] == str(customer_external_id.id)
+        assert json["status"] == SubscriptionStatus.active
+
+    @pytest.mark.auth
+    async def test_valid_with_metadata(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_recurring_free_price: Product,
+        customer: Customer,
+    ) -> None:
+        metadata = {"reference_id": "ABC123"}
+        response = await client.post(
+            "/v1/subscriptions/",
+            json={
+                "product_id": str(product_recurring_free_price.id),
+                "customer_id": str(customer.id),
+                "metadata": metadata,
+            },
+        )
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["metadata"] == metadata
+
+
+@pytest.mark.asyncio
 class TestSubscriptionProductUpdate:
     async def test_anonymous(
         self, client: AsyncClient, session: AsyncSession, subscription: Subscription

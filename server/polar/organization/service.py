@@ -370,10 +370,9 @@ class OrganizationService:
     ) -> str:
         match organization.invoice_numbering:
             case InvoiceNumbering.customer:
-                customer_suffix = str(customer.id).split("-")[0].upper()
-                invoice_number = f"{organization.customer_invoice_prefix}-{customer_suffix}-{customer.invoice_next_number:04d}"
+                invoice_number = f"{organization.customer_invoice_prefix}-{customer.short_id_str}-{customer.invoice_next_number:04d}"
                 customer_repository = CustomerRepository.from_session(session)
-                await customer_repository.update(
+                customer = await customer_repository.update(
                     customer,
                     update_dict={
                         "invoice_next_number": customer.invoice_next_number + 1

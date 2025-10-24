@@ -62,11 +62,12 @@ export const EventCostBadge = ({
     maximumFractionDigits: 17,
     notation: 'standard',
   })
+  const costNumber = useMemo(() => Number(cost) / 100, [cost])
 
   return (
     <div className="flex flex-row items-center gap-x-4 font-mono">
-      {currencyNumberFormat.format(Number(cost))}
-      <EventCostIndicator cost={Number(cost)} />
+      {currencyNumberFormat.format(costNumber)}
+      <EventCostIndicator cost={costNumber} />
     </div>
   )
 }

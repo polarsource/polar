@@ -144,3 +144,161 @@ jobs:
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
         run: uv run pytest -n auto --no-cov
+
+  check-generated-client:
+    name: "Check Generated Client"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
+
+    services:
+      postgres:
+        image: postgres:15.1-bullseye
+        env:
+          POSTGRES_USER: polar
+          POSTGRES_PASSWORD: polar
+          POSTGRES_DB: polar_test
+          POSTGRES_PORT: 5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      minio:
+        image: bitnamilegacy/minio:2024.5.28
+        ports:
+          - 9000:9000
+          - 9001:9001
+        env:
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+        options: >-
+          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: 💿 MinIO Setup
+        working-directory: ./server/.minio
+        env:
+          MINIO_HOST: 127.0.0.1
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+          ACCESS_KEY: polar-development
+          SECRET_ACCESS_KEY: polar123456789
+          BUCKET_NAME: polar-s3
+          BUCKET_TESTING_NAME: testing-polar-s3
+          POLICY_FILE: policy.json
+        run: bash github.sh
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: server/emails/package.json
+
+      - name: 📬 Setup Node.js environment for server/emails
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: server/emails/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "server/emails/pnpm-lock.yaml"
+
+      - name: 📬 Build server/emails
+        working-directory: server/emails
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: 🔧 uv install
+        working-directory: ./server
+        run: |
+          uv sync --dev
+          uv run task generate_dev_jwks
+
+      - name: ⚗️ alembic migrate
+        working-directory: ./server
+        run: uv run task db_migrate
+
+      - name: 🚀 Start API server
+        working-directory: ./server
+        env:
+          POLAR_ENV: development
+          POLAR_POSTGRES_DATABASE: polar_test
+        run: |
+          uv run task api > /tmp/api-server.log 2>&1 &
+          echo $! > /tmp/api-server.pid
+          echo "API server started with PID $(cat /tmp/api-server.pid)"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: 📦 Install client dependencies
+        working-directory: ./clients
+        run: pnpm install --frozen-lockfile
+
+      - name: ⏳ Wait for API server
+        run: |
+          echo "Waiting for API server to be ready..."
+          for i in {1..60}; do
+            if curl -sf http://127.0.0.1:8000/healthz > /dev/null 2>&1; then
+              echo "✅ API server is ready!"
+              exit 0
+            fi
+            if [ $i -eq 30 ]; then
+              echo "⚠️ Server not ready after 30s, checking logs..."
+              tail -50 /tmp/api-server.log || true
+            fi
+            if ! kill -0 $(cat /tmp/api-server.pid) 2>/dev/null; then
+              echo "❌ API server process died!"
+              tail -100 /tmp/api-server.log || true
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "❌ Timeout waiting for API server"
+          tail -100 /tmp/api-server.log || true
+          exit 1
+
+      - name: 🔄 Generate client and check for changes
+        working-directory: ./clients
+        run: |
+          pnpm generate
+          if ! git diff --exit-code packages/client/src/; then
+            echo "❌ Generated client is out of sync with OpenAPI spec"
+            echo "Run 'cd clients && pnpm generate' and commit the changes"
+            exit 1
+          fi

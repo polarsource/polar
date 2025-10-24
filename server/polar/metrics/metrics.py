@@ -711,7 +711,7 @@ class CostsMetric(Metric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        return func.sum(Event.user_metadata["_cost"]["amount"].as_integer())
+        return func.sum(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12))
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -728,7 +728,7 @@ class CumulativeCostsMetric(Metric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        return func.sum(Event.user_metadata["_cost"]["amount"].as_integer())
+        return func.sum(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12))
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:

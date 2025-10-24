@@ -29,7 +29,7 @@ export const EventMetadataFilter = ({
 
       const newMetadata = [...metadata]
       newMetadata[index] = {
-        key,
+        key: key.replaceAll(' ', '_').trim(),
         value: parsedValue,
       }
       onChange(newMetadata)

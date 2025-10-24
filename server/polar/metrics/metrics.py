@@ -404,6 +404,16 @@ class MonthlyRecurringRevenueMetric(Metric):
                         == SubscriptionRecurringInterval.month,
                         Subscription.amount,
                     ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.week,
+                        func.round(Subscription.amount * 4),
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.day,
+                        func.round(Subscription.amount * 30),
+                    ),
                 )
             ),
             0,
@@ -436,6 +446,16 @@ class CommittedMonthlyRecurringRevenueMetric(Metric):
                         Subscription.recurring_interval
                         == SubscriptionRecurringInterval.month,
                         Subscription.amount,
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.week,
+                        func.round(Subscription.amount * 4),
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.day,
+                        func.round(Subscription.amount * 30),
                     ),
                 )
             ).filter(

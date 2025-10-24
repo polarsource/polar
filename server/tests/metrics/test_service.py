@@ -28,6 +28,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_discount,
+    create_event,
     create_order,
     create_product,
     create_subscription,
@@ -975,3 +976,43 @@ class TestGetMetrics:
         assert jan_1.renewed_subscriptions_revenue == 0
         assert jan_1.active_subscriptions == 0
         assert jan_1.monthly_recurring_revenue == 0
+
+    @pytest.mark.auth
+    async def test_values_costs(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=UTC),
+                organization=organization,
+                customer=customer,
+                metadata={
+                    "_cost": {
+                        "amount": 0.000001,
+                        "currency": "usd",
+                    }
+                },
+            )
+        ]
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 1),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+        )
+
+        assert len(metrics.periods) == 1
+
+        jan_1 = metrics.periods[0]
+        assert jan_1.costs == 0.000001
+        assert jan_1.cumulative_costs == 0.000001

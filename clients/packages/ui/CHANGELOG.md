@@ -1,5 +1,11 @@
 # @polar-sh/ui
 
+## 0.1.2
+
+### Patch Changes
+
+- 258bdb1: Dependency upgrades, including React 19 peer dependency support
+
 ## 0.1.1
 
 ### Patch Changes

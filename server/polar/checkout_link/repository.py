@@ -3,7 +3,6 @@ from uuid import UUID
 
 from sqlalchemy import Select, select
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
@@ -94,12 +93,14 @@ class CheckoutLinkRepository(
     async def archive_product(self, product_id: UUID) -> None:
         statement = (
             self.get_base_statement()
-            .join(
-                CheckoutLinkProduct,
-                onclause=CheckoutLinkProduct.checkout_link_id == CheckoutLink.id,
+            .where(
+                CheckoutLink.id.in_(
+                    select(CheckoutLinkProduct.checkout_link_id).where(
+                        CheckoutLinkProduct.product_id == product_id
+                    )
+                )
             )
-            .where(CheckoutLinkProduct.product_id == product_id)
-            .options(contains_eager(CheckoutLink.checkout_link_products))
+            .options(selectinload(CheckoutLink.checkout_link_products))
         )
         checkout_links = await self.get_all(statement)
         for checkout_link in checkout_links:

@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator, Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any, Literal, cast, overload
+from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
@@ -2373,6 +2374,19 @@ class SubscriptionService:
         token, _ = await customer_session_service.create_customer_session(
             session, customer
         )
+
+        # Build query parameters with proper URL encoding
+        query_string = urlencode(
+            {
+                "customer_session_token": token,
+                "id": str(subscription.id),
+                "email": customer.email,
+            }
+        )
+        portal_url = settings.generate_frontend_url(
+            f"/{organization.slug}/portal?{query_string}"
+        )
+
         email = EmailAdapter.validate_python(
             {
                 "template": template_name,
@@ -2381,9 +2395,7 @@ class SubscriptionService:
                     "organization": organization,
                     "product": product,
                     "subscription": subscription,
-                    "url": settings.generate_frontend_url(
-                        f"/{organization.slug}/portal?customer_session_token={token}&id={subscription.id}&email={customer.email}"
-                    ),
+                    "url": portal_url,
                     **(extra_context or {}),
                 },
             }

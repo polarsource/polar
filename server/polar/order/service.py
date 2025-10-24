@@ -3,6 +3,7 @@ from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any, Literal
+from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
@@ -1452,22 +1453,42 @@ class OrderService:
             case OrderBillingReasonInternal.purchase:
                 template_name = "order_confirmation"
                 subject_template = "Your {description} order confirmation"
-                url_path_template = "/{organization}/portal?customer_session_token={token}&id={order}&email={email}"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{order}",
+                    "email": "{email}",
+                }
             case OrderBillingReasonInternal.subscription_create:
                 template_name = "subscription_confirmation"
                 subject_template = "Your {description} subscription"
-                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
             case (
                 OrderBillingReasonInternal.subscription_cycle
                 | OrderBillingReasonInternal.subscription_cycle_after_trial
             ):
                 template_name = "subscription_cycled"
                 subject_template = "Your {description} subscription has been renewed"
-                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
             case OrderBillingReasonInternal.subscription_update:
                 template_name = "subscription_updated"
                 subject_template = "Your subscription has changed to {description}"
-                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
 
         if not organization.customer_email_settings[template_name]:
             return
@@ -1478,15 +1499,20 @@ class OrderService:
         token, _ = await customer_session_service.create_customer_session(
             session, customer
         )
-        url = settings.generate_frontend_url(
-            url_path_template.format(
-                organization=organization.slug,
+
+        # Build query parameters with proper URL encoding
+        params = {
+            key: value.format(
                 token=token,
                 order=order.id,
                 subscription=subscription.id if subscription else "",
                 email=customer.email,
             )
-        )
+            for key, value in url_params.items()
+        }
+        query_string = urlencode(params)
+        url_path = url_path_template.format(organization=organization.slug)
+        url = settings.generate_frontend_url(f"{url_path}?{query_string}")
         subject = subject_template.format(description=order.description)
         email = EmailAdapter.validate_python(
             {

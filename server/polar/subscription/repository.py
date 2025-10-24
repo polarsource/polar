@@ -229,6 +229,16 @@ class SubscriptionRepository(
                         == SubscriptionRecurringInterval.month,
                         Subscription.amount,
                     ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.week,
+                        Subscription.amount * 4,
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.day,
+                        Subscription.amount * 30,
+                    ),
                 )
             case SubscriptionSortProperty.product:
                 return Product.name

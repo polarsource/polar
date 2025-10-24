@@ -1,4 +1,5 @@
 import dataclasses
+import string
 import time
 from collections.abc import Sequence
 from datetime import datetime
@@ -6,6 +7,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
+import sqlalchemy as sa
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
@@ -35,6 +37,21 @@ if TYPE_CHECKING:
     from .organization import Organization
     from .payment_method import PaymentMethod
     from .subscription import Subscription
+
+
+def short_id_to_base26(short_id: int) -> str:
+    """Convert a numeric short_id to an 8-character base-26 string (A-Z)."""
+    chars = string.ascii_uppercase
+    result = ""
+    num = short_id
+
+    # Convert to base-26
+    while num > 0:
+        result = chars[num % 26] + result
+        num = num // 26
+
+    # Pad with 'A' to ensure 8 characters
+    return result.rjust(8, "A")
 
 
 class CustomerOAuthPlatform(StrEnum):
@@ -92,9 +109,16 @@ class Customer(MetadataMixin, RecordModel):
             postgresql_nulls_not_distinct=True,
         ),
         UniqueConstraint("organization_id", "external_id"),
+        UniqueConstraint("organization_id", "short_id"),
     )
 
     external_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    short_id: Mapped[int] = mapped_column(
+        sa.BigInteger,
+        nullable=False,
+        index=True,
+        server_default=sa.text("generate_customer_short_id()"),
+    )
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     stripe_customer_id: Mapped[str | None] = mapped_column(
@@ -216,6 +240,11 @@ class Customer(MetadataMixin, RecordModel):
     @property
     def oauth_accounts(self) -> dict[str, Any]:
         return self._oauth_accounts
+
+    @property
+    def short_id_str(self) -> str:
+        """Get the base-26 string representation of the short_id."""
+        return short_id_to_base26(self.short_id)
 
     @property
     def legacy_user_id(self) -> UUID:

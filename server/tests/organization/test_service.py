@@ -205,10 +205,9 @@ async def test_get_next_invoice_number_customer(
         session, organization, customer
     )
 
-    customer_suffix = str(customer.id).split("-")[0].upper()
     assert (
         next_invoice_number
-        == f"{organization.customer_invoice_prefix}-{customer_suffix}-0001"
+        == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0001"
     )
     await session.commit()
     await session.refresh(customer)
@@ -225,7 +224,7 @@ async def test_get_next_invoice_number_customer(
 
     assert (
         next_invoice_number
-        == f"{organization.customer_invoice_prefix}-{customer_suffix}-0002"
+        == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0002"
     )
     await session.commit()
     await session.refresh(customer)
@@ -248,28 +247,48 @@ async def test_get_next_invoice_number_multiple_customers(
     customer2 = Customer(
         email="customer2@example.com",
         organization=organization,
+        short_id=1,
     )
     session.add(customer2)
 
     invoice1 = await organization_service.get_next_invoice_number(
         session, organization, customer
     )
-    customer_suffix = str(customer.id).split("-")[0].upper()
+    assert (
+        invoice1
+        == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0001"
+    )
     await session.commit()
-    assert invoice1 == f"{organization.customer_invoice_prefix}-{customer_suffix}-0001"
+    assert (
+        invoice1
+        == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0001"
+    )
 
     invoice2 = await organization_service.get_next_invoice_number(
         session, organization, customer2
     )
-    customer2_suffix = str(customer2.id).split("-")[0].upper()
+    assert (
+        invoice2
+        == f"{organization.customer_invoice_prefix}-{customer2.short_id_str}-0001"
+    )
     await session.commit()
-    assert invoice2 == f"{organization.customer_invoice_prefix}-{customer2_suffix}-0001"
+    assert (
+        invoice2
+        == f"{organization.customer_invoice_prefix}-{customer2.short_id_str}-0001"
+    )
 
     invoice3 = await organization_service.get_next_invoice_number(
         session, organization, customer
     )
+    assert (
+        invoice3
+        == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0002"
+    )
     await session.commit()
-    assert invoice3 == f"{organization.customer_invoice_prefix}-{customer_suffix}-0002"
+    assert (
+        invoice3
+        == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0002"
+    )
 
     await session.refresh(customer)
     await session.refresh(customer2)

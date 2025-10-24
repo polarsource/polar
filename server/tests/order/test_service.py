@@ -3893,7 +3893,6 @@ class TestCustomerBasedInvoiceNumbering:
         }
         await save_fixture(organization)
 
-        # Create two different customers
         customer_1 = await create_customer(
             save_fixture,
             organization=organization,
@@ -3909,7 +3908,6 @@ class TestCustomerBasedInvoiceNumbering:
             stripe_customer_id="STRIPE_CUSTOMER_2",
         )
 
-        # Create checkout and order for customer 1
         checkout_1 = await create_checkout(
             save_fixture,
             products=[product_one_time],
@@ -3918,7 +3916,6 @@ class TestCustomerBasedInvoiceNumbering:
         )
         order_1 = await order_service.create_from_checkout_one_time(session, checkout_1)
 
-        # Create checkout and order for customer 2
         checkout_2 = await create_checkout(
             save_fixture,
             products=[product_one_time],
@@ -3927,36 +3924,29 @@ class TestCustomerBasedInvoiceNumbering:
         )
         order_2 = await order_service.create_from_checkout_one_time(session, checkout_2)
 
-        # Refresh to get the invoice numbers
         await session.refresh(order_1)
         await session.refresh(order_2)
 
-        # Both customers should have different invoice number sequences
-        # They should both start with the organization prefix but have customer-specific numbering
         assert order_1.invoice_number is not None
         assert order_2.invoice_number is not None
         assert order_1.invoice_number != order_2.invoice_number
 
-        # Verify they both start with organization prefix
         assert order_1.invoice_number.startswith(organization.customer_invoice_prefix)
         assert order_2.invoice_number.startswith(organization.customer_invoice_prefix)
 
-        # Each customer should start at 0001
         assert order_1.invoice_number.endswith("-0001")
         assert order_2.invoice_number.endswith("-0001")
 
-        # Verify invoice numbers contain customer-specific suffix
-        customer_1_suffix = str(customer_1.id).split("-")[0].upper()
-        customer_2_suffix = str(customer_2.id).split("-")[0].upper()
-        assert customer_1_suffix in order_1.invoice_number
-        assert customer_2_suffix in order_2.invoice_number
+        await session.refresh(customer_1)
+        await session.refresh(customer_2)
+        assert customer_1.short_id_str in order_1.invoice_number
+        assert customer_2.short_id_str in order_2.invoice_number
 
-        # Verify format: PREFIX-CUSTOMER_SUFFIX-0001
         assert (
             order_1.invoice_number
-            == f"{organization.customer_invoice_prefix}-{customer_1_suffix}-0001"
+            == f"{organization.customer_invoice_prefix}-{customer_1.short_id_str}-0001"
         )
         assert (
             order_2.invoice_number
-            == f"{organization.customer_invoice_prefix}-{customer_2_suffix}-0001"
+            == f"{organization.customer_invoice_prefix}-{customer_2.short_id_str}-0001"
         )

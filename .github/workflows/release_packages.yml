@@ -49,3 +49,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS: "https://polar.sh,https://sandbox.polar.sh"
+          NPM_TOKEN: ""

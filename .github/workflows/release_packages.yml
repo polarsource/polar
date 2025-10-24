@@ -7,6 +7,10 @@ on:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -47,5 +51,4 @@ jobs:
           cwd: ${{ github.workspace }}/clients
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS: "https://polar.sh,https://sandbox.polar.sh"

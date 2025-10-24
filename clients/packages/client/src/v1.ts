@@ -1368,6 +1368,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/orders/export': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Export Subscriptions
+     * @description Export orders as a CSV file.
+     *
+     *     **Scopes**: `orders:read`
+     */
+    get: operations['orders:export']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/orders/{id}': {
     parameters: {
       query?: never
@@ -8207,7 +8229,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -8496,7 +8518,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -11428,7 +11450,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -11520,7 +11542,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -11765,7 +11787,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -12408,7 +12430,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -12654,7 +12676,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -13769,7 +13791,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -14442,6 +14464,11 @@ export interface components {
       /** Iat */
       iat: number
     }
+    /**
+     * InvoiceNumbering
+     * @enum {string}
+     */
+    InvoiceNumbering: 'organization' | 'customer'
     /** LLMMetadata */
     LLMMetadata: {
       /**
@@ -16643,7 +16670,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -16733,7 +16760,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -17377,6 +17404,7 @@ export interface components {
       /** Allow Customer Updates */
       allow_customer_updates: boolean
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      invoice_numbering: components['schemas']['InvoiceNumbering']
     }
     /** OrganizationUpdate */
     OrganizationUpdate: {
@@ -17775,7 +17803,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -17973,7 +18001,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        * @default 1
        */
       recurring_interval_count: number
@@ -18581,7 +18609,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -18661,7 +18689,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
        */
       recurring_interval_count?: number | null
       /**
@@ -19308,7 +19336,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -24388,6 +24416,40 @@ export interface operations {
       }
     }
   }
+  'orders:export': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by product ID. */
+        product_id?: string | string[] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'orders:get': {
     parameters: {
       query?: never
@@ -25390,7 +25452,6 @@ export interface operations {
           | 'America/Coral_Harbour'
           | 'America/Cordoba'
           | 'America/Costa_Rica'
-          | 'America/Coyhaique'
           | 'America/Creston'
           | 'America/Cuiaba'
           | 'America/Curacao'
@@ -31663,7 +31724,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'America/Coral_Harbour',
   'America/Cordoba',
   'America/Costa_Rica',
-  'America/Coyhaique',
   'America/Creston',
   'America/Cuiaba',
   'America/Curacao',
@@ -33339,6 +33399,9 @@ export const identityVerificationStatusValues: ReadonlyArray<
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   components['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
+export const invoiceNumberingValues: ReadonlyArray<
+  components['schemas']['InvoiceNumbering']
+> = ['organization', 'customer']
 export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
   components['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
 > = ['custom']

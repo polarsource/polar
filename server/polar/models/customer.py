@@ -13,6 +13,7 @@ from sqlalchemy import (
     ColumnElement,
     ForeignKey,
     Index,
+    Integer,
     String,
     UniqueConstraint,
     Uuid,
@@ -135,6 +136,8 @@ class Customer(MetadataMixin, RecordModel):
     meters_updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
+
+    invoice_next_number: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,

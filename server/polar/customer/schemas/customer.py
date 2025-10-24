@@ -84,14 +84,23 @@ class CustomerUpdate(CustomerUpdateBase):
 class CustomerUpdateExternalID(CustomerUpdateBase): ...
 
 
-class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
+class BaseCustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
+    """Base class for all customer types (with and without email)."""
+
     id: UUID4 = Field(
         description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
     )
     external_id: str | None = Field(
         description=_external_id_description, examples=[_external_id_example]
     )
-    email: str = Field(description=_email_description, examples=[_email_example])
+    email: str | None = Field(
+        default=None,
+        description=(
+            f"{_email_description} "
+            "Can be null for placeholder customers created automatically from event ingestion."
+        ),
+        examples=[_email_example],
+    )
     email_verified: bool = Field(
         description=(
             "Whether the customer email address is verified. "
@@ -113,9 +122,23 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     )
 
     @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])
-    def avatar_url(self) -> str:
+    def avatar_url(self) -> str | None:
+        if self.email is None:
+            return None
         email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
         return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
+
+
+class CustomerBase(BaseCustomerBase):
+    """Customer with email address."""
+
+    email: str
+
+
+class PlaceholderCustomerBase(BaseCustomerBase):
+    """Placeholder customer without email address."""
+
+    email: None
 
 
 class CustomerBalance(Schema):

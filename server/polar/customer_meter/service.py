@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
-from polar.customer.repository import CustomerRepository
+from polar.customer.repository import BaseCustomerRepository
 from polar.event.repository import EventRepository
 from polar.kit.math import non_negative_running_sum
 from polar.kit.pagination import PaginationParams
@@ -101,8 +101,8 @@ class CustomerMeterService:
                 "customer.webhook", WebhookEventType.customer_state_changed, customer.id
             )
 
-        customer_repository = CustomerRepository.from_session(session)
-        await customer_repository.set_meters_updated_at((customer,))
+        base_customer_repository = BaseCustomerRepository.from_session(session)
+        await base_customer_repository.set_meters_updated_at((customer,))
 
     async def update_customer_meter(
         self, session: AsyncSession, locker: Locker, customer: Customer, meter: Meter

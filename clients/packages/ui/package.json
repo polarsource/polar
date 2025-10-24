@@ -53,7 +53,7 @@
     "countries-list": "^3.2.0",
     "date-fns": "^4.1.0",
     "input-otp": "^1.4.2",
-    "lucide-react": "^0.546.0",
+    "lucide-react": "^0.547.0",
     "react-day-picker": "^9.11.1",
     "react-hook-form": "^7.65.0",
     "react-timeago": "^8.3.0",
@@ -70,7 +70,7 @@
     "typescript": "5.9.3"
   },
   "peerDependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
   }
 }

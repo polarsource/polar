@@ -30,7 +30,7 @@ export const CheckoutCard = ({
     <ShadowBox
       className={twMerge(
         themePreset.polar.checkoutCardWrapper,
-        'hidden flex-col gap-6 md:flex',
+        'flex flex-col gap-6',
       )}
     >
       {isSeatBased && update ? (

@@ -113,6 +113,11 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     )
     checkout_id: UUID4 | None
 
+    seats: int | None = Field(
+        default=None,
+        description="The number of seats for seat-based subscriptions. None for non-seat subscriptions.",
+    )
+
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
 

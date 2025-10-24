@@ -8207,7 +8207,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -8496,7 +8496,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -11428,7 +11428,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -11522,7 +11522,7 @@ export interface components {
        * Recurring Interval Count
        * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
        */
-      recurring_interval_count: number | null
+      recurring_interval_count: number
       /**
        * @description The status of the subscription.
        * @example active
@@ -11593,6 +11593,11 @@ export interface components {
       discount_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Seats
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       */
+      seats?: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -11760,7 +11765,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -12405,7 +12410,7 @@ export interface components {
        * Recurring Interval Count
        * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
        */
-      recurring_interval_count: number | null
+      recurring_interval_count: number
       /**
        * @description The status of the subscription.
        * @example active
@@ -12476,6 +12481,11 @@ export interface components {
       discount_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Seats
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       */
+      seats?: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -12644,7 +12654,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -12700,6 +12710,7 @@ export interface components {
       | '-product'
     CustomerSubscriptionUpdate:
       | components['schemas']['CustomerSubscriptionUpdateProduct']
+      | components['schemas']['CustomerSubscriptionUpdateSeats']
       | components['schemas']['CustomerSubscriptionCancel']
     /** CustomerSubscriptionUpdateProduct */
     CustomerSubscriptionUpdateProduct: {
@@ -12709,6 +12720,18 @@ export interface components {
        * @description Update subscription to another product.
        */
       product_id: string
+    }
+    /** CustomerSubscriptionUpdateSeats */
+    CustomerSubscriptionUpdateSeats: {
+      /**
+       * Seats
+       * @description Update the number of seats for this subscription.
+       */
+      seats: number
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
     }
     /** CustomerUpdate */
     CustomerUpdate: {
@@ -13759,7 +13782,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -16633,7 +16656,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -16725,7 +16748,7 @@ export interface components {
        * Recurring Interval Count
        * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
        */
-      recurring_interval_count: number | null
+      recurring_interval_count: number
       /**
        * @description The status of the subscription.
        * @example active
@@ -16796,6 +16819,11 @@ export interface components {
       discount_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Seats
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       */
+      seats?: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -17760,7 +17788,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -17888,7 +17916,7 @@ export interface components {
       recurring_interval?: null
       /**
        * Recurring Interval Count
-       * @description States that the product is a one-time purchase.
+       * @description One-time products don't have a recurring interval count.
        */
       recurring_interval_count?: null
     }
@@ -18566,7 +18594,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -19295,7 +19323,7 @@ export interface components {
        * Recurring Interval Count
        * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
        */
-      recurring_interval_count: number | null
+      recurring_interval_count: number
       /**
        * @description The status of the subscription.
        * @example active
@@ -19366,6 +19394,11 @@ export interface components {
       discount_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Seats
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       */
+      seats?: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
@@ -19852,6 +19885,7 @@ export interface components {
       | components['schemas']['SubscriptionUpdateProduct']
       | components['schemas']['SubscriptionUpdateDiscount']
       | components['schemas']['SubscriptionUpdateTrial']
+      | components['schemas']['SubscriptionUpdateSeats']
       | components['schemas']['SubscriptionCancel']
       | components['schemas']['SubscriptionRevoke']
     /** SubscriptionUpdateDiscount */
@@ -19870,6 +19904,18 @@ export interface components {
        * @description Update subscription to another product.
        */
       product_id: string
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
+    }
+    /** SubscriptionUpdateSeats */
+    SubscriptionUpdateSeats: {
+      /**
+       * Seats
+       * @description Update the number of seats for this subscription.
+       */
+      seats: number
       /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
@@ -29378,7 +29424,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Authentication required for subscription-based assignment */
+      /** @description Authentication required for direct subscription or order assignment */
       401: {
         headers: {
           [name: string]: unknown
@@ -29392,7 +29438,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Subscription, checkout, or customer not found */
+      /** @description Subscription, order, checkout, or customer not found */
       404: {
         headers: {
           [name: string]: unknown

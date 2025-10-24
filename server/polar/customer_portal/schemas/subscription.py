@@ -4,6 +4,7 @@ from typing import Annotated
 from pydantic import UUID4, AliasChoices, AliasPath, Field, computed_field
 from pydantic.json_schema import SkipJsonSchema
 
+from polar.enums import SubscriptionProrationBehavior
 from polar.kit.schemas import IDSchema, Schema, SetSchemaReference, TimestampedSchema
 from polar.meter.schemas import NAME_DESCRIPTION as METER_NAME_DESCRIPTION
 from polar.models.subscription import CustomerCancellationReason
@@ -76,6 +77,20 @@ class CustomerSubscriptionUpdateProduct(Schema):
     product_id: UUID4 = Field(description="Update subscription to another product.")
 
 
+class CustomerSubscriptionUpdateSeats(Schema):
+    seats: int = Field(
+        description="Update the number of seats for this subscription.",
+        ge=1,
+    )
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
+
+
 class CustomerSubscriptionCancel(Schema):
     cancel_at_period_end: bool | None = Field(
         None,
@@ -111,6 +126,8 @@ class CustomerSubscriptionCancel(Schema):
 
 
 CustomerSubscriptionUpdate = Annotated[
-    CustomerSubscriptionUpdateProduct | CustomerSubscriptionCancel,
+    CustomerSubscriptionUpdateProduct
+    | CustomerSubscriptionUpdateSeats
+    | CustomerSubscriptionCancel,
     SetSchemaReference("CustomerSubscriptionUpdate"),
 ]

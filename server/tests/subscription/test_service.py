@@ -72,6 +72,7 @@ from polar.subscription.service import (
     NotASeatBasedSubscription,
     SeatsAlreadyAssigned,
     SubscriptionDoesNotExist,
+    SubscriptionManagedByStripe,
     TrialingSubscription,
 )
 from polar.subscription.service import subscription as subscription_service
@@ -2805,6 +2806,35 @@ class TestUpdateSeats:
         # When: Try to update seats
         # Then: Raises error
         with pytest.raises(AlreadyCanceledSubscription):
+            await subscription_service.update_seats(session, subscription, seats=10)
+
+    async def test_stripe_managed_subscription_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Stripe-managed subscription with seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+        # Mark as Stripe-managed
+        subscription.stripe_subscription_id = "sub_stripe_123"
+        await save_fixture(subscription)
+
+        # When: Try to update seats
+        # Then: Raises error because Stripe manages this subscription
+        with pytest.raises(SubscriptionManagedByStripe):
             await subscription_service.update_seats(session, subscription, seats=10)
 
     async def test_proration_invoice_behavior(

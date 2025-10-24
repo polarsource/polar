@@ -33,6 +33,10 @@ import {
   useState,
 } from 'react'
 
+const stub = (): never => {
+  throw new Error('You forgot to wrap your component in <CheckoutProvider>.')
+}
+
 export interface CheckoutContextProps {
   checkout: CheckoutPublic
   refresh: () => Promise<
@@ -92,13 +96,8 @@ export interface CheckoutContextProps {
   client: PolarCore
 }
 
-const stub = (): never => {
-  throw new Error('You forgot to wrap your component in <CheckoutProvider>.')
-}
-
-export const CheckoutContext = createContext<CheckoutContextProps>(
-  stub as unknown as CheckoutContextProps,
-)
+// @ts-ignore
+export const CheckoutContext = createContext<CheckoutContextProps>(stub)
 
 interface CheckoutProviderProps {
   clientSecret: string

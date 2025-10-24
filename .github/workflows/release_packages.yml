@@ -7,11 +7,6 @@ on:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
-permissions:
-  id-token: write # Required for OIDC
-  contents: write # to push tags
-  pull-requests: read
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -23,6 +18,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -48,8 +44,9 @@ jobs:
         uses: changesets/action@v1.5.1
         with:
           # This expects you to have a script called release which does a build for your packages and calls changeset publish
-          publish: pnpm run release-packages
+          publish: pnpm release-packages
           cwd: ${{ github.workspace }}/clients
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS: "https://polar.sh,https://sandbox.polar.sh"

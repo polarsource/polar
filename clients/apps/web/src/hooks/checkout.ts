@@ -8,7 +8,7 @@ import { CONFIG } from '@/utils/config'
 export const useCheckoutConfirmedRedirect = (
   embed: boolean,
   theme?: 'light' | 'dark',
-  listenFulfillment?: (() => Promise<void>) | null,
+  listenFulfillment?: () => Promise<void>,
 ) => {
   const router = useRouter()
   return useCallback(

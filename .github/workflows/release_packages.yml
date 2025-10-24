@@ -7,11 +7,6 @@ on:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
-permissions:
-  id-token: write # Required for OIDC
-  contents: write # to push tags
-  pull-requests: read
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -19,6 +14,11 @@ jobs:
     defaults:
       run:
         working-directory: ${{ github.workspace }}/clients
+
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
 
     steps:
       - name: Checkout code

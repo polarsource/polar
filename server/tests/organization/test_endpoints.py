@@ -633,3 +633,136 @@ class TestGetAccount:
         assert json["is_details_submitted"]
         assert json["is_charges_enabled"]
         assert json["is_payouts_enabled"]
+
+
+@pytest.mark.asyncio
+class TestRemoveMember:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization, user: User
+    ) -> None:
+        response = await client.delete(
+            f"/v1/organizations/{organization.id}/members/{user.id}"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_admin(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user_second: User,
+    ) -> None:
+        # Authenticated user is a member but not admin
+        response = await client.delete(
+            f"/v1/organizations/{organization.id}/members/{user_second.id}"
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_non_admin_cannot_remove_member(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user_organization_second: UserOrganization,
+    ) -> None:
+        # user_organization is the authenticated user (member but not admin)
+        # user_organization_second is another member to be removed
+        # Should fail because authenticated user is not admin
+
+        members_before = await user_organization_service.list_by_org(
+            session, organization.id
+        )
+        assert len(members_before) == 2
+
+        response = await client.delete(
+            f"/v1/organizations/{organization.id}/members/{user_organization_second.user.id}"
+        )
+
+        assert response.status_code == 403
+
+        members_after = await user_organization_service.list_by_org(
+            session, organization.id
+        )
+        # No members should be removed
+        assert len(members_after) == len(members_before)
+
+    @pytest.mark.auth
+    async def test_admin_can_remove_member(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        organization_account: Account,
+        user_organization: UserOrganization,
+        user_organization_second: UserOrganization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        # user_organization is the authenticated user (admin through organization_account)
+        # user_organization_second is another member to be removed
+
+        members_before = await user_organization_service.list_by_org(
+            session, organization.id
+        )
+        assert len(members_before) == 2
+
+        response = await client.delete(
+            f"/v1/organizations/{organization.id}/members/{user_organization_second.user.id}"
+        )
+
+        assert response.status_code == 204
+
+        members_after = await user_organization_service.list_by_org(
+            session, organization.id
+        )
+        assert len(members_after) == 1
+        assert members_after[0].user_id == user_organization.user_id
+
+    @pytest.mark.auth
+    async def test_cannot_remove_admin(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        organization_account: Account,
+        user_organization: UserOrganization,
+        user_organization_second: UserOrganization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        # user_organization is the authenticated user and admin
+        # Try to remove themselves (the admin)
+
+        members_before = await user_organization_service.list_by_org(
+            session, organization.id
+        )
+
+        # Try to remove the admin user (themselves)
+        response = await client.delete(
+            f"/v1/organizations/{organization.id}/members/{user_organization.user.id}"
+        )
+
+        assert response.status_code == 403
+
+        members_after = await user_organization_service.list_by_org(
+            session, organization.id
+        )
+        # No members should be removed
+        assert len(members_after) == len(members_before)
+
+    @pytest.mark.auth
+    async def test_organization_not_found(
+        self,
+        client: AsyncClient,
+        user: User,
+    ) -> None:
+        response = await client.delete(
+            f"/v1/organizations/{uuid.uuid4()}/members/{user.id}"
+        )
+
+        assert response.status_code == 404
+
+

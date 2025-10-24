@@ -32,7 +32,7 @@ class AuthService:
         *,
         return_to: str | None = None,
     ) -> RedirectResponse:
-        token, user_session = await self._create_user_session(
+        token, user_session = await self.create_user_session(
             session=session,
             user=user,
             user_agent=request.headers.get("User-Agent", ""),
@@ -104,17 +104,7 @@ class AuthService:
 
         return True
 
-    async def _get_user_session_by_token(
-        self, session: AsyncSession, token: str, *, expired: bool = False
-    ) -> UserSession | None:
-        token_hash = get_token_hash(token, secret=settings.SECRET)
-        statement = select(UserSession).where(UserSession.token == token_hash)
-        if not expired:
-            statement = statement.where(UserSession.expires_at > utc_now())
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
-
-    async def _create_user_session(
+    async def create_user_session(
         self,
         session: AsyncSession,
         user: User,
@@ -137,6 +127,16 @@ class AuthService:
         await session.flush()
 
         return token, user_session
+
+    async def _get_user_session_by_token(
+        self, session: AsyncSession, token: str, *, expired: bool = False
+    ) -> UserSession | None:
+        token_hash = get_token_hash(token, secret=settings.SECRET)
+        statement = select(UserSession).where(UserSession.token == token_hash)
+        if not expired:
+            statement = statement.where(UserSession.expires_at > utc_now())
+        result = await session.execute(statement)
+        return result.unique().scalar_one_or_none()
 
     def _set_user_session_cookie(
         self, request: Request, response: R, value: str, expires: int | datetime

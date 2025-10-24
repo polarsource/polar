@@ -10,9 +10,9 @@ from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
 from polar.config import Environment, settings
-from polar.enums import AccountType
+from polar.enums import AccountType, InvoiceNumbering
 from polar.exceptions import PolarRequestValidationError
-from polar.models import Organization, Product, User
+from polar.models import Customer, Organization, Product, User
 from polar.models.account import Account
 from polar.models.organization import OrganizationNotificationSettings
 from polar.models.organization_review import OrganizationReview
@@ -163,18 +163,125 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
-async def test_get_next_invoice_number(
+async def test_get_next_invoice_number_organization(
     session: AsyncSession,
     organization: Organization,
+    customer: Customer,
 ) -> None:
     assert organization.customer_invoice_next_number == 1
 
     next_invoice_number = await organization_service.get_next_invoice_number(
-        session, organization
+        session, organization, customer
     )
 
     assert next_invoice_number == f"{organization.customer_invoice_prefix}-0001"
     assert organization.customer_invoice_next_number == 2
+
+    await session.refresh(customer)
+    assert customer.invoice_next_number == 1
+
+
+@pytest.mark.asyncio
+async def test_get_next_invoice_number_customer(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    customer: Customer,
+) -> None:
+    organization.subscription_settings = {
+        **organization.subscription_settings,
+        "invoice_numbering": InvoiceNumbering.customer,
+    }
+    await save_fixture(organization)
+
+    initial_org_counter = organization.customer_invoice_next_number
+    assert customer.invoice_next_number == 1
+
+    next_invoice_number = await organization_service.get_next_invoice_number(
+        session, organization, customer
+    )
+
+    assert (
+        next_invoice_number
+        == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0001"
+    )
+    await session.commit()
+    await session.refresh(customer)
+    assert customer.invoice_next_number == 2
+
+    await session.refresh(organization)
+    assert organization.customer_invoice_next_number == initial_org_counter
+
+    await session.refresh(customer)
+
+    next_invoice_number = await organization_service.get_next_invoice_number(
+        session, organization, customer
+    )
+
+    assert (
+        next_invoice_number
+        == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0002"
+    )
+    await session.commit()
+    await session.refresh(customer)
+    assert customer.invoice_next_number == 3
+
+
+@pytest.mark.asyncio
+async def test_get_next_invoice_number_multiple_customers(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    customer: Customer,
+) -> None:
+    organization.subscription_settings = {
+        **organization.subscription_settings,
+        "invoice_numbering": InvoiceNumbering.customer,
+    }
+    await save_fixture(organization)
+
+    customer2 = Customer(
+        email="customer2@example.com",
+        organization=organization,
+        short_id=1,
+    )
+    session.add(customer2)
+    await session.flush()
+
+    invoice1 = await organization_service.get_next_invoice_number(
+        session, organization, customer
+    )
+    await session.refresh(customer)
+    assert (
+        invoice1
+        == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0001"
+    )
+    await session.commit()
+
+    invoice2 = await organization_service.get_next_invoice_number(
+        session, organization, customer2
+    )
+    await session.refresh(customer2)
+    assert (
+        invoice2
+        == f"{organization.customer_invoice_prefix}-{customer2.short_id_str}-0001"
+    )
+    await session.commit()
+
+    await session.refresh(customer)
+    invoice3 = await organization_service.get_next_invoice_number(
+        session, organization, customer
+    )
+    assert (
+        invoice3
+        == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0002"
+    )
+    await session.commit()
+
+    await session.refresh(customer)
+    await session.refresh(customer2)
+    assert customer.invoice_next_number == 3
+    assert customer2.invoice_next_number == 2
 
 
 @pytest.mark.asyncio

@@ -576,7 +576,7 @@ class OrderService:
 
         organization = checkout.organization
         invoice_number = await organization_service.get_next_invoice_number(
-            session, organization
+            session, organization, customer
         )
 
         repository = OrderRepository.from_session(session)
@@ -697,7 +697,7 @@ class OrderService:
             tax_rate = tax_calculation["tax_rate"]
 
         invoice_number = await organization_service.get_next_invoice_number(
-            session, subscription.organization
+            session, subscription.organization, customer
         )
 
         total_amount = subtotal_amount - discount_amount + tax_amount
@@ -789,7 +789,7 @@ class OrderService:
 
         organization = subscription.organization
         invoice_number = await organization_service.get_next_invoice_number(
-            session, organization
+            session, organization, customer
         )
 
         repository = OrderRepository.from_session(session)
@@ -1342,7 +1342,7 @@ class OrderService:
         )
 
         invoice_number = await organization_service.get_next_invoice_number(
-            session, subscription.organization
+            session, subscription.organization, customer
         )
 
         repository = OrderRepository.from_session(session)

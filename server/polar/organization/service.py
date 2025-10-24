@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import structlog
@@ -16,6 +16,7 @@ from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import Environment, settings
+from polar.enums import InvoiceNumbering
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.plain.service import plain as plain_service
@@ -43,6 +44,9 @@ from .schemas import (
     OrganizationUpdate,
 )
 from .sorting import OrganizationSortProperty
+
+if TYPE_CHECKING:
+    from polar.models import Customer
 
 log = structlog.get_logger()
 
@@ -361,17 +365,33 @@ class OrganizationService:
         self,
         session: AsyncSession,
         organization: Organization,
+        customer: "Customer",
     ) -> str:
-        invoice_number = f"{organization.customer_invoice_prefix}-{organization.customer_invoice_next_number:04d}"
-        repository = OrganizationRepository.from_session(session)
-        organization = await repository.update(
-            organization,
-            update_dict={
-                "customer_invoice_next_number": organization.customer_invoice_next_number
-                + 1
-            },
-        )
-        return invoice_number
+        from polar.customer.repository import CustomerRepository
+
+        match organization.invoice_numbering:
+            case InvoiceNumbering.customer:
+                invoice_number = f"{organization.customer_invoice_prefix}-{customer.short_id_str}-{customer.invoice_next_number:04d}"
+                customer_repository = CustomerRepository.from_session(session)
+                customer.invoice_next_number = customer.invoice_next_number + 1
+                await customer_repository.update(
+                    customer,
+                    update_dict={"invoice_next_number": customer.invoice_next_number},
+                    flush=True,
+                )
+                return invoice_number
+
+            case InvoiceNumbering.organization:
+                invoice_number = f"{organization.customer_invoice_prefix}-{organization.customer_invoice_next_number:04d}"
+                repository = OrganizationRepository.from_session(session)
+                organization = await repository.update(
+                    organization,
+                    update_dict={
+                        "customer_invoice_next_number": organization.customer_invoice_next_number
+                        + 1
+                    },
+                )
+                return invoice_number
 
     async def _after_update(
         self,

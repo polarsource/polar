@@ -13,6 +13,7 @@ import {
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
+import { InvoiceNumbering } from './InvoiceNumbering'
 import { ProrationBehavior } from './ProrationBehavior'
 import {
   SettingsGroup,
@@ -127,6 +128,28 @@ const OrganizationSubscriptionSettings: React.FC<
               )}
             />
           </SettingsGroupItem>
+
+          <SettingsGroupItem
+            title="Invoice numbering"
+            description="Choose between organization-level sequential numbering or customer-level sequential numbering for invoices."
+          >
+            <FormField
+              control={control}
+              name="invoice_numbering"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <InvoiceNumbering
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </SettingsGroupItem>
+
           <SettingsGroupActions>
             <Button
               className="self-start"

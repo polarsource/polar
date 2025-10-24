@@ -21,7 +21,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.email.sender import DEFAULT_REPLY_TO_EMAIL_ADDRESS, EmailFromReply
-from polar.enums import SubscriptionProrationBehavior
+from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 
@@ -63,12 +63,14 @@ class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
     allow_customer_updates: bool
     proration_behavior: SubscriptionProrationBehavior
+    invoice_numbering: InvoiceNumbering
 
 
 _default_subscription_settings: OrganizationSubscriptionSettings = {
     "allow_multiple_subscriptions": False,
     "allow_customer_updates": True,
     "proration_behavior": SubscriptionProrationBehavior.prorate,
+    "invoice_numbering": InvoiceNumbering.organization,
 }
 
 
@@ -252,6 +254,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return SubscriptionProrationBehavior(
             self.subscription_settings["proration_behavior"]
         )
+
+    @property
+    def invoice_numbering(self) -> InvoiceNumbering:
+        return InvoiceNumbering(self.subscription_settings["invoice_numbering"])
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:

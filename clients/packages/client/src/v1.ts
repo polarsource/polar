@@ -14568,6 +14568,11 @@ export interface components {
       /** Iat */
       iat: number
     }
+    /**
+     * InvoiceNumbering
+     * @enum {string}
+     */
+    InvoiceNumbering: 'organization' | 'customer'
     /** LLMMetadata */
     LLMMetadata: {
       /**
@@ -17503,6 +17508,7 @@ export interface components {
       /** Allow Customer Updates */
       allow_customer_updates: boolean
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      invoice_numbering: components['schemas']['InvoiceNumbering']
     }
     /** OrganizationUpdate */
     OrganizationUpdate: {
@@ -25735,7 +25741,6 @@ export interface operations {
           | 'America/Coral_Harbour'
           | 'America/Cordoba'
           | 'America/Costa_Rica'
-          | 'America/Coyhaique'
           | 'America/Creston'
           | 'America/Cuiaba'
           | 'America/Curacao'
@@ -32107,7 +32112,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'America/Coral_Harbour',
   'America/Cordoba',
   'America/Costa_Rica',
-  'America/Coyhaique',
   'America/Creston',
   'America/Cuiaba',
   'America/Curacao',
@@ -33783,6 +33787,9 @@ export const identityVerificationStatusValues: ReadonlyArray<
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   components['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
+export const invoiceNumberingValues: ReadonlyArray<
+  components['schemas']['InvoiceNumbering']
+> = ['organization', 'customer']
 export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
   components['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
 > = ['custom']

@@ -13,7 +13,11 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
-from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
+from polar.enums import (
+    InvoiceNumbering,
+    PaymentProcessor,
+    SubscriptionRecurringInterval,
+)
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
@@ -3870,4 +3874,78 @@ class TestCustomerBalance:
         assert (
             await order_service.customer_balance(session, customer)
             == setup.expected_balance
+        )
+
+
+@pytest.mark.asyncio
+class TestCustomerBasedInvoiceNumbering:
+    async def test_different_customers_different_invoice_numbers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "invoice_numbering": InvoiceNumbering.customer,
+        }
+        await save_fixture(organization)
+
+        customer_1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+            name="Customer 1",
+            stripe_customer_id="STRIPE_CUSTOMER_1",
+        )
+        customer_2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer2@example.com",
+            name="Customer 2",
+            stripe_customer_id="STRIPE_CUSTOMER_2",
+        )
+
+        checkout_1 = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            status=CheckoutStatus.confirmed,
+            customer=customer_1,
+        )
+        order_1 = await order_service.create_from_checkout_one_time(session, checkout_1)
+
+        checkout_2 = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            status=CheckoutStatus.confirmed,
+            customer=customer_2,
+        )
+        order_2 = await order_service.create_from_checkout_one_time(session, checkout_2)
+
+        await session.refresh(order_1)
+        await session.refresh(order_2)
+
+        assert order_1.invoice_number is not None
+        assert order_2.invoice_number is not None
+        assert order_1.invoice_number != order_2.invoice_number
+
+        assert order_1.invoice_number.startswith(organization.customer_invoice_prefix)
+        assert order_2.invoice_number.startswith(organization.customer_invoice_prefix)
+
+        assert order_1.invoice_number.endswith("-0001")
+        assert order_2.invoice_number.endswith("-0001")
+
+        await session.refresh(customer_1)
+        await session.refresh(customer_2)
+        assert customer_1.short_id_str in order_1.invoice_number
+        assert customer_2.short_id_str in order_2.invoice_number
+
+        assert (
+            order_1.invoice_number
+            == f"{organization.customer_invoice_prefix}-{customer_1.short_id_str}-0001"
+        )
+        assert (
+            order_2.invoice_number
+            == f"{organization.customer_invoice_prefix}-{customer_2.short_id_str}-0001"
         )

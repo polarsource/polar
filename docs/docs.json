@@ -465,6 +465,14 @@
                     ]
                   },
                   {
+                    "group": "Customer Seats",
+                    "pages": [
+                      "api-reference/webhooks/customer_seat.assigned",
+                      "api-reference/webhooks/customer_seat.claimed",
+                      "api-reference/webhooks/customer_seat.revoked"
+                    ]
+                  },
+                  {
                     "group": "Refunds",
                     "pages": [
                       "api-reference/webhooks/refund.created",

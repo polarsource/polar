@@ -2,6 +2,7 @@
 
 import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import { EventCreationGuideModal } from '@/components/Events/EventCreationGuideModal'
+import { EventMetadataFilter } from '@/components/Events/EventMetadataFilter'
 import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
@@ -35,12 +36,14 @@ import {
   parseAsArrayOf,
   parseAsInteger,
   parseAsIsoDateTime,
+  parseAsJson,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
 import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import z from 'zod'
 
 const PAGE_SIZE = 300
 
@@ -76,6 +79,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     'page',
     parseAsInteger.withDefault(1),
   )
+  const [metadata, setMetadata] = useQueryState(
+    'metadata',
+    parseAsJson(
+      z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+    ),
+  )
 
   const router = useRouter()
 
@@ -104,7 +113,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     [data],
   )
 
-  const debouncedQuery = useDebounce(query, 250)
+  const debouncedQuery = useDebounce(query, 500)
+  const debouncedMetadata = useDebounce(metadata, 500)
 
   const eventParameters = useMemo(():
     | operations['events:list']['parameters']['query']
@@ -121,6 +131,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       start_timestamp: startDate.toISOString(),
       end_timestamp: endDate.toISOString(),
       query: debouncedQuery ?? null,
+      metadata: debouncedMetadata ?? null,
     }
   }, [
     selectedEventNames,
@@ -130,6 +141,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     sorting,
     debouncedQuery,
     selectedCustomerIds,
+    debouncedMetadata,
   ])
 
   const { data: events } = useEvents(organization.id, eventParameters)
@@ -173,7 +185,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             <div>Events</div>
             <div className="flex flex-row items-center gap-4">
               <Tooltip>
-                <TooltipTrigger>
+                <TooltipTrigger asChild>
                   <Button
                     size="icon"
                     className="h-6 w-6 rounded-full"
@@ -188,7 +200,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Reset Filters</p>
+                  <span>Reset Filters</span>
                 </TooltipContent>
               </Tooltip>
               <Button
@@ -295,6 +307,26 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 organizationId={organization.id}
                 selectedCustomerIds={selectedCustomerIds}
                 onSelectCustomerIds={setSelectedCustomerIds}
+              />
+
+              <EventMetadataFilter
+                metadata={Object.entries(metadata ?? {}).map(
+                  ([key, value]) => ({
+                    key,
+                    value,
+                  }),
+                )}
+                onChange={(metadata) => {
+                  setMetadata(
+                    metadata.reduce(
+                      (acc, curr) => {
+                        acc[curr.key] = curr.value
+                        return acc
+                      },
+                      {} as Record<string, string | number | boolean>,
+                    ),
+                  )
+                }}
               />
             </div>
           </div>

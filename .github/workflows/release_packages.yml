@@ -19,10 +19,6 @@ jobs:
       run:
         working-directory: ${{ github.workspace }}/clients
 
-    permissions:
-      contents: write
-      pull-requests: write
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5

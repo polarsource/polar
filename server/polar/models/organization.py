@@ -21,7 +21,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.email.sender import DEFAULT_REPLY_TO_EMAIL_ADDRESS, EmailFromReply
-from polar.enums import SubscriptionProrationBehavior
+from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 
@@ -71,6 +71,15 @@ _default_subscription_settings: OrganizationSubscriptionSettings = {
     "allow_customer_updates": True,
     "proration_behavior": SubscriptionProrationBehavior.prorate,
     "benefit_revocation_grace_period": 0,
+}
+
+
+class OrganizationOrderSettings(TypedDict):
+    invoice_numbering: InvoiceNumbering
+
+
+_default_order_settings: OrganizationOrderSettings = {
+    "invoice_numbering": InvoiceNumbering.organization,
 }
 
 
@@ -179,6 +188,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         JSONB, nullable=False, default=_default_subscription_settings
     )
 
+    order_settings: Mapped[OrganizationOrderSettings] = mapped_column(
+        JSONB, nullable=False, default=_default_order_settings
+    )
+
     notification_settings: Mapped[OrganizationNotificationSettings] = mapped_column(
         JSONB, nullable=False, default=_default_notification_settings
     )
@@ -258,6 +271,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def benefit_revocation_grace_period(self) -> int:
         return self.subscription_settings["benefit_revocation_grace_period"]
+
+    @property
+    def invoice_numbering(self) -> InvoiceNumbering:
+        return InvoiceNumbering(self.order_settings["invoice_numbering"])
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:

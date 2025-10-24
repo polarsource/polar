@@ -1,6 +1,8 @@
 'use client'
 
+import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import { EventCreationGuideModal } from '@/components/Events/EventCreationGuideModal'
+import { EventMetadataFilter } from '@/components/Events/EventMetadataFilter'
 import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
@@ -10,6 +12,7 @@ import Pagination from '@/components/Pagination/Pagination'
 import { useEventNames, useEvents } from '@/hooks/queries/events'
 import useDebounce from '@/utils/useDebounce'
 import AddOutlined from '@mui/icons-material/AddOutlined'
+import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
 import Search from '@mui/icons-material/Search'
 import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -22,18 +25,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import { endOfToday } from 'date-fns'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   parseAsArrayOf,
   parseAsInteger,
   parseAsIsoDateTime,
+  parseAsJson,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
 import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import z from 'zod'
 
 const PAGE_SIZE = 300
 
@@ -61,10 +71,22 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     'endDate',
     parseAsIsoDateTime.withDefault(endOfToday()),
   )
+  const [selectedCustomerIds, setSelectedCustomerIds] = useQueryState(
+    'customerIds',
+    parseAsArrayOf(parseAsString),
+  )
   const [currentPage, setCurrentPage] = useQueryState(
     'page',
     parseAsInteger.withDefault(1),
   )
+  const [metadata, setMetadata] = useQueryState(
+    'metadata',
+    parseAsJson(
+      z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+    ),
+  )
+
+  const router = useRouter()
 
   const {
     isShown: isEventCreationGuideShown,
@@ -74,14 +96,25 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
 
   const { data } = useEventNames(organization.id, {
     sorting: ['-occurrences'],
+    limit: 500,
   })
 
   const eventNames = useMemo(
-    () => data?.pages.flatMap((page) => page.items) ?? [],
+    () =>
+      data?.pages
+        .flatMap((page) => page.items)
+        .reduce(
+          (acc, curr) => {
+            acc[curr.source] = [...(acc[curr.source] ?? []), curr]
+            return acc
+          },
+          {} as Record<schemas['EventSource'], schemas['EventName'][]>,
+        ),
     [data],
   )
 
-  const debouncedQuery = useDebounce(query, 250)
+  const debouncedQuery = useDebounce(query, 500)
+  const debouncedMetadata = useDebounce(metadata, 500)
 
   const eventParameters = useMemo(():
     | operations['events:list']['parameters']['query']
@@ -92,11 +125,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           ? selectedEventNames
           : null,
       page: currentPage,
+      customer_id: selectedCustomerIds ?? null,
       limit: PAGE_SIZE,
       sorting: [sorting],
       start_timestamp: startDate.toISOString(),
       end_timestamp: endDate.toISOString(),
       query: debouncedQuery ?? null,
+      metadata: debouncedMetadata ?? null,
     }
   }, [
     selectedEventNames,
@@ -105,6 +140,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     endDate,
     sorting,
     debouncedQuery,
+    selectedCustomerIds,
+    debouncedMetadata,
   ])
 
   const { data: events } = useEvents(organization.id, eventParameters)
@@ -147,6 +184,25 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
             <div>Events</div>
             <div className="flex flex-row items-center gap-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    className="h-6 w-6 rounded-full"
+                    variant="ghost"
+                    onClick={() => {
+                      router.replace(
+                        `/dashboard/${organization.slug}/usage-billing/events`,
+                      )
+                    }}
+                  >
+                    <RefreshOutlined fontSize="inherit" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>Reset Filters</span>
+                </TooltipContent>
+              </Tooltip>
               <Button
                 size="icon"
                 className="h-6 w-6"
@@ -196,43 +252,82 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   </SelectContent>
                 </Select>
               </div>
-              {eventNames.length > 0 && (
-                <div className="flex flex-col gap-y-2">
-                  <h3 className="text-sm">Event</h3>
-                  <List size="small" className="rounded-xl">
-                    {eventNames.map((eventName) => (
-                      <ListItem
-                        key={eventName.name}
-                        size="small"
-                        className="justify-between px-3 font-mono text-sm"
-                        inactiveClassName="text-gray-500 dark:text-polar-500"
-                        selected={selectedEventNames?.includes(eventName.name)}
-                        onSelect={() =>
-                          setSelectedEventNames((prev) =>
-                            prev && prev.includes(eventName.name)
-                              ? prev.filter((name) => name !== eventName.name)
-                              : ([...(prev ?? []), eventName.name] as string[]),
-                          )
-                        }
-                      >
-                        <span className="w-full truncate">
-                          {eventName.name}
-                        </span>
-                        <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                          {Number(eventName.occurrences).toLocaleString(
-                            'en-US',
-                            {
-                              style: 'decimal',
-                              compactDisplay: 'short',
-                              notation: 'compact',
-                            },
-                          )}
-                        </span>
-                      </ListItem>
-                    ))}
-                  </List>
-                </div>
-              )}
+
+              {Object.entries(eventNames ?? {})
+                .sort((a) => (a[0] === 'system' ? 1 : -1))
+                .map(([source, eventNames]) => {
+                  if (eventNames.length === 0) return null
+
+                  return (
+                    <div className="flex flex-col gap-y-2" key={source}>
+                      <h3 className="text-sm capitalize">{source} Events</h3>
+                      <List size="small" className="rounded-xl">
+                        {eventNames.map((eventName) => (
+                          <ListItem
+                            key={eventName.name}
+                            size="small"
+                            className="justify-between px-3 font-mono text-xs"
+                            inactiveClassName="text-gray-500 dark:text-polar-500"
+                            selected={selectedEventNames?.includes(
+                              eventName.name,
+                            )}
+                            onSelect={() =>
+                              setSelectedEventNames((prev) =>
+                                prev && prev.includes(eventName.name)
+                                  ? prev.filter(
+                                      (name) => name !== eventName.name,
+                                    )
+                                  : ([
+                                      ...(prev ?? []),
+                                      eventName.name,
+                                    ] as string[]),
+                              )
+                            }
+                          >
+                            <span className="w-full truncate">
+                              {eventName.name}
+                            </span>
+                            <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
+                              {Number(eventName.occurrences).toLocaleString(
+                                'en-US',
+                                {
+                                  style: 'decimal',
+                                  compactDisplay: 'short',
+                                  notation: 'compact',
+                                },
+                              )}
+                            </span>
+                          </ListItem>
+                        ))}
+                      </List>
+                    </div>
+                  )
+                })}
+              <CustomerSelector
+                organizationId={organization.id}
+                selectedCustomerIds={selectedCustomerIds}
+                onSelectCustomerIds={setSelectedCustomerIds}
+              />
+
+              <EventMetadataFilter
+                metadata={Object.entries(metadata ?? {}).map(
+                  ([key, value]) => ({
+                    key,
+                    value,
+                  }),
+                )}
+                onChange={(metadata) => {
+                  setMetadata(
+                    metadata.reduce(
+                      (acc, curr) => {
+                        acc[curr.key] = curr.value
+                        return acc
+                      },
+                      {} as Record<string, string | number | boolean>,
+                    ),
+                  )
+                }}
+              />
             </div>
           </div>
           <Modal

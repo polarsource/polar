@@ -19,6 +19,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
 from polar.models import Customer, Organization, Product, Subscription, User
 from polar.models.customer_seat import CustomerSeat, SeatStatus
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -387,6 +388,31 @@ class TestAssignSeat:
         assert new_seat.revoked_at is None
         assert new_seat.claimed_at is None
 
+    @pytest.mark.asyncio
+    async def test_assign_seat_sends_webhook(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="test@example.com",
+        )
+
+        with patch("polar.webhook.service.webhook.send") as mock_send:
+            mock_send.return_value = []
+            seat = await seat_service.assign_seat(
+                session, subscription_with_seats, email="test@example.com"
+            )
+
+            mock_send.assert_called_once()
+            args = mock_send.call_args
+            assert args[0][1].id == subscription_with_seats.product.organization.id
+            assert args[0][2] == WebhookEventType.customer_seat_assigned
+            assert args[0][3].id == seat.id
+
 
 class TestGetSeatByToken:
     @pytest.mark.asyncio
@@ -571,6 +597,38 @@ class TestClaimSeat:
 
         assert claimed_seat.invitation_token is None
 
+    @pytest.mark.asyncio
+    async def test_claim_seat_sends_webhook(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+    ) -> None:
+        seat_pending = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer,
+        )
+        await session.refresh(seat_pending, ["subscription"])
+        assert seat_pending.subscription is not None
+        await session.refresh(seat_pending.subscription, ["product"])
+        await session.refresh(seat_pending.subscription.product, ["organization"])
+
+        assert seat_pending.invitation_token is not None
+
+        with patch("polar.webhook.service.webhook.send") as mock_send:
+            mock_send.return_value = []
+            seat, _ = await seat_service.claim_seat(
+                session, seat_pending.invitation_token
+            )
+
+            mock_send.assert_called_once()
+            args = mock_send.call_args
+            assert args[0][1].id == subscription_with_seats.product.organization.id
+            assert args[0][2] == WebhookEventType.customer_seat_claimed
+            assert args[0][3].id == seat.id
+
 
 class TestRevokeSeat:
     @pytest.mark.asyncio
@@ -607,6 +665,24 @@ class TestRevokeSeat:
 
         with pytest.raises(FeatureNotEnabled):
             await seat_service.revoke_seat(session, customer_seat_claimed)
+
+    @pytest.mark.asyncio
+    async def test_revoke_seat_sends_webhook(
+        self, session: AsyncSession, customer_seat_claimed: CustomerSeat
+    ) -> None:
+        with patch("polar.webhook.service.webhook.send") as mock_send:
+            mock_send.return_value = []
+            seat = await seat_service.revoke_seat(session, customer_seat_claimed)
+
+            mock_send.assert_called_once()
+            args = mock_send.call_args
+            assert customer_seat_claimed.subscription is not None
+            assert (
+                args[0][1].id
+                == customer_seat_claimed.subscription.product.organization.id
+            )
+            assert args[0][2] == WebhookEventType.customer_seat_revoked
+            assert args[0][3].id == seat.id
 
 
 class TestGetSeat:

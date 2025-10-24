@@ -63,6 +63,10 @@ from polar.product.guard import (
     is_free_price,
     is_metered_price,
 )
+from polar.subscription.schemas import (
+    SubscriptionCreateCustomer,
+    SubscriptionCreateExternalCustomer,
+)
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
     BelowMinimumSeats,
@@ -188,6 +192,192 @@ def frozen_time() -> Generator[datetime, None]:
     frozen_time = utc_now()
     with freezegun.freeze_time(frozen_time):
         yield frozen_time
+
+
+@pytest.mark.asyncio
+class TestCreate:
+    async def test_product_does_not_exist(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=uuid.uuid4(),
+            customer_id=uuid.uuid4(),
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 2
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert errors[0]["msg"] == "Product does not exist."
+        assert errors[1]["loc"] == ("body", "customer_id")
+        assert errors[1]["msg"] == "Customer does not exist."
+
+    async def test_product_not_recurring(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product_one_time.id,
+            customer_id=customer.id,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert errors[0]["msg"] == "Product is not a recurring product."
+
+    async def test_product_not_free(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id,
+            customer_id=customer.id,
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "product_id")
+        assert (
+            errors[0]["msg"]
+            == "Product is not free. The customer should go through a checkout to create a paid subscription."
+        )
+
+    async def test_customer_does_not_exist_by_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_recurring_free_price: Product,
+    ) -> None:
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product_recurring_free_price.id,
+            customer_id=uuid.uuid4(),
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "customer_id")
+        assert errors[0]["msg"] == "Customer does not exist."
+
+    async def test_customer_does_not_exist_by_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_recurring_free_price: Product,
+    ) -> None:
+        subscription_create = SubscriptionCreateExternalCustomer(
+            product_id=product_recurring_free_price.id,
+            external_customer_id="nonexistent",
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "external_customer_id")
+        assert errors[0]["msg"] == "Customer does not exist."
+
+    async def test_valid_with_customer_id(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_recurring_free_price: Product,
+        customer: Customer,
+    ) -> None:
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product_recurring_free_price.id,
+            customer_id=customer.id,
+            metadata={"key": "value"},
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.product_id == product_recurring_free_price.id
+        assert subscription.customer_id == customer.id
+        assert subscription.prices == product_recurring_free_price.prices
+        assert subscription.amount == 0
+        assert subscription.currency == "usd"
+        assert subscription.recurring_interval == SubscriptionRecurringInterval.month
+        assert subscription.recurring_interval_count == 1
+        assert subscription.user_metadata == {"key": "value"}
+
+        assert subscription.started_at is not None
+        assert subscription.current_period_start is not None
+        assert subscription.current_period_end is not None
+        assert subscription.started_at == subscription.current_period_start
+        assert subscription.current_period_end > subscription.current_period_start
+
+        assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+
+    async def test_valid_with_external_customer_id(
+        self,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product_recurring_free_price: Product,
+        customer_external_id: Customer,
+    ) -> None:
+        assert customer_external_id.external_id is not None
+
+        subscription_create = SubscriptionCreateExternalCustomer(
+            product_id=product_recurring_free_price.id,
+            external_customer_id=customer_external_id.external_id,
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.product_id == product_recurring_free_price.id
+        assert subscription.customer_id == customer_external_id.id
+        assert subscription.prices == product_recurring_free_price.prices
+
+        assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
 
 @pytest.mark.asyncio

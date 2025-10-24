@@ -76,7 +76,9 @@ async def create(
 ) -> Response:
     """Create an OAuth2 client."""
     request.state.user = auth_subject.subject if is_user(auth_subject) else None
-    request.state.parsed_data = client_configuration.model_dump(mode="json")
+    request.state.parsed_data = client_configuration.model_dump(
+        mode="json", exclude_none=True
+    )
     return authorization_server.create_endpoint_response(
         ClientRegistrationEndpoint.ENDPOINT_NAME, request
     )
@@ -116,7 +118,9 @@ async def update(
 ) -> Response:
     """Update an OAuth2 client."""
     request.state.user = auth_subject.subject if is_user(auth_subject) else None
-    request.state.parsed_data = client_configuration.model_dump(mode="json")
+    request.state.parsed_data = client_configuration.model_dump(
+        mode="json", exclude_none=True
+    )
     return authorization_server.create_endpoint_response(
         ClientConfigurationEndpoint.ENDPOINT_NAME, request
     )

@@ -327,6 +327,17 @@
                 ]
               },
               {
+                "group": "Customer Seats",
+                "pages": [
+                  "api-reference/customer-seats/assign",
+                  "api-reference/customer-seats/list",
+                  "api-reference/customer-seats/revoke",
+                  "api-reference/customer-seats/resend",
+                  "api-reference/customer-seats/get-claim-info",
+                  "api-reference/customer-seats/claim"
+                ]
+              },
+              {
                 "group": "Files",
                 "pages": [
                   "api-reference/files/create",
@@ -451,6 +462,14 @@
                       "api-reference/webhooks/order.paid",
                       "api-reference/webhooks/order.updated",
                       "api-reference/webhooks/order.refunded"
+                    ]
+                  },
+                  {
+                    "group": "Customer Seats",
+                    "pages": [
+                      "api-reference/webhooks/customer_seat.assigned",
+                      "api-reference/webhooks/customer_seat.claimed",
+                      "api-reference/webhooks/customer_seat.revoked"
                     ]
                   },
                   {

@@ -704,7 +704,18 @@ export interface paths {
      */
     get: operations['subscriptions:list']
     put?: never
-    post?: never
+    /**
+     * Create Subscription
+     * @description Create a subscription programmatically.
+     *
+     *     This endpoint only allows to create subscription on free products.
+     *     For paid products, use the checkout flow.
+     *
+     *     No initial order will be created and no confirmation email will be sent.
+     *
+     *     **Scopes**: `subscriptions:write`
+     */
+    post: operations['subscriptions:create']
     delete?: never
     options?: never
     head?: never
@@ -1360,6 +1371,28 @@ export interface paths {
      *     **Scopes**: `orders:read`
      */
     get: operations['orders:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/orders/export': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Export Subscriptions
+     * @description Export orders as a CSV file.
+     *
+     *     **Scopes**: `orders:read`
+     */
+    get: operations['orders:export']
     put?: never
     post?: never
     delete?: never
@@ -3760,6 +3793,73 @@ export interface webhooks {
      *     **Discord & Slack support:** Basic
      */
     post: operations['_endpointcustomer_state_changed_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'customer_seat.assigned': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * customer_seat.assigned
+     * @description Sent when a new customer seat is assigned.
+     *
+     *     This event is triggered when a seat is assigned to a customer by the organization.
+     *     The customer will receive an invitation email to claim the seat.
+     */
+    post: operations['_endpointcustomer_seat_assigned_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'customer_seat.claimed': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * customer_seat.claimed
+     * @description Sent when a customer seat is claimed.
+     *
+     *     This event is triggered when a customer accepts the seat invitation and claims their access.
+     */
+    post: operations['_endpointcustomer_seat_claimed_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'customer_seat.revoked': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * customer_seat.revoked
+     * @description Sent when a customer seat is revoked.
+     *
+     *     This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
+     */
+    post: operations['_endpointcustomer_seat_revoked_post']
     delete?: never
     options?: never
     head?: never
@@ -8207,7 +8307,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -8496,7 +8596,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -9449,12 +9549,25 @@ export interface components {
       discount_code?: string | null
     }
     /** CostMetadata */
-    CostMetadata: {
+    'CostMetadata-Input': {
       /**
        * Amount
        * @description The amount in cents.
        */
-      amount: number
+      amount: number | string
+      /**
+       * Currency
+       * @description The currency. Currently, only `usd` is supported.
+       */
+      currency: string
+    }
+    /** CostMetadata */
+    'CostMetadata-Output': {
+      /**
+       * Amount
+       * @description The amount in cents.
+       */
+      amount: string
       /**
        * Currency
        * @description The currency. Currently, only `usd` is supported.
@@ -11428,7 +11541,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -11520,7 +11633,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -11595,7 +11708,7 @@ export interface components {
       checkout_id: string | null
       /**
        * Seats
-       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       * @description Number of seats included in the subscription (for seat-based pricing).
        */
       seats?: number | null
       customer_cancellation_reason:
@@ -11765,7 +11878,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -12408,7 +12521,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -12483,7 +12596,7 @@ export interface components {
       checkout_id: string | null
       /**
        * Seats
-       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       * @description Number of seats included in the subscription (for seat-based pricing).
        */
       seats?: number | null
       customer_cancellation_reason:
@@ -12654,7 +12767,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -13782,7 +13895,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -14058,14 +14171,14 @@ export interface components {
     }
     /** EventMetadataInput */
     EventMetadataInput: {
-      _cost?: components['schemas']['CostMetadata']
+      _cost?: components['schemas']['CostMetadata-Input']
       _llm?: components['schemas']['LLMMetadata']
     } & {
       [key: string]: string | number | boolean
     }
     /** EventMetadataOutput */
     EventMetadataOutput: {
-      _cost?: components['schemas']['CostMetadata']
+      _cost?: components['schemas']['CostMetadata-Output']
       _llm?: components['schemas']['LLMMetadata']
     } & {
       [key: string]: string | number | boolean
@@ -16656,7 +16769,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -16746,7 +16859,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -16821,7 +16934,7 @@ export interface components {
       checkout_id: string | null
       /**
        * Seats
-       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       * @description Number of seats included in the subscription (for seat-based pricing).
        */
       seats?: number | null
       customer_cancellation_reason:
@@ -17788,7 +17901,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -17986,7 +18099,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        * @default 1
        */
       recurring_interval_count: number
@@ -18594,7 +18707,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -18674,7 +18787,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
        */
       recurring_interval_count?: number | null
       /**
@@ -19321,7 +19434,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -19396,7 +19509,7 @@ export interface components {
       checkout_id: string | null
       /**
        * Seats
-       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       * @description Number of seats included in the subscription (for seat-based pricing).
        */
       seats?: number | null
       customer_cancellation_reason:
@@ -19499,6 +19612,78 @@ export interface components {
       tax_amount: number
       /** Total Amount */
       total_amount: number
+    }
+    /**
+     * SubscriptionCreateCustomer
+     * @description Create a subscription for an existing customer.
+     */
+    SubscriptionCreateCustomer: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      product_id: string
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer to create the subscription for.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      customer_id: string
+    }
+    /**
+     * SubscriptionCreateExternalCustomer
+     * @description Create a subscription for an existing customer identified by an external ID.
+     */
+    SubscriptionCreateExternalCustomer: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      product_id: string
+      /**
+       * External Customer Id
+       * @description The ID of the customer in your system to create the subscription for. It must already exist in Polar.
+       */
+      external_customer_id: string
     }
     /** SubscriptionCustomer */
     SubscriptionCustomer: {
@@ -19902,6 +20087,7 @@ export interface components {
        * Product Id
        * Format: uuid4
        * @description Update subscription to another product.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
       /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
@@ -20831,6 +21017,67 @@ export interface components {
       data: components['schemas']['Customer']
     }
     /**
+     * WebhookCustomerSeatAssignedPayload
+     * @description Sent when a new customer seat is assigned.
+     *
+     *     This event is triggered when a seat is assigned to a customer by the organization.
+     *     The customer will receive an invitation email to claim the seat.
+     */
+    WebhookCustomerSeatAssignedPayload: {
+      /**
+       * Type
+       * @example customer_seat.assigned
+       * @constant
+       */
+      type: 'customer_seat.assigned'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['CustomerSeat']
+    }
+    /**
+     * WebhookCustomerSeatClaimedPayload
+     * @description Sent when a customer seat is claimed.
+     *
+     *     This event is triggered when a customer accepts the seat invitation and claims their access.
+     */
+    WebhookCustomerSeatClaimedPayload: {
+      /**
+       * Type
+       * @example customer_seat.claimed
+       * @constant
+       */
+      type: 'customer_seat.claimed'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['CustomerSeat']
+    }
+    /**
+     * WebhookCustomerSeatRevokedPayload
+     * @description Sent when a customer seat is revoked.
+     *
+     *     This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
+     */
+    WebhookCustomerSeatRevokedPayload: {
+      /**
+       * Type
+       * @example customer_seat.revoked
+       * @constant
+       */
+      type: 'customer_seat.revoked'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['CustomerSeat']
+    }
+    /**
      * WebhookCustomerStateChangedPayload
      * @description Sent when a customer state has changed.
      *
@@ -21077,6 +21324,9 @@ export interface components {
       | 'customer.updated'
       | 'customer.deleted'
       | 'customer.state_changed'
+      | 'customer_seat.assigned'
+      | 'customer_seat.claimed'
+      | 'customer_seat.revoked'
       | 'order.created'
       | 'order.updated'
       | 'order.paid'
@@ -22873,6 +23123,41 @@ export interface operations {
       }
     }
   }
+  'subscriptions:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['SubscriptionCreateCustomer']
+          | components['schemas']['SubscriptionCreateExternalCustomer']
+      }
+    }
+    responses: {
+      /** @description Subscription created. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Subscription']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'subscriptions:export': {
     parameters: {
       query?: {
@@ -24401,6 +24686,40 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_Order_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'orders:export': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by product ID. */
+        product_id?: string | string[] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -30890,6 +31209,105 @@ export interface operations {
       }
     }
   }
+  _endpointcustomer_seat_assigned_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookCustomerSeatAssignedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointcustomer_seat_claimed_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookCustomerSeatClaimedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointcustomer_seat_revoked_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookCustomerSeatRevokedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointorder_created_post: {
     parameters: {
       query?: never
@@ -34016,6 +34434,9 @@ export const webhookEventTypeValues: ReadonlyArray<
   'customer.updated',
   'customer.deleted',
   'customer.state_changed',
+  'customer_seat.assigned',
+  'customer_seat.claimed',
+  'customer_seat.revoked',
   'order.created',
   'order.updated',
   'order.paid',

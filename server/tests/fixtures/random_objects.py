@@ -1721,7 +1721,7 @@ async def create_event(
     timestamp: datetime | None = None,
     customer: Customer | None = None,
     external_customer_id: str | None = None,
-    metadata: dict[str, str | int | bool | float] | None = None,
+    metadata: dict[str, str | int | bool | float | Any] | None = None,
 ) -> Event:
     event = Event(
         timestamp=timestamp or utc_now(),

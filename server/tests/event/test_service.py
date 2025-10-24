@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -475,6 +476,41 @@ class TestIngest:
             assert event.source == EventSource.user
 
         enqueue_events_mock.assert_called_once_with(*(event.id for event in events))
+
+    @pytest.mark.parametrize(
+        "metadata",
+        [
+            {
+                "_cost": {
+                    "amount": "0.000000000001",
+                    "currency": "usd",
+                }
+            }
+        ],
+    )
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_valid_metadata(
+        self,
+        metadata: Any,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name="test",
+                    external_customer_id="test",
+                    metadata=metadata,
+                )
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest)
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        assert len(events) == 1
 
 
 @pytest.mark.asyncio

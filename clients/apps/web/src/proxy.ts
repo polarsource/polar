@@ -12,6 +12,7 @@ const AUTHENTICATED_ROUTES = [
   new RegExp('^/dashboard(/.*)?'),
   new RegExp('^/finance(/.*)?'),
   new RegExp('^/settings(/.*)?'),
+  new RegExp('^/oauth2(/.*)?'),
 ]
 
 const isForwardedRoute = (request: NextRequest): boolean => {

@@ -62,14 +62,12 @@ const DummyCheckoutContextProvider = ({
       <CheckoutFormContext.Provider
         value={{
           checkout,
-          // @ts-ignore
-          client: {},
           form,
           update: async () => checkout,
           confirm: async () => checkout as CheckoutPublicConfirmed,
           loading: false,
-          embed: embed === true,
-          theme,
+          loadingLabel: undefined,
+          isUpdatePending: false,
         }}
       >
         {children}

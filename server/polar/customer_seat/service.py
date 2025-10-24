@@ -26,8 +26,10 @@ from polar.models import (
 )
 from polar.models.customer_seat import SeatStatus
 from polar.models.order import OrderStatus
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
+from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .repository import CustomerSeatRepository
@@ -260,6 +262,13 @@ class SeatService:
                 billing_manager_email=billing_manager_customer.email,
             )
 
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.customer_seat_assigned,
+                seat,
+            )
+
         return seat
 
     async def get_seat_by_token(
@@ -377,6 +386,16 @@ class SeatService:
             **(request_metadata or {}),
         )
 
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
+        if organization:
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.customer_seat_claimed,
+                seat,
+            )
+
         return seat, session_token
 
     async def revoke_seat(
@@ -423,12 +442,24 @@ class SeatService:
         seat.customer_id = None
         seat.invitation_token = None
 
+        await session.flush()
+
         log.info(
             "Seat revoked",
             seat_id=seat.id,
             subscription_id=seat.subscription_id,
             order_id=seat.order_id,
         )
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
+        if organization:
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.customer_seat_revoked,
+                seat,
+            )
 
         return seat
 

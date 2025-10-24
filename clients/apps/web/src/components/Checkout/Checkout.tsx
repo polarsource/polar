@@ -191,6 +191,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
         <CheckoutProductSwitcher
           checkout={checkout}
           update={update}
+          disabled={shouldBlockCheckout}
           themePreset={themePreset}
         />
         {checkout.productPrice.amountType === 'custom' && (
@@ -246,6 +247,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
         <CheckoutProductSwitcher
           checkout={checkout}
           update={update}
+          disabled={shouldBlockCheckout}
           themePreset={themePreset}
         />
         {checkout.productPrice.amountType === 'custom' && (

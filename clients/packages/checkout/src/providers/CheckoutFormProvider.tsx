@@ -22,12 +22,6 @@ import { useForm } from 'react-hook-form'
 import { setValidationErrors } from '../utils/form'
 import { useCheckout } from './CheckoutProvider'
 
-const stub = (): never => {
-  throw new Error(
-    'You forgot to wrap your component in <CheckoutFormProvider>.',
-  )
-}
-
 export interface CheckoutFormContextProps {
   checkout: CheckoutPublic
   form: UseFormReturn<CheckoutUpdatePublic>
@@ -42,8 +36,15 @@ export interface CheckoutFormContextProps {
   isUpdatePending: boolean
 }
 
-// @ts-ignore
-export const CheckoutFormContext = createContext<CheckoutFormContextProps>(stub)
+const stub = (): never => {
+  throw new Error(
+    'You forgot to wrap your component in <CheckoutFormProvider>.',
+  )
+}
+
+export const CheckoutFormContext = createContext<CheckoutFormContextProps>(
+  stub as unknown as CheckoutFormContextProps,
+)
 
 export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
   const { checkout, update: updateOuter, confirm: confirmOuter } = useCheckout()

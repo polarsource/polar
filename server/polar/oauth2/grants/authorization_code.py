@@ -60,6 +60,21 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
     def __init__(self, request: OAuth2Request, server: "AuthorizationServer") -> None:
         super().__init__(request, server)
         self._hooks["before_create_authorization_response"] = set()
+        self._hooks["before_validate_authorization_request_payload"] = {
+            self.before_validate_authorization_request_payload
+        }
+
+    def before_validate_authorization_request_payload(
+        self, grant: "typing.Self", redirect_uri: str
+    ) -> None:
+        """
+        If no scope is provided in the authorization request,
+        default to the client's scope.
+        """
+        payload = self.request.payload
+        scope: str | None = payload.data.get("scope")
+        if scope is None:
+            self.request.payload.data["scope"] = self.request.client.scope
 
     def create_authorization_response(
         self, redirect_uri: str, grant_user: User | None

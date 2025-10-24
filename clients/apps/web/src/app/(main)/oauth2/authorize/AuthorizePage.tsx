@@ -40,14 +40,12 @@ const AuthorizePage = ({
         <div className="flex w-80 flex-col items-center gap-6">
           <div className="flex flex-row items-center gap-2">
             <LogoType className="h-10" />
-            <AddOutlined className="h-5" />
-            {client.logo_uri ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={client.logo_uri} className="h-10" alt={clientName} />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500">
-                {clientName[0].toUpperCase()}
-              </div>
+            {client.logo_uri && (
+              <>
+                <AddOutlined className="h-5" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={client.logo_uri} className="h-10" alt={clientName} />
+              </>
             )}
           </div>
           {sub && isSubTypeOrganization(sub_type, sub) && (

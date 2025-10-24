@@ -1,10 +1,14 @@
-from fastapi import Depends, Query
+from collections.abc import AsyncGenerator
+
+from fastapi import Depends, Query, Response
+from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import ResourceNotFound
+from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
-from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Order
 from polar.models.product import ProductBillingType
@@ -85,6 +89,63 @@ async def list(
         [OrderSchema.model_validate(result) for result in results],
         count,
         pagination,
+    )
+
+
+@router.get("/export", summary="Export Subscriptions")
+async def export(
+    auth_subject: auth.OrdersRead,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    product_id: MultipleQueryFilter[ProductID] | None = Query(
+        None, title="ProductID Filter", description="Filter by product ID."
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Response:
+    """Export orders as a CSV file."""
+
+    async def create_csv() -> AsyncGenerator[str, None]:
+        csv_writer = IterableCSVWriter(dialect="excel")
+        # CSV header
+        yield csv_writer.getrow(
+            (
+                "Email",
+                "Created At",
+                "Product",
+                "Amount",
+                "Currency",
+                "Status",
+                "Invoice number",
+            )
+        )
+
+        (results, _) = await order_service.list(
+            session,
+            auth_subject,
+            organization_id=organization_id,
+            product_id=product_id,
+            pagination=PaginationParams(limit=1000000, page=1),
+        )
+
+        for order in results:
+            yield csv_writer.getrow(
+                (
+                    order.customer.email,
+                    order.created_at.isoformat(),
+                    order.description,
+                    order.net_amount / 100,
+                    order.currency,
+                    order.status,
+                    order.invoice_number,
+                )
+            )
+
+    filename = "polar-orders.csv"
+    return StreamingResponse(
+        create_csv(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 

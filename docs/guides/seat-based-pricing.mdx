@@ -1,18 +1,22 @@
 ---
 title: "Implementing Seat-Based Pricing"
 sidebarTitle: "Seat-Based Pricing"
-description: "Complete guide to implementing team subscriptions with seat-based pricing"
+description: "Complete guide to implementing team products with seat-based pricing"
 ---
 
-This guide walks you through implementing seat-based pricing for team subscriptions, from creating the product to handling seat assignments and claims.
+This guide walks you through implementing seat-based pricing for team products, from creating the product to handling seat assignments and claims.
 
 ## What you'll build
 
 By the end of this guide, you'll have:
-- A seat-based product with tiered pricing
+- A seat-based product with tiered pricing (subscription or one-time)
 - Checkout flow for purchasing seats
 - Seat assignment and management interface
 - Claim flow for team members
+
+<Info>
+This guide covers both **subscription-based** and **one-time purchase** seat-based products. The implementation is similar for both, with key differences in scaling and billing.
+</Info>
 
 ## Prerequisites
 
@@ -34,13 +38,14 @@ Seat-based pricing is controlled by a feature flag. Contact support to enable it
 
   <Step title="Configure basic settings">
     Set your product name, description, and media. For example:
-    - **Name**: Team Pro Plan
-    - **Description**: Professional features for your entire team
+    - **Subscription**: Team Pro Plan - Professional features for your entire team
+    - **One-time**: Enterprise License Pack - Perpetual team licenses
   </Step>
 
   <Step title="Select seat-based pricing">
     Under **Pricing**:
-    - **Billing cycle**: Monthly or Yearly
+    - **Product type**: Choose **Subscription** for recurring billing or **One-time** for perpetual licenses
+    - **Billing cycle** (subscriptions only): Monthly or Yearly
     - **Pricing type**: Seat-based
     - **Min seats**: 1 (or your minimum team size)
   </Step>
@@ -72,17 +77,42 @@ Seat-based pricing is controlled by a feature flag. Contact support to enable it
 
 You can also create seat-based products via API:
 
+**Subscription example:**
+
 ```typescript
-const product = await polar.products.create({
+const subscriptionProduct = await polar.products.create({
   name: "Team Pro Plan",
   organization_id: "org_123",
+  is_recurring: true,
   prices: [{
+    type: "recurring",
+    recurring_interval: "month",
     amount_type: "seat_based",
     price_currency: "usd",
     seat_tiers: [
-      { min_seats: 1, max_seats: 4, price_per_seat: 1000 },   // $10
-      { min_seats: 5, max_seats: 9, price_per_seat: 900 },    // $9
-      { min_seats: 10, max_seats: null, price_per_seat: 800 } // $8
+      { min_seats: 1, max_seats: 4, price_per_seat: 1000 },   // $10/month
+      { min_seats: 5, max_seats: 9, price_per_seat: 900 },    // $9/month
+      { min_seats: 10, max_seats: null, price_per_seat: 800 } // $8/month
+    ]
+  }]
+});
+```
+
+**One-time purchase example:**
+
+```typescript
+const oneTimeProduct = await polar.products.create({
+  name: "Enterprise License Pack",
+  organization_id: "org_123",
+  is_recurring: false,
+  prices: [{
+    type: "one_time",
+    amount_type: "seat_based",
+    price_currency: "usd",
+    seat_tiers: [
+      { min_seats: 1, max_seats: 10, price_per_seat: 5000 },   // $50 per seat
+      { min_seats: 11, max_seats: 50, price_per_seat: 4500 },  // $45 per seat
+      { min_seats: 51, max_seats: null, price_per_seat: 4000 } // $40 per seat
     ]
   }]
 });
@@ -114,21 +144,33 @@ The checkout automatically calculates pricing based on your tiers. A customer se
 
 ## Step 3: Handle post-purchase webhook
 
-Listen for the `subscription.created` webhook to know when a customer purchases seats:
+Listen for purchase webhooks to know when a customer buys seats:
 
 ```typescript
 // Webhook handler
 app.post('/webhooks/polar', async (req, res) => {
   const event = req.body;
 
+  // For subscriptions
   if (event.type === 'subscription.created') {
     const subscription = event.data;
 
     if (subscription.product.has_seat_based_price) {
-      // Redirect billing manager to seat management
       await notifyBillingManager(subscription.customer_id, {
         message: `Your ${subscription.seats}-seat subscription is active!`,
-        manage_seats_url: `https://yourapp.com/seats/${subscription.id}`
+        manage_seats_url: `https://yourapp.com/seats/subscription/${subscription.id}`
+      });
+    }
+  }
+
+  // For one-time purchases
+  if (event.type === 'order.created') {
+    const order = event.data;
+
+    if (order.seats) {
+      await notifyBillingManager(order.customer_id, {
+        message: `Your ${order.seats} perpetual seat licenses have been purchased!`,
+        manage_seats_url: `https://yourapp.com/seats/order/${order.id}`
       });
     }
   }
@@ -142,12 +184,10 @@ app.post('/webhooks/polar', async (req, res) => {
 Create an interface for billing managers to assign seats:
 
 ```typescript
-// List available seats
-async function getSeatInfo(subscriptionId: string) {
+// List available seats (works for both subscriptions and orders)
+async function getSeatInfo(params: { subscription_id?: string; order_id?: string }) {
   const { seats, available_seats, total_seats } =
-    await polar.customerSeats.list({
-      subscription_id: subscriptionId
-    });
+    await polar.customerSeats.list(params);
 
   return {
     seats,
@@ -157,15 +197,15 @@ async function getSeatInfo(subscriptionId: string) {
   };
 }
 
-// Assign a seat
+// Assign a seat (works for both subscriptions and orders)
 async function assignSeat(
-  subscriptionId: string,
+  params: { subscription_id?: string; order_id?: string },
   email: string,
   metadata?: Record<string, any>
 ) {
   try {
     const seat = await polar.customerSeats.assign({
-      subscription_id: subscriptionId,
+      ...params,
       email: email,
       metadata: metadata // e.g., { department: "Engineering" }
     });
@@ -185,6 +225,10 @@ async function assignSeat(
     throw error;
   }
 }
+
+// Example usage:
+// For subscriptions: getSeatInfo({ subscription_id: "sub_123" })
+// For orders: getSeatInfo({ order_id: "order_456" })
 ```
 
 Example UI component (React):
@@ -421,9 +465,9 @@ async function revokeSeat(seatId: string) {
 Revoking a seat immediately removes access but does not issue a refund. The billing manager continues to pay for all purchased seats.
 </Warning>
 
-## Step 8: Handle subscription scaling
+## Step 8: Handle scaling
 
-Allow billing managers to add or reduce seats:
+**For subscriptions**, allow billing managers to add or reduce seats:
 
 ```typescript
 async function addSeats(subscriptionId: string, newTotal: number) {
@@ -459,6 +503,26 @@ async function reduceSeats(subscriptionId: string, newTotal: number) {
   return subscription;
 }
 ```
+
+**For one-time purchases**, customers buy additional seats via new orders:
+
+```typescript
+async function purchaseMoreSeats(productId: string, additionalSeats: number) {
+  // Create a new checkout for additional seats
+  const checkout = await polar.checkouts.create({
+    product_id: productId,
+    seats: additionalSeats,
+    success_url: "https://yourapp.com/success"
+  });
+
+  // Each order is independent with its own seat pool
+  return checkout;
+}
+```
+
+<Info>
+For one-time purchases, each order has its own independent seat pool. Customers can purchase additional seats anytime by creating a new order. All seats remain perpetual.
+</Info>
 
 ## Best Practices
 
@@ -529,7 +593,8 @@ Make it clear to billing managers that:
 - They won't receive direct access to benefits
 - Seats must be assigned to team members
 - Revocation doesn't refund costs
-- Reducing seats requires revoking claims first
+- **For subscriptions**: Reducing seats requires revoking claims first
+- **For one-time purchases**: Seats are perpetual and non-refundable
 
 ## Common Patterns
 

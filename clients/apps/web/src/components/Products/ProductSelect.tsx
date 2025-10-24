@@ -59,7 +59,7 @@ const ProductsCommandGroup = ({
           {!areAllSelected ? (
             <>Select all {groupedProducts[productPriceType].length}</>
           ) : (
-            <>Unselect all</>
+            <>Deselect all</>
           )}
         </div>
       </CommandItem>
@@ -245,7 +245,9 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
                   productPriceType="one_time"
                   onSelectProduct={onSelectProduct}
                   onSelectProductType={onSelectProductType}
-                  selectedProducts={selectedProducts || []}
+                  selectedProducts={
+                    value.length > 0 ? selectedProducts || [] : []
+                  }
                 />
                 <CommandSeparator />
                 <ProductsCommandGroup
@@ -253,7 +255,9 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
                   productPriceType="recurring"
                   onSelectProduct={onSelectProduct}
                   onSelectProductType={onSelectProductType}
-                  selectedProducts={selectedProducts || []}
+                  selectedProducts={
+                    value.length > 0 ? selectedProducts || [] : []
+                  }
                 />
               </>
             ) : (

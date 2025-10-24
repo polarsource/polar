@@ -11,10 +11,11 @@ from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
-from polar.kit.email import EmailStrDNS
-from polar.kit.metadata import MetadataOutputMixin
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
+    CUSTOMER_ID_EXAMPLE,
     METER_ID_EXAMPLE,
+    PRODUCT_ID_EXAMPLE,
     IDSchema,
     MergeJSONSchema,
     Schema,
@@ -64,8 +65,8 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     )
     recurring_interval_count: int = Field(
         description=(
-            "Number of interval units of the subscription."
-            "If this is set to 1 the charge will happen every interval (e.g. every month),"
+            "Number of interval units of the subscription. "
+            "If this is set to 1 the charge will happen every interval (e.g. every month), "
             "if set to 2 it will be every other month, and so on."
         )
     )
@@ -120,6 +121,11 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
 
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
+
+    seats: int | None = Field(
+        None,
+        description="Number of seats included in the subscription (for seat-based pricing).",
+    )
 
     price_id: SkipJsonSchema[UUID4] = Field(
         deprecated="Use `prices` instead.",
@@ -215,17 +221,48 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
     )
 
 
-class SubscriptionCreateEmail(Schema):
-    """Request schema for creating a subscription by email."""
-
-    email: EmailStrDNS = Field(description="The email address of the user.")
+class SubscriptionCreateBase(MetadataInputMixin, Schema):
     product_id: UUID4 = Field(
-        description="The ID of the product. **Must be the free subscription tier**."
+        description=(
+            "The ID of the recurring product to subscribe to. "
+            "Must be a free product, otherwise the customer should go through a checkout flow."
+        ),
+        examples=[PRODUCT_ID_EXAMPLE],
     )
 
 
+class SubscriptionCreateCustomer(SubscriptionCreateBase):
+    """
+    Create a subscription for an existing customer.
+    """
+
+    customer_id: UUID4 = Field(
+        description="The ID of the customer to create the subscription for.",
+        examples=[CUSTOMER_ID_EXAMPLE],
+    )
+
+
+class SubscriptionCreateExternalCustomer(SubscriptionCreateBase):
+    """
+    Create a subscription for an existing customer identified by an external ID.
+    """
+
+    external_customer_id: str = Field(
+        description=(
+            "The ID of the customer in your system to create the subscription for. "
+            "It must already exist in Polar."
+        )
+    )
+
+
+SubscriptionCreate = SubscriptionCreateCustomer | SubscriptionCreateExternalCustomer
+
+
 class SubscriptionUpdateProduct(Schema):
-    product_id: UUID4 = Field(description="Update subscription to another product.")
+    product_id: UUID4 = Field(
+        description="Update subscription to another product.",
+        examples=[PRODUCT_ID_EXAMPLE],
+    )
     proration_behavior: SubscriptionProrationBehavior | None = Field(
         default=None,
         description=(

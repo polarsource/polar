@@ -791,6 +791,76 @@
             "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\SubscriptionsListRequest(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$responses = $sdk->subscriptions->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
+      },
+      "post": {
+        "tags": [
+          "subscriptions",
+          "public",
+          "mcp"
+        ],
+        "summary": "Create Subscription",
+        "description": "Create a subscription programmatically.\n\nThis endpoint only allows to create subscription on free products.\nFor paid products, use the checkout flow.\n\nNo initial order will be created and no confirmation email will be sent.\n\n**Scopes**: `subscriptions:write`",
+        "operationId": "subscriptions:create",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/SubscriptionCreateCustomer"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SubscriptionCreateExternalCustomer"
+                  }
+                ],
+                "title": "Subscription Create"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Subscription created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "write",
+            "subscriptions"
+          ]
+        },
+        "x-speakeasy-group": "subscriptions",
+        "x-speakeasy-name-override": "create",
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.create({\n    productId: \"d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23\",\n    customerId: \"992fae2a-2a17-4b7a-8d9e-e287cf90131b\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/subscriptions/export": {
@@ -3094,7 +3164,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.createWebhookEndpoint({\n    url: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    format: \"slack\",\n    events: [\n      \"subscription.uncanceled\",\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.createWebhookEndpoint({\n    url: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    format: \"slack\",\n    events: [\n      \"subscription.canceled\",\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -34116,6 +34186,18 @@
             ],
             "title": "Checkout Id"
           },
+          "seats": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats",
+            "description": "The number of seats for seat-based subscriptions. None for non-seat subscriptions."
+          },
           "customer_cancellation_reason": {
             "anyOf": [
               {
@@ -34136,18 +34218,6 @@
               }
             ],
             "title": "Customer Cancellation Comment"
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Number of seats included in the subscription (for seat-based pricing)."
           }
         },
         "type": "object",
@@ -35969,6 +36039,18 @@
             ],
             "title": "Checkout Id"
           },
+          "seats": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats",
+            "description": "The number of seats for seat-based subscriptions. None for non-seat subscriptions."
+          },
           "customer_cancellation_reason": {
             "anyOf": [
               {
@@ -35989,18 +36071,6 @@
               }
             ],
             "title": "Customer Cancellation Comment"
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Number of seats included in the subscription (for seat-based pricing)."
           },
           "product": {
             "$ref": "#/components/schemas/CustomerSubscriptionProduct"
@@ -36410,6 +36480,9 @@
             "$ref": "#/components/schemas/CustomerSubscriptionUpdateProduct"
           },
           {
+            "$ref": "#/components/schemas/CustomerSubscriptionUpdateSeats"
+          },
+          {
             "$ref": "#/components/schemas/CustomerSubscriptionCancel"
           }
         ]
@@ -36428,6 +36501,32 @@
           "product_id"
         ],
         "title": "CustomerSubscriptionUpdateProduct"
+      },
+      "CustomerSubscriptionUpdateSeats": {
+        "properties": {
+          "seats": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Seats",
+            "description": "Update the number of seats for this subscription."
+          },
+          "proration_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionProrationBehavior"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Determine how to handle the proration billing. If not provided, will use the default organization setting."
+          }
+        },
+        "type": "object",
+        "required": [
+          "seats"
+        ],
+        "title": "CustomerSubscriptionUpdateSeats"
       },
       "CustomerUpdate": {
         "properties": {
@@ -39378,6 +39477,12 @@
             },
             {
               "type": "boolean"
+            },
+            {
+              "$ref": "#/components/schemas/CostMetadata-Input"
+            },
+            {
+              "$ref": "#/components/schemas/LLMMetadata"
             }
           ]
         },
@@ -39398,6 +39503,12 @@
             },
             {
               "type": "boolean"
+            },
+            {
+              "$ref": "#/components/schemas/CostMetadata-Output"
+            },
+            {
+              "$ref": "#/components/schemas/LLMMetadata"
             }
           ]
         },
@@ -45288,6 +45399,18 @@
             ],
             "title": "Checkout Id"
           },
+          "seats": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats",
+            "description": "The number of seats for seat-based subscriptions. None for non-seat subscriptions."
+          },
           "customer_cancellation_reason": {
             "anyOf": [
               {
@@ -45308,18 +45431,6 @@
               }
             ],
             "title": "Customer Cancellation Comment"
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Number of seats included in the subscription (for seat-based pricing)."
           }
         },
         "type": "object",
@@ -49400,6 +49511,18 @@
             ],
             "title": "Checkout Id"
           },
+          "seats": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats",
+            "description": "The number of seats for seat-based subscriptions. None for non-seat subscriptions."
+          },
           "customer_cancellation_reason": {
             "anyOf": [
               {
@@ -49420,18 +49543,6 @@
               }
             ],
             "title": "Customer Cancellation Comment"
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Number of seats included in the subscription (for seat-based pricing)."
           },
           "metadata": {
             "additionalProperties": {
@@ -49603,6 +49714,116 @@
           "cancel_at_period_end"
         ],
         "title": "SubscriptionCancel"
+      },
+      "SubscriptionCreateCustomer": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Id",
+            "description": "The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.",
+            "examples": [
+              "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
+            ]
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id",
+            "description": "The ID of the customer to create the subscription for.",
+            "examples": [
+              "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id",
+          "customer_id"
+        ],
+        "title": "SubscriptionCreateCustomer",
+        "description": "Create a subscription for an existing customer."
+      },
+      "SubscriptionCreateExternalCustomer": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Id",
+            "description": "The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.",
+            "examples": [
+              "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
+            ]
+          },
+          "external_customer_id": {
+            "type": "string",
+            "title": "External Customer Id",
+            "description": "The ID of the customer in your system to create the subscription for. It must already exist in Polar."
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id",
+          "external_customer_id"
+        ],
+        "title": "SubscriptionCreateExternalCustomer",
+        "description": "Create a subscription for an existing customer identified by an external ID."
       },
       "SubscriptionCustomer": {
         "properties": {
@@ -50325,6 +50546,9 @@
             "$ref": "#/components/schemas/SubscriptionUpdateTrial"
           },
           {
+            "$ref": "#/components/schemas/SubscriptionUpdateSeats"
+          },
+          {
             "$ref": "#/components/schemas/SubscriptionCancel"
           },
           {
@@ -50360,7 +50584,10 @@
             "type": "string",
             "format": "uuid4",
             "title": "Product Id",
-            "description": "Update subscription to another product."
+            "description": "Update subscription to another product.",
+            "examples": [
+              "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
+            ]
           },
           "proration_behavior": {
             "anyOf": [
@@ -50379,6 +50606,32 @@
           "product_id"
         ],
         "title": "SubscriptionUpdateProduct"
+      },
+      "SubscriptionUpdateSeats": {
+        "properties": {
+          "seats": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Seats",
+            "description": "Update the number of seats for this subscription."
+          },
+          "proration_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionProrationBehavior"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Determine how to handle the proration billing. If not provided, will use the default organization setting."
+          }
+        },
+        "type": "object",
+        "required": [
+          "seats"
+        ],
+        "title": "SubscriptionUpdateSeats"
       },
       "SubscriptionUpdateTrial": {
         "properties": {

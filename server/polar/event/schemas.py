@@ -17,6 +17,9 @@ from typing_extensions import TypedDict
 from polar.customer.schemas.customer import Customer
 from polar.event.system import (
     BenefitGrantMetadata,
+    CustomerCreatedMetadata,
+    CustomerDeletedMetadata,
+    CustomerUpdatedMetadata,
     MeterCreditedMetadata,
     MeterResetMetadata,
     SubscriptionCycledMetadata,
@@ -286,6 +289,39 @@ class SubscriptionProductUpdatedEvent(SystemEventBase):
     )
 
 
+class CustomerCreatedEvent(SystemEventBase):
+    """An event created by Polar when a customer is created."""
+
+    name: Literal[SystemEventEnum.customer_created] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: CustomerCreatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class CustomerUpdatedEvent(SystemEventBase):
+    """An event created by Polar when a customer is updated."""
+
+    name: Literal[SystemEventEnum.customer_updated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: CustomerUpdatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class CustomerDeletedEvent(SystemEventBase):
+    """An event created by Polar when a customer is deleted."""
+
+    name: Literal[SystemEventEnum.customer_deleted] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: CustomerDeletedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 SystemEvent = Annotated[
     MeterCreditEvent
     | MeterResetEvent
@@ -295,7 +331,10 @@ SystemEvent = Annotated[
     | BenefitRevokedEvent
     | SubscriptionCycledEvent
     | SubscriptionRevokedEvent
-    | SubscriptionProductUpdatedEvent,
+    | SubscriptionProductUpdatedEvent
+    | CustomerCreatedEvent
+    | CustomerUpdatedEvent
+    | CustomerDeletedEvent,
     Discriminator("name"),
     SetSchemaReference("SystemEvent"),
     ClassName("SystemEvent"),

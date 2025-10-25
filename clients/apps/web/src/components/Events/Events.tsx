@@ -51,7 +51,7 @@ const EventRow = ({
 
   const cost = (event.metadata as schemas['EventMetadataOutput'])._cost
 
-  const eventDisplayName = useEventDisplayName(event)
+  const eventDisplayName = useEventDisplayName(event.name)
   const eventCard = useEventCard(event)
 
   return (

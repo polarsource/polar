@@ -9,12 +9,15 @@ from sqlalchemy_utils.types.range import timedelta
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.event.service import event as event_service
+from polar.event.system import SystemEvent, build_system_event
 from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import BenefitGrant, Customer, Organization, User
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
+from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
@@ -152,6 +155,21 @@ class CustomerService:
                 ),
             )
         ) as customer:
+            await event_service.create_event(
+                session,
+                build_system_event(
+                    SystemEvent.customer_created,
+                    customer=customer,
+                    organization=customer.organization,
+                    metadata={
+                        "customer_id": str(customer.id),
+                        "customer_email": customer.email,
+                        "customer_name": customer.name,
+                        "customer_external_id": customer.external_id,
+                    },
+                ),
+            )
+
             return customer
 
     async def update(
@@ -218,17 +236,91 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        return await repository.update(
+        updated_customer = await repository.update(
             customer,
             update_dict=customer_update.model_dump(exclude_unset=True, by_alias=True),
         )
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            updated_customer.organization_id
+        )
+        assert organization is not None
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.customer_updated,
+                customer=updated_customer,
+                organization=organization,
+                metadata={
+                    "customer_id": str(updated_customer.id),
+                    "updated_fields": {
+                        **(
+                            {"email": customer_update.email}
+                            if customer_update.email is not None
+                            else {}
+                        ),
+                        **(
+                            {"name": customer_update.name}
+                            if customer_update.name is not None
+                            else {}
+                        ),
+                        **(
+                            {"external_id": customer_update.external_id}
+                            if customer_update.external_id is not None
+                            else {}
+                        ),
+                        **(
+                            {"billing_address": dict(customer_update.billing_address)}
+                            if customer_update.billing_address is not None
+                            else {}
+                        ),
+                        **(
+                            {"tax_id": customer_update.tax_id}
+                            if customer_update.tax_id is not None
+                            else {}
+                        ),
+                        **(
+                            {"metadata": dict(customer_update.metadata)}
+                            if customer_update.metadata is not None
+                            else {}
+                        ),
+                    },
+                },
+            ),
+        )
+
+        return updated_customer
 
     async def delete(self, session: AsyncSession, customer: Customer) -> Customer:
         enqueue_job("subscription.cancel_customer", customer_id=customer.id)
         enqueue_job("benefit.revoke_customer", customer_id=customer.id)
 
         repository = CustomerRepository.from_session(session)
-        return await repository.soft_delete(customer)
+        soft_deleted_customer = await repository.soft_delete(customer)
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            soft_deleted_customer.organization_id
+        )
+        assert organization is not None
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.customer_deleted,
+                customer=customer,
+                organization=organization,
+                metadata={
+                    "customer_id": str(customer.id),
+                    "customer_email": customer.email,
+                    "customer_name": customer.name,
+                },
+            ),
+        )
+
+        return soft_deleted_customer
 
     async def get_state(
         self,

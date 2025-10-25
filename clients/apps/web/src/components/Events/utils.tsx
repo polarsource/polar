@@ -4,9 +4,9 @@ import { BenefitEventCard } from './EventCard/BenefitEventCard'
 import { SubscriptionEventCard } from './EventCard/SubscriptionEventCard'
 import { UserEventCard } from './EventCard/UserEventCard'
 
-export const useEventDisplayName = (event: schemas['Event']) => {
+export const useEventDisplayName = (name: string) => {
   return useMemo(() => {
-    switch (event.name) {
+    switch (name) {
       case 'benefit.granted':
         return 'Benefit Granted'
       case 'benefit.cycled':
@@ -21,10 +21,18 @@ export const useEventDisplayName = (event: schemas['Event']) => {
         return 'Subscription Revoked'
       case 'subscription.product_updated':
         return 'Subscription Product Updated'
+      case 'subscription.seats_updated':
+        return 'Subscription Seats Updated'
+      case 'customer.created':
+        return 'Customer Created'
+      case 'customer.updated':
+        return 'Customer Updated'
+      case 'customer.deleted':
+        return 'Customer Deleted'
       default:
-        return event.name
+        return name
     }
-  }, [event])
+  }, [name])
 }
 
 export const useEventCard = (event: schemas['Event']) => {
@@ -41,6 +49,10 @@ export const useEventCard = (event: schemas['Event']) => {
           case 'subscription.revoked':
           case 'subscription.product_updated':
             return <SubscriptionEventCard event={event} />
+          case 'customer.created':
+          case 'customer.deleted':
+            return null
+          case 'customer.updated':
           default:
             return <UserEventCard event={event} />
         }

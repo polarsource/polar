@@ -555,7 +555,8 @@
               "guides/disable-subscription-changes-in-customer-portal",
               "guides/allow-multiple-subscriptions-per-customer",
               "guides/subscription-downgrades",
-              "guides/subscription-upgrades"
+              "guides/subscription-upgrades",
+              "guides/theme-switch-in-checkout"
             ]
           }
         ]

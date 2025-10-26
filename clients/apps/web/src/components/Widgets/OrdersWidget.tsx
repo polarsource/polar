@@ -14,6 +14,18 @@ import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+const orderStatusBadgeClassNames = (order: schemas['Order']) => {
+  switch (order.status) {
+    case 'paid':
+      return 'bg-emerald-50 text-emerald-500 dark:bg-emerald-950'
+    case 'pending':
+      return 'bg-yellow-50 text-yellow-500 dark:bg-yellow-950'
+    case 'refunded':
+    case 'partially_refunded':
+      return 'bg-violet-50 text-violet-500 dark:bg-violet-950 dark:text-violet-400'
+  }
+}
+
 interface OrderCardProps {
   className?: string
   order: schemas['Order']
@@ -42,9 +54,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
         <Status
           className={twMerge(
             'px-1 py-0.5 text-xs capitalize',
-            order.status === 'paid'
-              ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-950'
-              : 'bg-red-50 text-red-500 dark:bg-red-950',
+            orderStatusBadgeClassNames(order),
           )}
           status={order.status.split('_').join(' ')}
         />

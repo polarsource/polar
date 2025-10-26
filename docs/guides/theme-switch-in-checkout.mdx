@@ -1,0 +1,149 @@
+---
+title: "How to Switch Theme in Checkout"
+sidebarTitle: "Switch theme in checkout"
+description: "Learn how to switch theme for a checkout session created using the API as well as for checkout link."
+---
+
+## Create a checkout session using the API
+<Steps>
+    <Step title = "Go to Organization Settings">
+            In the Polar dashboard sidebar, click on **Settings**.
+                You can also go directly to:  
+                `https://polar.sh/dashboard/${org_slug}/settings`  
+            Scroll down to **Developers** section.
+            <img height="200" src="/assets/guides/theme-switch-in-checkout/organization-settings-2.png" />
+        </Step>
+    <Step title = "Create a New Token">
+        Click on **New Token** and set the desired **Name**, **Expiration** and **Scopes**.  
+        **checkouts:write** is the required scope for creating Checkout session. 
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/oat-settings.png" />
+        Scroll down and click on **Create**.
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/oat-settings-2.png" />
+    </Step>
+    <Step title = "Save your Access Token">
+        After creating your access token, you will be able to view it. Please copy and save your access token.
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/access-token.png" />
+    </Step>
+    <Step title =  "Go to Products Catalogue">
+        In the Polar dashboard sidebar, navigate to **Products** > **Catalogue** for your organization.
+        You can also go directly to:  
+        `https://polar.sh/dashboard/${org_slug}/products`  
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/products-catalogue.png" />
+    </Step>
+    <Step title = "Access the product IDs for checkout">
+        Retrieve the Product IDs for the items you wish to include in checkout by clicking on the **⋮ (More options) menu** next to chosen products and selecting **Copy Product ID**.  
+        These IDs will be required in the next step to create a checkout session.
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/product-id.png" />
+    </Step>
+    <Step title = "API call for Checkout session creation">
+        Open your terminal and paste the following curl command to make an API call for creating a checkout session.
+        Be sure to replace:
+        - \<YOUR_ACCESS_TOKEN\> with your actual access token
+        - \<PRODUCT_ID_1\>, \<PRODUCT_ID_2\>, etc., with the product IDs you want to include in the session
+        ```bash
+        curl --request POST \
+            --url https://api.polar.sh/v1/checkouts/ \
+            --header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
+            --header 'Content-Type: application/json' \
+            --data '{
+            "products": [
+                "<Product_ID_1>",
+                "<Product_ID_2>",
+                "<Product_ID_3>"
+            ]
+        }'
+
+        ```
+
+    You can also include additional parameters in the `--data` JSON as shown below.  
+    You can find the description of each parameter at [https://polar.sh/docs/api-reference/checkouts/create-session](https://polar.sh/docs/api-reference/checkouts/create-session).
+    
+    ```bash
+    curl --request POST \
+        --url https://api.polar.sh/v1/checkouts/ \
+        --header 'Authorization: Bearer <token>' \
+        --header 'Content-Type: application/json' \
+        --data '{
+        "trial_interval": "day",
+        "trial_interval_count": 500,
+        "metadata": {},
+        "custom_field_data": {},
+        "discount_id": "<string>",
+        "allow_discount_codes": true,
+        "require_billing_address": false,
+        "amount": 50000024,
+        "seats": 500,
+        "customer_id": "<string>",
+        "is_business_customer": false,
+        "external_customer_id": "<string>",
+        "customer_name": "<string>",
+        "customer_email": "jsmith@example.com",
+        "customer_ip_address": "<string>",
+        "customer_billing_name": "<string>",
+        "customer_billing_address": {
+            "line1": "<string>",
+            "line2": "<string>",
+            "postal_code": "<string>",
+            "city": "<string>",
+            "state": "<string>",
+            "country": "US"
+        },
+        "customer_tax_id": "<string>",
+        "customer_metadata": {},
+        "subscription_id": "<string>",
+        "success_url": "<string>",
+        "return_url": "<string>",
+        "embed_origin": "<string>",
+        "products": [
+            "<string>"
+        ]
+    }'
+    ```
+    </Step>
+    <Step title="Fetch the checkout URL">
+        The curl command returns a JSON. Access the checkout URL from the <code>"url"</code> key of the JSON.
+    </Step>
+</Steps>
+
+## Changing the Theme for a Checkout Session Created via the API
+<Steps>
+    <Step title="Switch to dark theme">
+        To switch to the dark theme, append the query parameter <code>theme=dark</code> to your checkout URL. For example, if your checkout URL is:  
+        <code>https://polar.sh/checkout/polar_c_ES7DwhlyvlYTPNaLiccKqiwJPda43FIzer</code>  
+        You should use:  
+        <code>https://polar.sh/checkout/polar_c_ES7DwhlyvlYTPNaLiccKqiwJPda43FIzer?theme=dark</code>  
+        The checkout session looks like below:
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/dark-theme.png" />
+    </Step>
+
+    <Step title="Switch to light theme">
+        Similarly, to switch to the light theme, append the query parameter <code>theme=light</code> to your checkout URL. For example:  
+        <code>https://polar.sh/checkout/polar_c_ES7DwhlyvlYTPNaLiccKqiwJPda43FIzer?theme=light</code>  
+        The checkout session looks like below:
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/light-theme.png" />
+    </Step>
+</Steps>
+
+
+## Switching Theme for a Checkout Link
+<Steps>
+    <Step title = "Create a checkout link">
+        You can create a checkout link by referring to:  
+        <code>https://polar.sh/docs/features/checkout/links#create-a-checkout-link</code>
+    </Step>
+    <Step title="Switch to dark theme">
+        To switch to the dark theme, append the query parameter <code>theme=dark</code> to your checkout link. For example, if your checkout link is:  
+        <code>https://api.polar.sh/v1/checkout-links/polar_cl_QHMjrDLsORxLIRfyQlfyqF1TWUR6Cy4afVcd/redirect</code>  
+        You should use:  
+        <code>https://api.polar.sh/v1/checkout-links/polar_cl_QHMjrDLsORxLIRfyQlfyqF1TWUR6Cy4afVcd/redirect?theme=dark</code>  
+        The checkout session looks like below:
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/dark-theme.png" />
+    </Step>
+
+    <Step title="Switch to light theme">
+        Similarly, to switch to the light theme, append the query parameter <code>theme=light</code> to your checkout link. For example:  
+        <code>https://api.polar.sh/v1/checkout-links/polar_cl_QHMjrDLsORxLIRfyQlfyqF1TWUR6Cy4afVcd/redirect?theme=light</code>  
+        The checkout session looks like below:
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/light-theme.png" />
+    </Step>
+</Steps>

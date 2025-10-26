@@ -11708,7 +11708,7 @@ export interface components {
       checkout_id: string | null
       /**
        * Seats
-       * @description Number of seats included in the subscription (for seat-based pricing).
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
       customer_cancellation_reason:
@@ -12596,7 +12596,7 @@ export interface components {
       checkout_id: string | null
       /**
        * Seats
-       * @description Number of seats included in the subscription (for seat-based pricing).
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
       customer_cancellation_reason:
@@ -16723,6 +16723,64 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * OrderPaidEvent
+     * @description An event created by Polar when an order is paid.
+     */
+    OrderPaidEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'order.paid'
+      metadata: components['schemas']['OrderPaidMetadata']
+    }
+    /** OrderPaidMetadata */
+    OrderPaidMetadata: {
+      /** Order Id */
+      order_id: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+    }
     /** OrderProduct */
     OrderProduct: {
       /** Metadata */
@@ -16788,6 +16846,64 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
+    }
+    /**
+     * OrderRefundedEvent
+     * @description An event created by Polar when an order is refunded.
+     */
+    OrderRefundedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'order.refunded'
+      metadata: components['schemas']['OrderRefundedMetadata']
+    }
+    /** OrderRefundedMetadata */
+    OrderRefundedMetadata: {
+      /** Order Id */
+      order_id: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
     }
     /**
      * OrderSortProperty
@@ -16934,7 +17050,7 @@ export interface components {
       checkout_id: string | null
       /**
        * Seats
-       * @description Number of seats included in the subscription (for seat-based pricing).
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
       customer_cancellation_reason:
@@ -19509,7 +19625,7 @@ export interface components {
       checkout_id: string | null
       /**
        * Seats
-       * @description Number of seats included in the subscription (for seat-based pricing).
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
        */
       seats?: number | null
       customer_cancellation_reason:
@@ -20141,6 +20257,8 @@ export interface components {
       | components['schemas']['SubscriptionCycledEvent']
       | components['schemas']['SubscriptionRevokedEvent']
       | components['schemas']['SubscriptionProductUpdatedEvent']
+      | components['schemas']['OrderPaidEvent']
+      | components['schemas']['OrderRefundedEvent']
     /**
      * TaxIDFormat
      * @description List of supported tax ID formats.
@@ -33863,6 +33981,12 @@ export const orderBillingReasonInternalValues: ReadonlyArray<
   'subscription_cycle_after_trial',
   'subscription_update',
 ]
+export const orderPaidEventNameValues: ReadonlyArray<
+  components['schemas']['OrderPaidEvent']['name']
+> = ['order.paid']
+export const orderRefundedEventNameValues: ReadonlyArray<
+  components['schemas']['OrderRefundedEvent']['name']
+> = ['order.refunded']
 export const orderSortPropertyValues: ReadonlyArray<
   components['schemas']['OrderSortProperty']
 > = [

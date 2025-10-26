@@ -53,7 +53,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
         <span>{displayDate}</span>
         <Status
           className={twMerge(
-            'px-1 py-0.5 text-xs capitalize',
+            'px-1.5 py-0.5 text-xs capitalize',
             orderStatusBadgeClassNames(order),
           )}
           status={order.status.split('_').join(' ')}

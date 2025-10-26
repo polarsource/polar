@@ -7,8 +7,7 @@ const useMetadata = (event: schemas['Event']) => {
     const metadata = { ...event.metadata }
     const metadataWithoutPrivateFields = Object.entries(metadata).reduce(
       (acc, [key, value]) => {
-        if (key.startsWith('_')) return acc
-        return { ...acc, [key]: value }
+        return key.startsWith('_') ? acc : { ...acc, [key]: value }
       },
       {},
     )

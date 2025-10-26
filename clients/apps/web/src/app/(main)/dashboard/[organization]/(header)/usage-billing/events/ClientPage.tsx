@@ -177,6 +177,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   return (
     <DashboardBody
       title="Events"
+      header={
+        <h3 className="dark:text-polar-500 text-xl text-gray-500">
+          {events?.pagination.total_count}{' '}
+          {events?.pagination.total_count === 1 ? 'Event' : 'Events'}
+        </h3>
+      }
       contextViewPlacement="left"
       contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
       contextView={

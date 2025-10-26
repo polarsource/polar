@@ -20,6 +20,8 @@ class SystemEvent(StrEnum):
     subscription_revoked = "subscription.revoked"
     subscription_product_updated = "subscription.product_updated"
     subscription_seats_updated = "subscription.seats_updated"
+    order_paid = "order.paid"
+    order_refunded = "order.refunded"
 
 
 class MeterCreditedMetadata(TypedDict):
@@ -129,6 +131,32 @@ class SubscriptionSeatsUpdatedEvent(Event):
         user_metadata: Mapped[SubscriptionSeatsUpdatedMetadata]  # type: ignore[assignment]
 
 
+class OrderPaidMetadata(TypedDict):
+    order_id: str
+    amount: int
+    currency: str
+
+
+class OrderPaidEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.order_paid]]
+        user_metadata: Mapped[OrderPaidMetadata]  # type: ignore[assignment]
+
+
+class OrderRefundedMetadata(TypedDict):
+    order_id: str
+    amount: int
+    currency: str
+
+
+class OrderRefundedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.order_refunded]]
+        user_metadata: Mapped[OrderRefundedMetadata]  # type: ignore[assignment]
+
+
 @overload
 def build_system_event(
     name: Literal[SystemEvent.meter_credited],
@@ -216,6 +244,24 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionSeatsUpdatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.order_paid],
+    customer: Customer,
+    organization: Organization,
+    metadata: OrderPaidMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.order_refunded],
+    customer: Customer,
+    organization: Organization,
+    metadata: OrderRefundedMetadata,
 ) -> Event: ...
 
 

@@ -45,7 +45,8 @@ const OrderStatusDisplayColor: Record<schemas['OrderStatus'], string> = {
   pending: 'bg-yellow-100 text-yellow-500 dark:bg-yellow-950',
   paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
   refunded: 'bg-blue-100 text-blue-400 dark:bg-blue-950',
-  partially_refunded: 'bg-purple-100 text-purple-500 dark:bg-purple-950',
+  partially_refunded:
+    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
 }
 
 interface ClientPageProps {

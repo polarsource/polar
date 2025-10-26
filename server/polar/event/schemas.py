@@ -19,6 +19,8 @@ from polar.event.system import (
     BenefitGrantMetadata,
     MeterCreditedMetadata,
     MeterResetMetadata,
+    OrderPaidMetadata,
+    OrderRefundedMetadata,
     SubscriptionCycledMetadata,
     SubscriptionProductUpdatedMetadata,
     SubscriptionRevokedMetadata,
@@ -286,6 +288,24 @@ class SubscriptionProductUpdatedEvent(SystemEventBase):
     )
 
 
+class OrderPaidEvent(SystemEventBase):
+    """An event created by Polar when an order is paid."""
+
+    name: Literal[SystemEventEnum.order_paid] = Field(description=_NAME_DESCRIPTION)
+    metadata: OrderPaidMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class OrderRefundedEvent(SystemEventBase):
+    """An event created by Polar when an order is refunded."""
+
+    name: Literal[SystemEventEnum.order_refunded] = Field(description=_NAME_DESCRIPTION)
+    metadata: OrderRefundedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 SystemEvent = Annotated[
     MeterCreditEvent
     | MeterResetEvent
@@ -295,7 +315,9 @@ SystemEvent = Annotated[
     | BenefitRevokedEvent
     | SubscriptionCycledEvent
     | SubscriptionRevokedEvent
-    | SubscriptionProductUpdatedEvent,
+    | SubscriptionProductUpdatedEvent
+    | OrderPaidEvent
+    | OrderRefundedEvent,
     Discriminator("name"),
     SetSchemaReference("SystemEvent"),
     ClassName("SystemEvent"),

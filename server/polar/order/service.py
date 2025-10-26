@@ -29,6 +29,8 @@ from polar.email.schemas import (
 )
 from polar.email.sender import Attachment, enqueue_email
 from polar.enums import PaymentProcessor
+from polar.event.service import event as event_service
+from polar.event.system import OrderPaidMetadata, SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
@@ -1722,6 +1724,20 @@ class OrderService:
         assert order.paid
 
         await self.send_webhook(session, order, WebhookEventType.order_paid)
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.order_paid,
+                customer=order.customer,
+                organization=order.organization,
+                metadata=OrderPaidMetadata(
+                    order_id=str(order.id),
+                    amount=order.total_amount,
+                    currency=order.currency,
+                ),
+            ),
+        )
 
         if order.subscription_id is not None and order.billing_reason in (
             OrderBillingReasonInternal.subscription_cycle,

@@ -1560,7 +1560,7 @@ class CheckoutService:
             if is_fixed_price(price):
                 checkout.amount = price.price_amount
                 checkout.currency = price.price_currency
-                checkout.seats = None  # Clear seats for non-seat-based pricing
+                checkout.seats = None
             elif is_custom_price(price):
                 checkout.amount = (
                     price.preset_amount
@@ -1568,16 +1568,15 @@ class CheckoutService:
                     or settings.CUSTOM_PRICE_PRESET_FALLBACK
                 )
                 checkout.currency = price.price_currency
-                checkout.seats = None  # Clear seats for non-seat-based pricing
+                checkout.seats = None
             elif is_seat_price(price):
-                # Calculate amount based on current seat count
                 seats = checkout.seats or checkout_update.seats or 1
                 checkout.seats = seats
                 checkout.amount = price.calculate_amount(seats)
                 checkout.currency = price.price_currency
             elif is_currency_price(price):
                 checkout.currency = price.price_currency
-                checkout.seats = None  # Clear seats for non-seat-based pricing
+                checkout.seats = None
 
             # When changing product, remove the discount if it's not applicable
             if checkout.discount is not None and not checkout.discount.is_applicable(

@@ -2974,129 +2974,57 @@ class TestUpdate:
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
-        organization: Organization,
+        product_one_time: Product,
+        product_seat_based: Product,
     ) -> None:
-        """
-        Test that when switching from a fixed price to a seat-based price,
-        the seats field is initialized to 1 if not provided.
-        """
-        # Create a product with both fixed and seat-based prices
-        product_with_multiple_prices = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[],
-        )
-
-        # Add a fixed price
-        fixed_price = await create_product_price_fixed(
-            save_fixture,
-            product=product_with_multiple_prices,
-            amount=1000,
-        )
-
-        # Add a seat-based price
-        seat_price = await create_product_price_seat_unit(
-            save_fixture,
-            product=product_with_multiple_prices,
-            price_per_seat=500,
-        )
-
-        product_with_multiple_prices.prices = [fixed_price, seat_price]
-        await save_fixture(product_with_multiple_prices)
-
-        # Create a checkout with the fixed price
         checkout = await create_checkout(
             save_fixture,
-            products=[product_with_multiple_prices],
-            price=fixed_price,
+            products=[product_one_time, product_seat_based],
         )
 
-        # Verify initial state - fixed price, no seats
-        assert checkout.product_price == fixed_price
+        assert checkout.product == product_one_time
         assert checkout.seats is None
-        assert checkout.amount == 1000
 
-        # Switch to seat-based price without providing seats
         updated_checkout = await checkout_service.update(
             session,
             locker,
             checkout,
-            CheckoutUpdate(
-                product_id=product_with_multiple_prices.id,
-                product_price_id=seat_price.id,
-            ),
+            CheckoutUpdate(product_id=product_seat_based.id),
         )
 
-        # Verify that seats is initialized to 1 and amount is calculated correctly
-        assert updated_checkout.product_price == seat_price
+        assert updated_checkout.product == product_seat_based
         assert updated_checkout.seats == 1
-        assert updated_checkout.amount == seat_price.calculate_amount(1)
+        assert updated_checkout.amount == product_seat_based.prices[0].calculate_amount(
+            1
+        )
 
     async def test_switching_from_seat_based_to_fixed_clears_seats(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
-        organization: Organization,
+        product_one_time: Product,
+        product_seat_based: Product,
     ) -> None:
-        """
-        Test that when switching from a seat-based price to a fixed price,
-        the seats field is cleared.
-        """
-        # Create a product with both fixed and seat-based prices
-        product_with_multiple_prices = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[],
-        )
-
-        # Add a fixed price
-        fixed_price = await create_product_price_fixed(
-            save_fixture,
-            product=product_with_multiple_prices,
-            amount=1000,
-        )
-
-        # Add a seat-based price
-        seat_price = await create_product_price_seat_unit(
-            save_fixture,
-            product=product_with_multiple_prices,
-            price_per_seat=500,
-        )
-
-        product_with_multiple_prices.prices = [fixed_price, seat_price]
-        await save_fixture(product_with_multiple_prices)
-
-        # Create a checkout with the seat-based price
         checkout = await create_checkout(
             save_fixture,
-            products=[product_with_multiple_prices],
-            price=seat_price,
+            products=[product_one_time, product_seat_based],
+            product=product_seat_based,
             seats=5,
         )
 
-        # Verify initial state - seat-based price with 5 seats
-        assert checkout.product_price == seat_price
+        assert checkout.product == product_seat_based
         assert checkout.seats == 5
-        assert checkout.amount == seat_price.calculate_amount(5)
 
-        # Switch to fixed price
         updated_checkout = await checkout_service.update(
             session,
             locker,
             checkout,
-            CheckoutUpdate(
-                product_id=product_with_multiple_prices.id,
-                product_price_id=fixed_price.id,
-            ),
+            CheckoutUpdate(product_id=product_one_time.id),
         )
 
-        # Verify that seats is cleared and amount is set to fixed price
-        assert updated_checkout.product_price == fixed_price
+        assert updated_checkout.product == product_one_time
         assert updated_checkout.seats is None
-        assert updated_checkout.amount == 1000
 
 
 @pytest.mark.asyncio

@@ -23,7 +23,7 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
             <span className="text-xs">{event.customer?.name}</span>
           ) : null}
           <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
-            {event.customer?.email}
+            {event.customer?.email ?? 'Anonymous'}
           </span>
         </div>
       </div>

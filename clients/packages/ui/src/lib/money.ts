@@ -22,11 +22,13 @@ export const formatCurrencyAndAmount = (
   currency: string = 'usd',
   minimumFractionDigits?: number,
   notation?: 'standard' | 'scientific' | 'engineering' | 'compact',
+  maximumFractionDigits?: number,
 ): string => {
   const currencyNumberFormat = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     minimumFractionDigits,
+    maximumFractionDigits,
     notation,
   })
   return currencyNumberFormat.format(cents / 100)

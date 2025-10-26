@@ -7,11 +7,11 @@ import {
 import { schemas } from '@polar-sh/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
   ChartContainer,
   ChartTooltip,
+  Line,
+  LineChart,
   XAxis,
   YAxis,
 } from '@polar-sh/ui/components/ui/chart'
@@ -106,12 +106,13 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                   label: 'Profit',
                   color: '#0062FF',
                 },
+
                 metric: {
                   label: 'Revenue vs. Cost',
                 },
               }}
             >
-              <BarChart
+              <LineChart
                 accessibilityLayer
                 data={data?.periods.map((period) => ({
                   timestamp: period.timestamp,
@@ -152,10 +153,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                           >
                             <div className="flex flex-row items-center gap-x-2">
                               <span
-                                className={twMerge(
-                                  'h-2 w-2 rounded-full',
-                                  index === array.length - 1 && 'hidden',
-                                )}
+                                className={twMerge('h-2 w-2 rounded-full')}
                                 style={{
                                   backgroundColor: item?.color,
                                 }}
@@ -164,7 +162,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                                 {item.name?.toString().split('_').join(' ')}
                               </span>
                             </div>
-                            <span className="">
+                            <span>
                               {getFormattedMetricValue(
                                 {
                                   slug: 'revenue_vs_cost',
@@ -209,25 +207,31 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                   interval="equidistantPreserveStart"
                   tickFormatter={timestampFormatter}
                 />
-                <Bar
+                <Line
                   dataKey="cost"
-                  fill="var(--color-cost)"
+                  stroke="var(--color-cost)"
+                  strokeWidth={2}
+                  activeDot={false}
+                  dot={false}
                   type="linear"
-                  maxBarSize={10}
                 />
-                <Bar
+                <Line
                   dataKey="revenue"
-                  fill="var(--color-revenue)"
+                  stroke="var(--color-revenue)"
+                  strokeWidth={2}
+                  activeDot={false}
+                  dot={false}
                   type="linear"
-                  maxBarSize={10}
                 />
-                <Bar
+                <Line
                   dataKey="profit"
-                  fill="var(--color-profit)"
+                  stroke="var(--color-profit)"
                   type="linear"
-                  maxBarSize={10}
+                  strokeWidth={2}
+                  activeDot={false}
+                  dot={false}
                 />
-              </BarChart>
+              </LineChart>
             </ChartContainer>
           )}
         </div>

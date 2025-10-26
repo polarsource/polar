@@ -58,7 +58,7 @@ export const getFormattedMetricValue = (
     case 'scalar':
       return scalarFormatter.format(value)
     case 'currency':
-      return formatCurrencyAndAmount(value, 'usd', 0)
+      return formatCurrencyAndAmount(value, 'usd', 0, 'compact', 17)
     case 'percentage':
       return percentageFormatter.format(value)
   }

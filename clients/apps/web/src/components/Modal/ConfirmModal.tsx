@@ -67,11 +67,11 @@ export const ConfirmModal = ({
       {...props}
       modalContent={
         <>
-          <div className="flex flex-col gap-y-6 p-8">
+          <div className="flex flex-col gap-y-4 p-8">
             <>
               <h3 className="text-xl font-medium">{title}</h3>
               {description && (
-                <p className="dark:text-polar-400 max-w-full text-sm leading-relaxed text-gray-500">
+                <p className="dark:text-polar-400 max-w-full text-sm text-gray-500">
                   {description}
                 </p>
               )}
@@ -83,7 +83,7 @@ export const ConfirmModal = ({
                 >
                   {confirmPrompt && (
                     <>
-                      <p className="dark:text-polar-400 max-w-full text-sm leading-relaxed text-gray-500">
+                      <p className="dark:text-polar-400 max-w-full text-sm text-gray-500">
                         Please enter &quot;{confirmPrompt}&quot; to confirm:
                       </p>
                       <FormField
@@ -115,7 +115,7 @@ export const ConfirmModal = ({
                       />
                     </>
                   )}
-                  <div className="flex flex-row gap-x-4 pt-6">
+                  <div className="flex flex-row-reverse gap-x-4 pt-2">
                     <Button
                       type="submit"
                       variant={destructive ? 'destructive' : 'default'}

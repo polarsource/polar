@@ -149,9 +149,10 @@ const BenefitRow = ({
       <ConfirmModal
         isShown={isDeleteShown}
         hide={hideDelete}
-        title="Delete Benefit"
-        description="Deleting a benefit will remove it from every Products & revoke it for existing customers. Are you sure?"
+        title={`Delete "${benefit.description}"`}
+        description="Deleting a benefit will remove it from every product & revoke it for existing customers. Are you sure?"
         onConfirm={handleDeleteBenefit}
+        destructiveText="Yes, delete"
         destructive
       />
     </div>

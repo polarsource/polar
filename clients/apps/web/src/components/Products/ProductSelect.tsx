@@ -42,6 +42,10 @@ const ProductsCommandGroup = ({
     )
   }, [groupedProducts, productPriceType, selectedProducts])
 
+  if (groupedProducts[productPriceType].length === 0) {
+    return null
+  }
+
   return (
     <CommandGroup className={className}>
       <CommandItem
@@ -55,6 +59,7 @@ const ProductsCommandGroup = ({
         <div className="flew-row flex items-center gap-2 font-semibold">
           <ProductPriceTypeLabel productPriceType={productPriceType} />
         </div>
+
         <div className="flex items-center font-light">
           {!areAllSelected ? (
             <>Select all {groupedProducts[productPriceType].length}</>

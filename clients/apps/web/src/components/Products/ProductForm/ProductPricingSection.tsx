@@ -380,7 +380,10 @@ export const ProductPriceSeatBasedItem: React.FC<
                 }
                 rules={{
                   required: 'This field is required',
-                  min: { value: 50, message: 'Price must be greater than 0.5' },
+                  min: {
+                    value: 0,
+                    message: 'Price must be greater than or equal to 0',
+                  },
                 }}
                 render={({ field }) => (
                   <FormItem>

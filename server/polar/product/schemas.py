@@ -76,6 +76,15 @@ PriceAmount = Annotated[
         description="The price in cents.",
     ),
 ]
+SeatPriceAmount = Annotated[
+    int,
+    Field(
+        ...,
+        ge=0,
+        le=MAXIMUM_PRICE_AMOUNT,
+        description="The price per seat in cents. Can be 0 for free tiers.",
+    ),
+]
 PriceCurrency = Annotated[
     str,
     Field(
@@ -164,7 +173,7 @@ class ProductPriceSeatTier(Schema):
         ge=1,
         description="Maximum number of seats (inclusive). None for unlimited.",
     )
-    price_per_seat: PriceAmount = Field(
+    price_per_seat: SeatPriceAmount = Field(
         description="Price per seat in cents for this tier"
     )
 

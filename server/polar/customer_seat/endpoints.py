@@ -1,7 +1,7 @@
 from typing import Annotated, cast
-from uuid import UUID
 
 from fastapi import Depends, Query, Request
+from pydantic import UUID4
 from sqlalchemy.orm import joinedload
 from sse_starlette import EventSourceResponse
 
@@ -158,8 +158,8 @@ async def assign_seat(
 async def list_seats(
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    subscription_id: Annotated[str | None, Query()] = None,
-    order_id: Annotated[str | None, Query()] = None,
+    subscription_id: Annotated[UUID4 | None, Query()] = None,
+    order_id: Annotated[UUID4 | None, Query()] = None,
 ) -> SeatsList:
     if isinstance(auth_subject.subject, Anonymous):
         raise NotPermitted("Authentication required")
@@ -176,7 +176,7 @@ async def list_seats(
         statement = (
             subscription_repository.get_readable_statement(typed_auth_subject)
             .options(*subscription_repository.get_eager_options())
-            .where(Subscription.id == UUID(subscription_id))
+            .where(Subscription.id == subscription_id)
         )
         subscription = await subscription_repository.get_one_or_none(statement)
 
@@ -191,7 +191,7 @@ async def list_seats(
         order_statement = (
             order_repository.get_readable_statement(typed_auth_subject)
             .options(*order_repository.get_eager_options())
-            .where(Order.id == UUID(order_id))
+            .where(Order.id == order_id)
         )
         order = await order_repository.get_one_or_none(order_statement)
 
@@ -227,7 +227,7 @@ async def list_seats(
     },
 )
 async def revoke_seat(
-    seat_id: str,
+    seat_id: UUID4,
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatSchema:
@@ -239,7 +239,7 @@ async def revoke_seat(
 
     seat = await seat_repository.get_by_id_and_auth_subject(
         typed_auth_subject,
-        UUID(seat_id),
+        seat_id,
         options=seat_repository.get_eager_options(),
     )
 
@@ -273,7 +273,7 @@ async def revoke_seat(
     },
 )
 async def resend_invitation(
-    seat_id: str,
+    seat_id: UUID4,
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatSchema:
@@ -285,7 +285,7 @@ async def resend_invitation(
 
     seat = await seat_repository.get_by_id_and_auth_subject(
         typed_auth_subject,
-        UUID(seat_id),
+        seat_id,
         options=seat_repository.get_eager_options(),
     )
 

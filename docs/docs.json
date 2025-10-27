@@ -237,6 +237,7 @@
                 "pages": [
                   "api-reference/subscriptions/get",
                   "api-reference/subscriptions/list",
+                  "api-reference/subscriptions/create",
                   "api-reference/subscriptions/update",
                   "api-reference/subscriptions/revoke"
                 ]

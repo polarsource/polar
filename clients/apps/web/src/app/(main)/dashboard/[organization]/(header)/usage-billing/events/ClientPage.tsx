@@ -4,6 +4,7 @@ import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import { EventCreationGuideModal } from '@/components/Events/EventCreationGuideModal'
 import { EventMetadataFilter } from '@/components/Events/EventMetadataFilter'
 import { Events } from '@/components/Events/Events'
+import { useEventDisplayName } from '@/components/Events/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import { Modal } from '@/components/Modal'
@@ -46,6 +47,11 @@ import { twMerge } from 'tailwind-merge'
 import z from 'zod'
 
 const PAGE_SIZE = 300
+
+const EventName = ({ eventName }: { eventName: schemas['EventName'] }) => {
+  const displayName = useEventDisplayName(eventName.name)
+  return <span className="w-full truncate">{displayName}</span>
+}
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -95,7 +101,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   } = useModal()
 
   const { data } = useEventNames(organization.id, {
-    sorting: ['-occurrences'],
+    sorting: ['name'],
     limit: 500,
   })
 
@@ -290,9 +296,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                               )
                             }
                           >
-                            <span className="w-full truncate">
-                              {eventName.name}
-                            </span>
+                            <EventName eventName={eventName} />
                             <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
                               {Number(eventName.occurrences).toLocaleString(
                                 'en-US',

@@ -1,6 +1,5 @@
 import { useOrder } from '@/hooks/queries/orders'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import { schemas } from '@polar-sh/client'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -79,7 +78,6 @@ export const OrderEventCard = ({ event }: OrderEventCardProps) => {
         >
           <div className="flex flex-row items-center gap-x-4 p-2">
             <div className="flex flex-row items-center gap-x-4">
-              <AllInclusiveOutlined fontSize="inherit" />
               <span className="">{order.product?.name}</span>
             </div>
             {billingReason && (

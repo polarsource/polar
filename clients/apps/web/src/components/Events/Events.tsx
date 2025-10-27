@@ -48,7 +48,7 @@ const EventRow = ({
     [event, isExpanded],
   )
 
-  const eventDisplayName = useEventDisplayName(event)
+  const eventDisplayName = useEventDisplayName(event.name)
   const eventCard = useEventCard(event)
   const eventCostBadge = useEventCostBadge(event)
 

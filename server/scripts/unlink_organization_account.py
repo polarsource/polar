@@ -218,9 +218,7 @@ async def unlink_organizations(
                 if is_ready:
                     typer.echo("      ✓ Organization still ready for payments")
                 else:
-                    typer.echo(
-                        "      ⚠️  WARNING: Organization NOT ready for payments!"
-                    )
+                    typer.echo("      ⚠️  WARNING: Organization NOT ready for payments!")
 
                 await session.commit()
                 typer.echo("      ✓ Committed changes")

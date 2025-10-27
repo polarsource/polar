@@ -15,7 +15,6 @@ from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.order.tasks import (
     OrderDoesNotExist,
-    PaymentMethodDoesNotExist,
     process_dunning,
     process_dunning_order,
     trigger_payment,
@@ -538,6 +537,7 @@ class TestTriggerPayment:
 
     async def test_trigger_payment_payment_method_not_found(
         self,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
         organization: Organization,
@@ -545,14 +545,28 @@ class TestTriggerPayment:
     ) -> None:
         # Given
         customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            stripe_subscription_id=None,
+        )
         order = await create_order(
             save_fixture,
             product=product,
             customer=customer,
+            subscription=subscription,
             status=OrderStatus.pending,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
         )
         non_existent_payment_method_id = uuid.uuid4()
 
-        # When/Then
-        with pytest.raises(PaymentMethodDoesNotExist):
-            await trigger_payment(order.id, non_existent_payment_method_id)
+        # When
+        await trigger_payment(order.id, non_existent_payment_method_id)
+
+        # Then
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.next_payment_attempt_at is not None

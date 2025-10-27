@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, overload
 
 from sqlalchemy.orm import Mapped
 from sqlalchemy.util.typing import TypedDict
@@ -135,6 +135,7 @@ class OrderPaidMetadata(TypedDict):
     order_id: str
     amount: int
     currency: str
+    backfilled: NotRequired[bool]
 
 
 class OrderPaidEvent(Event):
@@ -148,6 +149,7 @@ class OrderRefundedMetadata(TypedDict):
     order_id: str
     refunded_amount: int
     currency: str
+    backfilled: NotRequired[bool]
 
 
 class OrderRefundedEvent(Event):

@@ -353,6 +353,7 @@ async def _build_events_for_orders(
                         order_id=str(order.id),
                         amount=order.total_amount,
                         currency=order.currency,
+                        backfilled=True,
                     ),
                 }
             )
@@ -369,6 +370,7 @@ async def _build_events_for_orders(
                         order_id=str(order.id),
                         refunded_amount=order.refunded_amount,
                         currency=order.currency,
+                        backfilled=True,
                     ),
                 }
             )

@@ -16900,8 +16900,8 @@ export interface components {
     OrderRefundedMetadata: {
       /** Order Id */
       order_id: string
-      /** Amount */
-      amount: number
+      /** Refunded Amount */
+      refunded_amount: number
       /** Currency */
       currency: string
     }

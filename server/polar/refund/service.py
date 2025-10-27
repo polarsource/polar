@@ -627,7 +627,7 @@ class RefundService(ResourceServiceReader[Refund]):
                 organization=order.organization,
                 metadata=OrderRefundedMetadata(
                     order_id=str(order.id),
-                    amount=order.refunded_amount,
+                    refunded_amount=order.refunded_amount,
                     currency=order.currency,
                 ),
             ),

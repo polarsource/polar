@@ -59,6 +59,15 @@ export const useEventCard = (event: schemas['Event']) => {
   }, [event])
 }
 
+export const isOrderEvent = (
+  event: schemas['Event'],
+): event is schemas['OrderPaidEvent'] | schemas['OrderRefundedEvent'] => {
+  return (
+    event.source === 'system' &&
+    (event.name === 'order.paid' || event.name === 'order.refunded')
+  )
+}
+
 export const useEventCostBadge = (event: schemas['Event']) => {
   return useMemo(() => {
     if ('_cost' in event.metadata && event.metadata._cost) {
@@ -68,14 +77,14 @@ export const useEventCostBadge = (event: schemas['Event']) => {
           currency={event.metadata._cost?.currency}
         />
       )
-    } else if (event.name === 'order.paid' || event.name === 'order.refunded') {
+    } else if (isOrderEvent(event)) {
       return (
         <EventCostBadge
-          currency={event.metadata.currency as string}
+          currency={event.metadata.currency}
           cost={
             event.name === 'order.paid'
-              ? (-event.metadata.amount as number)
-              : (event.metadata.amount as number)
+              ? -event.metadata.amount
+              : event.metadata.refunded_amount
           }
         />
       )

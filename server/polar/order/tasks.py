@@ -1,14 +1,23 @@
+import asyncio
 import uuid
+from typing import Any
 
 import stripe as stripe_lib
 import structlog
 from dramatiq import Retry
-from sqlalchemy.orm import joinedload
+from sqlalchemy import String, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, selectinload
 
+from polar.config import settings
+from polar.event.repository import EventRepository
+from polar.event.system import OrderPaidMetadata, OrderRefundedMetadata, SystemEvent
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
-from polar.models import Customer, Order
+from polar.models import Customer, Event, Order
+from polar.models.event import EventSource
 from polar.models.order import OrderBillingReasonInternal
+from polar.models.transaction import Transaction, TransactionType
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -223,3 +232,145 @@ async def process_dunning_order(order_id: uuid.UUID) -> None:
             raise OrderDoesNotExist(order_id)
 
         await order_service.process_dunning_order(session, order)
+
+
+@actor(
+    actor_name="order.backfill_order_events",
+    priority=TaskPriority.LOW,
+    time_limit=3600_000,
+)
+async def backfill_order_events(rate_limit_delay: float = 1.0) -> None:
+    """
+    Backfill order.paid and order.refunded events for all existing orders.
+    Uses transaction timestamps for accurate event timing.
+
+    Args:
+        rate_limit_delay: Seconds to wait between batch inserts (default: 1.0)
+    """
+    async with AsyncSessionMaker() as session:
+        existing_order_ids_subquery = (
+            select(Event.user_metadata["order_id"].as_string().label("order_id"))
+            .where(Event.name.in_([SystemEvent.order_paid, SystemEvent.order_refunded]))
+            .distinct()
+            .subquery()
+        )
+
+        statement = (
+            select(Order)
+            .outerjoin(
+                existing_order_ids_subquery,
+                existing_order_ids_subquery.c.order_id == Order.id.cast(String),
+            )
+            .where(
+                Order.deleted_at.is_(None),
+                existing_order_ids_subquery.c.order_id.is_(None),
+            )
+            .options(selectinload(Order.customer))
+            .order_by(Order.created_at.asc())
+        )
+
+        orders_stream = await session.stream_scalars(
+            statement,
+            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        )
+
+        total_orders = 0
+        total_events = 0
+        events_batch: list[dict[str, Any]] = []
+
+        async for order in orders_stream:
+            events = await _build_events_for_orders(session, [order])
+            events_batch.extend(events)
+            total_orders += 1
+
+            if len(events_batch) >= settings.DATABASE_STREAM_YIELD_PER:
+                await EventRepository.from_session(session).insert_batch(events_batch)
+                total_events += len(events_batch)
+
+                log.info(
+                    "backfill_order_events.progress",
+                    orders=total_orders,
+                    events=total_events,
+                )
+
+                events_batch = []
+                await asyncio.sleep(rate_limit_delay)
+
+        if events_batch:
+            await EventRepository.from_session(session).insert_batch(events_batch)
+            total_events += len(events_batch)
+
+        log.info(
+            "backfill_order_events.completed",
+            total_orders=total_orders,
+            total_events=total_events,
+        )
+
+
+async def _build_events_for_orders(
+    session: AsyncSession, orders: list[Order]
+) -> list[dict[str, Any]]:
+    """Build events for a batch of orders using transaction timestamps."""
+    order_ids = [order.id for order in orders]
+    orders_by_id = {order.id: order for order in orders}
+
+    transactions_result = await session.execute(
+        select(Transaction)
+        .where(
+            Transaction.order_id.in_(order_ids),
+            Transaction.type.in_([TransactionType.payment, TransactionType.refund]),
+        )
+        .order_by(Transaction.created_at.asc())
+    )
+    transactions = transactions_result.scalars().all()
+
+    txns_by_order: dict[uuid.UUID, dict[str, list[Transaction]]] = {}
+    for txn in transactions:
+        if txn.order_id is None:
+            continue
+
+        if txn.order_id not in txns_by_order:
+            txns_by_order[txn.order_id] = {"payment": [], "refund": []}
+
+        if txn.type == TransactionType.payment:
+            txns_by_order[txn.order_id]["payment"].append(txn)
+        elif txn.type == TransactionType.refund:
+            txns_by_order[txn.order_id]["refund"].append(txn)
+
+    events: list[dict[str, Any]] = []
+    for order_id, order in orders_by_id.items():
+        order_txns = txns_by_order.get(order_id, {"payment": [], "refund": []})
+
+        for payment_txn in order_txns["payment"]:
+            events.append(
+                {
+                    "name": SystemEvent.order_paid,
+                    "source": EventSource.system,
+                    "timestamp": payment_txn.created_at,
+                    "customer_id": order.customer_id,
+                    "organization_id": order.customer.organization_id,
+                    "user_metadata": OrderPaidMetadata(
+                        order_id=str(order.id),
+                        amount=order.total_amount,
+                        currency=order.currency,
+                    ),
+                }
+            )
+
+        for refund_txn in order_txns["refund"]:
+            events.append(
+                {
+                    "name": SystemEvent.order_refunded,
+                    "source": EventSource.system,
+                    "timestamp": refund_txn.created_at,
+                    "customer_id": order.customer_id,
+                    "organization_id": order.customer.organization_id,
+                    "user_metadata": OrderRefundedMetadata(
+                        order_id=str(order.id),
+                        refunded_amount=order.refunded_amount,
+                        currency=order.currency,
+                    ),
+                }
+            )
+
+    return events

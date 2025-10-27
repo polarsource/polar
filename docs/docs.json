@@ -550,12 +550,13 @@
             "group": "Guides",
             "pages": [
               "guides/introduction",
-              "guides/seat-based-pricing",
+              "guides/allow-multiple-subscriptions-per-customer",
+              "guides/create-checkout-session",
               "guides/create-variants",
               "guides/disable-subscription-changes-in-customer-portal",
-              "guides/allow-multiple-subscriptions-per-customer",
               "guides/subscription-downgrades",
               "guides/subscription-upgrades",
+              "guides/seat-based-pricing",
               "guides/theme-switch-in-checkout"
             ]
           }

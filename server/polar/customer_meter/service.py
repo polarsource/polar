@@ -45,7 +45,6 @@ class CustomerMeterService:
             repository.get_readable_statement(auth_subject)
             .join(CustomerMeter.meter)
             .options(contains_eager(CustomerMeter.meter))
-            .where(Meter.archived_at.is_(None))
         )
 
         if organization_id is not None:
@@ -59,6 +58,9 @@ class CustomerMeterService:
 
         if meter_id is not None:
             statement = statement.where(Meter.id.in_(meter_id))
+        else:
+            # Only filter archived meters when not querying for specific meter IDs
+            statement = statement.where(Meter.archived_at.is_(None))
 
         statement = repository.apply_sorting(statement, sorting)
 

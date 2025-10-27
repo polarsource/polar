@@ -25,6 +25,23 @@ const invalidateDiscountsQueries = ({
   }
 }
 
+export const useDiscount = (organizationId: string, id?: string | null) =>
+  useQuery({
+    queryKey: ['discounts', 'detail', { organizationId, id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/discounts/{id}', {
+          params: {
+            path: {
+              id: id!,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
 export const useDiscounts = (
   organizationId: string,
   parameters?: Omit<

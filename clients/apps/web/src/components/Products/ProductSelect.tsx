@@ -238,7 +238,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         <Command shouldFilter={false}>
           <CommandInput
             className="border-none focus:ring-transparent"
-            placeholder="Search product"
+            placeholder="Search products…"
             value={query}
             onValueChange={setQuery}
           />

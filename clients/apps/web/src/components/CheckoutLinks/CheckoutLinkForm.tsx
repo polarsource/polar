@@ -1,5 +1,6 @@
 import {
   useCreateCheckoutLink,
+  useDiscount,
   useDiscounts,
   useSelectedProducts,
   useUpdateCheckoutLink,
@@ -9,14 +10,8 @@ import { getDiscountDisplay } from '@/utils/discount'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   Form,
@@ -28,7 +23,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { XIcon } from 'lucide-react'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'
 import { toast } from '../Toast/use-toast'
@@ -54,10 +49,23 @@ export const CheckoutLinkForm = ({
   onClose,
   productIds,
 }: CheckoutLinkFormProps) => {
-  const { data: discounts } = useDiscounts(organization.id, {
-    limit: 100,
-    sorting: ['name'],
-  })
+  const [discountQuery, setDiscountQuery] = useState('')
+
+  const { data: discounts, isLoading: isLoadingDiscounts } = useDiscounts(
+    organization.id,
+    {
+      query: discountQuery || undefined,
+      limit: 10,
+      sorting: ['name'],
+    },
+  )
+
+  // Since discounts is paginated & dynamically loaded above,
+  // we need to fetch the selected discount separately to ensure we have its data
+  const { data: selectedDiscount } = useDiscount(
+    organization.id,
+    checkoutLink?.discount_id,
+  )
 
   const defaultValues = useMemo<CheckoutLinkCreateForm>(() => {
     if (checkoutLink) {
@@ -292,51 +300,54 @@ export const CheckoutLinkForm = ({
             )}
           />
 
-          {(discounts?.items.length ?? 0) > 0 && (
-            <FormField
-              control={control}
-              name="discount_id"
-              render={({ field }) => {
-                return (
-                  <FormItem>
-                    <FormLabel>Preset discount</FormLabel>
-                    <div className="flex flex-row items-center gap-2">
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ''}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a discount" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {discounts?.items.map((discount) => (
-                            <SelectItem
-                              key={discount.id}
-                              value={discount.id}
-                              textValue={discount.name}
-                            >
-                              {discount.name} ({getDiscountDisplay(discount)})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {field.value && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          type="button"
-                          onClick={() => field.onChange(null)}
-                        >
-                          <XIcon className="h-4 w-4" />
-                        </Button>
+          <FormField
+            control={control}
+            name="discount_id"
+            render={({ field }) => {
+              const selectedItem =
+                selectedDiscount?.id === field.value
+                  ? selectedDiscount
+                  : discounts?.items.find((d) => d.id === field.value)
+
+              return (
+                <FormItem>
+                  <FormLabel>Preset discount</FormLabel>
+                  <div className="flex flex-row items-center gap-2">
+                    <Combobox
+                      items={discounts?.items || []}
+                      value={field.value || null}
+                      selectedItem={selectedItem || null}
+                      onChange={(value) => field.onChange(value || '')}
+                      onQueryChange={setDiscountQuery}
+                      getItemValue={(discount) => discount.id}
+                      getItemLabel={(discount) => discount.name}
+                      renderItem={(discount) => (
+                        <>
+                          {discount.name} ({getDiscountDisplay(discount)})
+                        </>
                       )}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
-            />
-          )}
+                      isLoading={isLoadingDiscounts}
+                      placeholder="Select a discount"
+                      searchPlaceholder="Search discounts…"
+                      emptyLabel="No discounts found"
+                      className="flex-1"
+                    />
+                    {field.value && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        type="button"
+                        onClick={() => field.onChange(null)}
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
 
           <FormField
             control={control}

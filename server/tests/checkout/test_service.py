@@ -72,7 +72,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
 from polar.order.service import OrderService
 from polar.postgres import AsyncSession
-from polar.product.guard import is_fixed_price, is_metered_price
+from polar.product.guard import is_fixed_price, is_metered_price, is_seat_price
 from polar.subscription.service import SubscriptionService
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -2994,9 +2994,9 @@ class TestUpdate:
 
         assert updated_checkout.product == product_seat_based
         assert updated_checkout.seats == 1
-        assert updated_checkout.amount == product_seat_based.prices[0].calculate_amount(
-            1
-        )
+        price = product_seat_based.prices[0]
+        assert is_seat_price(price)
+        assert updated_checkout.amount == price.calculate_amount(1)
 
     async def test_switching_from_seat_based_to_fixed_clears_seats(
         self,

@@ -72,7 +72,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
 from polar.order.service import OrderService
 from polar.postgres import AsyncSession
-from polar.product.guard import is_fixed_price, is_metered_price
+from polar.product.guard import is_fixed_price, is_metered_price, is_seat_price
 from polar.subscription.service import SubscriptionService
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -2968,6 +2968,63 @@ class TestUpdate:
                 checkout_seat_based,
                 CheckoutUpdate(seats=0),
             )
+
+    async def test_switching_to_seat_based_product_initializes_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_one_time: Product,
+        product_seat_based: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time, product_seat_based],
+        )
+
+        assert checkout.product == product_one_time
+        assert checkout.seats is None
+
+        updated_checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout,
+            CheckoutUpdate(product_id=product_seat_based.id),
+        )
+
+        assert updated_checkout.product == product_seat_based
+        assert updated_checkout.seats == 1
+        price = product_seat_based.prices[0]
+        assert is_seat_price(price)
+        assert updated_checkout.amount == price.calculate_amount(1)
+
+    async def test_switching_from_seat_based_to_fixed_clears_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_one_time: Product,
+        product_seat_based: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time, product_seat_based],
+            product=product_seat_based,
+            seats=5,
+        )
+
+        assert checkout.product == product_seat_based
+        assert checkout.seats == 5
+
+        updated_checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout,
+            CheckoutUpdate(product_id=product_one_time.id),
+        )
+
+        assert updated_checkout.product == product_one_time
+        assert updated_checkout.seats is None
 
 
 @pytest.mark.asyncio

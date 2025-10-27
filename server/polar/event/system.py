@@ -146,7 +146,7 @@ class OrderPaidEvent(Event):
 
 class OrderRefundedMetadata(TypedDict):
     order_id: str
-    amount: int
+    refunded_amount: int
     currency: str
 
 

@@ -164,35 +164,37 @@ export const ProductPageContextView = ({
 
   return (
     <div className="flex h-full flex-col justify-between pt-4">
-      <div className="dark:divide-polar-700 flex h-full flex-col divide-y overflow-y-auto">
-        <Form {...form}>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-y-6"
-          >
-            <ProductForm
-              organization={organization}
-              update={true}
-              compact={true}
-            />
-          </form>
-        </Form>
-        <ProductBenefitsForm
-          organization={organization}
-          organizationBenefits={organizationBenefits.filter(
-            (benefit) =>
-              // Hide not selectable benefits unless they are already enabled
-              benefit.selectable ||
-              enabledBenefits.some((b) => b.id === benefit.id),
-          )}
-          benefits={enabledBenefits}
-          onSelectBenefit={onSelectBenefit}
-          onRemoveBenefit={onRemoveBenefit}
-          onReorderBenefits={onReorderBenefits}
-          compact={true}
-        />
+      <div className="flex h-full flex-col overflow-y-auto">
+        <div className="dark:divide-polar-700 divide-y">
+          <Form {...form}>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="flex flex-col gap-y-6"
+            >
+              <ProductForm
+                organization={organization}
+                update={true}
+                compact={true}
+              />
+            </form>
+          </Form>
+          <ProductBenefitsForm
+            organization={organization}
+            organizationBenefits={organizationBenefits.filter(
+              (benefit) =>
+                // Hide not selectable benefits unless they are already enabled
+                benefit.selectable ||
+                enabledBenefits.some((b) => b.id === benefit.id),
+            )}
+            benefits={enabledBenefits}
+            onSelectBenefit={onSelectBenefit}
+            onRemoveBenefit={onRemoveBenefit}
+            onReorderBenefits={onReorderBenefits}
+            compact={true}
+          />
+        </div>
         {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (
-          <div className="mx-8 mb-8 rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+          <div className="mx-8 mb-2 rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
             Existing customers will immediately{' '}
             {benefitsAdded.length > 0 && (
               <>

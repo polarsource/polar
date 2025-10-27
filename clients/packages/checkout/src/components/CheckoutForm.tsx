@@ -509,66 +509,73 @@ const BaseCheckoutForm = ({
                         />
                       </FormControl>
                     )}
-                    <div className="grid grid-cols-2 gap-x-2">
-                      {isDisplayedField(
-                        checkout.billingAddressFields.postalCode,
-                      ) && (
-                        <FormControl>
-                          <FormField
-                            control={control}
-                            name="customerBillingAddress.postalCode"
-                            rules={{
-                              required: isRequiredField(
-                                checkout.billingAddressFields.postalCode,
-                              )
-                                ? 'This field is required'
-                                : false,
-                            }}
-                            render={({ field }) => (
-                              <div>
-                                <Input
-                                  type="text"
-                                  autoComplete="billing postal-code"
-                                  placeholder="Postal code"
-                                  className={themePresetProps.polar.input}
-                                  {...field}
-                                  value={field.value || ''}
-                                />
-                                <FormMessage />
-                              </div>
-                            )}
-                          />
-                        </FormControl>
-                      )}
-                      {isDisplayedField(checkout.billingAddressFields.city) && (
-                        <FormControl>
-                          <FormField
-                            control={control}
-                            name="customerBillingAddress.city"
-                            rules={{
-                              required: isRequiredField(
-                                checkout.billingAddressFields.city,
-                              )
-                                ? 'This field is required'
-                                : false,
-                            }}
-                            render={({ field }) => (
-                              <div>
-                                <Input
-                                  type="text"
-                                  autoComplete="billing address-level2"
-                                  placeholder="City"
-                                  className={themePresetProps.polar.input}
-                                  {...field}
-                                  value={field.value || ''}
-                                />
-                                <FormMessage />
-                              </div>
-                            )}
-                          />
-                        </FormControl>
-                      )}
-                    </div>
+                    {(isDisplayedField(
+                      checkout.billingAddressFields.postalCode,
+                    ) ||
+                      isDisplayedField(checkout.billingAddressFields.city)) && (
+                      <div className="grid grid-cols-2 gap-x-2">
+                        {isDisplayedField(
+                          checkout.billingAddressFields.postalCode,
+                        ) && (
+                          <FormControl>
+                            <FormField
+                              control={control}
+                              name="customerBillingAddress.postalCode"
+                              rules={{
+                                required: isRequiredField(
+                                  checkout.billingAddressFields.postalCode,
+                                )
+                                  ? 'This field is required'
+                                  : false,
+                              }}
+                              render={({ field }) => (
+                                <div>
+                                  <Input
+                                    type="text"
+                                    autoComplete="billing postal-code"
+                                    placeholder="Postal code"
+                                    className={themePresetProps.polar.input}
+                                    {...field}
+                                    value={field.value || ''}
+                                  />
+                                  <FormMessage />
+                                </div>
+                              )}
+                            />
+                          </FormControl>
+                        )}
+                        {isDisplayedField(
+                          checkout.billingAddressFields.city,
+                        ) && (
+                          <FormControl>
+                            <FormField
+                              control={control}
+                              name="customerBillingAddress.city"
+                              rules={{
+                                required: isRequiredField(
+                                  checkout.billingAddressFields.city,
+                                )
+                                  ? 'This field is required'
+                                  : false,
+                              }}
+                              render={({ field }) => (
+                                <div>
+                                  <Input
+                                    type="text"
+                                    autoComplete="billing address-level2"
+                                    placeholder="City"
+                                    className={themePresetProps.polar.input}
+                                    {...field}
+                                    value={field.value || ''}
+                                  />
+                                  <FormMessage />
+                                </div>
+                              )}
+                            />
+                          </FormControl>
+                        )}
+                      </div>
+                    )}
                     {isDisplayedField(checkout.billingAddressFields.state) && (
                       <FormControl>
                         <FormField
@@ -809,7 +816,7 @@ const BaseCheckoutForm = ({
                         ? formatCurrencyNumber(
                             checkout.taxAmount,
                             checkout.currency,
-                            checkout.discountAmount % 100 === 0 ? 0 : 2,
+                            checkout.taxAmount % 100 === 0 ? 0 : 2,
                           )
                         : '—'}
                     </DetailRow>

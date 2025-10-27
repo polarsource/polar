@@ -1,5 +1,4 @@
 from typing import Annotated
-from uuid import UUID
 
 import structlog
 from fastapi import Depends, Query
@@ -40,7 +39,9 @@ router = APIRouter(prefix="/seats", tags=["seats", APITag.public])
 async def list_seats(
     auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
-    subscription_id: Annotated[UUID4 | None, Query(description="Subscription ID")] = None,
+    subscription_id: Annotated[
+        UUID4 | None, Query(description="Subscription ID")
+    ] = None,
     order_id: Annotated[UUID4 | None, Query(description="Order ID")] = None,
 ) -> SeatsList:
     customer = auth_subject.subject

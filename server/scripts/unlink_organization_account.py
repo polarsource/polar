@@ -29,14 +29,12 @@ from uuid import UUID
 
 import structlog
 import typer
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
 from polar.account.repository import AccountRepository
-from polar.enums import AccountType
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Account, Customer, Order, Organization
-from polar.models.user import IdentityVerificationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, create_async_engine
@@ -194,9 +192,7 @@ async def unlink_organizations(
 
         if dry_run:
             typer.echo("🏃 DRY RUN MODE - No changes will be made")
-            typer.echo(
-                f"   Would unlink {len(orgs_without_orders)} organization(s)"
-            )
+            typer.echo(f"   Would unlink {len(orgs_without_orders)} organization(s)")
             return
 
         typer.echo("🚀 Proceeding with unlinking...")
@@ -214,22 +210,20 @@ async def unlink_organizations(
                     org, update_dict={"account_id": new_account.id}
                 )
                 await session.refresh(org, ["account"])
-                typer.echo(f"      ✓ Updated organization account_id")
+                typer.echo("      ✓ Updated organization account_id")
 
                 is_ready = await organization_service.is_organization_ready_for_payment(
                     session, org
                 )
                 if is_ready:
-                    typer.echo(
-                        f"      ✓ Organization still ready for payments"
-                    )
+                    typer.echo("      ✓ Organization still ready for payments")
                 else:
                     typer.echo(
-                        f"      ⚠️  WARNING: Organization NOT ready for payments!"
+                        "      ⚠️  WARNING: Organization NOT ready for payments!"
                     )
 
                 await session.commit()
-                typer.echo(f"      ✓ Committed changes")
+                typer.echo("      ✓ Committed changes")
 
             except Exception as e:
                 await session.rollback()
@@ -237,7 +231,9 @@ async def unlink_organizations(
                 raise
 
         typer.echo()
-        typer.echo(f"✅ Successfully unlinked {len(orgs_without_orders)} organization(s)")
+        typer.echo(
+            f"✅ Successfully unlinked {len(orgs_without_orders)} organization(s)"
+        )
 
 
 if __name__ == "__main__":

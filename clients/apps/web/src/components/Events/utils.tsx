@@ -6,9 +6,9 @@ import { SubscriptionEventCard } from './EventCard/SubscriptionEventCard'
 import { UserEventCard } from './EventCard/UserEventCard'
 import { EventCostBadge } from './EventCostBadge'
 
-export const useEventDisplayName = (event: schemas['Event']) => {
+export const useEventDisplayName = (eventName: schemas['Event']['name']) => {
   return useMemo(() => {
-    switch (event.name) {
+    switch (eventName) {
       case 'benefit.granted':
         return 'Benefit Granted'
       case 'benefit.cycled':
@@ -28,9 +28,9 @@ export const useEventDisplayName = (event: schemas['Event']) => {
       case 'order.refunded':
         return 'Order Refunded'
       default:
-        return event.name
+        return eventName
     }
-  }, [event])
+  }, [eventName])
 }
 
 export const useEventCard = (event: schemas['Event']) => {

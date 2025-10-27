@@ -4,63 +4,12 @@ sidebarTitle: "Switch Checkout Theme"
 description: "Learn how to switch the theme in a checkout session and a checkout link."
 ---
 
-## Creating a checkout session using the API
-
-<Steps>
-    <Step title = "Create a New Token">
-        Create a new organization token by following our [Organization Access Tokens](https://polar.sh/docs/integrate/oat) guide.
-    </Step>
-    <Step title = "Save your Access Token">
-        After creating your access token, you will be able to view it. Please copy and save your access token.
-        <img height="200" src="/assets/guides/theme-switch-in-checkout/access-token.png" />
-    </Step>
-    <Step title =  "Go to the Products Catalogue">
-        In the Polar dashboard sidebar, navigate to **Products** > **Catalogue** for your organization.
-        You can also go directly to:  
-        `https://polar.sh/dashboard/${org_slug}/products`  
-        <img height="200" src="/assets/guides/theme-switch-in-checkout/products-catalogue.png" />
-    </Step>
-    <Step title = "Access the product IDs for checkout">
-        Retrieve the Product IDs for the items you wish to include in checkout by clicking on the **⋮ (More options) menu** next to chosen products and selecting **Copy Product ID**.  
-        These IDs will be required in the next step to create a checkout session.
-        <img height="200" src="/assets/guides/theme-switch-in-checkout/product-id.png" />
-    </Step>
-    <Step title = "Create a Checkout Session using the API">
-        Open your terminal and paste the following curl command to make an API call for creating a checkout session.
-        Be sure to replace:
-        - \<YOUR_ACCESS_TOKEN\> with your actual access token
-        - \<PRODUCT_ID_1\>, \<PRODUCT_ID_2\>, etc., with the product IDs you want to include in the session
-        ```bash
-        curl --request POST \
-            --url https://api.polar.sh/v1/checkouts/ \
-            --header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
-            --header 'Content-Type: application/json' \
-            --data '{
-            "products": [
-                "<Product_ID_1>",
-                "<Product_ID_2>",
-                "<Product_ID_3>"
-            ]
-        }'
-        ```
-    Find the description of all the parameters in the [Create Checkout Session API](https://polar.sh/docs/api-reference/checkouts/create-session).
-    </Step>
-    <Step title="Access the Checkout Session URL">
-        The curl command returns a JSON. Access the checkout URL from the <code>"url"</code> key of the JSON.
-
-        ```json
-        {
-            "...": "...",
-            "url": "polar_c_...", // [!code ++]
-            "...": "..."
-        }
-        ```
-    </Step>
-</Steps>
-
 ## Changing the Theme for a Checkout Session Created via the API
 
 <Steps>
+    <Step title="Create a Checkout Session">
+        Create a Checkout Session by following our [How to Create Checkout Session](/guides/create-checkout-session) guide and obtain the `url`.
+    </Step>
     <Step title="Switch to dark theme">
         To switch to the dark theme, append the query parameter <code>theme=dark</code> to your checkout session URL as obtained earlier. For example, if your checkout session URL is:  
         <code>https://polar.sh/checkout/polar_c_ES7DwhlyvlYTPNaLiccKqiwJPda43FIzer</code>

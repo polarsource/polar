@@ -4,14 +4,16 @@ Script to unlink organizations from an account.
 Given an account ID, this script:
 1. Finds all organizations linked to that account
 2. Counts orders for each organization (via Customer -> Order)
-3. Reports organizations with orders (skips them)
-4. Unlinks organizations without orders by creating a new account
-5. If ALL organizations have no orders, keeps the oldest one with the existing account
+3. Keeps the organization with the most orders on the existing account
+4. Unlinks all other organizations by creating new accounts for them
 
-The new account:
-- Has no Stripe ID (stripe_id = None)
-- Copies admin and key fields from the old account
-- Ensures organization still passes payment readiness checks
+The organization with the most orders keeps the existing account (including Stripe ID).
+If multiple organizations have the same max order count, keeps the oldest one.
+
+The new accounts for unlinked organizations:
+- Have no Stripe ID (stripe_id = None)
+- Copy admin and key fields from the old account
+- Ensure organization still passes payment readiness checks
 
 Usage:
     Dry run (default):
@@ -145,60 +147,56 @@ async def unlink_organizations(
         typer.echo(f"📊 Found {len(organizations)} organization(s)")
         typer.echo()
 
-        orgs_with_orders = []
-        orgs_without_orders = []
-
+        # Count orders for all organizations
+        orgs_with_counts = []
         for org in organizations:
             order_count = await count_orders_for_organization(session, org.id)
-            if order_count > 0:
-                orgs_with_orders.append((org, order_count))
-            else:
-                orgs_without_orders.append(org)
+            orgs_with_counts.append((org, order_count))
 
-        if orgs_with_orders:
-            typer.echo("📋 Organizations WITH orders (will be skipped):")
-            for org, count in orgs_with_orders:
-                typer.echo(f"   • {org.slug} (ID: {org.id}) - {count} order(s)")
-            typer.echo()
+        # Display order counts
+        typer.echo("📋 Organizations and their order counts:")
+        for org, count in orgs_with_counts:
+            typer.echo(f"   • {org.slug} (ID: {org.id}) - {count} order(s)")
+        typer.echo()
 
-        if not orgs_without_orders:
-            typer.echo("❌ Error: No organizations without orders found")
-            raise typer.Exit(code=1)
+        # Find the organization with the most orders
+        # If tied, use the oldest organization as tiebreaker
+        orgs_with_counts_sorted = sorted(
+            orgs_with_counts,
+            key=lambda x: (-x[1], x[0].created_at),  # Most orders first, then oldest
+        )
+        org_to_keep, max_orders = orgs_with_counts_sorted[0]
+        orgs_to_unlink = [org for org, _ in orgs_with_counts_sorted[1:]]
 
-        # If ALL orgs have no orders, keep the oldest one with the existing account
-        org_to_keep = None
-        if not orgs_with_orders:
-            orgs_without_orders_sorted = sorted(
-                orgs_without_orders, key=lambda o: o.created_at
-            )
-            org_to_keep = orgs_without_orders_sorted[0]
-            orgs_without_orders = orgs_without_orders_sorted[1:]
+        typer.echo("✓ Organization to keep with existing account:")
+        typer.echo(
+            f"   • {org_to_keep.slug} (ID: {org_to_keep.id}, "
+            f"{max_orders} order(s), created: {org_to_keep.created_at})"
+        )
+        typer.echo()
 
-            typer.echo("ℹ️  All organizations have no orders")
-            typer.echo(
-                f"   Keeping oldest organization with existing account: {org_to_keep.slug} "
-                f"(created: {org_to_keep.created_at})"
-            )
-            typer.echo()
-
-        if orgs_without_orders:
-            typer.echo("🔄 Organizations WITHOUT orders (will be unlinked):")
-            for org in orgs_without_orders:
-                typer.echo(f"   • {org.slug} (ID: {org.id}, created: {org.created_at})")
-            typer.echo()
-        else:
-            typer.echo("✓ No organizations to unlink (only the oldest remains)")
+        if not orgs_to_unlink:
+            typer.echo("✓ Only one organization found - nothing to unlink")
             return
+
+        typer.echo("🔄 Organizations to unlink (will get new accounts):")
+        for org in orgs_to_unlink:
+            order_count = next(c for o, c in orgs_with_counts if o.id == org.id)
+            typer.echo(
+                f"   • {org.slug} (ID: {org.id}, "
+                f"{order_count} order(s), created: {org.created_at})"
+            )
+        typer.echo()
 
         if dry_run:
             typer.echo("🏃 DRY RUN MODE - No changes will be made")
-            typer.echo(f"   Would unlink {len(orgs_without_orders)} organization(s)")
+            typer.echo(f"   Would unlink {len(orgs_to_unlink)} organization(s)")
             return
 
         typer.echo("🚀 Proceeding with unlinking...")
         typer.echo()
 
-        for org in orgs_without_orders:
+        for org in orgs_to_unlink:
             try:
                 typer.echo(f"   Processing {org.slug}...")
 
@@ -229,9 +227,7 @@ async def unlink_organizations(
                 raise
 
         typer.echo()
-        typer.echo(
-            f"✅ Successfully unlinked {len(orgs_without_orders)} organization(s)"
-        )
+        typer.echo(f"✅ Successfully unlinked {len(orgs_to_unlink)} organization(s)")
 
 
 if __name__ == "__main__":

@@ -128,7 +128,7 @@ const ClientPage = ({
 
       let filterArg = ''
       if (isArchiving) {
-        filterArg = '&filter=archived'
+        filterArg = '&filter=all'
       }
 
       router.push(
@@ -289,7 +289,14 @@ const ClientPage = ({
               >
                 <div className="flex min-w-0 flex-col gap-y-1 px-6 py-2">
                   <div className="flex items-center gap-x-2">
-                    <div className="w-full truncate text-sm">{meter.name}</div>
+                    {meter.archived_at && archivedFilter === 'all' && (
+                      <Status
+                        className="bg-red-50 text-xs font-medium text-red-500 dark:bg-red-950 dark:text-red-500"
+                        status="Archived"
+                      />
+                    )}
+
+                    <div className="truncate text-sm">{meter.name}</div>
                   </div>
                   <div className="w-full truncate text-xs text-gray-500 capitalize dark:text-gray-500">
                     {meter.aggregation.func}

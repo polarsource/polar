@@ -3,6 +3,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import Depends, Query
+from pydantic import UUID4
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.customer_seat.repository import CustomerSeatRepository
@@ -39,8 +40,8 @@ router = APIRouter(prefix="/seats", tags=["seats", APITag.public])
 async def list_seats(
     auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
-    subscription_id: Annotated[str | None, Query(description="Subscription ID")] = None,
-    order_id: Annotated[str | None, Query(description="Order ID")] = None,
+    subscription_id: Annotated[UUID4 | None, Query(description="Subscription ID")] = None,
+    order_id: Annotated[UUID4 | None, Query(description="Order ID")] = None,
 ) -> SeatsList:
     customer = auth_subject.subject
 
@@ -55,7 +56,7 @@ async def list_seats(
             subscription_repository.get_readable_statement(auth_subject)
             .options(*subscription_repository.get_eager_options())
             .where(
-                Subscription.id == UUID(subscription_id),
+                Subscription.id == subscription_id,
             )
         )
         subscription = await subscription_repository.get_one_or_none(statement)
@@ -72,7 +73,7 @@ async def list_seats(
             order_repository.get_readable_statement(auth_subject)
             .options(*order_repository.get_eager_options())
             .where(
-                Order.id == UUID(order_id),
+                Order.id == order_id,
             )
         )
         order = await order_repository.get_one_or_none(order_statement)
@@ -194,7 +195,7 @@ async def assign_seat(
     },
 )
 async def revoke_seat(
-    seat_id: UUID,
+    seat_id: UUID4,
     auth_subject: auth.CustomerPortalWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatSchema:
@@ -222,7 +223,7 @@ async def revoke_seat(
     },
 )
 async def resend_invitation(
-    seat_id: UUID,
+    seat_id: UUID4,
     auth_subject: auth.CustomerPortalWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatSchema:

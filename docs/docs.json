@@ -62,8 +62,7 @@
                 "pages": [
                   "features/cost-insights/introduction",
                   "features/cost-insights/cost-events",
-                  "features/cost-insights/cost-metrics",
-                  "features/cost-insights/traces"
+                  "features/cost-insights/cost-metrics"
                 ]
               },
               {

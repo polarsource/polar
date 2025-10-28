@@ -8,6 +8,7 @@ from typing import Annotated, Any, Literal, LiteralString, Protocol, TypedDict
 import stdnum.ca.bn
 import stdnum.cl.rut
 import stdnum.exceptions
+import stdnum.in_.gstin
 import stdnum.tr.vkn
 import stripe as stripe_lib
 from pydantic import Field
@@ -261,6 +262,15 @@ class TRTINValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class INGSTValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.in_.gstin.compact(number)
+        try:
+            return stdnum.in_.gstin.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
     match tax_id_type:
         case TaxIDFormat.ca_gst_hst:
@@ -269,6 +279,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return CLTINValidator()
         case TaxIDFormat.tr_tin:
             return TRTINValidator()
+        case TaxIDFormat.in_gst:
+            return INGSTValidator()
         case _:
             return StdNumValidator(tax_id_type)
 

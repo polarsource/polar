@@ -85,8 +85,7 @@ export default async function Page(props: {
     api.GET('/v1/customer-portal/subscriptions/', {
       params: {
         query: {
-          organization_id: organization.id,
-          limit: 200,
+          limit: 100,
         },
       },
       ...cacheConfig,
@@ -95,8 +94,7 @@ export default async function Page(props: {
     api.GET('/v1/customer-portal/benefit-grants/', {
       params: {
         query: {
-          organization_id: organization.id,
-          limit: 200,
+          limit: 100,
         },
       },
       ...cacheConfig,

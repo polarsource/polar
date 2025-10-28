@@ -6,7 +6,10 @@
     "dev": "next dev --port 3000 --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "prettier -c . && eslint .",
+    "format": "prettier --write ./src",
+    "format:check": "prettier -c ./src",
+    "lint:only": "eslint .",
+    "lint": "format:check && lint:only",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "analyze": "ANALYZE=true next build"

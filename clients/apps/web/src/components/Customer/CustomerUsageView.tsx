@@ -131,12 +131,5 @@ const CustomerMeterItem = ({
     return null
   }
 
-  return (
-    <CustomerMeter
-      customerMeter={customerMeter}
-      data={data}
-      startDate={startDate}
-      endDate={endDate}
-    />
-  )
+  return <CustomerMeter customerMeter={customerMeter} data={data} />
 }

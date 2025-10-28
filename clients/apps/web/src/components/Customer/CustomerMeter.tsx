@@ -2,6 +2,7 @@ import { ParsedMeterQuantities } from '@/hooks/queries/meters'
 import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
 import { schemas } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useMemo } from 'react'
@@ -66,18 +67,20 @@ export const CustomerMeter = ({
               Current billing period
             </span>
             <h3 className="text-lg">
-              <FormattedDateTime
-                datetime={customerMeter.subscription.current_period_start}
-              />
               {customerMeter.subscription.current_period_end ? (
-                <>
-                  {' - '}
-                  <FormattedDateTime
-                    datetime={customerMeter.subscription.current_period_end}
-                  />
-                </>
+                <FormattedInterval
+                  startDatetime={
+                    customerMeter.subscription.current_period_start
+                  }
+                  endDatetime={customerMeter.subscription.current_period_end}
+                />
               ) : (
-                'until upgrade'
+                <>
+                  <FormattedDateTime
+                    datetime={customerMeter.subscription.current_period_start}
+                  />
+                  until upgrade
+                </>
               )}
             </h3>
           </div>

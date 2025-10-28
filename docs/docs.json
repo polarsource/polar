@@ -57,6 +57,16 @@
                 ]
               },
               {
+                "group": "Cost Insights",
+                "tag": "Beta",
+                "pages": [
+                  "features/cost-insights/introduction",
+                  "features/cost-insights/cost-events",
+                  "features/cost-insights/cost-metrics",
+                  "features/cost-insights/traces"
+                ]
+              },
+              {
                 "group": "Benefits",
                 "pages": [
                   "features/benefits/introduction",

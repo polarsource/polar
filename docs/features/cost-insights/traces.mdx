@@ -1,0 +1,314 @@
+---
+title: Traces
+tag: Coming Soon
+description: Group related events together to track end-to-end costs and performance
+---
+
+Traces allow you to group multiple events into a single logical unit, making it easy to track costs and performance for complex workflows. This is particularly useful for understanding the full cost of multi-step operations like AI agent workflows, data pipelines, or user sessions.
+
+## Creating Traces
+
+To create a trace, add a named trace to your ingestion request.
+
+```typescript TypeScript (SDK)
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+});
+
+const traceId = "trace_abc123"; // Unique identifier for this trace
+
+await polar.events.ingest({
+  id: traceId,
+  name: "Agent Execution",
+  events: [
+    {
+      name: "agent.planning",
+      customerId: "cus_abc123",
+      metadata: {
+        _cost: {
+          amount: 0.025,
+          currency: "usd",
+        },
+      },
+    },
+    {
+      name: "agent.execution",
+      customerId: "cus_abc123",
+      metadata: {
+        _cost: {
+          amount: 0.15,
+          currency: "usd",
+        },
+      },
+    },
+  ],
+});
+```
+
+### Trace Metadata Schema
+
+- **`name`** (required): A name for the trace
+  - Use a descriptive name for the trace
+  - Example: `"Planning Agent"`, `"Data Pipeline"`, `"User Session"`
+
+## Use Cases
+
+### AI Agent Workflows
+
+Track the complete cost of an AI agent's execution across multiple LLM calls:
+
+```typescript TypeScript
+import { Polar } from "@polar-sh/sdk";
+import { v4 as uuidv4 } from "uuid";
+
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+});
+
+async function executeAgent(customerId: string, task: string) {
+  const traceId = uuidv4();
+
+  // Step 1: Planning
+  const planningCompletion = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [{ role: "user", content: `Plan: ${task}` }],
+  });
+
+  const planningCost = calculateCost(planningCompletion.usage);
+
+  await polar.events.ingest({
+    events: [
+      {
+        name: "agent.planning",
+        customerId: customerId,
+        metadata: {
+          _trace: { id: traceId },
+          _cost: { amount: planningCost, currency: "usd" },
+          step: "planning",
+        },
+      },
+    ],
+  });
+
+  // Step 2: Execution
+  const executionCompletion = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [{ role: "user", content: "Execute plan..." }],
+  });
+
+  const executionCost = calculateCost(executionCompletion.usage);
+
+  await polar.events.ingest({
+    events: [
+      {
+        name: "agent.execution",
+        customerId: customerId,
+        metadata: {
+          _trace: { id: traceId },
+          _cost: { amount: executionCost, currency: "usd" },
+          step: "execution",
+        },
+      },
+    ],
+  });
+
+  // Step 3: Verification
+  const verificationCompletion = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [{ role: "user", content: "Verify results..." }],
+  });
+
+  const verificationCost = calculateCost(verificationCompletion.usage);
+
+  await polar.events.ingest({
+    events: [
+      {
+        name: "agent.verification",
+        customerId: customerId,
+        metadata: {
+          _trace: { id: traceId },
+          _cost: { amount: verificationCost, currency: "usd" },
+          step: "verification",
+        },
+      },
+    ],
+  });
+
+  return traceId;
+}
+```
+
+## Trace Analytics
+
+### Aggregated Costs
+
+Polar automatically aggregates costs across all events in a trace:
+
+```json
+{
+  "trace_id": "trace_abc123",
+  "total_cost": 0.175,
+  "currency": "usd",
+  "event_count": 3,
+  "events": [
+    { "name": "agent.planning", "cost": 0.025 },
+    { "name": "agent.execution", "cost": 0.15 },
+    { "name": "agent.verification", "cost": 0.0 }
+  ]
+}
+```
+
+### Trace Comparison
+
+Compare costs and performance across different traces:
+
+- Identify high-cost traces
+- Compare similar workflows
+- Detect anomalies in trace execution
+- Optimize expensive operations
+
+### Performance Metrics
+
+Track key performance indicators for your traces:
+
+- **Average cost per trace**: Understand typical workflow costs
+- **Cost distribution**: Identify which steps contribute most to total cost
+- **Trace duration**: Track time-based metrics (when timestamps are included)
+- **Success rate**: Monitor trace completion and failures
+
+## Best Practices
+
+### Use Consistent Trace IDs
+
+Generate unique, consistent trace IDs for each workflow:
+
+<CodeGroup>
+```typescript TypeScript
+import { v4 as uuidv4 } from "uuid";
+
+// Generate a unique trace ID
+const traceId = uuidv4();
+
+// Or use a custom format
+const traceId = `trace_${Date.now()}_${customerId}`;
+
+````
+
+```python Python
+import uuid
+
+# Generate a unique trace ID
+trace_id = str(uuid.uuid4())
+
+# Or use a custom format
+trace_id = f"trace_{int(time.time())}_{customer_id}"
+````
+
+</CodeGroup>
+
+### Include Contextual Metadata
+
+Add metadata to help analyze and debug traces:
+
+```json
+{
+  "metadata": {
+    "_trace": { "id": "trace_abc123" },
+    "_cost": { "amount": 0.05, "currency": "usd" },
+    "step": "planning",
+    "model": "gpt-4",
+    "duration_ms": 1250,
+    "success": true,
+    "error": null
+  }
+}
+```
+
+### Batch Events When Possible
+
+Ingest multiple trace events together for better performance:
+
+<CodeGroup>
+```typescript TypeScript
+await polar.events.ingest({
+  events: [
+    {
+      name: "step1",
+      customerId: customerId,
+      metadata: { _trace: { id: traceId }, _cost: { amount: 0.01, currency: "usd" } },
+    },
+    {
+      name: "step2",
+      customerId: customerId,
+      metadata: { _trace: { id: traceId }, _cost: { amount: 0.02, currency: "usd" } },
+    },
+    {
+      name: "step3",
+      customerId: customerId,
+      metadata: { _trace: { id: traceId }, _cost: { amount: 0.03, currency: "usd" } },
+    },
+  ],
+});
+```
+
+```python Python
+polar.events.ingest(
+    events=[
+        {
+            "name": "step1",
+            "customer_id": customer_id,
+            "metadata": {"_trace": {"id": trace_id}, "_cost": {"amount": 0.01, "currency": "usd"}}
+        },
+        {
+            "name": "step2",
+            "customer_id": customer_id,
+            "metadata": {"_trace": {"id": trace_id}, "_cost": {"amount": 0.02, "currency": "usd"}}
+        },
+        {
+            "name": "step3",
+            "customer_id": customer_id,
+            "metadata": {"_trace": {"id": trace_id}, "_cost": {"amount": 0.03, "currency": "usd"}}
+        }
+    ]
+)
+```
+
+</CodeGroup>
+
+### Track Trace Lifecycle
+
+Include events for trace start and completion:
+
+```json
+{
+  "events": [
+    {
+      "name": "trace.started",
+      "customer_id": "cus_abc123",
+      "metadata": {
+        "_trace": { "id": "trace_abc123" },
+        "workflow_type": "agent_execution"
+      }
+    },
+    // ... workflow events ...
+    {
+      "name": "trace.completed",
+      "customer_id": "cus_abc123",
+      "metadata": {
+        "_trace": { "id": "trace_abc123" },
+        "total_cost": 0.175,
+        "duration_ms": 5430,
+        "success": true
+      }
+    }
+  ]
+}
+```
+
+<Warning>
+  **Trace IDs must be unique**: Each distinct workflow or session should have
+  its own unique trace ID. Reusing trace IDs will cause events from different
+  workflows to be grouped together incorrectly.
+</Warning>

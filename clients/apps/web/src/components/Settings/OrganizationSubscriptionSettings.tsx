@@ -13,6 +13,7 @@ import {
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
+import { BenefitRevocationGracePeriod } from './BenefitRevocationGracePeriod'
 import { ProrationBehavior } from './ProrationBehavior'
 import {
   SettingsGroup,
@@ -127,6 +128,28 @@ const OrganizationSubscriptionSettings: React.FC<
               )}
             />
           </SettingsGroupItem>
+
+          <SettingsGroupItem
+            title="Benefit Revocation Grace Period"
+            description="How long to wait before revoking benefits after a payment fails"
+          >
+            <FormField
+              control={control}
+              name="benefit_revocation_grace_period"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <BenefitRevocationGracePeriod
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(Number(value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </SettingsGroupItem>
+
           <SettingsGroupActions>
             <Button
               className="self-start"

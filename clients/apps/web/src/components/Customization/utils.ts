@@ -95,6 +95,7 @@ const ORGANIZATION: schemas['Organization'] = {
     allow_multiple_subscriptions: true,
     allow_customer_updates: true,
     proration_behavior: 'invoice',
+    benefit_revocation_grace_period: 0,
   },
   notification_settings: {
     new_order: true,

@@ -137,7 +137,7 @@ function InviteMemberModal({
           description: 'Failed to invite user. Please try again.',
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Invite failed',
         description: 'Failed to invite user. Please try again.',

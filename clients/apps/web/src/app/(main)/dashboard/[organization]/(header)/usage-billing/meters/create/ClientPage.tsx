@@ -85,7 +85,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
         `/dashboard/${organization.slug}/usage-billing/meters?selectedMeter=${meter.id}`,
       )
     },
-    [createMeter, organization.slug, router],
+    [setError, createMeter, organization.slug, router],
   )
 
   return (

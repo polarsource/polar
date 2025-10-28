@@ -21,7 +21,7 @@ import {
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({
@@ -31,10 +31,10 @@ const ClientPage = ({
 }) => {
   const router = useRouter()
   const form = useForm<{ code: string }>()
-  const { control, handleSubmit, setError, watch } = form
+  const { control, handleSubmit, setError } = form
   const sessionRequest = useCustomerPortalSessionAuthenticate(api)
 
-  const code = watch('code') || ''
+  const code = useWatch({ control, name: 'code', defaultValue: '' })
 
   const onSubmit = useCallback(
     async ({ code }: { code: string }) => {

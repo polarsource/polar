@@ -14,7 +14,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 const ClientPage = ({
@@ -42,11 +42,11 @@ const ClientPage = ({
   }, [error, setError])
 
   const [loading, setLoading] = useState(false)
-  const onSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     e.currentTarget.submit()
-  }, [])
+  }
 
   const formRef = useRef<HTMLFormElement>(null)
 

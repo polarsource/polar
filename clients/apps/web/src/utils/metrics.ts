@@ -175,28 +175,3 @@ export const getPreviousParams = (
       return [startOfYesterday(), startDate]
   }
 }
-
-export const METRIC_CHART_TYPES: Partial<
-  Record<keyof schemas['Metrics'], 'line' | 'bar'>
-> = {
-  revenue: 'bar',
-  orders: 'bar',
-  new_subscriptions: 'bar',
-  renewed_subscriptions: 'bar',
-  new_subscriptions_revenue: 'bar',
-  renewed_subscriptions_revenue: 'bar',
-  one_time_products: 'bar',
-  one_time_products_revenue: 'bar',
-  checkouts: 'bar',
-  succeeded_checkouts: 'bar',
-  net_revenue: 'bar',
-  new_subscriptions_net_revenue: 'bar',
-  renewed_subscriptions_net_revenue: 'bar',
-  one_time_products_net_revenue: 'bar',
-}
-
-export const getMetricChartType = (
-  metric: keyof schemas['Metrics'],
-): 'line' | 'bar' => {
-  return METRIC_CHART_TYPES[metric] ?? 'line'
-}

@@ -154,7 +154,7 @@ const MetricChart = ({
       accessibilityLayer: true,
       data: mergedData,
       margin: {
-        left: 24,
+        left: showYAxis ? 4 : 24,
         right: 24,
         top: 24,
       },
@@ -197,9 +197,8 @@ const MetricChart = ({
         tickLine={false}
         axisLine={false}
         allowDecimals={hasDecimalValues}
-        domain={[0, (max) => Math.ceil(max / 3) * 3]} // This will make sure we can always render 3 horizontal grid lines
         tickMargin={4}
-        width={4}
+        width="auto"
       />
     ) : undefined
 
@@ -226,9 +225,19 @@ const MetricChart = ({
           {yAxis}
           {tooltip}
           {previousData && (
-            <Bar dataKey="previous" fill="var(--color-previous)" radius={1} />
+            <Bar
+              dataKey="previous"
+              fill="var(--color-previous)"
+              radius={1}
+              maxBarSize={10}
+            />
           )}
-          <Bar dataKey="current" fill="var(--color-current)" radius={1} />
+          <Bar
+            dataKey="current"
+            fill="var(--color-current)"
+            radius={1}
+            maxBarSize={16}
+          />
         </BarChart>
       )
     }

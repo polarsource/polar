@@ -1,5 +1,4 @@
 import { ParsedMetricsResponse } from '@/hooks/queries/metrics'
-import { getMetricChartType } from '@/utils/metrics'
 import Close from '@mui/icons-material/Close'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -131,7 +130,7 @@ export const ShareChartModal = ({
             height={200}
             width={560}
             simple
-            chartType={getMetricChartType(metric)}
+            chartType="line"
           />
           <LogoType className="text-white dark:text-white" height={35} />
         </div>

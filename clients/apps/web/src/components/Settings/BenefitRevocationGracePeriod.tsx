@@ -31,7 +31,7 @@ export const BenefitRevocationGracePeriod: React.FC<
       <SelectContent>
         {Object.entries(BENEFIT_REVOCATION_GRACE_PERIOD_LABELS).map(
           ([key, label]) => (
-            <SelectItem value={key} key={key}>
+            <SelectItem value={String(key)} key={key}>
               {label}
             </SelectItem>
           ),

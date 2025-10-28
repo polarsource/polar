@@ -337,4 +337,4 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def description(self) -> str:
         if self.product is not None:
             return self.product.name
-        return "TODO"
+        return self.items[0].label

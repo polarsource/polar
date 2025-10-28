@@ -970,7 +970,7 @@ export interface components {
       /** Email */
       email: string
       organization: components['schemas']['Organization']
-      product: components['schemas']['ProductEmail']
+      product: components['schemas']['ProductEmail'] | null
       order: components['schemas']['OrderEmail']
       /** Url */
       url: string
@@ -1079,21 +1079,26 @@ export interface components {
        */
       is_invoice_generated: boolean
       /**
+       * Seats
+       * @description Number of seats purchased (for seat-based one-time orders).
+       * @default null
+       */
+      seats: number | null
+      /**
        * Customer Id
        * Format: uuid4
        */
       customer_id: string
-      /**
-       * Product Id
-       * Format: uuid4
-       */
-      product_id: string
+      /** Product Id */
+      product_id: string | null
       /** Discount Id */
       discount_id: string | null
       /** Subscription Id */
       subscription_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /** Description */
+      description: string
       /** Items */
       items: components['schemas']['OrderItemSchema'][]
     }
@@ -1276,6 +1281,12 @@ export interface components {
        * @default false
        */
       seat_based_pricing_enabled: boolean
+      /**
+       * Revops Enabled
+       * @description If this organization has RevOps enabled
+       * @default false
+       */
+      revops_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {
@@ -1394,10 +1405,15 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
+      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
+      /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
+       */
+      recurring_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -1551,6 +1567,11 @@ export interface components {
        */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
+       * Recurring Interval Count
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
+       */
+      recurring_interval_count: number
+      /**
        * @description The status of the subscription.
        * @example active
        */
@@ -1620,6 +1641,12 @@ export interface components {
       discount_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Seats
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       * @default null
+       */
+      seats: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null

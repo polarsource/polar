@@ -131,6 +131,14 @@ export default function ClientPage({
     'renewed_subscriptions_net_revenue',
     'one_time_products_net_revenue',
   ]
+  const costEvents: (keyof schemas['Metrics'])[] = [
+    'monthly_recurring_revenue', // MRR
+    'average_revenue_per_user', // ARPU
+    'costs', // COGS
+    'cost_per_user', // Cost To Serve
+    'gross_margin', // MRR - COGS
+    'gross_margin_percentage', // Gross margin / MRR
+  ]
 
   return (
     <DashboardBody
@@ -214,6 +222,14 @@ export default function ClientPage({
               data={data}
               interval={interval}
             />
+            {organization.feature_settings?.revops_enabled && (
+              <MetricGroup
+                title="Costs"
+                metricKeys={costEvents}
+                data={data}
+                interval={interval}
+              />
+            )}
           </>
         )}
       </div>

@@ -1,9 +1,10 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, overload
 
 from sqlalchemy.orm import Mapped
 from sqlalchemy.util.typing import TypedDict
 
+from polar.kit.address import AddressDict
 from polar.models import Customer, Event, Organization
 from polar.models.benefit import BenefitType
 from polar.models.event import EventSource
@@ -22,6 +23,9 @@ class SystemEvent(StrEnum):
     subscription_seats_updated = "subscription.seats_updated"
     order_paid = "order.paid"
     order_refunded = "order.refunded"
+    customer_created = "customer.created"
+    customer_updated = "customer.updated"
+    customer_deleted = "customer.deleted"
 
 
 class MeterCreditedMetadata(TypedDict):
@@ -80,6 +84,57 @@ class BenefitRevokedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.benefit_revoked]]
         user_metadata: Mapped[BenefitGrantMetadata]  # type: ignore[assignment]
+
+
+class CustomerCreatedMetadata(TypedDict):
+    customer_id: str
+    customer_email: str
+    customer_name: str | None
+    customer_external_id: str | None
+
+
+class CustomerCreatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.customer_created]]
+        user_metadata: Mapped[CustomerCreatedMetadata]  # type: ignore[assignment]
+
+
+class CustomerUpdatedFields(TypedDict):
+    name: NotRequired[str | None]
+    email: NotRequired[str | None]
+    billing_address: NotRequired[AddressDict | None]
+    tax_id: NotRequired[str | None]
+    metadata: NotRequired[dict[str, str | int | bool] | None]
+
+
+class CustomerUpdatedMetadata(TypedDict):
+    customer_id: str
+    customer_email: str
+    customer_name: str | None
+    customer_external_id: str | None
+    updated_fields: CustomerUpdatedFields
+
+
+class CustomerUpdatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.customer_updated]]
+        user_metadata: Mapped[CustomerUpdatedMetadata]  # type: ignore[assignment]
+
+
+class CustomerDeletedMetadata(TypedDict):
+    customer_id: str
+    customer_email: str
+    customer_name: str | None
+    customer_external_id: str | None
+
+
+class CustomerDeletedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.customer_deleted]]
+        user_metadata: Mapped[CustomerDeletedMetadata]  # type: ignore[assignment]
 
 
 class SubscriptionCycledMetadata(TypedDict):
@@ -208,6 +263,33 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: BenefitGrantMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.customer_created],
+    customer: Customer,
+    organization: Organization,
+    metadata: CustomerCreatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.customer_updated],
+    customer: Customer,
+    organization: Organization,
+    metadata: CustomerUpdatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.customer_deleted],
+    customer: Customer,
+    organization: Organization,
+    metadata: CustomerDeletedMetadata,
 ) -> Event: ...
 
 

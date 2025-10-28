@@ -3650,6 +3650,74 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/wallets/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Wallets
+     * @description List wallets.
+     *
+     *     **Scopes**: `wallets:read`
+     */
+    get: operations['wallets:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/wallets/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Wallet
+     * @description Get a wallet by ID.
+     *
+     *     **Scopes**: `wallets:read`
+     */
+    get: operations['wallets:get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/wallets/{id}/top-up': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Top-Up Wallet
+     * @description Top-up a wallet by adding funds to its balance.
+     *
+     *     The customer should have a valid payment method on file.
+     *
+     *     **Scopes**: `wallets:write`
+     */
+    post: operations['wallets:top_up']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export interface webhooks {
   'checkout.created': {
@@ -5138,6 +5206,8 @@ export interface components {
       | 'subscriptions:write'
       | 'customers:read'
       | 'customers:write'
+      | 'wallets:read'
+      | 'wallets:write'
       | 'customer_meters:read'
       | 'customer_sessions:write'
       | 'customer_seats:read'
@@ -10660,7 +10730,7 @@ export interface components {
       /**
        * Currency
        * @description The currency code (ISO 4217) for the balance amount.
-       * @example USD
+       * @example usd
        */
       currency: string
     }
@@ -15365,6 +15435,12 @@ export interface components {
       items: components['schemas']['Transaction'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[Wallet] */
+    ListResource_Wallet_: {
+      /** Items */
+      items: components['schemas']['Wallet'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[WebhookDelivery] */
     ListResource_WebhookDelivery_: {
       /** Items */
@@ -16080,6 +16156,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** MissingPaymentMethodError */
+    MissingPaymentMethodError: {
+      /**
+       * Error
+       * @example MissingPaymentMethodError
+       * @constant
+       */
+      error: 'MissingPaymentMethodError'
+      /** Detail */
+      detail: string
+    }
     /** NotOpenCheckout */
     NotOpenCheckout: {
       /**
@@ -16211,7 +16298,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -16276,7 +16363,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -16322,7 +16409,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -17687,6 +17774,17 @@ export interface components {
        * @constant
        */
       error: 'PaymentError'
+      /** Detail */
+      detail: string
+    }
+    /** PaymentIntentFailedError */
+    PaymentIntentFailedError: {
+      /**
+       * Error
+       * @example PaymentIntentFailedError
+       * @constant
+       */
+      error: 'PaymentIntentFailedError'
       /** Detail */
       detail: string
     }
@@ -19218,6 +19316,8 @@ export interface components {
       | 'subscriptions:write'
       | 'customers:read'
       | 'customers:write'
+      | 'wallets:read'
+      | 'wallets:write'
       | 'customer_meters:read'
       | 'customer_sessions:write'
       | 'customer_seats:read'
@@ -20923,6 +21023,72 @@ export interface components {
       msg: string
       /** Error Type */
       type: string
+    }
+    /**
+     * Wallet
+     * @description A wallet represents a customer's balance in your organization.
+     *
+     *     They can top-up their wallet, and use the balance to pay for usage.
+     */
+    Wallet: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer that owns the wallet.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      customer_id: string
+      /**
+       * Balance
+       * @description The current balance of the wallet, in cents.
+       * @example 5000
+       */
+      balance: number
+      /**
+       * Currency
+       * @description The currency of the wallet.
+       * @example usd
+       */
+      currency: string
+    }
+    /**
+     * WalletSortProperty
+     * @enum {string}
+     */
+    WalletSortProperty: 'created_at' | '-created_at' | 'balance' | '-balance'
+    /**
+     * WalletTopUpCreate
+     * @description Request schema to top-up a wallet.
+     */
+    WalletTopUpCreate: {
+      /**
+       * Amount
+       * @description The amount to top-up the wallet by, in cents.
+       * @example 2000
+       */
+      amount: number
+      /**
+       * Currency
+       * @description The currency. Currently, only `usd` is supported. It should match the wallet's currency.
+       */
+      currency: string
     }
     /**
      * WebhookBenefitCreatedPayload
@@ -31130,6 +31296,157 @@ export interface operations {
       }
     }
   }
+  'wallets:list': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['WalletSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_Wallet_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'wallets:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The wallet ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Wallet']
+        }
+      }
+      /** @description Wallet not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'wallets:top_up': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The wallet ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WalletTopUpCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Wallet']
+        }
+      }
+      /** @description Wallet topped up successfully. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description The payment request failed. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PaymentIntentFailedError']
+        }
+      }
+      /** @description No payment method available. */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MissingPaymentMethodError']
+        }
+      }
+      /** @description Wallet not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointcheckout_created_post: {
     parameters: {
       query?: never
@@ -33276,6 +33593,8 @@ export const availableScopeValues: ReadonlyArray<
   'subscriptions:write',
   'customers:read',
   'customers:write',
+  'wallets:read',
+  'wallets:write',
   'customer_meters:read',
   'customer_sessions:write',
   'customer_seats:read',
@@ -34234,6 +34553,8 @@ export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'subscriptions:write',
   'customers:read',
   'customers:write',
+  'wallets:read',
+  'wallets:write',
   'customer_meters:read',
   'customer_sessions:write',
   'customer_seats:read',
@@ -34549,6 +34870,9 @@ export const userEventSourceValues: ReadonlyArray<
 export const userSignupAttributionIntentValues: ReadonlyArray<
   components['schemas']['UserSignupAttribution']['intent']
 > = ['creator', 'pledge', 'purchase', 'subscription', 'newsletter_subscription']
+export const walletSortPropertyValues: ReadonlyArray<
+  components['schemas']['WalletSortProperty']
+> = ['created_at', '-created_at', 'balance', '-balance']
 export const webhookEventTypeValues: ReadonlyArray<
   components['schemas']['WebhookEventType']
 > = [

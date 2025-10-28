@@ -109,9 +109,12 @@ export const MeterPage = ({
                   height={400}
                   metric={{
                     slug: 'quantity',
-                    display_name: 'Quantity',
+                    display_name: meter.name,
                     type: 'scalar',
                   }}
+                  chartType={
+                    meter.aggregation.func === 'count' ? 'bar' : 'line'
+                  }
                 />
               ) : (
                 <div className="flex h-[300px] flex-col items-center justify-center">

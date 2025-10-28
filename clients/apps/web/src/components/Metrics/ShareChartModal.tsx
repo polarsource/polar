@@ -130,6 +130,7 @@ export const ShareChartModal = ({
             height={200}
             width={560}
             simple
+            chartType="line"
           />
           <LogoType className="text-white dark:text-white" height={35} />
         </div>

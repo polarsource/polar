@@ -69,6 +69,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
       previousData={previousPeriodMetricsData}
       interval={interval}
       loading={metricLoading}
+      chartType="line"
     />
   )
 }

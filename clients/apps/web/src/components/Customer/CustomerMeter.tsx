@@ -139,6 +139,7 @@ export const CustomerMeter = ({
             type: 'scalar',
           }}
           showYAxis
+          chartType={meter.aggregation.func === 'count' ? 'bar' : 'line'}
         />
       </div>
     </ShadowBox>

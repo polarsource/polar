@@ -246,6 +246,7 @@ const MetricGroup = ({
               interval={interval}
               metric={metricKey}
               height={200}
+              chartType="line"
               className={twMerge(
                 'rounded-none! bg-transparent dark:bg-transparent',
                 index === 0 && 'lg:col-span-2',

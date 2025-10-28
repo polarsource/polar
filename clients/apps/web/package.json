@@ -9,7 +9,7 @@
     "format": "prettier --write ./src",
     "format:check": "prettier -c ./src",
     "lint:only": "eslint .",
-    "lint": "format:check && lint:only",
+    "lint": "pnpm format:check && pnpm lint:only",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "analyze": "ANALYZE=true next build"

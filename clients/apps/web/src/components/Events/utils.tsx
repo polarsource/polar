@@ -27,6 +27,14 @@ export const useEventDisplayName = (eventName: schemas['Event']['name']) => {
         return 'Order Paid'
       case 'order.refunded':
         return 'Order Refunded'
+      case 'subscription.seats_updated':
+        return 'Subscription Seats Updated'
+      case 'customer.created':
+        return 'Customer Created'
+      case 'customer.updated':
+        return 'Customer Updated'
+      case 'customer.deleted':
+        return 'Customer Deleted'
       default:
         return eventName
     }
@@ -50,6 +58,10 @@ export const useEventCard = (event: schemas['Event']) => {
           case 'order.paid':
           case 'order.refunded':
             return <OrderEventCard event={event} />
+          case 'customer.created':
+          case 'customer.deleted':
+            return null
+          case 'customer.updated':
           default:
             return <UserEventCard event={event} />
         }

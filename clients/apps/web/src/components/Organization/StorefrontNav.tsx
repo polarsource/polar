@@ -29,9 +29,7 @@ export const StorefrontNav = ({
   const currentTab = routeSegment ?? 'products'
   const router = useRouter()
 
-  const { data: orders } = useCustomerOrders(api, {
-    organization_id: organization.id,
-  })
+  const { data: orders } = useCustomerOrders(api)
 
   return (
     <>

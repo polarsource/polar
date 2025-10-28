@@ -65,8 +65,7 @@ export default async function Page(props: {
   } = await api.GET('/v1/customer-portal/orders/', {
     params: {
       query: {
-        organization_id: organization.id,
-        limit: 200,
+        limit: 100,
       },
     },
     cache: 'no-cache',

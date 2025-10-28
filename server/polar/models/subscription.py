@@ -165,6 +165,9 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     ended_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
+    past_due_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
 
     scheduler_locked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True

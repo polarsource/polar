@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import desc, select
+from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject
@@ -54,7 +54,6 @@ from polar.models import (
     Customer,
     Discount,
     Event,
-    Order,
     Organization,
     Payment,
     PaymentMethod,
@@ -66,7 +65,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -2214,7 +2213,6 @@ class SubscriptionService:
         Returns True if within grace period (benefits should not be revoked yet).
         Returns False if grace period has expired or doesn't apply.
         """
-        # Only applies to past_due and unpaid subscriptions
         if subscription.status not in {
             SubscriptionStatus.past_due,
             SubscriptionStatus.unpaid,
@@ -2223,27 +2221,13 @@ class SubscriptionService:
 
         grace_period_days = int(organization.benefit_revocation_grace_period)
 
-        # If grace period is 0 (immediate), no grace period applies
         if grace_period_days == 0:
             return False
 
-        # Get the latest pending order for this subscription
-        statement = (
-            select(Order)
-            .where(
-                Order.subscription_id == subscription.id,
-                Order.status == OrderStatus.pending,
-            )
-            .order_by(desc(Order.created_at))
-            .limit(1)
-        )
-        result = await session.execute(statement)
-        latest_pending_order = result.scalar_one_or_none()
-
-        if not latest_pending_order:
+        if not subscription.past_due_at:
             return False
 
-        grace_period_ends_at = latest_pending_order.created_at + timedelta(
+        grace_period_ends_at = subscription.past_due_at + timedelta(
             days=grace_period_days
         )
         now = utc_now()
@@ -2253,8 +2237,7 @@ class SubscriptionService:
                 "Subscription is within benefit revocation grace period",
                 subscription_id=str(subscription.id),
                 customer_id=str(subscription.customer_id),
-                order_id=str(latest_pending_order.id),
-                order_created_at=latest_pending_order.created_at.isoformat(),
+                past_due_at=subscription.past_due_at.isoformat(),
                 grace_period_ends_at=grace_period_ends_at.isoformat(),
                 days_remaining=(grace_period_ends_at - now).days,
             )
@@ -2518,9 +2501,10 @@ class SubscriptionService:
         previous_is_canceled = subscription.canceled
 
         repository = SubscriptionRepository.from_session(session)
-        subscription = await repository.update(
-            subscription, update_dict={"status": SubscriptionStatus.past_due}
-        )
+        update_dict: dict[str, Any] = {"status": SubscriptionStatus.past_due}
+        if subscription.past_due_at is None:
+            update_dict["past_due_at"] = utc_now()
+        subscription = await repository.update(subscription, update_dict=update_dict)
 
         # Trigger subscription updated events
         await self._after_subscription_updated(
@@ -2544,7 +2528,8 @@ class SubscriptionService:
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(
-            subscription, update_dict={"status": SubscriptionStatus.active}
+            subscription,
+            update_dict={"status": SubscriptionStatus.active, "past_due_at": None},
         )
 
         await self._after_subscription_updated(

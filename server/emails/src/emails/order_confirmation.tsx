@@ -25,21 +25,27 @@ export function OrderConfirmation({
 }: schemas['OrderConfirmationProps']) {
   return (
     <Wrapper>
-      <Preview>Thank you for your order of {product.name}!</Preview>
+      <Preview>Thank you for your order of {order.description}!</Preview>
       <OrganizationHeader organization={organization} />
       <Section className="pt-12">
         <Heading as="h1" className="text-xl font-bold text-gray-900">
           Thank you for your order!
         </Heading>
         <BodyText>
-          Your order of <span className="font-bold">{product.name}</span> is now
-          processed.
+          Your order of <span className="font-bold">{order.description}</span>{' '}
+          is now processed.
         </BodyText>
       </Section>
-      {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
-      <Section className="my-8 text-center">
-        <Button href={url}>Access my purchase</Button>
-      </Section>
+      {product && (
+        <>
+          {product.benefits.length > 0 && (
+            <Benefits benefits={product.benefits} />
+          )}
+          <Section className="my-8 text-center">
+            <Button href={url}>Access my purchase</Button>
+          </Section>
+        </>
+      )}
       <Hr />
       <OrderSummary order={order} />
       <Hr />

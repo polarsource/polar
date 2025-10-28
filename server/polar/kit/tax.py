@@ -449,12 +449,12 @@ def from_stripe_tax_rate_details(
         return None
 
     basis_points = None
-    if tax_rate_details.percentage_decimal is not None:
-        basis_points = int(float(tax_rate_details.percentage_decimal) * 100)
-
     amount = None
     amount_currency = None
-    if tax_rate_details.flat_amount is not None:
+
+    if tax_rate_details.percentage_decimal is not None:
+        basis_points = int(float(tax_rate_details.percentage_decimal) * 100)
+    elif tax_rate_details.flat_amount is not None:
         amount = tax_rate_details.flat_amount.amount
         amount_currency = tax_rate_details.flat_amount.currency
 

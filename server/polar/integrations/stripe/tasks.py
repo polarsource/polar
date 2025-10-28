@@ -207,7 +207,7 @@ async def charge_pending(event_id: uuid.UUID) -> None:
                 else:
                     raise
             await payment_service.upsert_from_stripe_charge(
-                session, charge, checkout, order
+                session, charge, checkout, None, order
             )
 
 

@@ -45,6 +45,7 @@ from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
+from polar.models.wallet_transaction import WalletTransactionType
 from polar.order.service import (
     CardPaymentFailed,
     MissingCheckoutCustomer,
@@ -86,6 +87,8 @@ from tests.fixtures.random_objects import (
     create_product,
     create_subscription,
     create_trialing_subscription,
+    create_wallet,
+    create_wallet_transaction,
 )
 from tests.fixtures.stripe import construct_stripe_invoice
 from tests.transaction.conftest import create_transaction
@@ -1700,6 +1703,81 @@ class TestCreateTrialOrder:
         assert order.product == product
         assert order.subscription == subscription
         assert len(order.items) == 1
+
+
+@pytest.mark.asyncio
+class TestCreateWalletOrder:
+    async def test_basic(
+        self,
+        mocker: MockerFixture,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        stripe_service_mock = MagicMock(spec=StripeService)
+        mocker.patch("polar.order.service.stripe_service", new=stripe_service_mock)
+        stripe_service_mock.get_tax_calculation.return_value = SimpleNamespace(
+            tax_amount_exclusive=20_00,
+            tax_breakdown=[
+                SimpleNamespace(
+                    taxability_reason="standard_rated",
+                    tax_rate_details=SimpleNamespace(
+                        rate_type="percentage",
+                        percentage_decimal="20.0",
+                        tax_type="vat",
+                        display_name="VAT",
+                        country="FR",
+                        state=None,
+                    ),
+                )
+            ],
+        )
+        stripe_service_mock.create_tax_transaction.return_value = SimpleNamespace(
+            id="STRIPE_TAX_TRANSACTION_ID"
+        )
+
+        wallet = await create_wallet(save_fixture, customer=customer)
+        wallet_transaction = await create_wallet_transaction(
+            save_fixture,
+            wallet=wallet,
+            type=WalletTransactionType.credit,
+            amount=100_00,
+            tax_amount=20_00,
+            tax_calculation_processor_id="TAX_CALCULATION_ID",
+        )
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            amount=120_00,
+            status=PaymentStatus.succeeded,
+        )
+
+        order = await order_service.create_wallet_order(
+            session, wallet_transaction, payment=payment
+        )
+
+        assert order.status == OrderStatus.paid
+        assert order.subtotal_amount == 100_00
+        assert order.tax_amount == 20_00
+        assert order.total_amount == 120_00
+        assert order.taxability_reason == TaxabilityReason.standard_rated
+        assert order.tax_rate is not None
+
+        enqueue_job_mock.assert_any_call(
+            "order.balance", order_id=order.id, charge_id=payment.processor_id
+        )
+        assert payment.order == order
+
+        assert wallet_transaction.order == order
+
+        stripe_service_mock.get_tax_calculation.assert_called_once_with(
+            "TAX_CALCULATION_ID"
+        )
+        stripe_service_mock.create_tax_transaction.assert_called_once_with(
+            "TAX_CALCULATION_ID", str(order.id)
+        )
 
 
 @pytest.mark.asyncio

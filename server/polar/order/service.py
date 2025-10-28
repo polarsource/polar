@@ -66,6 +66,7 @@ from polar.models import (
     Subscription,
     Transaction,
     User,
+    WalletTransaction,
 )
 from polar.models.held_balance import HeldBalance
 from polar.models.order import (
@@ -100,6 +101,7 @@ from polar.transaction.service.balance import (
 from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
+from polar.wallet.repository import WalletTransactionRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -820,6 +822,99 @@ class OrderService:
             ),
             flush=True,
         )
+
+        await self._on_order_created(session, order)
+
+        return order
+
+    async def create_wallet_order(
+        self,
+        session: AsyncSession,
+        wallet_transaction: WalletTransaction,
+        payment: Payment | None,
+    ) -> Order:
+        wallet = wallet_transaction.wallet
+        items: list[OrderItem] = [
+            OrderItem.from_wallet(wallet, wallet_transaction.amount)
+        ]
+
+        customer = wallet.customer
+        billing_address = customer.billing_address
+
+        subtotal_amount = sum(item.amount for item in items)
+
+        # Retrieve tax data
+        tax_amount = wallet_transaction.tax_amount or 0
+        taxability_reason = None
+        tax_rate: TaxRate | None = None
+        tax_id = customer.tax_id
+        if wallet_transaction.tax_calculation_processor_id is not None:
+            calculation = await stripe_service.get_tax_calculation(
+                wallet_transaction.tax_calculation_processor_id
+            )
+            assert tax_amount == calculation.tax_amount_exclusive
+            assert len(calculation.tax_breakdown) > 0
+            breakdown = calculation.tax_breakdown[0]
+            taxability_reason = TaxabilityReason.from_stripe(
+                breakdown.taxability_reason, tax_amount
+            )
+            tax_rate = from_stripe_tax_rate_details(breakdown.tax_rate_details)
+
+        invoice_number = await organization_service.get_next_invoice_number(
+            session, wallet.organization
+        )
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.create(
+            Order(
+                status=OrderStatus.paid,
+                subtotal_amount=subtotal_amount,
+                discount_amount=0,
+                tax_amount=tax_amount,
+                applied_balance_amount=0,
+                currency=wallet.currency,
+                billing_reason=OrderBillingReasonInternal.purchase,
+                billing_name=customer.billing_name,
+                billing_address=billing_address,
+                taxability_reason=taxability_reason,
+                tax_id=tax_id,
+                tax_rate=tax_rate,
+                invoice_number=invoice_number,
+                customer=customer,
+                items=items,
+                product=None,
+                discount=None,
+                subscription=None,
+                checkout=None,
+            ),
+            flush=True,
+        )
+
+        # Link payment and balance transaction to the order
+        if payment is not None:
+            payment_repository = PaymentRepository.from_session(session)
+            assert payment.amount == order.total_amount
+            await payment_repository.update(payment, update_dict={"order": order})
+            enqueue_job(
+                "order.balance", order_id=order.id, charge_id=payment.processor_id
+            )
+
+        # Link wallet transaction to the order
+        wallet_transaction_repository = WalletTransactionRepository.from_session(
+            session
+        )
+        await wallet_transaction_repository.update(
+            wallet_transaction, update_dict={"order": order}
+        )
+
+        # Record tax transaction
+        if wallet_transaction.tax_calculation_processor_id is not None:
+            transaction = await stripe_service.create_tax_transaction(
+                wallet_transaction.tax_calculation_processor_id, str(order.id)
+            )
+            await repository.update(
+                order, update_dict={"tax_transaction_processor_id": transaction.id}
+            )
 
         await self._on_order_created(session, order)
 
@@ -1681,7 +1776,8 @@ class OrderService:
         ],
     ) -> None:
         await session.refresh(order.customer, {"organization"})
-        await session.refresh(order.product, {"prices"})
+        if order.product is not None:
+            await session.refresh(order.product, {"prices"})
 
         # Refresh order items with their product_price.product relationship loaded
         # This is needed for webhook serialization which accesses `legacy_product_price.product`

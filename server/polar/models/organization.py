@@ -63,12 +63,14 @@ class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
     allow_customer_updates: bool
     proration_behavior: SubscriptionProrationBehavior
+    benefit_revocation_grace_period: int
 
 
 _default_subscription_settings: OrganizationSubscriptionSettings = {
     "allow_multiple_subscriptions": False,
     "allow_customer_updates": True,
     "proration_behavior": SubscriptionProrationBehavior.prorate,
+    "benefit_revocation_grace_period": 0,
 }
 
 
@@ -252,6 +254,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return SubscriptionProrationBehavior(
             self.subscription_settings["proration_behavior"]
         )
+
+    @property
+    def benefit_revocation_grace_period(self) -> int:
+        return self.subscription_settings["benefit_revocation_grace_period"]
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:

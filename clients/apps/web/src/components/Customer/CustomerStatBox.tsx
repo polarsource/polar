@@ -18,7 +18,7 @@ export const CustomerStatBox = ({
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 flex flex-1 flex-col gap-1 bg-gray-100',
+        'dark:bg-polar-800 dark:border-polar-700 flex flex-1 flex-col gap-1 bg-gray-50',
         className,
         size === 'lg'
           ? 'rounded-2xl px-5 py-4'

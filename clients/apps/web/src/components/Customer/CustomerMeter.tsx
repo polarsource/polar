@@ -11,15 +11,11 @@ import MetricChart from '../Metrics/MetricChart'
 export const CustomerMeter = ({
   customerMeter,
   data: { quantities, total },
-  startDate,
-  endDate,
 }: {
   customerMeter: schemas['CustomerMeter'] & {
     subscription: schemas['Subscription'] | null
   }
   data: ParsedMeterQuantities
-  startDate: Date | null
-  endDate: Date | null
 }) => {
   const { meter } = customerMeter
 
@@ -136,7 +132,7 @@ export const CustomerMeter = ({
           height={250}
           metric={{
             slug: 'quantity',
-            display_name: 'Quantity',
+            display_name: meter.name,
             type: 'scalar',
           }}
         />

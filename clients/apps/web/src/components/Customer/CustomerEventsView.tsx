@@ -53,7 +53,7 @@ export const CustomerEventsView = ({
     <TabsContent value="events" className="flex flex-col gap-y-8">
       <div className="flex flex-col gap-y-4 md:flex-row md:gap-x-6">
         <DateRangePicker
-          className="w-auto min-w-64"
+          className="w-72 shrink-0 grow-0"
           date={{
             from: startTimestamp
               ? new Date(startTimestamp)
@@ -74,7 +74,7 @@ export const CustomerEventsView = ({
           }}
         />
         <EventSelect
-          className="w-auto min-w-64"
+          className="ml-auto w-auto min-w-64"
           organizationId={customer.organization_id}
           allOption
           value={eventName}

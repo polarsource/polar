@@ -63,9 +63,9 @@ export const CustomerUsageView = ({
   }, [customerMetersData, subscriptionsData])
 
   return (
-    <TabsContent value="usage" className="flex flex-col gap-y-12">
+    <TabsContent value="usage" className="flex flex-col gap-y-8">
       <DateRangePicker
-        className="w-96"
+        className="w-72"
         date={{
           from: startDate
             ? new Date(startDate)

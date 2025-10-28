@@ -11,6 +11,7 @@ from .oauth_accounts import router as oauth_accounts_router
 from .order import router as order_router
 from .organization import router as organization_router
 from .subscription import router as subscription_router
+from .wallet import router as wallet_router
 
 router = APIRouter(prefix="/customer-portal", tags=["customer_portal"])
 
@@ -25,3 +26,4 @@ router.include_router(oauth_accounts_router)
 router.include_router(order_router)
 router.include_router(organization_router)
 router.include_router(subscription_router)
+router.include_router(wallet_router)

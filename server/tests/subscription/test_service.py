@@ -53,7 +53,7 @@ from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
@@ -91,7 +91,6 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_event,
     create_meter,
-    create_order,
     create_product,
     create_product_price_seat_unit,
     create_subscription,
@@ -3421,17 +3420,8 @@ class TestEnqueueBenefitsGrantsGracePeriod:
             customer=customer,
         )
         subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now() - timedelta(days=2)
         await save_fixture(subscription)
-
-        await create_order(
-            save_fixture,
-            customer=customer,
-            product=product,
-            subscription=subscription,
-            status=OrderStatus.pending,
-            billing_reason=OrderBillingReasonInternal.subscription_cycle,
-            created_at=utc_now() - timedelta(days=2),
-        )
 
         enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
         await subscription_service.enqueue_benefits_grants(session, subscription)
@@ -3456,19 +3446,11 @@ class TestEnqueueBenefitsGrantsGracePeriod:
             customer=customer,
         )
         subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now() - timedelta(days=8)
         await save_fixture(subscription)
 
-        await create_order(
-            save_fixture,
-            customer=customer,
-            product=product,
-            subscription=subscription,
-            status=OrderStatus.pending,
-            billing_reason=OrderBillingReasonInternal.subscription_cycle,
-            created_at=utc_now() - timedelta(days=8),
-        )
-
         enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+
         await subscription_service.enqueue_benefits_grants(session, subscription)
         enqueue_job_mock.assert_called_once_with(
             "benefit.enqueue_benefits_grants",
@@ -3497,6 +3479,7 @@ class TestEnqueueBenefitsGrantsGracePeriod:
             customer=customer,
         )
         subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now() - timedelta(minutes=1)
         await save_fixture(subscription)
 
         enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
@@ -3531,36 +3514,6 @@ class TestEnqueueBenefitsGrantsGracePeriod:
         subscription.status = SubscriptionStatus.canceled
         await save_fixture(subscription)
 
-        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
-        await subscription_service.enqueue_benefits_grants(session, subscription)
-        enqueue_job_mock.assert_called_once_with(
-            "benefit.enqueue_benefits_grants",
-            task="revoke",
-            customer_id=customer.id,
-            product_id=product.id,
-            subscription_id=subscription.id,
-        )
-
-    async def test_grace_period_no_pending_order(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        mocker: MockerFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        product.organization.subscription_settings[
-            "benefit_revocation_grace_period"
-        ] = 7
-        await save_fixture(product.organization)
-
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-        )
-        subscription.status = SubscriptionStatus.past_due
-        await save_fixture(subscription)
         enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
         await subscription_service.enqueue_benefits_grants(session, subscription)
         enqueue_job_mock.assert_called_once_with(

@@ -1,14 +1,14 @@
 import contextlib
 import uuid
 from collections.abc import AsyncGenerator, Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Literal, cast, overload
 from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject
@@ -54,6 +54,7 @@ from polar.models import (
     Customer,
     Discount,
     Event,
+    Order,
     Organization,
     Payment,
     PaymentMethod,
@@ -65,7 +66,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.order import OrderBillingReasonInternal
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -2202,6 +2203,65 @@ class SubscriptionService:
                 session, product.organization, event_type, subscription
             )
 
+    async def _is_within_revocation_grace_period(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        organization: Organization,
+    ) -> bool:
+        """Check if a subscription is within its benefit revocation grace period.
+
+        Returns True if within grace period (benefits should not be revoked yet).
+        Returns False if grace period has expired or doesn't apply.
+        """
+        # Only applies to past_due and unpaid subscriptions
+        if subscription.status not in {
+            SubscriptionStatus.past_due,
+            SubscriptionStatus.unpaid,
+        }:
+            return False
+
+        grace_period_days = int(organization.benefit_revocation_grace_period)
+
+        # If grace period is 0 (immediate), no grace period applies
+        if grace_period_days == 0:
+            return False
+
+        # Get the latest pending order for this subscription
+        statement = (
+            select(Order)
+            .where(
+                Order.subscription_id == subscription.id,
+                Order.status == OrderStatus.pending,
+            )
+            .order_by(desc(Order.created_at))
+            .limit(1)
+        )
+        result = await session.execute(statement)
+        latest_pending_order = result.scalar_one_or_none()
+
+        if not latest_pending_order:
+            return False
+
+        grace_period_ends_at = latest_pending_order.created_at + timedelta(
+            days=grace_period_days
+        )
+        now = utc_now()
+
+        if now < grace_period_ends_at:
+            log.info(
+                "Subscription is within benefit revocation grace period",
+                subscription_id=str(subscription.id),
+                customer_id=str(subscription.customer_id),
+                order_id=str(latest_pending_order.id),
+                order_created_at=latest_pending_order.created_at.isoformat(),
+                grace_period_ends_at=grace_period_ends_at.isoformat(),
+                days_remaining=(grace_period_ends_at - now).days,
+            )
+            return True
+
+        return False
+
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
@@ -2211,6 +2271,22 @@ class SubscriptionService:
 
         if subscription.is_incomplete():
             return
+
+        task = "grant" if subscription.active else "revoke"
+
+        # Check grace period for benefit revocation
+        if task == "revoke":
+            organization_repository = OrganizationRepository.from_session(session)
+            organization = await organization_repository.get_by_id(
+                product.organization_id
+            )
+            assert organization is not None
+
+            if await self._is_within_revocation_grace_period(
+                session, subscription, organization
+            ):
+                # Don't enqueue revocation yet, still within grace period
+                return
 
         # For seat-based products, handle benefits through seats
         if product.has_seat_based_price:
@@ -2223,8 +2299,6 @@ class SubscriptionService:
             # When subscription is active, benefits are granted when seats are claimed
             # So we don't need to do anything here
             return
-
-        task = "grant" if subscription.active else "revoke"
 
         enqueue_job(
             "benefit.enqueue_benefits_grants",

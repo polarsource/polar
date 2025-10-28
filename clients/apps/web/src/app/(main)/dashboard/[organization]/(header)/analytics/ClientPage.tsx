@@ -149,6 +149,14 @@ export default function ClientPage({
     'checkouts',
     'succeeded_checkouts',
   ]
+  const costEvents: (keyof schemas['Metrics'])[] = [
+    'monthly_recurring_revenue', // MRR
+    'average_revenue_per_user', // ARPU
+    'costs', // COGS
+    'cost_per_user', // Cost To Serve
+    'gross_margin', // MRR - COGS
+    'gross_margin_percentage', // Gross margin / MRR
+  ]
 
   const netRevenueEvents = useMemo(() => {
     const baseEvents: (keyof schemas['Metrics'])[] = [
@@ -263,6 +271,14 @@ export default function ClientPage({
               data={data}
               interval={interval}
             />
+            {organization.feature_settings?.revops_enabled && (
+              <MetricGroup
+                title="Costs"
+                metricKeys={costEvents}
+                data={data}
+                interval={interval}
+              />
+            )}
           </>
         )}
       </div>

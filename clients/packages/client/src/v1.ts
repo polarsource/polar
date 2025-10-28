@@ -16097,6 +16097,12 @@ export interface components {
       average_order_value: number
       /** Net Average Order Value */
       net_average_order_value: number
+      /** Average Revenue Per User */
+      average_revenue_per_user: number
+      /** Cost Per User */
+      cost_per_user: number
+      /** Gross Margin */
+      gross_margin: number
       /** One Time Products */
       one_time_products: number
       /** One Time Products Revenue */
@@ -16145,6 +16151,8 @@ export interface components {
       canceled_subscriptions_unused: number
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other: number
+      /** Gross Margin Percentage */
+      gross_margin_percentage: number
     }
     /**
      * MetricType
@@ -16162,6 +16170,9 @@ export interface components {
       cumulative_costs: components['schemas']['Metric']
       average_order_value: components['schemas']['Metric']
       net_average_order_value: components['schemas']['Metric']
+      average_revenue_per_user: components['schemas']['Metric']
+      cost_per_user: components['schemas']['Metric']
+      gross_margin: components['schemas']['Metric']
       one_time_products: components['schemas']['Metric']
       one_time_products_revenue: components['schemas']['Metric']
       one_time_products_net_revenue: components['schemas']['Metric']
@@ -16186,6 +16197,7 @@ export interface components {
       canceled_subscriptions_too_expensive: components['schemas']['Metric']
       canceled_subscriptions_unused: components['schemas']['Metric']
       canceled_subscriptions_other: components['schemas']['Metric']
+      gross_margin_percentage: components['schemas']['Metric']
     }
     /**
      * MetricsIntervalLimit
@@ -16263,6 +16275,12 @@ export interface components {
       average_order_value: number
       /** Net Average Order Value */
       net_average_order_value: number
+      /** Average Revenue Per User */
+      average_revenue_per_user: number
+      /** Cost Per User */
+      cost_per_user: number
+      /** Gross Margin */
+      gross_margin: number
       /** One Time Products */
       one_time_products: number
       /** One Time Products Revenue */
@@ -16311,6 +16329,8 @@ export interface components {
       canceled_subscriptions_unused: number
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other: number
+      /** Gross Margin Percentage */
+      gross_margin_percentage: number
     }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {
@@ -26173,7 +26193,6 @@ export interface operations {
           | 'America/Coral_Harbour'
           | 'America/Cordoba'
           | 'America/Costa_Rica'
-          | 'America/Coyhaique'
           | 'America/Creston'
           | 'America/Cuiaba'
           | 'America/Curacao'
@@ -32535,7 +32554,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'America/Coral_Harbour',
   'America/Cordoba',
   'America/Costa_Rica',
-  'America/Coyhaique',
   'America/Creston',
   'America/Cuiaba',
   'America/Curacao',

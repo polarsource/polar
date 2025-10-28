@@ -27,7 +27,6 @@ from plain_client import (
     CreateThreadInput,
     CustomerIdentifierInput,
     EmailAddressInput,
-    OptionalStringInput,
     Plain,
     UpsertCustomerIdentifierInput,
     UpsertCustomerInput,
@@ -162,7 +161,6 @@ class PlainService:
                         ),
                     ),
                     on_update=UpsertCustomerOnUpdateInput(
-                        external_id=OptionalStringInput(value=str(admin.id)),
                         email=EmailAddressInput(
                             email=admin.email, is_verified=admin.email_verified
                         ),
@@ -237,7 +235,6 @@ class PlainService:
                         ),
                     ),
                     on_update=UpsertCustomerOnUpdateInput(
-                        external_id=OptionalStringInput(value=str(user.id)),
                         email=EmailAddressInput(
                             email=user.email, is_verified=user.email_verified
                         ),
@@ -1277,7 +1274,6 @@ class PlainService:
                         ),
                     ),
                     on_update=UpsertCustomerOnUpdateInput(
-                        external_id=OptionalStringInput(value=str(admin.id)),
                         email=EmailAddressInput(
                             email=admin.email, is_verified=admin.email_verified
                         ),

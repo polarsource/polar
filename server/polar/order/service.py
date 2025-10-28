@@ -1831,6 +1831,11 @@ class OrderService:
             order, update_dict={"next_payment_attempt_at": next_retry_date}
         )
 
+        # Re-enqueue benefit revocation to check if grace period has expired
+        subscription = order.subscription
+        if subscription is not None:
+            await subscription_service.enqueue_benefits_grants(session, subscription)
+
         return order
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:

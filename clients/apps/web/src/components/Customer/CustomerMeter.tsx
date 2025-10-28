@@ -138,6 +138,7 @@ export const CustomerMeter = ({
             display_name: meter.name,
             type: 'scalar',
           }}
+          showYAxis
         />
       </div>
     </ShadowBox>

@@ -9,6 +9,7 @@ import {
   Line,
   LineChart,
   XAxis,
+  YAxis,
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
 import { useCallback, useMemo } from 'react'
@@ -25,6 +26,7 @@ interface MetricChartProps {
   grid?: boolean
   onDataIndexHover?: (index: number | undefined) => void
   simple?: boolean
+  showYAxis?: boolean
 }
 
 const MetricChart = ({
@@ -37,6 +39,7 @@ const MetricChart = ({
   width: _width,
   onDataIndexHover,
   simple = false,
+  showYAxis = false,
 }: MetricChartProps & {
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -94,6 +97,14 @@ const MetricChart = ({
         : undefined,
     [simple, mergedData],
   )
+
+  const hasDecimalValues = useMemo(() => {
+    return mergedData.some(
+      (item) =>
+        (typeof item.current === 'number' && item.current % 1 !== 0) ||
+        (typeof item.previous === 'number' && item.previous % 1 !== 0),
+    )
+  }, [mergedData])
 
   const formatter = useCallback(
     (value: number, name: string, item?: { color?: string }) => {
@@ -161,6 +172,16 @@ const MetricChart = ({
           ticks={ticks}
           tickFormatter={timestampFormatter}
         />
+        {showYAxis && (
+          <YAxis
+            tickLine={false}
+            axisLine={false}
+            allowDecimals={hasDecimalValues}
+            domain={[0, (max) => Math.ceil(max / 3) * 3]} // This will make sure we can always render 3 horizontal grid lines
+            tickMargin={4}
+            width={4}
+          />
+        )}
         <ChartTooltip<number, string>
           cursor={true}
           content={(props) => (

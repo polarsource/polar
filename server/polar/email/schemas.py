@@ -51,6 +51,7 @@ class ProductEmail(ProductBase):
 
 
 class OrderEmail(OrderBase):
+    description: str
     items: list[OrderItemSchema]
 
 
@@ -121,7 +122,7 @@ class OAuth2LeakedTokenEmail(BaseModel):
 
 class OrderConfirmationProps(EmailProps):
     organization: Organization
-    product: ProductEmail
+    product: ProductEmail | None
     order: OrderEmail
     url: str
 

@@ -74,7 +74,7 @@ async def process_charge(
         async with sessionmaker() as session:
             try:
                 payment = await payment_service.upsert_from_stripe_charge(
-                    session, charge, None, None
+                    session, charge, None, None, None
                 )
                 payment.created_at = datetime.fromtimestamp(charge.created, tz=UTC)
                 return payment

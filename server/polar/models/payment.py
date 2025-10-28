@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from .checkout import Checkout
     from .order import Order
     from .organization import Organization
+    from .wallet import Wallet
 
 
 class PaymentStatus(StrEnum):
@@ -83,6 +84,17 @@ class Payment(RecordModel):
     @declared_attr
     def checkout(cls) -> Mapped["Checkout | None"]:
         return relationship("Checkout", lazy="raise")
+
+    wallet_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("wallets.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def wallet(cls) -> Mapped["Wallet | None"]:
+        return relationship("Wallet", lazy="raise")
 
     order_id: Mapped[UUID | None] = mapped_column(
         Uuid,

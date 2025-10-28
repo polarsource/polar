@@ -20,7 +20,7 @@ from polar.models.product_price import (
 )
 
 if TYPE_CHECKING:
-    from polar.models import Order, Product
+    from polar.models import Order, Product, Wallet
 
 
 class OrderItem(RecordModel):
@@ -88,3 +88,8 @@ class OrderItem(RecordModel):
         formatted_end = format_date(end.date(), locale="en_US")
         label = f"Trial period for {product.name} ({formatted_start} - {formatted_end})"
         return cls(label=label, amount=0, tax_amount=0, proration=False)
+
+    @classmethod
+    def from_wallet(cls, wallet: "Wallet", amount: int) -> Self:
+        label = f"Wallet Top-Up for {wallet.organization.name}"
+        return cls(label=label, amount=amount, tax_amount=0, proration=False)

@@ -106,7 +106,7 @@ class OrderBase(TimestampedSchema, IDSchema):
             # Validate from stored webhook payload
             "product_price_id",
             # Validate from ORM model
-            AliasPath("legacy_product_price", "id"),
+            "legacy_product_price_id",
         ),
     )
     discount_id: UUID4 | None

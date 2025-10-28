@@ -222,6 +222,13 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
                 return item.product_price
         return self.product.prices[0]
 
+    @property
+    def legacy_product_price_id(self) -> UUID | None:
+        price = self.legacy_product_price
+        if price is None:
+            return None
+        return price.id
+
     @hybrid_property
     def paid(self) -> bool:
         return self.status in {

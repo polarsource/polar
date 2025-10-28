@@ -17619,6 +17619,8 @@ export interface components {
       /** Allow Customer Updates */
       allow_customer_updates: boolean
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /** Benefit Revocation Grace Period */
+      benefit_revocation_grace_period: number
     }
     /** OrganizationUpdate */
     OrganizationUpdate: {
@@ -25853,7 +25855,6 @@ export interface operations {
           | 'America/Coral_Harbour'
           | 'America/Cordoba'
           | 'America/Costa_Rica'
-          | 'America/Coyhaique'
           | 'America/Creston'
           | 'America/Cuiaba'
           | 'America/Curacao'
@@ -32225,7 +32226,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'America/Coral_Harbour',
   'America/Cordoba',
   'America/Costa_Rica',
-  'America/Coyhaique',
   'America/Creston',
   'America/Cuiaba',
   'America/Curacao',

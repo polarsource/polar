@@ -873,6 +873,25 @@ class GrossMarginMetric(SQLMetric):
         return cumulative_sum(periods, cls.slug)
 
 
+class GrossMarginPercentageMetric(MetaMetric):
+    slug = "gross_margin_percentage"
+    display_name = "Gross Margin %"
+    type = MetricType.percentage
+
+    @classmethod
+    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+        gross_margin = period.gross_margin
+        revenue = period.revenue
+        return (gross_margin / revenue) if revenue > 0 else 0.0
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
+        periods_list = list(periods)
+        total_gross_margin = sum(p.gross_margin for p in periods_list)
+        total_revenue = sum(p.revenue for p in periods_list)
+        return (total_gross_margin / total_revenue) if total_revenue > 0 else 0.0
+
+
 class ChurnRateMetric(MetaMetric):
     slug = "churn_rate"
     display_name = "Churn Rate"
@@ -930,6 +949,7 @@ METRICS_SQL: list[type[SQLMetric]] = [
 
 METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
     ChurnRateMetric,
+    GrossMarginPercentageMetric,
 ]
 
 METRICS: list[type[Metric]] = [

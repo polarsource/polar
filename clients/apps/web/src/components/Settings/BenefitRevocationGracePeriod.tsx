@@ -8,11 +8,11 @@ import {
 } from '@polar-sh/ui/components/atoms/Select'
 
 const BENEFIT_REVOCATION_GRACE_PERIOD_LABELS: Record<number, string> = {
-  0: 'Immediate',
-  2: '2 Days',
-  7: '7 Days',
-  14: '14 Days',
-  21: '21 Days',
+  0: 'Immediately',
+  2: 'After 2 Days',
+  7: 'After 7 Days',
+  14: 'After 14 Days',
+  21: 'After 21 Days',
 }
 
 export interface BenefitRevocationGracePeriodProps {

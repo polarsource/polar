@@ -130,8 +130,8 @@ const OrganizationSubscriptionSettings: React.FC<
           </SettingsGroupItem>
 
           <SettingsGroupItem
-            title="Benefit Revocation Grace Period"
-            description="How long to wait before revoking benefits after a payment fails"
+            title="Grace period for benefit revocation"
+            description="How long to wait before revoking benefits during payment retries"
           >
             <FormField
               control={control}

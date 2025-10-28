@@ -326,6 +326,9 @@ export const OrganizationDetailsForm: React.FC<
         <div>
           <div className="mb-2 flex items-center justify-between">
             <label className="block text-sm font-medium">Social Media</label>
+            <p className="text-sm text-gray-600">
+              These links are not publicly accessible, and are only accessible through the <Link href="https://polar.sh/docs/api-reference/organizations/get" target="_blank">Organizations API</Link>
+            </p>
           </div>
           <OrganizationSocialLinks />
         </div>

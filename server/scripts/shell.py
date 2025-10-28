@@ -1,6 +1,7 @@
 import asyncio
 import atexit
 import logging.config
+import os
 import sys
 from typing import Any
 
@@ -54,6 +55,12 @@ def shell_asyncio(loop: asyncio.AbstractEventLoop, **namespace: object) -> None:
     console = AsyncIOInteractiveConsole(imported_objects, loop)
 
     # Wire globals in asyncio.__main__ that REPLThread expects
+    if os.getenv("PYTHON_BASIC_REPL"):
+        aio_main.CAN_USE_PYREPL = False
+    else:
+        from _pyrepl.main import CAN_USE_PYREPL
+
+        aio_main.CAN_USE_PYREPL = CAN_USE_PYREPL
     aio_main.console = console
     aio_main.loop = loop
     aio_main.return_code = 0

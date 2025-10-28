@@ -6,6 +6,8 @@ import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { twMerge } from 'tailwind-merge'
 import { Navigation } from './Navigation'
 
+export const dynamic = 'force-dynamic'
+
 export default async function Layout(props: {
   params: Promise<{ organization: string }>
   children: React.ReactNode

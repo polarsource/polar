@@ -281,10 +281,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const [showUpdateModal, setShowUpdateModal] = useState(false)
   const [selectedDiscount, setSelectedDiscount] =
     useState<schemas['Discount']>()
-  const onDiscountSelected = useCallback((discount: schemas['Discount']) => {
+
+  const onDiscountSelected = (discount: schemas['Discount']) => {
     setSelectedDiscount(discount)
     setShowUpdateModal(true)
-  }, [])
+  }
 
   return (
     <DashboardBody wide>

@@ -10,10 +10,7 @@ interface GoogleLoginButtonProps {
   signup?: schemas['UserSignupAttribution']
 }
 
-const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
-  returnTo,
-  signup,
-}) => {
+const GoogleLoginButton = ({ returnTo, signup }: GoogleLoginButtonProps) => {
   const posthog = usePostHog()
 
   const onClick = () => {

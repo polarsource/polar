@@ -147,7 +147,7 @@ const ClientPage = ({
         title: 'Benefit ID Copied',
         description: `Benefit ${selectedBenefit.description} ID successfully copied`,
       })
-    } catch (err) {
+    } catch {
       toast({
         title: 'Benefit ID Copy Failed',
         description: `Error copying ID of benefit ${selectedBenefit.description}`,

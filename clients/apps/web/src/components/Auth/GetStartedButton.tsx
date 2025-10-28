@@ -16,14 +16,14 @@ interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   storefrontOrg?: schemas['Organization']
 }
 
-const GetStartedButton: React.FC<GetStartedButtonProps> = ({
+const GetStartedButton = ({
   text: _text,
   wrapperClassNames,
   orgSlug: slug,
   storefrontOrg,
   size = 'lg',
   ...props
-}) => {
+}: GetStartedButtonProps) => {
   const posthog = usePostHog()
 
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()

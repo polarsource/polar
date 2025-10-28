@@ -25855,6 +25855,7 @@ export interface operations {
           | 'America/Coral_Harbour'
           | 'America/Cordoba'
           | 'America/Costa_Rica'
+          | 'America/Coyhaique'
           | 'America/Creston'
           | 'America/Cuiaba'
           | 'America/Curacao'
@@ -28031,8 +28032,6 @@ export interface operations {
           | null
         /** @description Filter by benefit ID. */
         benefit_id?: string | string[] | null
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by checkout ID. */
         checkout_id?: string | string[] | null
         /** @description Filter by order ID. */
@@ -28813,8 +28812,6 @@ export interface operations {
   'customer_portal:downloadables:list': {
     parameters: {
       query?: {
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by benefit ID. */
         benefit_id?: string | string[] | null
         /** @description Page number, defaults to 1. */
@@ -28910,8 +28907,6 @@ export interface operations {
   'customer_portal:license_keys:list': {
     parameters: {
       query?: {
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by a specific benefit */
         benefit_id?: string | null
         /** @description Page number, defaults to 1. */
@@ -29205,8 +29200,6 @@ export interface operations {
   'customer_portal:orders:list': {
     parameters: {
       query?: {
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
         /** @description Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
@@ -29551,8 +29544,6 @@ export interface operations {
   'customer_portal:subscriptions:list': {
     parameters: {
       query?: {
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
         /** @description Filter by active or cancelled subscription. */
@@ -32226,6 +32217,7 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'America/Coral_Harbour',
   'America/Cordoba',
   'America/Costa_Rica',
+  'America/Coyhaique',
   'America/Creston',
   'America/Cuiaba',
   'America/Curacao',

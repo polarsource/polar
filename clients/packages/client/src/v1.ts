@@ -4705,6 +4705,21 @@ export interface components {
         | 'ZM'
         | 'ZW'
     }
+    /** AddressDict */
+    AddressDict: {
+      /** Line1 */
+      line1?: string
+      /** Line2 */
+      line2?: string
+      /** Postal Code */
+      postal_code?: string
+      /** City */
+      city?: string
+      /** State */
+      state?: string
+      /** Country */
+      country: string
+    }
     /** AddressInput */
     AddressInput: {
       /** Line1 */
@@ -11079,6 +11094,66 @@ export interface components {
        */
       organization_id?: string | null
     }
+    /**
+     * CustomerCreatedEvent
+     * @description An event created by Polar when a customer is created.
+     */
+    CustomerCreatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'customer.created'
+      metadata: components['schemas']['CustomerCreatedMetadata']
+    }
+    /** CustomerCreatedMetadata */
+    CustomerCreatedMetadata: {
+      /** Customer Id */
+      customer_id: string
+      /** Customer Email */
+      customer_email: string
+      /** Customer Name */
+      customer_name: string | null
+      /** Customer External Id */
+      customer_external_id: string | null
+    }
     /** CustomerCustomerMeter */
     CustomerCustomerMeter: {
       /**
@@ -11185,6 +11260,66 @@ export interface components {
       expires_at: string
       /** Return Url */
       return_url: string | null
+    }
+    /**
+     * CustomerDeletedEvent
+     * @description An event created by Polar when a customer is deleted.
+     */
+    CustomerDeletedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'customer.deleted'
+      metadata: components['schemas']['CustomerDeletedMetadata']
+    }
+    /** CustomerDeletedMetadata */
+    CustomerDeletedMetadata: {
+      /** Customer Id */
+      customer_id: string
+      /** Customer Email */
+      customer_email: string
+      /** Customer Name */
+      customer_name: string | null
+      /** Customer External Id */
+      customer_external_id: string | null
     }
     /**
      * CustomerMeter
@@ -12921,6 +13056,81 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+    }
+    /**
+     * CustomerUpdatedEvent
+     * @description An event created by Polar when a customer is updated.
+     */
+    CustomerUpdatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'customer.updated'
+      metadata: components['schemas']['CustomerUpdatedMetadata']
+    }
+    /** CustomerUpdatedFields */
+    CustomerUpdatedFields: {
+      /** Name */
+      name?: string | null
+      /** Email */
+      email?: string | null
+      billing_address?: components['schemas']['AddressDict'] | null
+      /** Tax Id */
+      tax_id?: string | null
+      /** Metadata */
+      metadata?: {
+        [key: string]: string | number | boolean
+      } | null
+    }
+    /** CustomerUpdatedMetadata */
+    CustomerUpdatedMetadata: {
+      /** Customer Id */
+      customer_id: string
+      /** Customer Email */
+      customer_email: string
+      /** Customer Name */
+      customer_name: string | null
+      /** Customer External Id */
+      customer_external_id: string | null
+      updated_fields: components['schemas']['CustomerUpdatedFields']
     }
     /** DiscordGuild */
     DiscordGuild: {
@@ -20261,6 +20471,9 @@ export interface components {
       | components['schemas']['SubscriptionProductUpdatedEvent']
       | components['schemas']['OrderPaidEvent']
       | components['schemas']['OrderRefundedEvent']
+      | components['schemas']['CustomerCreatedEvent']
+      | components['schemas']['CustomerUpdatedEvent']
+      | components['schemas']['CustomerDeletedEvent']
     /**
      * TaxIDFormat
      * @description List of supported tax ID formats.
@@ -33761,6 +33974,9 @@ export const customerCancellationReasonValues: ReadonlyArray<
   'unused',
   'other',
 ]
+export const customerCreatedEventNameValues: ReadonlyArray<
+  components['schemas']['CustomerCreatedEvent']['name']
+> = ['customer.created']
 export const customerCustomerMeterSortPropertyValues: ReadonlyArray<
   components['schemas']['CustomerCustomerMeterSortProperty']
 > = [
@@ -33779,6 +33995,9 @@ export const customerCustomerMeterSortPropertyValues: ReadonlyArray<
   'balance',
   '-balance',
 ]
+export const customerDeletedEventNameValues: ReadonlyArray<
+  components['schemas']['CustomerDeletedEvent']['name']
+> = ['customer.deleted']
 export const customerMeterSortPropertyValues: ReadonlyArray<
   components['schemas']['CustomerMeterSortProperty']
 > = [
@@ -33844,6 +34063,9 @@ export const customerSubscriptionSortPropertyValues: ReadonlyArray<
   'product',
   '-product',
 ]
+export const customerUpdatedEventNameValues: ReadonlyArray<
+  components['schemas']['CustomerUpdatedEvent']['name']
+> = ['customer.updated']
 export const discountDurationValues: ReadonlyArray<
   components['schemas']['DiscountDuration']
 > = ['once', 'forever', 'repeating']

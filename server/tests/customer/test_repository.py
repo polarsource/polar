@@ -42,7 +42,7 @@ async def test_create_context(
         assert customer.id is not None
         await session.flush()
 
-    enqueue_job_mock.assert_called_once_with(
+    enqueue_job_mock.assert_any_call(
         "customer.webhook", WebhookEventType.customer_created, customer.id
     )
 

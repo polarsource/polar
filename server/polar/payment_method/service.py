@@ -122,6 +122,24 @@ class PaymentMethodService:
 
         return await self.upsert_from_stripe(session, customer, stripe_payment_method)
 
+    async def get_customer_payment_method(
+        self, session: AsyncSession, customer: Customer
+    ) -> PaymentMethod | None:
+        repository = PaymentMethodRepository.from_session(session)
+        if customer.default_payment_method_id is not None:
+            return await repository.get_by_id(
+                customer.default_payment_method_id,
+                options=repository.get_eager_options(),
+            )
+
+        payment_methods = await repository.list_by_customer(
+            customer.id, options=repository.get_eager_options()
+        )
+        if len(payment_methods) > 0:
+            return payment_methods[0]
+
+        return None
+
     async def _get_active_subscription_ids(
         self,
         session: AsyncSession,

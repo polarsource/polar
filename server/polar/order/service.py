@@ -362,7 +362,7 @@ class OrderService:
 
         statement = (
             statement.join(Order.discount, isouter=True)
-            .join(Order.product)
+            .join(Order.product, isouter=True)
             .options(
                 *repository.get_eager_options(
                     customer_load=contains_eager(Order.customer),

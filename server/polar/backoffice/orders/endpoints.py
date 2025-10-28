@@ -110,7 +110,7 @@ async def list(
     statement = (
         repository.get_base_statement()
         .join(Customer, Order.customer_id == Customer.id)
-        .join(Product, Order.product_id == Product.id)
+        .join(Product, Order.product_id == Product.id, isouter=True)
         .join(Organization, Customer.organization_id == Organization.id)
         .options(
             contains_eager(Order.customer).contains_eager(Customer.organization),

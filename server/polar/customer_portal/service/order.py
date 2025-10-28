@@ -76,7 +76,7 @@ class CustomerOrderService:
         repository = CustomerOrderRepository.from_session(session)
         statement = (
             repository.get_readable_statement(auth_subject)
-            .join(Order.product)
+            .join(Order.product, isouter=True)
             .options(
                 *repository.get_eager_options(
                     product_load=contains_eager(Order.product)

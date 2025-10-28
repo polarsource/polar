@@ -73,7 +73,7 @@ class StorefrontService:
         statement = select(Customer).where(
             Customer.id.in_(
                 select(Order.customer_id)
-                .join(Product, Product.id == Order.product_id)
+                .join(Product, Product.id == Order.product_id, isouter=True)
                 .where(
                     Order.deleted_at.is_(None),
                     Product.organization_id == organization.id,

@@ -819,7 +819,7 @@ class PlainService:
             (
                 select(Order)
                 .join(Customer, onclause=Customer.id == Order.customer_id)
-                .join(Product, onclause=Product.id == Order.product_id)
+                .join(Product, onclause=Product.id == Order.product_id, isouter=True)
                 .where(func.lower(Customer.email) == email.lower())
             )
             .order_by(Order.created_at.desc())

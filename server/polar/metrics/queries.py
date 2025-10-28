@@ -88,7 +88,9 @@ def _get_readable_orders_statement(
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> Select[tuple[uuid.UUID]]:
-    statement = select(Order.id).join(Product, onclause=Order.product_id == Product.id)
+    statement = select(Order.id).join(
+        Product, onclause=Order.product_id == Product.id, isouter=True
+    )
 
     if is_user(auth_subject):
         statement = statement.where(

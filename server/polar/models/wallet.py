@@ -1,9 +1,15 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Uuid
+from sqlalchemy import ForeignKey, String, Uuid, func, select
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    column_property,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.kit.db.models.base import RecordModel
 
@@ -29,3 +35,14 @@ class Wallet(RecordModel):
     organization: AssociationProxy["Organization"] = association_proxy(
         "customer", "organization"
     )
+
+    @declared_attr
+    def balance(cls) -> Mapped[int]:
+        from .wallet_transaction import WalletTransaction
+
+        return column_property(
+            select(func.coalesce(func.sum(WalletTransaction.amount), 0))
+            .where(WalletTransaction.wallet_id == cls.id)
+            .correlate_except(WalletTransaction)
+            .scalar_subquery()
+        )

@@ -47,13 +47,9 @@ class DownloadableService(
         auth_subject: AuthSubject[Customer],
         *,
         pagination: PaginationParams,
-        organization_id: Sequence[UUID] | None = None,
         benefit_id: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[Downloadable], int]:
         statement = self._get_base_query(auth_subject)
-
-        if organization_id:
-            statement = statement.where(File.organization_id.in_(organization_id))
 
         if benefit_id:
             statement = statement.where(Downloadable.benefit_id.in_(benefit_id))

@@ -126,7 +126,7 @@ class CustomerBalance(Schema):
     )
     currency: str = Field(
         description="The currency code (ISO 4217) for the balance amount.",
-        examples=["USD"],
+        examples=["usd"],
     )
 
 

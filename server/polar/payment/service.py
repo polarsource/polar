@@ -9,7 +9,7 @@ from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import generate_uuid
-from polar.models import Checkout, Order, Payment
+from polar.models import Checkout, Order, Payment, Wallet
 from polar.models.payment import PaymentStatus
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -101,6 +101,7 @@ class PaymentService:
         session: AsyncSession,
         charge: stripe_lib.Charge,
         checkout: Checkout | None,
+        wallet: Wallet | None,
         order: Order | None,
     ) -> Payment:
         repository = PaymentRepository.from_session(session)
@@ -140,9 +141,12 @@ class PaymentService:
 
         payment.checkout = checkout
         payment.order = order
+        payment.wallet = wallet
 
         if checkout is not None:
             payment.organization = checkout.organization
+        elif wallet is not None:
+            payment.organization = wallet.organization
         elif order is not None:
             payment.organization = order.organization
         else:

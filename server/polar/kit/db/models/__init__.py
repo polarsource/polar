@@ -1,3 +1,3 @@
-from .base import Model, RateLimitGroupMixin, RecordModel, TimestampedModel
+from .base import IDModel, Model, RateLimitGroupMixin, RecordModel, TimestampedModel
 
-__all__ = ["Model", "TimestampedModel", "RecordModel", "RateLimitGroupMixin"]
+__all__ = ["Model", "TimestampedModel", "IDModel", "RecordModel", "RateLimitGroupMixin"]

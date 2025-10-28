@@ -45,7 +45,7 @@ class TimestampedModel(Model):
         self.deleted_at = utc_now()
 
 
-class RecordModel(TimestampedModel):
+class IDModel(Model):
     __abstract__ = True
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)
@@ -70,6 +70,10 @@ class RecordModel(TimestampedModel):
     @classmethod
     def generate_id(cls) -> UUID:
         return generate_uuid()
+
+
+class RecordModel(IDModel, TimestampedModel):
+    __abstract__ = True
 
 
 class RateLimitGroupMixin:

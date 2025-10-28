@@ -45,7 +45,6 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         *,
         type: Sequence[BenefitType] | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
-        organization_id: Sequence[uuid.UUID] | None = None,
         checkout_id: Sequence[uuid.UUID] | None = None,
         order_id: Sequence[uuid.UUID] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
@@ -63,9 +62,6 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         if benefit_id is not None:
             statement = statement.where(BenefitGrant.benefit_id.in_(benefit_id))
-
-        if organization_id is not None:
-            statement = statement.where(Benefit.organization_id.in_(organization_id))
 
         if checkout_id is not None:
             statement = (

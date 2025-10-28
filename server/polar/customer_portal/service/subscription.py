@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, or_, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject
@@ -51,7 +51,6 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         auth_subject: AuthSubject[Customer],
         *,
-        organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         query: str | None = None,
@@ -77,9 +76,6 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             )
         )
 
-        if organization_id is not None:
-            statement = statement.where(Product.organization_id.in_(organization_id))
-
         if product_id is not None:
             statement = statement.where(Subscription.product_id.in_(product_id))
 
@@ -90,12 +86,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 statement = statement.where(Subscription.revoked.is_(True))
 
         if query is not None:
-            statement = statement.where(
-                or_(
-                    Product.name.ilike(f"%{query}%"),
-                    Organization.slug.ilike(f"%{query}%"),
-                )
-            )
+            statement = statement.where(Product.name.ilike(f"%{query}%"))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

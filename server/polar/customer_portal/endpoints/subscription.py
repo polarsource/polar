@@ -13,7 +13,6 @@ from polar.locker import Locker, get_locker
 from polar.models import Subscription
 from polar.models.subscription import SubscriptionStatus
 from polar.openapi import APITag
-from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
@@ -50,9 +49,6 @@ async def list(
     auth_subject: auth.CustomerPortalRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
     product_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
@@ -69,7 +65,6 @@ async def list(
     results, count = await customer_subscription_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
         product_id=product_id,
         active=active,
         query=query,

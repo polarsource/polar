@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import UnaryExpression, asc, desc
-from sqlalchemy.orm.strategy_options import contains_eager
+from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject
 from polar.enums import PaymentProcessor
@@ -64,7 +64,6 @@ class CustomerOrderService:
         session: AsyncSession,
         auth_subject: AuthSubject[Customer],
         *,
-        organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         product_billing_type: Sequence[ProductBillingType] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
@@ -84,9 +83,6 @@ class CustomerOrderService:
                 )
             )
         )
-
-        if organization_id is not None:
-            statement = statement.where(Product.organization_id.in_(organization_id))
 
         if product_id is not None:
             statement = statement.where(Order.product_id.in_(product_id))

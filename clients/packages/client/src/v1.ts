@@ -3109,6 +3109,50 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/wallets/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Wallets
+     * @description List wallets of the authenticated customer.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:wallets:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/wallets/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Wallet
+     * @description Get a wallet by ID for the authenticated customer.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:wallets:get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-seats': {
     parameters: {
       query?: never
@@ -13202,6 +13246,59 @@ export interface components {
       customer_external_id: string | null
       updated_fields: components['schemas']['CustomerUpdatedFields']
     }
+    /**
+     * CustomerWallet
+     * @description A wallet represents your balance with an organization.
+     *
+     *     You can top-up your wallet and use the balance to pay for usage.
+     */
+    CustomerWallet: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer that owns the wallet.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      customer_id: string
+      /**
+       * Balance
+       * @description The current balance of the wallet, in cents.
+       * @example 5000
+       */
+      balance: number
+      /**
+       * Currency
+       * @description The currency of the wallet.
+       * @example usd
+       */
+      currency: string
+    }
+    /**
+     * CustomerWalletSortProperty
+     * @enum {string}
+     */
+    CustomerWalletSortProperty:
+      | 'created_at'
+      | '-created_at'
+      | 'balance'
+      | '-balance'
     /** DiscordGuild */
     DiscordGuild: {
       /** Name */
@@ -15521,6 +15618,12 @@ export interface components {
       items: components['schemas']['CustomerSubscription'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[CustomerWallet] */
+    ListResource_CustomerWallet_: {
+      /** Items */
+      items: components['schemas']['CustomerWallet'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Customer] */
     ListResource_Customer_: {
       /** Items */
@@ -17077,6 +17180,8 @@ export interface components {
       amount: number
       /** Currency */
       currency: string
+      /** Backfilled */
+      backfilled?: boolean
     }
     /** OrderProduct */
     OrderProduct: {
@@ -17201,6 +17306,8 @@ export interface components {
       refunded_amount: number
       /** Currency */
       currency: string
+      /** Backfilled */
+      backfilled?: boolean
     }
     /**
      * OrderSortProperty
@@ -19592,6 +19699,12 @@ export interface components {
       metadata?: {
         [key: string]: unknown
       } | null
+      /**
+       * Immediate Claim
+       * @description If true, the seat will be immediately claimed without sending an invitation email. API-only feature.
+       * @default false
+       */
+      immediate_claim: boolean
     }
     /** SeatClaim */
     SeatClaim: {
@@ -30150,6 +30263,83 @@ export interface operations {
       }
     }
   }
+  'customer_portal:wallets:list': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['CustomerWalletSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_CustomerWallet_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:wallets:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The wallet ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerWallet']
+        }
+      }
+      /** @description Wallet not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer-seats:list_seats': {
     parameters: {
       query?: {
@@ -34377,6 +34567,9 @@ export const customerSubscriptionSortPropertyValues: ReadonlyArray<
 export const customerUpdatedEventNameValues: ReadonlyArray<
   components['schemas']['CustomerUpdatedEvent']['name']
 > = ['customer.updated']
+export const customerWalletSortPropertyValues: ReadonlyArray<
+  components['schemas']['CustomerWalletSortProperty']
+> = ['created_at', '-created_at', 'balance', '-balance']
 export const discountDurationValues: ReadonlyArray<
   components['schemas']['DiscountDuration']
 > = ['once', 'forever', 'repeating']

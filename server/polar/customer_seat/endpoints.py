@@ -57,6 +57,12 @@ async def assign_seat(
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatSchema:
+    # Prevent anonymous users from using immediate_claim
+    if isinstance(auth_subject.subject, Anonymous) and seat_assign.immediate_claim:
+        raise NotPermitted(
+            "Anonymous users cannot use immediate_claim. This feature is only available for authenticated API access."
+        )
+
     subscription: Subscription | None = None
     order: Order | None = None
 
@@ -140,6 +146,7 @@ async def assign_seat(
         external_customer_id=seat_assign.external_customer_id,
         customer_id=seat_assign.customer_id,
         metadata=seat_assign.metadata,
+        immediate_claim=seat_assign.immediate_claim,
     )
 
     return CustomerSeatSchema.model_validate(seat)

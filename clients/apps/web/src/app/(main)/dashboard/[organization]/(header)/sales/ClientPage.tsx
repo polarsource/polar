@@ -160,12 +160,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
     },
     {
       accessorKey: 'product',
-      enableSorting: true,
+      enableSorting: false,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Product" />
+        <DataTableColumnHeader column={column} title="Description" />
       ),
-      cell: (props) => {
-        const product = props.getValue() as schemas['Product']
+      cell: ({
+        row: {
+          original: { product, description },
+        },
+      }) => {
+        if (!product) {
+          return <span>{description}</span>
+        }
         return (
           <div className="flex flex-row items-center gap-4">
             {product.name}

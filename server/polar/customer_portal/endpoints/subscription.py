@@ -1,4 +1,4 @@
-from typing import Annotated, TypedDict
+from typing import Annotated
 
 import structlog
 from fastapi import Depends, Query
@@ -14,7 +14,7 @@ from polar.openapi import APITag
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
-from polar.subscription.schemas import SubscriptionID
+from polar.subscription.schemas import SubscriptionChargePreview, SubscriptionID
 from polar.subscription.service import AlreadyCanceledSubscription
 from polar.subscription.service import subscription as subscription_service
 
@@ -99,19 +99,10 @@ async def get(
     return subscription
 
 
-class SubscriptionChargePreviewResponse(TypedDict):
-    base_amount: int
-    metered_amount: int
-    subtotal_amount: int
-    discount_amount: int
-    tax_amount: int
-    total_amount: int
-
-
 @router.get(
     "/{id}/charge-preview",
     summary="Preview Next Charge For Active Subscription",
-    response_model=SubscriptionChargePreviewResponse,
+    response_model=SubscriptionChargePreview,
     responses={404: SubscriptionNotFound},
     tags=[APITag.private],
 )
@@ -119,7 +110,7 @@ async def get_charge_preview(
     id: SubscriptionID,
     auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionChargePreviewResponse:
+) -> SubscriptionChargePreview:
     """Get current period usage and cost breakdown for a subscription."""
     subscription = await customer_subscription_service.get_by_id(
         session, auth_subject, id
@@ -128,9 +119,15 @@ async def get_charge_preview(
     if subscription is None:
         raise ResourceNotFound()
 
-    if subscription.status != "active":
-        ## FIXME Is a 404 the correct behavior?
+    # Allow active, trialing, and subscriptions set to cancel at period end
+    if subscription.status not in ("active", "trialing"):
         raise ResourceNotFound()
+
+    # If subscription will end (cancel_at_period_end or ends_at), ensure there's still a charge coming
+    if subscription.cancel_at_period_end or subscription.ends_at:
+        # Only show preview if we haven't reached the end date yet
+        if subscription.ended_at:
+            raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
 

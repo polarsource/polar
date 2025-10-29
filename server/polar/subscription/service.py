@@ -3,7 +3,7 @@ import uuid
 from collections.abc import AsyncGenerator, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, Literal, TypedDict, cast, overload
+from typing import Any, Literal, cast, overload
 from urllib.parse import urlencode
 
 import stripe as stripe_lib
@@ -93,6 +93,7 @@ from polar.worker import enqueue_job
 from .repository import SubscriptionRepository
 from .schemas import (
     SubscriptionCancel,
+    SubscriptionChargePreview,
     SubscriptionCreate,
     SubscriptionCreateCustomer,
     SubscriptionRevoke,
@@ -254,17 +255,6 @@ def _from_timestamp(t: int | None) -> datetime | None:
     if t is None:
         return None
     return datetime.fromtimestamp(t, UTC)
-
-
-class SubscriptionChargePreview(TypedDict):
-    """Preview of upcoming subscription charge."""
-
-    base_amount: int
-    metered_amount: int
-    subtotal_amount: int
-    discount_amount: int
-    tax_amount: int
-    total_amount: int
 
 
 class SubscriptionService:
@@ -2109,14 +2099,14 @@ class SubscriptionService:
 
         total = taxable_amount + tax_amount
 
-        return {
-            "base_amount": base_price,
-            "metered_amount": metered_amount,
-            "subtotal_amount": subtotal_amount,
-            "discount_amount": discount_amount,
-            "tax_amount": tax_amount,
-            "total_amount": total,
-        }
+        return SubscriptionChargePreview(
+            base_amount=base_price,
+            metered_amount=metered_amount,
+            subtotal_amount=subtotal_amount,
+            discount_amount=discount_amount,
+            tax_amount=tax_amount,
+            total_amount=total,
+        )
 
     async def _after_subscription_updated(
         self,

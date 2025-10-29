@@ -215,9 +215,7 @@ async def get_charge_preview(
         if subscription.ended_at:
             raise ResourceNotFound()
 
-    preview = await subscription_service.calculate_charge_preview(session, subscription)
-
-    return SubscriptionChargePreview.model_validate(preview)
+    return await subscription_service.calculate_charge_preview(session, subscription)
 
 
 @router.post(

@@ -787,7 +787,7 @@ export interface paths {
     }
     /**
      * Preview Next Charge For Subscription
-     * @description Get a preview of the next charge for an active subscription.
+     * @description Get a preview of the next charge for an active or trialing subscription.
      *
      *     Returns a breakdown of:
      *     - Base subscription amount
@@ -796,7 +796,9 @@ export interface paths {
      *     - Calculated taxes
      *     - Total amount
      *
-     *     Only available for active subscriptions.
+     *     For trialing subscriptions, shows what the first charge will be when the trial ends.
+     *     For subscriptions set to cancel at period end, shows the final charge.
+     *     Only available for active or trialing subscriptions, including those set to cancel.
      *
      *     **Scopes**: `subscriptions:read` `subscriptions:write`
      */
@@ -20003,21 +20005,6 @@ export interface components {
        */
       total_amount: number
     }
-    /** SubscriptionChargePreviewResponse */
-    SubscriptionChargePreviewResponse: {
-      /** Base Amount */
-      base_amount: number
-      /** Metered Amount */
-      metered_amount: number
-      /** Subtotal Amount */
-      subtotal_amount: number
-      /** Discount Amount */
-      discount_amount: number
-      /** Tax Amount */
-      tax_amount: number
-      /** Total Amount */
-      total_amount: number
-    }
     /**
      * SubscriptionCreateCustomer
      * @description Create a subscription for an existing customer.
@@ -30079,7 +30066,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SubscriptionChargePreviewResponse']
+          'application/json': components['schemas']['SubscriptionChargePreview']
         }
       }
       /** @description Customer subscription was not found. */

@@ -15,16 +15,16 @@ const UpcomingChargeCard = ({
     subscription.id,
   )
 
-  const isFreeProduct = subscription.prices.some(
-    (price) => price.amount_type === 'free',
-  )
-
   const isTrialing = subscription.status === 'trialing'
   const isActive = subscription.status === 'active'
 
   if (!isActive && !isTrialing) {
     return null
   }
+
+  const isFreeProduct = subscription.prices.some(
+    (price) => price.amount_type === 'free',
+  )
 
   const hasMeters = subscription.meters.length > 0
   const hasTaxes = chargePreview && chargePreview.tax_amount > 0

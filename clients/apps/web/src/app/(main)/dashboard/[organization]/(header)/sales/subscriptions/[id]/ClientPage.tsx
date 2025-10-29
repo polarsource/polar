@@ -208,7 +208,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
         )}
       </ShadowBox>
 
-      <UpcomingChargeCard subscription={subscription} />
+      {(subscription.status === 'active' ||
+        subscription.status === 'trialing') && (
+        <UpcomingChargeCard subscription={subscription} />
+      )}
 
       <div className="flex flex-col gap-4 md:hidden">
         <CustomerContextView

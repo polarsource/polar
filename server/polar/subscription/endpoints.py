@@ -179,6 +179,7 @@ async def get(
     summary="Preview Next Charge For Subscription",
     response_model=SubscriptionChargePreview,
     responses={404: SubscriptionNotFound},
+    tags=[APITag.private],
 )
 async def get_charge_preview(
     id: SubscriptionID,

@@ -14,7 +14,10 @@ from polar.enums import AccountType, InvoiceNumbering
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Organization, Product, User
 from polar.models.account import Account
-from polar.models.organization import OrganizationNotificationSettings
+from polar.models.organization import (
+    OrganizationNotificationSettings,
+    OrganizationStatus,
+)
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.ai_validation import (
@@ -304,7 +307,7 @@ class TestCheckReviewThreshold:
         organization: Organization,
     ) -> None:
         # Given organization already under review
-        organization.status = Organization.Status.UNDER_REVIEW
+        organization.status = OrganizationStatus.UNDER_REVIEW
         organization.next_review_threshold = 1000
 
         # When
@@ -313,7 +316,7 @@ class TestCheckReviewThreshold:
         )
 
         # Then
-        assert result.status == Organization.Status.UNDER_REVIEW
+        assert result.status == OrganizationStatus.UNDER_REVIEW
 
     async def test_zero_threshold(
         self,
@@ -322,7 +325,7 @@ class TestCheckReviewThreshold:
         organization: Organization,
     ) -> None:
         # Given organization with review threshold set to 0
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.next_review_threshold = 0
 
         transaction_sum_mock = mocker.patch(
@@ -336,7 +339,7 @@ class TestCheckReviewThreshold:
         )
 
         # Then
-        assert result.status == Organization.Status.UNDER_REVIEW
+        assert result.status == OrganizationStatus.UNDER_REVIEW
         transaction_sum_mock.assert_called_once()
 
     async def test_below_review_threshold(
@@ -346,7 +349,7 @@ class TestCheckReviewThreshold:
         organization: Organization,
     ) -> None:
         # Given organization below review threshold
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.next_review_threshold = 10000
 
         transaction_sum_mock = mocker.patch(
@@ -360,7 +363,7 @@ class TestCheckReviewThreshold:
         )
 
         # Then
-        assert result.status == Organization.Status.ACTIVE
+        assert result.status == OrganizationStatus.ACTIVE
         transaction_sum_mock.assert_called_once()
 
     async def test_above_review_threshold(
@@ -370,7 +373,7 @@ class TestCheckReviewThreshold:
         organization: Organization,
     ) -> None:
         # Given organization above review threshold
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.next_review_threshold = 1000
 
         transaction_sum_mock = mocker.patch(
@@ -385,7 +388,7 @@ class TestCheckReviewThreshold:
         )
 
         # Then
-        assert result.status == Organization.Status.UNDER_REVIEW
+        assert result.status == OrganizationStatus.UNDER_REVIEW
         transaction_sum_mock.assert_called_once()
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
@@ -401,7 +404,7 @@ class TestConfirmOrganizationReviewed:
         organization: Organization,
     ) -> None:
         # Given organization under review
-        organization.status = Organization.Status.UNDER_REVIEW
+        organization.status = OrganizationStatus.UNDER_REVIEW
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
@@ -411,7 +414,7 @@ class TestConfirmOrganizationReviewed:
         )
 
         # Then
-        assert result.status == Organization.Status.ACTIVE
+        assert result.status == OrganizationStatus.ACTIVE
         assert result.next_review_threshold == 15000
         enqueue_job_mock.assert_called_once_with(
             "organization.reviewed", organization_id=organization.id
@@ -426,13 +429,13 @@ class TestDenyOrganization:
         organization: Organization,
     ) -> None:
         # Given organization active
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
 
         # When
         result = await organization_service.deny_organization(session, organization)
 
         # Then
-        assert result.status == Organization.Status.DENIED
+        assert result.status == OrganizationStatus.DENIED
 
 
 @pytest.mark.asyncio
@@ -444,7 +447,7 @@ class TestSetOrganizationUnderReview:
         organization: Organization,
     ) -> None:
         # Given organization active
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
@@ -454,7 +457,7 @@ class TestSetOrganizationUnderReview:
         )
 
         # Then
-        assert result.status == Organization.Status.UNDER_REVIEW
+        assert result.status == OrganizationStatus.UNDER_REVIEW
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
         )
@@ -642,7 +645,7 @@ class TestGetPaymentStatus:
     ) -> None:
         # Set up as new organization
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore
 
@@ -694,7 +697,7 @@ class TestGetPaymentStatus:
     ) -> None:
         # Make organization not payment ready (new org without account setup)
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.CREATED
+        organization.status = OrganizationStatus.CREATED
         organization.account_id = None
         await save_fixture(organization)
 
@@ -1189,7 +1192,7 @@ class TestApproveAppeal:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.status = Organization.Status.UNDER_REVIEW
+        organization.status = OrganizationStatus.UNDER_REVIEW
         review = OrganizationReview(
             organization_id=organization.id,
             verdict=OrganizationReview.Verdict.FAIL,
@@ -1205,7 +1208,7 @@ class TestApproveAppeal:
 
         result = await organization_service.approve_appeal(session, organization)
 
-        assert organization.status == Organization.Status.ACTIVE
+        assert organization.status == OrganizationStatus.ACTIVE
         assert result.appeal_decision == OrganizationReview.AppealDecision.APPROVED
         assert result.appeal_reviewed_at is not None
 

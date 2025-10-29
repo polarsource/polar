@@ -11,7 +11,7 @@ from alembic import op
 
 # Polar Custom Imports
 from polar.kit.extensions.sqlalchemy.types import StringEnum
-from polar.models.organization import Organization
+from polar.models.organization import Organization, OrganizationStatus
 
 # revision identifiers, used by Alembic.
 revision = "24bff4469bc0"
@@ -25,9 +25,9 @@ def upgrade() -> None:
         "organizations",
         sa.Column(
             "status",
-            StringEnum(Organization.Status),
+            StringEnum(OrganizationStatus),
             nullable=True,
-            default=Organization.Status.CREATED.value,
+            default=OrganizationStatus.CREATED.value,
         ),
     )
 

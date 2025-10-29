@@ -26,10 +26,10 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.models.organization import Organization as OrganizationModel
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationNotificationSettings,
+    OrganizationStatus,
     OrganizationSubscriptionSettings,
 )
 from polar.models.organization_review import OrganizationReview
@@ -201,7 +201,7 @@ class Organization(IDSchema, TimestampedSchema):
     socials: list[OrganizationSocialLink] = Field(
         description="Links to social profiles.",
     )
-    status: OrganizationModel.Status = Field(description="Current organization status")
+    status: OrganizationStatus = Field(description="Current organization status")
     details_submitted_at: datetime | None = Field(
         description="When the business details were submitted.",
     )
@@ -304,7 +304,7 @@ class OrganizationPaymentStatus(Schema):
         description="Whether the organization is ready to accept payments"
     )
     steps: list[OrganizationPaymentStep] = Field(description="List of onboarding steps")
-    organization_status: OrganizationModel.Status = Field(
+    organization_status: OrganizationStatus = Field(
         description="Current organization status"
     )
 

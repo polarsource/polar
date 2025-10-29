@@ -26,6 +26,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.models import Account, Organization, User, UserOrganization
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -76,7 +77,7 @@ class PaymentStatusResponse(BaseModel):
         description="Whether the organization is ready to accept payments"
     )
     steps: list[PaymentStep] = Field(description="List of onboarding steps")
-    organization_status: Organization.Status = Field(
+    organization_status: OrganizationStatus = Field(
         description="Current organization status"
     )
 
@@ -414,7 +415,7 @@ class OrganizationService:
             organization.next_review_threshold >= 0
             and transfers_sum >= organization.next_review_threshold
         ):
-            organization.status = Organization.Status.UNDER_REVIEW
+            organization.status = OrganizationStatus.UNDER_REVIEW
             organization.status_updated_at = datetime.now(UTC)
             await self._sync_account_status(session, organization)
             session.add(organization)
@@ -429,7 +430,7 @@ class OrganizationService:
         organization: Organization,
         next_review_threshold: int,
     ) -> Organization:
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.status_updated_at = datetime.now(UTC)
         organization.next_review_threshold = next_review_threshold
         await self._sync_account_status(session, organization)
@@ -449,7 +450,7 @@ class OrganizationService:
     async def deny_organization(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
-        organization.status = Organization.Status.DENIED
+        organization.status = OrganizationStatus.DENIED
         organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
@@ -467,7 +468,7 @@ class OrganizationService:
     async def set_organization_under_review(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
-        organization.status = Organization.Status.UNDER_REVIEW
+        organization.status = OrganizationStatus.UNDER_REVIEW
         organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
@@ -483,7 +484,7 @@ class OrganizationService:
 
         for organization in organizations:
             # Don't override organizations that are denied
-            if organization.status == Organization.Status.DENIED:
+            if organization.status == OrganizationStatus.DENIED:
                 continue
 
             # If account is fully set up, set organization to ACTIVE
@@ -497,7 +498,7 @@ class OrganizationService:
                     account.is_payouts_enabled,
                 )
             ):
-                organization.status = Organization.Status.ACTIVE
+                organization.status = OrganizationStatus.ACTIVE
                 organization.status_updated_at = datetime.now(UTC)
 
             # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
@@ -508,7 +509,7 @@ class OrganizationService:
                     not account.is_payouts_enabled,
                 )
             ):
-                organization.status = Organization.Status.ONBOARDING_STARTED
+                organization.status = OrganizationStatus.ONBOARDING_STARTED
                 organization.status_updated_at = datetime.now(UTC)
 
             await self._sync_account_status(session, organization)
@@ -523,10 +524,10 @@ class OrganizationService:
 
         # Map organization status to account status
         status_mapping = {
-            Organization.Status.ONBOARDING_STARTED: Account.Status.ONBOARDING_STARTED,
-            Organization.Status.ACTIVE: Account.Status.ACTIVE,
-            Organization.Status.UNDER_REVIEW: Account.Status.UNDER_REVIEW,
-            Organization.Status.DENIED: Account.Status.DENIED,
+            OrganizationStatus.ONBOARDING_STARTED: Account.Status.ONBOARDING_STARTED,
+            OrganizationStatus.ACTIVE: Account.Status.ACTIVE,
+            OrganizationStatus.UNDER_REVIEW: Account.Status.UNDER_REVIEW,
+            OrganizationStatus.DENIED: Account.Status.DENIED,
         }
 
         if organization.status in status_mapping:
@@ -633,7 +634,7 @@ class OrganizationService:
         # First check basic conditions that don't require account data
         if (
             organization.is_blocked()
-            or organization.status == Organization.Status.DENIED
+            or organization.status == OrganizationStatus.DENIED
         ):
             return False
 
@@ -644,8 +645,8 @@ class OrganizationService:
 
         # For new organizations, check basic conditions first
         if organization.status not in [
-            Organization.Status.ACTIVE,
-            Organization.Status.UNDER_REVIEW,
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.UNDER_REVIEW,
         ]:
             return False
 
@@ -757,7 +758,7 @@ class OrganizationService:
         if review.appeal_decision is not None:
             raise ValueError("Appeal has already been reviewed")
 
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.status_updated_at = datetime.now(UTC)
         review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
         review.appeal_reviewed_at = datetime.now(UTC)

@@ -7,6 +7,7 @@ from polar.held_balance.service import HeldBalanceService
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Account, Organization
+from polar.models.organization import OrganizationStatus
 from polar.notifications.service import NotificationsService
 from polar.notifications.service import notifications as notification_service
 from polar.organization.tasks import (
@@ -53,7 +54,7 @@ class TestOrganizationUnderReview:
         organization: Organization,
     ) -> None:
         # Update organization to have under review status
-        organization.status = Organization.Status.UNDER_REVIEW
+        organization.status = OrganizationStatus.UNDER_REVIEW
         await save_fixture(organization)
 
         # then
@@ -87,7 +88,7 @@ class TestOrganizationUnderReview:
         account: Account,
     ) -> None:
         # Update organization to have under review status and account
-        organization.status = Organization.Status.UNDER_REVIEW
+        organization.status = OrganizationStatus.UNDER_REVIEW
         organization.account_id = account.id
         await save_fixture(organization)
 
@@ -131,7 +132,7 @@ class TestOrganizationReviewed:
         organization: Organization,
     ) -> None:
         # Update organization to have active status
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         await save_fixture(organization)
 
         release_account_mock = mocker.patch.object(
@@ -166,7 +167,7 @@ class TestOrganizationReviewed:
         account: Account,
     ) -> None:
         # Update organization to have active status and account
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.account_id = account.id
         await save_fixture(organization)
 

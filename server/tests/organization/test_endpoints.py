@@ -8,7 +8,7 @@ from pytest_mock import MockerFixture
 from polar.enums import AccountType
 from polar.models import Product, User
 from polar.models.account import Account
-from polar.models.organization import Organization
+from polar.models.organization import Organization, OrganizationStatus
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
@@ -478,7 +478,7 @@ class TestGetPaymentStatus:
     ) -> None:
         # Set up as new organization
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore
 

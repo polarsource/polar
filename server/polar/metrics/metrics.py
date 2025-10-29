@@ -891,6 +891,31 @@ class GrossMarginPercentageMetric(MetaMetric):
         return cumulative_last(periods, cls.slug)
 
 
+class NetCashflowMetric(SQLMetric):
+    slug = "net_cashflow"
+    display_name = "Net Cashflow"
+    type = MetricType.currency
+    query = MetricQuery.events
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[float]:
+        revenue = func.sum(
+            case(
+                (
+                    Event.name == "order.paid",
+                    Event.user_metadata["amount"].as_integer(),
+                ),
+                else_=0,
+            )
+        )
+
+        costs = func.sum(
+            func.coalesce(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12), 0)
+        )
+
+        return revenue - costs
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
@@ -926,6 +951,7 @@ METRICS_SQL: list[type[SQLMetric]] = [
     AverageRevenuePerUserMetric,
     CostPerUserMetric,
     GrossMarginMetric,
+    NetCashflowMetric,
     OneTimeProductsMetric,
     OneTimeProductsRevenueMetric,
     OneTimeProductsNetRevenueMetric,

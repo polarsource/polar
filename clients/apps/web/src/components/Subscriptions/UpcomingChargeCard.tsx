@@ -74,11 +74,15 @@ const UpcomingChargeCard = ({
           <DetailRow
             label={subscription.product.name}
             value={
-              <AmountLabel
-                amount={subscription.amount || 0}
-                currency={subscription.currency}
-                minimumFractionDigits={2}
-              />
+              isCancelingAtPeriodEnd ? (
+                <span className="text-gray-500">Canceled</span>
+              ) : (
+                <AmountLabel
+                  amount={subscription.amount || 0}
+                  currency={subscription.currency}
+                  minimumFractionDigits={2}
+                />
+              )
             }
           />
 
@@ -167,7 +171,12 @@ const UpcomingChargeCard = ({
                   )}
 
                   <DetailRow
-                    label={hasMeters ? 'Estimated Total' : 'Total'}
+                    label={[
+                      hasMeters && 'Estimated',
+                      isCancelingAtPeriodEnd ? 'Final Charge' : 'Total',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
                     value={
                       <span className="text-lg font-semibold">
                         <AmountLabel
@@ -185,19 +194,19 @@ const UpcomingChargeCard = ({
 
                   {isCancelingAtPeriodEnd && (
                     <p className="max-w-sm text-xs text-gray-500">
-                      This will be the final charge before the subscription ends
+                      This will be the final charge when the subscription ends.
                       {hasMeters &&
-                        '. Final amount may vary based on usage until the end of the billing period'}
+                        ' Final amount may vary based on usage until the end of the billing period.'}
                     </p>
                   )}
 
                   {!isCancelingAtPeriodEnd && hasMeters && (
                     <p className="max-w-sm text-xs text-gray-500">
                       {isActive
-                        ? 'Final charges may vary based on usage until the end of the billing period'
+                        ? 'Final charges may vary based on usage until the end of the billing period.'
                         : isTrialing
-                          ? 'Final charges may vary based on usage during the trial period'
-                          : 'Final charges may vary'}
+                          ? 'Final charges may vary based on usage during the trial period.'
+                          : 'Final charges may vary.'}
                     </p>
                   )}
                 </>

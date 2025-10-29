@@ -2055,7 +2055,12 @@ class SubscriptionService:
         Returns:
             SubscriptionChargePreview with breakdown of charges
         """
-        base_price = sum(p.amount for p in subscription.subscription_product_prices)
+        # If subscription is set to cancel at period end, there's no base charge
+        # Only metered charges accumulated during the period will be billed
+        if subscription.cancel_at_period_end or subscription.ends_at:
+            base_price = 0
+        else:
+            base_price = sum(p.amount for p in subscription.subscription_product_prices)
 
         metered_amount = sum(meter.amount for meter in subscription.meters)
 

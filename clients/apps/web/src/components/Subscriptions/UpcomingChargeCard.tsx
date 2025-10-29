@@ -19,7 +19,10 @@ const UpcomingChargeCard = ({
     subscription.id,
   )
 
-  if (subscription.status !== 'active') {
+  const isTrialing = subscription.status === 'trialing'
+  const isActive = subscription.status === 'active'
+
+  if (!isActive && !isTrialing) {
     return null
   }
 
@@ -27,20 +30,23 @@ const UpcomingChargeCard = ({
   const hasTaxes = chargePreview && chargePreview.tax_amount > 0
   const hasDiscount = chargePreview && chargePreview.discount_amount > 0
 
+  const chargeDate = isTrialing
+    ? subscription.trial_end
+    : subscription.current_period_end
+
+  const dateLabel = isTrialing ? 'Trial Ends' : 'Next Invoice'
+
   return (
     <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
       <div className="flex flex-col gap-6 p-8">
         <div className="items-center justify-between space-y-1.5 sm:flex sm:space-y-0">
           <h3 className="text-lg font-medium">Upcoming Charge</h3>
           <span className="text-sm text-gray-500">
-            Next Invoice —{' '}
-            {subscription.current_period_end
-              ? new Date(subscription.current_period_end).toLocaleDateString(
-                  'en-US',
-                  {
-                    dateStyle: 'medium',
-                  },
-                )
+            {dateLabel} —{' '}
+            {chargeDate
+              ? new Date(chargeDate).toLocaleDateString('en-US', {
+                  dateStyle: 'medium',
+                })
               : 'N/A'}
           </span>
         </div>
@@ -160,8 +166,11 @@ const UpcomingChargeCard = ({
 
                   {hasMeters && (
                     <p className="text-xs text-gray-500">
-                      Final charges may vary based on usage until the end of the
-                      billing period
+                      {isActive
+                        ? 'Final charges may vary based on usage until the end of the billing period'
+                        : isTrialing
+                          ? 'Final charges may vary based on usage during the trial period'
+                          : 'Final charges may vary'}
                     </p>
                   )}
                 </>

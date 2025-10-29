@@ -186,7 +186,7 @@ async def get_charge_preview(
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionChargePreview:
     """
-    Get a preview of the next charge for an active subscription.
+    Get a preview of the next charge for an active or trialing subscription.
 
     Returns a breakdown of:
     - Base subscription amount
@@ -195,14 +195,15 @@ async def get_charge_preview(
     - Calculated taxes
     - Total amount
 
-    Only available for active subscriptions.
+    For trialing subscriptions, shows what the first charge will be when the trial ends.
+    Only available for active or trialing subscriptions.
     """
     subscription = await subscription_service.get(session, auth_subject, id)
 
     if subscription is None:
         raise ResourceNotFound()
 
-    if subscription.status != "active":
+    if subscription.status not in ("active", "trialing"):
         raise ResourceNotFound()
 
     preview = await subscription_service.calculate_charge_preview(session, subscription)

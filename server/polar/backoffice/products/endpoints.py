@@ -8,15 +8,61 @@ from tagflow import tag, text
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, Product, ProductBenefit
+from polar.models.product_price import ProductPrice
 from polar.postgres import AsyncSession, get_db_session
 from polar.product import sorting
 from polar.product.repository import ProductRepository
 from polar.product.sorting import ProductSortProperty
 
+from .. import formatters
 from ..components import button, datatable, description_list, input
 from ..layout import layout
 
 router = APIRouter()
+
+
+def _format_price_display(price: ProductPrice) -> str:
+    """Format a price for display based on its amount type."""
+    from polar.models.product_price import ProductPriceAmountType
+
+    if price.amount_type == ProductPriceAmountType.free:
+        return "Free"
+    elif price.amount_type == ProductPriceAmountType.custom:
+        parts = []
+        if hasattr(price, "minimum_amount") and price.minimum_amount:
+            parts.append(
+                f"Min: {formatters.currency(price.minimum_amount, price.price_currency)}"
+            )
+        if hasattr(price, "maximum_amount") and price.maximum_amount:
+            parts.append(
+                f"Max: {formatters.currency(price.maximum_amount, price.price_currency)}"
+            )
+        if hasattr(price, "preset_amount") and price.preset_amount:
+            parts.append(
+                f"Preset: {formatters.currency(price.preset_amount, price.price_currency)}"
+            )
+        return "Pay what you want" + (f" ({', '.join(parts)})" if parts else "")
+    elif price.amount_type == ProductPriceAmountType.fixed:
+        if hasattr(price, "price_amount") and price.price_amount:
+            return formatters.currency(price.price_amount, price.price_currency)
+        return "N/A"
+    elif price.amount_type == ProductPriceAmountType.seat_based:
+        if hasattr(price, "seat_tiers") and price.seat_tiers:
+            tiers = price.seat_tiers.get("tiers", [])
+            if tiers:
+                first_tier = tiers[0]
+                price_display = formatters.currency(
+                    first_tier["price_per_seat"], price.price_currency
+                )
+                if len(tiers) > 1:
+                    return f"From {price_display} / seat"
+                return f"{price_display} / seat"
+        return "Seat-based pricing"
+    elif price.amount_type == ProductPriceAmountType.metered_unit:
+        if hasattr(price, "price_amount") and price.price_amount:
+            return f"{formatters.currency(price.price_amount, price.price_currency)} / unit"
+        return "Metered pricing"
+    return "N/A"
 
 
 class OrganizationColumn(datatable.DatatableAttrColumn[Product, ProductSortProperty]):
@@ -36,10 +82,12 @@ async def list(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     repository = ProductRepository.from_session(session)
-    statement = repository.get_base_statement()
+    statement = (
+        repository.get_base_statement()
+        .join(Organization, Product.organization_id == Organization.id)
+        .options(contains_eager(Product.organization))
+    )
 
-    # Determine if we need to join Organization
-    needs_org_join = False
     if query:
         try:
             query_uuid = uuid.UUID(query)
@@ -47,7 +95,6 @@ async def list(
                 or_(Product.id == query_uuid, Product.organization_id == query_uuid)
             )
         except ValueError:
-            needs_org_join = True
             statement = statement.where(
                 or_(
                     Product.name.ilike(f"%{query}%"),
@@ -55,14 +102,6 @@ async def list(
                     Organization.name.ilike(f"%{query}%"),
                 )
             )
-
-    # Apply joins and loading options
-    if needs_org_join:
-        statement = statement.join(
-            Organization, Product.organization_id == Organization.id
-        ).options(contains_eager(Product.organization))
-    else:
-        statement = statement.options(joinedload(Product.organization))
 
     statement = repository.apply_sorting(statement, sorting)
 
@@ -215,13 +254,9 @@ async def get(
                                     with tag.th():
                                         text("ID")
                                     with tag.th():
-                                        text("Type")
-                                    with tag.th():
                                         text("Amount Type")
                                     with tag.th():
-                                        text("Amount")
-                                    with tag.th():
-                                        text("Currency")
+                                        text("Price")
                                     with tag.th():
                                         text("Archived")
                             with tag.tbody():
@@ -230,23 +265,13 @@ async def get(
                                         with tag.td():
                                             text(str(price.id))
                                         with tag.td():
-                                            text(str(price.type or "N/A"))
+                                            text(
+                                                price.amount_type.replace(
+                                                    "_", " "
+                                                ).title()
+                                            )
                                         with tag.td():
-                                            text(str(price.amount_type))
-                                        with tag.td():
-                                            if hasattr(price, "price_amount"):
-                                                text(
-                                                    f"{price.price_amount / 100:.2f}"
-                                                    if price.price_amount
-                                                    else "N/A"
-                                                )
-                                            else:
-                                                text("N/A")
-                                        with tag.td():
-                                            if hasattr(price, "price_currency"):
-                                                text(str(price.price_currency or "N/A"))
-                                            else:
-                                                text("N/A")
+                                            text(_format_price_display(price))
                                         with tag.td():
                                             text(str(price.is_archived))
 
@@ -268,8 +293,6 @@ async def get(
                                         text("Type")
                                     with tag.th():
                                         text("Description")
-                                    with tag.th():
-                                        text("Order")
                             with tag.tbody():
                                 for product_benefit in product.product_benefits:
                                     benefit = product_benefit.benefit
@@ -288,5 +311,3 @@ async def get(
                                             text(benefit.type.get_display_name())
                                         with tag.td():
                                             text(benefit.description)
-                                        with tag.td():
-                                            text(str(product_benefit.order))

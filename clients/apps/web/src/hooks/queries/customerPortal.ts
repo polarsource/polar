@@ -450,21 +450,13 @@ export const useCustomerSeats = (
 
 export const useAssignSeat = (api: Client) =>
   useMutation({
-    mutationFn: async (variables: {
-      subscription_id?: string
-      order_id?: string
-      checkout_id?: string
-      email?: string
-      external_customer_id?: string
-      customer_id?: string
-      metadata?: Record<string, any>
-      immediate_claim?: boolean | null
-    }) =>
+    mutationFn: async (
+      variables: Omit<schemas['SeatAssign'], 'immediate_claim'> & {
+        immediate_claim?: boolean
+      },
+    ) =>
       api.POST('/v1/customer-portal/seats', {
-        body: {
-          ...variables,
-          immediate_claim: variables.immediate_claim ?? false,
-        },
+        body: { ...variables, immediate_claim: variables.immediate_claim ?? false },
       }),
     onSuccess: async (result, _variables, _ctx) => {
       if (result.error) {

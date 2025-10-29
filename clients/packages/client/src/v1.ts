@@ -19501,7 +19501,7 @@ export interface components {
        * @description If true, the seat will be immediately claimed without sending an invitation email. API-only feature.
        * @default false
        */
-      immediate_claim: boolean | null
+      immediate_claim: boolean
     }
     /** SeatClaim */
     SeatClaim: {

@@ -34,7 +34,7 @@ class SeatAssign(Schema):
     metadata: dict[str, Any] | None = Field(
         None, description="Additional metadata for the seat (max 10 keys, 1KB total)"
     )
-    immediate_claim: bool | None = Field(
+    immediate_claim: bool = Field(
         default=False,
         description="If true, the seat will be immediately claimed without sending an invitation email. API-only feature.",
     )

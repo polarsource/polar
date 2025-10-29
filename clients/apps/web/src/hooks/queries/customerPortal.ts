@@ -456,7 +456,10 @@ export const useAssignSeat = (api: Client) =>
       },
     ) =>
       api.POST('/v1/customer-portal/seats', {
-        body: { ...variables, immediate_claim: variables.immediate_claim ?? false },
+        body: {
+          ...variables,
+          immediate_claim: variables.immediate_claim ?? false,
+        },
       }),
     onSuccess: async (result, _variables, _ctx) => {
       if (result.error) {

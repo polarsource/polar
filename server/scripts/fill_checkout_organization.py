@@ -73,7 +73,7 @@ async def fill_checkout_organization(batch_size: int = typer.Option(1000)) -> No
 
                 if len(batch) >= batch_size:
                     async with sessionmaker() as update_session:
-                        connection = await session.connection()
+                        connection = await update_session.connection()
                         await connection.execute(
                             update(Checkout).where(Checkout.id == bindparam("c_id")),
                             batch,
@@ -84,7 +84,7 @@ async def fill_checkout_organization(batch_size: int = typer.Option(1000)) -> No
 
             if batch:
                 async with sessionmaker() as update_session:
-                    connection = await session.connection()
+                    connection = await update_session.connection()
                     await connection.execute(
                         update(Checkout).where(Checkout.id == bindparam("c_id")), batch
                     )

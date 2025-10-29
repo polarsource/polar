@@ -519,3 +519,10 @@ export const useCustomerClaimedSubscriptions = (api: Client) =>
     queryFn: () => unwrap(api.GET('/v1/customer-portal/seats/subscriptions')),
     retry: defaultRetry,
   })
+
+export const useCustomerWallets = (api: Client) =>
+  useQuery({
+    queryKey: ['customer_wallets'],
+    queryFn: () => unwrap(api.GET('/v1/customer-portal/wallets/')),
+    retry: defaultRetry,
+  })

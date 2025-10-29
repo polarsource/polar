@@ -22,6 +22,15 @@ const links = (organization: schemas['Organization']) => [
     label: 'Overview',
     isActive: (path: string) => path.includes('/overview'),
   },
+  ...(organization.feature_settings?.wallets_enabled
+    ? [
+        {
+          href: `/${organization.slug}/portal/wallet`,
+          label: 'Wallet',
+          isActive: (path: string) => path.includes('/wallet'),
+        },
+      ]
+    : []),
   {
     href: `/${organization.slug}/portal/orders`,
     label: 'Orders',

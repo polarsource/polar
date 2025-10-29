@@ -31,7 +31,6 @@ import {
   FormField,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import Link from 'next/link'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useForm, useFormContext } from 'react-hook-form'
@@ -328,7 +327,8 @@ export const OrganizationDetailsForm: React.FC<
           <div className="mb-4 flex flex-col items-start">
             <label className="block text-sm font-medium">Social Media</label>
             <p className="mt-2 text-xs text-gray-600">
-              Social media links help with your account review. They will not be shown publicly.
+              Social media links help with your account review. They will not be
+              shown publicly.
             </p>
           </div>
           <OrganizationSocialLinks />

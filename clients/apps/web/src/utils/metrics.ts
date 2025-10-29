@@ -48,6 +48,7 @@ export const getTickFormatter = (
 const scalarFormatter = Intl.NumberFormat('en-US', {})
 const percentageFormatter = Intl.NumberFormat('en-US', {
   style: 'percent',
+  maximumFractionDigits: 2,
 })
 
 export const getFormattedMetricValue = (

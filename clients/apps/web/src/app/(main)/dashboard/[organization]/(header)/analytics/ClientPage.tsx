@@ -150,13 +150,13 @@ export default function ClientPage({
     'succeeded_checkouts',
   ]
   const costEvents: (keyof schemas['Metrics'])[] = [
-    'monthly_recurring_revenue', // MRR
-    'average_revenue_per_user', // ARPU
     'costs', // COGS
     'cost_per_user', // Cost To Serve
     'gross_margin', // MRR - COGS
     'gross_margin_percentage', // Gross margin / MRR
     'net_cashflow',
+    'monthly_recurring_revenue', // MRR
+    'average_revenue_per_user', // ARPU
   ]
 
   const netRevenueEvents = useMemo(() => {

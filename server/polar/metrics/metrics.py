@@ -891,7 +891,7 @@ class NetCashflowMetric(MetaMetric):
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        return cumulative_last(periods, cls.slug)
+        return cumulative_sum(periods, cls.slug)
 
 
 class ChurnRateMetric(MetaMetric):

@@ -132,13 +132,13 @@ export default function ClientPage({
     'one_time_products_net_revenue',
   ]
   const costEvents: (keyof schemas['Metrics'])[] = [
-    'monthly_recurring_revenue', // MRR
-    'average_revenue_per_user', // ARPU
     'costs', // COGS
     'cost_per_user', // Cost To Serve
     'gross_margin', // MRR - COGS
     'gross_margin_percentage', // Gross margin / MRR
     'net_cashflow',
+    'monthly_recurring_revenue', // MRR
+    'average_revenue_per_user', // ARPU
   ]
 
   return (

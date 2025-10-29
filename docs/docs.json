@@ -552,6 +552,7 @@
             "pages": [
               "guides/introduction",
               "guides/allow-multiple-subscriptions-per-customer",
+              "guides/automate-post-purchase-link-sharing",
               "guides/change-email-as-merchant",
               "guides/create-checkout-session",
               "guides/create-multiple-organizations",
@@ -560,8 +561,7 @@
               "guides/subscription-downgrades",
               "guides/subscription-upgrades",
               "guides/seat-based-pricing",
-              "guides/theme-switch-in-checkout",
-              "guides/custom-benefit"
+              "guides/theme-switch-in-checkout"
             ]
           }
         ]

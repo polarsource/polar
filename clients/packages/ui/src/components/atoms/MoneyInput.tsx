@@ -71,7 +71,6 @@ const MoneyInput = (props: Props) => {
 
   const updateValue = useCallback(
     (newValue: string) => {
-      console.log('Updating value to:', newValue)
       if (_onChange) {
         if (!newValue || newValue.trim() === '') {
           setPreviousValue(null)
@@ -116,21 +115,30 @@ const MoneyInput = (props: Props) => {
 
       if (decimalMatch) {
         const maxDecimalPrecision = 2
-
         const decimalPart = decimalMatch[2]
-
         const integerPart = cleaned
           .slice(0, -decimalMatch[0].length)
           .replace(/[,.]/g, '')
+        const trimmedDecimalPart = decimalPart.slice(0, maxDecimalPrecision)
 
         const parsedValue = Number.parseFloat(
-          `${integerPart}.${decimalPart.slice(0, maxDecimalPrecision)}`,
+          `${integerPart}.${trimmedDecimalPart}`,
         )
 
         if (!Number.isNaN(parsedValue)) {
-          newValue = parsedValue.toFixed(
-            Math.min(maxDecimalPrecision, decimalPart.length),
+          const decimalPlaces = Math.min(
+            maxDecimalPrecision,
+            decimalPart.length,
           )
+          const formatted = parsedValue.toFixed(decimalPlaces)
+
+          // This covers when the user deletes the last integer part and prevents inserting a `0`
+          // in place of the last integer part that would make the caret jump to the end of the input
+          // This way the user can continue typing
+          newValue =
+            integerPart.length > 0
+              ? formatted
+              : formatted.replace(/^0(?=\.)/, '')
         }
       }
 
@@ -141,11 +149,20 @@ const MoneyInput = (props: Props) => {
 
   const onBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
-      // Strip trailing decimal point
-      if (internalValue?.endsWith('.')) {
-        const strippedValue = internalValue.replace(/\.$/, '')
+      if (internalValue) {
+        let nextValue = internalValue
 
-        updateValue(strippedValue)
+        if (nextValue.startsWith('.')) {
+          nextValue = `0${nextValue}`
+        }
+
+        if (nextValue.endsWith('.')) {
+          nextValue = nextValue.replace(/\.$/, '')
+        }
+
+        if (nextValue !== internalValue) {
+          updateValue(nextValue)
+        }
       }
 
       if (_onBlur) {

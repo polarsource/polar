@@ -1220,7 +1220,7 @@ class TestGetMetrics:
         assert mar.active_subscriptions == 2
         assert mar.cost_per_user == 0
 
-        assert metrics.totals.cost_per_user == 0
+        assert metrics.totals.cost_per_user == 0.5
 
     @pytest.mark.auth
     async def test_gross_margin(
@@ -1345,19 +1345,19 @@ class TestGetMetrics:
         jan = metrics.periods[0]
         assert jan.revenue == 10000
         assert jan.costs == 25.00
-        assert jan.gross_margin == 10000 - 25.00
+        assert jan.gross_margin == 9975.00
 
         feb = metrics.periods[1]
         assert feb.revenue == 10000
         assert feb.costs == 15.00
-        assert feb.gross_margin == 10000 - 15.00
+        assert feb.gross_margin == 19960.00
 
         mar = metrics.periods[2]
         assert mar.revenue == 0
         assert mar.costs == 0
-        assert mar.gross_margin == 0
+        assert mar.gross_margin == 19960.00
 
-        assert metrics.totals.gross_margin == 20000 - 40.00
+        assert metrics.totals.gross_margin == 19960.00
 
     @pytest.mark.auth
     async def test_cost_per_user_no_costs(

@@ -22,7 +22,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
 from polar.models import Checkout, Order, Subscription
 from polar.models.checkout import CheckoutStatus
-from polar.models.event import Event, EventSource
+from polar.models.event import Event
 from polar.models.subscription import CustomerCancellationReason
 
 from .queries import MetricQuery
@@ -823,8 +823,8 @@ class CostPerUserMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[float]:
-        total_customers = func.count(func.distinct(Event.customer_id)).filter(
-            Event.source == EventSource.user
+        total_customers = func.count(func.distinct(Event.customer_id)) + func.count(
+            func.distinct(Event.external_customer_id)
         )
 
         total_costs = func.sum(
@@ -841,33 +841,20 @@ class CostPerUserMetric(SQLMetric):
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        return cumulative_last(periods, cls.slug)
+        total_active_users = cumulative_last(periods, ActiveSubscriptionsMetric.slug)
+        total_costs = sum(getattr(p, CostsMetric.slug) for p in periods)
+        return total_costs / total_active_users if total_active_users > 0 else 0.0
 
 
-class GrossMarginMetric(SQLMetric):
+class GrossMarginMetric(MetaMetric):
     slug = "gross_margin"
     display_name = "Gross Margin"
     type = MetricType.currency
-    query = MetricQuery.cumulative_events
 
     @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[float]:
-        revenue = func.sum(
-            case(
-                (
-                    Event.name == "order.paid",
-                    Event.user_metadata["amount"].as_integer(),
-                ),
-                else_=0,
-            )
-        )
-
-        costs = func.sum(
-            func.coalesce(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12), 0)
-        )
-
+    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+        revenue = period.cumulative_revenue
+        costs = period.cumulative_costs
         return revenue - costs
 
     @classmethod
@@ -875,72 +862,36 @@ class GrossMarginMetric(SQLMetric):
         return cumulative_last(periods, cls.slug)
 
 
-class GrossMarginPercentageMetric(SQLMetric):
+class GrossMarginPercentageMetric(MetaMetric):
     slug = "gross_margin_percentage"
     display_name = "Gross Margin %"
     type = MetricType.percentage
-    query = MetricQuery.cumulative_events
 
     @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[float]:
-        revenue = func.sum(
-            case(
-                (
-                    Event.name == "order.paid",
-                    Event.user_metadata["amount"].as_integer(),
-                ),
-                else_=0,
-            )
-        )
-
-        costs = func.sum(
-            func.coalesce(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12), 0)
-        )
-
-        return type_coerce(
-            case(
-                (revenue == 0, 0),
-                else_=(revenue - costs) / revenue,
-            ),
-            Float,
-        )
+    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+        revenue = period.cumulative_revenue
+        costs = period.cumulative_costs
+        return (revenue - costs) / revenue if revenue > 0 else 0.0
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
         return cumulative_last(periods, cls.slug)
 
 
-class NetCashflowMetric(SQLMetric):
+class NetCashflowMetric(MetaMetric):
     slug = "net_cashflow"
     display_name = "Net Cashflow"
     type = MetricType.currency
-    query = MetricQuery.events
 
     @classmethod
-    def get_sql_expression(
-        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
-    ) -> ColumnElement[float]:
-        revenue = func.sum(
-            case(
-                (
-                    Event.name == "order.paid",
-                    Event.user_metadata["amount"].as_integer(),
-                ),
-                else_=0,
-            )
-        )
-
-        costs = func.sum(
-            func.coalesce(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12), 0)
-        )
-
+    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+        revenue = period.net_revenue
+        costs = period.costs
         return revenue - costs
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        return cumulative_sum(periods, cls.slug)
+        return cumulative_last(periods, cls.slug)
 
 
 class ChurnRateMetric(MetaMetric):
@@ -959,6 +910,25 @@ class ChurnRateMetric(MetaMetric):
         return cumulative_last(periods, cls.slug)
 
 
+class ActiveUserMetric(SQLMetric):
+    slug = "active_user_by_event"
+    display_name = "Active User (By event)"
+    type = MetricType.scalar
+    query = MetricQuery.events
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(func.distinct(Event.customer_id)) + func.count(
+            func.distinct(Event.external_customer_id)
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int:
+        return int(cumulative_last(periods, ActiveSubscriptionsMetric.slug))
+
+
 METRICS_SQL: list[type[SQLMetric]] = [
     OrdersMetric,
     RevenueMetric,
@@ -971,9 +941,7 @@ METRICS_SQL: list[type[SQLMetric]] = [
     NetAverageOrderValueMetric,
     AverageRevenuePerUserMetric,
     CostPerUserMetric,
-    GrossMarginMetric,
-    GrossMarginPercentageMetric,
-    NetCashflowMetric,
+    ActiveUserMetric,
     OneTimeProductsMetric,
     OneTimeProductsRevenueMetric,
     OneTimeProductsNetRevenueMetric,
@@ -1002,6 +970,9 @@ METRICS_SQL: list[type[SQLMetric]] = [
 
 METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
     ChurnRateMetric,
+    GrossMarginMetric,
+    GrossMarginPercentageMetric,
+    NetCashflowMetric,
 ]
 
 METRICS: list[type[Metric]] = [

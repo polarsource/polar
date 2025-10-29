@@ -11,6 +11,13 @@ from polar.models import Organization, Product, ProductBenefit
 from polar.models.product_price import ProductPrice
 from polar.postgres import AsyncSession, get_db_session
 from polar.product import sorting
+from polar.product.guard import (
+    is_custom_price,
+    is_fixed_price,
+    is_free_price,
+    is_metered_price,
+    is_seat_price,
+)
 from polar.product.repository import ProductRepository
 from polar.product.sorting import ProductSortProperty
 
@@ -23,31 +30,29 @@ router = APIRouter()
 
 def _format_price_display(price: ProductPrice) -> str:
     """Format a price for display based on its amount type."""
-    from polar.models.product_price import ProductPriceAmountType
-
-    if price.amount_type == ProductPriceAmountType.free:
+    if is_free_price(price):
         return "Free"
-    elif price.amount_type == ProductPriceAmountType.custom:
+    elif is_custom_price(price):
         parts = []
-        if hasattr(price, "minimum_amount") and price.minimum_amount:
+        if price.minimum_amount:
             parts.append(
                 f"Min: {formatters.currency(price.minimum_amount, price.price_currency)}"
             )
-        if hasattr(price, "maximum_amount") and price.maximum_amount:
+        if price.maximum_amount:
             parts.append(
                 f"Max: {formatters.currency(price.maximum_amount, price.price_currency)}"
             )
-        if hasattr(price, "preset_amount") and price.preset_amount:
+        if price.preset_amount:
             parts.append(
                 f"Preset: {formatters.currency(price.preset_amount, price.price_currency)}"
             )
         return "Pay what you want" + (f" ({', '.join(parts)})" if parts else "")
-    elif price.amount_type == ProductPriceAmountType.fixed:
-        if hasattr(price, "price_amount") and price.price_amount:
+    elif is_fixed_price(price):
+        if price.price_amount:
             return formatters.currency(price.price_amount, price.price_currency)
         return "N/A"
-    elif price.amount_type == ProductPriceAmountType.seat_based:
-        if hasattr(price, "seat_tiers") and price.seat_tiers:
+    elif is_seat_price(price):
+        if price.seat_tiers:
             tiers = price.seat_tiers.get("tiers", [])
             if tiers:
                 first_tier = tiers[0]
@@ -58,8 +63,8 @@ def _format_price_display(price: ProductPrice) -> str:
                     return f"From {price_display} / seat"
                 return f"{price_display} / seat"
         return "Seat-based pricing"
-    elif price.amount_type == ProductPriceAmountType.metered_unit:
-        if hasattr(price, "price_amount") and price.price_amount:
+    elif is_metered_price(price):
+        if price.price_amount:
             return f"{formatters.currency(price.price_amount, price.price_currency)} / unit"
         return "Metered pricing"
     return "N/A"

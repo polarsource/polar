@@ -7656,6 +7656,12 @@ export interface components {
        */
       trial_end: string | null
       /**
+       * Organization Id
+       * Format: uuid4
+       * @description ID of the organization owning the checkout session.
+       */
+      organization_id: string
+      /**
        * Product Id
        * Format: uuid4
        * @description ID of the product to checkout.
@@ -9077,6 +9083,12 @@ export interface components {
        */
       trial_end: string | null
       /**
+       * Organization Id
+       * Format: uuid4
+       * @description ID of the organization owning the checkout session.
+       */
+      organization_id: string
+      /**
        * Product Id
        * Format: uuid4
        * @description ID of the product to checkout.
@@ -9307,6 +9319,12 @@ export interface components {
        * @description End date and time of the trial period, if any.
        */
       trial_end: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description ID of the organization owning the checkout session.
+       */
+      organization_id: string
       /**
        * Product Id
        * Format: uuid4
@@ -9847,6 +9865,255 @@ export interface components {
       | 'SV'
       | 'SX'
       | 'SY'
+      | 'SZ'
+      | 'TC'
+      | 'TD'
+      | 'TF'
+      | 'TG'
+      | 'TH'
+      | 'TJ'
+      | 'TK'
+      | 'TL'
+      | 'TM'
+      | 'TN'
+      | 'TO'
+      | 'TR'
+      | 'TT'
+      | 'TV'
+      | 'TW'
+      | 'TZ'
+      | 'UA'
+      | 'UG'
+      | 'UM'
+      | 'US'
+      | 'UY'
+      | 'UZ'
+      | 'VA'
+      | 'VC'
+      | 'VE'
+      | 'VG'
+      | 'VI'
+      | 'VN'
+      | 'VU'
+      | 'WF'
+      | 'WS'
+      | 'YE'
+      | 'YT'
+      | 'ZA'
+      | 'ZM'
+      | 'ZW'
+    /**
+     * CountryAlpha2Input
+     * @enum {string}
+     */
+    CountryAlpha2Input:
+      | 'AD'
+      | 'AE'
+      | 'AF'
+      | 'AG'
+      | 'AI'
+      | 'AL'
+      | 'AM'
+      | 'AO'
+      | 'AQ'
+      | 'AR'
+      | 'AS'
+      | 'AT'
+      | 'AU'
+      | 'AW'
+      | 'AX'
+      | 'AZ'
+      | 'BA'
+      | 'BB'
+      | 'BD'
+      | 'BE'
+      | 'BF'
+      | 'BG'
+      | 'BH'
+      | 'BI'
+      | 'BJ'
+      | 'BL'
+      | 'BM'
+      | 'BN'
+      | 'BO'
+      | 'BQ'
+      | 'BR'
+      | 'BS'
+      | 'BT'
+      | 'BV'
+      | 'BW'
+      | 'BY'
+      | 'BZ'
+      | 'CA'
+      | 'CC'
+      | 'CD'
+      | 'CF'
+      | 'CG'
+      | 'CH'
+      | 'CI'
+      | 'CK'
+      | 'CL'
+      | 'CM'
+      | 'CN'
+      | 'CO'
+      | 'CR'
+      | 'CV'
+      | 'CW'
+      | 'CX'
+      | 'CY'
+      | 'CZ'
+      | 'DE'
+      | 'DJ'
+      | 'DK'
+      | 'DM'
+      | 'DO'
+      | 'DZ'
+      | 'EC'
+      | 'EE'
+      | 'EG'
+      | 'EH'
+      | 'ER'
+      | 'ES'
+      | 'ET'
+      | 'FI'
+      | 'FJ'
+      | 'FK'
+      | 'FM'
+      | 'FO'
+      | 'FR'
+      | 'GA'
+      | 'GB'
+      | 'GD'
+      | 'GE'
+      | 'GF'
+      | 'GG'
+      | 'GH'
+      | 'GI'
+      | 'GL'
+      | 'GM'
+      | 'GN'
+      | 'GP'
+      | 'GQ'
+      | 'GR'
+      | 'GS'
+      | 'GT'
+      | 'GU'
+      | 'GW'
+      | 'GY'
+      | 'HK'
+      | 'HM'
+      | 'HN'
+      | 'HR'
+      | 'HT'
+      | 'HU'
+      | 'ID'
+      | 'IE'
+      | 'IL'
+      | 'IM'
+      | 'IN'
+      | 'IO'
+      | 'IQ'
+      | 'IS'
+      | 'IT'
+      | 'JE'
+      | 'JM'
+      | 'JO'
+      | 'JP'
+      | 'KE'
+      | 'KG'
+      | 'KH'
+      | 'KI'
+      | 'KM'
+      | 'KN'
+      | 'KR'
+      | 'KW'
+      | 'KY'
+      | 'KZ'
+      | 'LA'
+      | 'LB'
+      | 'LC'
+      | 'LI'
+      | 'LK'
+      | 'LR'
+      | 'LS'
+      | 'LT'
+      | 'LU'
+      | 'LV'
+      | 'LY'
+      | 'MA'
+      | 'MC'
+      | 'MD'
+      | 'ME'
+      | 'MF'
+      | 'MG'
+      | 'MH'
+      | 'MK'
+      | 'ML'
+      | 'MM'
+      | 'MN'
+      | 'MO'
+      | 'MP'
+      | 'MQ'
+      | 'MR'
+      | 'MS'
+      | 'MT'
+      | 'MU'
+      | 'MV'
+      | 'MW'
+      | 'MX'
+      | 'MY'
+      | 'MZ'
+      | 'NA'
+      | 'NC'
+      | 'NE'
+      | 'NF'
+      | 'NG'
+      | 'NI'
+      | 'NL'
+      | 'NO'
+      | 'NP'
+      | 'NR'
+      | 'NU'
+      | 'NZ'
+      | 'OM'
+      | 'PA'
+      | 'PE'
+      | 'PF'
+      | 'PG'
+      | 'PH'
+      | 'PK'
+      | 'PL'
+      | 'PM'
+      | 'PN'
+      | 'PR'
+      | 'PS'
+      | 'PT'
+      | 'PW'
+      | 'PY'
+      | 'QA'
+      | 'RE'
+      | 'RO'
+      | 'RS'
+      | 'RW'
+      | 'SA'
+      | 'SB'
+      | 'SC'
+      | 'SD'
+      | 'SE'
+      | 'SG'
+      | 'SH'
+      | 'SI'
+      | 'SJ'
+      | 'SK'
+      | 'SL'
+      | 'SM'
+      | 'SN'
+      | 'SO'
+      | 'SR'
+      | 'SS'
+      | 'ST'
+      | 'SV'
+      | 'SX'
       | 'SZ'
       | 'TC'
       | 'TD'
@@ -17386,7 +17653,7 @@ export interface components {
        */
       socials: components['schemas']['OrganizationSocialLink'][]
       /** @description Current organization status */
-      status: components['schemas']['Status']
+      status: components['schemas']['OrganizationStatus']
       /**
        * Details Submitted At
        * @description When the business details were submitted.
@@ -17754,7 +18021,7 @@ export interface components {
        */
       steps: components['schemas']['OrganizationPaymentStep'][]
       /** @description Current organization status */
-      organization_status: components['schemas']['Status']
+      organization_status: components['schemas']['OrganizationStatus']
     }
     /** OrganizationPaymentStep */
     OrganizationPaymentStep: {
@@ -17778,6 +18045,50 @@ export interface components {
        * @description Whether the step is completed
        */
       completed: boolean
+    }
+    /** OrganizationProfileSettings */
+    OrganizationProfileSettings: {
+      /**
+       * Enabled
+       * @description If this organization has a profile enabled
+       */
+      enabled?: boolean | null
+      /**
+       * Description
+       * @description A description of the organization
+       */
+      description?: string | null
+      /**
+       * Featured Projects
+       * @description A list of featured projects
+       */
+      featured_projects?: string[] | null
+      /**
+       * Featured Organizations
+       * @description A list of featured organizations
+       */
+      featured_organizations?: string[] | null
+      /**
+       * Links
+       * @description A list of links associated with the organization
+       */
+      links?: string[] | null
+      /**
+       * @description Subscription promotion settings
+       * @default {
+       *       "promote": true,
+       *       "show_count": true,
+       *       "count_free": true
+       *     }
+       */
+      subscribe:
+        | components['schemas']['OrganizationSubscribePromoteSettings']
+        | null
+      /**
+       * Accent Color
+       * @description Accent color for the organization
+       */
+      accent_color?: string | null
     }
     /** OrganizationReviewStatus */
     OrganizationReviewStatus: {
@@ -17859,6 +18170,37 @@ export interface components {
       | '-next_review_threshold'
       | 'days_in_status'
       | '-days_in_status'
+    /**
+     * OrganizationStatus
+     * @enum {string}
+     */
+    OrganizationStatus:
+      | 'created'
+      | 'onboarding_started'
+      | 'under_review'
+      | 'denied'
+      | 'active'
+    /** OrganizationSubscribePromoteSettings */
+    OrganizationSubscribePromoteSettings: {
+      /**
+       * Promote
+       * @description Promote email subscription (free)
+       * @default true
+       */
+      promote: boolean
+      /**
+       * Show Count
+       * @description Show subscription count publicly
+       * @default true
+       */
+      show_count: boolean
+      /**
+       * Count Free
+       * @description Include free subscribers in total count
+       * @default true
+       */
+      count_free: boolean
+    }
     /** OrganizationSubscriptionSettings */
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
@@ -33971,6 +34313,254 @@ export const countryAlpha2Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const countryAlpha2InputValues: ReadonlyArray<
+  components['schemas']['CountryAlpha2Input']
+> = [
+  'AD',
+  'AE',
+  'AF',
+  'AG',
+  'AI',
+  'AL',
+  'AM',
+  'AO',
+  'AQ',
+  'AR',
+  'AS',
+  'AT',
+  'AU',
+  'AW',
+  'AX',
+  'AZ',
+  'BA',
+  'BB',
+  'BD',
+  'BE',
+  'BF',
+  'BG',
+  'BH',
+  'BI',
+  'BJ',
+  'BL',
+  'BM',
+  'BN',
+  'BO',
+  'BQ',
+  'BR',
+  'BS',
+  'BT',
+  'BV',
+  'BW',
+  'BY',
+  'BZ',
+  'CA',
+  'CC',
+  'CD',
+  'CF',
+  'CG',
+  'CH',
+  'CI',
+  'CK',
+  'CL',
+  'CM',
+  'CN',
+  'CO',
+  'CR',
+  'CV',
+  'CW',
+  'CX',
+  'CY',
+  'CZ',
+  'DE',
+  'DJ',
+  'DK',
+  'DM',
+  'DO',
+  'DZ',
+  'EC',
+  'EE',
+  'EG',
+  'EH',
+  'ER',
+  'ES',
+  'ET',
+  'FI',
+  'FJ',
+  'FK',
+  'FM',
+  'FO',
+  'FR',
+  'GA',
+  'GB',
+  'GD',
+  'GE',
+  'GF',
+  'GG',
+  'GH',
+  'GI',
+  'GL',
+  'GM',
+  'GN',
+  'GP',
+  'GQ',
+  'GR',
+  'GS',
+  'GT',
+  'GU',
+  'GW',
+  'GY',
+  'HK',
+  'HM',
+  'HN',
+  'HR',
+  'HT',
+  'HU',
+  'ID',
+  'IE',
+  'IL',
+  'IM',
+  'IN',
+  'IO',
+  'IQ',
+  'IS',
+  'IT',
+  'JE',
+  'JM',
+  'JO',
+  'JP',
+  'KE',
+  'KG',
+  'KH',
+  'KI',
+  'KM',
+  'KN',
+  'KR',
+  'KW',
+  'KY',
+  'KZ',
+  'LA',
+  'LB',
+  'LC',
+  'LI',
+  'LK',
+  'LR',
+  'LS',
+  'LT',
+  'LU',
+  'LV',
+  'LY',
+  'MA',
+  'MC',
+  'MD',
+  'ME',
+  'MF',
+  'MG',
+  'MH',
+  'MK',
+  'ML',
+  'MM',
+  'MN',
+  'MO',
+  'MP',
+  'MQ',
+  'MR',
+  'MS',
+  'MT',
+  'MU',
+  'MV',
+  'MW',
+  'MX',
+  'MY',
+  'MZ',
+  'NA',
+  'NC',
+  'NE',
+  'NF',
+  'NG',
+  'NI',
+  'NL',
+  'NO',
+  'NP',
+  'NR',
+  'NU',
+  'NZ',
+  'OM',
+  'PA',
+  'PE',
+  'PF',
+  'PG',
+  'PH',
+  'PK',
+  'PL',
+  'PM',
+  'PN',
+  'PR',
+  'PS',
+  'PT',
+  'PW',
+  'PY',
+  'QA',
+  'RE',
+  'RO',
+  'RS',
+  'RW',
+  'SA',
+  'SB',
+  'SC',
+  'SD',
+  'SE',
+  'SG',
+  'SH',
+  'SI',
+  'SJ',
+  'SK',
+  'SL',
+  'SM',
+  'SN',
+  'SO',
+  'SR',
+  'SS',
+  'ST',
+  'SV',
+  'SX',
+  'SZ',
+  'TC',
+  'TD',
+  'TF',
+  'TG',
+  'TH',
+  'TJ',
+  'TK',
+  'TL',
+  'TM',
+  'TN',
+  'TO',
+  'TR',
+  'TT',
+  'TV',
+  'TW',
+  'TZ',
+  'UA',
+  'UG',
+  'UM',
+  'US',
+  'UY',
+  'UZ',
+  'VA',
+  'VC',
+  'VE',
+  'VG',
+  'VI',
+  'VN',
+  'VU',
+  'WF',
+  'WS',
+  'YE',
+  'YT',
+  'ZA',
+  'ZM',
+  'ZW',
+]
 export const customFieldCheckboxTypeValues: ReadonlyArray<
   components['schemas']['CustomFieldCheckbox']['type']
 > = ['checkbox']
@@ -34381,6 +34971,9 @@ export const organizationSortPropertyValues: ReadonlyArray<
   'days_in_status',
   '-days_in_status',
 ]
+export const organizationStatusValues: ReadonlyArray<
+  components['schemas']['OrganizationStatus']
+> = ['created', 'onboarding_started', 'under_review', 'denied', 'active']
 export const paymentProcessorValues: ReadonlyArray<
   components['schemas']['PaymentProcessor']
 > = ['stripe']

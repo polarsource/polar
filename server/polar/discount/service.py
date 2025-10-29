@@ -365,12 +365,13 @@ class DiscountService(ResourceServiceReader[Discount]):
         self,
         session: AsyncSession,
         code: str,
+        organization: Organization,
         product: Product,
         *,
         redeemable: bool = True,
     ) -> Discount | None:
         discount = await self.get_by_code_and_organization(
-            session, code, product.organization, redeemable=redeemable
+            session, code, organization, redeemable=redeemable
         )
 
         if discount is None:

@@ -288,7 +288,11 @@ class CheckoutService:
         discount: Discount | None = None
         if checkout_create.discount_id is not None:
             discount = await self._get_validated_discount(
-                session, product, price, discount_id=checkout_create.discount_id
+                session,
+                product.organization,
+                product,
+                price,
+                discount_id=checkout_create.discount_id,
             )
 
         customer_tax_id: TaxID | None = None
@@ -727,7 +731,11 @@ class CheckoutService:
         if checkout_link.discount_id is not None:
             try:
                 discount = await self._get_validated_discount(
-                    session, product, price, discount_id=checkout_link.discount_id
+                    session,
+                    product.organization,
+                    product,
+                    price,
+                    discount_id=checkout_link.discount_id,
                 )
             # If the discount is not valid, just ignore it
             except PolarRequestValidationError:
@@ -770,7 +778,11 @@ class CheckoutService:
             if discount_code is not None and isinstance(discount_code, str):
                 try:
                     discount = await self._get_validated_discount(
-                        session, product, price, discount_code=discount_code
+                        session,
+                        product.organization,
+                        product,
+                        price,
+                        discount_code=discount_code,
                     )
                     checkout.discount = discount
                 except PolarRequestValidationError:
@@ -1100,7 +1112,7 @@ class CheckoutService:
         product = checkout.product
         subscription: Subscription | None = None
         if product.is_recurring:
-            if not product.organization.subscriptions_billing_engine:
+            if not checkout.organization.subscriptions_billing_engine:
                 (
                     subscription,
                     _,
@@ -1339,6 +1351,7 @@ class CheckoutService:
     async def _get_validated_discount(
         self,
         session: AsyncSession,
+        organization: Organization,
         product: Product,
         price: ProductPrice,
         *,
@@ -1349,6 +1362,7 @@ class CheckoutService:
     async def _get_validated_discount(
         self,
         session: AsyncSession,
+        organization: Organization,
         product: Product,
         price: ProductPrice,
         *,
@@ -1358,6 +1372,7 @@ class CheckoutService:
     async def _get_validated_discount(
         self,
         session: AsyncSession,
+        organization: Organization,
         product: Product,
         price: ProductPrice,
         *,
@@ -1381,11 +1396,11 @@ class CheckoutService:
         discount: Discount | None = None
         if discount_id is not None:
             discount = await discount_service.get_by_id_and_organization(
-                session, discount_id, product.organization, products=[product]
+                session, discount_id, organization, products=[product]
             )
         elif discount_code is not None:
             discount = await discount_service.get_by_code_and_product(
-                session, discount_code, product
+                session, discount_code, organization, product
             )
 
         if discount is None:
@@ -1608,6 +1623,7 @@ class CheckoutService:
             if checkout_update.discount_id is not None:
                 checkout.discount = await self._get_validated_discount(
                     session,
+                    checkout.organization,
                     checkout.product,
                     checkout.product_price,
                     discount_id=checkout_update.discount_id,
@@ -1622,6 +1638,7 @@ class CheckoutService:
             if checkout_update.discount_code is not None:
                 discount = await self._get_validated_discount(
                     session,
+                    checkout.organization,
                     checkout.product,
                     checkout.product_price,
                     discount_code=checkout_update.discount_code,

@@ -1362,6 +1362,7 @@ async def create_checkout(
         amount=amount,
         tax_amount=tax_amount,
         currency=currency,
+        organization=product.organization,
         product_price=price,
         product=product,
         checkout_products=[

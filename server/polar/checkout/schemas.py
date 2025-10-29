@@ -468,6 +468,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         description="End date and time of the trial period, if any."
     )
 
+    organization_id: UUID4 = Field(
+        description="ID of the organization owning the checkout session."
+    )
     product_id: UUID4 = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
     discount_id: UUID4 | None = Field(

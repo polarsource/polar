@@ -22,7 +22,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
 from polar.models import Checkout, Order, Subscription
 from polar.models.checkout import CheckoutStatus
-from polar.models.event import Event
+from polar.models.event import Event, EventSource
 from polar.models.subscription import CustomerCancellationReason
 
 from .queries import MetricQuery
@@ -823,7 +823,9 @@ class CostPerUserMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[float]:
-        total_customers = func.count(func.distinct(Event.customer_id))
+        total_customers = func.count(func.distinct(Event.customer_id)).filter(
+            Event.source == EventSource.user
+        )
 
         total_costs = func.sum(
             func.coalesce(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12), 0)

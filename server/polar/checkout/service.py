@@ -70,7 +70,6 @@ from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
-from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.guard import (
@@ -211,11 +210,11 @@ class CheckoutService:
     ) -> tuple[Sequence[Checkout], int]:
         repository = CheckoutRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).options(
-            *repository.get_eager_options(product_load=contains_eager(Checkout.product))
+            *repository.get_eager_options()
         )
 
         if organization_id is not None:
-            statement = statement.where(Product.organization_id.in_(organization_id))
+            statement = statement.where(Checkout.organization_id.in_(organization_id))
 
         if product_id is not None:
             statement = statement.where(Checkout.product_id.in_(product_id))
@@ -245,18 +244,14 @@ class CheckoutService:
         statement = (
             repository.get_readable_statement(auth_subject)
             .where(Checkout.id == id)
-            .options(
-                *repository.get_eager_options(
-                    product_load=contains_eager(Checkout.product)
-                )
-            )
+            .options(*repository.get_eager_options())
         )
         checkout = await repository.get_one_or_none(statement)
 
         if checkout is None:
             return None
 
-        if checkout.product.organization.is_blocked():
+        if checkout.organization.is_blocked():
             raise NotPermitted()
 
         return checkout
@@ -431,6 +426,7 @@ class CheckoutService:
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
+            organization=product.organization,
             checkout_products=checkout_products,
             product=product,
             product_price=price,
@@ -608,6 +604,7 @@ class CheckoutService:
             amount=amount,
             currency=currency,
             seats=checkout_create.seats,
+            organization=product.organization,
             checkout_products=[CheckoutProduct(product=product, order=0)],
             product=product,
             product_price=price,
@@ -745,6 +742,7 @@ class CheckoutService:
             trial_interval_count=checkout_link.trial_interval_count,
             allow_discount_codes=checkout_link.allow_discount_codes,
             require_billing_address=checkout_link.require_billing_address,
+            organization=checkout_link.organization,
             checkout_products=[
                 CheckoutProduct(product=p, order=i) for i, p in enumerate(products)
             ],
@@ -930,7 +928,7 @@ class CheckoutService:
         if (
             checkout.is_payment_required
             and not await organization_service.is_organization_ready_for_payment(
-                session, checkout.product.organization
+                session, checkout.organization
             )
         ):
             raise PaymentNotReady()
@@ -2003,13 +2001,8 @@ class CheckoutService:
     async def _after_checkout_created(
         self, session: AsyncSession, checkout: Checkout
     ) -> None:
-        organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(
-            checkout.product.organization_id
-        )
-        assert organization is not None
         await webhook_service.send(
-            session, organization, WebhookEventType.checkout_created, checkout
+            session, checkout.organization, WebhookEventType.checkout_created, checkout
         )
 
     async def _after_checkout_updated(
@@ -2018,21 +2011,16 @@ class CheckoutService:
         await publish_checkout_event(
             checkout.client_secret, CheckoutEvent.updated, {"status": checkout.status}
         )
-        organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(
-            checkout.product.organization_id
+        events = await webhook_service.send(
+            session, checkout.organization, WebhookEventType.checkout_updated, checkout
         )
-        if organization is not None:
-            events = await webhook_service.send(
-                session, organization, WebhookEventType.checkout_updated, checkout
+        # No webhook to send, publish the webhook_event immediately
+        if len(events) == 0:
+            await publish_checkout_event(
+                checkout.client_secret,
+                CheckoutEvent.webhook_event_delivered,
+                {"status": checkout.status},
             )
-            # No webhook to send, publish the webhook_event immediately
-            if len(events) == 0:
-                await publish_checkout_event(
-                    checkout.client_secret,
-                    CheckoutEvent.webhook_event_delivered,
-                    {"status": checkout.status},
-                )
 
     async def _eager_load_product(
         self, session: AsyncSession, product: Product

@@ -133,12 +133,13 @@ class Checkout(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    organization_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("organizations.id", ondelete="cascade"),
-        nullable=True,
-        default=None,
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
     )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     product_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False
@@ -166,10 +167,6 @@ class Checkout(
 
     products: AssociationProxy[list["Product"]] = association_proxy(
         "checkout_products", "product"
-    )
-
-    organization: AssociationProxy[Organization] = association_proxy(
-        "product", "organization"
     )
 
     discount_id: Mapped[UUID | None] = mapped_column(

@@ -328,16 +328,7 @@ export const OrganizationDetailsForm: React.FC<
           <div className="mb-4 flex flex-col items-start">
             <label className="block text-sm font-medium">Social Media</label>
             <p className="mt-2 text-xs text-gray-600">
-              These links are not publicly accessible, and are only accessible
-              through the{' '}
-              <Link
-                className="underline"
-                href="https://polar.sh/docs/api-reference/organizations/get"
-                target="_blank"
-              >
-                Organizations API
-              </Link>
-              .
+              Social media links help with your account review. They will not be shown publicly.
             </p>
           </div>
           <OrganizationSocialLinks />

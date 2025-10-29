@@ -56,7 +56,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const hasSeatBasedSubscription =
     !!subscription?.seats && subscription.seats > 0
-  console.log('subscription', subscription)
 
   const { data: seatsData, isLoading: isLoadingSeats } = useOrganizationSeats(
     hasSeatBasedSubscription ? { subscriptionId: subscription?.id } : undefined,

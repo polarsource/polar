@@ -11,7 +11,7 @@ const UpcomingChargeCard = ({
 }: {
   subscription: schemas['Subscription']
 }) => {
-  const { data: chargePreview, isLoading } = useSubscriptionChargePreview(
+  const { data: chargePreview, isFetching } = useSubscriptionChargePreview(
     subscription.id,
   )
 
@@ -105,7 +105,7 @@ const UpcomingChargeCard = ({
           )}
 
           <div className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-2">
-            {isLoading ? (
+            {isFetching ? (
               <div className="flex items-center justify-between">
                 <span className="font-medium">Total</span>
                 <span className="dark:bg-polar-700 animate-pulse rounded-md bg-gray-50 text-gray-500/0 dark:text-gray-400">
@@ -180,11 +180,11 @@ const UpcomingChargeCard = ({
                       </span>
                     }
                     valueClassName="font-medium"
-                    labelClassName="font-medium"
+                    labelClassName="font-medium dark:text-white"
                   />
 
                   {isCancelingAtPeriodEnd && (
-                    <p className="text-xs text-gray-500">
+                    <p className="max-w-sm text-xs text-gray-500">
                       This will be the final charge before the subscription ends
                       {hasMeters &&
                         '. Final amount may vary based on usage until the end of the billing period'}
@@ -192,7 +192,7 @@ const UpcomingChargeCard = ({
                   )}
 
                   {!isCancelingAtPeriodEnd && hasMeters && (
-                    <p className="text-xs text-gray-500">
+                    <p className="max-w-sm text-xs text-gray-500">
                       {isActive
                         ? 'Final charges may vary based on usage until the end of the billing period'
                         : isTrialing

@@ -98,6 +98,10 @@ export const useUpdateSubscription = (id: string) =>
           }
         },
       )
+
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'charge-preview'],
+      })
     },
   })
 
@@ -149,5 +153,9 @@ export const useUncancelSubscription = (id: string) =>
           }
         },
       )
+
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'charge-preview'],
+      })
     },
   })

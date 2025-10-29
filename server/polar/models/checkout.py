@@ -134,7 +134,10 @@ class Checkout(
     )
 
     organization_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
+        Uuid,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
     )
 
     @declared_attr

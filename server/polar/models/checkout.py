@@ -133,6 +133,13 @@ class Checkout(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
+    organization_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=True,
+        default=None,
+    )
+
     product_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False
     )

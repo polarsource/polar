@@ -33,7 +33,7 @@ from polar.models import (
 from polar.models.product import ProductBillingType
 
 if TYPE_CHECKING:
-    from .metrics import Metric
+    from .metrics import SQLMetric
 
 
 class MetricQuery(StrEnum):
@@ -51,7 +51,7 @@ def _get_metrics_columns(
     metric_cte: MetricQuery,
     timestamp_column: ColumnElement[datetime],
     interval: TimeInterval,
-    metrics: list["type[Metric]"],
+    metrics: list["type[SQLMetric]"],
     now: datetime,
 ) -> Generator[ColumnElement[int] | ColumnElement[float], None, None]:
     return (
@@ -69,7 +69,7 @@ class QueryCallable(Protocol):
         timestamp_series: CTE,
         interval: TimeInterval,
         auth_subject: AuthSubject[User | Organization],
-        metrics: list["type[Metric]"],
+        metrics: list["type[SQLMetric]"],
         now: datetime,
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -123,7 +123,7 @@ def get_orders_cte(
     timestamp_series: CTE,
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
-    metrics: list["type[Metric]"],
+    metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
@@ -173,7 +173,7 @@ def get_cumulative_orders_cte(
     timestamp_series: CTE,
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
-    metrics: list["type[Metric]"],
+    metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
@@ -223,7 +223,7 @@ def get_active_subscriptions_cte(
     timestamp_series: CTE,
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
-    metrics: list["type[Metric]"],
+    metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
@@ -333,7 +333,7 @@ def get_checkouts_cte(
     timestamp_series: CTE,
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
-    metrics: list["type[Metric]"],
+    metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
@@ -410,7 +410,7 @@ def get_canceled_subscriptions_cte(
     timestamp_series: CTE,
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
-    metrics: list["type[Metric]"],
+    metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
@@ -481,7 +481,7 @@ def get_cost_events_cte(
     timestamp_series: CTE,
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
-    metrics: list["type[Metric]"],
+    metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
@@ -523,7 +523,7 @@ def get_cumulative_cost_events_cte(
     timestamp_series: CTE,
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
-    metrics: list["type[Metric]"],
+    metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
@@ -597,7 +597,7 @@ def get_events_cte(
     timestamp_series: CTE,
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
-    metrics: list["type[Metric]"],
+    metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,

@@ -12,7 +12,7 @@ from polar.models import Organization, User
 from polar.models.product import ProductBillingType
 from polar.postgres import AsyncReadSession, AsyncSession
 
-from .metrics import METRICS
+from .metrics import METRICS, METRICS_POST_COMPUTE, METRICS_SQL
 from .queries import QUERIES
 from .schemas import MetricsPeriod, MetricsResponse
 
@@ -51,7 +51,7 @@ class MetricsService:
                 timestamp_series,
                 interval,
                 auth_subject,
-                METRICS,
+                METRICS_SQL,
                 now or datetime.now(tz=timezone),
                 organization_id=organization_id,
                 product_id=product_id,
@@ -83,7 +83,19 @@ class MetricsService:
         )
         periods: list[MetricsPeriod] = []
         async for row in result:
-            periods.append(MetricsPeriod(**row._asdict()))
+            period_dict = row._asdict()
+
+            for meta_metric in METRICS_POST_COMPUTE:
+                period_dict[meta_metric.slug] = 0
+
+            temp_period = MetricsPeriod(**period_dict)
+
+            for meta_metric in METRICS_POST_COMPUTE:
+                period_dict[meta_metric.slug] = meta_metric.compute_from_period(
+                    temp_period
+                )
+
+            periods.append(MetricsPeriod(**period_dict))
 
         totals: dict[str, int | float] = {}
         for metric in METRICS:

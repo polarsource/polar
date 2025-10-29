@@ -458,9 +458,13 @@ export const useAssignSeat = (api: Client) =>
       external_customer_id?: string
       customer_id?: string
       metadata?: Record<string, any>
+      immediate_claim?: boolean | null
     }) =>
       api.POST('/v1/customer-portal/seats', {
-        body: variables,
+        body: {
+          ...variables,
+          immediate_claim: variables.immediate_claim ?? false,
+        },
       }),
     onSuccess: async (result, _variables, _ctx) => {
       if (result.error) {

@@ -214,7 +214,7 @@ class SeatService:
         external_customer_id: str | None = None,
         customer_id: uuid.UUID | None = None,
         metadata: dict[str, Any] | None = None,
-        immediate_claim: bool = False,
+        immediate_claim: bool | None = False,
     ) -> CustomerSeat:
         product = self._get_product(container)
         source_id = self._get_container_id(container)

@@ -16990,6 +16990,8 @@ export interface components {
       amount: number
       /** Currency */
       currency: string
+      /** Backfilled */
+      backfilled?: boolean
     }
     /** OrderProduct */
     OrderProduct: {
@@ -17114,6 +17116,8 @@ export interface components {
       refunded_amount: number
       /** Currency */
       currency: string
+      /** Backfilled */
+      backfilled?: boolean
     }
     /**
      * OrderSortProperty
@@ -19492,6 +19496,12 @@ export interface components {
       metadata?: {
         [key: string]: unknown
       } | null
+      /**
+       * Immediate Claim
+       * @description If true, the seat will be immediately claimed without sending an invitation email. API-only feature.
+       * @default false
+       */
+      immediate_claim: boolean | null
     }
     /** SeatClaim */
     SeatClaim: {

@@ -554,6 +554,7 @@
               "guides/allow-multiple-subscriptions-per-customer",
               "guides/change-email-as-merchant",
               "guides/create-checkout-session",
+              "guides/create-multiple-organizations",
               "guides/create-variants",
               "guides/disable-subscription-changes-in-customer-portal",
               "guides/subscription-downgrades",

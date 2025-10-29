@@ -15860,6 +15860,8 @@ export interface components {
       cost_per_user: number
       /** Gross Margin */
       gross_margin: number
+      /** Net Cashflow */
+      net_cashflow: number
       /** One Time Products */
       one_time_products: number
       /** One Time Products Revenue */
@@ -15908,6 +15910,8 @@ export interface components {
       canceled_subscriptions_unused: number
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other: number
+      /** Churn Rate */
+      churn_rate: number
       /** Gross Margin Percentage */
       gross_margin_percentage: number
     }
@@ -15930,6 +15934,7 @@ export interface components {
       average_revenue_per_user: components['schemas']['Metric']
       cost_per_user: components['schemas']['Metric']
       gross_margin: components['schemas']['Metric']
+      net_cashflow: components['schemas']['Metric']
       one_time_products: components['schemas']['Metric']
       one_time_products_revenue: components['schemas']['Metric']
       one_time_products_net_revenue: components['schemas']['Metric']
@@ -15954,6 +15959,7 @@ export interface components {
       canceled_subscriptions_too_expensive: components['schemas']['Metric']
       canceled_subscriptions_unused: components['schemas']['Metric']
       canceled_subscriptions_other: components['schemas']['Metric']
+      churn_rate: components['schemas']['Metric']
       gross_margin_percentage: components['schemas']['Metric']
     }
     /**
@@ -16038,6 +16044,8 @@ export interface components {
       cost_per_user: number
       /** Gross Margin */
       gross_margin: number
+      /** Net Cashflow */
+      net_cashflow: number
       /** One Time Products */
       one_time_products: number
       /** One Time Products Revenue */
@@ -16086,6 +16094,8 @@ export interface components {
       canceled_subscriptions_unused: number
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other: number
+      /** Churn Rate */
+      churn_rate: number
       /** Gross Margin Percentage */
       gross_margin_percentage: number
     }

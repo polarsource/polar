@@ -552,6 +552,7 @@
             "pages": [
               "guides/introduction",
               "guides/allow-multiple-subscriptions-per-customer",
+              "guides/change-email-as-merchant",
               "guides/create-checkout-session",
               "guides/create-variants",
               "guides/disable-subscription-changes-in-customer-portal",

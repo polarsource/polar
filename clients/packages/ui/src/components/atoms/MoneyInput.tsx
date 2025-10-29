@@ -152,10 +152,12 @@ const MoneyInput = (props: Props) => {
       if (internalValue) {
         let nextValue = internalValue
 
+        // Add 0 as integer part if value starts with `.`
         if (nextValue.startsWith('.')) {
           nextValue = `0${nextValue}`
         }
 
+        // Strip trailing decimal point
         if (nextValue.endsWith('.')) {
           nextValue = nextValue.replace(/\.$/, '')
         }

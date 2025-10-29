@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4
 from sqlalchemy import or_
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from tagflow import tag, text
 
 from polar.kit.pagination import PaginationParamsQuery
@@ -36,10 +36,10 @@ async def list(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     repository = ProductRepository.from_session(session)
-    statement = repository.get_base_statement().options(
-        joinedload(Product.organization)
-    )
+    statement = repository.get_base_statement()
 
+    # Determine if we need to join Organization
+    needs_org_join = False
     if query:
         try:
             query_uuid = uuid.UUID(query)
@@ -47,13 +47,22 @@ async def list(
                 or_(Product.id == query_uuid, Product.organization_id == query_uuid)
             )
         except ValueError:
+            needs_org_join = True
             statement = statement.where(
                 or_(
                     Product.name.ilike(f"%{query}%"),
                     Organization.slug.ilike(f"%{query}%"),
                     Organization.name.ilike(f"%{query}%"),
                 )
-            ).join(Organization, Product.organization_id == Organization.id)
+            )
+
+    # Apply joins and loading options
+    if needs_org_join:
+        statement = statement.join(
+            Organization, Product.organization_id == Organization.id
+        ).options(contains_eager(Product.organization))
+    else:
+        statement = statement.options(joinedload(Product.organization))
 
     statement = repository.apply_sorting(statement, sorting)
 
@@ -234,7 +243,10 @@ async def get(
                                             else:
                                                 text("N/A")
                                         with tag.td():
-                                            text(str(price.price_currency or "N/A"))
+                                            if hasattr(price, "price_currency"):
+                                                text(str(price.price_currency or "N/A"))
+                                            else:
+                                                text("N/A")
                                         with tag.td():
                                             text(str(price.is_archived))
 

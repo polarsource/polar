@@ -6,17 +6,17 @@ import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 
-interface UpcomingChargeCardProps {
-  subscription: schemas['Subscription']
-  organization: schemas['Organization']
-}
-
 const UpcomingChargeCard = ({
   subscription,
-  organization,
-}: UpcomingChargeCardProps) => {
+}: {
+  subscription: schemas['Subscription']
+}) => {
   const { data: chargePreview, isLoading } = useSubscriptionChargePreview(
     subscription.id,
+  )
+
+  const isFreeProduct = subscription.prices.some(
+    (price) => price.amount_type === 'free',
   )
 
   const isTrialing = subscription.status === 'trialing'
@@ -35,6 +35,12 @@ const UpcomingChargeCard = ({
     : subscription.current_period_end
 
   const dateLabel = isTrialing ? 'Trial Ends' : 'Next Invoice'
+
+  const hasNextInvoice = !isFreeProduct || hasMeters
+
+  if (!hasNextInvoice) {
+    return null
+  }
 
   return (
     <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">

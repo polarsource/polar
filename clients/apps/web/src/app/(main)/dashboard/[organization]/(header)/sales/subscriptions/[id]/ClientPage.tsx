@@ -208,10 +208,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         )}
       </ShadowBox>
 
-      <UpcomingChargeCard
-        subscription={subscription}
-        organization={organization}
-      />
+      <UpcomingChargeCard subscription={subscription} />
 
       <div className="flex flex-col gap-4 md:hidden">
         <CustomerContextView

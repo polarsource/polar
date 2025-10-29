@@ -28,11 +28,13 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_checkout,
+    create_discount,
     create_organization,
     create_product,
     create_product_price_seat_unit,
@@ -593,6 +595,38 @@ class TestUpdateCheckout:
         assert json["seats"] == 7
         assert json["amount"] == 3000 * 7
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_update_with_discount(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5_000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="TESTDISCOUNT50",
+        )
+
+        response = await client.patch(
+            f"{api_prefix}/{checkout_open.id}",
+            json={
+                "discount_id": str(discount.id),
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["discount"] is not None
+        assert json["discount"]["id"] == str(discount.id)
+
 
 @pytest.mark.asyncio
 class TestClientGet:
@@ -704,6 +738,36 @@ class TestClientUpdate:
         assert updated_checkout is not None
         assert updated_checkout.user_metadata == {}
 
+    async def test_update_with_discount_code(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        organization: Organization,
+    ) -> None:
+        await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5_000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="TESTDISCOUNT50",
+        )
+
+        response = await client.patch(
+            f"{api_prefix}/client/{checkout_open.client_secret}",
+            json={
+                "discount_code": "TESTDISCOUNT50",
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["discount"] is not None
+        assert json["discount"]["code"] == "TESTDISCOUNT50"
+
 
 @pytest.mark.asyncio
 class TestClientConfirm:
@@ -777,3 +841,45 @@ class TestClientConfirm:
 
         json = response.json()
         assert "customer_session_token" in json
+
+    async def test_confirm_with_discount_code(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        organization: Organization,
+    ) -> None:
+        await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5_000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="TESTDISCOUNT50",
+        )
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
+            json={
+                "customer_name": "Customer Name",
+                "customer_email": "customer@example.com",
+                "customer_billing_address": {"country": "FR"},
+                "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                "discount_code": "TESTDISCOUNT50",
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["discount"] is not None
+        assert json["discount"]["code"] == "TESTDISCOUNT50"

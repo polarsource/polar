@@ -197,15 +197,23 @@ async def get_charge_preview(
     - Total amount
 
     For trialing subscriptions, shows what the first charge will be when the trial ends.
-    Only available for active or trialing subscriptions.
+    For subscriptions set to cancel at period end, shows the final charge.
+    Only available for active or trialing subscriptions, including those set to cancel.
     """
     subscription = await subscription_service.get(session, auth_subject, id)
 
     if subscription is None:
         raise ResourceNotFound()
 
+    # Allow active, trialing, and subscriptions set to cancel at period end
     if subscription.status not in ("active", "trialing"):
         raise ResourceNotFound()
+
+    # If subscription will end (cancel_at_period_end or ends_at), ensure there's still a charge coming
+    if subscription.cancel_at_period_end or subscription.ends_at:
+        # Only show preview if we haven't reached the end date yet
+        if subscription.ended_at:
+            raise ResourceNotFound()
 
     preview = await subscription_service.calculate_charge_preview(session, subscription)
 

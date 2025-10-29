@@ -17,7 +17,10 @@ const UpcomingChargeCard = ({
 
   const isTrialing = subscription.status === 'trialing'
   const isActive = subscription.status === 'active'
+  const isCancelingAtPeriodEnd =
+    subscription.cancel_at_period_end && !subscription.ended_at
 
+  // Show for active, trialing, or subscriptions set to cancel at period end
   if (!isActive && !isTrialing) {
     return null
   }
@@ -34,7 +37,17 @@ const UpcomingChargeCard = ({
     ? subscription.trial_end
     : subscription.current_period_end
 
-  const dateLabel = isTrialing ? 'Trial Ends' : 'Next Invoice'
+  // Determine header and label based on subscription state
+  let headerTitle = 'Upcoming Charge'
+  let dateLabel = 'Next Invoice'
+
+  if (isTrialing) {
+    headerTitle = 'First Charge After Trial'
+    dateLabel = 'Trial Ends'
+  } else if (isCancelingAtPeriodEnd) {
+    headerTitle = 'Final Charge'
+    dateLabel = 'Subscription Ends'
+  }
 
   const hasNextInvoice = !isFreeProduct || hasMeters
 
@@ -46,7 +59,7 @@ const UpcomingChargeCard = ({
     <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
       <div className="flex flex-col gap-6 p-8">
         <div className="items-center justify-between space-y-1.5 sm:flex sm:space-y-0">
-          <h3 className="text-lg font-medium">Upcoming Charge</h3>
+          <h3 className="text-lg font-medium">{headerTitle}</h3>
           <span className="text-sm text-gray-500">
             {dateLabel} —{' '}
             {chargeDate
@@ -170,7 +183,15 @@ const UpcomingChargeCard = ({
                     labelClassName="font-medium"
                   />
 
-                  {hasMeters && (
+                  {isCancelingAtPeriodEnd && (
+                    <p className="text-xs text-gray-500">
+                      This will be the final charge before the subscription ends
+                      {hasMeters &&
+                        '. Final amount may vary based on usage until the end of the billing period'}
+                    </p>
+                  )}
+
+                  {!isCancelingAtPeriodEnd && hasMeters && (
                     <p className="text-xs text-gray-500">
                       {isActive
                         ? 'Final charges may vary based on usage until the end of the billing period'

@@ -45,6 +45,7 @@ class MetricQuery(StrEnum):
     costs = "costs"
     cumulative_costs = "cumulative_costs"
     events = "events"
+    cumulative_events = "cumulative_events"
 
 
 def _get_metrics_columns(
@@ -636,6 +637,49 @@ def get_events_cte(
     )
 
 
+def get_cumulative_events_cte(
+    timestamp_series: CTE,
+    interval: TimeInterval,
+    auth_subject: AuthSubject[User | Organization],
+    metrics: list["type[SQLMetric]"],
+    now: datetime,
+    *,
+    organization_id: Sequence[uuid.UUID] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+) -> CTE:
+    timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    readable_events_statement = _get_readable_events_statement(
+        auth_subject,
+        organization_id=organization_id,
+        customer_id=customer_id,
+    )
+
+    return cte(
+        select(
+            timestamp_column.label("timestamp"),
+            *_get_metrics_columns(
+                MetricQuery.cumulative_events, timestamp_column, interval, metrics, now
+            ),
+        )
+        .select_from(
+            timestamp_series.join(
+                Event,
+                isouter=True,
+                onclause=and_(
+                    interval.sql_date_trunc(Event.timestamp)
+                    <= interval.sql_date_trunc(timestamp_column),
+                    Event.id.in_(readable_events_statement),
+                ),
+            )
+        )
+        .group_by(timestamp_column)
+        .order_by(timestamp_column.asc())
+    )
+
+
 QUERIES: list[QueryCallable] = [
     get_orders_cte,
     get_cumulative_orders_cte,
@@ -645,4 +689,5 @@ QUERIES: list[QueryCallable] = [
     get_cost_events_cte,
     get_cumulative_cost_events_cte,
     get_events_cte,
+    get_cumulative_events_cte,
 ]

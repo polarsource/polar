@@ -77,6 +77,7 @@ async def orders_import(
             resolve_path=True,
         ),
     ],
+    invoice_number_prefix: str = typer.Option("LEMONSQUEEZY-"),
 ) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
@@ -110,7 +111,7 @@ async def orders_import(
 
                     for row in reader:
                         # Customer
-                        email = row["email"]
+                        email = row.get("email", row["user_email"])
                         customer = customer_map.get(
                             email,
                             await customer_repository.get_by_email_and_organization(
@@ -118,7 +119,7 @@ async def orders_import(
                             ),
                         )
                         if customer is None:
-                            name = row["name"] or None
+                            name = row.get("name", row["user_name"]) or None
                             country = row["country"].upper() or None
                             if country is None or country not in SUPPORTED_COUNTRIES:
                                 country = "US"
@@ -129,8 +130,8 @@ async def orders_import(
                             )
                             customer = await customer_repository.create(
                                 Customer(
-                                    email=row["email"],
-                                    name=row["name"],
+                                    email=email,
+                                    name=name,
                                     billing_address=billing_address,
                                     organization=organization,
                                 ),
@@ -152,6 +153,20 @@ async def orders_import(
                         product_map[product_name] = product
 
                         # Create Order
+                        lemon_squeezy_id = row.get("id", row["identifier"])
+                        existing_order_statement = (
+                            order_repository.get_base_statement().where(
+                                Order.user_metadata["lemon_squeezy_id"].astext
+                                == lemon_squeezy_id,
+                            )
+                        )
+                        existing_order = await order_repository.get_one_or_none(
+                            existing_order_statement
+                        )
+                        if existing_order is not None:
+                            progress.advance(task)
+                            continue
+
                         created_at = datetime.strptime(
                             row["date_utc"], "%Y-%m-%d %H:%M:%S"
                         ).replace(tzinfo=UTC)
@@ -163,8 +178,8 @@ async def orders_import(
                             Order(
                                 created_at=created_at,
                                 status=OrderStatus.paid,
-                                subtotal_amount=subtotal_amount,
-                                discount_amount=discount_amount,
+                                subtotal_amount=0,
+                                discount_amount=0,
                                 tax_amount=0,  # Don't import tax to avoid perturbing our own tax reports
                                 applied_balance_amount=0,
                                 currency="usd",
@@ -175,7 +190,7 @@ async def orders_import(
                                 tax_id=None,
                                 tax_rate=None,
                                 tax_calculation_processor_id=None,
-                                invoice_number=f"LEMONSQUEEZY-{organization.slug.upper()}-{row['order_number']}",
+                                invoice_number=f"{invoice_number_prefix}{organization.slug.upper()}-{row['order_number']}",
                                 customer=customer,
                                 product=product,
                                 discount=None,
@@ -190,7 +205,7 @@ async def orders_import(
                                     )
                                 ],
                                 user_metadata={
-                                    "lemon_squeezy_id": row["id"],
+                                    "lemon_squeezy_id": lemon_squeezy_id,
                                 },
                                 custom_field_data={},
                             ),

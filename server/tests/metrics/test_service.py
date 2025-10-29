@@ -20,6 +20,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.event import EventSource
 from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
@@ -1016,3 +1017,365 @@ class TestGetMetrics:
         jan_1 = metrics.periods[0]
         assert jan_1.costs == 0.000001
         assert jan_1.cumulative_costs == 0.000001
+
+    @pytest.mark.auth
+    async def test_average_revenue_per_user(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        customer_second: Customer,
+        organization: Organization,
+    ) -> None:
+        subscriptions_customer_1: dict[str, SubscriptionFixture] = {
+            "subscription_1": {
+                "started_at": date(2024, 1, 1),
+                "product": "monthly_subscription",
+            }
+        }
+        await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, subscriptions_customer_1, {}
+        )
+
+        subscriptions_customer_2: dict[str, SubscriptionFixture] = {
+            "subscription_2": {
+                "started_at": date(2024, 1, 1),
+                "product": "yearly_subscription",
+            }
+        }
+        await _create_fixtures(
+            save_fixture,
+            customer_second,
+            organization,
+            PRODUCTS,
+            subscriptions_customer_2,
+            {},
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 3, 1),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+        )
+
+        assert len(metrics.periods) == 3
+
+        jan = metrics.periods[0]
+        assert jan.active_subscriptions == 2
+        assert jan.monthly_recurring_revenue == 183_33
+        assert jan.average_revenue_per_user == 91_66
+
+        feb = metrics.periods[1]
+        assert feb.active_subscriptions == 2
+        assert feb.monthly_recurring_revenue == 183_33
+        assert feb.average_revenue_per_user == 91_66
+
+        mar = metrics.periods[2]
+        assert mar.active_subscriptions == 2
+        assert mar.monthly_recurring_revenue == 183_33
+        assert mar.average_revenue_per_user == 91_66
+
+        assert metrics.totals.average_revenue_per_user == 91_66
+
+    @pytest.mark.auth
+    async def test_average_revenue_per_user_no_customers(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+    ) -> None:
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+        )
+
+        assert len(metrics.periods) == 1
+
+        jan = metrics.periods[0]
+        assert jan.active_subscriptions == 0
+        assert jan.monthly_recurring_revenue == 0
+        assert jan.average_revenue_per_user == 0
+
+    @pytest.mark.auth
+    async def test_cost_per_user(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        customer_second: Customer,
+        organization: Organization,
+    ) -> None:
+        subscriptions_customer_1: dict[str, SubscriptionFixture] = {
+            "subscription_1": {
+                "started_at": date(2024, 1, 1),
+                "product": "monthly_subscription",
+            }
+        }
+        await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, subscriptions_customer_1, {}
+        )
+
+        subscriptions_customer_2: dict[str, SubscriptionFixture] = {
+            "subscription_2": {
+                "started_at": date(2024, 1, 1),
+                "product": "monthly_subscription",
+            }
+        }
+        await _create_fixtures(
+            save_fixture,
+            customer_second,
+            organization,
+            PRODUCTS,
+            subscriptions_customer_2,
+            {},
+        )
+
+        await create_event(
+            save_fixture,
+            timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=UTC),
+            organization=organization,
+            customer=customer,
+            metadata={
+                "_cost": {
+                    "amount": 0.50,
+                    "currency": "usd",
+                }
+            },
+        )
+
+        await create_event(
+            save_fixture,
+            timestamp=datetime(2024, 1, 1, 14, 0, tzinfo=UTC),
+            organization=organization,
+            customer=customer_second,
+            metadata={
+                "_cost": {
+                    "amount": 0.30,
+                    "currency": "usd",
+                }
+            },
+        )
+
+        await create_event(
+            save_fixture,
+            timestamp=datetime(2024, 2, 1, 10, 0, tzinfo=UTC),
+            organization=organization,
+            customer=customer,
+            metadata={
+                "_cost": {
+                    "amount": 0.20,
+                    "currency": "usd",
+                }
+            },
+        )
+
+        await create_event(
+            save_fixture,
+            timestamp=datetime(2024, 2, 1, 12, 0, tzinfo=UTC),
+            organization=organization,
+            customer=customer_second,
+            metadata={
+                "_cost": {
+                    "amount": 0.00,
+                    "currency": "usd",
+                }
+            },
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 3, 1),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+        )
+
+        assert len(metrics.periods) == 3
+
+        jan = metrics.periods[0]
+        assert jan.costs == 0.80
+        assert jan.active_subscriptions == 2
+        assert jan.cost_per_user == 0.4
+
+        feb = metrics.periods[1]
+        assert feb.costs == 0.20
+        assert feb.active_subscriptions == 2
+        assert feb.cost_per_user == 0.1
+
+        mar = metrics.periods[2]
+        assert mar.costs == 0
+        assert mar.active_subscriptions == 2
+        assert mar.cost_per_user == 0
+
+        assert metrics.totals.cost_per_user == 0
+
+    @pytest.mark.auth
+    async def test_gross_margin(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        customer_second: Customer,
+        organization: Organization,
+    ) -> None:
+        subscriptions_customer_1: dict[str, SubscriptionFixture] = {
+            "subscription_1": {
+                "started_at": date(2024, 1, 1),
+                "product": "monthly_subscription",
+            }
+        }
+        orders_customer_1: dict[str, OrderFixture] = {
+            "order_1": {
+                "created_at": date(2024, 1, 1),
+                "product": "monthly_subscription",
+                "subscription": "subscription_1",
+                "amount": 10000,
+                "status": OrderStatus.paid,
+            }
+        }
+        await _create_fixtures(
+            save_fixture,
+            customer,
+            organization,
+            PRODUCTS,
+            subscriptions_customer_1,
+            orders_customer_1,
+        )
+
+        await create_event(
+            save_fixture,
+            timestamp=datetime(2024, 1, 1, 10, 0, tzinfo=UTC),
+            organization=organization,
+            customer=customer,
+            name="order.paid",
+            source=EventSource.system,
+            metadata={
+                "amount": 10000,
+            },
+        )
+
+        subscriptions_customer_2: dict[str, SubscriptionFixture] = {
+            "subscription_2": {
+                "started_at": date(2024, 1, 1),
+                "product": "monthly_subscription",
+            }
+        }
+        orders_customer_2: dict[str, OrderFixture] = {
+            "order_2": {
+                "created_at": date(2024, 2, 1),
+                "product": "monthly_subscription",
+                "subscription": "subscription_2",
+                "amount": 10000,
+                "status": OrderStatus.paid,
+            }
+        }
+        await _create_fixtures(
+            save_fixture,
+            customer_second,
+            organization,
+            PRODUCTS,
+            subscriptions_customer_2,
+            orders_customer_2,
+        )
+
+        await create_event(
+            save_fixture,
+            timestamp=datetime(2024, 2, 1, 10, 0, tzinfo=UTC),
+            organization=organization,
+            customer=customer_second,
+            name="order.paid",
+            source=EventSource.system,
+            metadata={
+                "amount": 10000,
+            },
+        )
+
+        await create_event(
+            save_fixture,
+            timestamp=datetime(2024, 1, 15, 12, 0, tzinfo=UTC),
+            organization=organization,
+            customer=customer,
+            metadata={
+                "_cost": {
+                    "amount": 25.00,
+                    "currency": "usd",
+                }
+            },
+        )
+
+        await create_event(
+            save_fixture,
+            timestamp=datetime(2024, 2, 10, 10, 0, tzinfo=UTC),
+            organization=organization,
+            customer=customer_second,
+            metadata={
+                "_cost": {
+                    "amount": 15.00,
+                    "currency": "usd",
+                }
+            },
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 3, 1),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+        )
+
+        assert len(metrics.periods) == 3
+
+        jan = metrics.periods[0]
+        assert jan.revenue == 10000
+        assert jan.costs == 25.00
+        assert jan.gross_margin == 10000 - 25.00
+
+        feb = metrics.periods[1]
+        assert feb.revenue == 10000
+        assert feb.costs == 15.00
+        assert feb.gross_margin == 10000 - 15.00
+
+        mar = metrics.periods[2]
+        assert mar.revenue == 0
+        assert mar.costs == 0
+        assert mar.gross_margin == 0
+
+        assert metrics.totals.gross_margin == 20000 - 40.00
+
+    @pytest.mark.auth
+    async def test_cost_per_user_no_costs(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+    ) -> None:
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+        )
+
+        assert len(metrics.periods) == 1
+
+        jan = metrics.periods[0]
+        assert jan.costs == 0
+        assert jan.cost_per_user == 0

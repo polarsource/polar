@@ -40,6 +40,18 @@ export const useSubscription = (
     initialData,
   })
 
+export const useSubscriptionChargePreview = (id: string) =>
+  useQuery({
+    queryKey: ['subscriptions', { id }, 'charge-preview'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/subscriptions/{id}/charge-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
 export const useUpdateSubscription = (id: string) =>
   useMutation({
     mutationFn: (body: schemas['SubscriptionUpdate']) => {

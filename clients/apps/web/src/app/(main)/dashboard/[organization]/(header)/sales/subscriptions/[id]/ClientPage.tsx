@@ -10,6 +10,7 @@ import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
 import { DetailRow } from '@/components/Shared/DetailRow'
 import CancelSubscriptionModal from '@/components/Subscriptions/CancelSubscriptionModal'
 import SubscriptionDetails from '@/components/Subscriptions/SubscriptionDetails'
+import UpcomingChargeCard from '@/components/Subscriptions/UpcomingChargeCard'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
 import { toast } from '@/components/Toast/use-toast'
 import {
@@ -132,6 +133,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       <List size="small">
         <ProductListItem organization={organization} product={product} />
       </List>
+
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-8">
           <div className="flex flex-col gap-6">
@@ -205,6 +207,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </div>
         )}
       </ShadowBox>
+
+      <UpcomingChargeCard
+        subscription={subscription}
+        organization={organization}
+      />
 
       <div className="flex flex-col gap-4 md:hidden">
         <CustomerContextView

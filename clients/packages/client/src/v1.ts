@@ -778,6 +778,37 @@ export interface paths {
     patch: operations['subscriptions:update']
     trace?: never
   }
+  '/v1/subscriptions/{id}/charge-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Next Charge For Subscription
+     * @description Get a preview of the next charge for an active subscription.
+     *
+     *     Returns a breakdown of:
+     *     - Base subscription amount
+     *     - Metered usage charges
+     *     - Applied discounts
+     *     - Calculated taxes
+     *     - Total amount
+     *
+     *     Only available for active subscriptions.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:get_charge_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/transactions/search': {
     parameters: {
       query?: never
@@ -16990,6 +17021,8 @@ export interface components {
       amount: number
       /** Currency */
       currency: string
+      /** Backfilled */
+      backfilled?: boolean
     }
     /** OrderProduct */
     OrderProduct: {
@@ -17114,6 +17147,8 @@ export interface components {
       refunded_amount: number
       /** Currency */
       currency: string
+      /** Backfilled */
+      backfilled?: boolean
     }
     /**
      * OrderSortProperty
@@ -19492,6 +19527,12 @@ export interface components {
       metadata?: {
         [key: string]: unknown
       } | null
+      /**
+       * Immediate Claim
+       * @description If true, the seat will be immediately claimed without sending an invitation email. API-only feature.
+       * @default false
+       */
+      immediate_claim: boolean
     }
     /** SeatClaim */
     SeatClaim: {
@@ -19925,6 +19966,42 @@ export interface components {
        *     Or uncancel a subscription currently set to be revoked at period end.
        */
       cancel_at_period_end: boolean
+    }
+    /**
+     * SubscriptionChargePreview
+     * @description Preview of the next charge for a subscription.
+     */
+    SubscriptionChargePreview: {
+      /**
+       * Base Amount
+       * @description Base subscription amount in cents (sum of product prices)
+       */
+      base_amount: number
+      /**
+       * Metered Amount
+       * @description Total metered usage charges in cents (sum of all meter charges)
+       */
+      metered_amount: number
+      /**
+       * Subtotal Amount
+       * @description Subtotal amount in cents (base + metered, before discount and tax)
+       */
+      subtotal_amount: number
+      /**
+       * Discount Amount
+       * @description Discount amount in cents
+       */
+      discount_amount: number
+      /**
+       * Tax Amount
+       * @description Tax amount in cents
+       */
+      tax_amount: number
+      /**
+       * Total Amount
+       * @description Total amount in cents (final charge amount)
+       */
+      total_amount: number
     }
     /** SubscriptionChargePreviewResponse */
     SubscriptionChargePreviewResponse: {
@@ -23673,6 +23750,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionLocked']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:get_charge_preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

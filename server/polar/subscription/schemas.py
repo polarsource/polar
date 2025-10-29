@@ -370,3 +370,20 @@ SubscriptionUpdate = Annotated[
     | SubscriptionRevoke,
     SetSchemaReference("SubscriptionUpdate"),
 ]
+
+
+class SubscriptionChargePreview(Schema):
+    """Preview of the next charge for a subscription."""
+
+    base_amount: int = Field(
+        description="Base subscription amount in cents (sum of product prices)"
+    )
+    metered_amount: int = Field(
+        description="Total metered usage charges in cents (sum of all meter charges)"
+    )
+    subtotal_amount: int = Field(
+        description="Subtotal amount in cents (base + metered, before discount and tax)"
+    )
+    discount_amount: int = Field(description="Discount amount in cents")
+    tax_amount: int = Field(description="Tax amount in cents")
+    total_amount: int = Field(description="Total amount in cents (final charge amount)")

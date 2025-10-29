@@ -25,7 +25,12 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Subscription as SubscriptionSchema
-from .schemas import SubscriptionCreate, SubscriptionID, SubscriptionUpdate
+from .schemas import (
+    SubscriptionChargePreview,
+    SubscriptionCreate,
+    SubscriptionID,
+    SubscriptionUpdate,
+)
 from .service import AlreadyCanceledSubscription, SubscriptionLocked
 from .service import subscription as subscription_service
 
@@ -167,6 +172,42 @@ async def get(
         raise ResourceNotFound()
 
     return subscription
+
+
+@router.get(
+    "/{id}/charge-preview",
+    summary="Preview Next Charge For Subscription",
+    response_model=SubscriptionChargePreview,
+    responses={404: SubscriptionNotFound},
+)
+async def get_charge_preview(
+    id: SubscriptionID,
+    auth_subject: auth.SubscriptionsRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionChargePreview:
+    """
+    Get a preview of the next charge for an active subscription.
+
+    Returns a breakdown of:
+    - Base subscription amount
+    - Metered usage charges
+    - Applied discounts
+    - Calculated taxes
+    - Total amount
+
+    Only available for active subscriptions.
+    """
+    subscription = await subscription_service.get(session, auth_subject, id)
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    if subscription.status != "active":
+        raise ResourceNotFound()
+
+    preview = await subscription_service.calculate_charge_preview(session, subscription)
+
+    return SubscriptionChargePreview.model_validate(preview)
 
 
 @router.post(

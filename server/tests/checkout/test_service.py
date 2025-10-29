@@ -62,6 +62,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal
+from polar.models.organization import OrganizationStatus
 from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
@@ -3848,7 +3849,7 @@ class TestConfirm:
     ) -> None:
         # Make organization not payment ready (new org without account setup)
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.CREATED
+        organization.status = OrganizationStatus.CREATED
         organization.account_id = None
         await save_fixture(organization)
 
@@ -3878,7 +3879,7 @@ class TestConfirm:
     ) -> None:
         # Make organization not payment ready (new org without account setup)
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.CREATED
+        organization.status = OrganizationStatus.CREATED
         organization.account_id = None
         await save_fixture(organization)
 
@@ -3936,7 +3937,7 @@ class TestConfirm:
     ) -> None:
         # Make organization not payment ready (new org without account setup)
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.CREATED
+        organization.status = OrganizationStatus.CREATED
         organization.account_id = None
         await save_fixture(organization)
 
@@ -3975,7 +3976,7 @@ class TestConfirm:
     ) -> None:
         # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.CREATED
+        organization.status = OrganizationStatus.CREATED
         organization.account_id = None
         await save_fixture(organization)
 
@@ -4014,7 +4015,7 @@ class TestConfirm:
     ) -> None:
         # Make organization grandfathered (created before cutoff)
         organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
-        organization.status = Organization.Status.CREATED
+        organization.status = OrganizationStatus.CREATED
         organization.account_id = None
         await save_fixture(organization)
 
@@ -4071,7 +4072,7 @@ class TestConfirm:
     ) -> None:
         # Make organization new (not grandfathered)
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore
 

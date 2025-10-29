@@ -106,23 +106,24 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
 }
 
 
+class OrganizationStatus(StrEnum):
+    CREATED = "created"
+    ONBOARDING_STARTED = "onboarding_started"
+    UNDER_REVIEW = "under_review"
+    DENIED = "denied"
+    ACTIVE = "active"
+
+    def get_display_name(self) -> str:
+        return {
+            OrganizationStatus.CREATED: "Created",
+            OrganizationStatus.ONBOARDING_STARTED: "Onboarding Started",
+            OrganizationStatus.UNDER_REVIEW: "Under Review",
+            OrganizationStatus.DENIED: "Denied",
+            OrganizationStatus.ACTIVE: "Active",
+        }[self]
+
+
 class Organization(RateLimitGroupMixin, RecordModel):
-    class Status(StrEnum):
-        CREATED = "created"
-        ONBOARDING_STARTED = "onboarding_started"
-        UNDER_REVIEW = "under_review"
-        DENIED = "denied"
-        ACTIVE = "active"
-
-        def get_display_name(self) -> str:
-            return {
-                Organization.Status.CREATED: "Created",
-                Organization.Status.ONBOARDING_STARTED: "Onboarding Started",
-                Organization.Status.UNDER_REVIEW: "Under Review",
-                Organization.Status.DENIED: "Denied",
-                Organization.Status.ACTIVE: "Active",
-            }[self]
-
     __tablename__ = "organizations"
     __table_args__ = (
         UniqueConstraint("slug"),
@@ -155,10 +156,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     account_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("accounts.id", ondelete="set null"), nullable=True
     )
-    status: Mapped[Status] = mapped_column(
-        StringEnum(Status),
+    status: Mapped[OrganizationStatus] = mapped_column(
+        StringEnum(OrganizationStatus),
         nullable=False,
-        default=Status.CREATED,
+        default=OrganizationStatus.CREATED,
     )
     next_review_threshold: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0
@@ -310,10 +311,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return False
 
     def is_under_review(self) -> bool:
-        return self.status == Organization.Status.UNDER_REVIEW
+        return self.status == OrganizationStatus.UNDER_REVIEW
 
     def is_active(self) -> bool:
-        return self.status == Organization.Status.ACTIVE
+        return self.status == OrganizationStatus.ACTIVE
 
     def statement_descriptor(self, suffix: str = "") -> str:
         max_length = settings.stripe_descriptor_suffix_max_length

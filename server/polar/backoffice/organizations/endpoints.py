@@ -36,6 +36,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.file import FileServiceTypes
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -104,11 +105,11 @@ def empty_str_to_none_before_bool(value: Any) -> Any:
 @contextlib.contextmanager
 def organization_badge(organization: Organization) -> Generator[None]:
     with tag.div(classes="badge"):
-        if organization.status == Organization.Status.ACTIVE:
+        if organization.status == OrganizationStatus.ACTIVE:
             classes("badge-success")
         elif (
-            organization.status == Organization.Status.UNDER_REVIEW
-            or organization.status == Organization.Status.DENIED
+            organization.status == OrganizationStatus.UNDER_REVIEW
+            or organization.status == OrganizationStatus.DENIED
         ):
             classes("badge-warning")
         else:
@@ -149,7 +150,7 @@ class DaysInStatusColumn(
             delta = datetime.now(UTC) - item.created_at
             days = delta.days
 
-        if item.status == Organization.Status.UNDER_REVIEW:
+        if item.status == OrganizationStatus.UNDER_REVIEW:
             text(f"{days} days in review")
         else:
             text(f"{days} days since review")
@@ -303,7 +304,7 @@ async def list(
     limit: int = Query(100, description="Size of a page, defaults to 100.", gt=0),
     query: str | None = Query(None),
     organization_status: Annotated[
-        Organization.Status | None,
+        OrganizationStatus | None,
         BeforeValidator(empty_str_to_none_before_enum),
         Query(),
     ] = None,
@@ -360,12 +361,12 @@ async def list(
     if review_cycle:
         if review_cycle == "first":
             statement = statement.where(
-                Organization.status == Organization.Status.UNDER_REVIEW,
+                Organization.status == OrganizationStatus.UNDER_REVIEW,
                 Organization.next_review_threshold == 0,
             )
         elif review_cycle == "subsequent":
             statement = statement.where(
-                Organization.status == Organization.Status.UNDER_REVIEW,
+                Organization.status == OrganizationStatus.UNDER_REVIEW,
                 Organization.next_review_threshold > 0,
             )
 
@@ -393,7 +394,7 @@ async def list(
                             ("All Organization Statuses", ""),
                             *[
                                 (status.get_display_name(), status.value)
-                                for status in Organization.Status
+                                for status in OrganizationStatus
                             ],
                         ],
                         organization_status.value if organization_status else "",

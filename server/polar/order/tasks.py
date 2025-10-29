@@ -285,6 +285,7 @@ async def backfill_order_events(rate_limit_delay: float = 1.0) -> None:
 
             if len(events_batch) >= settings.DATABASE_STREAM_YIELD_PER:
                 await EventRepository.from_session(session).insert_batch(events_batch)
+                await session.commit()
                 total_events += len(events_batch)
 
                 log.info(

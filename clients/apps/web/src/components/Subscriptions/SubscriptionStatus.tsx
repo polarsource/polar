@@ -39,9 +39,9 @@ const StatusLabel = ({
       <span className={twMerge('h-2 w-2 rounded-full border-2', color)} />
       <span className="capitalize">{children}</span>
       {prettyEventDate && (
-        <Pill color="gray" className="flex flex-row">
+        <Pill color="gray">
           {icon}
-          <span className="ml-1!">{prettyEventDate}</span>
+          <span>{prettyEventDate}</span>
         </Pill>
       )}
     </div>

@@ -1,4 +1,4 @@
-from typing import Annotated, TypedDict
+from typing import Annotated
 
 import structlog
 from fastapi import Depends, Query
@@ -8,15 +8,13 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.kit.tax import calculate_tax
 from polar.locker import Locker, get_locker
 from polar.models import Subscription
-from polar.models.subscription import SubscriptionStatus
 from polar.openapi import APITag
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
-from polar.subscription.schemas import SubscriptionID
+from polar.subscription.schemas import SubscriptionChargePreview, SubscriptionID
 from polar.subscription.service import AlreadyCanceledSubscription
 from polar.subscription.service import subscription as subscription_service
 
@@ -101,19 +99,10 @@ async def get(
     return subscription
 
 
-class SubscriptionChargePreviewResponse(TypedDict):
-    base_amount: int
-    metered_amount: int
-    subtotal_amount: int
-    discount_amount: int
-    tax_amount: int
-    total_amount: int
-
-
 @router.get(
     "/{id}/charge-preview",
     summary="Preview Next Charge For Active Subscription",
-    response_model=SubscriptionChargePreviewResponse,
+    response_model=SubscriptionChargePreview,
     responses={404: SubscriptionNotFound},
     tags=[APITag.private],
 )
@@ -121,7 +110,7 @@ async def get_charge_preview(
     id: SubscriptionID,
     auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionChargePreviewResponse:
+) -> SubscriptionChargePreview:
     """Get current period usage and cost breakdown for a subscription."""
     subscription = await customer_subscription_service.get_by_id(
         session, auth_subject, id
@@ -130,67 +119,17 @@ async def get_charge_preview(
     if subscription is None:
         raise ResourceNotFound()
 
-    if subscription.status != "active":
-        ## FIXME Is a 404 the correct behavior?
+    # Allow active, trialing, and subscriptions set to cancel at period end
+    if subscription.status not in ("active", "trialing"):
         raise ResourceNotFound()
 
-    base_price = sum(p.amount for p in subscription.subscription_product_prices)
+    # If subscription will end (cancel_at_period_end or ends_at), ensure there's still a charge coming
+    if subscription.cancel_at_period_end or subscription.ends_at:
+        # Only show preview if we haven't reached the end date yet
+        if subscription.ended_at:
+            raise ResourceNotFound()
 
-    metered_amount = sum(meter.amount for meter in subscription.meters)
-
-    subtotal_amount = base_price + metered_amount
-
-    discount_amount = 0
-
-    applicable_discount = None
-
-    # Ensure the discount has not expired yet for the next charge (so at current_period_end)
-    if subscription.discount is not None:
-        assert subscription.started_at is not None
-        assert subscription.current_period_end is not None
-        if not subscription.discount.is_repetition_expired(
-            subscription.started_at,
-            subscription.current_period_end,
-            subscription.status == SubscriptionStatus.trialing,
-        ):
-            applicable_discount = subscription.discount
-
-    if applicable_discount is not None:
-        discount_amount = applicable_discount.get_discount_amount(subtotal_amount)
-
-    taxable_amount = subtotal_amount - discount_amount
-
-    tax_amount = 0
-
-    if (
-        taxable_amount > 0
-        and subscription.product.is_tax_applicable
-        and subscription.customer.billing_address is not None
-    ):
-        tax = await calculate_tax(
-            subscription.id,
-            subscription.currency,
-            taxable_amount,
-            subscription.product.tax_code,
-            subscription.customer.billing_address,
-            [subscription.customer.tax_id]
-            if subscription.customer.tax_id is not None
-            else [],
-            subscription.tax_exempted,
-        )
-
-        tax_amount = tax["amount"]
-
-    total = taxable_amount + tax_amount
-
-    return {
-        "base_amount": base_price,
-        "metered_amount": metered_amount,
-        "subtotal_amount": subtotal_amount,
-        "discount_amount": discount_amount,
-        "tax_amount": tax_amount,
-        "total_amount": total,
-    }
+    return await subscription_service.calculate_charge_preview(session, subscription)
 
 
 @router.patch(

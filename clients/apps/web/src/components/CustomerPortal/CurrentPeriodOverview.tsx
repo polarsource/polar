@@ -23,7 +23,13 @@ export const CurrentPeriodOverview = ({
     subscription.id,
   )
 
-  if (subscription.status !== 'active') {
+  const isTrialing = subscription.status === 'trialing'
+  const isActive = subscription.status === 'active'
+  const isCancelingAtPeriodEnd =
+    subscription.cancel_at_period_end && !subscription.ended_at
+
+  // Show for active, trialing, or subscriptions set to cancel at period end
+  if (!isActive && !isTrialing) {
     return null
   }
 
@@ -31,6 +37,37 @@ export const CurrentPeriodOverview = ({
   const hasTaxes = subscriptionPreview && subscriptionPreview.tax_amount > 0
   const hasDiscount =
     subscriptionPreview && subscriptionPreview.discount_amount > 0
+
+  const isFreeProduct = subscription.prices.some(
+    (price) => price.amount_type === 'free',
+  )
+
+  // For subscriptions set to cancel, only show if there are meters
+  if (isCancelingAtPeriodEnd && !hasMeters) {
+    return null
+  }
+
+  // Don't show for free subscriptions with no meters
+  const hasNextInvoice = !isFreeProduct || hasMeters
+  if (!hasNextInvoice) {
+    return null
+  }
+
+  const chargeDate = isTrialing
+    ? subscription.trial_end
+    : subscription.current_period_end
+
+  // Determine header and label based on subscription state
+  let headerTitle = 'Current Period Overview'
+  let dateLabel = 'Next Invoice'
+
+  if (isTrialing) {
+    headerTitle = 'First Charge After Trial'
+    dateLabel = 'Trial Ends'
+  } else if (isCancelingAtPeriodEnd) {
+    headerTitle = 'Final Charge'
+    dateLabel = 'Subscription Ends'
+  }
 
   return (
     <div
@@ -40,16 +77,13 @@ export const CurrentPeriodOverview = ({
       )}
     >
       <div className="items-center justify-between space-y-1.5 sm:flex sm:space-y-0">
-        <h4 className="text-lg font-medium">Current Period Overview</h4>
+        <h4 className="text-lg font-medium">{headerTitle}</h4>
         <span className="text-sm text-gray-500">
-          Next Invoice —{' '}
-          {subscription.current_period_end
-            ? new Date(subscription.current_period_end).toLocaleDateString(
-                'en-US',
-                {
-                  dateStyle: 'medium',
-                },
-              )
+          {dateLabel} —{' '}
+          {chargeDate
+            ? new Date(chargeDate).toLocaleDateString('en-US', {
+                dateStyle: 'medium',
+              })
             : 'N/A'}
         </span>
       </div>
@@ -59,8 +93,14 @@ export const CurrentPeriodOverview = ({
           <span className="text-gray-600 dark:text-gray-400">
             {subscription.product.name}
           </span>
-          <span className="font-medium">
-            <ProductPriceLabel product={subscription.product} />
+          <span
+            className={isCancelingAtPeriodEnd ? 'text-gray-500' : 'font-medium'}
+          >
+            {isCancelingAtPeriodEnd ? (
+              'Canceled'
+            ) : (
+              <ProductPriceLabel product={subscription.product} />
+            )}
           </span>
         </div>
 
@@ -77,7 +117,7 @@ export const CurrentPeriodOverview = ({
                   <AmountLabel
                     amount={meter.amount}
                     currency={subscription.currency}
-                    minimumFractionDigits={2}
+                    minimumFractionDigits={meter.amount % 100 === 0 ? 0 : 2}
                   />
                 </span>
               </div>
@@ -152,10 +192,21 @@ export const CurrentPeriodOverview = ({
             </span>
           </div>
 
-          {hasMeters && (
-            <p className="text-xs text-gray-500">
-              Final charges may vary based on usage until the end of the billing
-              period
+          {isCancelingAtPeriodEnd && (
+            <p className="max-w-sm text-xs text-gray-500">
+              This will be the final charge before the subscription ends.
+              {hasMeters &&
+                ' Final amount may vary based on usage until the end of the billing period.'}
+            </p>
+          )}
+
+          {!isCancelingAtPeriodEnd && hasMeters && (
+            <p className="max-w-sm text-xs text-gray-500">
+              {isActive
+                ? 'Final charges may vary based on usage until the end of the billing period.'
+                : isTrialing
+                  ? 'Final charges may vary based on usage during the trial period.'
+                  : 'Final charges may vary.'}
             </p>
           )}
         </div>

@@ -778,6 +778,39 @@ export interface paths {
     patch: operations['subscriptions:update']
     trace?: never
   }
+  '/v1/subscriptions/{id}/charge-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Next Charge For Subscription
+     * @description Get a preview of the next charge for an active or trialing subscription.
+     *
+     *     Returns a breakdown of:
+     *     - Base subscription amount
+     *     - Metered usage charges
+     *     - Applied discounts
+     *     - Calculated taxes
+     *     - Total amount
+     *
+     *     For trialing subscriptions, shows what the first charge will be when the trial ends.
+     *     For subscriptions set to cancel at period end, shows the final charge.
+     *     Only available for active or trialing subscriptions, including those set to cancel.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:get_charge_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/transactions/search': {
     parameters: {
       query?: never
@@ -19936,19 +19969,40 @@ export interface components {
        */
       cancel_at_period_end: boolean
     }
-    /** SubscriptionChargePreviewResponse */
-    SubscriptionChargePreviewResponse: {
-      /** Base Amount */
+    /**
+     * SubscriptionChargePreview
+     * @description Preview of the next charge for a subscription.
+     */
+    SubscriptionChargePreview: {
+      /**
+       * Base Amount
+       * @description Base subscription amount in cents (sum of product prices)
+       */
       base_amount: number
-      /** Metered Amount */
+      /**
+       * Metered Amount
+       * @description Total metered usage charges in cents (sum of all meter charges)
+       */
       metered_amount: number
-      /** Subtotal Amount */
+      /**
+       * Subtotal Amount
+       * @description Subtotal amount in cents (base + metered, before discount and tax)
+       */
       subtotal_amount: number
-      /** Discount Amount */
+      /**
+       * Discount Amount
+       * @description Discount amount in cents
+       */
       discount_amount: number
-      /** Tax Amount */
+      /**
+       * Tax Amount
+       * @description Tax amount in cents
+       */
       tax_amount: number
-      /** Total Amount */
+      /**
+       * Total Amount
+       * @description Total amount in cents (final charge amount)
+       */
       total_amount: number
     }
     /**
@@ -23683,6 +23737,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionLocked']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:get_charge_preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -29971,7 +30066,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SubscriptionChargePreviewResponse']
+          'application/json': components['schemas']['SubscriptionChargePreview']
         }
       }
       /** @description Customer subscription was not found. */

@@ -43,6 +43,7 @@ from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.tax import calculate_tax
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
@@ -92,6 +93,7 @@ from polar.worker import enqueue_job
 from .repository import SubscriptionRepository
 from .schemas import (
     SubscriptionCancel,
+    SubscriptionChargePreview,
     SubscriptionCreate,
     SubscriptionCreateCustomer,
     SubscriptionRevoke,
@@ -2029,6 +2031,82 @@ class SubscriptionService:
         )
 
         return subscription
+
+    async def calculate_charge_preview(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> SubscriptionChargePreview:
+        """
+        Calculate a preview of the next charge for a subscription.
+
+        Args:
+            session: Database session
+            subscription: The subscription to calculate the preview for
+
+        Returns:
+            SubscriptionChargePreview with breakdown of charges
+        """
+        # If subscription is set to cancel at period end, there's no base charge
+        # Only metered charges accumulated during the period will be billed
+        if subscription.cancel_at_period_end or subscription.ends_at:
+            base_price = 0
+        else:
+            base_price = sum(p.amount for p in subscription.subscription_product_prices)
+
+        metered_amount = sum(meter.amount for meter in subscription.meters)
+
+        subtotal_amount = base_price + metered_amount
+
+        discount_amount = 0
+
+        applicable_discount = None
+
+        # Ensure the discount has not expired yet for the next charge (so at current_period_end)
+        if subscription.discount is not None:
+            assert subscription.started_at is not None
+            assert subscription.current_period_end is not None
+            if not subscription.discount.is_repetition_expired(
+                subscription.started_at,
+                subscription.current_period_end,
+                subscription.status == SubscriptionStatus.trialing,
+            ):
+                applicable_discount = subscription.discount
+
+        if applicable_discount is not None:
+            discount_amount = applicable_discount.get_discount_amount(subtotal_amount)
+
+        taxable_amount = subtotal_amount - discount_amount
+
+        tax_amount = 0
+
+        if (
+            taxable_amount > 0
+            and subscription.product.is_tax_applicable
+            and subscription.customer.billing_address is not None
+        ):
+            tax = await calculate_tax(
+                subscription.id,
+                subscription.currency,
+                taxable_amount,
+                subscription.product.tax_code,
+                subscription.customer.billing_address,
+                [subscription.customer.tax_id]
+                if subscription.customer.tax_id is not None
+                else [],
+                subscription.tax_exempted,
+            )
+
+            tax_amount = tax["amount"]
+
+        total = taxable_amount + tax_amount
+
+        return SubscriptionChargePreview(
+            base_amount=base_price,
+            metered_amount=metered_amount,
+            subtotal_amount=subtotal_amount,
+            discount_amount=discount_amount,
+            tax_amount=tax_amount,
+            total_amount=total,
+        )
 
     async def _after_subscription_updated(
         self,

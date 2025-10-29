@@ -31,6 +31,7 @@ import {
   FormField,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import Link from 'next/link'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useForm, useFormContext } from 'react-hook-form'
@@ -324,8 +325,20 @@ export const OrganizationDetailsForm: React.FC<
 
         {/* Social Links - Progressive Disclosure */}
         <div>
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-4 flex flex-col items-start">
             <label className="block text-sm font-medium">Social Media</label>
+            <p className="mt-2 text-xs text-gray-600">
+              These links are not publicly accessible, and are only accessible
+              through the{' '}
+              <Link
+                className="underline"
+                href="https://polar.sh/docs/api-reference/organizations/get"
+                target="_blank"
+              >
+                Organizations API
+              </Link>
+              .
+            </p>
           </div>
           <OrganizationSocialLinks />
         </div>

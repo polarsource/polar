@@ -1,7 +1,7 @@
 {
   "languages": {
     "Python": {
-      "language_servers": ["ty", "basedpyright", "ruff", "!pylsp"],
+      "language_servers": ["pyright", "!basedpyright", "ruff", "!pylsp"],
       "format_on_save": "on",
       "wrap_guides": [88],
       "formatter": [
@@ -16,13 +16,10 @@
     }
   },
   "lsp": {
-    "basedpyright": {
+    "pyright": {
       "settings": {
         "python": {
           "pythonPath": ".venv/bin/python"
-        },
-        "basedpyright.analysis": {
-          "autoImportCompletions": true
         }
       }
     }

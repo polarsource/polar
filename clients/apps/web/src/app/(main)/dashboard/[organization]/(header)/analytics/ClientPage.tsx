@@ -48,10 +48,13 @@ export default function ClientPage({
   const { data: allProducts } = useProducts(organization.id, { limit: 100 })
 
   const relevantProducts = useMemo(() => {
-    if (!allProducts?.items) return []
-    // If no products selected, show all products
-    if (!productId || productId.length === 0) return allProducts.items
-    // Otherwise filter to selected products
+    if (!allProducts?.items) {
+      return []
+    }
+
+    if (!productId || productId.length === 0) {
+      return allProducts.items
+    }
     return allProducts.items.filter((p) => productId.includes(p.id))
   }, [allProducts, productId])
 
@@ -125,6 +128,7 @@ export default function ClientPage({
     'average_order_value',
     'cumulative_revenue',
   ]
+
   const subscriptionEvents: (keyof schemas['Metrics'])[] = [
     'monthly_recurring_revenue',
     'committed_monthly_recurring_revenue',
@@ -134,14 +138,16 @@ export default function ClientPage({
     'new_subscriptions_revenue',
     'renewed_subscriptions_revenue',
   ]
+
   const oneTimeEvents: (keyof schemas['Metrics'])[] = [
     'one_time_products',
     'one_time_products_revenue',
   ]
+
   const checkoutEvents: (keyof schemas['Metrics'])[] = [
+    'checkouts_conversion',
     'checkouts',
     'succeeded_checkouts',
-    'checkouts_conversion',
   ]
 
   const netRevenueEvents = useMemo(() => {
@@ -196,43 +202,38 @@ export default function ClientPage({
       <div className="flex flex-col gap-12">
         {data && (
           <>
-            <MetricGroup
-              title="Orders"
-              metricKeys={orderEvents}
-              data={data}
-              interval={interval}
-            />
             {hasRecurringProducts && (
-              <MetricGroup
-                title="Subscriptions"
-                metricKeys={subscriptionEvents}
-                data={data}
-                interval={interval}
-              />
-            )}
-            {hasRecurringProducts && (
-              <div className="flex flex-col gap-y-6">
-                <h3 className="text-2xl">Cancellations</h3>
-                <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
-                  <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-3">
-                    <div className="dark:border-polar-700 col-span-2 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
-                      <CancellationsStackedChart
-                        data={data}
-                        interval={interval}
-                        height={400}
-                      />
-                    </div>
-                    <div className="dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
-                      <CancellationsDistributionChart
-                        data={data}
-                        interval={interval}
-                        height={20}
-                      />
+              <>
+                <MetricGroup
+                  title="Subscriptions"
+                  metricKeys={subscriptionEvents}
+                  data={data}
+                  interval={interval}
+                />
+                <div className="flex flex-col gap-y-6">
+                  <h3 className="text-2xl">Cancellations</h3>
+                  <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
+                    <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-3">
+                      <div className="dark:border-polar-700 col-span-2 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
+                        <CancellationsStackedChart
+                          data={data}
+                          interval={interval}
+                          height={400}
+                        />
+                      </div>
+                      <div className="dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
+                        <CancellationsDistributionChart
+                          data={data}
+                          interval={interval}
+                          height={20}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
+
             {hasOneTimeProducts && (
               <MetricGroup
                 title="One-time Purchases"
@@ -241,12 +242,21 @@ export default function ClientPage({
                 interval={interval}
               />
             )}
+
+            <MetricGroup
+              title="Orders"
+              metricKeys={orderEvents}
+              data={data}
+              interval={interval}
+            />
+
             <MetricGroup
               title="Checkouts"
               metricKeys={checkoutEvents}
               data={data}
               interval={interval}
             />
+
             <MetricGroup
               title="Net Revenue"
               metricKeys={netRevenueEvents}

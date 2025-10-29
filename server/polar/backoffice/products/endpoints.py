@@ -34,25 +34,25 @@ def _format_price_display(price: ProductPrice) -> str:
         return "Free"
     elif is_custom_price(price):
         parts = []
-        if price.minimum_amount:
+        if price.minimum_amount is not None and price.price_currency is not None:
             parts.append(
                 f"Min: {formatters.currency(price.minimum_amount, price.price_currency)}"
             )
-        if price.maximum_amount:
+        if price.maximum_amount is not None and price.price_currency is not None:
             parts.append(
                 f"Max: {formatters.currency(price.maximum_amount, price.price_currency)}"
             )
-        if price.preset_amount:
+        if price.preset_amount is not None and price.price_currency is not None:
             parts.append(
                 f"Preset: {formatters.currency(price.preset_amount, price.price_currency)}"
             )
         return "Pay what you want" + (f" ({', '.join(parts)})" if parts else "")
     elif is_fixed_price(price):
-        if price.price_amount:
+        if price.price_amount is not None and price.price_currency is not None:
             return formatters.currency(price.price_amount, price.price_currency)
         return "N/A"
     elif is_seat_price(price):
-        if price.seat_tiers:
+        if price.seat_tiers is not None and price.price_currency is not None:
             tiers = price.seat_tiers.get("tiers", [])
             if tiers:
                 first_tier = tiers[0]
@@ -64,7 +64,7 @@ def _format_price_display(price: ProductPrice) -> str:
                 return f"{price_display} / seat"
         return "Seat-based pricing"
     elif is_metered_price(price):
-        if price.price_amount:
+        if price.price_amount is not None and price.price_currency is not None:
             return f"{formatters.currency(price.price_amount, price.price_currency)} / unit"
         return "Metered pricing"
     return "N/A"

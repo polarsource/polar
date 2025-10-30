@@ -11,6 +11,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
     UniqueConstraint,
     Uuid,
     and_,
@@ -167,6 +168,8 @@ class Organization(RateLimitGroupMixin, RecordModel):
     status_updated_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
+
+    internal_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     @declared_attr
     def account(cls) -> Mapped[Account | None]:

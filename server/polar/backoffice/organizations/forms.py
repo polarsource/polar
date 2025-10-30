@@ -112,3 +112,15 @@ class UpdateOrganizationDetailsForm(forms.BaseForm):
         ),
     ]
     details: Annotated[UpdateOrganizationDetailsDataForm, Field(title="Details")]
+
+
+class UpdateOrganizationInternalNotesForm(forms.BaseForm):
+    internal_notes: Annotated[
+        str | None,
+        forms.TextAreaField(rows=10),
+        Field(
+            None,
+            title="Internal Notes",
+            description="Internal notes about this organization (admin only)",
+        ),
+    ]

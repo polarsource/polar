@@ -17,7 +17,7 @@ from polar.models import Customer, Order, Organization, Product
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.order import sorting
 from polar.order.repository import OrderRepository
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_read_session
 
 from .. import formatters
 from ..components import button, datatable, description_list, input
@@ -104,7 +104,7 @@ async def list(
     billing_reason: Annotated[
         OrderBillingReason | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     repository = OrderRepository.from_session(session)
     statement = (
@@ -218,7 +218,7 @@ async def list(
 async def get(
     request: Request,
     id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     order_repository = OrderRepository.from_session(session)
     order = await order_repository.get_by_id(

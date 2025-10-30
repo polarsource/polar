@@ -45,7 +45,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user.repository import UserRepository
 from polar.user_organization.service import (
@@ -300,7 +300,7 @@ async def get_setup_verdict_data(
 async def list(
     request: Request,
     sorting: sorting.ListSorting,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
     page: int = Query(1, description="Page number, defaults to 1.", gt=0),
     limit: int = Query(100, description="Size of a page, defaults to 100.", gt=0),
     query: str | None = Query(None),

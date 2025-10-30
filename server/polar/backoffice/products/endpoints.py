@@ -9,7 +9,7 @@ from tagflow import tag, text
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, Product, ProductBenefit
 from polar.models.product_price import ProductPrice
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_read_session
 from polar.product import sorting
 from polar.product.guard import (
     is_custom_price,
@@ -78,7 +78,7 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     query: str | None = Query(None),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     repository = ProductRepository.from_session(session)
     statement = (
@@ -156,7 +156,7 @@ async def list(
 async def get(
     request: Request,
     id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     repository = ProductRepository.from_session(session)
     product = await repository.get_by_id(

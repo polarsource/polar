@@ -14,7 +14,7 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Customer, Order, Organization, Product, Subscription
 from polar.order.repository import OrderRepository
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.sorting import SubscriptionSortProperty
 
@@ -31,7 +31,7 @@ async def list(
     request: Request,
     pagination: PaginationParamsQuery,
     query: str | None = Query(None),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     repository = CustomerRepository.from_session(session)
     statement = (
@@ -97,7 +97,7 @@ async def list(
 async def get(
     request: Request,
     id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     customer_repository = CustomerRepository.from_session(session)
     customer = await customer_repository.get_by_id(

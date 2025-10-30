@@ -65,7 +65,8 @@ const CustomerSubscriptionDetails = ({
   const primaryAction = useMemo(() => {
     if (
       organization.subscription_settings.allow_customer_updates &&
-      !isCanceled
+      !isCanceled &&
+      subscription.status !== 'trialing'
     ) {
       return {
         label: 'Change Plan',

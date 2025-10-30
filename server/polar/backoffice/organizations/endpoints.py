@@ -75,6 +75,7 @@ from .forms import (
     OrganizationStatusFormAdapter,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationForm,
+    UpdateOrganizationInternalNotesForm,
 )
 from .schemas import PaymentStatistics, SetupVerdictData
 
@@ -627,6 +628,60 @@ async def update_details(
                     variant="primary",
                 ):
                     text("Update Details")
+
+
+@router.api_route(
+    "/{id}/update_internal_notes",
+    name="organizations:update_internal_notes",
+    methods=["GET", "POST"],
+)
+async def update_internal_notes(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(id)
+    if not organization:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = UpdateOrganizationInternalNotesForm.model_validate_form(data)
+            organization = await org_repo.update(
+                organization, update_dict=form.model_dump(exclude_none=True)
+            )
+            return HXRedirectResponse(
+                request, str(request.url_for("organizations:get", id=id)), 303
+            )
+
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Edit Internal Notes", open=True):
+        with tag.p(classes="text-sm text-base-content-secondary"):
+            text("Add or update internal notes about this organization (admin only)")
+
+        with UpdateOrganizationInternalNotesForm.render(
+            data=organization,
+            validation_error=validation_error,
+            hx_post=str(request.url_for("organizations:update_internal_notes", id=id)),
+            hx_target="#modal",
+            classes="space-y-4",
+        ):
+            # Action buttons
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Save Notes")
 
 
 @router.api_route("/{id}/delete", name="organizations:delete", methods=["GET", "POST"])
@@ -1673,6 +1728,33 @@ async def get(
                                     text(
                                         f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'USD', locale='en_US')})"
                                     )
+
+            # Internal Notes Section
+            with tag.div(classes="card card-border w-full shadow-sm"):
+                with tag.div(classes="card-body"):
+                    with tag.div(classes="flex justify-between items-center mb-4"):
+                        with tag.h2(classes="card-title"):
+                            text("Internal Notes")
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "organizations:update_internal_notes",
+                                    id=organization.id,
+                                )
+                            ),
+                            hx_target="#modal",
+                            variant="secondary",
+                        ):
+                            text("Edit Notes")
+
+                    if organization.internal_notes:
+                        with tag.div(classes="prose max-w-none"):
+                            with tag.p(classes="whitespace-pre-line text-sm"):
+                                text(organization.internal_notes)
+                    else:
+                        with tag.div(classes="text-center py-4"):
+                            with tag.p(classes="text-gray-400"):
+                                text("No internal notes yet")
 
             # Organization Review Section
             with tag.div(classes="mt-8"):

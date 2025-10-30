@@ -1,11 +1,12 @@
 import asyncio
 import uuid
+from collections.abc import Sequence
 from typing import Any
 
 import stripe as stripe_lib
 import structlog
 from dramatiq import Retry
-from sqlalchemy import String, select
+from sqlalchemy import String, and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -239,15 +240,24 @@ async def process_dunning_order(order_id: uuid.UUID) -> None:
     priority=TaskPriority.LOW,
     time_limit=3600_000,
 )
-async def backfill_order_events(rate_limit_delay: float = 1.0) -> None:
+async def backfill_order_events(
+    batch_size: int = settings.DATABASE_STREAM_YIELD_PER, rate_limit_delay: float = 1.0
+) -> None:
     """
     Backfill order.paid and order.refunded events for all existing orders.
     Uses transaction timestamps for accurate event timing.
 
     Args:
+        batch_size: The number of orders to process at a time between the delays (default 100)
         rate_limit_delay: Seconds to wait between batch inserts (default: 1.0)
     """
+
     async with AsyncSessionMaker() as session:
+        last_created_at = None
+        last_id = None
+        total_orders = 0
+        total_events = 0
+
         existing_order_ids_subquery = (
             select(Event.user_metadata["order_id"].as_string().label("order_id"))
             .where(Event.name.in_([SystemEvent.order_paid, SystemEvent.order_refunded]))
@@ -255,8 +265,8 @@ async def backfill_order_events(rate_limit_delay: float = 1.0) -> None:
             .subquery()
         )
 
-        statement = (
-            select(Order)
+        count_statement = (
+            select(func.count(Order.id))
             .outerjoin(
                 existing_order_ids_subquery,
                 existing_order_ids_subquery.c.order_id == Order.id.cast(String),
@@ -265,41 +275,66 @@ async def backfill_order_events(rate_limit_delay: float = 1.0) -> None:
                 Order.deleted_at.is_(None),
                 existing_order_ids_subquery.c.order_id.is_(None),
             )
-            .options(selectinload(Order.customer))
-            .order_by(Order.created_at.asc())
+        )
+        count_result = await session.execute(count_statement)
+        total_to_process = count_result.scalar() or 0
+
+        log.info(
+            "backfill_order_events.starting",
+            total_orders_to_process=total_to_process,
         )
 
-        orders_stream = await session.stream_scalars(
-            statement,
-            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
-        )
+        while True:
+            statement = (
+                select(Order)
+                .outerjoin(
+                    existing_order_ids_subquery,
+                    existing_order_ids_subquery.c.order_id == Order.id.cast(String),
+                )
+                .where(
+                    Order.deleted_at.is_(None),
+                    existing_order_ids_subquery.c.order_id.is_(None),
+                )
+                .options(selectinload(Order.customer))
+                .order_by(Order.created_at.asc(), Order.id.asc())
+                .limit(batch_size)
+            )
 
-        total_orders = 0
-        total_events = 0
-        events_batch: list[dict[str, Any]] = []
-
-        async for order in orders_stream:
-            events = await _build_events_for_orders(session, [order])
-            events_batch.extend(events)
-            total_orders += 1
-
-            if len(events_batch) >= settings.DATABASE_STREAM_YIELD_PER:
-                await EventRepository.from_session(session).insert_batch(events_batch)
-                await session.commit()
-                total_events += len(events_batch)
-
-                log.info(
-                    "backfill_order_events.progress",
-                    orders=total_orders,
-                    events=total_events,
+            if last_created_at is not None:
+                statement = statement.where(
+                    or_(
+                        Order.created_at > last_created_at,
+                        and_(Order.created_at == last_created_at, Order.id > last_id),
+                    )
                 )
 
-                events_batch = []
+            result = await session.execute(statement)
+            orders = result.scalars().all()
+            if not orders:
+                break
+
+            last_created_at = orders[-1].created_at
+            last_id = orders[-1].id
+
+            events = await _build_events_for_orders(session, orders)
+            total_orders += len(orders)
+
+            if events:
+                await EventRepository.from_session(session).insert_batch(events)
+                await session.commit()
+                total_events += len(events)
                 await asyncio.sleep(rate_limit_delay)
 
-        if events_batch:
-            await EventRepository.from_session(session).insert_batch(events_batch)
-            total_events += len(events_batch)
+            progress_pct = (
+                (total_orders / total_to_process * 100) if total_to_process > 0 else 100
+            )
+            log.info(
+                "backfill_order_events.progress",
+                progress_pct=f"{progress_pct:.1f}%",
+                orders=total_orders,
+                events=total_events,
+                total_to_process=total_to_process,
+            )
 
         log.info(
             "backfill_order_events.completed",
@@ -309,7 +344,7 @@ async def backfill_order_events(rate_limit_delay: float = 1.0) -> None:
 
 
 async def _build_events_for_orders(
-    session: AsyncSession, orders: list[Order]
+    session: AsyncSession, orders: Sequence[Order]
 ) -> list[dict[str, Any]]:
     """Build events for a batch of orders using transaction timestamps."""
     order_ids = [order.id for order in orders]

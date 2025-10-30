@@ -607,7 +607,7 @@ class TestBackfillOrderEvents:
         )
         await save_fixture(payment_transaction)
 
-        await backfill_order_events(rate_limit_delay=0.0)
+        await backfill_order_events(batch_size=2, rate_limit_delay=0.0)
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(organization.id)
@@ -663,7 +663,7 @@ class TestBackfillOrderEvents:
         )
         await save_fixture(refund_transaction)
 
-        await backfill_order_events(rate_limit_delay=0.0)
+        await backfill_order_events(batch_size=2, rate_limit_delay=0.0)
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(organization.id)
@@ -734,7 +734,7 @@ class TestBackfillOrderEvents:
         )
         await save_fixture(refund_transaction_2)
 
-        await backfill_order_events(rate_limit_delay=0.0)
+        await backfill_order_events(batch_size=2, rate_limit_delay=0.0)
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(organization.id)
@@ -785,7 +785,7 @@ class TestBackfillOrderEvents:
         )
         await save_fixture(existing_event)
 
-        await backfill_order_events(rate_limit_delay=0.0)
+        await backfill_order_events(batch_size=2, rate_limit_delay=0.0)
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(organization.id)
@@ -809,7 +809,7 @@ class TestBackfillOrderEvents:
             status=OrderStatus.pending,
         )
 
-        await backfill_order_events(rate_limit_delay=0.0)
+        await backfill_order_events(batch_size=2, rate_limit_delay=0.0)
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(organization.id)

@@ -1,13 +1,12 @@
 import asyncio
 import uuid
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import Any
 
 import stripe as stripe_lib
 import structlog
 from dramatiq import Retry
-from sqlalchemy import String, and_, delete, func, or_, select
-from sqlalchemy.engine import CursorResult
+from sqlalchemy import String, and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -255,34 +254,34 @@ async def remove_backfilled_events(
     async with AsyncSessionMaker() as session:
         total_deleted = 0
 
-        while True:
-            result = await session.execute(
-                delete(Event).where(
-                    Event.id.in_(
-                        select(Event.id)
-                        .where(
-                            Event.name.in_(
-                                [SystemEvent.order_paid, SystemEvent.order_refunded]
-                            ),
-                            Event.user_metadata["backfilled"].as_boolean().is_(True),
-                        )
-                        .limit(batch_size)
-                    )
-                )
-            )
-            await session.commit()
+        # while True:
+        #     result = await session.execute(
+        #         delete(Event).where(
+        #             Event.id.in_(
+        #                 select(Event.id)
+        #                 .where(
+        #                     Event.name.in_(
+        #                         [SystemEvent.order_paid, SystemEvent.order_refunded]
+        #                     ),
+        #                     Event.user_metadata["backfilled"].as_boolean().is_(True),
+        #                 )
+        #                 .limit(batch_size)
+        #             )
+        #         )
+        #     )
+        #     await session.commit()
 
-            batch_deleted = cast(CursorResult[Any], result).rowcount
-            if batch_deleted == 0:
-                break
+        #     batch_deleted = cast(CursorResult[Any], result).rowcount
+        #     if batch_deleted == 0:
+        #         break
 
-            total_deleted += batch_deleted
-            log.info(
-                "remove_backfilled_events.progress",
-                deleted=total_deleted,
-            )
+        #     total_deleted += batch_deleted
+        #     log.info(
+        #         "remove_backfilled_events.progress",
+        #         deleted=total_deleted,
+        #     )
 
-            await asyncio.sleep(rate_limit_delay)
+        #     await asyncio.sleep(rate_limit_delay)
 
         log.info(
             "remove_backfilled_events.completed",

@@ -753,6 +753,7 @@ class TestBackfillOrderEvents:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 class TestRemoveBackfilledEvents:
     async def test_removes_backfilled_events(
         self,

@@ -7,7 +7,7 @@ import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import ProductSelect from '@/components/Products/ProductSelect'
-import { ParsedMetricsResponse, useMetrics } from '@/hooks/queries'
+import { ParsedMetricsResponse, useMetrics, useProducts } from '@/hooks/queries'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { useRouter } from 'next/navigation'
@@ -44,6 +44,29 @@ export default function ClientPage({
     organization_id: organization.id,
     ...(productId ? { product_id: productId } : {}),
   })
+
+  const { data: allProducts } = useProducts(organization.id, { limit: 100 })
+
+  const relevantProducts = useMemo(() => {
+    if (!allProducts?.items) {
+      return []
+    }
+
+    if (!productId || productId.length === 0) {
+      return allProducts.items
+    }
+    return allProducts.items.filter((p) => productId.includes(p.id))
+  }, [allProducts, productId])
+
+  const hasRecurringProducts = useMemo(
+    () => relevantProducts.some((p) => p.is_recurring),
+    [relevantProducts],
+  )
+
+  const hasOneTimeProducts = useMemo(
+    () => relevantProducts.some((p) => !p.is_recurring),
+    [relevantProducts],
+  )
 
   const dateRange = useMemo(
     () => ({ from: startDate, to: endDate }),
@@ -99,38 +122,54 @@ export default function ClientPage({
     [router, organization, interval, startDate, endDate],
   )
 
-  const generalEvents: (keyof schemas['Metrics'])[] = [
+  const orderEvents: (keyof schemas['Metrics'])[] = [
     'revenue',
-    'monthly_recurring_revenue',
-    'committed_monthly_recurring_revenue',
     'orders',
     'average_order_value',
     'cumulative_revenue',
   ]
+
   const subscriptionEvents: (keyof schemas['Metrics'])[] = [
+    'monthly_recurring_revenue',
+    'committed_monthly_recurring_revenue',
     'active_subscriptions',
     'new_subscriptions',
     'renewed_subscriptions',
     'new_subscriptions_revenue',
     'renewed_subscriptions_revenue',
   ]
+
   const oneTimeEvents: (keyof schemas['Metrics'])[] = [
     'one_time_products',
     'one_time_products_revenue',
   ]
+
   const checkoutEvents: (keyof schemas['Metrics'])[] = [
+    'checkouts_conversion',
     'checkouts',
     'succeeded_checkouts',
-    'checkouts_conversion',
   ]
-  const netRevenueEvents: (keyof schemas['Metrics'])[] = [
-    'net_revenue',
-    'net_average_order_value',
-    'net_cumulative_revenue',
-    'new_subscriptions_net_revenue',
-    'renewed_subscriptions_net_revenue',
-    'one_time_products_net_revenue',
-  ]
+
+  const netRevenueEvents = useMemo(() => {
+    const baseEvents: (keyof schemas['Metrics'])[] = [
+      'net_revenue',
+      'net_average_order_value',
+      'net_cumulative_revenue',
+    ]
+    const subscriptionNetEvents: (keyof schemas['Metrics'])[] = [
+      'new_subscriptions_net_revenue',
+      'renewed_subscriptions_net_revenue',
+    ]
+    const oneTimeNetEvents: (keyof schemas['Metrics'])[] = [
+      'one_time_products_net_revenue',
+    ]
+
+    return [
+      ...baseEvents,
+      ...(hasRecurringProducts ? subscriptionNetEvents : []),
+      ...(hasOneTimeProducts ? oneTimeNetEvents : []),
+    ]
+  }, [hasRecurringProducts, hasOneTimeProducts])
 
   return (
     <DashboardBody
@@ -163,51 +202,61 @@ export default function ClientPage({
       <div className="flex flex-col gap-12">
         {data && (
           <>
-            <MetricGroup
-              title="Orders"
-              metricKeys={generalEvents}
-              data={data}
-              interval={interval}
-            />
-            <MetricGroup
-              title="Subscriptions"
-              metricKeys={subscriptionEvents}
-              data={data}
-              interval={interval}
-            />
-            <div className="flex flex-col gap-y-6">
-              <h3 className="text-2xl">Cancellations</h3>
-              <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
-                <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-3">
-                  <div className="dark:border-polar-700 col-span-2 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
-                    <CancellationsStackedChart
-                      data={data}
-                      interval={interval}
-                      height={400}
-                    />
-                  </div>
-                  <div className="dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
-                    <CancellationsDistributionChart
-                      data={data}
-                      interval={interval}
-                      height={20}
-                    />
+            {hasRecurringProducts && (
+              <>
+                <MetricGroup
+                  title="Subscriptions"
+                  metricKeys={subscriptionEvents}
+                  data={data}
+                  interval={interval}
+                />
+                <div className="flex flex-col gap-y-6">
+                  <h3 className="text-2xl">Cancellations</h3>
+                  <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
+                    <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-3">
+                      <div className="dark:border-polar-700 col-span-2 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
+                        <CancellationsStackedChart
+                          data={data}
+                          interval={interval}
+                          height={400}
+                        />
+                      </div>
+                      <div className="dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
+                        <CancellationsDistributionChart
+                          data={data}
+                          interval={interval}
+                          height={20}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
+
+            {hasOneTimeProducts && (
+              <MetricGroup
+                title="One-time Purchases"
+                metricKeys={oneTimeEvents}
+                data={data}
+                interval={interval}
+              />
+            )}
+
             <MetricGroup
-              title="One-time Purchases"
-              metricKeys={oneTimeEvents}
+              title="Orders"
+              metricKeys={orderEvents}
               data={data}
               interval={interval}
             />
+
             <MetricGroup
               title="Checkouts"
               metricKeys={checkoutEvents}
               data={data}
               interval={interval}
             />
+
             <MetricGroup
               title="Net Revenue"
               metricKeys={netRevenueEvents}

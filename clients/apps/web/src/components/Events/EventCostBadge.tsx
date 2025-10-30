@@ -57,7 +57,7 @@ export interface EventCostWithAmountBadgeProps {
 }
 
 export interface EventCostWithoutAmountBadgeProps {
-  nonCostEvent: true
+  nonCostEvent: boolean
 }
 
 export type EventCostBadgeProps =

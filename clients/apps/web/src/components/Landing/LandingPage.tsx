@@ -11,6 +11,7 @@ import GetStartedButton from '../Auth/GetStartedButton'
 import { Adapters } from './Adapters'
 import { Benefits } from './Benefits'
 import { Checkout } from './Checkout'
+import { Events } from './Events'
 import Features from './Features'
 import { Pricing } from './Pricing'
 import SDKs from './SDKs'
@@ -31,7 +32,7 @@ export const PageContent = () => {
     <>
       <Section className="flex flex-col gap-y-32 pt-0 md:pt-0">
         <Hero
-          title="Monetize your software"
+          title="Your software business on Autopilot"
           description="Turn your software into a business with 6 lines of code"
         >
           <GetStartedButton size="lg" text="Get Started" />
@@ -49,6 +50,7 @@ export const PageContent = () => {
             </Button>
           </Link>
         </Hero>
+        <Events />
         <Features />
         <Adapters />
         <SDKs />

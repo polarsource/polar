@@ -11,7 +11,6 @@ Cost Insights works by allowing you to add a special `_cost` property to any eve
 
 To track costs, add a `_cost` property to your event's metadata when ingesting events.
 
-<CodeGroup>
 ```typescript TypeScript (SDK)
 import { Polar } from "@polar-sh/sdk";
 
@@ -23,7 +22,7 @@ await polar.events.ingest({
   events: [
     {
       name: "llm.inference",
-      customerId: "cus_abc123",
+      externalCustomerId: "user_123",
       metadata: {
         _cost: {
           amount: 0.025,
@@ -35,29 +34,6 @@ await polar.events.ingest({
 });
 ```
 
-```python Python (SDK)
-from polar_sdk import Polar
-
-polar = Polar(
-    access_token=os.environ.get("POLAR_ACCESS_TOKEN")
-)
-
-polar.events.ingest(
-    events=[
-        {
-            "name": "llm.inference",
-            "customer_id": "cus_abc123",
-            "metadata": {
-                "_cost": {
-                    "amount": 0.025,
-                    "currency": "usd"
-                }
-            }
-        }
-    ]
-)
-```
-
 ```json cURL
 POST https://api.polar.sh/v1/events/ingest
 Content-Type: application/json
@@ -67,7 +43,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
   "events": [
     {
       "name": "llm.inference",
-      "customer_id": "cus_abc123",
+      "external_customer_id": "user_123",
       "metadata": {
         "_cost": {
           "amount": 0.025,
@@ -78,7 +54,6 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
   ]
 }
 ```
-</CodeGroup>
 
 ### Cost Metadata Schema
 
@@ -93,11 +68,11 @@ The `_cost` property has the following structure:
 - **`currency`** (required): The currency code
   - Currently only `"usd"` is supported
 
-<Warning>
+<Info>
   **Amount must be in cents**: The `amount` field represents the cost in cents,
-  not dollars. For example, `100` = $1.00, `0.5` = $0.005 (half a cent), and
-  `0.001` = $0.00001 (one hundredth of a cent).
-</Warning>
+  not dollars. For example, `100 = $1.00`, `0.5 = $0.005` (half a cent), and
+  `0.001 = $0.00001` (one hundredth of a cent).
+</Info>
 
 ## Use Cases
 
@@ -105,7 +80,6 @@ The `_cost` property has the following structure:
 
 Track the cost of LLM API calls per customer:
 
-<CodeGroup>
 ```typescript TypeScript
 import { Polar } from "@polar-sh/sdk";
 import OpenAI from "openai";
@@ -125,8 +99,8 @@ const completion = await openai.chat.completions.create({
 });
 
 // Calculate cost (example: $0.03 per 1K input tokens, $0.06 per 1K output tokens)
-const inputCost = (completion.usage.prompt_tokens / 1000) * 3; // in cents
-const outputCost = (completion.usage.completion_tokens / 1000) * 6; // in cents
+const inputCost = ((completion.usage.prompt * tokens) / 1000) * 3; // in cents
+const outputCost = ((completion.usage.completion * tokens) / 1000) * 6; // in cents
 const totalCost = inputCost + outputCost;
 
 // Track the cost in Polar
@@ -153,54 +127,6 @@ await polar.events.ingest({
 });
 ```
 
-```python Python
-from polar_sdk import Polar
-from openai import OpenAI
-
-polar = Polar(
-    access_token=os.environ.get("POLAR_ACCESS_TOKEN")
-)
-
-openai_client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY")
-)
-
-# Make LLM API call
-completion = openai_client.chat.completions.create(
-    model="gpt-4",
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-
-# Calculate cost (example: $0.03 per 1K input tokens, $0.06 per 1K output tokens)
-input_cost = (completion.usage.prompt_tokens / 1000) * 3  # in cents
-output_cost = (completion.usage.completion_tokens / 1000) * 6  # in cents
-total_cost = input_cost + output_cost
-
-# Track the cost in Polar
-polar.events.ingest(
-    events=[
-        {
-            "name": "gpt4.completion",
-            "customer_id": "cus_abc123",
-            "metadata": {
-                "_cost": {
-                    "amount": total_cost,
-                    "currency": "usd"
-                },
-                "_llm": {
-                    "vendor": "openai",
-                    "model": "gpt-4",
-                    "input_tokens": completion.usage.prompt_tokens,
-                    "output_tokens": completion.usage.completion_tokens,
-                    "total_tokens": completion.usage.total_tokens
-                }
-            }
-        }
-    ]
-)
-```
-</CodeGroup>
-
 ### Infrastructure Costs
 
 Track compute, storage, or API costs:
@@ -210,7 +136,7 @@ Track compute, storage, or API costs:
   "events": [
     {
       "name": "video.processing",
-      "customer_id": "cus_abc123",
+      "external_customer_id": "user_123",
       "metadata": {
         "_cost": {
           "amount": 45.5, // $0.455
@@ -233,7 +159,7 @@ Track costs from external services:
   "events": [
     {
       "name": "email.sent",
-      "customer_id": "cus_abc123",
+      "external_customer_id": "user_123",
       "metadata": {
         "_cost": {
           "amount": 0.0001, // $0.000001
@@ -253,7 +179,6 @@ Track costs from external services:
 
 Ingest cost events as they occur to maintain accurate, up-to-date metrics:
 
-<CodeGroup>
 ```typescript TypeScript
 import { Polar } from "@polar-sh/sdk";
 
@@ -273,7 +198,7 @@ await polar.events.ingest({
   events: [
     {
       name: "llm.completion",
-      customerId: customerId,
+      externalCustomerId: "user_123",
       metadata: {
         _cost: {
           amount: cost,
@@ -284,38 +209,6 @@ await polar.events.ingest({
   ],
 });
 ```
-
-```python Python
-from polar_sdk import Polar
-
-polar = Polar(
-    access_token=os.environ.get("POLAR_ACCESS_TOKEN")
-)
-
-# When making an LLM API call
-completion = openai_client.chat.completions.create(
-    model="gpt-4",
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-
-cost = calculate_cost(completion.usage)  # Cost should be in cents
-
-polar.events.ingest(
-    events=[
-        {
-            "name": "llm.completion",
-            "customer_id": customer_id,
-            "metadata": {
-                "_cost": {
-                    "amount": cost,
-                    "currency": "usd"
-                }
-            }
-        }
-    ]
-)
-```
-</CodeGroup>
 
 ### Use Precise Amounts
 

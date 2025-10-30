@@ -23,9 +23,9 @@ While Polar automatically tracks revenue from orders and subscriptions, Cost Ins
 
 Cost Insights works in three simple steps:
 
-1. **Ingest events with cost data**: Add a `_cost` property to events when ingesting them through Polar's Event Ingestion API
+1. **Ingest events with cost data**: Add a `_cost` property to events metadata when ingesting them through Polar's Event Ingestion API
 2. **Automatic aggregation**: Polar automatically aggregates costs alongside your revenue data
-3. **Query and analyze**: Use the Metrics API to retrieve costs, profits, and customer LTV
+3. **Query and analyze**: Use the Metrics API, or the Polar Dashboard to retrieve costs, profits, and customer LTV
 
 ### Quick Example
 
@@ -34,7 +34,7 @@ Cost Insights works in three simple steps:
   "events": [
     {
       "name": "llm.inference",
-      "customer_id": "cus_abc123",
+      "external_customer_id": "user_123",
       "metadata": {
         "_cost": {
           "amount": 0.025, // $0.00025 in cents
@@ -56,16 +56,19 @@ Cost Insights works in three simple steps:
 ## Documentation
 
 <CardGroup cols={2}>
-  <Card title="Cost Events" icon="chart-line" href="/features/cost-insights/cost-events">
+  <Card
+    title="Cost Events"
+    icon="chart-line"
+    href="/features/cost-insights/cost-events"
+  >
     Learn how to track costs by adding the `_cost` property to your events
+    metadata
   </Card>
-  <Card title="Cost Metrics" icon="chart-bar" href="/features/cost-insights/cost-metrics">
+  <Card
+    title="Cost Metrics"
+    icon="chart-bar"
+    href="/features/cost-insights/cost-metrics"
+  >
     Query and analyze costs, profits, and customer lifetime value
   </Card>
 </CardGroup>
-
-## Next Steps
-
-- Learn more about [Event Ingestion](/docs/events/ingestion)
-- Explore the [Metrics API](/docs/api/metrics)
-- Understand [Customer Analytics](/docs/features/customer-analytics)

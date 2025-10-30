@@ -81,7 +81,6 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_billing_entry,
     create_canceled_subscription,
-    create_checkout,
     create_customer,
     create_discount,
     create_event,
@@ -89,6 +88,7 @@ from tests.fixtures.random_objects import (
     create_payment,
     create_payment_method,
     create_product,
+    create_product_checkout,
     create_subscription,
     create_trialing_subscription,
     create_wallet,
@@ -462,7 +462,7 @@ class TestCreateFromCheckoutOneTime:
     async def test_recurring_product(
         self, save_fixture: SaveFixture, session: AsyncSession, product: Product
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture, products=[product], status=CheckoutStatus.confirmed
         )
         with pytest.raises(RecurringProduct):
@@ -474,7 +474,7 @@ class TestCreateFromCheckoutOneTime:
         session: AsyncSession,
         product_one_time: Product,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture, products=[product_one_time], status=CheckoutStatus.confirmed
         )
         with pytest.raises(MissingCheckoutCustomer):
@@ -489,7 +489,7 @@ class TestCreateFromCheckoutOneTime:
         product_one_time: Product,
         customer: Customer,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_one_time],
             status=CheckoutStatus.confirmed,
@@ -525,7 +525,7 @@ class TestCreateFromCheckoutOneTime:
         product_one_time_custom_price: Product,
         customer: Customer,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_one_time_custom_price],
             status=CheckoutStatus.confirmed,
@@ -563,7 +563,7 @@ class TestCreateFromCheckoutOneTime:
         product_one_time_free_price: Product,
         customer: Customer,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_one_time_free_price],
             status=CheckoutStatus.confirmed,
@@ -600,7 +600,7 @@ class TestCreateFromCheckoutOneTime:
         discount_percentage_100: Discount,
         customer: Customer,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_one_time],
             status=CheckoutStatus.confirmed,
@@ -643,7 +643,7 @@ class TestCreateFromCheckoutSubscription:
         product_one_time: Product,
         subscription: Subscription,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture, products=[product_one_time], status=CheckoutStatus.confirmed
         )
         with pytest.raises(NotRecurringProduct):
@@ -661,7 +661,7 @@ class TestCreateFromCheckoutSubscription:
         product: Product,
         customer: Customer,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture, products=[product], status=CheckoutStatus.confirmed
         )
         subscription = await create_subscription(
@@ -683,7 +683,7 @@ class TestCreateFromCheckoutSubscription:
         product: Product,
         customer: Customer,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product],
             status=CheckoutStatus.confirmed,
@@ -714,7 +714,7 @@ class TestCreateFromCheckoutSubscription:
         product_recurring_metered: Product,
         customer: Customer,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_recurring_metered],
             status=CheckoutStatus.confirmed,
@@ -1991,7 +1991,7 @@ class TestCreateOrderFromStripe:
         subscription: Subscription,
         product: Product,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture, products=[product], status=CheckoutStatus.succeeded
         )
         invoice = construct_stripe_invoice(
@@ -3986,7 +3986,7 @@ class TestCustomerBasedInvoiceNumbering:
             stripe_customer_id="STRIPE_CUSTOMER_2",
         )
 
-        checkout_1 = await create_checkout(
+        checkout_1 = await create_product_checkout(
             save_fixture,
             products=[product_one_time],
             status=CheckoutStatus.confirmed,
@@ -3994,7 +3994,7 @@ class TestCustomerBasedInvoiceNumbering:
         )
         order_1 = await order_service.create_from_checkout_one_time(session, checkout_1)
 
-        checkout_2 = await create_checkout(
+        checkout_2 = await create_product_checkout(
             save_fixture,
             products=[product_one_time],
             status=CheckoutStatus.confirmed,

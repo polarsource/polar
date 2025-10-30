@@ -7,7 +7,11 @@ from polar.payment.service import UnlinkedPaymentError
 from polar.payment.service import payment as payment_service
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout, create_order, create_wallet
+from tests.fixtures.random_objects import (
+    create_order,
+    create_product_checkout,
+    create_wallet,
+)
 from tests.fixtures.stripe import build_stripe_charge, build_stripe_payment_intent
 
 
@@ -21,7 +25,7 @@ class TestUpsertFromStripeCharge:
         customer: Customer,
     ) -> None:
         # Create a checkout
-        checkout = await create_checkout(save_fixture, products=[product])
+        checkout = await create_product_checkout(save_fixture, products=[product])
 
         # Create a charge with checkout_id in metadata
         charge = build_stripe_charge(
@@ -104,7 +108,7 @@ class TestUpsertFromStripeCharge:
         customer: Customer,
     ) -> None:
         # Create a checkout
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product],
         )
@@ -189,7 +193,7 @@ class TestUpsertFromStripeCharge:
         self, session: AsyncSession, save_fixture: SaveFixture, product: Product
     ) -> None:
         # Create a checkout
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product],
         )
@@ -259,7 +263,7 @@ class TestUpsertFromStripePaymentIntent:
         customer: Customer,
     ) -> None:
         # Create a checkout
-        checkout = await create_checkout(save_fixture, products=[product])
+        checkout = await create_product_checkout(save_fixture, products=[product])
 
         # Create a payment intent with last_payment_error
         payment_intent = build_stripe_payment_intent(

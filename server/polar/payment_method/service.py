@@ -25,13 +25,6 @@ class NoPaymentMethodOnIntent(PaymentMethodError):
         super().__init__(message)
 
 
-class NotRecurringProduct(PaymentMethodError):
-    def __init__(self, product_id: uuid.UUID) -> None:
-        self.product_id = product_id
-        message = f"Product with ID {product_id} is not a recurring product."
-        super().__init__(message)
-
-
 class PaymentMethodInUseByActiveSubscription(PaymentMethodError):
     def __init__(self, subscription_ids: list[uuid.UUID]) -> None:
         self.subscription_ids = subscription_ids
@@ -81,9 +74,6 @@ class PaymentMethodService:
     ) -> PaymentMethod:
         if intent.payment_method is None:
             raise NoPaymentMethodOnIntent(intent.id)
-
-        if not checkout.product.is_recurring:
-            raise NotRecurringProduct(checkout.product.id)
 
         stripe_payment_method = await stripe_service.get_payment_method(
             get_expandable_id(intent.payment_method)

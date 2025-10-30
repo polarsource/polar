@@ -85,13 +85,13 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
-    create_checkout,
     create_customer,
     create_customer_seat,
     create_discount,
     create_event,
     create_meter,
     create_product,
+    create_product_checkout,
     create_product_price_seat_unit,
     create_subscription,
     create_subscription_with_seats,
@@ -388,7 +388,7 @@ class TestCreateOrUpdateFromCheckout:
         session: AsyncSession,
         product_one_time: Product,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_one_time],
             status=CheckoutStatus.confirmed,
@@ -404,7 +404,7 @@ class TestCreateOrUpdateFromCheckout:
         session: AsyncSession,
         product: Product,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product],
             status=CheckoutStatus.confirmed,
@@ -424,7 +424,7 @@ class TestCreateOrUpdateFromCheckout:
         customer: Customer,
         payment_method: PaymentMethod,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product],
             status=CheckoutStatus.confirmed,
@@ -466,7 +466,7 @@ class TestCreateOrUpdateFromCheckout:
         customer: Customer,
         payment_method: PaymentMethod,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_recurring_custom_price],
             status=CheckoutStatus.confirmed,
@@ -504,7 +504,7 @@ class TestCreateOrUpdateFromCheckout:
         product_recurring_free_price: Product,
         customer: Customer,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_recurring_free_price],
             status=CheckoutStatus.confirmed,
@@ -541,7 +541,7 @@ class TestCreateOrUpdateFromCheckout:
         customer: Customer,
         payment_method: PaymentMethod,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_recurring_metered],
             status=CheckoutStatus.confirmed,
@@ -586,7 +586,7 @@ class TestCreateOrUpdateFromCheckout:
         discount_percentage_100: Discount,
         payment_method: PaymentMethod,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_recurring_custom_price],
             status=CheckoutStatus.confirmed,
@@ -633,7 +633,7 @@ class TestCreateOrUpdateFromCheckout:
             customer=customer,
             status=SubscriptionStatus.active,
         )
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product],
             status=CheckoutStatus.confirmed,
@@ -683,7 +683,7 @@ class TestCreateOrUpdateFromCheckout:
         customer: Customer,
         payment_method: PaymentMethod,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product],
             status=CheckoutStatus.confirmed,

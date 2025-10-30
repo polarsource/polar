@@ -33,10 +33,10 @@ from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_checkout,
     create_discount,
     create_organization,
     create_product,
+    create_product_checkout,
     create_product_price_seat_unit,
 )
 
@@ -70,7 +70,7 @@ def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
 async def checkout_open(
     save_fixture: SaveFixture, product_one_time: Product
 ) -> Checkout:
-    return await create_checkout(save_fixture, products=[product_one_time])
+    return await create_product_checkout(save_fixture, products=[product_one_time])
 
 
 async def create_blocked_product(
@@ -114,15 +114,17 @@ class TestList:
         discount_percentage_50: Discount,
     ) -> None:
         checkouts = [
-            await create_checkout(save_fixture, products=[product]),
-            await create_checkout(
+            await create_product_checkout(save_fixture, products=[product]),
+            await create_product_checkout(
                 save_fixture, products=[product], subscription=subscription
             ),
-            await create_checkout(
+            await create_product_checkout(
                 save_fixture, products=[product], discount=discount_percentage_50
             ),
-            await create_checkout(save_fixture, products=[product], customer=customer),
-            await create_checkout(save_fixture, products=[product_one_time]),
+            await create_product_checkout(
+                save_fixture, products=[product], customer=customer
+            ),
+            await create_product_checkout(save_fixture, products=[product_one_time]),
         ]
 
         session.expunge_all()
@@ -540,7 +542,9 @@ class TestUpdateCheckout:
         )
         product.prices = [price]
 
-        checkout = await create_checkout(save_fixture, products=[product], seats=4)
+        checkout = await create_product_checkout(
+            save_fixture, products=[product], seats=4
+        )
 
         response = await client.patch(
             f"{api_prefix}/{checkout.id}",
@@ -575,7 +579,9 @@ class TestUpdateCheckout:
         )
         product.prices = [price]
 
-        checkout = await create_checkout(save_fixture, products=[product], seats=2)
+        checkout = await create_product_checkout(
+            save_fixture, products=[product], seats=2
+        )
 
         # Initial state
         response = await client.get(f"{api_prefix}/{checkout.id}")
@@ -642,7 +648,7 @@ class TestClientGet:
         client: AsyncClient,
         product: Product,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product],
             status=CheckoutStatus.expired,

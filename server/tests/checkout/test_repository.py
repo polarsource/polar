@@ -8,7 +8,7 @@ from polar.models import Product
 from polar.models.checkout import CheckoutStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout
+from tests.fixtures.random_objects import create_product_checkout
 
 
 @pytest.mark.asyncio
@@ -16,19 +16,19 @@ class TestExpireOpenCheckouts:
     async def test_valid(
         self, save_fixture: SaveFixture, session: AsyncSession, product: Product
     ) -> None:
-        open_checkout = await create_checkout(
+        open_checkout = await create_product_checkout(
             save_fixture,
             products=[product],
             status=CheckoutStatus.open,
             expires_at=utc_now() + timedelta(days=1),
         )
-        expired_checkout = await create_checkout(
+        expired_checkout = await create_product_checkout(
             save_fixture,
             products=[product],
             status=CheckoutStatus.open,
             expires_at=utc_now() - timedelta(days=1),
         )
-        successful_checkout = await create_checkout(
+        successful_checkout = await create_product_checkout(
             save_fixture,
             products=[product],
             status=CheckoutStatus.succeeded,

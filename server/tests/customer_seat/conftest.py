@@ -17,10 +17,10 @@ from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_checkout,
     create_customer_seat,
     create_order_with_seats,
     create_product,
+    create_product_checkout,
     create_product_price_seat_unit,
     create_subscription_with_seats,
 )
@@ -156,7 +156,7 @@ async def checkout_with_order(
     await session.refresh(order_with_seats.product, ["prices"])
 
     assert order_with_seats.product is not None
-    checkout = await create_checkout(
+    checkout = await create_product_checkout(
         save_fixture,
         products=[order_with_seats.product],
         customer=order_with_seats.customer,

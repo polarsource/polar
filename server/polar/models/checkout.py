@@ -13,6 +13,7 @@ from sqlalchemy import (
     Integer,
     String,
     Uuid,
+    case,
     event,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -41,6 +42,7 @@ from .organization import Organization
 from .product import Product
 from .product_price import ProductPrice, ProductPriceSeatUnit
 from .subscription import Subscription
+from .wallet import Wallet
 
 if TYPE_CHECKING:
     from polar.custom_field.attachment import AttachedCustomFieldMixin
@@ -88,9 +90,7 @@ class CheckoutBillingAddressFields(TypedDict):
     line2: BillingAddressFieldMode
 
 
-class Checkout(
-    TrialConfigurationMixin, CustomFieldDataMixin, MetadataMixin, RecordModel
-):
+class Checkout(MetadataMixin, RecordModel):
     __tablename__ = "checkouts"
 
     payment_processor: Mapped[PaymentProcessor] = mapped_column(
@@ -122,15 +122,10 @@ class Checkout(
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
-    seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     tax_processor_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
-    )
-
-    trial_end: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     organization_id: Mapped[UUID] = mapped_column(
@@ -144,41 +139,12 @@ class Checkout(
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
 
-    product_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False
+    product_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=True
     )
-
-    @declared_attr
-    def product(cls) -> Mapped[Product]:
-        return relationship(Product, lazy="raise")
-
-    product_price_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=False
+    wallet_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("wallets.id", ondelete="cascade"), nullable=True
     )
-
-    @declared_attr
-    def product_price(cls) -> Mapped[ProductPrice]:
-        return relationship(ProductPrice, lazy="raise")
-
-    checkout_products: Mapped[list["CheckoutProduct"]] = relationship(
-        "CheckoutProduct",
-        back_populates="checkout",
-        cascade="all, delete-orphan",
-        order_by="CheckoutProduct.order",
-        lazy="raise",
-    )
-
-    products: AssociationProxy[list["Product"]] = association_proxy(
-        "checkout_products", "product"
-    )
-
-    discount_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
-    )
-
-    @declared_attr
-    def discount(cls) -> Mapped[Discount | None]:
-        return relationship(Discount, lazy="raise")
 
     customer_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("customers.id", ondelete="set null"), nullable=True
@@ -213,20 +179,6 @@ class Checkout(
         TaxIDType, nullable=True, default=None
     )
     customer_metadata: Mapped[MetadataColumn]
-
-    # Only set when a checkout is attached to an existing subscription (free-to-paid upgrades).
-    # For subscriptions created by the checkout itself, see `Subscription.checkout_id`.
-    subscription_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("subscriptions.id", ondelete="set null"), nullable=True
-    )
-
-    @declared_attr
-    def subscription(cls) -> Mapped[Subscription | None]:
-        return relationship(
-            Subscription,
-            lazy="raise",
-            foreign_keys=[cls.subscription_id],  # type: ignore
-        )
 
     @hybrid_property
     def is_expired(self) -> bool:
@@ -265,36 +217,24 @@ class Checkout(
         return self.customer_tax_id[0] if self.customer_tax_id is not None else None
 
     @property
-    def discount_amount(self) -> int:
-        return self.discount.get_discount_amount(self.amount) if self.discount else 0
-
-    @property
-    def net_amount(self) -> int:
-        return self.amount - self.discount_amount
-
-    @property
     def total_amount(self) -> int:
         return self.net_amount + (self.tax_amount or 0)
 
     @property
-    def is_discount_applicable(self) -> bool:
-        return any(is_discount_applicable(price) for price in self.product.prices)
-
-    @property
-    def is_free_product_price(self) -> bool:
-        return all(is_free_price(price) for price in self.product.prices)
-
-    @property
-    def has_metered_prices(self) -> bool:
-        return any(is_metered_price(price) for price in self.product.prices)
+    def net_amount(self) -> int:
+        raise NotImplementedError()
 
     @property
     def is_payment_required(self) -> bool:
-        return self.total_amount > 0 and self.trial_end is None
+        raise NotImplementedError()
 
     @property
     def is_payment_setup_required(self) -> bool:
-        return self.product.is_recurring and not self.is_free_product_price
+        raise NotImplementedError()
+
+    @property
+    def should_save_payment_method(self) -> bool:
+        raise NotImplementedError()
 
     @property
     def is_payment_form_required(self) -> bool:
@@ -311,10 +251,6 @@ class Checkout(
     @customer_session_token.setter
     def customer_session_token(self, value: str) -> None:
         self._customer_session_token = value
-
-    attached_custom_fields: AssociationProxy[Sequence["AttachedCustomFieldMixin"]] = (
-        association_proxy("product", "attached_custom_fields")
-    )
 
     @property
     def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
@@ -361,6 +297,111 @@ class Checkout(
         }
 
     @property
+    def description(self) -> str:
+        raise NotImplementedError()
+
+    __mapper_args__ = {
+        "polymorphic_on": case(
+            (product_id.is_(None), "wallet"),
+            else_="product",
+        )
+    }
+
+
+class ProductCheckout(TrialConfigurationMixin, CustomFieldDataMixin, Checkout):
+    seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    trial_end: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+
+    product_id: Mapped[UUID] = mapped_column(
+        use_existing_column=True,
+        nullable=True,  # Force Alembic to detect it as nullable column
+    )
+
+    @declared_attr
+    def product(cls) -> Mapped[Product]:
+        return relationship(Product, lazy="raise")
+
+    product_price_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=True
+    )
+
+    @declared_attr
+    def product_price(cls) -> Mapped[ProductPrice]:
+        return relationship(ProductPrice, lazy="raise")
+
+    checkout_products: Mapped[list["CheckoutProduct"]] = relationship(
+        "CheckoutProduct",
+        back_populates="checkout",
+        cascade="all, delete-orphan",
+        order_by="CheckoutProduct.order",
+        lazy="raise",
+    )
+
+    products: AssociationProxy[list["Product"]] = association_proxy(
+        "checkout_products", "product"
+    )
+
+    discount_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
+    )
+
+    @declared_attr
+    def discount(cls) -> Mapped[Discount | None]:
+        return relationship(Discount, lazy="raise")
+
+    # Only set when a checkout is attached to an existing subscription (free-to-paid upgrades).
+    # For subscriptions created by the checkout itself, see `Subscription.checkout_id`.
+    subscription_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("subscriptions.id", ondelete="set null"), nullable=True
+    )
+
+    @declared_attr
+    def subscription(cls) -> Mapped[Subscription | None]:
+        return relationship(
+            Subscription,
+            lazy="raise",
+            foreign_keys=[cls.subscription_id],  # type: ignore
+        )
+
+    attached_custom_fields: AssociationProxy[Sequence["AttachedCustomFieldMixin"]] = (
+        association_proxy("product", "attached_custom_fields")
+    )
+
+    @property
+    def discount_amount(self) -> int:
+        return self.discount.get_discount_amount(self.amount) if self.discount else 0
+
+    @property
+    def net_amount(self) -> int:
+        return self.amount - self.discount_amount
+
+    @property
+    def is_payment_required(self) -> bool:
+        return self.total_amount > 0 and self.trial_end is None
+
+    @property
+    def is_payment_setup_required(self) -> bool:
+        return self.product.is_recurring and not self.is_free_product_price
+
+    @property
+    def should_save_payment_method(self) -> bool:
+        return self.product.is_recurring
+
+    @property
+    def is_discount_applicable(self) -> bool:
+        return any(is_discount_applicable(price) for price in self.product.prices)
+
+    @property
+    def is_free_product_price(self) -> bool:
+        return all(is_free_price(price) for price in self.product.prices)
+
+    @property
+    def has_metered_prices(self) -> bool:
+        return any(is_metered_price(price) for price in self.product.prices)
+
+    @property
     def active_trial_interval(self) -> TrialInterval | None:
         return self.trial_interval or self.product.trial_interval
 
@@ -378,10 +419,56 @@ class Checkout(
 
         return self.product_price.get_price_per_seat(self.seats)
 
+    @property
+    def description(self) -> str:
+        return f"{self.organization.name} — {self.product.name}"
 
-@event.listens_for(Checkout, "before_update")
+    __mapper_args__ = {
+        "polymorphic_identity": "product",
+        "polymorphic_load": "inline",
+    }
+
+
+class WalletTopUpCheckout(Checkout):
+    __mapper_args__ = {
+        "polymorphic_identity": "wallet",
+        "polymorphic_load": "inline",
+    }
+
+    wallet_id: Mapped[UUID] = mapped_column(
+        use_existing_column=True,
+        nullable=True,  # Force Alembic to detect it as nullable column
+    )
+
+    @declared_attr
+    def wallet(cls) -> Mapped[Wallet]:
+        return relationship(Wallet, lazy="raise")
+
+    customer_id: Mapped[UUID] = mapped_column(
+        use_existing_column=True,
+        nullable=True,  # Force Alembic to detect it as nullable column
+    )
+
+    @declared_attr
+    def customer(cls) -> Mapped[Customer]:
+        return relationship(Customer, lazy="raise")
+
+    @property
+    def should_save_payment_method(self) -> bool:
+        return True
+
+    @property
+    def description(self) -> str:
+        return f"{self.organization.name} — Wallet Top-Up"
+
+
 def check_expiration(
     mapper: Mapper[Any], connection: Connection, target: Checkout
 ) -> None:
     if target.expires_at < utc_now() and target.status == CheckoutStatus.open:
         target.status = CheckoutStatus.expired
+
+
+event.listen(Checkout, "before_update", check_expiration)
+event.listen(ProductCheckout, "before_update", check_expiration)
+event.listen(WalletTopUpCheckout, "before_update", check_expiration)

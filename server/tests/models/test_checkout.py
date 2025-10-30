@@ -6,7 +6,7 @@ from polar.models import Product
 from polar.models.checkout import CheckoutStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout
+from tests.fixtures.random_objects import create_product_checkout
 
 
 @pytest.mark.asyncio
@@ -34,7 +34,7 @@ async def test_checkout_expired_status_update(
     session: AsyncSession,
     product_one_time: Product,
 ) -> None:
-    checkout = await create_checkout(
+    checkout = await create_product_checkout(
         save_fixture, products=[product_one_time], status=initial_status
     )
     assert checkout.status == initial_status

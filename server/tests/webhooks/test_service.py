@@ -25,7 +25,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookCheckoutUpdatedPayload
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout
+from tests.fixtures.random_objects import create_product_checkout
 
 
 @pytest.fixture
@@ -189,7 +189,7 @@ class TestOnEventSuccess:
         publish_checkout_event_mock = mocker.patch(
             "polar.webhook.service.publish_checkout_event"
         )
-        checkout = await create_checkout(save_fixture, products=[product])
+        checkout = await create_product_checkout(save_fixture, products=[product])
         timestamp = utc_now()
         event = WebhookEvent(
             created_at=timestamp,

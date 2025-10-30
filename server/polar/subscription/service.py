@@ -66,6 +66,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
+from polar.models.checkout import ProductCheckout
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
@@ -542,7 +543,7 @@ class SubscriptionService:
     async def create_or_update_from_checkout(
         self,
         session: AsyncSession,
-        checkout: Checkout,
+        checkout: ProductCheckout,
         payment_method: PaymentMethod | None = None,
     ) -> tuple[Subscription, bool]:
         product = checkout.product
@@ -666,7 +667,7 @@ class SubscriptionService:
     async def create_or_update_from_checkout_stripe(
         self,
         session: AsyncSession,
-        checkout: Checkout,
+        checkout: ProductCheckout,
         payment: Payment | None = None,
         payment_method: PaymentMethod | None = None,
     ) -> tuple[Subscription, bool]:

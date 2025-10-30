@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models import Checkout, Product
+    from polar.models import Product, ProductCheckout
 
 
 class CheckoutProduct(RecordModel):
@@ -26,8 +26,8 @@ class CheckoutProduct(RecordModel):
     order: Mapped[int] = mapped_column(Integer, nullable=False)
 
     @declared_attr
-    def checkout(cls) -> Mapped["Checkout"]:
-        return relationship("Checkout", back_populates="checkout_products")
+    def checkout(cls) -> Mapped["ProductCheckout"]:
+        return relationship("ProductCheckout", back_populates="checkout_products")
 
     @declared_attr
     def product(cls) -> Mapped["Product"]:

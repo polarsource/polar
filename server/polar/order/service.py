@@ -14,6 +14,7 @@ from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
+from polar.checkout.guard import is_product_checkout
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -68,6 +69,7 @@ from polar.models import (
     User,
     WalletTransaction,
 )
+from polar.models.checkout import ProductCheckout
 from polar.models.held_balance import HeldBalance
 from polar.models.order import (
     OrderBillingReason,
@@ -475,7 +477,10 @@ class OrderService:
         return OrderInvoice(url=url)
 
     async def create_from_checkout_one_time(
-        self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None
+        self,
+        session: AsyncSession,
+        checkout: ProductCheckout,
+        payment: Payment | None = None,
     ) -> Order:
         product = checkout.product
         if product.is_recurring:
@@ -506,7 +511,7 @@ class OrderService:
     async def create_from_checkout_subscription(
         self,
         session: AsyncSession,
-        checkout: Checkout,
+        checkout: ProductCheckout,
         subscription: Subscription,
         billing_reason: Literal[
             OrderBillingReasonInternal.subscription_create,
@@ -530,7 +535,7 @@ class OrderService:
     async def _create_order_from_checkout(
         self,
         session: AsyncSession,
-        checkout: Checkout,
+        checkout: ProductCheckout,
         billing_reason: OrderBillingReasonInternal,
         payment: Payment | None = None,
         subscription: Subscription | None = None,
@@ -1434,7 +1439,7 @@ class OrderService:
         )
         custom_field_data = (
             checkout.custom_field_data
-            if checkout is not None
+            if checkout is not None and is_product_checkout(checkout)
             else subscription.custom_field_data
         )
 

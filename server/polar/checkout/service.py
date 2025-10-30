@@ -43,7 +43,15 @@ from polar.kit.crypto import generate_token
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.tax import TaxID, to_stripe_tax_id, validate_tax_id
+from polar.kit.tax import (
+    InvalidTaxID,
+    TaxCalculationError,
+    TaxCode,
+    TaxID,
+    calculate_tax,
+    to_stripe_tax_id,
+    validate_tax_id,
+)
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
@@ -59,6 +67,7 @@ from polar.models import (
     Payment,
     PaymentMethod,
     Product,
+    ProductCheckout,
     ProductPrice,
     Subscription,
     User,
@@ -86,9 +95,9 @@ from polar.subscription.service import subscription as subscription_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from ..kit.tax import InvalidTaxID, TaxCalculationError, calculate_tax
 from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
+from .guard import is_product_checkout
 from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
 
@@ -155,7 +164,7 @@ class PaymentDoesNotExist(CheckoutError):
 
 
 class ArchivedPriceCheckout(CheckoutError):
-    def __init__(self, checkout: Checkout) -> None:
+    def __init__(self, checkout: ProductCheckout) -> None:
         self.checkout = checkout
         self.price = checkout.product_price
         message = (
@@ -262,7 +271,7 @@ class CheckoutService:
         checkout_create: CheckoutCreate,
         auth_subject: AuthSubject[User | Organization],
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
-    ) -> Checkout:
+    ) -> ProductCheckout:
         if isinstance(checkout_create, CheckoutPriceCreate):
             products, product, price = await self._get_validated_price(
                 session, auth_subject, checkout_create.product_price_id
@@ -425,7 +434,7 @@ class CheckoutService:
         ):
             require_billing_address = True
 
-        checkout = Checkout(
+        checkout = ProductCheckout(
             payment_processor=PaymentProcessor.stripe,
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
@@ -512,7 +521,7 @@ class CheckoutService:
         auth_subject: AuthSubject[User | Anonymous],
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
-    ) -> Checkout:
+    ) -> ProductCheckout:
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(
             checkout_create.product_id, options=product_repository.get_eager_options()
@@ -602,7 +611,7 @@ class CheckoutService:
         elif is_currency_price(price):
             currency = price.price_currency
 
-        checkout = Checkout(
+        checkout = ProductCheckout(
             payment_processor=PaymentProcessor.stripe,
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
@@ -660,7 +669,7 @@ class CheckoutService:
         ip_address: str | None = None,
         query_prefill: dict[str, str | UUID4 | dict[str, str] | None] | None = None,
         **query_metadata: str | None,
-    ) -> Checkout:
+    ) -> ProductCheckout:
         products: list[Product] = []
         for product in checkout_link.products:
             if not product.is_archived:
@@ -741,7 +750,7 @@ class CheckoutService:
             except PolarRequestValidationError:
                 pass
 
-        checkout = Checkout(
+        checkout = ProductCheckout(
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
@@ -848,14 +857,14 @@ class CheckoutService:
 
         return checkout
 
-    async def update(
+    async def update[C: Checkout](
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout: Checkout,
+        checkout: C,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
-    ) -> Checkout:
+    ) -> C:
         async with self._lock_checkout_update(session, locker, checkout) as checkout:
             checkout = await self._update_checkout(
                 session, checkout, checkout_update, ip_geolocation_client
@@ -869,18 +878,18 @@ class CheckoutService:
             await self._after_checkout_updated(session, checkout)
             return checkout
 
-    async def confirm(
+    async def confirm[C: Checkout](
         self,
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[User | Anonymous],
-        checkout: Checkout,
+        checkout: C,
         checkout_confirm: CheckoutConfirm,
-    ) -> Checkout:
+    ) -> C:
         async with self._lock_checkout_update(session, locker, checkout) as checkout:
             checkout = await self._update_checkout(session, checkout, checkout_confirm)
             # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
-            if checkout.discount is not None:
+            if is_product_checkout(checkout) and checkout.discount is not None:
                 try:
                     async with discount_service.redeem_discount(
                         session, locker, checkout.discount
@@ -905,13 +914,13 @@ class CheckoutService:
                 session, auth_subject, checkout, checkout_confirm
             )
 
-    async def _confirm_inner(
+    async def _confirm_inner[C: Checkout](
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Anonymous],
-        checkout: Checkout,
+        checkout: C,
         checkout_confirm: CheckoutConfirm,
-    ) -> Checkout:
+    ) -> C:
         errors: list[ValidationError] = []
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -926,7 +935,7 @@ class CheckoutService:
             )
 
         # Case where the price was archived after the checkout was created
-        if checkout.product_price.is_archived:
+        if is_product_checkout(checkout) and checkout.product_price.is_archived:
             errors.append(
                 {
                     "type": "value_error",
@@ -991,7 +1000,8 @@ class CheckoutService:
             raise PolarRequestValidationError(errors)
 
         if (
-            checkout.trial_end is not None
+            is_product_checkout(checkout)
+            and checkout.trial_end is not None
             and not checkout.organization.subscriptions_billing_engine
         ):
             raise BadRequest(
@@ -1036,13 +1046,13 @@ class CheckoutService:
                                 "confirmation_token": checkout_confirm.confirmation_token_id,
                                 "customer": stripe_customer_id,
                                 "statement_descriptor_suffix": checkout.organization.statement_descriptor(),
-                                "description": f"{checkout.organization.name} — {checkout.product.name}",
+                                "description": checkout.description,
                                 "metadata": intent_metadata,
                                 "return_url": settings.generate_frontend_url(
                                     f"/checkout/{checkout.client_secret}/confirmation"
                                 ),
                             }
-                            if checkout.product.is_recurring:
+                            if checkout.should_save_payment_method:
                                 payment_intent_params["setup_future_usage"] = (
                                     "off_session"
                                 )
@@ -1055,7 +1065,7 @@ class CheckoutService:
                                 "confirm": True,
                                 "confirmation_token": checkout_confirm.confirmation_token_id,
                                 "customer": stripe_customer_id,
-                                "description": f"{checkout.organization.name} — {checkout.product.name}",
+                                "description": checkout.description,
                                 "metadata": intent_metadata,
                                 "return_url": settings.generate_frontend_url(
                                     f"/checkout/{checkout.client_secret}/confirmation"
@@ -1105,40 +1115,43 @@ class CheckoutService:
         if checkout.status != CheckoutStatus.confirmed:
             raise NotConfirmedCheckout(checkout)
 
-        product_price = checkout.product_price
-        if product_price.is_archived:
-            raise ArchivedPriceCheckout(checkout)
+        if is_product_checkout(checkout):
+            product_price = checkout.product_price
+            if product_price.is_archived:
+                raise ArchivedPriceCheckout(checkout)
 
-        product = checkout.product
-        subscription: Subscription | None = None
-        if product.is_recurring:
-            if not checkout.organization.subscriptions_billing_engine:
-                (
-                    subscription,
-                    _,
-                ) = await subscription_service.create_or_update_from_checkout_stripe(
-                    session, checkout, payment, payment_method
-                )
+            product = checkout.product
+            subscription: Subscription | None = None
+            if product.is_recurring:
+                if not checkout.organization.subscriptions_billing_engine:
+                    (
+                        subscription,
+                        _,
+                    ) = await subscription_service.create_or_update_from_checkout_stripe(
+                        session, checkout, payment, payment_method
+                    )
+                else:
+                    (
+                        subscription,
+                        created,
+                    ) = await subscription_service.create_or_update_from_checkout(
+                        session, checkout, payment_method
+                    )
+                    await order_service.create_from_checkout_subscription(
+                        session,
+                        checkout,
+                        subscription,
+                        OrderBillingReasonInternal.subscription_create
+                        if created
+                        else OrderBillingReasonInternal.subscription_update,
+                        payment,
+                    )
             else:
-                (
-                    subscription,
-                    created,
-                ) = await subscription_service.create_or_update_from_checkout(
-                    session, checkout, payment_method
-                )
-                await order_service.create_from_checkout_subscription(
-                    session,
-                    checkout,
-                    subscription,
-                    OrderBillingReasonInternal.subscription_create
-                    if created
-                    else OrderBillingReasonInternal.subscription_update,
-                    payment,
+                await order_service.create_from_checkout_one_time(
+                    session, checkout, payment
                 )
         else:
-            await order_service.create_from_checkout_one_time(
-                session, checkout, payment
-            )
+            raise NotImplementedError()
 
         repository = CheckoutRepository.from_session(session)
         checkout = await repository.update(
@@ -1477,9 +1490,9 @@ class CheckoutService:
         return subscription, subscription.customer
 
     @contextlib.asynccontextmanager
-    async def _lock_checkout_update(
-        self, session: AsyncSession, locker: Locker, checkout: Checkout
-    ) -> AsyncIterator[Checkout]:
+    async def _lock_checkout_update[C: Checkout](
+        self, session: AsyncSession, locker: Locker, checkout: C
+    ) -> AsyncIterator[C]:
         """
         Set a lock to prevent updating the checkout while confirming.
         We've seen in the wild someone switching pricing while the payment was being made!
@@ -1494,7 +1507,7 @@ class CheckoutService:
             # Refresh the checkout: it may have changed while waiting for the lock
             repository = CheckoutRepository.from_session(session)
             checkout = typing.cast(
-                Checkout,
+                C,
                 await repository.get_by_id(
                     checkout.id, options=repository.get_eager_options()
                 ),
@@ -1507,15 +1520,18 @@ class CheckoutService:
             # See: https://github.com/polarsource/polar/issues/7260
             await session.commit()
 
-    async def _update_checkout(
+    async def _update_checkout[C: Checkout](
         self,
         session: AsyncSession,
-        checkout: Checkout,
+        checkout: C,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic | CheckoutConfirm,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
-    ) -> Checkout:
+    ) -> C:
         if checkout.status != CheckoutStatus.open:
             raise NotOpenCheckout(checkout)
+
+        if not is_product_checkout(checkout):
+            raise NotImplementedError()
 
         if checkout_update.product_id is not None:
             product_repository = ProductRepository.from_session(session)
@@ -1703,7 +1719,8 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
-        checkout = await self._update_trial_end(checkout)
+        if is_product_checkout(checkout):
+            checkout = await self._update_trial_end(checkout)  # type: ignore[assignment]
 
         exclude = {
             "product_id",
@@ -1724,16 +1741,21 @@ class CheckoutService:
 
         session.add(checkout)
 
-        await self._validate_subscription_uniqueness(session, checkout)
+        if is_product_checkout(checkout):
+            await self._validate_subscription_uniqueness(session, checkout)
 
         return checkout
 
-    async def _update_checkout_tax(
-        self, session: AsyncSession, checkout: Checkout
-    ) -> Checkout:
-        if not (
-            checkout.is_payment_form_required and checkout.product.is_tax_applicable
-        ):
+    async def _update_checkout_tax[C: Checkout](
+        self, session: AsyncSession, checkout: C
+    ) -> C:
+        is_tax_applicable = True
+        tax_code: TaxCode = TaxCode.general_electronically_supplied_services
+        if is_product_checkout(checkout):
+            is_tax_applicable = checkout.product.is_tax_applicable
+            tax_code = checkout.product.tax_code
+
+        if not (checkout.is_payment_form_required and is_tax_applicable):
             checkout.tax_amount = 0
             checkout.tax_processor_id = None
             return checkout
@@ -1744,7 +1766,7 @@ class CheckoutService:
                     checkout.id,
                     checkout.currency,
                     checkout.net_amount,
-                    checkout.product.tax_code,
+                    tax_code,
                     checkout.customer_billing_address,
                     (
                         [checkout.customer_tax_id]
@@ -1764,12 +1786,12 @@ class CheckoutService:
 
         return checkout
 
-    async def _update_checkout_ip_geolocation(
+    async def _update_checkout_ip_geolocation[C: Checkout](
         self,
         session: AsyncSession,
-        checkout: Checkout,
+        checkout: C,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None,
-    ) -> Checkout:
+    ) -> C:
         if ip_geolocation_client is None:
             return checkout
 
@@ -1794,7 +1816,7 @@ class CheckoutService:
         session.add(checkout)
         return checkout
 
-    async def _update_trial_end(self, checkout: Checkout) -> Checkout:
+    async def _update_trial_end(self, checkout: ProductCheckout) -> ProductCheckout:
         if not checkout.product.is_recurring:
             checkout.trial_end = None
             return checkout
@@ -1810,7 +1832,7 @@ class CheckoutService:
         return checkout
 
     async def _validate_subscription_uniqueness(
-        self, session: AsyncSession, checkout: Checkout
+        self, session: AsyncSession, checkout: ProductCheckout
     ) -> None:
         organization = checkout.organization
 
@@ -1989,7 +2011,7 @@ class CheckoutService:
             yield await repository.update(customer, flush=True)
 
     async def _create_ad_hoc_custom_price(
-        self, checkout: Checkout, *, idempotency_key: str | None = None
+        self, checkout: ProductCheckout, *, idempotency_key: str | None = None
     ) -> stripe_lib.Price:
         assert checkout.product.stripe_product_id is not None
         price_params: stripe_lib.Price.CreateParams = {

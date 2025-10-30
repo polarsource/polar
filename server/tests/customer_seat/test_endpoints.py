@@ -18,9 +18,9 @@ from polar.models.customer_seat import SeatStatus
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_checkout,
     create_customer,
     create_customer_seat,
+    create_product_checkout,
     create_subscription_with_seats,
 )
 
@@ -365,8 +365,6 @@ class TestAssignSeat:
         subscription_with_seats: Subscription,
         user_organization_seat_enabled: UserOrganization,
     ) -> None:
-        from tests.fixtures.random_objects import create_checkout, create_customer
-
         await create_customer(
             save_fixture,
             organization=subscription_with_seats.product.organization,
@@ -375,7 +373,7 @@ class TestAssignSeat:
 
         await session.refresh(subscription_with_seats.product, ["prices"])
 
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[subscription_with_seats.product],
             price=subscription_with_seats.product.prices[0],
@@ -444,7 +442,7 @@ class TestAssignSeat:
 
         await session.refresh(subscription_with_seats.product, ["prices"])
 
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[subscription_with_seats.product],
             price=subscription_with_seats.product.prices[0],

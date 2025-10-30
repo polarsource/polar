@@ -47,7 +47,6 @@ from polar.kit.trial import TrialInterval
 from polar.locker import Locker
 from polar.models import (
     Account,
-    Checkout,
     CheckoutProduct,
     Customer,
     Discount,
@@ -58,7 +57,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import CheckoutStatus, ProductCheckout
 from polar.models.custom_field import CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal
@@ -79,12 +78,12 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
-    create_checkout,
     create_checkout_link,
     create_custom_field,
     create_customer,
     create_discount,
     create_product,
+    create_product_checkout,
     create_product_price_fixed,
     create_product_price_seat_unit,
     create_subscription,
@@ -131,43 +130,49 @@ def product_parametrization_helper(request: pytest.FixtureRequest) -> Product:
 @pytest_asyncio.fixture
 async def checkout_one_time_fixed(
     save_fixture: SaveFixture, product_one_time: Product
-) -> Checkout:
-    return await create_checkout(save_fixture, products=[product_one_time])
+) -> ProductCheckout:
+    return await create_product_checkout(save_fixture, products=[product_one_time])
 
 
 @pytest_asyncio.fixture
 async def checkout_one_time_custom(
     save_fixture: SaveFixture, product_one_time_custom_price: Product
-) -> Checkout:
-    return await create_checkout(save_fixture, products=[product_one_time_custom_price])
+) -> ProductCheckout:
+    return await create_product_checkout(
+        save_fixture, products=[product_one_time_custom_price]
+    )
 
 
 @pytest_asyncio.fixture
 async def checkout_one_time_free(
     save_fixture: SaveFixture, product_one_time_free_price: Product
-) -> Checkout:
-    return await create_checkout(save_fixture, products=[product_one_time_free_price])
+) -> ProductCheckout:
+    return await create_product_checkout(
+        save_fixture, products=[product_one_time_free_price]
+    )
 
 
 @pytest_asyncio.fixture
 async def checkout_recurring_fixed(
     save_fixture: SaveFixture, product: Product
-) -> Checkout:
-    return await create_checkout(save_fixture, products=[product])
+) -> ProductCheckout:
+    return await create_product_checkout(save_fixture, products=[product])
 
 
 @pytest_asyncio.fixture
 async def checkout_recurring_free(
     save_fixture: SaveFixture, product_recurring_free_price: Product
-) -> Checkout:
-    return await create_checkout(save_fixture, products=[product_recurring_free_price])
+) -> ProductCheckout:
+    return await create_product_checkout(
+        save_fixture, products=[product_recurring_free_price]
+    )
 
 
 @pytest_asyncio.fixture
 async def checkout_confirmed_one_time(
     save_fixture: SaveFixture, product_one_time: Product
-) -> Checkout:
-    return await create_checkout(
+) -> ProductCheckout:
+    return await create_product_checkout(
         save_fixture, products=[product_one_time], status=CheckoutStatus.confirmed
     )
 
@@ -175,8 +180,8 @@ async def checkout_confirmed_one_time(
 @pytest_asyncio.fixture
 async def checkout_confirmed_recurring(
     save_fixture: SaveFixture, product: Product
-) -> Checkout:
-    return await create_checkout(
+) -> ProductCheckout:
+    return await create_product_checkout(
         save_fixture, products=[product], status=CheckoutStatus.confirmed
     )
 
@@ -187,11 +192,11 @@ async def checkout_confirmed_recurring_upgrade(
     product: Product,
     product_recurring_free_price: Product,
     customer: Customer,
-) -> Checkout:
+) -> ProductCheckout:
     subscription = await create_subscription(
         save_fixture, product=product_recurring_free_price, customer=customer
     )
-    return await create_checkout(
+    return await create_product_checkout(
         save_fixture,
         products=[product],
         status=CheckoutStatus.confirmed,
@@ -202,8 +207,8 @@ async def checkout_confirmed_recurring_upgrade(
 @pytest_asyncio.fixture
 async def checkout_discount_percentage_100(
     save_fixture: SaveFixture, product: Product, discount_percentage_100: Discount
-) -> Checkout:
-    return await create_checkout(
+) -> ProductCheckout:
+    return await create_product_checkout(
         save_fixture,
         products=[product],
         status=CheckoutStatus.open,
@@ -238,8 +243,8 @@ async def product_custom_fields(
 @pytest_asyncio.fixture
 async def checkout_custom_fields(
     save_fixture: SaveFixture, product_custom_fields: Product
-) -> Checkout:
-    return await create_checkout(save_fixture, products=[product_custom_fields])
+) -> ProductCheckout:
+    return await create_product_checkout(save_fixture, products=[product_custom_fields])
 
 
 @pytest_asyncio.fixture
@@ -257,8 +262,10 @@ async def product_tax_not_applicable(
 @pytest_asyncio.fixture
 async def checkout_tax_not_applicable(
     save_fixture: SaveFixture, product_tax_not_applicable: Product
-) -> Checkout:
-    return await create_checkout(save_fixture, products=[product_tax_not_applicable])
+) -> ProductCheckout:
+    return await create_product_checkout(
+        save_fixture, products=[product_tax_not_applicable]
+    )
 
 
 @pytest_asyncio.fixture
@@ -317,8 +324,10 @@ async def product_seat_based(
 @pytest_asyncio.fixture
 async def checkout_seat_based(
     save_fixture: SaveFixture, product_seat_based: Product
-) -> Checkout:
-    return await create_checkout(save_fixture, products=[product_seat_based], seats=5)
+) -> ProductCheckout:
+    return await create_product_checkout(
+        save_fixture, products=[product_seat_based], seats=5
+    )
 
 
 @pytest.mark.asyncio
@@ -2087,7 +2096,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
@@ -2104,7 +2113,7 @@ class TestUpdate:
         session: AsyncSession,
         locker: Locker,
         product_one_time_custom_price: Product,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
@@ -2120,7 +2129,7 @@ class TestUpdate:
         amount: int,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_custom: Checkout,
+        checkout_one_time_custom: ProductCheckout,
     ) -> None:
         with pytest.raises(ValidationError):
             await checkout_service.update(
@@ -2139,7 +2148,7 @@ class TestUpdate:
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_custom: Checkout,
+        checkout_one_time_custom: ProductCheckout,
     ) -> None:
         price = checkout_one_time_custom.product.prices[0]
         assert isinstance(price, ProductPriceCustom)
@@ -2161,7 +2170,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_confirmed_one_time: Checkout,
+        checkout_confirmed_one_time: ProductCheckout,
     ) -> None:
         with pytest.raises(NotOpenCheckout):
             await checkout_service.update(
@@ -2200,7 +2209,7 @@ class TestUpdate:
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
-        checkout_recurring_fixed: Checkout,
+        checkout_recurring_fixed: ProductCheckout,
     ) -> None:
         for key, value in initial_values.items():
             setattr(checkout_recurring_fixed, key, value)
@@ -2218,7 +2227,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
@@ -2234,7 +2243,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
@@ -2250,7 +2259,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_free: Checkout,
+        checkout_one_time_free: ProductCheckout,
         discount_fixed_once: Discount,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
@@ -2265,7 +2274,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_free: Checkout,
+        checkout_one_time_free: ProductCheckout,
         discount_fixed_once: Discount,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
@@ -2281,7 +2290,7 @@ class TestUpdate:
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
         organization: Organization,
     ) -> None:
         recurring_discount = await create_discount(
@@ -2308,7 +2317,7 @@ class TestUpdate:
         session: AsyncSession,
         locker: Locker,
         product: Product,
-        checkout_recurring_fixed: Checkout,
+        checkout_recurring_fixed: ProductCheckout,
     ) -> None:
         new_product = await create_product(
             save_fixture,
@@ -2344,7 +2353,7 @@ class TestUpdate:
         session: AsyncSession,
         locker: Locker,
         product: Product,
-        checkout_recurring_fixed: Checkout,
+        checkout_recurring_fixed: ProductCheckout,
     ) -> None:
         """
         If the Checkout has a discount applicable to the new product,
@@ -2390,7 +2399,7 @@ class TestUpdate:
         session: AsyncSession,
         locker: Locker,
         product: Product,
-        checkout_recurring_fixed: Checkout,
+        checkout_recurring_fixed: ProductCheckout,
     ) -> None:
         """
         If the Checkout has a discount that is not applicable to the new product,
@@ -2440,7 +2449,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
@@ -2459,7 +2468,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_custom: Checkout,
+        checkout_one_time_custom: ProductCheckout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
@@ -2475,7 +2484,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_free: Checkout,
+        checkout_one_time_free: ProductCheckout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
@@ -2495,7 +2504,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_custom: Checkout,
+        checkout_one_time_custom: ProductCheckout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
@@ -2515,7 +2524,7 @@ class TestUpdate:
         session: AsyncSession,
         locker: Locker,
         save_fixture: SaveFixture,
-        checkout_one_time_custom: Checkout,
+        checkout_one_time_custom: ProductCheckout,
     ) -> None:
         checkout_one_time_custom.customer_tax_id = ("FR61954506077", TaxIDFormat.eu_vat)
         await save_fixture(checkout_one_time_custom)
@@ -2540,7 +2549,7 @@ class TestUpdate:
         session: AsyncSession,
         locker: Locker,
         calculate_tax_mock: AsyncMock,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         calculate_tax_mock.side_effect = IncompleteTaxLocation(
             stripe_lib.InvalidRequestError("ERROR", "ERROR")
@@ -2565,7 +2574,7 @@ class TestUpdate:
         session: AsyncSession,
         locker: Locker,
         calculate_tax_mock: AsyncMock,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         calculate_tax_mock.return_value = {
             "processor_id": "TAX_PROCESSOR_ID",
@@ -2594,7 +2603,7 @@ class TestUpdate:
         locker: Locker,
         save_fixture: SaveFixture,
         customer: Customer,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         checkout_one_time_fixed.customer = customer
         checkout_one_time_fixed.customer_email = customer.email
@@ -2613,7 +2622,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_free: Checkout,
+        checkout_one_time_free: ProductCheckout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
@@ -2630,7 +2639,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_free: Checkout,
+        checkout_one_time_free: ProductCheckout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
@@ -2646,7 +2655,7 @@ class TestUpdate:
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_free: Checkout,
+        checkout_one_time_free: ProductCheckout,
     ) -> None:
         checkout_one_time_free.user_metadata = {"key": "value"}
         await save_fixture(checkout_one_time_free)
@@ -2661,7 +2670,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_free: Checkout,
+        checkout_one_time_free: ProductCheckout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
@@ -2683,7 +2692,7 @@ class TestUpdate:
         custom_field_data: dict[str, Any],
         session: AsyncSession,
         locker: Locker,
-        checkout_custom_fields: Checkout,
+        checkout_custom_fields: ProductCheckout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.update(
@@ -2697,7 +2706,10 @@ class TestUpdate:
             assert error["loc"][0:2] == ("body", "custom_field_data")
 
     async def test_valid_custom_field_data(
-        self, session: AsyncSession, locker: Locker, checkout_custom_fields: Checkout
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_custom_fields: ProductCheckout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
@@ -2711,7 +2723,10 @@ class TestUpdate:
         assert checkout.custom_field_data == {"text": "abc", "select": "a"}
 
     async def test_valid_missing_required_custom_field(
-        self, session: AsyncSession, locker: Locker, checkout_custom_fields: Checkout
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_custom_fields: ProductCheckout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
@@ -2728,7 +2743,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_free: Checkout,
+        checkout_one_time_free: ProductCheckout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
@@ -2745,7 +2760,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_tax_not_applicable: Checkout,
+        checkout_tax_not_applicable: ProductCheckout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
@@ -2765,7 +2780,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
         discount_fixed_once: Discount,
     ) -> None:
         checkout = await checkout_service.update(
@@ -2792,7 +2807,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
         discount_fixed_once: Discount,
     ) -> None:
         checkout = await checkout_service.update(
@@ -2821,7 +2836,7 @@ class TestUpdate:
         session: AsyncSession,
         locker: Locker,
         organization: Organization,
-        checkout_recurring_fixed: Checkout,
+        checkout_recurring_fixed: ProductCheckout,
         customer: Customer,
     ) -> None:
         organization.subscription_settings = {
@@ -2857,7 +2872,7 @@ class TestUpdate:
         session: AsyncSession,
         locker: Locker,
         organization: Organization,
-        checkout_recurring_fixed: Checkout,
+        checkout_recurring_fixed: ProductCheckout,
         customer: Customer,
     ) -> None:
         organization.subscription_settings = {
@@ -2895,7 +2910,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_seat_based: Checkout,
+        checkout_seat_based: ProductCheckout,
     ) -> None:
         price = checkout_seat_based.product_price
         assert isinstance(price, ProductPriceSeatUnit)
@@ -2917,7 +2932,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_seat_based: Checkout,
+        checkout_seat_based: ProductCheckout,
     ) -> None:
         price = checkout_seat_based.product_price
         assert isinstance(price, ProductPriceSeatUnit)
@@ -2942,7 +2957,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.update(
@@ -2960,7 +2975,7 @@ class TestUpdate:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout_seat_based: Checkout,
+        checkout_seat_based: ProductCheckout,
     ) -> None:
         with pytest.raises(ValidationError):
             await checkout_service.update(
@@ -2978,7 +2993,7 @@ class TestUpdate:
         product_one_time: Product,
         product_seat_based: Product,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_one_time, product_seat_based],
         )
@@ -3007,7 +3022,7 @@ class TestUpdate:
         product_one_time: Product,
         product_seat_based: Product,
     ) -> None:
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture,
             products=[product_one_time, product_seat_based],
             product=product_seat_based,
@@ -3107,7 +3122,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
@@ -3128,7 +3143,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_confirmed_one_time: Checkout,
+        checkout_confirmed_one_time: ProductCheckout,
     ) -> None:
         with pytest.raises(NotOpenCheckout):
             await checkout_service.confirm(
@@ -3147,7 +3162,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         archived_price = await create_product_price_fixed(
             save_fixture, product=checkout_one_time_fixed.product, is_archived=True
@@ -3176,7 +3191,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_custom_fields: Checkout,
+        checkout_custom_fields: ProductCheckout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
@@ -3200,7 +3215,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_custom_fields: Checkout,
+        checkout_custom_fields: ProductCheckout,
     ) -> None:
         """
         We had a bug where the custom fields validation was actually bypassed
@@ -3228,7 +3243,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         calculate_tax_mock.side_effect = IncompleteTaxLocation(
             stripe_lib.InvalidRequestError("ERROR", "ERROR")
@@ -3281,7 +3296,7 @@ class TestConfirm:
         save_fixture: SaveFixture,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         checkout_one_time_fixed.is_business_customer = True
         await save_fixture(checkout_one_time_fixed)
@@ -3321,7 +3336,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         checkout_one_time_fixed.customer_metadata = {"key": "value"}
         await save_fixture(checkout_one_time_fixed)
@@ -3391,7 +3406,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_discount_percentage_100: Checkout,
+        checkout_discount_percentage_100: ProductCheckout,
         discount_percentage_100: Discount,
     ) -> None:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
@@ -3446,7 +3461,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_custom: Checkout,
+        checkout_one_time_custom: ProductCheckout,
         discount_percentage_50: Discount,
     ) -> None:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
@@ -3505,7 +3520,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_free: Checkout,
+        checkout_one_time_free: ProductCheckout,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.checkout.service.enqueue_job")
 
@@ -3546,7 +3561,7 @@ class TestConfirm:
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         customer = await create_customer(
             save_fixture,
@@ -3590,7 +3605,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
         customer: Customer,
     ) -> None:
         customer.user_metadata = {"key": "value"}
@@ -3630,7 +3645,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         checkout_one_time_fixed.external_customer_id = "EXTERNAL_ID"
         await save_fixture(checkout_one_time_fixed)
@@ -3668,7 +3683,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
@@ -3724,7 +3739,7 @@ class TestConfirm:
             organization=organization,
             email="customer1@example.com",
         )
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture, products=[product], external_customer_id="external_id_1"
         )
 
@@ -3769,7 +3784,7 @@ class TestConfirm:
         Customer exists and linked to checkout. Email shouldn't be updated.
         """
         customer = await create_customer(save_fixture, organization=organization)
-        checkout = await create_checkout(
+        checkout = await create_product_checkout(
             save_fixture, products=[product], customer=customer
         )
 
@@ -3805,7 +3820,7 @@ class TestConfirm:
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
-        checkout_discount_percentage_100: Checkout,
+        checkout_discount_percentage_100: ProductCheckout,
     ) -> None:
         calculate_tax_mock.side_effect = IncompleteTaxLocation(
             stripe_lib.InvalidRequestError("ERROR", "ERROR")
@@ -3845,7 +3860,7 @@ class TestConfirm:
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         # Make organization not payment ready (new org without account setup)
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
@@ -3863,6 +3878,7 @@ class TestConfirm:
                 CheckoutConfirm(
                     customer_email="test@example.com",
                     customer_name="Test Customer",
+                    confirmation_token_id=None,
                 ),
             )
 
@@ -3873,7 +3889,7 @@ class TestConfirm:
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
         mocker: MockerFixture,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -3932,7 +3948,7 @@ class TestConfirm:
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
-        checkout_one_time_free: Checkout,
+        checkout_one_time_free: ProductCheckout,
         mocker: MockerFixture,
     ) -> None:
         # Make organization not payment ready (new org without account setup)
@@ -3959,6 +3975,7 @@ class TestConfirm:
             CheckoutConfirm(
                 customer_email="test@example.com",
                 customer_name="Test Customer",
+                confirmation_token_id=None,
             ),
         )
 
@@ -3972,7 +3989,7 @@ class TestConfirm:
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
-        checkout_recurring_fixed: Checkout,
+        checkout_recurring_fixed: ProductCheckout,
     ) -> None:
         # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
@@ -4010,7 +4027,7 @@ class TestConfirm:
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
         stripe_service_mock: MagicMock,
     ) -> None:
         # Make organization grandfathered (created before cutoff)
@@ -4067,7 +4084,7 @@ class TestConfirm:
         organization: Organization,
         account: Account,
         user: User,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
         stripe_service_mock: MagicMock,
     ) -> None:
         # Make organization new (not grandfathered)
@@ -4132,7 +4149,7 @@ class TestConfirm:
 @pytest.mark.asyncio
 class TestHandleSuccess:
     async def test_not_confirmed_checkout(
-        self, session: AsyncSession, checkout_one_time_fixed: Checkout
+        self, session: AsyncSession, checkout_one_time_fixed: ProductCheckout
     ) -> None:
         with pytest.raises(NotConfirmedCheckout):
             await checkout_service.handle_success(session, checkout_one_time_fixed)
@@ -4142,7 +4159,7 @@ class TestHandleSuccess:
         order_service_mock: MagicMock,
         subscription_service_mock: MagicMock,
         session: AsyncSession,
-        checkout_confirmed_one_time: Checkout,
+        checkout_confirmed_one_time: ProductCheckout,
         payment: Payment,
     ) -> None:
         checkout = await checkout_service.handle_success(
@@ -4160,7 +4177,7 @@ class TestHandleSuccess:
         order_service_mock: MagicMock,
         subscription_service_mock: MagicMock,
         session: AsyncSession,
-        checkout_confirmed_recurring: Checkout,
+        checkout_confirmed_recurring: ProductCheckout,
         payment: Payment,
     ) -> None:
         subscription_mock = MagicMock()
@@ -4201,7 +4218,7 @@ class TestHandleFailure:
         status: CheckoutStatus,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        checkout_one_time_fixed: Checkout,
+        checkout_one_time_fixed: ProductCheckout,
     ) -> None:
         checkout_one_time_fixed.status = status
         await save_fixture(checkout_one_time_fixed)
@@ -4213,7 +4230,7 @@ class TestHandleFailure:
         assert checkout.status == status
 
     async def test_valid(
-        self, session: AsyncSession, checkout_confirmed_one_time: Checkout
+        self, session: AsyncSession, checkout_confirmed_one_time: ProductCheckout
     ) -> None:
         checkout = await checkout_service.handle_failure(
             session, checkout_confirmed_one_time
@@ -4225,7 +4242,7 @@ class TestHandleFailure:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        checkout_confirmed_one_time: Checkout,
+        checkout_confirmed_one_time: ProductCheckout,
         discount_fixed_once: Discount,
     ) -> None:
         discount_redemption = DiscountRedemption(

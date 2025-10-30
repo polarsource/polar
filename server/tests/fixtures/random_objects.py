@@ -45,6 +45,7 @@ from polar.models import (
     Payout,
     Product,
     ProductBenefit,
+    ProductCheckout,
     ProductCustomField,
     ProductPrice,
     ProductPriceCustom,
@@ -1305,7 +1306,7 @@ async def products(
     return [product, product_second, product_organization_second]
 
 
-async def create_checkout(
+async def create_product_checkout(
     save_fixture: SaveFixture,
     *,
     products: list[Product],
@@ -1328,7 +1329,7 @@ async def create_checkout(
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
     seats: int | None = None,
-) -> Checkout:
+) -> ProductCheckout:
     product = product or products[0]
     price = price or product.prices[0]
 
@@ -1350,7 +1351,7 @@ async def create_checkout(
     if trial_interval is not None and trial_interval_count is not None:
         trial_end = trial_interval.get_end(utc_now(), trial_interval_count)
 
-    checkout = Checkout(
+    checkout = ProductCheckout(
         payment_processor=payment_processor,
         status=status,
         expires_at=expires_at or get_expires_at(),

@@ -20,7 +20,7 @@ from polar.models import (
     Product,
     UserOrganization,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import CheckoutStatus, ProductCheckout, WalletTopUpCheckout
 
 from .sorting import CheckoutSortProperty
 
@@ -81,18 +81,19 @@ class CheckoutRepository(
         return (
             joinedload(Checkout.organization).joinedload(Organization.account),
             joinedload(Checkout.customer),
-            joinedload(Checkout.product).options(
+            joinedload(ProductCheckout.product).options(
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
             ),
-            selectinload(Checkout.checkout_products).options(
+            selectinload(ProductCheckout.checkout_products).options(
                 joinedload(CheckoutProduct.product).options(
                     selectinload(Product.product_medias),
                 )
             ),
-            joinedload(Checkout.subscription),
-            joinedload(Checkout.discount),
-            joinedload(Checkout.product_price),
+            joinedload(ProductCheckout.subscription),
+            joinedload(ProductCheckout.discount),
+            joinedload(ProductCheckout.product_price),
+            joinedload(WalletTopUpCheckout.wallet),
         )
 
     def get_sorting_clause(self, property: CheckoutSortProperty) -> SortingClause:

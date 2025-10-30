@@ -32,6 +32,7 @@ from plain_client import (
     UpsertCustomerInput,
     UpsertCustomerOnCreateInput,
     UpsertCustomerOnUpdateInput,
+    UpsertCustomerUpsertCustomer,
 )
 from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager
@@ -174,8 +175,8 @@ class PlainService:
 
             thread_result = await plain.create_thread(
                 CreateThreadInput(
-                    customer_identifier=CustomerIdentifierInput(
-                        external_id=str(admin.id)
+                    customer_identifier=self._get_customer_identifier(
+                        customer_result, admin.email
                     ),
                     title="Account Review",
                     label_type_ids=["lt_01JFG7F4N67FN3MAWK06FJ8FPG"],
@@ -250,8 +251,8 @@ class PlainService:
             # Create the thread with detailed appeal information
             thread_result = await plain.create_thread(
                 CreateThreadInput(
-                    customer_identifier=CustomerIdentifierInput(
-                        external_id=str(user.id)
+                    customer_identifier=self._get_customer_identifier(
+                        customer_result, user.email
                     ),
                     title=f"Organization Appeal - {organization.slug}",
                     label_type_ids=["lt_01K3QWYTDV7RSS7MM2RC584X41"],
@@ -1234,6 +1235,29 @@ class PlainService:
             ],
         )
 
+    def _get_customer_identifier(
+        self,
+        customer_result: UpsertCustomerUpsertCustomer,
+        email: str,
+    ) -> CustomerIdentifierInput:
+        """
+        Get customer identifier for Plain thread creation.
+
+        Prefers external_id if set on the customer result, otherwise falls back to email.
+        This handles cases where external_id might not be set on the Plain customer.
+        """
+        if customer_result.customer is None:
+            raise ValueError(
+                "Customer not found when creating thread", customer_result, email
+            )
+
+        if customer_result.customer.external_id:
+            return CustomerIdentifierInput(
+                external_id=customer_result.customer.external_id
+            )
+
+        return CustomerIdentifierInput(email_address=email)
+
     @contextlib.asynccontextmanager
     async def _get_plain_client(self) -> AsyncIterator[Plain]:
         async with httpx.AsyncClient(
@@ -1287,8 +1311,8 @@ class PlainService:
 
             thread_result = await plain.create_thread(
                 CreateThreadInput(
-                    customer_identifier=CustomerIdentifierInput(
-                        external_id=str(admin.id)
+                    customer_identifier=self._get_customer_identifier(
+                        customer_result, admin.email
                     ),
                     title=title,
                     components=[

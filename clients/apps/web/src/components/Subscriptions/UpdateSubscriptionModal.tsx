@@ -163,6 +163,7 @@ const UpdateProduct = ({
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
+                    disabled={subscription.status === 'trialing'}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a new product" />
@@ -184,6 +185,11 @@ const UpdateProduct = ({
                     </SelectContent>
                   </Select>
                 </FormControl>
+                {subscription.status === 'trialing' && (
+                  <FormDescription>
+                    Product changes are not supported during a trial period
+                  </FormDescription>
+                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -219,7 +225,9 @@ const UpdateProduct = ({
             type="submit"
             size="lg"
             loading={updateSubscription.isPending}
-            disabled={updateSubscription.isPending}
+            disabled={
+              updateSubscription.isPending || subscription.status === 'trialing'
+            }
           >
             Update Subscription
           </Button>

@@ -12,6 +12,9 @@ NAVIGATION = [
         "Benefits", "benefits:list", active_route_name_prefix="benefits:"
     ),
     navigation.NavigationItem(
+        "Products", "products:list", active_route_name_prefix="products:"
+    ),
+    navigation.NavigationItem(
         "Subscriptions", "subscriptions:list", active_route_name_prefix="subscriptions:"
     ),
     navigation.NavigationItem(

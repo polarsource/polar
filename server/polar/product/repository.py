@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, case, func, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -9,17 +9,25 @@ from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
+    RepositorySortingMixin,
+    SortingClause,
 )
 from polar.models import (
     CheckoutProduct,
     Product,
     ProductPrice,
+    ProductPriceCustom,
+    ProductPriceFixed,
     UserOrganization,
 )
+from polar.models.product_price import ProductPriceAmountType
 from polar.postgres import sql
+
+from .sorting import ProductSortProperty
 
 
 class ProductRepository(
+    RepositorySortingMixin[Product, ProductSortProperty],
     RepositorySoftDeletionIDMixin[Product, UUID],
     RepositorySoftDeletionMixin[Product],
     RepositoryBase[Product],
@@ -105,6 +113,43 @@ class ProductRepository(
 
         count = await self.session.scalar(statement)
         return count or 0
+
+    def get_sorting_clause(self, property: ProductSortProperty) -> SortingClause:
+        match property:
+            case ProductSortProperty.created_at:
+                return Product.created_at
+            case ProductSortProperty.product_name:
+                return Product.name
+            case ProductSortProperty.price_amount_type:
+                return case(
+                    (
+                        ProductPrice.amount_type == ProductPriceAmountType.free,
+                        1,
+                    ),
+                    (
+                        ProductPrice.amount_type == ProductPriceAmountType.custom,
+                        2,
+                    ),
+                    (
+                        ProductPrice.amount_type == ProductPriceAmountType.fixed,
+                        3,
+                    ),
+                )
+            case ProductSortProperty.price_amount:
+                return case(
+                    (
+                        ProductPrice.amount_type == ProductPriceAmountType.free,
+                        -2,
+                    ),
+                    (
+                        ProductPrice.amount_type == ProductPriceAmountType.custom,
+                        func.coalesce(ProductPriceCustom.minimum_amount, -1),
+                    ),
+                    (
+                        ProductPrice.amount_type == ProductPriceAmountType.fixed,
+                        ProductPriceFixed.price_amount,
+                    ),
+                )
 
 
 class ProductPriceRepository(

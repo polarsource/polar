@@ -16603,8 +16603,8 @@ export interface components {
       gross_margin: number
       /** Gross Margin Percentage */
       gross_margin_percentage: number
-      /** Net Cashflow */
-      net_cashflow: number
+      /** Cashflow */
+      cashflow: number
     }
     /**
      * MetricType
@@ -16652,7 +16652,7 @@ export interface components {
       churn_rate: components['schemas']['Metric']
       gross_margin: components['schemas']['Metric']
       gross_margin_percentage: components['schemas']['Metric']
-      net_cashflow: components['schemas']['Metric']
+      cashflow: components['schemas']['Metric']
     }
     /**
      * MetricsIntervalLimit
@@ -16790,8 +16790,8 @@ export interface components {
       gross_margin: number
       /** Gross Margin Percentage */
       gross_margin_percentage: number
-      /** Net Cashflow */
-      net_cashflow: number
+      /** Cashflow */
+      cashflow: number
     }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {

@@ -57,6 +57,7 @@ class Settings(BaseSettings):
 
     WEBHOOK_MAX_RETRIES: int = 10
     WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=30)
+    WEBHOOK_FAILURE_THRESHOLD: int = 10
 
     CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=5)
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=15)

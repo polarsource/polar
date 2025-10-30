@@ -52,6 +52,9 @@ class WebhookEndpoint(IDSchema, TimestampedSchema):
         description="The organization ID associated with the webhook endpoint."
     )
     events: EndpointEvents
+    enabled: bool = Field(
+        description="Whether the webhook endpoint is enabled and will receive events."
+    )
 
 
 class WebhookEndpointCreate(Schema):
@@ -89,6 +92,9 @@ class WebhookEndpointUpdate(Schema):
     )
     format: EndpointFormat | None = None
     events: EndpointEvents | None = None
+    enabled: bool | None = Field(
+        default=None, description="Whether the webhook endpoint is enabled."
+    )
 
 
 class WebhookEvent(IDSchema, TimestampedSchema):

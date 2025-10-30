@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Uuid
+from sqlalchemy import Boolean, ForeignKey, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -68,6 +68,7 @@ class WebhookEndpoint(RecordModel):
     events: Mapped[list[WebhookEventType]] = mapped_column(
         JSONB, nullable=False, default=[]
     )
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,

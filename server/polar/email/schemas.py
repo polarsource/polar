@@ -27,6 +27,7 @@ class EmailTemplate(StrEnum):
     order_confirmation = "order_confirmation"
     organization_access_token_leaked = "organization_access_token_leaked"
     organization_invite = "organization_invite"
+    organization_account_unlink = "organization_account_unlink"
     personal_access_token_leaked = "personal_access_token_leaked"
     seat_invitation = "seat_invitation"
     subscription_cancellation = "subscription_cancellation"
@@ -301,6 +302,18 @@ class NotificationCreateAccountEmail(BaseModel):
     props: MaintainerCreateAccountNotificationPayload
 
 
+class OrganizationAccountUnlinkProps(EmailProps):
+    organization_kept_name: str
+    organizations_unlinked: list[str]
+
+
+class OrganizationAccountUnlinkEmail(BaseModel):
+    template: Literal[EmailTemplate.organization_account_unlink] = (
+        EmailTemplate.organization_account_unlink
+    )
+    props: OrganizationAccountUnlinkProps
+
+
 Email = Annotated[
     LoginCodeEmail
     | CustomerSessionCodeEmail
@@ -310,6 +323,7 @@ Email = Annotated[
     | OrderConfirmationEmail
     | OrganizationAccessTokenLeakedEmail
     | OrganizationInviteEmail
+    | OrganizationAccountUnlinkEmail
     | PersonalAccessTokenLeakedEmail
     | SeatInvitationEmail
     | SubscriptionCancellationEmail

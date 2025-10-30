@@ -122,12 +122,16 @@ export default function ClientPage({
     [router, organization, interval, startDate, endDate],
   )
 
-  const orderEvents: (keyof schemas['Metrics'])[] = [
-    'revenue',
-    'orders',
-    'average_order_value',
-    'cumulative_revenue',
-  ]
+  const orderEvents: (keyof schemas['Metrics'])[] = useMemo(
+    () => [
+      ...(hasOneTimeProducts && !hasRecurringProducts
+        ? []
+        : (['revenue', 'orders'] as const)),
+      'average_order_value',
+      'cumulative_revenue',
+    ],
+    [hasOneTimeProducts, hasRecurringProducts],
+  )
 
   const subscriptionEvents: (keyof schemas['Metrics'])[] = [
     'monthly_recurring_revenue',

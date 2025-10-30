@@ -1,4 +1,5 @@
 from datetime import datetime as dt
+from decimal import Decimal
 
 from babel.numbers import format_currency
 
@@ -9,8 +10,15 @@ def datetime(value: dt) -> str:
     return value.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def currency(value: int, currency: str) -> str:
-    return format_currency(value / 100, currency.upper(), locale="en_US")
+def currency(
+    value: int | Decimal | float, currency: str, *, decimal_quantization: bool = True
+) -> str:
+    return format_currency(
+        value / 100,
+        currency.upper(),
+        locale="en_US",
+        decimal_quantization=decimal_quantization,
+    )
 
 
 def tax_id(value: TaxID) -> str:

@@ -1,10 +1,10 @@
 import builtins
 import uuid
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Literal
 
 import stripe
-from sqlalchemy import UnaryExpression, asc, case, desc, func, select
+from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject, is_user
@@ -32,12 +32,10 @@ from polar.models import (
     ProductBenefit,
     ProductMedia,
     ProductPrice,
-    ProductPriceCustom,
-    ProductPriceFixed,
     User,
 )
 from polar.models.product_custom_field import ProductCustomField
-from polar.models.product_price import HasStripePriceId, ProductPriceAmountType
+from polar.models.product_price import HasStripePriceId
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
@@ -73,7 +71,7 @@ class ProductService:
         benefit_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: Sequence[Sorting[ProductSortProperty]] = [
+        sorting: list[Sorting[ProductSortProperty]] = [
             (ProductSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Product], int]:
@@ -122,56 +120,7 @@ class ProductService:
         if metadata is not None:
             statement = apply_metadata_clause(Product, statement, metadata)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == ProductSortProperty.created_at:
-                order_by_clauses.append(clause_function(Product.created_at))
-            elif criterion == ProductSortProperty.product_name:
-                order_by_clauses.append(clause_function(Product.name))
-            elif criterion == ProductSortProperty.price_amount_type:
-                order_by_clauses.append(
-                    clause_function(
-                        case(
-                            (
-                                ProductPrice.amount_type == ProductPriceAmountType.free,
-                                1,
-                            ),
-                            (
-                                ProductPrice.amount_type
-                                == ProductPriceAmountType.custom,
-                                2,
-                            ),
-                            (
-                                ProductPrice.amount_type
-                                == ProductPriceAmountType.fixed,
-                                3,
-                            ),
-                        )
-                    )
-                )
-            elif criterion == ProductSortProperty.price_amount:
-                order_by_clauses.append(
-                    clause_function(
-                        case(
-                            (
-                                ProductPrice.amount_type == ProductPriceAmountType.free,
-                                -2,
-                            ),
-                            (
-                                ProductPrice.amount_type
-                                == ProductPriceAmountType.custom,
-                                func.coalesce(ProductPriceCustom.minimum_amount, -1),
-                            ),
-                            (
-                                ProductPrice.amount_type
-                                == ProductPriceAmountType.fixed,
-                                ProductPriceFixed.price_amount,
-                            ),
-                        )
-                    )
-                )
-        statement = statement.order_by(*order_by_clauses)
+        statement = repository.apply_sorting(statement, sorting)
 
         statement = statement.options(
             selectinload(Product.product_medias),

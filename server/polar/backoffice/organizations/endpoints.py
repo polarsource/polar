@@ -552,6 +552,7 @@ async def update(
         "name": organization.name,
         "slug": organization.slug,
         "customer_invoice_prefix": organization.customer_invoice_prefix,
+        "internal_notes": organization.internal_notes,
         "feature_flags": {
             field_name: organization.feature_settings.get(field_name, False)
             for field_name in OrganizationFeatureSettings.model_fields.keys()
@@ -1371,28 +1372,40 @@ async def get(
                     ):
                         text("Edit")
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
-                with description_list.DescriptionList[Organization](
-                    description_list.DescriptionListAttrItem(
-                        "id", "ID", clipboard=True
-                    ),
-                    description_list.DescriptionListAttrItem(
-                        "slug", "Slug", clipboard=True
-                    ),
-                    description_list.DescriptionListDateTimeItem(
-                        "created_at", "Created At"
-                    ),
-                    description_list.DescriptionListDateTimeItem(
-                        "created_at", "Created At"
-                    ),
-                    description_list.DescriptionListLinkItem(
-                        "website", "Website", external=True
-                    ),
-                    description_list.DescriptionListAttrItem(
-                        "email", "Support email", clipboard=True
-                    ),
-                    description_list.DescriptionListSocialsItem("Social Links"),
-                ).render(request, organization):
-                    pass
+                with tag.div(classes="flex flex-col gap-4"):
+                    with description_list.DescriptionList[Organization](
+                        description_list.DescriptionListAttrItem(
+                            "id", "ID", clipboard=True
+                        ),
+                        description_list.DescriptionListAttrItem(
+                            "slug", "Slug", clipboard=True
+                        ),
+                        description_list.DescriptionListDateTimeItem(
+                            "created_at", "Created At"
+                        ),
+                        description_list.DescriptionListDateTimeItem(
+                            "created_at", "Created At"
+                        ),
+                        description_list.DescriptionListLinkItem(
+                            "website", "Website", external=True
+                        ),
+                        description_list.DescriptionListAttrItem(
+                            "email", "Support email", clipboard=True
+                        ),
+                        description_list.DescriptionListSocialsItem("Social Links"),
+                    ).render(request, organization):
+                        pass
+
+                    with tag.div(classes="card card-border w-full shadow-sm bg-warning/10"):
+                        with tag.div(classes="card-body"):
+                            with tag.h3(classes="card-title text-sm"):
+                                text("Internal Notes")
+                            with tag.div(classes="text-sm whitespace-pre-line"):
+                                if organization.internal_notes:
+                                    text(organization.internal_notes)
+                                else:
+                                    with tag.span(classes="text-base-content-secondary italic"):
+                                        text("No internal notes")
                 # Simple users table
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):

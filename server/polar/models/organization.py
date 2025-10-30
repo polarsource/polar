@@ -11,6 +11,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
     UniqueConstraint,
     Uuid,
     and_,
@@ -138,6 +139,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     email: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     website: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    internal_notes: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     socials: Mapped[list[OrganizationSocials]] = mapped_column(
         JSONB, nullable=False, default=list
     )

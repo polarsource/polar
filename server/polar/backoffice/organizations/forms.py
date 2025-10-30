@@ -64,6 +64,15 @@ class UpdateOrganizationForm(forms.BaseForm):
             to_upper=True, min_length=3, pattern=r"^[a-zA-Z0-9\-]+[a-zA-Z0-9]$"
         ),
     ]
+    internal_notes: Annotated[
+        str | None,
+        forms.TextAreaField(rows=4),
+        Field(
+            default=None,
+            title="Internal Notes",
+            description="Internal notes for support team (not visible to organization)",
+        ),
+    ]
     feature_flags: Annotated[
         OrganizationFeatureSettings | None,
         forms.SubFormField(OrganizationFeatureSettings),

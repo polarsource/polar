@@ -27,6 +27,11 @@ export default function AccountStep({
   onStartAccountSetup,
   onSkipAccountSetup,
 }: AccountStepProps) {
+  const isAccountSetupComplete =
+    organizationAccount?.stripe_id !== null &&
+    organizationAccount?.is_details_submitted &&
+    organizationAccount?.is_charges_enabled &&
+    organizationAccount?.is_payouts_enabled
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -35,7 +40,7 @@ export default function AccountStep({
           <h1 className="text-2xl font-semibold">Payout Account</h1>
         </div>
         <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-          {organizationAccount?.is_details_submitted
+          {isAccountSetupComplete
             ? 'Your payout account details and status.'
             : isNotAdmin
               ? 'Account setup requires admin privileges.'
@@ -44,7 +49,7 @@ export default function AccountStep({
       </div>
 
       {/* Account Information */}
-      {organizationAccount && organizationAccount.is_details_submitted ? (
+      {isAccountSetupComplete ? (
         <StepCard>
           <div className="space-y-4 text-center">
             <div className="rounded-lg bg-gray-50 p-8 dark:bg-gray-800">

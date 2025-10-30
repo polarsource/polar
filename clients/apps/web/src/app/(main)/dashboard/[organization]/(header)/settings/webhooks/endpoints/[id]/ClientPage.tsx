@@ -11,6 +11,7 @@ import { toast } from '@/components/Toast/use-toast'
 import { getStatusRedirect } from '@/components/Toast/utils'
 import {
   useDeleteWebhookEndpoint,
+  useEditWebhookEndpoint,
   useResetSecretWebhookEndpoint,
   useWebhookEndpoint,
 } from '@/hooks/queries'
@@ -21,6 +22,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import Switch from '@polar-sh/ui/components/atoms/Switch'
 import { useParams, useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 
@@ -38,6 +40,34 @@ export default function ClientPage({
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const { data: endpoint } = useWebhookEndpoint(id)
+
+  const editWebhookEndpoint = useEditWebhookEndpoint()
+  const handleToggleEnabled = useCallback(
+    async (enabled: boolean) => {
+      if (!endpoint) return
+      const { error } = await editWebhookEndpoint.mutateAsync({
+        id: endpoint.id,
+        body: { enabled },
+      })
+      if (error) {
+        toast({
+          title: 'Webhook Endpoint Update Failed',
+          description: `Error updating Webhook Endpoint: ${error.detail}`,
+        })
+        return
+      }
+
+      toast({
+        title: enabled
+          ? 'Webhook Endpoint Enabled'
+          : 'Webhook Endpoint Disabled',
+        description: enabled
+          ? 'Webhook endpoint will now receive events'
+          : 'Webhook endpoint will no longer receive events',
+      })
+    },
+    [editWebhookEndpoint, endpoint],
+  )
 
   const {
     hide: hideResetModal,
@@ -119,7 +149,19 @@ export default function ClientPage({
       wide
     >
       <div className="flex flex-col gap-4">
-        <h3 className="text-lg">{endpoint.url}</h3>
+        <div className="flex items-center justify-between gap-4">
+          <h3 className="text-lg">{endpoint.url}</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500" id="webhook-status-label">
+              {endpoint.enabled ? 'Enabled' : 'Disabled'}
+            </span>
+            <Switch
+              checked={endpoint.enabled}
+              onCheckedChange={handleToggleEnabled}
+              aria-labelledby="webhook-status-label"
+            />
+          </div>
+        </div>
         <CopyToClipboardInput
           value={endpoint.secret}
           buttonLabel="Copy Secret"

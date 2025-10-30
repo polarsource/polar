@@ -32,6 +32,7 @@ from plain_client import (
     UpsertCustomerInput,
     UpsertCustomerOnCreateInput,
     UpsertCustomerOnUpdateInput,
+    UpsertCustomerUpsertCustomer,
 )
 from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager
@@ -1236,7 +1237,7 @@ class PlainService:
 
     def _get_customer_identifier(
         self,
-        customer_result,
+        customer_result: UpsertCustomerUpsertCustomer,
         email: str,
     ) -> CustomerIdentifierInput:
         """
@@ -1245,6 +1246,11 @@ class PlainService:
         Prefers external_id if set on the customer result, otherwise falls back to email.
         This handles cases where external_id might not be set on the Plain customer.
         """
+        if customer_result.customer is None:
+            raise ValueError(
+                "Customer not found when creating thread", customer_result, email
+            )
+
         if customer_result.customer.external_id:
             return CustomerIdentifierInput(
                 external_id=customer_result.customer.external_id

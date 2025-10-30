@@ -474,7 +474,13 @@ def _get_readable_cost_events_statement(
     if customer_id is not None:
         statement = statement.join(
             Customer,
-            onclause=Event.customer_id == Customer.id,
+            onclause=or_(
+                Event.customer_id == Customer.id,
+                and_(
+                    Event.external_customer_id == Customer.external_id,
+                    Event.organization_id == Customer.organization_id,
+                ),
+            ),
         ).where(Customer.id.in_(customer_id))
 
     return statement
@@ -590,7 +596,13 @@ def _get_readable_events_statement(
     if customer_id is not None:
         statement = statement.join(
             Customer,
-            onclause=Event.customer_id == Customer.id,
+            onclause=or_(
+                Event.customer_id == Customer.id,
+                and_(
+                    Event.external_customer_id == Customer.external_id,
+                    Event.organization_id == Customer.organization_id,
+                ),
+            ),
         ).where(Customer.id.in_(customer_id))
 
     return statement

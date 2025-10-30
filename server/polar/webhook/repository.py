@@ -49,10 +49,7 @@ class WebhookEventRepository(
         """
         statement = (
             self.get_base_statement()
-            .where(
-                WebhookEvent.webhook_endpoint_id == endpoint_id,
-                WebhookEvent.succeeded.is_not(None),
-            )
+            .where(WebhookEvent.webhook_endpoint_id == endpoint_id)
             .order_by(WebhookEvent.created_at.desc())
             .limit(limit)
         )

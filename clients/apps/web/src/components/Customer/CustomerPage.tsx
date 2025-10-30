@@ -28,8 +28,8 @@ import {
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { benefitsDisplayNames } from '../Benefit/utils'
+import CashflowChart from '../Metrics/CashflowChart'
 import MetricChartBox from '../Metrics/MetricChartBox'
-import ProfitChart from '../Metrics/ProfitChart'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerStatBox } from './CustomerStatBox'
 
@@ -199,7 +199,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         </div>
 
         {organization.feature_settings?.revops_enabled && (
-          <ProfitChart
+          <CashflowChart
             loading={metricsLoading}
             data={relevantMetricsData}
             interval={interval}

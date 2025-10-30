@@ -72,6 +72,28 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
     def generate_client_secret(self, request: StarletteJsonRequest) -> str:
         return generate_token(prefix=CLIENT_SECRET_PREFIX)
 
+    def create_registration_response(
+        self, request: StarletteJsonRequest
+    ) -> tuple[int, dict[str, typing.Any], list[tuple[str, str]]]:
+        """
+        Create client registration response.
+
+        Temporary workaround: Exclude client_secret and client_secret_expires_at
+        from the response when token_endpoint_auth_method is 'none', as this
+        helps clients that haven't yet updated to properly handle public clients.
+        """
+        status, body, headers = super().create_registration_response(request)
+
+        # Check if this is a public client (token_endpoint_auth_method = none)
+        if isinstance(body, dict):
+            token_endpoint_auth_method = body.get("token_endpoint_auth_method")
+            if token_endpoint_auth_method == "none":
+                # Remove client_secret fields for public clients as a temporary workaround
+                body.pop("client_secret", None)
+                body.pop("client_secret_expires_at", None)
+
+        return status, body, headers
+
     def get_server_metadata(self) -> dict[str, typing.Any]:
         return _get_server_metadata(self.server)
 
@@ -110,6 +132,28 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
             ),
             "registration_access_token": client.registration_access_token,
         }
+
+    def create_read_client_response(
+        self, client: OAuth2Client, request: StarletteJsonRequest
+    ) -> tuple[int, dict[str, typing.Any], list[tuple[str, str]]]:
+        """
+        Create client read response (GET endpoint).
+
+        Temporary workaround: Exclude client_secret and client_secret_expires_at
+        from the response when token_endpoint_auth_method is 'none', as this
+        helps clients that haven't yet updated to properly handle public clients.
+        """
+        status, body, headers = super().create_read_client_response(client, request)
+
+        # Check if this is a public client (token_endpoint_auth_method = none)
+        if isinstance(body, dict):
+            token_endpoint_auth_method = body.get("token_endpoint_auth_method")
+            if token_endpoint_auth_method == "none":
+                # Remove client_secret fields for public clients as a temporary workaround
+                body.pop("client_secret", None)
+                body.pop("client_secret_expires_at", None)
+
+        return status, body, headers
 
     def authenticate_token(self, request: StarletteJsonRequest) -> User | str | None:
         if request.user is not None:

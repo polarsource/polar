@@ -13,7 +13,7 @@ import {
   useSubscriptions,
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
-import { getChartRangeParams } from '@/utils/metrics'
+import { getChartRangeParams, getFormattedMetricValue } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -136,7 +136,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-8">
         <div className="flex flex-col gap-4 md:flex-row md:gap-6">
-          <CustomerStatBox title="Cumulative Revenue" size="lg">
+          <CustomerStatBox title="Lifetime Revenue" size="lg">
             {typeof metricsData?.totals.cumulative_revenue === 'number' ? (
               <AmountLabel
                 amount={metricsData?.totals.cumulative_revenue ?? 0}
@@ -150,10 +150,21 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
 
           {organization.feature_settings?.revops_enabled ? (
             <>
-              <CustomerStatBox title="Cumulative Costs" size="lg">
+              <CustomerStatBox title="Lifetime Costs" size="lg">
                 {typeof metricsData?.totals.cumulative_costs === 'number' ? (
                   <AmountLabel
                     amount={metricsData?.totals.cumulative_costs ?? 0}
+                    currency="USD"
+                    minimumFractionDigits={5}
+                  />
+                ) : (
+                  '—'
+                )}
+              </CustomerStatBox>
+              <CustomerStatBox title="Lifetime Profit" size="lg">
+                {metricsData?.totals.gross_margin !== undefined ? (
+                  <AmountLabel
+                    amount={metricsData.totals.gross_margin}
                     currency="USD"
                     minimumFractionDigits={2}
                   />
@@ -161,20 +172,13 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                   '—'
                 )}
               </CustomerStatBox>
-              <CustomerStatBox title="Profit" size="lg">
-                {metricsData?.totals.cumulative_revenue &&
-                metricsData?.totals.cumulative_costs ? (
-                  <AmountLabel
-                    amount={
-                      metricsData.totals.cumulative_revenue -
-                      metricsData.totals.cumulative_costs
-                    }
-                    currency="USD"
-                    minimumFractionDigits={2}
-                  />
-                ) : (
-                  '—'
-                )}
+              <CustomerStatBox title="Profit Margin" size="lg">
+                {metricsData?.totals.gross_margin_percentage !== undefined
+                  ? getFormattedMetricValue(
+                      metricsData.metrics.gross_margin_percentage,
+                      metricsData?.totals.gross_margin_percentage,
+                    )
+                  : '—'}
               </CustomerStatBox>
             </>
           ) : (
@@ -190,6 +194,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             />
           </CustomerStatBox>
         </div>
+
         {organization.feature_settings?.revops_enabled && (
           <ProfitChart
             loading={metricsLoading}

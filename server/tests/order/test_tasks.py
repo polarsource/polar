@@ -13,8 +13,8 @@ from polar.models import Event, Organization, Product
 from polar.models.event import EventSource
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentStatus
+from polar.models.refund import RefundStatus
 from polar.models.subscription import SubscriptionStatus
-from polar.models.transaction import Processor, Transaction, TransactionType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.order.tasks import (
@@ -22,6 +22,7 @@ from polar.order.tasks import (
     backfill_order_events,
     process_dunning,
     process_dunning_order,
+    remove_backfilled_events,
     trigger_payment,
 )
 from polar.subscription.repository import SubscriptionRepository
@@ -31,6 +32,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_payment,
     create_payment_method,
+    create_refund,
     create_subscription,
 )
 
@@ -579,7 +581,7 @@ class TestTriggerPayment:
 
 @pytest.mark.asyncio
 class TestBackfillOrderEvents:
-    async def test_creates_order_paid_event_from_payment_transaction(
+    async def test_creates_order_paid_event_from_order(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -594,19 +596,6 @@ class TestBackfillOrderEvents:
             status=OrderStatus.paid,
         )
 
-        payment_transaction = Transaction(
-            type=TransactionType.payment,
-            processor=Processor.stripe,
-            currency=order.currency,
-            amount=order.total_amount,
-            account_currency=order.currency,
-            account_amount=order.total_amount,
-            tax_amount=order.tax_amount,
-            order_id=order.id,
-            charge_id="ch_test",
-        )
-        await save_fixture(payment_transaction)
-
         await backfill_order_events(batch_size=2, rate_limit_delay=0.0)
 
         event_repository = EventRepository.from_session(session)
@@ -616,10 +605,10 @@ class TestBackfillOrderEvents:
         assert len(paid_events) == 1
         assert paid_events[0].customer_id == customer.id
         assert paid_events[0].organization_id == organization.id
-        assert paid_events[0].timestamp == payment_transaction.created_at
+        assert paid_events[0].timestamp == order.created_at
         assert paid_events[0].user_metadata["order_id"] == str(order.id)
 
-    async def test_creates_order_refunded_event_from_refund_transaction(
+    async def test_creates_order_refunded_event_from_refund(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -637,31 +626,13 @@ class TestBackfillOrderEvents:
         order.refunded_tax_amount = order.tax_amount
         await save_fixture(order)
 
-        payment_transaction = Transaction(
-            type=TransactionType.payment,
-            processor=Processor.stripe,
-            currency=order.currency,
-            amount=order.total_amount,
-            account_currency=order.currency,
-            account_amount=order.total_amount,
+        refund = await create_refund(
+            save_fixture,
+            order=order,
+            status=RefundStatus.succeeded,
+            amount=order.net_amount,
             tax_amount=order.tax_amount,
-            order_id=order.id,
-            charge_id="ch_test",
         )
-        await save_fixture(payment_transaction)
-
-        refund_transaction = Transaction(
-            type=TransactionType.refund,
-            processor=Processor.stripe,
-            currency=order.currency,
-            amount=-order.total_amount,
-            account_currency=order.currency,
-            account_amount=-order.total_amount,
-            tax_amount=-order.tax_amount,
-            order_id=order.id,
-            charge_id="ch_test",
-        )
-        await save_fixture(refund_transaction)
 
         await backfill_order_events(batch_size=2, rate_limit_delay=0.0)
 
@@ -671,11 +642,9 @@ class TestBackfillOrderEvents:
         refunded_events = [e for e in events if e.name == SystemEvent.order_refunded]
         assert len(refunded_events) == 1
         assert refunded_events[0].customer_id == customer.id
-        assert refunded_events[0].timestamp == refund_transaction.created_at
+        assert refunded_events[0].timestamp == refund.created_at
         assert refunded_events[0].user_metadata["order_id"] == str(order.id)
-        assert (
-            refunded_events[0].user_metadata["refunded_amount"] == order.refunded_amount
-        )
+        assert refunded_events[0].user_metadata["refunded_amount"] == refund.amount
 
     async def test_creates_multiple_refund_events_for_partial_refunds(
         self,
@@ -695,44 +664,23 @@ class TestBackfillOrderEvents:
         order.refunded_tax_amount = order.tax_amount // 2
         await save_fixture(order)
 
-        payment_transaction = Transaction(
-            type=TransactionType.payment,
-            processor=Processor.stripe,
-            currency=order.currency,
-            amount=order.total_amount,
-            account_currency=order.currency,
-            account_amount=order.total_amount,
-            tax_amount=order.tax_amount,
-            order_id=order.id,
-            charge_id="ch_test",
+        refund_1 = await create_refund(
+            save_fixture,
+            order=order,
+            status=RefundStatus.succeeded,
+            amount=order.net_amount // 4,
+            tax_amount=order.tax_amount // 4,
+            processor_id="refund_1",
         )
-        await save_fixture(payment_transaction)
 
-        refund_transaction_1 = Transaction(
-            type=TransactionType.refund,
-            processor=Processor.stripe,
-            currency=order.currency,
-            amount=-(order.total_amount // 4),
-            account_currency=order.currency,
-            account_amount=-(order.total_amount // 4),
-            tax_amount=-(order.tax_amount // 4),
-            order_id=order.id,
-            charge_id="ch_test",
+        refund_2 = await create_refund(
+            save_fixture,
+            order=order,
+            status=RefundStatus.succeeded,
+            amount=order.net_amount // 4,
+            tax_amount=order.tax_amount // 4,
+            processor_id="refund_2",
         )
-        await save_fixture(refund_transaction_1)
-
-        refund_transaction_2 = Transaction(
-            type=TransactionType.refund,
-            processor=Processor.stripe,
-            currency=order.currency,
-            amount=-(order.total_amount // 4),
-            account_currency=order.currency,
-            account_amount=-(order.total_amount // 4),
-            tax_amount=-(order.tax_amount // 4),
-            order_id=order.id,
-            charge_id="ch_test",
-        )
-        await save_fixture(refund_transaction_2)
 
         await backfill_order_events(batch_size=2, rate_limit_delay=0.0)
 
@@ -741,8 +689,8 @@ class TestBackfillOrderEvents:
 
         refunded_events = [e for e in events if e.name == SystemEvent.order_refunded]
         assert len(refunded_events) == 2
-        assert refunded_events[0].timestamp == refund_transaction_1.created_at
-        assert refunded_events[1].timestamp == refund_transaction_2.created_at
+        assert refunded_events[0].timestamp == refund_1.created_at
+        assert refunded_events[1].timestamp == refund_2.created_at
 
     async def test_skips_orders_with_existing_events(
         self,
@@ -758,19 +706,6 @@ class TestBackfillOrderEvents:
             customer=customer,
             status=OrderStatus.paid,
         )
-
-        payment_transaction = Transaction(
-            type=TransactionType.payment,
-            processor=Processor.stripe,
-            currency=order.currency,
-            amount=order.total_amount,
-            account_currency=order.currency,
-            account_amount=order.total_amount,
-            tax_amount=order.tax_amount,
-            order_id=order.id,
-            charge_id="ch_test",
-        )
-        await save_fixture(payment_transaction)
 
         existing_event = Event(
             name=SystemEvent.order_paid,
@@ -794,7 +729,7 @@ class TestBackfillOrderEvents:
         assert len(paid_events) == 1
         assert paid_events[0].id == existing_event.id
 
-    async def test_handles_orders_without_transactions(
+    async def test_skips_pending_orders(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -815,3 +750,56 @@ class TestBackfillOrderEvents:
         events = await event_repository.get_all_by_organization(organization.id)
 
         assert len(events) == 0
+
+
+@pytest.mark.asyncio
+class TestRemoveBackfilledEvents:
+    async def test_removes_backfilled_events(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        backfilled_event = Event(
+            name=SystemEvent.order_paid,
+            source=EventSource.system,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            user_metadata={
+                "order_id": str(order.id),
+                "amount": order.total_amount,
+                "currency": order.currency,
+                "backfilled": True,
+            },
+        )
+        await save_fixture(backfilled_event)
+
+        non_backfilled_event = Event(
+            name=SystemEvent.order_paid,
+            source=EventSource.system,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            user_metadata={
+                "order_id": str(order.id),
+                "amount": order.total_amount,
+                "currency": order.currency,
+            },
+        )
+        await save_fixture(non_backfilled_event)
+
+        await remove_backfilled_events(batch_size=10, rate_limit_delay=0.0)
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_organization(organization.id)
+
+        assert len(events) == 1
+        assert events[0].id == non_backfilled_event.id

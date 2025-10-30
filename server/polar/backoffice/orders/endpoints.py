@@ -5,6 +5,7 @@ from collections.abc import Generator
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
@@ -18,6 +19,8 @@ from polar.models.order import OrderBillingReason, OrderStatus
 from polar.order import sorting
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession, get_db_session
+from polar.refund.schemas import BulkRefundCreate, BulkRefundResult, RefundResultItem
+from polar.refund.service import refund as refund_service
 
 from .. import formatters
 from ..components import button, datatable, description_list, input
@@ -434,3 +437,40 @@ async def get(
                                 request, order
                             ):
                                 pass
+
+
+@router.post("/bulk-refund", name="orders:bulk_refund")
+async def bulk_refund(
+    request: Request,
+    bulk_refund_data: BulkRefundCreate,
+    session: AsyncSession = Depends(get_db_session),
+) -> JSONResponse:
+    try:
+        results, successful_count, failed_count = (
+            await refund_service.bulk_refund_by_organization(
+                session=session,
+                organization_id=bulk_refund_data.organization_id,
+                reason=bulk_refund_data.reason,
+                comment=bulk_refund_data.comment,
+            )
+        )
+
+        result_items = [
+            RefundResultItem(**result)
+            for result in results
+        ]
+
+        bulk_result = BulkRefundResult(
+            total_orders=len(results),
+            successful_refunds=successful_count,
+            failed_refunds=failed_count,
+            results=result_items,
+        )
+
+        return JSONResponse(
+            content=bulk_result.model_dump(mode="json"),
+            status_code=200,
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

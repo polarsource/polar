@@ -138,3 +138,29 @@ class InternalRefundCreate(MetadataInputMixin, Schema):
             processor_reason=stripe_reason,
             processor_balance_transaction_id=balance_transaction_id,
         )
+
+
+class BulkRefundCreate(Schema):
+    organization_id: UUID4 = Field(
+        description="The organization ID to refund all orders for."
+    )
+    reason: RefundReason = Field(
+        description="The reason for the bulk refund."
+    )
+    comment: str = Field(
+        description="A comment explaining the bulk refund (e.g., 'Merchant violated our AUP. Refunding Buyers')."
+    )
+
+
+class RefundResultItem(Schema):
+    order_id: UUID4
+    success: bool
+    refund_id: UUID4 | None = None
+    error: str | None = None
+
+
+class BulkRefundResult(Schema):
+    total_orders: int
+    successful_refunds: int
+    failed_refunds: int
+    results: list[RefundResultItem]

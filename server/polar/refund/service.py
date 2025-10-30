@@ -21,6 +21,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
+    Customer,
     Order,
     Organization,
     Pledge,
@@ -28,6 +29,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.order import OrderStatus
 from polar.models.refund import Refund, RefundReason, RefundStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
@@ -709,6 +711,104 @@ class RefundService(ResourceServiceReader[Refund]):
             )
 
         return statement
+
+    async def bulk_refund_by_organization(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        reason: RefundReason,
+        comment: str,
+    ) -> tuple[list[dict[str, Any]], int, int]:
+        from .schemas import RefundCreate
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
+        if not organization:
+            raise ResourceNotFound(f"Organization not found: {organization_id}")
+
+        customer_repository = CustomerRepository.from_session(session)
+        order_repository = OrderRepository.from_session(session)
+
+        statement = (
+            select(Order)
+            .join(Customer, Order.customer_id == Customer.id)
+            .where(
+                Customer.organization_id == organization_id,
+                Order.deleted_at.is_(None),
+                Order.status.in_([
+                    OrderStatus.paid,
+                    OrderStatus.partially_refunded,
+                ]),
+                Order.refundable_amount > 0,
+            )
+            .options(*order_repository.get_eager_options())
+        )
+
+        orders = await order_repository.get_all(statement)
+
+        results: list[dict[str, Any]] = []
+        successful_count = 0
+        failed_count = 0
+
+        for order in orders:
+            try:
+                refund_amount = order.refundable_amount
+                if refund_amount <= 0:
+                    results.append({
+                        "order_id": str(order.id),
+                        "success": False,
+                        "refund_id": None,
+                        "error": "No refundable amount remaining",
+                    })
+                    failed_count += 1
+                    continue
+
+                create_schema = RefundCreate(
+                    order_id=order.id,
+                    reason=reason,
+                    amount=refund_amount,
+                    comment=comment,
+                    revoke_benefits=False,
+                )
+
+                refund = await self.create(session, order, create_schema=create_schema)
+                await session.commit()
+
+                results.append({
+                    "order_id": str(order.id),
+                    "success": True,
+                    "refund_id": str(refund.id),
+                    "error": None,
+                })
+                successful_count += 1
+
+                log.info(
+                    "bulk_refund.order_refunded",
+                    organization_id=str(organization_id),
+                    order_id=str(order.id),
+                    refund_id=str(refund.id),
+                    amount=refund_amount,
+                )
+
+            except Exception as e:
+                await session.rollback()
+                error_message = str(e)
+                results.append({
+                    "order_id": str(order.id),
+                    "success": False,
+                    "refund_id": None,
+                    "error": error_message,
+                })
+                failed_count += 1
+
+                log.warning(
+                    "bulk_refund.order_failed",
+                    organization_id=str(organization_id),
+                    order_id=str(order.id),
+                    error=error_message,
+                )
+
+        return results, successful_count, failed_count
 
 
 refund = RefundService(Refund)

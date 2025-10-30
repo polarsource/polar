@@ -606,3 +606,147 @@ class TestUpdatedWebhooks(StripeRefund):
         assert updated_order.status == OrderStatus.paid
 
         revert_refund_transaction.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+class TestBulkRefundByOrganization:
+    async def test_bulk_refund_success(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order1 = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+            subtotal_amount=1000,
+            tax_amount=200,
+        )
+        order2 = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+            subtotal_amount=2000,
+            tax_amount=400,
+        )
+
+        stripe_service_mock.create_refund.return_value = build_stripe_refund(
+            amount=1200,
+            charge_id="ch_test",
+        )
+
+        results, successful_count, failed_count = (
+            await refund_service.bulk_refund_by_organization(
+                session=session,
+                organization_id=organization.id,
+                reason=RefundReason.service_disruption,
+                comment="Test bulk refund",
+            )
+        )
+
+        assert successful_count == 2
+        assert failed_count == 0
+        assert len(results) == 2
+
+        for result in results:
+            assert result["success"] is True
+            assert result["refund_id"] is not None
+            assert result["error"] is None
+
+    async def test_bulk_refund_partially_refunded_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.partially_refunded,
+            subtotal_amount=1000,
+            tax_amount=200,
+            refunded_amount=500,
+            refunded_tax_amount=100,
+        )
+
+        stripe_service_mock.create_refund.return_value = build_stripe_refund(
+            amount=600,
+            charge_id="ch_test",
+        )
+
+        results, successful_count, failed_count = (
+            await refund_service.bulk_refund_by_organization(
+                session=session,
+                organization_id=organization.id,
+                reason=RefundReason.service_disruption,
+                comment="Test bulk refund",
+            )
+        )
+
+        assert successful_count == 1
+        assert failed_count == 0
+        assert len(results) == 1
+        assert results[0]["success"] is True
+
+    async def test_bulk_refund_no_orders(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        organization: Organization,
+    ) -> None:
+        results, successful_count, failed_count = (
+            await refund_service.bulk_refund_by_organization(
+                session=session,
+                organization_id=organization.id,
+                reason=RefundReason.service_disruption,
+                comment="Test bulk refund",
+            )
+        )
+
+        assert successful_count == 0
+        assert failed_count == 0
+        assert len(results) == 0
+
+    async def test_bulk_refund_already_fully_refunded(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.refunded,
+            subtotal_amount=1000,
+            tax_amount=200,
+            refunded_amount=1000,
+            refunded_tax_amount=200,
+        )
+
+        results, successful_count, failed_count = (
+            await refund_service.bulk_refund_by_organization(
+                session=session,
+                organization_id=organization.id,
+                reason=RefundReason.service_disruption,
+                comment="Test bulk refund",
+            )
+        )
+
+        assert successful_count == 0
+        assert failed_count == 0
+        assert len(results) == 0

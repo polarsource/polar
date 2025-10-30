@@ -1559,3 +1559,98 @@ class TestGetMetrics:
 
         jan_2_all = metrics_all.periods[1]
         assert jan_2_all.costs == 0.35
+
+    @pytest.mark.auth
+    async def test_customer_filter_null_external_id_safety(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        customer_second: Customer,
+        organization: Organization,
+    ) -> None:
+        # Ensure both customers have NO external_id (NULL)
+        customer.external_id = None
+        customer_second.external_id = None
+        await save_fixture(customer)
+        await save_fixture(customer_second)
+
+        # Create event with NULL external_customer_id for first customer
+        await create_event(
+            save_fixture,
+            timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=UTC),
+            organization=organization,
+            customer=customer,
+            external_customer_id=None,
+            metadata={
+                "_cost": {
+                    "amount": 0.10,
+                    "currency": "usd",
+                }
+            },
+        )
+
+        # Create another event with NULL external_customer_id, no customer_id link
+        # This is an "orphaned" event that shouldn't match ANY customer filter
+        await create_event(
+            save_fixture,
+            timestamp=datetime(2024, 1, 1, 14, 0, tzinfo=UTC),
+            organization=organization,
+            customer=None,  # No direct link
+            external_customer_id=None,  # NULL external_customer_id
+            metadata={
+                "_cost": {
+                    "amount": 0.50,
+                    "currency": "usd",
+                }
+            },
+        )
+
+        # Filter by first customer
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 1),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            customer_id=[customer.id],
+        )
+
+        assert len(metrics.periods) == 1
+
+        jan_1 = metrics.periods[0]
+        # Should ONLY include the event with direct customer_id link (0.10)
+        # Should NOT include the orphaned event (0.50) even though both have NULL external_customer_id
+        assert jan_1.costs == 0.10
+
+        # Filter by second customer - should get nothing
+        metrics_second = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 1),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            customer_id=[customer_second.id],
+        )
+
+        assert len(metrics_second.periods) == 1
+        jan_1_second = metrics_second.periods[0]
+        assert jan_1_second.costs == 0  # No events for this customer
+
+        # Without filter should include all events
+        metrics_all = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 1),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+        )
+
+        assert len(metrics_all.periods) == 1
+        jan_1_all = metrics_all.periods[0]
+        assert jan_1_all.costs == 0.60  # Both events: 0.10 + 0.50

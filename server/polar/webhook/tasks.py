@@ -46,6 +46,10 @@ async def _webhook_event_send(
         webhook_endpoint_id=event.webhook_endpoint_id,
     )
 
+    if not event.webhook_endpoint.enabled:
+        bound_log.info("Webhook endpoint is disabled, skipping")
+        return
+
     if event.payload is None:
         bound_log.info("Archived event, skipping")
         return
@@ -110,6 +114,7 @@ async def _webhook_event_send(
             # Permanent failure
             if not can_retry():
                 event.succeeded = False
+                enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
             # Retry
             else:
                 raise Retry() from e
@@ -130,6 +135,12 @@ async def _webhook_event_send(
 async def webhook_event_success(webhook_event_id: UUID) -> None:
     async with AsyncSessionMaker() as session:
         return await webhook_service.on_event_success(session, webhook_event_id)
+
+
+@actor(actor_name="webhook_event.failed", priority=TaskPriority.HIGH)
+async def webhook_event_failed(webhook_event_id: UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        return await webhook_service.on_event_failed(session, webhook_event_id)
 
 
 @actor(

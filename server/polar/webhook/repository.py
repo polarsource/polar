@@ -8,6 +8,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models.webhook_delivery import WebhookDelivery
+from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.models.webhook_event import WebhookEvent
 
 
@@ -37,6 +38,26 @@ class WebhookEventRepository(
             statement = statement.where(WebhookEvent.created_at < older_than)
         return await self.get_all(statement)
 
+    async def get_recent_by_endpoint(
+        self, endpoint_id: UUID, *, limit: int
+    ) -> Sequence[WebhookEvent]:
+        """
+        Get recent events for an endpoint.
+
+        Returns a list of WebhookEvent objects ordered by
+        created_at descending (most recent first).
+        """
+        statement = (
+            self.get_base_statement()
+            .where(
+                WebhookEvent.webhook_endpoint_id == endpoint_id,
+                WebhookEvent.succeeded.is_not(None),
+            )
+            .order_by(WebhookEvent.created_at.desc())
+            .limit(limit)
+        )
+        return await self.get_all(statement)
+
 
 class WebhookDeliveryRepository(
     RepositorySoftDeletionIDMixin[WebhookDelivery, UUID],
@@ -52,3 +73,11 @@ class WebhookDeliveryRepository(
             .order_by(WebhookDelivery.created_at.asc())
         )
         return await self.get_all(statement)
+
+
+class WebhookEndpointRepository(
+    RepositorySoftDeletionIDMixin[WebhookEndpoint, UUID],
+    RepositorySoftDeletionMixin[WebhookEndpoint],
+    RepositoryBase[WebhookEndpoint],
+):
+    model = WebhookEndpoint

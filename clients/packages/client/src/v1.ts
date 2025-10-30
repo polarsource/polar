@@ -22264,6 +22264,11 @@ export interface components {
        * @description The events that will trigger the webhook.
        */
       events: components['schemas']['WebhookEventType'][]
+      /**
+       * Enabled
+       * @description Whether the webhook endpoint is enabled and will receive events.
+       */
+      enabled: boolean
     }
     /**
      * WebhookEndpointCreate
@@ -22310,6 +22315,11 @@ export interface components {
       format?: components['schemas']['WebhookFormat'] | null
       /** Events */
       events?: components['schemas']['WebhookEventType'][] | null
+      /**
+       * Enabled
+       * @description Whether the webhook endpoint is enabled.
+       */
+      enabled?: boolean | null
     }
     /**
      * WebhookEvent

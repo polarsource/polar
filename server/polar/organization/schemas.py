@@ -68,6 +68,9 @@ class OrganizationFeatureSettings(Schema):
     revops_enabled: bool = Field(
         False, description="If this organization has RevOps enabled"
     )
+    wallets_enabled: bool = Field(
+        False, description="If this organization has Wallets enabled"
+    )
 
 
 class OrganizationSubscribePromoteSettings(Schema):

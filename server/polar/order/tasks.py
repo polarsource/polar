@@ -1,12 +1,13 @@
 import asyncio
 import uuid
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 import stripe as stripe_lib
 import structlog
 from dramatiq import Retry
-from sqlalchemy import String, and_, func, or_, select
+from sqlalchemy import String, and_, delete, func, or_, select
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -17,8 +18,8 @@ from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models import Customer, Event, Order
 from polar.models.event import EventSource
-from polar.models.order import OrderBillingReasonInternal
-from polar.models.transaction import Transaction, TransactionType
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.refund import Refund, RefundStatus
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -236,6 +237,60 @@ async def process_dunning_order(order_id: uuid.UUID) -> None:
 
 
 @actor(
+    actor_name="order.remove_backfilled_events",
+    priority=TaskPriority.LOW,
+    time_limit=3600_000,
+)
+async def remove_backfilled_events(
+    batch_size: int = 1000, rate_limit_delay: float = 0.1
+) -> None:
+    """
+    Remove all previously backfilled order events (events with backfilled=true flag).
+    Useful for cleaning up before re-running backfill with updated logic.
+
+    Args:
+        batch_size: The number of events to delete at a time (default 100)
+        rate_limit_delay: Seconds to wait between batch deletes (default: 0.1)
+    """
+    async with AsyncSessionMaker() as session:
+        total_deleted = 0
+
+        while True:
+            result = await session.execute(
+                delete(Event).where(
+                    Event.id.in_(
+                        select(Event.id)
+                        .where(
+                            Event.name.in_(
+                                [SystemEvent.order_paid, SystemEvent.order_refunded]
+                            ),
+                            Event.user_metadata["backfilled"].as_boolean().is_(True),
+                        )
+                        .limit(batch_size)
+                    )
+                )
+            )
+            await session.commit()
+
+            batch_deleted = cast(CursorResult[Any], result).rowcount
+            if batch_deleted == 0:
+                break
+
+            total_deleted += batch_deleted
+            log.info(
+                "remove_backfilled_events.progress",
+                deleted=total_deleted,
+            )
+
+            await asyncio.sleep(rate_limit_delay)
+
+        log.info(
+            "remove_backfilled_events.completed",
+            total_deleted=total_deleted,
+        )
+
+
+@actor(
     actor_name="order.backfill_order_events",
     priority=TaskPriority.LOW,
     time_limit=3600_000,
@@ -245,7 +300,7 @@ async def backfill_order_events(
 ) -> None:
     """
     Backfill order.paid and order.refunded events for all existing orders.
-    Uses transaction timestamps for accurate event timing.
+    Uses order.created_at for paid events and refund.created_at for refund events.
 
     Args:
         batch_size: The number of orders to process at a time between the delays (default 100)
@@ -274,6 +329,13 @@ async def backfill_order_events(
             .where(
                 Order.deleted_at.is_(None),
                 existing_order_ids_subquery.c.order_id.is_(None),
+                Order.status.in_(
+                    [
+                        OrderStatus.paid,
+                        OrderStatus.refunded,
+                        OrderStatus.partially_refunded,
+                    ]
+                ),
             )
         )
         count_result = await session.execute(count_statement)
@@ -294,6 +356,13 @@ async def backfill_order_events(
                 .where(
                     Order.deleted_at.is_(None),
                     existing_order_ids_subquery.c.order_id.is_(None),
+                    Order.status.in_(
+                        [
+                            OrderStatus.paid,
+                            OrderStatus.refunded,
+                            OrderStatus.partially_refunded,
+                        ]
+                    ),
                 )
                 .options(selectinload(Order.customer))
                 .order_by(Order.created_at.asc(), Order.id.asc())
@@ -346,65 +415,58 @@ async def backfill_order_events(
 async def _build_events_for_orders(
     session: AsyncSession, orders: Sequence[Order]
 ) -> list[dict[str, Any]]:
-    """Build events for a batch of orders using transaction timestamps."""
+    """Build events for a batch of orders using order and refund timestamps."""
     order_ids = [order.id for order in orders]
     orders_by_id = {order.id: order for order in orders}
 
-    transactions_result = await session.execute(
-        select(Transaction)
+    refunds_result = await session.execute(
+        select(Refund)
         .where(
-            Transaction.order_id.in_(order_ids),
-            Transaction.type.in_([TransactionType.payment, TransactionType.refund]),
+            Refund.order_id.in_(order_ids),
+            Refund.status == RefundStatus.succeeded,
         )
-        .order_by(Transaction.created_at.asc())
+        .order_by(Refund.created_at.asc())
     )
-    transactions = transactions_result.scalars().all()
+    refunds = refunds_result.scalars().all()
 
-    txns_by_order: dict[uuid.UUID, dict[str, list[Transaction]]] = {}
-    for txn in transactions:
-        if txn.order_id is None:
+    refunds_by_order: dict[uuid.UUID, list[Refund]] = {}
+    for refund in refunds:
+        if refund.order_id is None:
             continue
-
-        if txn.order_id not in txns_by_order:
-            txns_by_order[txn.order_id] = {"payment": [], "refund": []}
-
-        if txn.type == TransactionType.payment:
-            txns_by_order[txn.order_id]["payment"].append(txn)
-        elif txn.type == TransactionType.refund:
-            txns_by_order[txn.order_id]["refund"].append(txn)
+        if refund.order_id not in refunds_by_order:
+            refunds_by_order[refund.order_id] = []
+        refunds_by_order[refund.order_id].append(refund)
 
     events: list[dict[str, Any]] = []
     for order_id, order in orders_by_id.items():
-        order_txns = txns_by_order.get(order_id, {"payment": [], "refund": []})
+        events.append(
+            {
+                "name": SystemEvent.order_paid,
+                "source": EventSource.system,
+                "timestamp": order.created_at,
+                "customer_id": order.customer_id,
+                "organization_id": order.customer.organization_id,
+                "user_metadata": OrderPaidMetadata(
+                    order_id=str(order.id),
+                    amount=order.total_amount,
+                    currency=order.currency,
+                    backfilled=True,
+                ),
+            }
+        )
 
-        for payment_txn in order_txns["payment"]:
-            events.append(
-                {
-                    "name": SystemEvent.order_paid,
-                    "source": EventSource.system,
-                    "timestamp": payment_txn.created_at,
-                    "customer_id": order.customer_id,
-                    "organization_id": order.customer.organization_id,
-                    "user_metadata": OrderPaidMetadata(
-                        order_id=str(order.id),
-                        amount=order.total_amount,
-                        currency=order.currency,
-                        backfilled=True,
-                    ),
-                }
-            )
-
-        for refund_txn in order_txns["refund"]:
+        order_refunds = refunds_by_order.get(order_id, [])
+        for refund in order_refunds:
             events.append(
                 {
                     "name": SystemEvent.order_refunded,
                     "source": EventSource.system,
-                    "timestamp": refund_txn.created_at,
+                    "timestamp": refund.created_at,
                     "customer_id": order.customer_id,
                     "organization_id": order.customer.organization_id,
                     "user_metadata": OrderRefundedMetadata(
                         order_id=str(order.id),
-                        refunded_amount=order.refunded_amount,
+                        refunded_amount=refund.amount,
                         currency=order.currency,
                         backfilled=True,
                     ),

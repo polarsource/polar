@@ -13,6 +13,7 @@ from .layout import layout
 from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
 from .orders.endpoints import router as orders_router
 from .organizations.endpoints import router as organizations_router
+from .organizations_v2.endpoints import router as organizations_v2_router
 from .pledges.endpoints import router as pledges_router
 from .products.endpoints import router as products_router
 from .responses import TagResponse
@@ -39,6 +40,7 @@ app.mount(
 )
 app.include_router(users_router, prefix="/users")
 app.include_router(organizations_router, prefix="/organizations")
+app.include_router(organizations_v2_router)  # New redesigned interface
 app.include_router(customers_router, prefix="/customers")
 app.include_router(benefits_router, prefix="/benefits")
 app.include_router(products_router, prefix="/products")

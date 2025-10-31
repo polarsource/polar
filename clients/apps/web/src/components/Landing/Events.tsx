@@ -136,7 +136,7 @@ export const Events = () => {
                     })}
                   </p>
                   <div className="flex w-fit flex-row items-center justify-end gap-x-4 md:w-32">
-                    {'cost' in event && (
+                    {'cost' in event && event.cost && (
                       <EventCostBadge
                         cost={event.cost.amount}
                         currency={event.cost.currency}

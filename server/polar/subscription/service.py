@@ -2749,7 +2749,7 @@ class SubscriptionService:
         """
         now = utc_now()
         reminder_date = now + timedelta(days=7)
-        
+
         # Find subscriptions that:
         # - Are active
         # - Have yearly recurring interval
@@ -2768,11 +2768,11 @@ class SubscriptionService:
                 Subscription.renewal_reminder_sent_at.is_(None),
                 Subscription.stripe_subscription_id.is_(None),
             )
-            .options(repository.get_eager_options())
+            .options(*repository.get_eager_options())
         )
-        
+
         subscriptions = await repository.get_all(statement)
-        
+
         for subscription in subscriptions:
             # Check if organization has renewal reminders enabled
             product_repository = ProductRepository.from_session(session)
@@ -2781,27 +2781,27 @@ class SubscriptionService:
             )
             if not product:
                 continue
-                
+
             organization_repository = OrganizationRepository.from_session(session)
             organization = await organization_repository.get_by_id(
                 product.organization_id
             )
             if not organization:
                 continue
-                
+
             # Skip if organization doesn't have renewal reminders enabled
             if not organization.customer_email_settings.get(
                 "subscription_renewal_reminder", False
             ):
                 continue
-            
+
             # Send reminder email
             await self.send_renewal_reminder_email(session, subscription)
-            
+
             # Mark as reminded
             subscription.renewal_reminder_sent_at = now
             await repository.update(subscription, flush=True)
-            
+
             log.info(
                 "Sent renewal reminder",
                 subscription_id=subscription.id,

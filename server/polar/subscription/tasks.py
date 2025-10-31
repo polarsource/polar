@@ -15,7 +15,13 @@ from polar.models import (
 )
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
-from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor, enqueue_job
+from polar.worker import (
+    AsyncSessionMaker,
+    CronTrigger,
+    TaskPriority,
+    actor,
+    enqueue_job,
+)
 
 from .service import SubscriptionNotReadyForMigration
 from .service import subscription as subscription_service

@@ -415,7 +415,14 @@ class OrganizationService:
             organization.next_review_threshold >= 0
             and transfers_sum >= organization.next_review_threshold
         ):
-            organization.status = OrganizationStatus.UNDER_REVIEW
+            # Determine if this is first review or ongoing review
+            # If organization is ACTIVE, this is an ongoing review
+            # Otherwise, it's a first review
+            if organization.status == OrganizationStatus.ACTIVE:
+                organization.status = OrganizationStatus.ONGOING_REVIEW
+            else:
+                organization.status = OrganizationStatus.FIRST_REVIEW
+
             organization.status_updated_at = datetime.now(UTC)
             await self._sync_account_status(session, organization)
             session.add(organization)
@@ -466,9 +473,16 @@ class OrganizationService:
         return organization
 
     async def set_organization_under_review(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        is_ongoing_review: bool = False,
     ) -> Organization:
-        organization.status = OrganizationStatus.UNDER_REVIEW
+        # Use ONGOING_REVIEW for subsequent reviews, FIRST_REVIEW for initial review
+        if is_ongoing_review:
+            organization.status = OrganizationStatus.ONGOING_REVIEW
+        else:
+            organization.status = OrganizationStatus.FIRST_REVIEW
         organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
@@ -483,23 +497,32 @@ class OrganizationService:
         organizations = await repository.get_all_by_account(account.id)
 
         for organization in organizations:
-            # Don't override organizations that are denied
-            if organization.status == OrganizationStatus.DENIED:
+            # Don't override organizations that are denied, blocked, or under review
+            if organization.status in (
+                OrganizationStatus.DENIED,
+                OrganizationStatus.BLOCKED,
+                OrganizationStatus.FIRST_REVIEW,
+                OrganizationStatus.ONGOING_REVIEW,
+            ):
                 continue
 
-            # If account is fully set up, set organization to ACTIVE
+            # If account is fully set up, set organization to READY (ready to receive payments)
             if all(
                 (
-                    not organization.is_under_review(),
-                    not organization.is_active(),
+                    organization.status
+                    in (
+                        OrganizationStatus.ONBOARDING_STARTED,
+                        OrganizationStatus.CREATED,
+                    ),
                     account.currency is not None,
                     account.is_details_submitted,
                     account.is_charges_enabled,
                     account.is_payouts_enabled,
                 )
             ):
-                organization.status = OrganizationStatus.ACTIVE
+                organization.status = OrganizationStatus.READY
                 organization.status_updated_at = datetime.now(UTC)
+                organization.onboarded_at = datetime.now(UTC)
 
             # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
             if any(
@@ -524,10 +547,15 @@ class OrganizationService:
 
         # Map organization status to account status
         status_mapping = {
+            OrganizationStatus.CREATED: Account.Status.ONBOARDING_STARTED,
             OrganizationStatus.ONBOARDING_STARTED: Account.Status.ONBOARDING_STARTED,
+            OrganizationStatus.READY: Account.Status.ACTIVE,
+            OrganizationStatus.FIRST_REVIEW: Account.Status.UNDER_REVIEW,
             OrganizationStatus.ACTIVE: Account.Status.ACTIVE,
-            OrganizationStatus.UNDER_REVIEW: Account.Status.UNDER_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW: Account.Status.ACTIVE,  # Fully operational
+            OrganizationStatus.UNDER_REVIEW: Account.Status.UNDER_REVIEW,  # Legacy
             OrganizationStatus.DENIED: Account.Status.DENIED,
+            OrganizationStatus.BLOCKED: Account.Status.DENIED,
         }
 
         if organization.status in status_mapping:
@@ -644,9 +672,13 @@ class OrganizationService:
             return True
 
         # For new organizations, check basic conditions first
+        # Organizations can accept payments when they are READY, under review, or ACTIVE
         if organization.status not in [
+            OrganizationStatus.READY,
+            OrganizationStatus.FIRST_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW,
             OrganizationStatus.ACTIVE,
-            OrganizationStatus.UNDER_REVIEW,
+            OrganizationStatus.UNDER_REVIEW,  # Legacy support
         ]:
             return False
 
@@ -795,6 +827,36 @@ class OrganizationService:
         await session.commit()
 
         return review
+
+    async def block_organization(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        """Block an organization from all platform access."""
+        organization.status = OrganizationStatus.BLOCKED
+        organization.status_updated_at = datetime.now(UTC)
+        # Keep blocked_at for backward compatibility during migration
+        organization.blocked_at = datetime.now(UTC)
+        await self._sync_account_status(session, organization)
+        session.add(organization)
+        return organization
+
+    async def unblock_organization(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        """Unblock an organization and restore appropriate status."""
+        # Clear both status and blocked_at
+        organization.blocked_at = None
+        # Determine appropriate status based on account setup
+        if organization.account_id and organization.onboarded_at:
+            # If they were onboarded, set to READY
+            organization.status = OrganizationStatus.READY
+        else:
+            # Otherwise back to onboarding
+            organization.status = OrganizationStatus.ONBOARDING_STARTED
+        organization.status_updated_at = datetime.now(UTC)
+        await self._sync_account_status(session, organization)
+        session.add(organization)
+        return organization
 
 
 organization = OrganizationService()

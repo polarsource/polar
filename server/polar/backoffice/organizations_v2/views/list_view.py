@@ -50,7 +50,15 @@ class OrganizationListView:
         days_in_status = self.calculate_days_in_status(org)
 
         # Under review for more than 3 days
-        if org.status == OrganizationStatus.UNDER_REVIEW and days_in_status > 3:
+        if (
+            org.status
+            in (
+                OrganizationStatus.UNDER_REVIEW,
+                OrganizationStatus.FIRST_REVIEW,
+                OrganizationStatus.ONGOING_REVIEW,
+            )
+            and days_in_status > 3
+        ):
             return True
 
         # Has pending appeal
@@ -265,10 +273,16 @@ class OrganizationListView:
                 count=sum(status_counts.values()),
             ),
             Tab(
-                label="Under Review",
-                url="/backoffice/organizations-v2?status=under_review",
-                active=status_filter == OrganizationStatus.UNDER_REVIEW,
-                count=status_counts.get(OrganizationStatus.UNDER_REVIEW, 0),
+                label="Ready",
+                url="/backoffice/organizations-v2?status=ready",
+                active=status_filter == OrganizationStatus.READY,
+                count=status_counts.get(OrganizationStatus.READY, 0),
+            ),
+            Tab(
+                label="First Review",
+                url="/backoffice/organizations-v2?status=first_review",
+                active=status_filter == OrganizationStatus.FIRST_REVIEW,
+                count=status_counts.get(OrganizationStatus.FIRST_REVIEW, 0),
                 badge_variant="warning",
             ),
             Tab(
@@ -279,10 +293,30 @@ class OrganizationListView:
                 badge_variant="success",
             ),
             Tab(
+                label="Ongoing Review",
+                url="/backoffice/organizations-v2?status=ongoing_review",
+                active=status_filter == OrganizationStatus.ONGOING_REVIEW,
+                count=status_counts.get(OrganizationStatus.ONGOING_REVIEW, 0),
+            ),
+            Tab(
+                label="Under Review (Legacy)",
+                url="/backoffice/organizations-v2?status=under_review",
+                active=status_filter == OrganizationStatus.UNDER_REVIEW,
+                count=status_counts.get(OrganizationStatus.UNDER_REVIEW, 0),
+                badge_variant="warning",
+            ),
+            Tab(
                 label="Denied",
                 url="/backoffice/organizations-v2?status=denied",
                 active=status_filter == OrganizationStatus.DENIED,
                 count=status_counts.get(OrganizationStatus.DENIED, 0),
+                badge_variant="error",
+            ),
+            Tab(
+                label="Blocked",
+                url="/backoffice/organizations-v2?status=blocked",
+                active=status_filter == OrganizationStatus.BLOCKED,
+                count=status_counts.get(OrganizationStatus.BLOCKED, 0),
                 badge_variant="error",
             ),
         ]

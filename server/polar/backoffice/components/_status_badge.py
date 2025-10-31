@@ -37,9 +37,29 @@ def status_badge(
     """
     # Map status to badge variant with flat design
     status_config = {
+        OrganizationStatus.CREATED: {
+            "class": "badge-ghost border border-base-300",
+            "aria": "created status",
+        },
+        OrganizationStatus.ONBOARDING_STARTED: {
+            "class": "badge-ghost border border-base-300",
+            "aria": "onboarding started status",
+        },
+        OrganizationStatus.READY: {
+            "class": "badge-ghost border border-base-300",
+            "aria": "ready status",
+        },
+        OrganizationStatus.FIRST_REVIEW: {
+            "class": "badge-ghost border border-base-300",
+            "aria": "first review status",
+        },
         OrganizationStatus.ACTIVE: {
             "class": "badge-ghost border border-base-300",
             "aria": "active status",
+        },
+        OrganizationStatus.ONGOING_REVIEW: {
+            "class": "badge-ghost border border-base-300",
+            "aria": "ongoing review status",
         },
         OrganizationStatus.UNDER_REVIEW: {
             "class": "badge-ghost border border-base-300",
@@ -49,13 +69,9 @@ def status_badge(
             "class": "badge-ghost border border-base-300",
             "aria": "denied status",
         },
-        OrganizationStatus.CREATED: {
+        OrganizationStatus.BLOCKED: {
             "class": "badge-ghost border border-base-300",
-            "aria": "created status",
-        },
-        OrganizationStatus.ONBOARDING_STARTED: {
-            "class": "badge-ghost border border-base-300",
-            "aria": "onboarding started status",
+            "aria": "blocked status",
         },
     }
 

@@ -110,17 +110,25 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
 class OrganizationStatus(StrEnum):
     CREATED = "created"
     ONBOARDING_STARTED = "onboarding_started"
-    UNDER_REVIEW = "under_review"
-    DENIED = "denied"
+    READY = "ready"
+    UNDER_REVIEW = "under_review"  # Deprecated: use FIRST_REVIEW or ONGOING_REVIEW
+    FIRST_REVIEW = "first_review"
     ACTIVE = "active"
+    ONGOING_REVIEW = "ongoing_review"
+    DENIED = "denied"
+    BLOCKED = "blocked"
 
     def get_display_name(self) -> str:
         return {
             OrganizationStatus.CREATED: "Created",
             OrganizationStatus.ONBOARDING_STARTED: "Onboarding Started",
+            OrganizationStatus.READY: "Ready",
             OrganizationStatus.UNDER_REVIEW: "Under Review",
-            OrganizationStatus.DENIED: "Denied",
+            OrganizationStatus.FIRST_REVIEW: "First Review",
             OrganizationStatus.ACTIVE: "Active",
+            OrganizationStatus.ONGOING_REVIEW: "Ongoing Review",
+            OrganizationStatus.DENIED: "Denied",
+            OrganizationStatus.BLOCKED: "Blocked",
         }[self]
 
 
@@ -234,12 +242,18 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @hybrid_property
     def can_authenticate(self) -> bool:
-        return self.deleted_at is None and self.blocked_at is None
+        # Check both status and blocked_at during migration period
+        return self.deleted_at is None and not self.is_blocked()
 
     @can_authenticate.inplace.expression
     @classmethod
     def _can_authenticate_expression(cls) -> ColumnElement[bool]:
-        return and_(cls.deleted_at.is_(None), cls.blocked_at.is_(None))
+        # During expand phase, check both blocked_at and status
+        return and_(
+            cls.deleted_at.is_(None),
+            cls.blocked_at.is_(None),
+            cls.status != OrganizationStatus.BLOCKED,
+        )
 
     @hybrid_property
     def storefront_enabled(self) -> bool:
@@ -309,12 +323,15 @@ class Organization(RateLimitGroupMixin, RecordModel):
         )
 
     def is_blocked(self) -> bool:
-        if self.blocked_at is not None:
-            return True
-        return False
+        # Check both status and blocked_at during migration period
+        return self.status == OrganizationStatus.BLOCKED or self.blocked_at is not None
 
     def is_under_review(self) -> bool:
-        return self.status == OrganizationStatus.UNDER_REVIEW
+        return self.status in (
+            OrganizationStatus.UNDER_REVIEW,
+            OrganizationStatus.FIRST_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW,
+        )
 
     def is_active(self) -> bool:
         return self.status == OrganizationStatus.ACTIVE

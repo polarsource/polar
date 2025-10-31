@@ -33,6 +33,7 @@ class EmailTemplate(StrEnum):
     subscription_confirmation = "subscription_confirmation"
     subscription_cycled = "subscription_cycled"
     subscription_past_due = "subscription_past_due"
+    subscription_renewal_reminder = "subscription_renewal_reminder"
     subscription_revoked = "subscription_revoked"
     subscription_uncanceled = "subscription_uncanceled"
     subscription_updated = "subscription_updated"
@@ -236,6 +237,16 @@ class SubscriptionPastDueEmail(BaseModel):
     props: SubscriptionPastDueProps
 
 
+class SubscriptionRenewalReminderProps(SubscriptionPropsBase): ...
+
+
+class SubscriptionRenewalReminderEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_renewal_reminder] = (
+        EmailTemplate.subscription_renewal_reminder
+    )
+    props: SubscriptionRenewalReminderProps
+
+
 class SubscriptionRevokedProps(SubscriptionPropsBase): ...
 
 
@@ -330,6 +341,7 @@ Email = Annotated[
     | SubscriptionConfirmationEmail
     | SubscriptionCycledEmail
     | SubscriptionPastDueEmail
+    | SubscriptionRenewalReminderEmail
     | SubscriptionRevokedEmail
     | SubscriptionUncanceledEmail
     | SubscriptionUpdatedEmail

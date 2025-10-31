@@ -15,7 +15,7 @@ from polar.models import (
 )
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
+from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor, enqueue_job
 
 from .service import SubscriptionNotReadyForMigration
 from .service import subscription as subscription_service
@@ -145,3 +145,13 @@ async def migrate_stripe_subscription(subscription_id: uuid.UUID) -> None:
         except SubscriptionNotReadyForMigration:
             # Retry another time
             pass
+
+
+@actor(
+    actor_name="subscription.send_renewal_reminders",
+    cron_trigger=CronTrigger(hour=9, minute=0),
+    priority=TaskPriority.LOW,
+)
+async def subscription_send_renewal_reminders() -> None:
+    async with AsyncSessionMaker() as session:
+        await subscription_service.send_renewal_reminders(session)

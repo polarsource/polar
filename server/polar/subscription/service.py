@@ -2475,6 +2475,16 @@ class SubscriptionService:
             },
         )
 
+    async def send_renewal_reminder_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} subscription renews soon",
+            template_name="subscription_renewal_reminder",
+        )
+
     async def _send_customer_email(
         self,
         session: AsyncSession,
@@ -2484,6 +2494,7 @@ class SubscriptionService:
         template_name: Literal[
             "subscription_cancellation",
             "subscription_past_due",
+            "subscription_renewal_reminder",
             "subscription_revoked",
             "subscription_uncanceled",
             "subscription_updated",
@@ -2730,6 +2741,73 @@ class SubscriptionService:
             raise
 
         return subscription
+
+    async def send_renewal_reminders(self, session: AsyncSession) -> None:
+        """
+        Find and send renewal reminder emails for yearly subscriptions
+        that will renew in 7 days and haven't been reminded yet.
+        """
+        now = utc_now()
+        reminder_date = now + timedelta(days=7)
+        
+        # Find subscriptions that:
+        # - Are active
+        # - Have yearly recurring interval
+        # - Will renew in 7 days (within a 24-hour window)
+        # - Haven't been reminded yet
+        # - Don't have Stripe subscription ID (managed by Polar)
+        repository = SubscriptionRepository.from_session(session)
+        statement = (
+            repository.get_base_statement()
+            .where(
+                Subscription.active.is_(True),
+                Subscription.recurring_interval == SubscriptionRecurringInterval.year,
+                Subscription.current_period_end.is_not(None),
+                Subscription.current_period_end >= reminder_date,
+                Subscription.current_period_end < reminder_date + timedelta(days=1),
+                Subscription.renewal_reminder_sent_at.is_(None),
+                Subscription.stripe_subscription_id.is_(None),
+            )
+            .options(repository.get_eager_options())
+        )
+        
+        subscriptions = await repository.get_all(statement)
+        
+        for subscription in subscriptions:
+            # Check if organization has renewal reminders enabled
+            product_repository = ProductRepository.from_session(session)
+            product = await product_repository.get_by_id(
+                subscription.product_id, options=product_repository.get_eager_options()
+            )
+            if not product:
+                continue
+                
+            organization_repository = OrganizationRepository.from_session(session)
+            organization = await organization_repository.get_by_id(
+                product.organization_id
+            )
+            if not organization:
+                continue
+                
+            # Skip if organization doesn't have renewal reminders enabled
+            if not organization.customer_email_settings.get(
+                "subscription_renewal_reminder", False
+            ):
+                continue
+            
+            # Send reminder email
+            await self.send_renewal_reminder_email(session, subscription)
+            
+            # Mark as reminded
+            subscription.renewal_reminder_sent_at = now
+            await repository.update(subscription, flush=True)
+            
+            log.info(
+                "Sent renewal reminder",
+                subscription_id=subscription.id,
+                customer_id=subscription.customer_id,
+                renewal_date=subscription.current_period_end,
+            )
 
 
 subscription = SubscriptionService()

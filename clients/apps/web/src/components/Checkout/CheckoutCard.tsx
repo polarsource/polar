@@ -5,14 +5,14 @@ import {
   CheckoutPricing,
   CheckoutSeatSelector,
 } from '@polar-sh/checkout/components'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { twMerge } from 'tailwind-merge'
 export interface CheckoutCardProps {
-  checkout: CheckoutPublic
-  update?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  checkout: ProductCheckoutPublic
+  update?: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   disabled?: boolean
   themePreset: ThemingPresetProps
 }
@@ -47,7 +47,6 @@ export const CheckoutCard = ({
         <div className="flex flex-col gap-2">
           <h1 className="font-medium dark:text-white">Included</h1>
           <div className="flex flex-col gap-y-2">
-            {/* @ts-ignore */}
             <BenefitList benefits={product.benefits} toggle={true} />
           </div>
         </div>

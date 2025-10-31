@@ -7,6 +7,7 @@ import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpub
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
+import { hasProductCheckout } from '@polar-sh/checkout/guards'
 import { PolarCore } from '@polar-sh/sdk/core'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -111,7 +112,7 @@ export const CheckoutConfirmation = ({
   const router = useRouter()
   const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
   const [checkout, setCheckout] = useState(_checkout)
-  const { product, status, organization } = checkout
+  const { status, organization } = checkout
 
   const updateCheckout = useCallback(async () => {
     const { ok, value } = await checkoutsClientGet(client, {
@@ -180,8 +181,12 @@ export const CheckoutConfirmation = ({
         <p className="dark:text-polar-500 text-gray-500">
           {status === 'confirmed' &&
             'Please wait while we are listening for those webhooks.'}
-          {status === 'succeeded' &&
-            `You're now eligible for the benefits of ${product.name}.`}
+          {status === 'succeeded' && (
+            <>
+              {hasProductCheckout(checkout) &&
+                `You're now eligible for the benefits of ${checkout.product.name}.`}
+            </>
+          )}
           {status === 'failed' && 'Please try again or contact support.'}
         </p>
         {status === 'confirmed' && (
@@ -202,11 +207,13 @@ export const CheckoutConfirmation = ({
         {status === 'succeeded' && (
           <>
             <CheckoutSeatInvitations checkout={checkout} />
-            <CheckoutBenefits
-              checkout={checkout}
-              customerSessionToken={customerSessionToken}
-              maxWaitingTimeMs={maxWaitingTimeMs}
-            />
+            {hasProductCheckout(checkout) && (
+              <CheckoutBenefits
+                checkout={checkout}
+                customerSessionToken={customerSessionToken}
+                maxWaitingTimeMs={maxWaitingTimeMs}
+              />
+            )}
             <p className="dark:text-polar-500 text-center text-xs text-gray-500">
               This order was processed by our online reseller & Merchant of
               Record, Polar, who also handles order-related inquiries and

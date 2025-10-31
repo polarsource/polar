@@ -2,6 +2,7 @@
 
 import { useAssignSeatFromCheckout } from '@/hooks/queries'
 import { validateEmail } from '@/utils/validation'
+import { hasProductCheckout } from '@polar-sh/checkout/guards'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -23,14 +24,12 @@ interface EmailInput {
 const CheckoutSeatInvitations = ({
   checkout,
 }: CheckoutSeatInvitationsProps) => {
-  const { productPrice, seats, id: checkoutId } = checkout
+  const { seats, id: checkoutId } = checkout
 
   // Check if this is a seat-based product
-  const isSeatBased = productPrice.amountType === 'seat_based'
-
-  if (!isSeatBased || !seats) {
-    return null
-  }
+  const isSeatBased =
+    hasProductCheckout(checkout) &&
+    checkout.productPrice.amountType === 'seat_based'
 
   const [emailInputs, setEmailInputs] = useState<EmailInput[]>([
     { id: '1', value: '' },
@@ -42,7 +41,7 @@ const CheckoutSeatInvitations = ({
 
   const assignSeat = useAssignSeatFromCheckout(checkoutId)
 
-  const availableSeats = seats - sentCount - (selfInvited ? 1 : 0)
+  const availableSeats = (seats || 1) - sentCount - (selfInvited ? 1 : 0)
   const canAddMore = emailInputs.length < availableSeats
 
   const addEmailInput = () => {
@@ -126,6 +125,10 @@ const CheckoutSeatInvitations = ({
     (input) => input.value.trim() && !input.error && !input.sent,
   ).length
   const canSend = validEmails > 0 && !isSending
+
+  if (!isSeatBased || !seats) {
+    return null
+  }
 
   return (
     <Well className="dark:border-polar-700 w-full border border-gray-200 bg-transparent dark:bg-transparent">

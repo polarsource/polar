@@ -1,8 +1,8 @@
 'use client'
 
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 import { useMemo } from 'react'
+import { ProductCheckoutPublic } from '../guards'
 import { getMeteredPrices } from '../utils/product'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -27,7 +27,7 @@ const GaugeIcon = ({ className }: { className?: string }) => {
 }
 
 interface MeteredPricesDisplayProps {
-  checkout: CheckoutPublic
+  checkout: ProductCheckoutPublic
 }
 
 const MeteredPricesDisplay = ({ checkout }: MeteredPricesDisplayProps) => {

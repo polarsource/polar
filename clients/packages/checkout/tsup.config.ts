@@ -13,6 +13,7 @@ export const options: Options[] = [
   },
   {
     entry: [
+      'src/guards.ts',
       'src/components/index.ts',
       'src/hooks/index.ts',
       'src/providers/index.ts',

@@ -9,6 +9,10 @@ import {
   CheckoutProductSwitcher,
   CheckoutPWYWForm,
 } from '@polar-sh/checkout/components'
+import {
+  hasProductCheckout,
+  type ProductCheckoutPublic,
+} from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
@@ -67,13 +71,13 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   useEffect(() => {
     posthog.capture('storefront:subscriptions:checkout:open', {
       organization_slug: checkout.organization.slug,
-      product_id: checkout.product.id,
+      product_id: checkout.productId,
       amount: checkout.amount,
       embed,
     })
   }, [
     checkout.organization.slug,
-    checkout.product.id,
+    checkout.productId,
     checkout.amount,
     embed,
     posthog,
@@ -85,14 +89,15 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
       posthog.capture('storefront:subscriptions:payment_not_ready:view', {
         organization_slug: checkout.organization.slug,
         organization_status: paymentStatus?.organization_status,
-        product_id: checkout.product.id,
+        product_id: checkout.productId,
       })
     }
   }, [
+    paymentStatus,
     shouldBlockCheckout,
     checkout.organization.slug,
     paymentStatus?.organization_status,
-    checkout.product.id,
+    checkout.productId,
     posthog,
   ])
 
@@ -185,18 +190,26 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
         )}
       >
         <PaymentNotReadyBanner />
-        <CheckoutProductSwitcher
-          checkout={checkout}
-          update={update}
-          themePreset={themePreset}
-        />
-        {checkout.productPrice.amountType === 'custom' && (
-          <CheckoutPWYWForm
-            checkout={checkout}
-            update={update}
-            productPrice={checkout.productPrice as ProductPriceCustom}
-            themePreset={themePreset}
-          />
+        {hasProductCheckout(checkout) && (
+          <>
+            <CheckoutProductSwitcher
+              checkout={checkout}
+              update={
+                update as (
+                  data: CheckoutUpdatePublic,
+                ) => Promise<ProductCheckoutPublic>
+              }
+              themePreset={themePreset}
+            />
+            {checkout.productPrice.amountType === 'custom' && (
+              <CheckoutPWYWForm
+                checkout={checkout}
+                update={update}
+                productPrice={checkout.productPrice as ProductPriceCustom}
+                themePreset={themePreset}
+              />
+            )}
+          </>
         )}
         <CheckoutForm
           form={form}
@@ -236,28 +249,40 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
             <span>Back to {checkout.organization.name}</span>
           </Link>
         )}
-        <CheckoutProductInfo
-          organization={checkout.organization}
-          product={checkout.product}
-        />
-        <CheckoutProductSwitcher
-          checkout={checkout}
-          update={update}
-          themePreset={themePreset}
-        />
-        {checkout.productPrice.amountType === 'custom' && (
-          <CheckoutPWYWForm
-            checkout={checkout}
-            update={update}
-            productPrice={checkout.productPrice as ProductPriceCustom}
-            themePreset={themePreset}
-          />
+        {hasProductCheckout(checkout) && (
+          <>
+            <CheckoutProductInfo
+              organization={checkout.organization}
+              product={checkout.product}
+            />
+            <CheckoutProductSwitcher
+              checkout={checkout}
+              update={
+                update as (
+                  data: CheckoutUpdatePublic,
+                ) => Promise<ProductCheckoutPublic>
+              }
+              themePreset={themePreset}
+            />
+            {checkout.productPrice.amountType === 'custom' && (
+              <CheckoutPWYWForm
+                checkout={checkout}
+                update={update}
+                productPrice={checkout.productPrice as ProductPriceCustom}
+                themePreset={themePreset}
+              />
+            )}
+            <CheckoutCard
+              checkout={checkout}
+              update={
+                update as (
+                  data: CheckoutUpdatePublic,
+                ) => Promise<ProductCheckoutPublic>
+              }
+              themePreset={themePreset}
+            />
+          </>
         )}
-        <CheckoutCard
-          checkout={checkout}
-          update={update}
-          themePreset={themePreset}
-        />
       </div>
       <div className="flex flex-col gap-y-8 md:p-12">
         <PaymentNotReadyBanner />

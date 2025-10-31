@@ -320,44 +320,32 @@ class WebhookService:
                 session, organization_id
             )
 
-            # Get the organization for the email
-            organization_statement = select(Organization).where(
-                Organization.id == organization_id
-            )
-            org_result = await session.execute(organization_statement)
-            organization = org_result.scalar_one_or_none()
-
-            if organization:
+            if user_organizations:
+                # User and Organization are eagerly loaded
+                organization = user_organizations[0].organization
                 dashboard_url = f"{settings.FRONTEND_BASE_URL}/dashboard/{organization.slug}/settings/webhooks"
 
-                # Fetch all users in a single query to avoid N+1 problem
-                user_ids = [user_org.user_id for user_org in user_organizations]
-                if user_ids:
-                    users_statement = select(User).where(User.id.in_(user_ids))
-                    users_result = await session.execute(users_statement)
-                    users = users_result.unique().scalars().all()
+                for user_org in user_organizations:
+                    user = user_org.user
+                    email = EmailAdapter.validate_python(
+                        {
+                            "template": "webhook_endpoint_disabled",
+                            "props": {
+                                "email": user.email,
+                                "organization": organization,
+                                "webhook_endpoint_url": endpoint.url,
+                                "dashboard_url": dashboard_url,
+                            },
+                        }
+                    )
 
-                    for user in users:
-                        if user.email:
-                            email = EmailAdapter.validate_python(
-                                {
-                                    "template": "webhook_endpoint_disabled",
-                                    "props": {
-                                        "email": user.email,
-                                        "organization": organization,
-                                        "webhook_endpoint_url": endpoint.url,
-                                        "dashboard_url": dashboard_url,
-                                    },
-                                }
-                            )
+                    body = render_email_template(email)
 
-                            body = render_email_template(email)
-
-                            enqueue_email(
-                                to_email_addr=user.email,
-                                subject=f"Webhook endpoint disabled for {organization.name}",
-                                html_content=body,
-                            )
+                    enqueue_email(
+                        to_email_addr=user.email,
+                        subject=f"Webhook endpoint disabled for {organization.name}",
+                        html_content=body,
+                    )
 
     async def get_event_by_id(
         self, session: AsyncSession, id: UUID

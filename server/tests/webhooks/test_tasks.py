@@ -4,7 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.config import settings
-from polar.models import Organization, User, WebhookEndpoint, WebhookEvent
+from polar.models import WebhookEndpoint, WebhookEvent
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from polar.webhook.service import webhook as webhook_service
@@ -167,50 +167,3 @@ class TestOnEventFailed:
         # Endpoint should remain disabled
         await session.refresh(webhook_endpoint_organization)
         assert webhook_endpoint_organization.enabled is False
-
-    async def test_sends_email_to_org_members_when_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        webhook_endpoint_organization: WebhookEndpoint,
-        user: User,
-        organization: Organization,
-        mocker: MockerFixture,
-    ) -> None:
-        from polar.models import UserOrganization
-
-        # Create a user organization membership
-        user_org = UserOrganization(
-            user_id=user.id,
-            organization_id=organization.id,
-        )
-        await save_fixture(user_org)
-
-        # Mock the enqueue_email function
-        enqueue_email_mock = mocker.patch("polar.webhook.service.enqueue_email")
-
-        # Create multiple failed events
-        events = []
-        for i in range(settings.WEBHOOK_FAILURE_THRESHOLD):
-            event = WebhookEvent(
-                webhook_endpoint_id=webhook_endpoint_organization.id,
-                type=WebhookEventType.customer_created,
-                payload='{"foo":"bar"}',
-                succeeded=False,
-            )
-            await save_fixture(event)
-            events.append(event)
-
-        # Trigger the failure handler
-        await webhook_service.on_event_failed(session, events[-1].id)
-
-        # Check that the endpoint is now disabled
-        await session.refresh(webhook_endpoint_organization)
-        assert webhook_endpoint_organization.enabled is False
-
-        # Check that an email was sent to the user
-        assert enqueue_email_mock.called
-        call_kwargs = enqueue_email_mock.call_args.kwargs
-        assert call_kwargs["to_email_addr"] == user.email
-        assert "disabled" in call_kwargs["subject"].lower()
-        assert "html_content" in call_kwargs

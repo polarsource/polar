@@ -64,7 +64,6 @@ class UserRepository(
             self.get_base_statement(include_deleted=include_deleted)
             .join(User.oauth_accounts)
             .where(
-                OAuthAccount.deleted_at.is_(None),
                 OAuthAccount.platform == platform,
                 OAuthAccount.account_id == account_id,
             )

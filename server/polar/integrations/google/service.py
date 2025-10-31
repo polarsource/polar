@@ -1,11 +1,13 @@
 from typing import TypedDict
 
 import httpx
+import structlog
 from httpx_oauth.clients.google import GoogleOAuth2
 from httpx_oauth.oauth2 import OAuth2Token
 
 from polar.config import settings
 from polar.exceptions import PolarError
+from polar.logging import Logger
 from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
@@ -13,6 +15,8 @@ from polar.user.oauth_service import oauth_account_service
 from polar.user.repository import UserRepository
 from polar.user.schemas import UserSignupAttribution
 from polar.worker import enqueue_job
+
+log: Logger = structlog.get_logger()
 
 google_oauth_client = GoogleOAuth2(
     settings.GOOGLE_CLIENT_ID, settings.GOOGLE_CLIENT_SECRET
@@ -65,7 +69,6 @@ class GoogleService:
             OAuthPlatform.google, google_profile["id"]
         )
 
-        # Linked account, update access token
         if user is not None:
             oauth_account = user.get_oauth_account(OAuthPlatform.google)
             assert oauth_account is not None
@@ -84,19 +87,15 @@ class GoogleService:
             expires_at=token["expires_at"],
         )
 
-        # Check if user exists with the same email
         user = await user_repository.get_by_email(google_profile["email"])
         if user is not None:
-            # Automatically link if email is verified
             if google_profile["email_verified"]:
                 user.oauth_accounts.append(oauth_account)
                 session.add(user)
                 return (user, False)
             else:
-                # For security reasons, don't link if the email is not verified
                 raise CannotLinkUnverifiedEmailError(google_profile["email"])
 
-        # New user, create it
         user = User(
             email=google_profile["email"],
             email_verified=google_profile["email_verified"],
@@ -134,6 +133,12 @@ class GoogleService:
                 account_email=google_profile["email"],
             )
             user.oauth_accounts.append(oauth_account)
+            log.info(
+                "oauth_account.connect",
+                user_id=user.id,
+                platform="google",
+                account_email=google_profile["email"],
+            )
 
         oauth_account.access_token = token["access_token"]
         oauth_account.expires_at = token["expires_at"]

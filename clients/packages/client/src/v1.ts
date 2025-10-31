@@ -55,6 +55,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/users/me/oauth-accounts/{platform}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Disconnect Oauth Account
+     * @description Disconnect an OAuth account (GitHub or Google) from the authenticated user.
+     *
+     *     This allows users to unlink their OAuth provider while keeping their Polar account.
+     *     They can still authenticate using other methods (email magic link or other OAuth providers).
+     *
+     *     Note: You cannot disconnect your last authentication method if your email is not verified.
+     */
+    delete: operations['users:disconnect_oauth_account']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/integrations/github/authorize': {
     parameters: {
       query?: never
@@ -22897,6 +22922,49 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['UserIdentityVerification']
+        }
+      }
+    }
+  }
+  'users:disconnect_oauth_account': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        platform: components['schemas']['OAuthPlatform']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Cannot disconnect last authentication method */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description OAuth account not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }

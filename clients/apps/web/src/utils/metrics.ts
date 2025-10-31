@@ -1,5 +1,4 @@
 import { schemas } from '@polar-sh/client'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import {
   differenceInDays,
   differenceInMonths,
@@ -15,41 +14,34 @@ import {
   subMonths,
   subYears,
 } from 'date-fns'
+import {
+  formatAccountingFriendlyCurrency,
+  formatHumanFriendlyCurrency,
+  formatHumanFriendlyScalar,
+  formatPercentage,
+  formatScalar,
+  formatSubCentCurrency,
+} from './formatters'
 
 export const toISODate = (date: Date) => format(date, 'yyyy-MM-dd')
 
 export const fromISODate = (date: string) =>
   parse(date, 'yyyy-MM-dd', new Date('1970-01-01T12:00:00Z'))
 
-const scalarTickFormatter = Intl.NumberFormat('en-US', {
-  notation: 'compact',
-  maximumFractionDigits: 2,
-})
-
-const percentageTickFormatter = Intl.NumberFormat('en-US', {
-  style: 'percent',
-  maximumFractionDigits: 2,
-})
-
 export const getTickFormatter = (
   metric: schemas['Metric'],
 ): ((value: number) => string) => {
   switch (metric.type) {
     case 'scalar':
-      return scalarTickFormatter.format
+      return formatHumanFriendlyScalar
     case 'currency':
-      return (value: number) =>
-        formatCurrencyAndAmount(value, 'usd', 0, 'compact')
+      return formatHumanFriendlyCurrency
     case 'percentage':
-      return percentageTickFormatter.format
+      return formatPercentage
+    case 'currency_sub_cent':
+      return formatSubCentCurrency
   }
 }
-
-const scalarFormatter = Intl.NumberFormat('en-US', {})
-const percentageFormatter = Intl.NumberFormat('en-US', {
-  style: 'percent',
-  maximumFractionDigits: 2,
-})
 
 export const getFormattedMetricValue = (
   metric: schemas['Metric'],
@@ -57,11 +49,13 @@ export const getFormattedMetricValue = (
 ): string => {
   switch (metric.type) {
     case 'scalar':
-      return scalarFormatter.format(value)
+      return formatScalar(value)
     case 'currency':
-      return formatCurrencyAndAmount(value, 'usd', 0, 'compact')
+      return formatAccountingFriendlyCurrency(value)
     case 'percentage':
-      return percentageFormatter.format(value)
+      return formatPercentage(value)
+    case 'currency_sub_cent':
+      return formatSubCentCurrency(value)
   }
 }
 

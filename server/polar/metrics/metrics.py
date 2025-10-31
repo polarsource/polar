@@ -31,6 +31,7 @@ from .queries import MetricQuery
 class MetricType(StrEnum):
     scalar = "scalar"
     currency = "currency"
+    currency_sub_cent = "currency_sub_cent"
     percentage = "percentage"
 
 
@@ -732,7 +733,7 @@ class CanceledSubscriptionsOtherMetric(SQLMetric):
 class CostsMetric(SQLMetric):
     slug = "costs"
     display_name = "Costs"
-    type = MetricType.currency
+    type = MetricType.currency_sub_cent
     query = MetricQuery.costs
 
     @classmethod
@@ -749,7 +750,7 @@ class CostsMetric(SQLMetric):
 class CumulativeCostsMetric(SQLMetric):
     slug = "cumulative_costs"
     display_name = "Cumulative Costs"
-    type = MetricType.currency
+    type = MetricType.currency_sub_cent
     query = MetricQuery.cumulative_costs
 
     @classmethod
@@ -816,7 +817,7 @@ class AverageRevenuePerUserMetric(SQLMetric):
 class CostPerUserMetric(SQLMetric):
     slug = "cost_per_user"
     display_name = "Cost Per User"
-    type = MetricType.currency
+    type = MetricType.currency_sub_cent
     query = MetricQuery.events
 
     @classmethod

@@ -15,9 +15,11 @@ import {
   subYears,
 } from 'date-fns'
 import {
+  formatAccountingFriendlyCurrency,
   formatHumanFriendlyCurrency,
-  formatInteger,
+  formatHumanFriendlyScalar,
   formatPercentage,
+  formatScalar,
   formatSubCentCurrency,
 } from './formatters'
 
@@ -26,17 +28,12 @@ export const toISODate = (date: Date) => format(date, 'yyyy-MM-dd')
 export const fromISODate = (date: string) =>
   parse(date, 'yyyy-MM-dd', new Date('1970-01-01T12:00:00Z'))
 
-const scalarTickFormatter = Intl.NumberFormat('en-US', {
-  notation: 'compact',
-  maximumFractionDigits: 2,
-})
-
 export const getTickFormatter = (
   metric: schemas['Metric'],
 ): ((value: number) => string) => {
   switch (metric.type) {
     case 'scalar':
-      return scalarTickFormatter.format
+      return formatHumanFriendlyScalar
     case 'currency':
       return formatHumanFriendlyCurrency
     case 'percentage':
@@ -52,9 +49,9 @@ export const getFormattedMetricValue = (
 ): string => {
   switch (metric.type) {
     case 'scalar':
-      return formatInteger(value)
+      return formatScalar(value)
     case 'currency':
-      return formatHumanFriendlyCurrency(value)
+      return formatAccountingFriendlyCurrency(value)
     case 'percentage':
       return formatPercentage(value)
     case 'currency_sub_cent':

@@ -1,3 +1,4 @@
+import { formatSubCentCurrency } from '@/utils/formatters'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp'
 import { useMemo } from 'react'
@@ -73,22 +74,13 @@ export const EventCostBadge = (props: EventCostBadgeProps) => {
     )
   }
 
-  const { cost, currency } = props as EventCostWithAmountBadgeProps
-
-  const currencyNumberFormat = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 17,
-    notation: 'standard',
-  })
-
-  const costNumber = Number(cost) / 100
+  const { cost } = props as EventCostWithAmountBadgeProps
+  const parsedNumber = Number(cost)
 
   return (
     <div className="flex flex-row items-center gap-x-4 font-mono">
-      {currencyNumberFormat.format(-costNumber)}
-      <EventCostIndicator cost={costNumber} />
+      {formatSubCentCurrency(parsedNumber)}
+      <EventCostIndicator cost={parsedNumber} />
     </div>
   )
 }

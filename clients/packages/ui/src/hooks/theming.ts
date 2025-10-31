@@ -263,3 +263,13 @@ export const useThemePreset = (
       }
   }
 }
+
+// Deprecation helper, `useThemePreset` should not be used as it triggers hooks linter rules
+// but it's not a hook (`use` prefix is reserved)
+export const getThemePreset = (
+  preset: ThemePreset | (string & {}),
+  theme?: 'light' | 'dark',
+) => {
+  const validatedPreset = preset === 'midday' ? 'midday' : 'polar'
+  return useThemePreset(validatedPreset, theme)
+}

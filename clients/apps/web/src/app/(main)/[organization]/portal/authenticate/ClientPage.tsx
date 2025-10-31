@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
@@ -134,6 +135,14 @@ const ClientPage = ({
             >
               Access my purchases
             </Button>
+
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Don&apos;t have a code?{' '}
+              <Link href="request" className="underline hover:no-underline">
+                Request a new one
+              </Link>
+              .
+            </p>
           </form>
         </Form>
       </div>

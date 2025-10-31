@@ -108,9 +108,7 @@ export const Navigation = ({
         ))}
       </nav>
       <Select
-        defaultValue={
-          filteredLinks.find(({ href }) => href === currentPath)?.label
-        }
+        value={filteredLinks.find(({ href }) => href === currentPath)?.label}
         onValueChange={(value) => {
           router.push(
             buildPath(

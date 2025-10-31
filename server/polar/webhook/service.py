@@ -332,7 +332,7 @@ class WebhookService:
                 for user_org in user_organizations:
                     user_statement = select(User).where(User.id == user_org.user_id)
                     user_result = await session.execute(user_statement)
-                    user = user_result.scalar_one_or_none()
+                    user = user_result.unique().scalar_one_or_none()
 
                     if user and user.email:
                         from polar.email.schemas import EmailAdapter

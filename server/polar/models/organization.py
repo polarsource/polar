@@ -82,7 +82,7 @@ class OrganizationOrderSettings(TypedDict):
 
 
 _default_order_settings: OrganizationOrderSettings = {
-    "invoice_numbering": InvoiceNumbering.organization,
+    "invoice_numbering": InvoiceNumbering.customer,
 }
 
 

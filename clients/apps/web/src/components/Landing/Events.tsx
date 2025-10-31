@@ -46,7 +46,11 @@ export const Events = () => {
     const events = mockedEvents.slice(-eventOffset)
 
     const profit = events.reduce((acc, event) => {
-      return acc + event.cost.amount
+      return (
+        acc +
+        (event.cost?.amount ?? 0) +
+        (event.revenue?.amount ? -event.revenue.amount : 0)
+      )
     }, 0)
 
     return -profit
@@ -54,12 +58,12 @@ export const Events = () => {
 
   return (
     <Section className="flex flex-col gap-y-32 py-0 md:py-0">
-      <div className="dark:bg-polar-900 flex w-full flex-col gap-y-6 overflow-hidden rounded-4xl bg-gray-200 p-2 md:flex-row">
+      <div className="dark:bg-polar-900 flex w-full flex-col gap-y-6 overflow-hidden rounded-4xl bg-gray-200 p-2 xl:flex-row">
         <div className="flex w-full flex-1 flex-col gap-y-8 p-6 md:p-12">
           <span className="w-fit rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white">
             Now in Beta
           </span>
-          <h3 className="text-5xl leading-tight! text-balance">
+          <h3 className="text-3xl leading-tight! text-balance md:text-4xl">
             A realtime view of your revenue & costs
           </h3>
           <p className="dark:text-polar-500 text-lg text-gray-500">
@@ -121,23 +125,33 @@ export const Events = () => {
               {mockedEvents.map((event, idx) => (
                 <motion.div
                   key={idx}
-                  className="dark:bg-polar-900 flex flex-row items-center gap-x-8 rounded-md border border-gray-100 bg-white p-2 pl-4 font-mono text-xs dark:border-white/5"
+                  className="dark:bg-polar-900 flex flex-row items-center justify-between gap-x-8 rounded-md border border-gray-100 bg-white p-2 pl-4 font-mono text-xs md:justify-start dark:border-white/5"
                 >
-                  <h3 className="w-36 truncate">{event.name}</h3>
-                  <p className="dark:text-polar-500 hidden w-28 text-xs text-gray-500 md:flex">
+                  <h3 className="w-full truncate xl:w-36">{event.name}</h3>
+                  <p className="dark:text-polar-500 hidden w-28 text-xs text-gray-500 xl:flex">
                     {event.timestamp.toLocaleDateString('en-US', {
                       day: 'numeric',
                       month: 'short',
                       year: 'numeric',
                     })}
                   </p>
-                  <div className="flex w-32 flex-row items-center justify-end gap-x-4">
-                    <EventCostBadge
-                      cost={event.cost.amount}
-                      currency={event.cost.currency}
-                      nonCostEvent={event.cost.amount === 0}
-                    />
+                  <div className="flex w-fit flex-row items-center justify-end gap-x-4 md:w-32">
+                    {'cost' in event && (
+                      <EventCostBadge
+                        cost={event.cost.amount}
+                        currency={event.cost.currency}
+                        nonCostEvent={event.cost.amount === 0}
+                      />
+                    )}
+                    {'revenue' in event && event.revenue && (
+                      <EventCostBadge
+                        cost={-event.revenue.amount}
+                        currency={event.revenue.currency}
+                        nonCostEvent={event.revenue.amount === 0}
+                      />
+                    )}
                     <AvatarWrapper
+                      className="hidden md:block"
                       name={event.name}
                       avatar_url="/assets/landing/testamonials/emil.jpg"
                     />
@@ -175,8 +189,8 @@ const mockedEvents = [
     id: 3,
     name: 'Order Paid',
     timestamp: new Date('2025-10-30T00:00:12Z'),
-    cost: {
-      amount: -2500,
+    revenue: {
+      amount: 2500,
       currency: 'USD',
     },
   },
@@ -220,8 +234,8 @@ const mockedEvents = [
     id: 8,
     name: 'Subscription Upgrade',
     timestamp: new Date('2025-10-30T00:00:07Z'),
-    cost: {
-      amount: -1000,
+    revenue: {
+      amount: 1000,
       currency: 'USD',
     },
   },

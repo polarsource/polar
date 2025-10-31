@@ -22,7 +22,6 @@ from polar.order.tasks import (
     backfill_order_events,
     process_dunning,
     process_dunning_order,
-    remove_backfilled_events,
     trigger_payment,
 )
 from polar.subscription.repository import SubscriptionRepository
@@ -750,57 +749,3 @@ class TestBackfillOrderEvents:
         events = await event_repository.get_all_by_organization(organization.id)
 
         assert len(events) == 0
-
-
-@pytest.mark.asyncio
-@pytest.mark.skip
-class TestRemoveBackfilledEvents:
-    async def test_removes_backfilled_events(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product: Product,
-        organization: Organization,
-    ) -> None:
-        customer = await create_customer(save_fixture, organization=organization)
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=OrderStatus.paid,
-        )
-
-        backfilled_event = Event(
-            name=SystemEvent.order_paid,
-            source=EventSource.system,
-            customer_id=customer.id,
-            organization_id=organization.id,
-            user_metadata={
-                "order_id": str(order.id),
-                "amount": order.total_amount,
-                "currency": order.currency,
-                "backfilled": True,
-            },
-        )
-        await save_fixture(backfilled_event)
-
-        non_backfilled_event = Event(
-            name=SystemEvent.order_paid,
-            source=EventSource.system,
-            customer_id=customer.id,
-            organization_id=organization.id,
-            user_metadata={
-                "order_id": str(order.id),
-                "amount": order.total_amount,
-                "currency": order.currency,
-            },
-        )
-        await save_fixture(non_backfilled_event)
-
-        await remove_backfilled_events(batch_size=10, rate_limit_delay=0.0)
-
-        event_repository = EventRepository.from_session(session)
-        events = await event_repository.get_all_by_organization(organization.id)
-
-        assert len(events) == 1
-        assert events[0].id == non_backfilled_event.id

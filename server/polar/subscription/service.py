@@ -2759,6 +2759,8 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         statement = (
             repository.get_base_statement()
+            .join(Product, Subscription.product_id == Product.id)
+            .join(Organization, Product.organization_id == Organization.id)
             .where(
                 Subscription.active.is_(True),
                 Subscription.recurring_interval == SubscriptionRecurringInterval.year,
@@ -2768,26 +2770,20 @@ class SubscriptionService:
                 Subscription.renewal_reminder_sent_at.is_(None),
                 Subscription.stripe_subscription_id.is_(None),
             )
-            .options(*repository.get_eager_options())
+            .options(
+                contains_eager(Subscription.product).contains_eager(
+                    Product.organization
+                ),
+                selectinload(Subscription.customer),
+                selectinload(Subscription.subscription_product_prices),
+            )
         )
 
         subscriptions = await repository.get_all(statement)
 
         for subscription in subscriptions:
-            # Check if organization has renewal reminders enabled
-            product_repository = ProductRepository.from_session(session)
-            product = await product_repository.get_by_id(
-                subscription.product_id, options=product_repository.get_eager_options()
-            )
-            if not product:
-                continue
-
-            organization_repository = OrganizationRepository.from_session(session)
-            organization = await organization_repository.get_by_id(
-                product.organization_id
-            )
-            if not organization:
-                continue
+            product = subscription.product
+            organization = product.organization
 
             # Skip if organization doesn't have renewal reminders enabled
             if not organization.customer_email_settings.get(

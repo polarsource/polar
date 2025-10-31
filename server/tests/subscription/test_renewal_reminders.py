@@ -1,13 +1,12 @@
-import uuid
 from datetime import timedelta
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from freezegun import freeze_time
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
-from polar.models import Customer, Organization, Subscription
+from polar.models import Customer, Organization
 from polar.postgres import AsyncSession
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
@@ -35,7 +34,7 @@ class TestSendRenewalReminders:
         # Create a yearly subscription that renews in exactly 7 days
         now = utc_now()
         renewal_date = now + timedelta(days=7, hours=3)  # 7 days and 3 hours ahead
-        
+
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -48,7 +47,9 @@ class TestSendRenewalReminders:
         )
         subscription.current_period_end = renewal_date
         subscription.renewal_reminder_sent_at = None
-        subscription.stripe_subscription_id = None  # Clear to indicate Polar-managed subscription
+        subscription.stripe_subscription_id = (
+            None  # Clear to indicate Polar-managed subscription
+        )
         await save_fixture(subscription)
 
         # Mock the email sending method
@@ -83,7 +84,7 @@ class TestSendRenewalReminders:
         # Create a yearly subscription that renews in 7 days
         now = utc_now()
         renewal_date = now + timedelta(days=7)
-        
+
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -125,7 +126,7 @@ class TestSendRenewalReminders:
         # Create a monthly subscription that renews in 7 days
         now = utc_now()
         renewal_date = now + timedelta(days=7)
-        
+
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -167,7 +168,7 @@ class TestSendRenewalReminders:
         # Create a yearly subscription that renews in 7 days with reminder already sent
         now = utc_now()
         renewal_date = now + timedelta(days=7)
-        
+
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -209,7 +210,7 @@ class TestSendRenewalReminders:
         # Create a yearly subscription with Stripe ID
         now = utc_now()
         renewal_date = now + timedelta(days=7)
-        
+
         product = await create_product(
             save_fixture,
             organization=organization,

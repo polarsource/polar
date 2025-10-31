@@ -120,6 +120,7 @@ class GithubUserService:
         signup_attribution: UserSignupAttribution | None = None,
     ) -> User:
         email, email_verified = github_email
+
         new_user = User(
             email=email,
             email_verified=email_verified,
@@ -138,7 +139,6 @@ class GithubUserService:
                 )
             ],
         )
-
         session.add(new_user)
         await session.flush()
 
@@ -157,8 +157,6 @@ class GithubUserService:
         tokens: OAuthAccessToken,
         client: GitHub[TokenAuthStrategy],
     ) -> User:
-        # Fetch primary email from github
-        # Required to succeed for new users signups. For existing users we'll let it fail.
         github_email: GithubEmail | None = None
         try:
             github_email = await self.fetch_authenticated_user_primary_email(
@@ -187,7 +185,6 @@ class GithubUserService:
                 user=user,
             )
 
-        # update email if fetch was successful
         if github_email is not None:
             email, _ = github_email
             oauth_account.account_email = email
@@ -231,7 +228,6 @@ class GithubUserService:
         authenticated: GithubUser,
         signup_attribution: UserSignupAttribution | None = None,
     ) -> tuple[User, bool]:
-        # Check if we have an existing user with this GitHub account
         existing_user_by_id = await self.get_user_by_github_id(
             session, id=authenticated.id
         )
@@ -245,15 +241,12 @@ class GithubUserService:
             )
             return (user, False)
 
-        # Fetch user email
         github_email = await self.fetch_authenticated_user_primary_email(client=client)
 
-        # Check if existing user with this email
         email, email_verified = github_email
         repository = UserRepository.from_session(session)
         existing_user_by_email = await repository.get_by_email(email)
         if existing_user_by_email:
-            # Automatically link if email is verified
             if email_verified:
                 user = await self.get_updated(
                     session,
@@ -265,10 +258,8 @@ class GithubUserService:
                 return (user, False)
 
             else:
-                # For security reasons, don't link if the email is not verified
                 raise CannotLinkUnverifiedEmailError(email)
 
-        # New user
         user = await self.create(
             session,
             github_user=authenticated,
@@ -293,7 +284,6 @@ class GithubUserService:
         if existing_oauth is not None and existing_oauth.user_id != user.id:
             raise AccountLinkedToAnotherUserError()
 
-        # Create or update OAuthAccount
         oauth_account = await oauth_account_service.get_by_platform_and_account_id(
             session, OAuthPlatform.github, account_id
         )
@@ -305,8 +295,15 @@ class GithubUserService:
                 platform=OAuthPlatform.github,
                 account_id=account_id,
                 account_email=email,
+                user_id=user.id,
             )
-            user.oauth_accounts.append(oauth_account)
+            session.add(oauth_account)
+            log.info(
+                "oauth_account.connect",
+                user_id=user.id,
+                platform="github",
+                account_email=email,
+            )
 
         oauth_account.access_token = tokens.access_token
         oauth_account.expires_at = tokens.expires_at
@@ -316,7 +313,6 @@ class GithubUserService:
         oauth_account.account_username = github_user.login
         session.add(oauth_account)
 
-        # Update User profile
         user.avatar_url = github_user.avatar_url
         session.add(user)
 

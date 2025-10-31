@@ -14,6 +14,7 @@ from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer.schemas.state import CustomerState
 from polar.email.react import render_email_template
+from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
@@ -329,33 +330,34 @@ class WebhookService:
             if organization:
                 dashboard_url = f"{settings.FRONTEND_BASE_URL}/dashboard/{organization.slug}/settings/webhooks"
 
-                for user_org in user_organizations:
-                    user_statement = select(User).where(User.id == user_org.user_id)
-                    user_result = await session.execute(user_statement)
-                    user = user_result.unique().scalar_one_or_none()
+                # Fetch all users in a single query to avoid N+1 problem
+                user_ids = [user_org.user_id for user_org in user_organizations]
+                if user_ids:
+                    users_statement = select(User).where(User.id.in_(user_ids))
+                    users_result = await session.execute(users_statement)
+                    users = users_result.unique().scalars().all()
 
-                    if user and user.email:
-                        from polar.email.schemas import EmailAdapter
+                    for user in users:
+                        if user.email:
+                            email = EmailAdapter.validate_python(
+                                {
+                                    "template": "webhook_endpoint_disabled",
+                                    "props": {
+                                        "email": user.email,
+                                        "organization": organization,
+                                        "webhook_endpoint_url": endpoint.url,
+                                        "dashboard_url": dashboard_url,
+                                    },
+                                }
+                            )
 
-                        email = EmailAdapter.validate_python(
-                            {
-                                "template": "webhook_endpoint_disabled",
-                                "props": {
-                                    "email": user.email,
-                                    "organization": organization,
-                                    "webhook_endpoint_url": endpoint.url,
-                                    "dashboard_url": dashboard_url,
-                                },
-                            }
-                        )
+                            body = render_email_template(email)
 
-                        body = render_email_template(email)
-
-                        enqueue_email(
-                            to_email_addr=user.email,
-                            subject=f"Webhook endpoint disabled for {organization.name}",
-                            html_content=body,
-                        )
+                            enqueue_email(
+                                to_email_addr=user.email,
+                                subject=f"Webhook endpoint disabled for {organization.name}",
+                                html_content=body,
+                            )
 
     async def get_event_by_id(
         self, session: AsyncSession, id: UUID

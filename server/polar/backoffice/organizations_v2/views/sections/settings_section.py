@@ -1,0 +1,142 @@
+"""Settings section with organization configuration."""
+
+import contextlib
+from collections.abc import Generator
+
+from fastapi import Request
+from tagflow import tag, text
+
+from polar.models import Organization
+
+from ....components import button, card
+
+
+class SettingsSection:
+    """Render the settings section with configuration options."""
+
+    def __init__(self, organization: Organization):
+        self.org = organization
+
+    @contextlib.contextmanager
+    def render(self, request: Request) -> Generator[None]:
+        """Render the settings section."""
+
+        with tag.div(classes="space-y-6"):
+            # Basic settings card
+            with card(bordered=True):
+                with tag.div(classes="flex items-center justify-between mb-4"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Basic Settings")
+                    with button(
+                        variant="secondary",
+                        size="sm",
+                        ghost=True,
+                        hx_get=f"/backoffice/organizations-v2/{self.org.id}/edit",
+                        hx_target="#modal",
+                    ):
+                        text("Edit")
+
+                with tag.div(classes="space-y-4"):
+                    with tag.div(classes="grid grid-cols-2 gap-4"):
+                        with tag.div():
+                            with tag.div(classes="text-sm text-base-content/60 mb-1"):
+                                text("Name")
+                            with tag.div(classes="font-semibold"):
+                                text(self.org.name)
+
+                        with tag.div():
+                            with tag.div(classes="text-sm text-base-content/60 mb-1"):
+                                text("Slug")
+                            with tag.div(classes="font-mono text-sm"):
+                                text(self.org.slug)
+
+                    with tag.div():
+                        with tag.div(classes="text-sm text-base-content/60 mb-1"):
+                            text("Email")
+                        with tag.div(classes="text-sm"):
+                            text(self.org.email or "Not set")
+
+                    with tag.div():
+                        with tag.div(classes="text-sm text-base-content/60 mb-1"):
+                            text("Customer Invoice Prefix")
+                        with tag.div(classes="font-mono text-sm"):
+                            text(self.org.customer_invoice_prefix)
+
+            # Organization details card
+            with card(bordered=True):
+                with tag.div(classes="flex items-center justify-between mb-4"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Organization Details")
+                    with button(
+                        variant="secondary",
+                        size="sm",
+                        ghost=True,
+                        hx_get=f"/backoffice/organizations-v2/{self.org.id}/edit-details",
+                        hx_target="#modal",
+                    ):
+                        text("Edit")
+
+                with tag.div(classes="space-y-4"):
+                    if hasattr(self.org, "details") and self.org.details:
+                        details = self.org.details
+
+                        if details.get("about"):
+                            with tag.div():
+                                with tag.div(classes="text-sm font-semibold mb-2"):
+                                    text("About")
+                                with tag.div(
+                                    classes="text-sm text-base-content/80 whitespace-pre-wrap"
+                                ):
+                                    text(details["about"])
+
+                        if details.get("product_description"):
+                            with tag.div():
+                                with tag.div(classes="text-sm font-semibold mb-2"):
+                                    text("Product Description")
+                                with tag.div(
+                                    classes="text-sm text-base-content/80 whitespace-pre-wrap"
+                                ):
+                                    text(details["product_description"])
+
+                        if details.get("intended_use"):
+                            with tag.div():
+                                with tag.div(classes="text-sm font-semibold mb-2"):
+                                    text("Intended Use")
+                                with tag.div(
+                                    classes="text-sm text-base-content/80 whitespace-pre-wrap"
+                                ):
+                                    text(details["intended_use"])
+                    else:
+                        with tag.div(
+                            classes="text-sm text-base-content/60 text-center py-4"
+                        ):
+                            text("No details provided")
+
+            # Danger zone card
+            with card(bordered=True, classes="border-error/20 bg-error/5"):
+                with tag.h2(classes="text-lg font-bold mb-4 text-error"):
+                    text("Danger Zone")
+
+                with tag.div(classes="space-y-3"):
+                    with tag.div(classes="flex items-center justify-between"):
+                        with tag.div():
+                            with tag.div(classes="font-semibold text-sm"):
+                                text("Delete Organization")
+                            with tag.div(classes="text-xs text-base-content/60"):
+                                text(
+                                    "Permanently delete this organization and all associated data"
+                                )
+
+                        with button(
+                            variant="error",
+                            size="sm",
+                            outline=True,
+                            hx_get=f"/backoffice/organizations-v2/{self.org.id}/delete-dialog",
+                            hx_target="#modal",
+                        ):
+                            text("Delete")
+
+            yield
+
+
+__all__ = ["SettingsSection"]

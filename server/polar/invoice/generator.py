@@ -146,6 +146,9 @@ class Invoice(BaseModel):
         assert order.billing_address is not None
         assert order.invoice_number is not None
 
+        # Determine if this is a seat-based order
+        is_seat_based = order.seats is not None and order.seats > 0
+
         return cls(
             number=order.invoice_number,
             date=order.created_at,
@@ -165,8 +168,10 @@ class Invoice(BaseModel):
             items=[
                 InvoiceItem(
                     description=item.label,
-                    quantity=1,
-                    unit_amount=item.amount,
+                    quantity=order.seats if is_seat_based else 1,
+                    unit_amount=(
+                        item.amount // order.seats if is_seat_based else item.amount
+                    ),
                     amount=item.amount,
                 )
                 for item in order.items

@@ -10,6 +10,7 @@
     "format:check": "prettier -c ./src",
     "lint:only": "eslint .",
     "lint": "pnpm format:check && pnpm lint:only",
+    "lint:changed": "eslint $(git diff --name-only --relative --diff-filter=ACMR HEAD | grep -E '\\.(js|jsx|ts|tsx)$')",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "analyze": "ANALYZE=true next build"

@@ -135,7 +135,11 @@ class OrganizationListView:
             with tag.td(classes="py-4"):
                 with tag.div(classes="flex flex-col gap-1"):
                     with tag.a(
-                        href=str(request.url_for("organizations-v2:detail", organization_id=org.id)),
+                        href=str(
+                            request.url_for(
+                                "organizations-v2:detail", organization_id=org.id
+                            )
+                        ),
                         classes="font-semibold hover:underline flex items-center gap-2",
                     ):
                         text(org.name)
@@ -210,7 +214,12 @@ class OrganizationListView:
                             variant="secondary",
                             size="sm",
                             outline=True,
-                            hx_post=str(request.url_for("organizations-v2:approve", organization_id=org.id)) + "?threshold=25000",
+                            hx_post=str(
+                                request.url_for(
+                                    "organizations-v2:approve", organization_id=org.id
+                                )
+                            )
+                            + "?threshold=25000",
                             hx_confirm="Approve with $250 threshold?",
                         ):
                             text("Approve")
@@ -218,13 +227,22 @@ class OrganizationListView:
                             variant="secondary",
                             size="sm",
                             outline=True,
-                            hx_get=str(request.url_for("organizations-v2:deny_dialog", organization_id=org.id)),
+                            hx_get=str(
+                                request.url_for(
+                                    "organizations-v2:deny_dialog",
+                                    organization_id=org.id,
+                                )
+                            ),
                             hx_target="#modal",
                         ):
                             text("Deny")
                 else:
                     with tag.a(
-                        href=str(request.url_for("organizations-v2:detail", organization_id=org.id)),
+                        href=str(
+                            request.url_for(
+                                "organizations-v2:detail", organization_id=org.id
+                            )
+                        ),
                         classes="btn btn-ghost btn-sm",
                     ):
                         text("View →")
@@ -267,7 +285,8 @@ class OrganizationListView:
             ),
             Tab(
                 label="Under Review",
-                url=str(request.url_for("organizations-v2:list")) + "?status=under_review",
+                url=str(request.url_for("organizations-v2:list"))
+                + "?status=under_review",
                 active=status_filter == OrganizationStatus.UNDER_REVIEW,
                 count=status_counts.get(OrganizationStatus.UNDER_REVIEW, 0),
                 badge_variant="warning",
@@ -484,6 +503,7 @@ class OrganizationListView:
                             with tag.thead():
                                 with tag.tr():
                                     with self.sortable_header(
+                                        request,
                                         "Organization",
                                         "name",
                                         current_sort,
@@ -495,6 +515,7 @@ class OrganizationListView:
                                         text("Email")
 
                                     with self.sortable_header(
+                                        request,
                                         "Country",
                                         "country",
                                         current_sort,
@@ -503,6 +524,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Created",
                                         "created",
                                         current_sort,
@@ -511,6 +533,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "In Status",
                                         "status_duration",
                                         current_sort,
@@ -520,6 +543,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Risk",
                                         "risk",
                                         current_sort,
@@ -529,6 +553,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Next Review",
                                         "next_review",
                                         current_sort,
@@ -632,7 +657,8 @@ class OrganizationListView:
                     with tag.div(classes="flex justify-center mt-6"):
                         with button(
                             variant="secondary",
-                            hx_get=str(request.url_for("organizations-v2:list")) + f"?page={page + 1}",
+                            hx_get=str(request.url_for("organizations-v2:list"))
+                            + f"?page={page + 1}",
                             hx_target="#org-list",
                             hx_swap="beforeend",
                         ):
@@ -685,6 +711,7 @@ class OrganizationListView:
                             with tag.thead():
                                 with tag.tr():
                                     with self.sortable_header(
+                                        request,
                                         "Organization",
                                         "name",
                                         current_sort,
@@ -696,6 +723,7 @@ class OrganizationListView:
                                         text("Email")
 
                                     with self.sortable_header(
+                                        request,
                                         "Country",
                                         "country",
                                         current_sort,
@@ -704,6 +732,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Created",
                                         "created",
                                         current_sort,
@@ -712,6 +741,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "In Status",
                                         "status_duration",
                                         current_sort,
@@ -721,6 +751,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Risk",
                                         "risk",
                                         current_sort,
@@ -730,6 +761,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Next Review",
                                         "next_review",
                                         current_sort,
@@ -833,7 +865,8 @@ class OrganizationListView:
                     with tag.div(classes="flex justify-center mt-6"):
                         with button(
                             variant="secondary",
-                            hx_get=str(request.url_for("organizations-v2:list")) + f"?page={page + 1}",
+                            hx_get=str(request.url_for("organizations-v2:list"))
+                            + f"?page={page + 1}",
                             hx_target="#org-list",
                             hx_swap="beforeend",
                         ):

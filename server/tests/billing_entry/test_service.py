@@ -139,6 +139,7 @@ async def create_metered_event_billing_entry(
             amount=100,
             tax_amount=0,
             product_price=price,
+            quantity=1,
         )
         order.items.append(order_item)
         await save_fixture(order)
@@ -184,6 +185,7 @@ async def create_credit_billing_entry(
             amount=100,
             tax_amount=0,
             product_price=price,
+            quantity=1,
         )
         order.items.append(order_item)
         await save_fixture(order)
@@ -238,6 +240,7 @@ async def create_static_price_billing_entry(
             amount=amount,
             tax_amount=0,
             product_price=price,
+            quantity=1,
         )
         order.items.append(order_item)
         await save_fixture(order)

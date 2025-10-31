@@ -165,8 +165,10 @@ class Invoice(BaseModel):
             items=[
                 InvoiceItem(
                     description=item.label,
-                    quantity=1,
-                    unit_amount=item.amount,
+                    quantity=item.quantity,
+                    unit_amount=item.amount // item.quantity
+                    if item.quantity > 0
+                    else item.amount,
                     amount=item.amount,
                 )
                 for item in order.items

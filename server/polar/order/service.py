@@ -737,6 +737,7 @@ class OrderService:
                 subscription=subscription,
                 checkout=None,
                 items=items,
+                seats=subscription.seats,
                 user_metadata=subscription.user_metadata,
                 custom_field_data=subscription.custom_field_data,
             ),
@@ -1337,6 +1338,7 @@ class OrderService:
                     amount=line.amount,
                     tax_amount=tax_amount,
                     proration=line.proration,
+                    quantity=getattr(line, "quantity", None) or 1,
                     product_price=product_price,
                 )
             )

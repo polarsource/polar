@@ -89,6 +89,7 @@ from tests.fixtures.random_objects import (
     create_payment,
     create_payment_method,
     create_product,
+    create_product_price_seat_unit,
     create_subscription,
     create_trialing_subscription,
     create_wallet,
@@ -1665,6 +1666,191 @@ class TestCreateSubscriptionOrder:
         assert order.total_amount == -50_00
         assert order.due_amount == 0
         assert order.status == OrderStatus.paid
+
+    async def test_cycle_seat_based_price(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Create a product with seat-based pricing
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        price = await create_product_price_seat_unit(
+            save_fixture, product=product, price_per_seat=1000  # $10 per seat
+        )
+        product.prices = [price]
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Create subscription with 5 seats
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, seats=5
+        )
+
+        # Create billing entry for the cycle (total amount for 5 seats)
+        billing_entry = await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=5000,  # 5 seats × $10 = $50
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
+        )
+
+        # Verify order has seats field set
+        assert order.seats == 5
+
+        # Verify order item has correct quantity
+        assert len(order.items) == 1
+        order_item = order.items[0]
+        assert order_item.product_price == price
+        assert order_item.amount == billing_entry.amount
+        assert order_item.quantity == 5  # Should be set from subscription.seats
+        assert order_item.order == order
+
+        # Verify order totals
+        assert order.subtotal_amount == 5000
+        assert order.status == OrderStatus.pending
+        assert order.billing_reason == OrderBillingReasonInternal.subscription_cycle
+        assert order.subscription == subscription
+
+    async def test_cycle_seat_based_price_invoice_generation(
+        self,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Create a product with seat-based pricing
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        price = await create_product_price_seat_unit(
+            save_fixture, product=product, price_per_seat=999  # $9.99 per seat
+        )
+        product.prices = [price]
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Create subscription with 10 seats
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, seats=10
+        )
+
+        # Create billing entry for the cycle
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=9990,  # 10 seats × $9.99 = $99.90
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
+        )
+
+        # Generate invoice from the order
+        from polar.invoice.generator import Invoice
+
+        invoice = Invoice.from_order(order)
+
+        # Verify invoice item has correct quantity and unit price
+        assert len(invoice.items) == 1
+        invoice_item = invoice.items[0]
+        assert invoice_item.quantity == 10
+        assert invoice_item.unit_amount == 999  # $9.99 per seat
+        assert invoice_item.amount == 9990  # Total: $99.90
+
+    async def test_cycle_seat_based_price_with_different_quantities(
+        self,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that quantity is correctly set for various seat counts."""
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        price = await create_product_price_seat_unit(
+            save_fixture, product=product, price_per_seat=2000  # $20 per seat
+        )
+        product.prices = [price]
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # Test with 1 seat
+        subscription_1 = await create_active_subscription(
+            save_fixture, product=product, customer=customer, seats=1
+        )
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=customer,
+            product_price=price,
+            amount=2000,
+            currency=price.price_currency,
+            subscription=subscription_1,
+        )
+
+        order_1 = await order_service.create_subscription_order(
+            session, subscription_1, OrderBillingReasonInternal.subscription_cycle
+        )
+        assert order_1.items[0].quantity == 1
+        assert order_1.seats == 1
+
+        # Test with 100 seats
+        subscription_100 = await create_active_subscription(
+            save_fixture, product=product, customer=customer, seats=100
+        )
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=customer,
+            product_price=price,
+            amount=200000,  # 100 × $20
+            currency=price.price_currency,
+            subscription=subscription_100,
+        )
+
+        order_100 = await order_service.create_subscription_order(
+            session, subscription_100, OrderBillingReasonInternal.subscription_cycle
+        )
+        assert order_100.items[0].quantity == 100
+        assert order_100.seats == 100
 
 
 @pytest.mark.asyncio
@@ -3919,6 +4105,7 @@ class TestCustomerBalance:
                     amount=amount,
                     tax_amount=0,
                     proration=proration,
+                    quantity=1,
                 )
                 order_items.append(order_item)
             order = await create_order(

@@ -30,6 +30,7 @@ class OrderItem(RecordModel):
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     proration: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     order_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("orders.id", ondelete="cascade")
     )
@@ -65,6 +66,7 @@ class OrderItem(RecordModel):
         amount: int | None = None,
         seats: int | None = None,
     ) -> Self:
+        quantity = 1
         if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
             amount = price.price_amount
         elif isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom):
@@ -74,11 +76,13 @@ class OrderItem(RecordModel):
         elif isinstance(price, ProductPriceSeatUnit):
             assert seats is not None, "seats must be provided for seat-based prices"
             amount = price.calculate_amount(seats)
+            quantity = seats
         return cls(
             label=price.product.name,
             amount=amount,
             tax_amount=tax_amount,
             proration=False,
+            quantity=quantity,
             product_price=price,
         )
 

@@ -131,7 +131,7 @@ async def handle_success(
 
     if checkout is not None:
         payment_method: PaymentMethod | None = None
-        if checkout.product.is_recurring:
+        if checkout.should_save_payment_method:
             payment_method = await payment_method_service.upsert_from_stripe_intent(
                 session, object, checkout
             )

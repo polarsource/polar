@@ -16,6 +16,7 @@ from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
+from polar.checkout.guard import has_product_checkout
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
@@ -545,6 +546,8 @@ class SubscriptionService:
         checkout: Checkout,
         payment_method: PaymentMethod | None = None,
     ) -> tuple[Subscription, bool]:
+        assert has_product_checkout(checkout)
+
         product = checkout.product
         if not product.is_recurring:
             raise NotARecurringProduct(checkout, product)
@@ -670,6 +673,8 @@ class SubscriptionService:
         payment: Payment | None = None,
         payment_method: PaymentMethod | None = None,
     ) -> tuple[Subscription, bool]:
+        assert has_product_checkout(checkout)
+
         idempotency_key = f"subscription_{checkout.id}{'' if payment is None else f'_{payment.processor_id}'}"
         product = checkout.product
         if not product.is_recurring:

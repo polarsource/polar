@@ -14,6 +14,7 @@ from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
+from polar.checkout.guard import has_product_checkout
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -477,6 +478,8 @@ class OrderService:
     async def create_from_checkout_one_time(
         self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None
     ) -> Order:
+        assert has_product_checkout(checkout)
+
         product = checkout.product
         if product.is_recurring:
             raise RecurringProduct(checkout, product)
@@ -514,6 +517,8 @@ class OrderService:
         ],
         payment: Payment | None = None,
     ) -> Order:
+        assert has_product_checkout(checkout)
+
         product = checkout.product
         if not product.is_recurring:
             raise NotRecurringProduct(checkout, product)
@@ -539,19 +544,17 @@ class OrderService:
         if customer is None:
             raise MissingCheckoutCustomer(checkout)
 
-        product = checkout.product
-        prices = product.prices
-
         items: list[OrderItem] = []
-        for price in prices:
-            # Don't create an item for metered prices
-            if not is_static_price(price):
-                continue
-            if is_custom_price(price):
-                item = OrderItem.from_price(price, 0, checkout.amount)
-            else:
-                item = OrderItem.from_price(price, 0, seats=checkout.seats)
-            items.append(item)
+        if has_product_checkout(checkout):
+            for price in checkout.product.prices:
+                # Don't create an item for metered prices
+                if not is_static_price(price):
+                    continue
+                if is_custom_price(price):
+                    item = OrderItem.from_price(price, 0, checkout.amount)
+                else:
+                    item = OrderItem.from_price(price, 0, seats=checkout.seats)
+                items.append(item)
 
         discount_amount = checkout.discount_amount
 
@@ -599,7 +602,7 @@ class OrderService:
                 tax_rate=tax_rate,
                 invoice_number=invoice_number,
                 customer=customer,
-                product=product,
+                product=checkout.product,
                 discount=checkout.discount,
                 subscription=subscription,
                 checkout=checkout,

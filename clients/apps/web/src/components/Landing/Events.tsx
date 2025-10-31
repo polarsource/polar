@@ -1,6 +1,9 @@
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import AvatarWrapper from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { motion, useMotionValue, useMotionValueEvent } from 'framer-motion'
+import Link from 'next/link'
 import { useMemo, useRef, useState } from 'react'
 import { EventCostBadge } from '../Events/EventCostBadge'
 import { Section } from './Section'
@@ -50,29 +53,43 @@ export const Events = () => {
   }, [mockedEvents, eventOffset])
 
   return (
-    <Section className="flex flex-col gap-y-32 pt-0 md:pt-0">
-      <div
-        style={{
-          backgroundImage: 'url(/assets/landing/abstract_08.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-        className="dark:bg-polar-900 flex w-full flex-col items-center justify-center rounded-3xl bg-gray-50 p-12"
-      >
-        <div className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-2xl bg-white p-8">
+    <Section className="flex flex-col gap-y-32 py-0 md:py-0">
+      <div className="dark:bg-polar-900 flex w-full flex-col gap-y-6 overflow-hidden rounded-4xl bg-gray-200 p-2 md:flex-row">
+        <div className="flex w-full flex-1 flex-col gap-y-8 p-6 md:p-12">
+          <span className="w-fit rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white">
+            Now in Beta
+          </span>
+          <h3 className="text-5xl leading-tight! text-balance">
+            A realtime view of your revenue & costs
+          </h3>
+          <p className="dark:text-polar-500 text-lg text-gray-500">
+            Track revenue, costs & profits in realtime. Understand your business
+            performance like never before.
+          </p>
+          <Link
+            href="/docs/features/cost-insights/introduction"
+            target="_blank"
+          >
+            <Button
+              variant="secondary"
+              className="rounded-full"
+              wrapperClassNames="flex flex-row items-center gap-x-2"
+            >
+              <span>Read the docs</span>
+              <ArrowOutwardOutlined fontSize="inherit" />
+            </Button>
+          </Link>
+        </div>
+        <div className="dark:bg-polar-950 flex w-full flex-1 flex-col gap-y-4 rounded-3xl bg-gray-100 p-8">
           <div className="flex flex-row items-center justify-between gap-x-4">
             <h3>Activity</h3>
-            <div className="flex flex-row items-center gap-x-4 pr-2">
+            <div className="flex flex-row items-center gap-x-4">
               <div className="flex flex-row items-center gap-x-4 font-mono text-xs">
                 <span>Profit</span>
                 <span className="dark:text-polar-500 text-gray-500">
                   {formatCurrencyAndAmount(profit, 'USD', 2, 'compact', 12)}
                 </span>
               </div>
-              <AvatarWrapper
-                name="Emil"
-                avatar_url="/assets/landing/testamonials/emil.jpg"
-              />
             </div>
           </div>
           <div
@@ -104,7 +121,7 @@ export const Events = () => {
               {mockedEvents.map((event, idx) => (
                 <motion.div
                   key={idx}
-                  className="dark:bg-polar-800 flex flex-row items-center gap-x-8 rounded-md border border-gray-100 bg-white p-2 pl-4 font-mono text-xs dark:border-white/5"
+                  className="dark:bg-polar-900 flex flex-row items-center gap-x-8 rounded-md border border-gray-100 bg-white p-2 pl-4 font-mono text-xs dark:border-white/5"
                 >
                   <h3 className="w-36 truncate">{event.name}</h3>
                   <p className="dark:text-polar-500 hidden w-28 text-xs text-gray-500 md:flex">

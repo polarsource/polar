@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 import structlog
+from githubkit.exception import GitHubException
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.oauth2 import OAuth2Token, RefreshTokenError
 from sqlalchemy.exc import IntegrityError
@@ -235,9 +236,23 @@ class GitHubRepositoryBenefitUserService:
                     and org_response.parsed_data.plan
                 ):
                     plan = org_response.parsed_data.plan
-            except Exception:
+            except GitHubException as e:
                 log.error(
-                    "failed to get github org plan", installation_id=installation.id
+                    "failed to get github org plan",
+                    installation_id=installation.id,
+                    organization=installation.account.login,
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                    exc_info=True,
+                )
+            except Exception as e:
+                log.error(
+                    "unexpected error getting github org plan",
+                    installation_id=installation.id,
+                    organization=installation.account.login,
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                    exc_info=True,
                 )
 
         plan_name = plan.name if plan else ""

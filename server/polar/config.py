@@ -250,7 +250,7 @@ class Settings(BaseSettings):
     PAYOUT_INVOICES_PREFIX: str = "POLAR-"
 
     # Application behaviours
-    API_PAGINATION_MAX_LIMIT: int = 100
+    API_PAGINATION_MAX_LIMIT: int = 300
 
     ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(seconds=1)
     ACCOUNT_PAYOUT_MINIMUM_BALANCE: int = 1000

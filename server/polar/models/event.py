@@ -127,6 +127,18 @@ class Event(Model, MetadataMixin):
         String, nullable=True, index=True
     )
 
+    external_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True, unique=True
+    )
+
+    parent_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("events.id"), nullable=True, index=True
+    )
+
+    @declared_attr
+    def parent(cls) -> Mapped["Event | None"]:
+        return relationship("Event", remote_side="Event.id", lazy="raise")
+
     @declared_attr
     def customer(cls) -> Mapped[Customer | None]:
         return relationship(

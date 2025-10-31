@@ -9,10 +9,10 @@ from sqlalchemy import (
     Select,
     and_,
     func,
-    insert,
     or_,
     select,
 )
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -38,12 +38,23 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
         return await self.get_all(statement)
 
-    async def insert_batch(self, events: Sequence[dict[str, Any]]) -> Sequence[UUID]:
+    async def insert_batch(
+        self, events: Sequence[dict[str, Any]]
+    ) -> tuple[Sequence[UUID], int]:
         if not events:
-            return []
-        statement = insert(Event).returning(Event.id)
+            return [], 0
+
+        statement = (
+            insert(Event)
+            .on_conflict_do_nothing(index_elements=["external_id"])
+            .returning(Event.id)
+        )
         result = await self.session.execute(statement, events)
-        return result.scalars().all()
+        inserted_ids = result.scalars().all()
+
+        duplicates_count = len(events) - len(inserted_ids)
+
+        return inserted_ids, duplicates_count
 
     async def get_latest_meter_reset(
         self, customer: Customer, meter_id: UUID

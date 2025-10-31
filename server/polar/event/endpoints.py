@@ -80,6 +80,10 @@ async def list(
     query: str | None = Query(
         None, title="Query", description="Query to filter events."
     ),
+    parent_id: EventID | None = Query(
+        None,
+        description="Filter events by parent event ID. When not specified, returns root events only.",
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[EventSchema]:
     """List events."""
@@ -119,6 +123,7 @@ async def list(
         pagination=pagination,
         sorting=sorting,
         query=query,
+        parent_id=parent_id,
     )
 
     return ListResource.from_paginated_results(

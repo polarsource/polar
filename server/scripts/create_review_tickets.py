@@ -40,7 +40,7 @@ from polar.models import Organization
 from polar.models.organization import OrganizationStatus
 from polar.models.transaction import TransactionType
 from polar.organization.repository import OrganizationRepository
-from polar.postgres import AsyncSession, create_async_engine
+from polar.postgres import create_async_engine
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user.repository import UserRepository
 

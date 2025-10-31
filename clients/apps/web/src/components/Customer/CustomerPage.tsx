@@ -13,7 +13,14 @@ import {
   useSubscriptions,
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
-import { getChartRangeParams, getFormattedMetricValue } from '@/utils/metrics'
+import {
+  formatAccountingFriendlyCurrency,
+  formatCurrency,
+  formatPercentage,
+  formatScalar,
+  formatSubCentCurrency,
+} from '@/utils/formatters'
+import { getChartRangeParams } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -140,70 +147,50 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       <TabsContent value="overview" className="flex flex-col gap-y-8">
         <div className="flex flex-col gap-4 md:flex-row md:gap-6">
           <CustomerStatBox title="Lifetime Revenue" size="lg">
-            {typeof metricsData?.totals.cumulative_revenue === 'number' ? (
-              <AmountLabel
-                amount={metricsData?.totals.cumulative_revenue ?? 0}
-                currency="USD"
-                minimumFractionDigits={2}
-              />
-            ) : (
-              '—'
-            )}
+            {typeof metricsData?.totals.cumulative_revenue === 'number'
+              ? formatAccountingFriendlyCurrency(
+                  metricsData.totals.cumulative_revenue,
+                )
+              : '—'}
           </CustomerStatBox>
 
           {organization.feature_settings?.revops_enabled ? (
             <>
               <CustomerStatBox title="Lifetime Costs" size="lg">
-                {typeof metricsData?.totals.cumulative_costs === 'number' ? (
-                  <AmountLabel
-                    amount={metricsData?.totals.cumulative_costs ?? 0}
-                    currency="USD"
-                    minimumFractionDigits={5}
-                  />
-                ) : (
-                  '—'
-                )}
+                {typeof metricsData?.totals.cumulative_costs === 'number'
+                  ? formatSubCentCurrency(metricsData.totals.cumulative_costs)
+                  : '—'}
               </CustomerStatBox>
               <CustomerStatBox title="Lifetime Profit" size="lg">
-                {metricsData?.totals.gross_margin !== undefined ? (
-                  <AmountLabel
-                    amount={metricsData.totals.gross_margin}
-                    currency="USD"
-                    minimumFractionDigits={2}
-                  />
-                ) : (
-                  '—'
-                )}
+                {typeof metricsData?.totals.gross_margin === 'number'
+                  ? formatAccountingFriendlyCurrency(
+                      metricsData.totals.gross_margin,
+                    )
+                  : '—'}
               </CustomerStatBox>
               <CustomerStatBox title="Profit Margin" size="lg">
-                {metricsData?.totals.gross_margin_percentage !== undefined
-                  ? getFormattedMetricValue(
-                      metricsData.metrics.gross_margin_percentage,
-                      metricsData?.totals.gross_margin_percentage,
-                    )
+                {typeof metricsData?.totals.gross_margin_percentage === 'number'
+                  ? formatPercentage(metricsData.totals.gross_margin_percentage)
                   : '—'}
               </CustomerStatBox>
             </>
           ) : (
             <CustomerStatBox title="Orders" size="lg">
-              {metricsData?.totals.orders ?? '—'}
+              {metricsData?.totals.orders
+                ? formatScalar(metricsData?.totals.orders)
+                : '—'}
             </CustomerStatBox>
           )}
           <CustomerStatBox title="Customer Balance" size="lg">
-            <AmountLabel
-              amount={customerBalance?.balance ?? 0}
-              currency="USD"
-              minimumFractionDigits={2}
-            />
+            {formatCurrency(customerBalance?.balance ?? 0)}
           </CustomerStatBox>
         </div>
 
         {organization.feature_settings?.revops_enabled && (
           <CashflowChart
-            loading={metricsLoading}
-            data={relevantMetricsData}
-            interval={interval}
-            height={300}
+            organizationId={organization.id}
+            customerId={customer.id}
+            customerCreatedAt={customer.created_at}
           />
         )}
 

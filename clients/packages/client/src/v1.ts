@@ -16610,7 +16610,7 @@ export interface components {
      * MetricType
      * @enum {string}
      */
-    MetricType: 'scalar' | 'currency' | 'percentage'
+    MetricType: 'scalar' | 'currency' | 'currency_sub_cent' | 'percentage'
     /** Metrics */
     Metrics: {
       orders: components['schemas']['Metric']
@@ -35401,7 +35401,7 @@ export const meterSortPropertyValues: ReadonlyArray<
 > = ['created_at', '-created_at', 'name', '-name']
 export const metricTypeValues: ReadonlyArray<
   components['schemas']['MetricType']
-> = ['scalar', 'currency', 'percentage']
+> = ['scalar', 'currency', 'currency_sub_cent', 'percentage']
 export const notificationRecipientPlatformValues: ReadonlyArray<
   components['schemas']['NotificationRecipientPlatform']
 > = ['ios', 'android']

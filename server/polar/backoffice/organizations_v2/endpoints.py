@@ -1429,7 +1429,7 @@ async def delete_dialog(
 
         return HXRedirectResponse(
             request,
-            "/backoffice/organizations-v2",
+            str(request.url_for("organizations-v2:list")),
             303,
         )
 

@@ -143,7 +143,12 @@ class AccountSection:
 
                         with button(
                             variant="primary",
-                            hx_get=f"/backoffice/organizations-v2/{self.org.id}/setup-account",
+                            hx_get=str(
+                                request.url_for(
+                                    "organizations-v2:setup_account",
+                                    organization_id=self.org.id,
+                                )
+                            ),
                             hx_target="#modal",
                         ):
                             text("Setup Manual Account")

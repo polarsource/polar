@@ -31,7 +31,11 @@ class SettingsSection:
                         variant="secondary",
                         size="sm",
                         ghost=True,
-                        hx_get=f"/backoffice/organizations-v2/{self.org.id}/edit",
+                        hx_get=str(
+                            request.url_for(
+                                "organizations-v2:edit", organization_id=self.org.id
+                            )
+                        ),
                         hx_target="#modal",
                     ):
                         text("Edit")
@@ -71,7 +75,12 @@ class SettingsSection:
                         variant="secondary",
                         size="sm",
                         ghost=True,
-                        hx_get=f"/backoffice/organizations-v2/{self.org.id}/edit-features",
+                        hx_get=str(
+                            request.url_for(
+                                "organizations-v2:edit_features",
+                                organization_id=self.org.id,
+                            )
+                        ),
                         hx_target="#modal",
                     ):
                         text("Edit")
@@ -118,7 +127,12 @@ class SettingsSection:
                         variant="secondary",
                         size="sm",
                         ghost=True,
-                        hx_get=f"/backoffice/organizations-v2/{self.org.id}/edit-details",
+                        hx_get=str(
+                            request.url_for(
+                                "organizations-v2:edit_details",
+                                organization_id=self.org.id,
+                            )
+                        ),
                         hx_target="#modal",
                     ):
                         text("Edit")
@@ -192,7 +206,12 @@ class SettingsSection:
                             variant="error",
                             size="sm",
                             outline=True,
-                            hx_get=f"/backoffice/organizations-v2/{self.org.id}/delete-dialog",
+                            hx_get=str(
+                                request.url_for(
+                                    "organizations-v2:delete_dialog",
+                                    organization_id=self.org.id,
+                                )
+                            ),
                             hx_target="#modal",
                         ):
                             text("Delete")

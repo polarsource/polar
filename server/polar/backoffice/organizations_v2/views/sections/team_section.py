@@ -72,7 +72,13 @@ class TeamSection:
                                         variant="secondary",
                                         size="sm",
                                         ghost=True,
-                                        hx_get=f"/backoffice/organizations-v2/{self.org.id}/impersonate/{member.user_id}",
+                                        hx_get=str(
+                                            request.url_for(
+                                                "organizations-v2:impersonate",
+                                                organization_id=self.org.id,
+                                                user_id=member.user_id,
+                                            )
+                                        ),
                                     ):
                                         text("Impersonate")
 
@@ -96,13 +102,25 @@ class TeamSection:
                                             if not member_is_admin:
                                                 with tag.li():
                                                     with tag.a(
-                                                        hx_post=f"/backoffice/organizations-v2/{self.org.id}/make-admin/{member.user_id}",
+                                                        hx_post=str(
+                                                            request.url_for(
+                                                                "organizations-v2:make_admin",
+                                                                organization_id=self.org.id,
+                                                                user_id=member.user_id,
+                                                            )
+                                                        ),
                                                         hx_confirm="Make this user an admin?",
                                                     ):
                                                         text("Make Admin")
                                             with tag.li():
                                                 with tag.a(
-                                                    hx_delete=f"/backoffice/organizations-v2/{self.org.id}/remove-member/{member.user_id}",
+                                                    hx_delete=str(
+                                                        request.url_for(
+                                                            "organizations-v2:remove_member",
+                                                            organization_id=self.org.id,
+                                                            user_id=member.user_id,
+                                                        )
+                                                    ),
                                                     hx_confirm="Remove this member?",
                                                     classes="text-error",
                                                 ):

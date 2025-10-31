@@ -30,9 +30,9 @@ export default function Page() {
 export const PageContent = () => {
   return (
     <>
-      <Section className="flex flex-col gap-y-32 pt-0 md:pt-0">
+      <Section className="flex flex-col gap-y-32 py-0 md:py-0">
         <Hero
-          title="Your software business on Autopilot"
+          title="Monetize your software"
           description="Turn your software into a business with 6 lines of code"
         >
           <GetStartedButton size="lg" text="Get Started" />
@@ -50,8 +50,8 @@ export const PageContent = () => {
             </Button>
           </Link>
         </Hero>
-        <Events />
         <Features />
+        <Events />
         <Adapters />
         <SDKs />
         <Usage />

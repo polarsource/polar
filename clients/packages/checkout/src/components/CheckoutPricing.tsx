@@ -3,6 +3,7 @@
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { useMemo } from 'react'
+import { ProductCheckoutPublic } from '../guards'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
 import { hasRecurringIntervals, isLegacyRecurringPrice } from '../utils/product'
@@ -13,7 +14,7 @@ import ProductPriceLabel from './ProductPriceLabel'
 const CheckoutProductAmountLabel = ({
   checkout,
 }: {
-  checkout: CheckoutPublic
+  checkout: ProductCheckoutPublic
 }) => {
   const { product, productPrice, discount } = checkout
   if (!discount || productPrice.amountType !== 'fixed') {
@@ -49,7 +50,7 @@ const CheckoutProductAmountLabel = ({
 }
 
 interface CheckoutPricingProps {
-  checkout: CheckoutPublic
+  checkout: ProductCheckoutPublic
   update?: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   disabled?: boolean
 }

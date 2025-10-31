@@ -1,6 +1,5 @@
 'use client'
 
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
@@ -11,6 +10,7 @@ import {
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { cn } from '@polar-sh/ui/lib/utils'
 import { useCallback } from 'react'
+import type { ProductCheckoutPublic } from '../guards'
 import {
   formatRecurringFrequency,
   hasLegacyRecurringPrices,
@@ -18,8 +18,8 @@ import {
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface CheckoutProductSwitcherProps {
-  checkout: CheckoutPublic
-  update?: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  checkout: ProductCheckoutPublic
+  update?: (data: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   disabled?: boolean
   themePreset: ThemingPresetProps
 }
@@ -27,7 +27,6 @@ interface CheckoutProductSwitcherProps {
 const CheckoutProductSwitcher = ({
   checkout,
   update,
-  disabled,
   themePreset,
 }: CheckoutProductSwitcherProps) => {
   const {
@@ -59,7 +58,7 @@ const CheckoutProductSwitcher = ({
   }
 
   const getDescription = (
-    product: CheckoutPublic['product'],
+    product: ProductCheckoutPublic['product'],
     price: ProductPrice | LegacyRecurringProductPrice,
   ) => {
     const interval = hasLegacyRecurringPrices(product)

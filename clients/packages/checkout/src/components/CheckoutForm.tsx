@@ -34,6 +34,7 @@ import {
 } from '@stripe/stripe-js'
 import { PropsWithChildren, useCallback, useEffect, useMemo } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
+import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { getDiscountDisplay } from '../utils/discount'
@@ -107,10 +108,14 @@ const BaseCheckoutForm = ({
   children,
   themePreset: themePresetProps,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
-  const interval = hasLegacyRecurringPrices(checkout.product)
-    ? checkout.productPrice.recurringInterval
-    : checkout.product.recurringInterval
-  const intervalCount = checkout.product.recurringIntervalCount
+  const interval = hasProductCheckout(checkout)
+    ? hasLegacyRecurringPrices(checkout.product)
+      ? checkout.productPrice.recurringInterval
+      : checkout.product.recurringInterval
+    : null
+  const intervalCount = hasProductCheckout(checkout)
+    ? checkout.product.recurringIntervalCount
+    : null
   const {
     control,
     handleSubmit,
@@ -124,11 +129,10 @@ const BaseCheckoutForm = ({
   const discount = checkout.discount
   const isDiscountWithoutCode = discount && discount.code === null
 
-  const { product, productPrice, isBusinessCustomer } = checkout
-  const meteredPrices = useMemo(() => getMeteredPrices(product), [product])
-  const onlyMeteredPrices = useMemo(
-    () => meteredPrices.length === product.prices.length,
-    [meteredPrices, product],
+  const { product, isBusinessCustomer } = checkout
+  const meteredPrices = useMemo(
+    () => (product ? getMeteredPrices(product) : []),
+    [product],
   )
 
   const country = watch('customerBillingAddress.country')
@@ -766,26 +770,29 @@ const BaseCheckoutForm = ({
                   )}
                 />
               )}
-              {checkout.attachedCustomFields.map(
-                ({ customField, required }) => (
-                  <FormField
-                    key={customField.id}
-                    control={control}
-                    name={`customFieldData.${customField.slug}`}
-                    rules={{
-                      required: required ? 'This field is required' : undefined,
-                    }}
-                    render={({ field }) => (
-                      <CustomFieldInput
-                        customField={customField}
-                        required={required}
-                        field={field}
-                        themePreset={themePresetProps}
-                      />
-                    )}
-                  />
-                ),
-              )}
+              {checkout.attachedCustomFields &&
+                checkout.attachedCustomFields.map(
+                  ({ customField, required }) => (
+                    <FormField
+                      key={customField.id}
+                      control={control}
+                      name={`customFieldData.${customField.slug}`}
+                      rules={{
+                        required: required
+                          ? 'This field is required'
+                          : undefined,
+                      }}
+                      render={({ field }) => (
+                        <CustomFieldInput
+                          customField={customField}
+                          required={required}
+                          field={field}
+                          themePreset={themePresetProps}
+                        />
+                      )}
+                    />
+                  ),
+                )}
             </div>
             {!checkout.isFreeProductPrice && (
               <div className="flex flex-col gap-y-2">

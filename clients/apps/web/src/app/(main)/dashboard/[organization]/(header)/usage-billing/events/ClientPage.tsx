@@ -46,7 +46,7 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import z from 'zod'
 
-const PAGE_SIZE = 300
+const PAGE_SIZE = 100
 
 const EventName = ({ eventName }: { eventName: schemas['EventName'] }) => {
   const displayName = useEventDisplayName(eventName.name)

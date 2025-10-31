@@ -136,6 +136,10 @@ class Event(Model, MetadataMixin):
     )
 
     @declared_attr
+    def parent(cls) -> Mapped["Event | None"]:
+        return relationship("Event", remote_side="Event.id", lazy="raise")
+
+    @declared_attr
     def customer(cls) -> Mapped[Customer | None]:
         return relationship(
             Customer,

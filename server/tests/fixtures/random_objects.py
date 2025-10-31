@@ -1725,6 +1725,8 @@ async def create_event(
     timestamp: datetime | None = None,
     customer: Customer | None = None,
     external_customer_id: str | None = None,
+    external_id: str | None = None,
+    parent_id: uuid.UUID | None = None,
     metadata: dict[str, str | int | bool | float | Any] | None = None,
 ) -> Event:
     event = Event(
@@ -1733,6 +1735,8 @@ async def create_event(
         name=name,
         customer_id=customer.id if customer else None,
         external_customer_id=external_customer_id,
+        external_id=external_id,
+        parent_id=parent_id,
         organization=organization,
         user_metadata=metadata or {},
     )

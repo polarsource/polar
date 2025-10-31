@@ -110,4 +110,4 @@ class TestIngest:
 
         assert response.status_code == 200
         json = response.json()
-        assert json == {"inserted": len(events)}
+        assert json == {"inserted": len(events), "duplicates": 0}

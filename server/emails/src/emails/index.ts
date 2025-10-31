@@ -20,6 +20,7 @@ import { SubscriptionPastDue } from './subscription_past_due'
 import { SubscriptionRevoked } from './subscription_revoked'
 import { SubscriptionUncanceled } from './subscription_uncanceled'
 import { SubscriptionUpdated } from './subscription_updated'
+import { WebhookEndpointDisabled } from './webhook_endpoint_disabled'
 
 const TEMPLATES: Record<string, React.FC<any>> = {
   login_code: LoginCode,
@@ -39,6 +40,7 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   subscription_revoked: SubscriptionRevoked,
   subscription_uncanceled: SubscriptionUncanceled,
   subscription_updated: SubscriptionUpdated,
+  webhook_endpoint_disabled: WebhookEndpointDisabled,
   notification_account_under_review: NotificationAccountUnderReview,
   notification_account_reviewed: NotificationAccountReviewed,
   notification_new_sale: NotificationNewSale,

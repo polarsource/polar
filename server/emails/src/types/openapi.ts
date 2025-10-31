@@ -1210,7 +1210,7 @@ export interface components {
        */
       socials: components['schemas']['OrganizationSocialLink'][]
       /** @description Current organization status */
-      status: components['schemas']['Status']
+      status: components['schemas']['OrganizationStatus']
       /**
        * Details Submitted At
        * @description When the business details were submitted.
@@ -1287,6 +1287,12 @@ export interface components {
        * @default false
        */
       revops_enabled: boolean
+      /**
+       * Wallets Enabled
+       * @description If this organization has Wallets enabled
+       * @default false
+       */
+      wallets_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {
@@ -1340,6 +1346,16 @@ export interface components {
       | 'tiktok'
       | 'linkedin'
       | 'other'
+    /**
+     * OrganizationStatus
+     * @enum {string}
+     */
+    OrganizationStatus:
+      | 'created'
+      | 'onboarding_started'
+      | 'under_review'
+      | 'denied'
+      | 'active'
     /** OrganizationSubscriptionSettings */
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
@@ -1347,6 +1363,8 @@ export interface components {
       /** Allow Customer Updates */
       allow_customer_updates: boolean
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /** Benefit Revocation Grace Period */
+      benefit_revocation_grace_period: number
     }
     /** PersonalAccessTokenLeakedEmail */
     PersonalAccessTokenLeakedEmail: {
@@ -1458,16 +1476,6 @@ export interface components {
       /** Claim Url */
       claim_url: string
     }
-    /**
-     * Status
-     * @enum {string}
-     */
-    Status:
-      | 'created'
-      | 'onboarding_started'
-      | 'under_review'
-      | 'denied'
-      | 'active'
     /** SubscriptionCancellationEmail */
     SubscriptionCancellationEmail: {
       /**
@@ -1766,6 +1774,26 @@ export interface components {
      * @enum {string}
      */
     TrialInterval: 'day' | 'week' | 'month' | 'year'
+    /** WebhookEndpointDisabledEmail */
+    WebhookEndpointDisabledEmail: {
+      /**
+       * Template
+       * @default webhook_endpoint_disabled
+       * @constant
+       */
+      template: 'webhook_endpoint_disabled'
+      props: components['schemas']['WebhookEndpointDisabledProps']
+    }
+    /** WebhookEndpointDisabledProps */
+    WebhookEndpointDisabledProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      /** Webhook Endpoint Url */
+      webhook_endpoint_url: string
+      /** Dashboard Url */
+      dashboard_url: string
+    }
   }
   responses: never
   parameters: never

@@ -7,7 +7,7 @@ import ErrorOutlined from '@mui/icons-material/ErrorOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -22,9 +22,7 @@ export default function ClientPage({
   invitationToken?: string
 }) {
   const router = useRouter()
-  const themePreset = useThemePreset(
-    organization.slug === 'midday' ? 'midday' : 'polar',
-  )
+  const themePreset = getThemePreset(organization.slug)
   const [claimingState, setClaimingState] = useState<
     'idle' | 'claiming' | 'redirecting'
   >('idle')

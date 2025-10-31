@@ -20,7 +20,7 @@ import Alert from '@polar-sh/ui/components/atoms/Alert'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
@@ -50,10 +50,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const posthog = usePostHog()
 
-  const themePreset = useThemePreset(
-    checkout.organization.slug === 'midday' ? 'midday' : 'polar',
-    theme,
-  )
+  const themePreset = getThemePreset(checkout.organization.slug, theme)
 
   // Check organization payment readiness (account verification only for checkout)
   const { data: paymentStatus } = useOrganizationPaymentStatus(

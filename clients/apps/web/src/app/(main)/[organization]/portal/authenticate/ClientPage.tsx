@@ -18,7 +18,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
@@ -62,9 +62,7 @@ const ClientPage = ({
     [sessionRequest, setError, router, organization],
   )
 
-  const themingPreset = useThemePreset(
-    organization.slug === 'midday' ? 'midday' : 'polar',
-  )
+  const themingPreset = getThemePreset(organization.slug)
 
   return (
     <ShadowBox

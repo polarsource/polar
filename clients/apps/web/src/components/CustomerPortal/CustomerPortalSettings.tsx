@@ -9,7 +9,7 @@ import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
@@ -44,8 +44,8 @@ export const CustomerPortalSettings = ({
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
   const theme = useTheme()
-  const themingPreset = useThemePreset(
-    organization.slug === 'midday' ? 'midday' : 'polar',
+  const themingPreset = getThemePreset(
+    organization.slug,
     theme.resolvedTheme as 'light' | 'dark',
   )
 

@@ -1,6 +1,6 @@
 import { PolarThemeProvider } from '@/app/providers'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { twMerge } from 'tailwind-merge'
 import PublicLayout from '../Layout/PublicLayout'
 import CheckoutEmbedLayout from './Embed/CheckoutEmbedLayout'
@@ -14,10 +14,7 @@ interface CheckoutLayoutProps {
 const CheckoutLayout: React.FC<
   React.PropsWithChildren<CheckoutLayoutProps>
 > = ({ children, checkout, embed, theme }) => {
-  const themingPreset = useThemePreset(
-    checkout.organization.slug === 'midday' ? 'midday' : 'polar',
-    theme,
-  )
+  const themingPreset = getThemePreset(checkout.organization.slug, theme)
 
   if (embed) {
     return (

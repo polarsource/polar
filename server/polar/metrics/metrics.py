@@ -23,6 +23,7 @@ from polar.kit.time_queries import TimeInterval
 from polar.models import Checkout, Order, Subscription
 from polar.models.checkout import CheckoutStatus
 from polar.models.event import Event
+from polar.models.order import OrderBillingReasonInternal
 from polar.models.subscription import CustomerCancellationReason
 
 from .queries import MetricQuery
@@ -273,10 +274,12 @@ class NewSubscriptionsRevenueMetric(SQLMetric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.sum(Order.net_amount).filter(
-            i.sql_date_trunc(
-                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            Order.billing_reason.in_(
+                [
+                    OrderBillingReasonInternal.subscription_create,
+                    OrderBillingReasonInternal.subscription_cycle_after_trial,
+                ]
             )
-            == i.sql_date_trunc(t)
         )
 
     @classmethod
@@ -295,10 +298,12 @@ class NewSubscriptionsNetRevenueMetric(SQLMetric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.sum(Order.payout_amount).filter(
-            i.sql_date_trunc(
-                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            Order.billing_reason.in_(
+                [
+                    OrderBillingReasonInternal.subscription_create,
+                    OrderBillingReasonInternal.subscription_cycle_after_trial,
+                ]
             )
-            == i.sql_date_trunc(t)
         )
 
     @classmethod
@@ -317,10 +322,12 @@ class RenewedSubscriptionsMetric(SQLMetric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.count(Subscription.id.distinct()).filter(
-            i.sql_date_trunc(
-                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            Order.billing_reason.in_(
+                [
+                    OrderBillingReasonInternal.subscription_cycle,
+                    OrderBillingReasonInternal.subscription_update,
+                ]
             )
-            != i.sql_date_trunc(t)
         )
 
     @classmethod
@@ -339,10 +346,12 @@ class RenewedSubscriptionsRevenueMetric(SQLMetric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.sum(Order.net_amount).filter(
-            i.sql_date_trunc(
-                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            Order.billing_reason.in_(
+                [
+                    OrderBillingReasonInternal.subscription_cycle,
+                    OrderBillingReasonInternal.subscription_update,
+                ]
             )
-            != i.sql_date_trunc(t)
         )
 
     @classmethod
@@ -361,10 +370,12 @@ class RenewedSubscriptionsNetRevenueMetric(SQLMetric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.sum(Order.payout_amount).filter(
-            i.sql_date_trunc(
-                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            Order.billing_reason.in_(
+                [
+                    OrderBillingReasonInternal.subscription_cycle,
+                    OrderBillingReasonInternal.subscription_update,
+                ]
             )
-            != i.sql_date_trunc(t)
         )
 
     @classmethod

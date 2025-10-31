@@ -1,12 +1,18 @@
 import contextlib
 from collections.abc import Generator
-from typing import Literal
+from typing import Any, Literal, TypedDict
 
 from tagflow import attr, tag, text
 
+from ._button import Variant as ButtonVariant
 from ._button import button
 
 Variant = Literal["info", "success", "warning", "error"]
+
+
+class VariantConfig(TypedDict):
+    icon: str
+    button: ButtonVariant
 
 
 @contextlib.contextmanager
@@ -18,7 +24,7 @@ def confirmation_dialog(
     confirm_text: str = "Confirm",
     cancel_text: str = "Cancel",
     open: bool = False,
-    **kwargs: any,
+    **kwargs: Any,
 ) -> Generator[None]:
     """Create a standardized confirmation dialog component.
 
@@ -50,7 +56,7 @@ def confirmation_dialog(
         ...     # Add form action to confirm button
         ...     pass
     """
-    variant_config = {
+    variant_config: dict[str, VariantConfig] = {
         "info": {"icon": "ℹ️", "button": "info"},
         "success": {"icon": "✅", "button": "success"},
         "warning": {"icon": "⚠️", "button": "warning"},

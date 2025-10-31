@@ -1,5 +1,6 @@
 import contextlib
 from collections.abc import Generator
+from typing import Any
 
 from tagflow import tag, text
 
@@ -9,7 +10,7 @@ def empty_state(
     title: str,
     description: str | None = None,
     icon: str | None = None,
-    **kwargs: any,
+    **kwargs: Any,
 ) -> Generator[None]:
     """Create an empty state component for when there's no data.
 
@@ -52,7 +53,7 @@ def empty_state(
 def loading_state(
     message: str = "Loading...",
     size: str = "md",
-    **kwargs: any,
+    **kwargs: Any,
 ) -> Generator[None]:
     """Create a loading state component with spinner.
 
@@ -100,7 +101,7 @@ def card(
     *,
     bordered: bool = True,
     compact: bool = False,
-    **kwargs: any,
+    **kwargs: Any,
 ) -> Generator[None]:
     """Create a generic card container component.
 

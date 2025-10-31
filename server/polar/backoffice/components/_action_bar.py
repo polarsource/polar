@@ -1,6 +1,6 @@
 import contextlib
 from collections.abc import Generator
-from typing import Literal
+from typing import Any, Literal
 
 from tagflow import tag
 
@@ -12,7 +12,7 @@ def action_bar(
     *,
     position: Position = "right",
     vertical: bool = False,
-    **kwargs: any,
+    **kwargs: Any,
 ) -> Generator[None]:
     """Create an action bar container for grouping buttons and actions.
 

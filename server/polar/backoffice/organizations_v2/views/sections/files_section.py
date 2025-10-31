@@ -2,6 +2,7 @@
 
 import contextlib
 from collections.abc import Generator
+from typing import Any
 
 from fastapi import Request
 from tagflow import tag, text
@@ -14,7 +15,11 @@ from ....components import button, card, empty_state
 class FilesSection:
     """Render the files section with file listing."""
 
-    def __init__(self, organization: Organization, files: list | None = None):
+    def __init__(
+        self,
+        organization: Organization,
+        files: list[Any] | None = None,
+    ):
         self.org = organization
         self.files = files or []
 

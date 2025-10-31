@@ -172,9 +172,7 @@ class OrganizationDetailView:
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                **{
-                                    "onclick": f"const amount = document.getElementById('custom-threshold').value; if(amount && confirm('Approve with $' + amount + ' threshold?')) {{ htmx.ajax('POST', '/backoffice/organizations-v2/{self.org.id}/approve?threshold=' + (amount * 100), {{target: 'body'}}); }}"
-                                },
+                                onclick=f"const amount = document.getElementById('custom-threshold').value; if(amount && confirm('Approve with $' + amount + ' threshold?')) {{ htmx.ajax('POST', '/backoffice/organizations-v2/{self.org.id}/approve?threshold=' + (amount * 100), {{target: 'body'}}); }}",
                             ):
                                 text("✓")
 
@@ -231,9 +229,7 @@ class OrganizationDetailView:
                                 variant="secondary",
                                 size="sm",
                                 ghost=True,
-                                **{
-                                    "onclick": f"navigator.clipboard.writeText('{self.org.slug}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)"
-                                },
+                                onclick=f"navigator.clipboard.writeText('{self.org.slug}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
                             ):
                                 text("Copy")
 
@@ -250,9 +246,7 @@ class OrganizationDetailView:
                                 variant="secondary",
                                 size="sm",
                                 ghost=True,
-                                **{
-                                    "onclick": f"navigator.clipboard.writeText('{self.org.id}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)"
-                                },
+                                onclick=f"navigator.clipboard.writeText('{self.org.id}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
                             ):
                                 text("Copy")
 

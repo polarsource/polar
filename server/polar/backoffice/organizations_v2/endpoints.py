@@ -23,13 +23,14 @@ from polar.backoffice.organizations.analytics import (
     PaymentAnalyticsService,
 )
 from polar.backoffice.organizations.forms import (
+    UpdateOrganizationBasicForm,
     UpdateOrganizationDetailsForm,
-    UpdateOrganizationForm,
     UpdateOrganizationInternalNotesForm,
 )
 from polar.models import Organization, User, UserOrganization
 from polar.models.organization import OrganizationStatus
 from polar.models.transaction import TransactionType
+from polar.models.user import IdentityVerificationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
@@ -63,10 +64,10 @@ async def list_organizations(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=100),
     # Advanced filters
-    country: str = Query(""),
-    risk_level: str = Query(""),
-    days_in_status: str = Query(""),
-    has_appeal: str = Query(""),
+    country: str | None = Query(""),
+    risk_level: str | None = Query(""),
+    days_in_status: str | None = Query(""),
+    has_appeal: str | None = Query(""),
 ) -> None:
     """
     List organizations with enhanced filtering and smart grouping.
@@ -178,41 +179,43 @@ async def list_organizations(
             Organization.name.desc() if is_desc else Organization.name.asc()
         )
     elif sort == "country":
-        order = (
+        country_order = (
             Account.country.desc().nullslast()
             if is_desc
             else Account.country.asc().nullslast()
         )
-        stmt = stmt.join(Organization.account).order_by(order)
+        stmt = stmt.join(Organization.account).order_by(country_order)
     elif sort == "created":
         stmt = stmt.order_by(
             Organization.created_at.asc() if is_desc else Organization.created_at.desc()
         )
     elif sort == "updated":
         stmt = stmt.order_by(
-            Organization.updated_at.asc() if is_desc else Organization.updated_at.desc()
+            Organization.modified_at.asc()
+            if is_desc
+            else Organization.modified_at.desc()
         )
     elif sort == "status_duration":
-        order = (
+        status_order = (
             Organization.status_updated_at.desc().nullslast()
             if is_desc
             else Organization.status_updated_at.asc().nullsfirst()
         )
-        stmt = stmt.order_by(order)
+        stmt = stmt.order_by(status_order)
     elif sort == "risk":
-        order = (
+        risk_order = (
             OrganizationReview.risk_score.asc().nullsfirst()
             if is_desc
             else OrganizationReview.risk_score.desc().nullslast()
         )
-        stmt = stmt.join(Organization.review).order_by(order)
+        stmt = stmt.join(Organization.review).order_by(risk_order)
     elif sort == "next_review":
-        order = (
+        threshold_order = (
             Organization.next_review_threshold.asc().nullsfirst()
             if is_desc
             else Organization.next_review_threshold.desc().nullslast()
         )
-        stmt = stmt.order_by(order)
+        stmt = stmt.order_by(threshold_order)
     elif sort == "priority":
         # Priority: Under Review > Denied > Others, then by days in status
         stmt = stmt.order_by(
@@ -312,7 +315,7 @@ async def get_organization_detail(
         .limit(10)
     )
     members_result = await session.execute(members_stmt)
-    organization.members = list(members_result.scalars().unique().all())
+    organization.members = list(members_result.scalars().unique().all())  # type: ignore[attr-defined]
 
     # Create views
     detail_view = OrganizationDetailView(organization)
@@ -334,9 +337,20 @@ async def get_organization_detail(
         )
         products_count = await setup_analytics.get_products_count(organization_id)
         benefits_count = await setup_analytics.get_benefits_count(organization_id)
-        user_verified = await setup_analytics.check_user_verified_in_stripe(
-            organization
+
+        user_verified_result = await session.execute(
+            select(User.identity_verification_status)
+            .join(UserOrganization, User.id == UserOrganization.user_id)
+            .where(UserOrganization.organization_id == organization_id)
+            .limit(1)
         )
+        user_verified_row = user_verified_result.first()
+        user_verified = (
+            user_verified_row[0] == IdentityVerificationStatus.verified
+            if user_verified_row
+            else False
+        )
+
         (
             account_charges_enabled,
             account_payouts_enabled,
@@ -492,12 +506,13 @@ async def approve_organization(
     "/{organization_id}/deny-dialog",
     name="organizations-v2:deny_dialog",
     methods=["GET", "POST"],
+    response_model=None,
 )
 async def deny_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> HXRedirectResponse | None:
     """Deny organization dialog and action."""
     repository = OrganizationRepository(session)
 
@@ -547,17 +562,20 @@ async def deny_dialog(
                 ):
                     text("Deny Organization")
 
+    return None
+
 
 @router.api_route(
     "/{organization_id}/approve-denied-dialog",
     name="organizations-v2:approve_denied_dialog",
     methods=["GET", "POST"],
+    response_model=None,
 )
 async def approve_denied_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> HXRedirectResponse | None:
     """Approve a denied organization dialog and action."""
     repository = OrganizationRepository(session)
 
@@ -569,7 +587,7 @@ async def approve_denied_dialog(
         data = await request.form()
         # Convert dollars to cents (user enters 250, we store 25000)
         raw_threshold = data.get("threshold", "250")
-        threshold = int(float(raw_threshold) * 100)
+        threshold = int(float(str(raw_threshold)) * 100)
 
         # Approve the organization
         await organization_service.confirm_organization_reviewed(
@@ -631,17 +649,20 @@ async def approve_denied_dialog(
                     with button(variant="primary"):
                         text("Approve Organization")
 
+    return None
+
 
 @router.api_route(
     "/{organization_id}/unblock-approve-dialog",
     name="organizations-v2:unblock_approve_dialog",
     methods=["GET", "POST"],
+    response_model=None,
 )
 async def unblock_approve_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> HXRedirectResponse | None:
     """Unblock and approve organization dialog and action."""
     repository = OrganizationRepository(session)
 
@@ -653,10 +674,10 @@ async def unblock_approve_dialog(
         data = await request.form()
         # Convert dollars to cents (user enters 250, we store 25000)
         raw_threshold = data.get("threshold", "250")
-        threshold = int(float(raw_threshold) * 100)
+        threshold = int(float(str(raw_threshold)) * 100)
 
-        # Unblock the organization
-        await organization_service.unblock_organization(session, organization)
+        # Unblock the organization (set blocked_at to None)
+        organization.blocked_at = None
 
         # Approve the organization
         await organization_service.confirm_organization_reviewed(
@@ -718,17 +739,20 @@ async def unblock_approve_dialog(
                     with button(variant="primary"):
                         text("Unblock & Approve")
 
+    return None
+
 
 @router.api_route(
     "/{organization_id}/block-dialog",
     name="organizations-v2:block_dialog",
     methods=["GET", "POST"],
+    response_model=None,
 )
 async def block_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> HXRedirectResponse | None:
     """Block organization dialog and action."""
     repository = OrganizationRepository(session)
 
@@ -737,8 +761,10 @@ async def block_dialog(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     if request.method == "POST":
-        # Block the organization
-        await organization_service.block_organization(session, organization)
+        # Block the organization (set blocked_at to current time)
+        from datetime import UTC, datetime
+
+        organization.blocked_at = datetime.now(UTC)
         await session.commit()
 
         return HXRedirectResponse(
@@ -789,17 +815,20 @@ async def block_dialog(
                 ):
                     text("Block Organization")
 
+    return None
+
 
 @router.api_route(
     "/{organization_id}/edit",
     name="organizations-v2:edit",
     methods=["GET", "POST"],
+    response_model=None,
 )
 async def edit_organization(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> HXRedirectResponse | None:
     """Edit organization details."""
     repository = OrganizationRepository(session)
 
@@ -813,7 +842,7 @@ async def edit_organization(
     if request.method == "POST":
         data = await request.form()
         try:
-            form = UpdateOrganizationForm.model_validate_form(data)
+            form = UpdateOrganizationBasicForm.model_validate_form(data)
             if form.slug != organization.slug:
                 existing_slug = await repository.get_by_slug(form.slug)
                 if existing_slug is not None:
@@ -831,8 +860,8 @@ async def edit_organization(
                         ],
                     )
 
-            # Update organization with basic fields only (no feature flags here)
-            form_dict = form.model_dump(exclude_none=True, exclude={"feature_flags"})
+            # Update organization with basic fields only
+            form_dict = form.model_dump(exclude_none=True)
             organization = await repository.update(
                 organization,
                 update_dict=form_dict,
@@ -861,7 +890,7 @@ async def edit_organization(
         with tag.p(classes="text-sm text-base-content/60 mb-4"):
             text("Update organization name, slug, and customer invoice prefix")
 
-        with UpdateOrganizationForm.render(
+        with UpdateOrganizationBasicForm.render(
             data=form_data,
             validation_error=validation_error,
             hx_post=str(
@@ -883,17 +912,20 @@ async def edit_organization(
                 ):
                     text("Save Changes")
 
+    return None
+
 
 @router.api_route(
     "/{organization_id}/edit-details",
     name="organizations-v2:edit_details",
     methods=["GET", "POST"],
+    response_model=None,
 )
 async def edit_details(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> HXRedirectResponse | None:
     """Edit organization details (about, product description, intended use)."""
     repository = OrganizationRepository(session)
 
@@ -909,8 +941,8 @@ async def edit_details(
             data = await request.form()
             form = UpdateOrganizationDetailsForm.model_validate_form(data)
 
-            # Update organization with form data (exclude website since it's not in this form anymore)
-            form_dict = form.model_dump(exclude_none=True, exclude={"website"})
+            # Update organization with form data
+            form_dict = form.model_dump(exclude_none=True)
             organization = await repository.update(
                 organization,
                 update_dict=form_dict,
@@ -930,6 +962,7 @@ async def edit_details(
 
     # Prepare data for form rendering
     form_data = {
+        "website": organization.website,
         "details": organization.details or {},
     }
 
@@ -961,17 +994,20 @@ async def edit_details(
                 ):
                     text("Save Changes")
 
+    return None
+
 
 @router.api_route(
     "/{organization_id}/edit-features",
     name="organizations-v2:edit_features",
     methods=["GET", "POST"],
+    response_model=None,
 )
 async def edit_features(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> HXRedirectResponse | None:
     """Edit organization feature flags."""
     repository = OrganizationRepository(session)
 
@@ -1064,17 +1100,20 @@ async def edit_features(
                 ):
                     text("Save Changes")
 
+    return None
+
 
 @router.api_route(
     "/{organization_id}/add-note",
     name="organizations-v2:add_note",
     methods=["GET", "POST"],
+    response_model=None,
 )
 async def add_note(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> HXRedirectResponse | None:
     """Add internal notes to an organization."""
     repository = OrganizationRepository(session)
 
@@ -1131,17 +1170,20 @@ async def add_note(
                 ):
                     text("Save Notes")
 
+    return None
+
 
 @router.api_route(
     "/{organization_id}/edit-note",
     name="organizations-v2:edit_note",
     methods=["GET", "POST"],
+    response_model=None,
 )
 async def edit_note(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> HXRedirectResponse | None:
     """Edit internal notes for an organization."""
     repository = OrganizationRepository(session)
 
@@ -1198,6 +1240,8 @@ async def edit_note(
                 ):
                     text("Save Notes")
 
+    return None
+
 
 @router.get(
     "/{organization_id}/impersonate/{user_id}",
@@ -1208,7 +1252,7 @@ async def impersonate_user(
     organization_id: UUID4,
     user_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-):
+) -> HXRedirectResponse:
     """Impersonate a user by creating a read-only session for them."""
     from datetime import timedelta
 
@@ -1223,11 +1267,11 @@ async def impersonate_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     # Verify user belongs to organization
-    stmt = select(UserOrganization).where(
+    membership_stmt = select(UserOrganization).where(
         UserOrganization.user_id == user_id,
         UserOrganization.organization_id == organization_id,
     )
-    result = await session.execute(stmt)
+    result = await session.execute(membership_stmt)
     if not result.scalars().one_or_none():
         raise HTTPException(
             status_code=400, detail="User is not a member of this organization"
@@ -1245,7 +1289,7 @@ async def impersonate_user(
 
     # Get user's first organization for redirect
     repository = OrganizationRepository(session)
-    user_orgs = await repository.list_all_by_user_id(user.id)
+    user_orgs = await repository.get_all_by_user(user.id)
     redirect_url = f"/{user_orgs[0].slug}" if user_orgs else "/"
 
     response = HXRedirectResponse(request, redirect_url, 303)
@@ -1307,7 +1351,12 @@ async def make_admin(
     try:
         from polar.account.service import account as account_service
 
-        await account_service.change_admin(session, organization, user_id)
+        if not organization.account:
+            raise HTTPException(status_code=400, detail="Organization has no account")
+
+        await account_service.change_admin(
+            session, organization.account, user_id, organization_id
+        )
         await session.commit()
     except Exception as e:
         logger.error("Failed to make user admin", error=str(e))
@@ -1360,12 +1409,13 @@ async def remove_member(
     "/{organization_id}/delete-dialog",
     name="organizations-v2:delete_dialog",
     methods=["GET", "POST"],
+    response_model=None,
 )
 async def delete_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> HXRedirectResponse | None:
     """Delete organization dialog and action."""
     repository = OrganizationRepository(session)
 
@@ -1420,6 +1470,8 @@ async def delete_dialog(
                 ):
                     text("Delete Organization")
 
+    return None
+
 
 @router.api_route(
     "/{organization_id}/setup-account",
@@ -1431,7 +1483,7 @@ async def setup_account(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-):
+) -> HXRedirectResponse | None:
     """Show modal to setup a manual payment account."""
     repository = OrganizationRepository(session)
 
@@ -1440,9 +1492,12 @@ async def setup_account(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     if request.method == "POST":
-        # Create manual account via organization service
-        await organization_service.create_manual_account(session, organization)
-        await session.commit()
+        # TODO: Implement manual account creation
+        # This would need to create an Account record and associate it with the organization
+        raise HTTPException(
+            status_code=501, detail="Manual account creation not yet implemented"
+        )
+        # await session.commit()
 
         # Redirect back to account section
         redirect_url = (
@@ -1482,6 +1537,8 @@ async def setup_account(
                     ),
                 ):
                     text("Create Manual Account")
+
+    return None
 
 
 # TODO: Implement action endpoints

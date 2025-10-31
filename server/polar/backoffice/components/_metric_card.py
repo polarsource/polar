@@ -1,6 +1,6 @@
 import contextlib
 from collections.abc import Generator
-from typing import Literal
+from typing import Any, Literal
 
 from tagflow import tag, text
 
@@ -16,7 +16,7 @@ def metric_card(
     subtitle: str | None = None,
     trend: Literal["up", "down", "neutral"] | None = None,
     compact: bool = False,
-    **kwargs: any,
+    **kwargs: Any,
 ) -> Generator[None]:
     """Create a metric display card component.
 

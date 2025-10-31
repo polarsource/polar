@@ -1,6 +1,7 @@
 import contextlib
 from collections.abc import Generator
 from dataclasses import dataclass
+from typing import Any
 
 from tagflow import attr, tag, text
 
@@ -21,7 +22,7 @@ def tab_nav(
     tabs: list[Tab],
     *,
     vertical: bool = False,
-    **kwargs: any,
+    **kwargs: Any,
 ) -> Generator[None]:
     """Create a tab navigation component.
 

@@ -9,6 +9,7 @@ from tagflow import tag, text
 from polar.models import Organization
 
 from ....components import card, metric_card
+from ....components._metric_card import Variant
 
 
 class OverviewSection:
@@ -89,7 +90,9 @@ class OverviewSection:
             yield
 
     @contextlib.contextmanager
-    def setup_card(self, setup_data: dict | None = None) -> Generator[None]:
+    def setup_card(
+        self, setup_data: dict[str, int | bool] | None = None
+    ) -> Generator[None]:
         """Render setup verdict card."""
         with card(bordered=True):
             with tag.h2(classes="text-lg font-bold mb-4"):
@@ -124,7 +127,9 @@ class OverviewSection:
             yield
 
     @contextlib.contextmanager
-    def payment_card(self, payment_stats: dict | None = None) -> Generator[None]:
+    def payment_card(
+        self, payment_stats: dict[str, int | float] | None = None
+    ) -> Generator[None]:
         """Render payment statistics card."""
         # Check if payment risk is high
         p90_risk = payment_stats.get("p90_risk", 0) if payment_stats else 0
@@ -182,6 +187,7 @@ class OverviewSection:
                         pass
 
                 # Risk scores
+                risk_variant: Variant
                 if p90_risk >= 75:
                     risk_variant = "error"
                 elif p90_risk >= 50:
@@ -208,7 +214,7 @@ class OverviewSection:
 
                 # Refund metrics
                 refund_rate = payment_stats.get("refund_rate", 0)
-                refund_variant = (
+                refund_variant: Variant = (
                     "error"
                     if refund_rate >= 15
                     else "warning"
@@ -239,8 +245,8 @@ class OverviewSection:
     def render(
         self,
         request: Request,
-        setup_data: dict | None = None,
-        payment_stats: dict | None = None,
+        setup_data: dict[str, int | bool] | None = None,
+        payment_stats: dict[str, int | float] | None = None,
     ) -> Generator[None]:
         """Render the complete overview section."""
 

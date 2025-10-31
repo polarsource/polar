@@ -62,6 +62,53 @@ class SettingsSection:
                         with tag.div(classes="font-mono text-sm"):
                             text(self.org.customer_invoice_prefix)
 
+            # Feature flags card
+            with card(bordered=True):
+                with tag.div(classes="flex items-center justify-between mb-4"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Feature Flags")
+                    with button(
+                        variant="secondary",
+                        size="sm",
+                        ghost=True,
+                        hx_get=f"/backoffice/organizations-v2/{self.org.id}/edit-features",
+                        hx_target="#modal",
+                    ):
+                        text("Edit")
+
+                with tag.div(classes="space-y-2"):
+                    # Import OrganizationFeatureSettings to iterate over feature flags
+                    from polar.organization.schemas import OrganizationFeatureSettings
+
+                    feature_settings = self.org.feature_settings or {}
+                    if feature_settings:
+                        for (
+                            field_name
+                        ) in OrganizationFeatureSettings.model_fields.keys():
+                            enabled = feature_settings.get(field_name, False)
+                            label = field_name.replace("_", " ").title()
+
+                            with tag.div(classes="flex items-center gap-2"):
+                                # Status indicator
+                                status_class = (
+                                    "bg-success" if enabled else "bg-base-300"
+                                )
+                                with tag.div(
+                                    classes=f"w-2 h-2 rounded-full {status_class}"
+                                ):
+                                    pass
+                                with tag.div(classes="text-sm"):
+                                    text(label)
+                                with tag.div(
+                                    classes="text-xs text-base-content/60 ml-auto"
+                                ):
+                                    text("Enabled" if enabled else "Disabled")
+                    else:
+                        with tag.div(
+                            classes="text-sm text-base-content/60 text-center py-4"
+                        ):
+                            text("No feature flags configured")
+
             # Organization details card
             with card(bordered=True):
                 with tag.div(classes="flex items-center justify-between mb-4"):
@@ -77,6 +124,20 @@ class SettingsSection:
                         text("Edit")
 
                 with tag.div(classes="space-y-4"):
+                    # Website
+                    if self.org.website:
+                        with tag.div():
+                            with tag.div(classes="text-sm font-semibold mb-2"):
+                                text("Website")
+                            with tag.div(classes="text-sm text-base-content/80"):
+                                with tag.a(
+                                    href=str(self.org.website),
+                                    target="_blank",
+                                    rel="noopener noreferrer",
+                                    classes="link link-primary",
+                                ):
+                                    text(str(self.org.website))
+
                     if hasattr(self.org, "details") and self.org.details:
                         details = self.org.details
 

@@ -1,5 +1,6 @@
 import contextlib
 from collections.abc import Generator
+from typing import Any
 
 from tagflow import classes, tag, text
 
@@ -11,7 +12,7 @@ def status_badge(
     status: OrganizationStatus,
     *,
     show_icon: bool = False,
-    **kwargs: any,
+    **kwargs: Any,
 ) -> Generator[None]:
     """Create a status badge component with semantic coloring.
 

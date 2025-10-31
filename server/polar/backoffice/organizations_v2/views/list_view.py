@@ -35,7 +35,7 @@ class OrganizationListView:
             func.count(Organization.id).label("count"),
         ).group_by(Organization.status)
         result = await self.session.execute(stmt)
-        return {row.status: row.count for row in result}
+        return {row.status: row.count for row in result}  # type: ignore[misc]
 
     def calculate_days_in_status(self, org: Organization) -> int:
         """Calculate how many days organization has been in current status."""
@@ -75,7 +75,7 @@ class OrganizationListView:
         current_sort: str,
         current_direction: str,
         align: str = "left",
-    ):
+    ) -> Generator[None]:
         """Render a sortable table header with direction indicator."""
         is_active = current_sort == sort_key
         # Toggle direction: if currently ASC, next click is DESC

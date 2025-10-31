@@ -33,22 +33,22 @@ class OrganizationDetailView:
         tabs = [
             Tab(
                 "Overview",
-                f"/backoffice/organizations-v2/{self.org.id}?section=overview",
+                str(request.url_for("organizations-v2:detail", organization_id=self.org.id)) + "?section=overview",
                 active=current_section == "overview",
             ),
             Tab(
                 "Team",
-                f"/backoffice/organizations-v2/{self.org.id}?section=team",
+                str(request.url_for("organizations-v2:detail", organization_id=self.org.id)) + "?section=team",
                 active=current_section == "team",
             ),
             Tab(
                 "Account",
-                f"/backoffice/organizations-v2/{self.org.id}?section=account",
+                str(request.url_for("organizations-v2:detail", organization_id=self.org.id)) + "?section=account",
                 active=current_section == "account",
             ),
             Tab(
                 "Settings",
-                f"/backoffice/organizations-v2/{self.org.id}?section=settings",
+                str(request.url_for("organizations-v2:detail", organization_id=self.org.id)) + "?section=settings",
                 active=current_section == "settings",
             ),
         ]
@@ -77,7 +77,7 @@ class OrganizationDetailView:
                             variant="secondary",
                             size="sm",
                             ghost=True,
-                            hx_get=f"/backoffice/organizations-v2/{self.org.id}/edit-note",
+                            hx_get=str(request.url_for("organizations-v2:edit_note", organization_id=self.org.id)),
                             hx_target="#modal",
                         ):
                             text("Edit Note")
@@ -93,7 +93,7 @@ class OrganizationDetailView:
                         variant="secondary",
                         size="sm",
                         outline=True,
-                        hx_get=f"/backoffice/organizations-v2/{self.org.id}/add-note",
+                        hx_get=str(request.url_for("organizations-v2:add_note", organization_id=self.org.id)),
                         hx_target="#modal",
                     ):
                         text("Add Note")
@@ -115,7 +115,7 @@ class OrganizationDetailView:
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                hx_get=f"/backoffice/organizations-v2/{self.org.id}/unblock-approve-dialog",
+                                hx_get=str(request.url_for("organizations-v2:unblock_approve_dialog", organization_id=self.org.id)),
                                 hx_target="#modal",
                             ):
                                 text("Unblock & Approve")
@@ -127,7 +127,7 @@ class OrganizationDetailView:
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                hx_get=f"/backoffice/organizations-v2/{self.org.id}/approve-denied-dialog",
+                                hx_get=str(request.url_for("organizations-v2:approve_denied_dialog", organization_id=self.org.id)),
                                 hx_target="#modal",
                             ):
                                 text("Approve")
@@ -139,7 +139,7 @@ class OrganizationDetailView:
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                hx_get=f"/backoffice/organizations-v2/{self.org.id}/deny-dialog",
+                                hx_get=str(request.url_for("organizations-v2:deny_dialog", organization_id=self.org.id)),
                                 hx_target="#modal",
                             ):
                                 text("Deny")
@@ -154,12 +154,13 @@ class OrganizationDetailView:
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                hx_post=f"/backoffice/organizations-v2/{self.org.id}/approve?threshold={max_threshold}",
+                                hx_post=str(request.url_for("organizations-v2:approve", organization_id=self.org.id)) + f"?threshold={max_threshold}",
                                 hx_confirm=f"Approve this organization with {max_threshold_display} threshold?",
                             ):
                                 text(f"Approve ({max_threshold_display})")
 
                         # Custom approve with input
+                        approve_url = str(request.url_for("organizations-v2:approve", organization_id=self.org.id))
                         with tag.div(classes="flex gap-2"):
                             with tag.input(
                                 type="number",
@@ -172,7 +173,7 @@ class OrganizationDetailView:
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                onclick=f"const amount = document.getElementById('custom-threshold').value; if(amount && confirm('Approve with $' + amount + ' threshold?')) {{ htmx.ajax('POST', '/backoffice/organizations-v2/{self.org.id}/approve?threshold=' + (amount * 100), {{target: 'body'}}); }}",
+                                onclick=f"const amount = document.getElementById('custom-threshold').value; if(amount && confirm('Approve with $' + amount + ' threshold?')) {{ htmx.ajax('POST', '{approve_url}?threshold=' + (amount * 100), {{target: 'body'}}); }}",
                             ):
                                 text("✓")
 
@@ -181,7 +182,7 @@ class OrganizationDetailView:
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                hx_get=f"/backoffice/organizations-v2/{self.org.id}/deny-dialog",
+                                hx_get=str(request.url_for("organizations-v2:deny_dialog", organization_id=self.org.id)),
                                 hx_target="#modal",
                             ):
                                 text("Deny")
@@ -195,7 +196,7 @@ class OrganizationDetailView:
                             variant="secondary",
                             size="sm",
                             outline=True,
-                            hx_get=f"/backoffice/organizations-v2/{self.org.id}/plain-thread",
+                            hx_get=str(request.url_for("organizations-v2:detail", organization_id=self.org.id)) + "/plain-thread",
                             hx_target="#modal",
                         ):
                             text("Create Plain Thread")
@@ -205,7 +206,7 @@ class OrganizationDetailView:
                             variant="secondary",
                             size="sm",
                             outline=True,
-                            hx_get=f"/backoffice/organizations-v2/{self.org.id}/block-dialog",
+                            hx_get=str(request.url_for("organizations-v2:block_dialog", organization_id=self.org.id)),
                             hx_target="#modal",
                         ):
                             text("Block Organization")
@@ -295,7 +296,7 @@ class OrganizationDetailView:
         # Back button and header
         with tag.div(classes="mb-6"):
             with tag.a(
-                href="/backoffice/organizations-v2",
+                href=str(request.url_for("organizations-v2:list")),
                 classes="text-sm text-base-content/60 hover:text-base-content mb-2 inline-block",
             ):
                 text("← Back to Organizations")
@@ -325,7 +326,7 @@ class OrganizationDetailView:
                                 text("Search in Plain")
                         with tag.li():
                             with tag.a(
-                                hx_get=f"/backoffice/organizations-v2/{self.org.id}/delete-dialog",
+                                hx_get=str(request.url_for("organizations-v2:delete_dialog", organization_id=self.org.id)),
                                 hx_target="#modal",
                             ):
                                 text("Delete Organization")

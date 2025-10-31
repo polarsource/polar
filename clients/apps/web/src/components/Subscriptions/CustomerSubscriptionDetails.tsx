@@ -11,7 +11,7 @@ import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
@@ -40,9 +40,7 @@ const CustomerSubscriptionDetails = ({
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
 
-  const themePreset = useThemePreset(
-    subscription.product.organization.slug === 'midday' ? 'midday' : 'polar',
-  )
+  const themePreset = getThemePreset(subscription.product.organization.slug)
 
   const {
     isShown: isBenefitGrantsModalOpen,

@@ -3,7 +3,7 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -27,8 +27,8 @@ export const CustomerPortalOrders = ({
   const api = createClientSideAPI(customerSessionToken)
 
   const theme = useTheme()
-  const themingPreset = useThemePreset(
-    organization.slug === 'midday' ? 'midday' : 'polar',
+  const themingPreset = getThemePreset(
+    organization.slug,
     theme.resolvedTheme as 'light' | 'dark',
   )
 

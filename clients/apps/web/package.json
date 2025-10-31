@@ -20,6 +20,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.39",
     "@ai-sdk/google": "^2.0.25",
+    "@ai-sdk/mcp": "^0.0.4",
     "@ai-sdk/react": "^2.0.84",
     "@date-fns/utc": "^2.1.1",
     "@dnd-kit/core": "^6.3.1",

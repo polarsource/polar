@@ -5,11 +5,11 @@ import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser } from '@/utils/user'
 import { anthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
+import { experimental_createMCPClient } from '@ai-sdk/mcp'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { withTracing } from '@posthog/ai'
 import {
   convertToModelMessages,
-  experimental_createMCPClient,
   generateObject,
   smoothStream,
   stepCountIs,

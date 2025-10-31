@@ -105,9 +105,12 @@ const CashflowChart = ({
         )}
       >
         <div className="flex flex-col gap-y-4">
-          <h3 className="text-xl">
-            Cashflow <span className="opacity-50">Last 30 Days</span>
-          </h3>
+          <div className="flex flex-row gap-x-4">
+            <h3 className="text-xl">Cashflow</h3>
+            <span className="dark:text-polar-500 text-xl text-gray-500">
+              Last 30 Days
+            </span>
+          </div>
           <h3 className="text-5xl font-light">
             {formatAccountingFriendlyCurrency(
               metricsData ? metricsData.totals.cashflow : 0,
@@ -148,7 +151,7 @@ const CashflowChart = ({
                     {timestampFormatter(period.timestamp)}
                   </dt>
                   <dd className="w-full space-y-2">
-                    <div className="flex h-8 w-full items-center justify-start rounded-full bg-gray-100">
+                    <div className="dark:bg-polar-800 flex h-8 w-full items-center justify-start rounded-full bg-gray-100">
                       <div
                         className="flex h-full min-w-fit items-center justify-start rounded-full bg-red-500 px-[7px] text-right text-sm text-white data-empty:text-black/20"
                         style={{

@@ -158,7 +158,7 @@ export default function ClientPage({
     'cost_per_user', // Cost To Serve
     'gross_margin', // MRR - COGS
     'gross_margin_percentage', // Gross margin / MRR
-    'net_cashflow',
+    'cashflow',
     'monthly_recurring_revenue', // MRR
     'average_revenue_per_user', // ARPU
   ]

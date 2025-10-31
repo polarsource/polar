@@ -879,20 +879,20 @@ class GrossMarginPercentageMetric(MetaMetric):
         return cumulative_last(periods, cls.slug)
 
 
-class NetCashflowMetric(MetaMetric):
-    slug = "net_cashflow"
-    display_name = "Net Cashflow"
+class CashflowMetric(MetaMetric):
+    slug = "cashflow"
+    display_name = "Cashflow"
     type = MetricType.currency
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> float:
-        revenue = period.net_revenue
+        revenue = period.revenue
         costs = period.costs
         return revenue - costs
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        return cumulative_last(periods, cls.slug)
+        return cumulative_sum(periods, cls.slug)
 
 
 class ChurnRateMetric(MetaMetric):
@@ -973,7 +973,7 @@ METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
     ChurnRateMetric,
     GrossMarginMetric,
     GrossMarginPercentageMetric,
-    NetCashflowMetric,
+    CashflowMetric,
 ]
 
 METRICS: list[type[Metric]] = [

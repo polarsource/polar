@@ -1,6 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { useMemo } from 'react'
 import { BenefitEventCard } from './EventCard/BenefitEventCard'
+import { LLMInferenceEventCard } from './EventCard/LLMInferenceEventCard'
 import { OrderEventCard } from './EventCard/OrderEventCard'
 import { SubscriptionEventCard } from './EventCard/SubscriptionEventCard'
 import { UserEventCard } from './EventCard/UserEventCard'
@@ -65,6 +66,8 @@ export const useEventCard = (event: schemas['Event']) => {
           default:
             return <UserEventCard event={event} />
         }
+      case 'user':
+        return <LLMInferenceEventCard event={event} />
       default:
         return <UserEventCard event={event} />
     }

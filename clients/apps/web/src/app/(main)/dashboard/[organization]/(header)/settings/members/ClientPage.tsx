@@ -90,6 +90,7 @@ export default function ClientPage({
       )}
 
       <Modal
+        title="Invite Member"
         className="max-w-(--breakpoint-sm)!"
         modalContent={
           <InviteMemberModal

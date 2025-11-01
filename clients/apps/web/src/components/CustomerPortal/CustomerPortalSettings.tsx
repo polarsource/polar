@@ -110,6 +110,7 @@ export const CustomerPortalSettings = ({
       </Well>
 
       <Modal
+        title="Add Payment Method"
         isShown={isAddPaymentMethodModalOpen}
         hide={hideAddPaymentMethodModal}
         modalContent={

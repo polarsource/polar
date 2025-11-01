@@ -153,6 +153,7 @@ const LandingPageMobileNavigation = () => {
         </SidebarContent>
       </Sidebar>
       <Modal
+        title="Login"
         isShown={isModalShown}
         hide={hideModal}
         modalContent={<AuthModal />}
@@ -307,6 +308,7 @@ const LandingPageDesktopNavigation = () => {
         </Button>
       </div>
       <Modal
+        title="Login"
         isShown={isModalShown}
         hide={hideModal}
         modalContent={<AuthModal />}

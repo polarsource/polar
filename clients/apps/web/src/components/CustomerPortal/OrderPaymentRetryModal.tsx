@@ -91,6 +91,7 @@ export const OrderPaymentRetryModal = ({
 
   return (
     <Modal
+      title="Update Payment Method"
       isShown={isOpen}
       hide={handleClose}
       modalContent={

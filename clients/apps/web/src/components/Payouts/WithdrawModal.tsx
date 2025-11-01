@@ -80,6 +80,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
   return (
     <Modal
+      title="Withdraw Balance"
       className="min-w-[400px]"
       isShown={isShown}
       hide={hide}

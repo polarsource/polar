@@ -13,9 +13,12 @@ from polar.models import (
     ProductPriceFixed,
     UserOrganization,
 )
+from polar.models.custom_field import CustomFieldType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_custom_field,
+    create_product,
     set_product_benefits,
 )
 
@@ -425,6 +428,44 @@ class TestUpdateProduct:
         product_price = product_one_time.prices[0]
         assert isinstance(product_price, ProductPriceFixed)
         assert price["price_amount"] == product_price.price_amount
+
+    @pytest.mark.auth
+    async def test_invalid_attached_custom_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        custom_field = await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="test-field",
+            organization=organization,
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            attached_custom_fields=[
+                (custom_field, True),
+            ],
+        )
+
+        response = await client.patch(
+            f"/v1/products/{product.id}",
+            json={
+                "attached_custom_fields": [
+                    {
+                        "custom_field_id": str(uuid.uuid4()),
+                        "required": False,
+                    }
+                ]
+            },
+        )
+
+        assert response.status_code == 422
 
 
 @pytest.mark.asyncio

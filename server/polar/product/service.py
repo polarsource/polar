@@ -278,6 +278,24 @@ class ProductService:
     ) -> Product:
         errors: list[ValidationError] = []
 
+        # Validate prices
+        existing_prices = set(product.prices)
+        added_prices: list[ProductPrice] = []
+        if update_schema.prices is not None:
+            (
+                _,
+                existing_prices,
+                added_prices,
+                prices_errors,
+            ) = await self._get_validated_prices(
+                session,
+                update_schema.prices,
+                product.recurring_interval,
+                product,
+                auth_subject,
+            )
+            errors.extend(prices_errors)
+
         # Prevent non-legacy products from changing their recurring interval
         if (
             update_schema.recurring_interval is not None
@@ -380,23 +398,6 @@ class ProductService:
             if attached_custom_fields_errors:
                 await nested.rollback()
                 errors.extend(attached_custom_fields_errors)
-
-        existing_prices = set(product.prices)
-        added_prices: list[ProductPrice] = []
-        if update_schema.prices is not None:
-            (
-                _,
-                existing_prices,
-                added_prices,
-                prices_errors,
-            ) = await self._get_validated_prices(
-                session,
-                update_schema.prices,
-                product.recurring_interval,
-                product,
-                auth_subject,
-            )
-            errors.extend(prices_errors)
 
         if errors:
             raise PolarRequestValidationError(errors)

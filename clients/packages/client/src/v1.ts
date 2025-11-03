@@ -5524,7 +5524,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitCustomSubscriberProperties']
     }
     /**
@@ -5803,7 +5803,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDiscordSubscriberProperties']
     }
     /**
@@ -6007,7 +6007,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDownloadablesSubscriberProperties']
     }
     /** BenefitDownloadablesSubscriberProperties */
@@ -6237,7 +6237,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitGitHubRepositorySubscriberProperties']
     }
     /**
@@ -7111,7 +7111,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitLicenseKeysSubscriberProperties']
     }
     /** BenefitLicenseKeysSubscriberProperties */
@@ -7334,7 +7334,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitMeterCreditSubscriberProperties']
     }
     /**
@@ -7494,6 +7494,48 @@ export interface components {
       | '-description'
       | 'type'
       | '-type'
+    /** BenefitSubscriberOrganization */
+    BenefitSubscriberOrganization: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Organization name shown in checkout, customer portal, emails etc.
+       */
+      name: string
+      /**
+       * Slug
+       * @description Unique organization slug in checkout, customer portal and credit card statements.
+       */
+      slug: string
+      /**
+       * Avatar Url
+       * @description Avatar URL shown in checkout, customer portal, emails etc.
+       */
+      avatar_url: string | null
+      /** @description Proration behavior applied when customer updates their subscription from the portal. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
+    }
     /**
      * BenefitType
      * @enum {string}
@@ -8635,6 +8677,48 @@ export interface components {
        */
       success_url?: string | null
     }
+    /** CheckoutOrganization */
+    CheckoutOrganization: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Organization name shown in checkout, customer portal, emails etc.
+       */
+      name: string
+      /**
+       * Slug
+       * @description Unique organization slug in checkout, customer portal and credit card statements.
+       */
+      slug: string
+      /**
+       * Avatar Url
+       * @description Avatar URL shown in checkout, customer portal, emails etc.
+       */
+      avatar_url: string | null
+      /** @description Proration behavior applied when customer updates their subscription from the portal. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
+    }
     /**
      * CheckoutPriceCreate
      * @description Create a new checkout session from a product price.
@@ -9360,7 +9444,7 @@ export interface components {
             | components['schemas']['CheckoutDiscountPercentageRepeatDuration']
           )
         | null
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['CheckoutOrganization']
       /** Attached Custom Fields */
       attached_custom_fields:
         | components['schemas']['AttachedCustomField'][]
@@ -9600,7 +9684,7 @@ export interface components {
             | components['schemas']['CheckoutDiscountPercentageRepeatDuration']
           )
         | null
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['CheckoutOrganization']
       /** Attached Custom Fields */
       attached_custom_fields:
         | components['schemas']['AttachedCustomField'][]
@@ -12193,7 +12277,7 @@ export interface components {
        * @description List of medias associated to the product.
        */
       medias: components['schemas']['ProductMediaFileRead'][]
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['CustomerOrganization']
     }
     /**
      * CustomerOrderSortProperty
@@ -12345,12 +12429,54 @@ export interface components {
       /** @description The address of the customer that should appear on the invoice. Can't be updated after the invoice is generated. */
       billing_address: components['schemas']['AddressInput'] | null
     }
+    /** CustomerOrganization */
+    CustomerOrganization: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Organization name shown in checkout, customer portal, emails etc.
+       */
+      name: string
+      /**
+       * Slug
+       * @description Unique organization slug in checkout, customer portal and credit card statements.
+       */
+      slug: string
+      /**
+       * Avatar Url
+       * @description Avatar URL shown in checkout, customer portal, emails etc.
+       */
+      avatar_url: string | null
+      /** @description Proration behavior applied when customer updates their subscription from the portal. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
+    }
     /**
-     * CustomerOrganization
+     * CustomerOrganizationData
      * @description Schema of an organization and related data for customer portal.
      */
-    CustomerOrganization: {
-      organization: components['schemas']['Organization']
+    CustomerOrganizationData: {
+      organization: components['schemas']['CustomerOrganization']
       /** Products */
       products: components['schemas']['CustomerProduct'][]
     }
@@ -13419,7 +13545,7 @@ export interface components {
        * @description List of medias associated to the product.
        */
       medias: components['schemas']['ProductMediaFileRead'][]
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['CustomerOrganization']
     }
     /**
      * CustomerSubscriptionSortProperty
@@ -15310,6 +15436,17 @@ export interface components {
      * @enum {string}
      */
     IdentityVerificationStatus: 'unverified' | 'pending' | 'verified' | 'failed'
+    /** InsufficientBalance */
+    InsufficientBalance: {
+      /**
+       * Error
+       * @example InsufficientBalance
+       * @constant
+       */
+      error: 'InsufficientBalance'
+      /** Detail */
+      detail: string
+    }
     /** IntrospectTokenResponse */
     IntrospectTokenResponse: {
       /** Active */
@@ -15378,6 +15515,18 @@ export interface components {
        */
       total_tokens: number
     }
+    /**
+     * LegacyOrganizationStatus
+     * @description Legacy organization status values kept for backward compatibility in schemas
+     *     using OrganizationPublicBase.
+     * @enum {string}
+     */
+    LegacyOrganizationStatus:
+      | 'created'
+      | 'onboarding_started'
+      | 'under_review'
+      | 'denied'
+      | 'active'
     LegacyRecurringProductPrice:
       | components['schemas']['LegacyRecurringProductPriceFixed']
       | components['schemas']['LegacyRecurringProductPriceCustom']
@@ -16173,54 +16322,6 @@ export interface components {
       return_to?: string | null
       attribution?: components['schemas']['UserSignupAttribution'] | null
     }
-    /** MaintainerAccountReviewedNotification */
-    MaintainerAccountReviewedNotification: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'MaintainerAccountReviewedNotification'
-      payload: components['schemas']['MaintainerAccountReviewedNotificationPayload']
-    }
-    /** MaintainerAccountReviewedNotificationPayload */
-    MaintainerAccountReviewedNotificationPayload: {
-      /** Account Type */
-      account_type: string
-    }
-    /** MaintainerAccountUnderReviewNotification */
-    MaintainerAccountUnderReviewNotification: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'MaintainerAccountUnderReviewNotification'
-      payload: components['schemas']['MaintainerAccountUnderReviewNotificationPayload']
-    }
-    /** MaintainerAccountUnderReviewNotificationPayload */
-    MaintainerAccountUnderReviewNotificationPayload: {
-      /** Account Type */
-      account_type: string
-    }
     /** MaintainerCreateAccountNotification */
     MaintainerCreateAccountNotification: {
       /**
@@ -17001,8 +17102,6 @@ export interface components {
     NotificationsList: {
       /** Notifications */
       notifications: (
-        | components['schemas']['MaintainerAccountUnderReviewNotification']
-        | components['schemas']['MaintainerAccountReviewedNotification']
         | components['schemas']['MaintainerNewPaidSubscriptionNotification']
         | components['schemas']['MaintainerNewProductSaleNotification']
         | components['schemas']['MaintainerCreateAccountNotification']
@@ -17957,8 +18056,7 @@ export interface components {
       /**
        * Id
        * Format: uuid4
-       * @description The organization ID.
-       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       * @description The ID of the object.
        */
       id: string
       /**
@@ -17976,6 +18074,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
+      /** @description Proration behavior applied when customer updates their subscription from the portal. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
       /**
        * Email
        * @description Public support email.
@@ -18522,7 +18627,8 @@ export interface components {
     OrganizationStatus:
       | 'created'
       | 'onboarding_started'
-      | 'under_review'
+      | 'initial_review'
+      | 'ongoing_review'
       | 'denied'
       | 'active'
     /** OrganizationSubscribePromoteSettings */
@@ -21551,7 +21657,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      product: components['schemas']['TransactionProduct']
+      product: components['schemas']['TransactionProduct'] | null
       /** Subscription Id */
       subscription_id: string | null
     }
@@ -21680,6 +21786,17 @@ export interface components {
        * @constant
        */
       error: 'Unauthorized'
+      /** Detail */
+      detail: string
+    }
+    /** UnderReviewAccount */
+    UnderReviewAccount: {
+      /**
+       * Error
+       * @example UnderReviewAccount
+       * @constant
+       */
+      error: 'UnderReviewAccount'
       /** Detail */
       detail: string
     }
@@ -30679,7 +30796,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerOrganization']
+          'application/json': components['schemas']['CustomerOrganizationData']
         }
       }
       /** @description Organization not found. */
@@ -32244,13 +32361,40 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Successful Response */
+      /** @description Payout estimate computed successfully. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': components['schemas']['PayoutEstimate']
+        }
+      }
+      /** @description The balance is insufficient to create a payout. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['InsufficientBalance']
+        }
+      }
+      /** @description The account is under review or not ready. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UnderReviewAccount']
+        }
+      }
+      /** @description Account not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -35546,6 +35690,9 @@ export const identityVerificationStatusValues: ReadonlyArray<
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   components['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
+export const legacyOrganizationStatusValues: ReadonlyArray<
+  components['schemas']['LegacyOrganizationStatus']
+> = ['created', 'onboarding_started', 'under_review', 'denied', 'active']
 export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
   components['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
 > = ['custom']
@@ -35558,12 +35705,6 @@ export const legacyRecurringProductPriceFreeAmount_typeValues: ReadonlyArray<
 export const licenseKeyStatusValues: ReadonlyArray<
   components['schemas']['LicenseKeyStatus']
 > = ['granted', 'revoked', 'disabled']
-export const maintainerAccountReviewedNotificationTypeValues: ReadonlyArray<
-  components['schemas']['MaintainerAccountReviewedNotification']['type']
-> = ['MaintainerAccountReviewedNotification']
-export const maintainerAccountUnderReviewNotificationTypeValues: ReadonlyArray<
-  components['schemas']['MaintainerAccountUnderReviewNotification']['type']
-> = ['MaintainerAccountUnderReviewNotification']
 export const maintainerCreateAccountNotificationTypeValues: ReadonlyArray<
   components['schemas']['MaintainerCreateAccountNotification']['type']
 > = ['MaintainerCreateAccountNotification']
@@ -35709,7 +35850,14 @@ export const organizationSortPropertyValues: ReadonlyArray<
 ]
 export const organizationStatusValues: ReadonlyArray<
   components['schemas']['OrganizationStatus']
-> = ['created', 'onboarding_started', 'under_review', 'denied', 'active']
+> = [
+  'created',
+  'onboarding_started',
+  'initial_review',
+  'ongoing_review',
+  'denied',
+  'active',
+]
 export const paymentProcessorValues: ReadonlyArray<
   components['schemas']['PaymentProcessor']
 > = ['stripe']

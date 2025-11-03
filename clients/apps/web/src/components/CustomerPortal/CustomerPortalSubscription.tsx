@@ -170,7 +170,6 @@ const CustomerPortalSubscription = ({
             subscription.amount && subscription.currency ? (
               <AmountLabel
                 amount={subscription.amount}
-                currency={subscription.currency}
                 interval={subscription.recurring_interval}
                 intervalCount={subscription.recurring_interval_count}
               />

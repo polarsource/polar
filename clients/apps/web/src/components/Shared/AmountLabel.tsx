@@ -1,13 +1,11 @@
+import { formatCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useMemo } from 'react'
 
 interface AmountLabelProps {
   amount: number
-  currency: string
   interval?: schemas['SubscriptionRecurringInterval']
   intervalCount?: number | null
-  minimumFractionDigits?: number
 }
 
 const ordinalRules = new Intl.PluralRules('en', { type: 'ordinal' })
@@ -29,11 +27,9 @@ const ordinal = (number: number): string => {
 
 const AmountLabel: React.FC<AmountLabelProps> = ({
   amount,
-  currency,
   interval,
   intervalCount,
-  minimumFractionDigits = 0,
-}) => {
+}: AmountLabelProps) => {
   const intervalDisplay = useMemo(() => {
     if (!interval) {
       return ''
@@ -59,7 +55,7 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
 
   return (
     <div className="flex flex-row items-baseline gap-x-1">
-      {formatCurrencyAndAmount(amount, currency, minimumFractionDigits)}
+      {formatCurrency(amount)}
       <span className="text-[max(12px,0.5em)]">{intervalDisplay}</span>
     </div>
   )

@@ -1,7 +1,9 @@
 """add external_id and parent_id to events
+
 Revision ID: cd0255e61066
 Revises: f3cbc3937937
 Create Date: 2025-11-03 15:14:55.787471
+
 """
 
 import sqlalchemy as sa

@@ -36,6 +36,10 @@ export const useEventDisplayName = (eventName: schemas['Event']['name']) => {
         return 'Customer Updated'
       case 'customer.deleted':
         return 'Customer Deleted'
+      case 'meter.credited':
+        return 'Meter Credited'
+      case 'meter.reset':
+        return 'Meter Reset'
       default:
         return eventName
     }

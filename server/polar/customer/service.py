@@ -180,7 +180,7 @@ class CustomerService:
                     }
                 )
 
-            # Reset verification status
+            customer.email = customer_update.email
             customer.email_verified = False
 
         if (
@@ -220,7 +220,9 @@ class CustomerService:
 
         return await repository.update(
             customer,
-            update_dict=customer_update.model_dump(exclude_unset=True, by_alias=True),
+            update_dict=customer_update.model_dump(
+                exclude={"email"}, exclude_unset=True, by_alias=True
+            ),
         )
 
     async def delete(self, session: AsyncSession, customer: Customer) -> Customer:

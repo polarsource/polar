@@ -255,6 +255,18 @@ class TestUpdate:
 
         assert customer.external_id == customer_external_id.external_id
 
+    async def test_valid_explicitly_none_email(
+        self, session: AsyncSession, customer: Customer
+    ) -> None:
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(email=None),
+        )
+        await session.flush()
+
+        assert updated_customer.email == customer.email
+
 
 @pytest.mark.asyncio
 class TestDelete:

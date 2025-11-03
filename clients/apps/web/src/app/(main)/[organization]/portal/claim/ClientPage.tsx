@@ -18,7 +18,7 @@ export default function ClientPage({
   organization,
   invitationToken,
 }: {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   invitationToken?: string
 }) {
   const router = useRouter()

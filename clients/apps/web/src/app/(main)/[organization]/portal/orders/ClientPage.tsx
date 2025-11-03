@@ -9,7 +9,7 @@ const ClientPage = ({
   orders,
   customerSessionToken,
 }: {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   orders: schemas['ListResource_CustomerOrder_']
   customerSessionToken: string
 }) => {

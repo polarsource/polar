@@ -1,10 +1,9 @@
 'use client'
 
-import MailOutline from '@mui/icons-material/MailOutline'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
-import { PropsWithChildren, useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Gradient } from './GradientMesh'
 import { computeComplementaryColor } from './utils'
 
@@ -62,29 +61,8 @@ export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
         </div>
       </div>
       <div className="flex w-full grow flex-col items-center">
-        <div className="flex w-full grow flex-col items-center gap-y-6">
-          <div className="flex flex-row flex-wrap items-center gap-3 text-lg">
-            {organization.email && (
-              <SocialLink href={`mailto:${organization.email}`}>
-                <MailOutline fontSize="small" />
-              </SocialLink>
-            )}
-          </div>
-        </div>
+        <div className="flex w-full grow flex-col items-center gap-y-6"></div>
       </div>
     </div>
-  )
-}
-
-const SocialLink = (props: PropsWithChildren<{ href: string }>) => {
-  return (
-    <Link
-      target="_blank"
-      rel="noopener nofollow"
-      className="dark:text-polar-400 flex flex-col items-center justify-center rounded-full bg-transparent text-gray-500 transition-colors hover:bg-transparent hover:text-blue-500 dark:bg-transparent dark:hover:text-white"
-      href={props.href}
-    >
-      {props.children}
-    </Link>
   )
 }

@@ -62,7 +62,7 @@ const CustomerSubscriptionDetails = ({
 
   const primaryAction = useMemo(() => {
     if (
-      organization.subscription_settings.allow_customer_updates &&
+      organization.allow_customer_updates &&
       !isCanceled &&
       subscription.status !== 'trialing'
     ) {

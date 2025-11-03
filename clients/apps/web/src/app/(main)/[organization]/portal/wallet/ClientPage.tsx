@@ -9,7 +9,7 @@ const ClientPage = ({
   wallets,
   customerSessionToken,
 }: {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   wallets: schemas['CustomerWallet'][]
   customerSessionToken: string
 }) => {

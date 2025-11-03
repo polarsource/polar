@@ -25,7 +25,7 @@ const ClientPage = ({
   organization,
   email,
 }: {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   email?: string
 }) => {
   const router = useRouter()

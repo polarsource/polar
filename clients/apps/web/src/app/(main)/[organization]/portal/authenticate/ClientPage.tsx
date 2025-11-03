@@ -28,7 +28,7 @@ import { twMerge } from 'tailwind-merge'
 const ClientPage = ({
   organization,
 }: {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
 }) => {
   const router = useRouter()
   const form = useForm<{ code: string }>()

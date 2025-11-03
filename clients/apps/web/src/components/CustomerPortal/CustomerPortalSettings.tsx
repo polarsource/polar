@@ -20,7 +20,7 @@ import EditBillingDetails from './EditBillingDetails'
 import PaymentMethod from './PaymentMethod'
 
 interface CustomerPortalSettingsProps {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   customerSessionToken?: string
   setupIntentParams?: {
     setup_intent_client_secret: string

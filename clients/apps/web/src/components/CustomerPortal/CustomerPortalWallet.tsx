@@ -3,7 +3,7 @@ import { schemas } from '@polar-sh/client'
 import WalletCard from '../Wallet/WalletCard'
 
 export interface CustomerPortalWalletProps {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   wallet: schemas['CustomerWallet']
   customerSessionToken: string
 }

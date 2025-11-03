@@ -13,7 +13,7 @@ import CustomerPortalSubscription from './CustomerPortalSubscription'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
 
 interface SubscriptionsOverviewProps {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   subscriptions: schemas['CustomerSubscription'][]
   products: schemas['CustomerProduct'][]
   api: Client
@@ -56,7 +56,7 @@ export const ActiveSubscriptionsOverview = ({
 }
 
 interface SubscriptionsOverviewProps {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   subscriptions: schemas['CustomerSubscription'][]
 }
 

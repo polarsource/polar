@@ -12,7 +12,7 @@ import { twMerge } from 'tailwind-merge'
 import FormattedUnits from '../Meter/FormattedUnits'
 export interface CustomerUsageProps {
   api: Client
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
 }
 
 export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {

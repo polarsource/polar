@@ -180,8 +180,6 @@ export const ProductPriceSeatBasedItem: React.FC<
 
   const tiers = watch(`prices.${index}.seat_tiers.tiers`)
 
-  const DEFAULT_TIER_SIZE = 10
-
   const addTier = useCallback(() => {
     const lastTier = tiers?.[tiers.length - 1]
     const minSeats = lastTier?.max_seats ? lastTier.max_seats + 1 : 1

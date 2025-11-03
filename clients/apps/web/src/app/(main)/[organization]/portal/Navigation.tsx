@@ -16,21 +16,12 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
-const links = (organization: schemas['Organization']) => [
+const links = (organization: schemas['CustomerOrganization']) => [
   {
     href: `/${organization.slug}/portal/overview`,
     label: 'Overview',
     isActive: (path: string) => path.includes('/overview'),
   },
-  ...(organization.feature_settings?.wallets_enabled
-    ? [
-        {
-          href: `/${organization.slug}/portal/wallet`,
-          label: 'Wallet',
-          isActive: (path: string) => path.includes('/wallet'),
-        },
-      ]
-    : []),
   {
     href: `/${organization.slug}/portal/orders`,
     label: 'Orders',
@@ -52,7 +43,7 @@ export const Navigation = ({
   organization,
   themePreset,
 }: {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   themePreset: ThemingPresetProps
 }) => {
   const router = useRouter()

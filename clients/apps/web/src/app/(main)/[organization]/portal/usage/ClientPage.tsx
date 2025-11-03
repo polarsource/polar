@@ -8,7 +8,7 @@ const ClientPage = ({
   organization,
   customerSessionToken,
 }: {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   customerSessionToken?: string
 }) => {
   const api = createClientSideAPI(customerSessionToken)

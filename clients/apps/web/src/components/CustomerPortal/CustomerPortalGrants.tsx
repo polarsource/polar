@@ -4,7 +4,7 @@ import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
 
 export interface CustomerPortalGrantsProps {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   benefitGrants: schemas['CustomerBenefitGrant'][]
   api: Client
 }

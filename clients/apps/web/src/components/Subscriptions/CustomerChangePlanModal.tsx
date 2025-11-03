@@ -56,7 +56,7 @@ const CustomerChangePlanModal = ({
   themingPreset,
 }: {
   api: Client
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   products: schemas['CustomerProduct'][]
   subscription: schemas['CustomerSubscription']
   hide: () => void
@@ -109,7 +109,7 @@ const CustomerChangePlanModal = ({
   }, [selectedProduct, subscription])
 
   const prorationBehavior = useMemo(
-    () => organization.subscription_settings.proration_behavior,
+    () => organization.proration_behavior,
     [organization],
   )
 

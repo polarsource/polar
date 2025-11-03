@@ -78,13 +78,16 @@ const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
   trial_interval_count: null,
 }
 
-const ORGANIZATION: schemas['Organization'] = {
+const ORGANIZATION: schemas['CustomerOrganization'] = {
   id: '123',
   name: 'My Organization',
   slug: 'my-organization',
   created_at: new Date().toISOString(),
   modified_at: null,
   avatar_url: '/assets/acme.jpg',
+  allow_customer_updates: true,
+  proration_behavior: 'prorate',
+  // @ts-expect-error - deprecated hidden fields
   website: null,
   socials: [],
   status: 'active',

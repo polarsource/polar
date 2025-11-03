@@ -2,7 +2,7 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 
 interface WalletCardProps {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   wallet: schemas['CustomerWallet'] | schemas['Wallet']
 }
 

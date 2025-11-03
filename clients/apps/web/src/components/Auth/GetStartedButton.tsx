@@ -13,7 +13,7 @@ import { AuthModal } from './AuthModal'
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
   orgSlug?: string
-  storefrontOrg?: schemas['Organization']
+  storefrontOrg?: schemas['CustomerOrganization']
 }
 
 const GetStartedButton = ({

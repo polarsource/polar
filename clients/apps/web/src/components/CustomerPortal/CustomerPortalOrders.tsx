@@ -14,7 +14,7 @@ import { OrderStatus } from '../Orders/OrderStatus'
 import CustomerPortalOrder from './CustomerPortalOrder'
 
 export interface CustomerPortalOrdersProps {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   orders: schemas['CustomerOrder'][]
   customerSessionToken: string
 }

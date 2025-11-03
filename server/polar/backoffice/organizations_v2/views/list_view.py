@@ -101,6 +101,7 @@ class OrganizationListView:
             hx_vals_dict["status"] = status_filter.value
 
         import json
+
         hx_vals = json.dumps(hx_vals_dict)
 
         with tag.th(

@@ -14,8 +14,8 @@ import {
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import {
-  formatAccountingFriendlyCurrency,
   formatCurrency,
+  formatHumanFriendlyCurrency,
   formatPercentage,
   formatScalar,
   formatSubCentCurrency,
@@ -43,13 +43,13 @@ import { CustomerTrendStatBox } from './CustomerTrendStatBox'
 interface CustomerPageProps {
   organization: schemas['Organization']
   customer: schemas['Customer']
-  metrics: { startDate: Date; endDate: Date }
+  dateRange: { startDate: Date; endDate: Date }
 }
 
 export const CustomerPage: React.FC<CustomerPageProps> = ({
   organization,
   customer,
-  metrics,
+  dateRange,
 }) => {
   const { data: orders, isLoading: ordersLoading } = useOrders(
     customer.organization_id,
@@ -82,14 +82,14 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
   >(organization.feature_settings?.revops_enabled ? 'cashflow' : 'revenue')
 
   const interval = React.useMemo(() => {
-    return metrics.startDate && metrics.endDate
-      ? dateRangeToInterval(metrics.startDate, metrics.endDate)
+    return dateRange.startDate && dateRange.endDate
+      ? dateRangeToInterval(dateRange.startDate, dateRange.endDate)
       : 'day'
-  }, [metrics.startDate, metrics.endDate])
+  }, [dateRange])
 
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
-    startDate: metrics.startDate,
-    endDate: metrics.endDate,
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate,
     organization_id: organization.id,
     interval,
     customer_id: [customer.id],
@@ -97,8 +97,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
 
   const { data: currentPeriodMetrics } = useMetrics(
     {
-      startDate: metrics.startDate,
-      endDate: metrics.endDate,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
       organization_id: organization.id,
       interval: 'day',
       customer_id: [customer.id],
@@ -108,8 +108,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
 
   const { data: previousPeriodMetrics } = useMetrics(
     {
-      startDate: getPreviousDateRange(metrics.startDate, metrics.endDate)[0],
-      endDate: getPreviousDateRange(metrics.startDate, metrics.endDate)[1],
+      startDate: getPreviousDateRange(
+        dateRange.startDate,
+        dateRange.endDate,
+      )[0],
+      endDate: getPreviousDateRange(dateRange.startDate, dateRange.endDate)[1],
       organization_id: organization.id,
       interval: 'day',
       customer_id: [customer.id],
@@ -120,11 +123,19 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
   const calculateTrend = React.useCallback(
     (
       metricKey: keyof schemas['MetricsTotals'],
-    ): { value: number; direction: 'up' | 'down' | 'none' } | undefined => {
+    ):
+      | {
+          value: number
+          direction: 'up' | 'down' | 'none'
+          metric: schemas['Metric']
+          previousValue: number
+        }
+      | undefined => {
       if (!currentPeriodMetrics?.totals || !previousPeriodMetrics?.totals) {
         return undefined
       }
 
+      const metric = currentPeriodMetrics.metrics[metricKey]
       const currentValue = currentPeriodMetrics.totals[metricKey]
       const previousValue = previousPeriodMetrics.totals[metricKey]
 
@@ -136,20 +147,23 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       }
 
       if (previousValue === 0) {
-        if (currentValue === 0) return { value: 0, direction: 'none' }
-        return { value: 100, direction: 'up' }
+        if (currentValue === 0)
+          return { value: 0, direction: 'none', metric, previousValue }
+        return { value: 100, direction: 'up', metric, previousValue }
       }
 
       const percentageChange =
         ((currentValue - previousValue) / Math.abs(previousValue)) * 100
 
       if (Math.abs(percentageChange) < 0.01) {
-        return { value: 0, direction: 'none' }
+        return { value: 0, direction: 'none', metric, previousValue }
       }
 
       return {
         value: percentageChange,
         direction: percentageChange > 0 ? 'up' : 'down',
+        previousValue,
+        metric,
       }
     },
     [currentPeriodMetrics, previousPeriodMetrics],
@@ -211,7 +225,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <TabsTrigger value="usage">Usage</TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-8">
-        <div className="flex flex-col gap-4 md:flex-row md:gap-6">
+        <div className="grid grid-cols-2 flex-row gap-4 md:gap-6 xl:flex">
           {organization.feature_settings?.revops_enabled ? (
             <>
               <CustomerTrendStatBox
@@ -220,7 +234,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 trend={calculateTrend('revenue')}
               >
                 {typeof currentPeriodMetrics?.totals.revenue === 'number'
-                  ? formatAccountingFriendlyCurrency(
+                  ? formatHumanFriendlyCurrency(
                       currentPeriodMetrics.totals.revenue,
                     )
                   : '—'}
@@ -240,7 +254,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 trend={calculateTrend('gross_margin')}
               >
                 {typeof currentPeriodMetrics?.totals.gross_margin === 'number'
-                  ? formatAccountingFriendlyCurrency(
+                  ? formatHumanFriendlyCurrency(
                       currentPeriodMetrics.totals.gross_margin,
                     )
                   : '—'}
@@ -262,7 +276,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             <>
               <CustomerStatBox title="Lifetime Revenue" size="lg">
                 {typeof metricsData?.totals.cumulative_revenue === 'number'
-                  ? formatAccountingFriendlyCurrency(
+                  ? formatHumanFriendlyCurrency(
                       metricsData.totals.cumulative_revenue,
                     )
                   : '—'}
@@ -531,8 +545,12 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </div>
         </ShadowBox>
       </TabsContent>
-      <CustomerUsageView customer={customer} />
-      <CustomerEventsView customer={customer} organization={organization} />
+      <CustomerUsageView customer={customer} dateRange={dateRange} />
+      <CustomerEventsView
+        customer={customer}
+        organization={organization}
+        dateRange={dateRange}
+      />
     </Tabs>
   )
 }

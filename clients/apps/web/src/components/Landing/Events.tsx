@@ -53,8 +53,8 @@ export const Events = () => {
       )
     }, 0)
 
-    return -profit
-  }, [mockedEvents, eventOffset])
+    return profit
+  }, [eventOffset])
 
   return (
     <Section className="flex flex-col gap-y-32 py-0 md:py-0">
@@ -140,13 +140,15 @@ export const Events = () => {
                       <EventCostBadge
                         cost={event.cost.amount}
                         currency={event.cost.currency}
+                        type="cost"
                         nonCostEvent={event.cost.amount === 0}
                       />
                     )}
                     {'revenue' in event && event.revenue && (
                       <EventCostBadge
-                        cost={-event.revenue.amount}
+                        cost={event.revenue.amount}
                         currency={event.revenue.currency}
+                        type="revenue"
                         nonCostEvent={event.revenue.amount === 0}
                       />
                     )}

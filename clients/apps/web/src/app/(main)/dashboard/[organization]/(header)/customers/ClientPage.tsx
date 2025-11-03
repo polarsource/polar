@@ -383,7 +383,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         <CustomerPage
           customer={selectedCustomer}
           organization={organization}
-          metrics={{ startDate, endDate }}
+          dateRange={{ startDate, endDate }}
         />
       ) : (
         <div className="mt-96 flex w-full flex-col items-center justify-center gap-4">

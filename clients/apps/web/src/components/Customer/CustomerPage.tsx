@@ -35,7 +35,6 @@ import {
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { benefitsDisplayNames } from '../Benefit/utils'
-import CashflowChart from '../Metrics/CashflowChart'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerStatBox } from './CustomerStatBox'
@@ -75,8 +74,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
   const { data: customerBalance, isLoading: balanceLoading } =
     useCustomerBalance(customer.id)
 
-  const [selectedMetric, setSelectedMetric] =
-    React.useState<keyof schemas['Metrics']>('revenue')
+  const [selectedMetric, setSelectedMetric] = React.useState<
+    keyof schemas['Metrics']
+  >(organization.feature_settings?.revops_enabled ? 'cashflow' : 'revenue')
+
   const [startDate, endDate, interval] = React.useMemo(
     () => getChartRangeParams('all_time', customer.created_at),
     [customer.created_at],
@@ -186,13 +187,15 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </CustomerStatBox>
         </div>
 
-        {organization.feature_settings?.revops_enabled && (
+        {/** Disabling this for now until we're satisfied with the layout/presentation design */}
+
+        {/** organization.feature_settings?.revops_enabled && (}
           <CashflowChart
             organizationId={organization.id}
             customerId={customer.id}
             customerCreatedAt={customer.created_at}
           />
-        )}
+        ) */}
 
         <MetricChartBox
           metric={selectedMetric}

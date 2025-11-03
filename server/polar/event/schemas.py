@@ -137,20 +137,6 @@ class EventCreateBase(Schema):
             "**Required unless you use an organization token.**"
         ),
     )
-    external_id: str | None = Field(
-        default=None,
-        description=(
-            "Your unique identifier for this event. "
-            "Useful for deduplication and parent-child relationships."
-        ),
-    )
-    parent_id: str | None = Field(
-        default=None,
-        description=(
-            "The ID of the parent event. "
-            "Can be either a Polar event ID (UUID) or an external event ID."
-        ),
-    )
     metadata: EventMetadataInput = Field(
         description=METADATA_DESCRIPTION.format(
             heading=(
@@ -186,9 +172,6 @@ class EventsIngest(Schema):
 
 class EventsIngestResponse(Schema):
     inserted: int = Field(description="Number of events inserted.")
-    duplicates: int = Field(
-        default=0, description="Number of duplicate events skipped."
-    )
 
 
 class BaseEvent(IDSchema):

@@ -3,8 +3,14 @@ name: Server
 on:
   push:
     branches: ["main"]
+    paths:
+      - "server/**"
+      - ".github/workflows/test_server.yaml"
   pull_request:
     types: [opened, synchronize, edited]
+    paths:
+      - "server/**"
+      - ".github/workflows/test_server.yaml"
 
 permissions:
   contents: read

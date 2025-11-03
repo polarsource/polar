@@ -3,8 +3,14 @@ name: Client
 on:
   push:
     branches: ["main"]
+    paths:
+      - "clients/**"
+      - ".github/workflows/test_client.yaml"
   pull_request:
     types: [opened, synchronize, edited]
+    paths:
+      - "clients/**"
+      - ".github/workflows/test_client.yaml"
 
 defaults:
   run:

@@ -1696,7 +1696,7 @@ dev = [
     { name = "freezegun", specifier = ">=1.5.1" },
     { name = "minio", specifier = ">=7.2.9" },
     { name = "mypy", specifier = ">=1.11" },
-    { name = "polar-sdk", specifier = "==0.22.6" },
+    { name = "polar-sdk", specifier = "==0.27.3" },
     { name = "pytest", specifier = "<9" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
@@ -1716,7 +1716,7 @@ dev = [
 
 [[package]]
 name = "polar-sdk"
-version = "0.22.6"
+version = "0.27.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpcore" },
@@ -1725,9 +1725,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "standardwebhooks" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b9/db/99e57b971c46dddff0d96fcad6a90ab1472d02434d933935bed6c70f1b5a/polar_sdk-0.22.6.tar.gz", hash = "sha256:26c87c25e728bc16ddc0d048de527e8f219461958f2633eb159aea4ac8e5b42b", size = 218022, upload-time = "2025-08-12T11:37:52.644Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3a/4e/4b342b5c2920d88bf962f778c91891b31fd521eb952dd6da819e4b68c9f8/polar_sdk-0.27.3.tar.gz", hash = "sha256:e2a04f515c965571c2ad090d4302f36d7fd553edfc921a3da45247c850db3441", size = 244648, upload-time = "2025-10-24T11:54:37.119Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d4/25/3e8def424621050ffc504d944926e84809d957af398f024fee4a9276fb3a/polar_sdk-0.22.6-py3-none-any.whl", hash = "sha256:f2d62be78e77eab17a8cee381b5bc9a0b5157fe50ea67b93b444543371bdb271", size = 592379, upload-time = "2025-08-12T11:37:51.382Z" },
+    { url = "https://files.pythonhosted.org/packages/48/0b/36ac6f895ae3f9e1342ddd32e4abb89b0e4aff9858e57151ff081844f226/polar_sdk-0.27.3-py3-none-any.whl", hash = "sha256:1b36f77edc534b4bd489dd1f270bb89395f30c7b5ea5dd704b8fa8271a94f6a5", size = 675420, upload-time = "2025-10-24T11:54:35.286Z" },
 ]
 
 [[package]]

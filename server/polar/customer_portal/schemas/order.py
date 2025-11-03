@@ -6,7 +6,6 @@ from pydantic.json_schema import SkipJsonSchema
 from polar.enums import PaymentProcessor
 from polar.kit.schemas import Schema
 from polar.order.schemas import OrderBase, OrderItemSchema, OrderUpdateBase
-from polar.organization.schemas import Organization
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
@@ -16,12 +15,14 @@ from polar.product.schemas import (
 )
 from polar.subscription.schemas import SubscriptionBase
 
+from .organization import CustomerOrganization
+
 
 class CustomerOrderProduct(ProductBase):
     prices: ProductPriceList
     benefits: BenefitPublicList
     medias: ProductMediaList
-    organization: Organization
+    organization: CustomerOrganization
 
 
 class CustomerOrderSubscription(SubscriptionBase): ...

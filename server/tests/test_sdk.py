@@ -16,6 +16,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_checkout,
     create_order,
     create_subscription,
 )
@@ -190,3 +191,19 @@ class TestSDK:
         assert response is not None
 
         assert len(response.products) == 1
+
+    async def test_client_get_checkout(
+        self,
+        save_fixture: SaveFixture,
+        polar: Polar,
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        checkout = await create_checkout(save_fixture, products=[product])
+        response = await polar.checkouts.client_get_async(
+            client_secret=checkout.client_secret
+        )
+        assert response is not None
+
+        assert response.product_id == str(product.id)

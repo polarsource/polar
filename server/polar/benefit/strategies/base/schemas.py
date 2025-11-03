@@ -7,7 +7,7 @@ from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantError
-from polar.organization.schemas import Organization, OrganizationID
+from polar.organization.schemas import OrganizationID, OrganizationPublicBase
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
 BENEFIT_DESCRIPTION_MAX_LENGTH = 42
@@ -108,5 +108,8 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
         return self.customer_id
 
 
+class BenefitSubscriberOrganization(OrganizationPublicBase): ...
+
+
 class BenefitSubscriberBase(BenefitBase):
-    organization: Organization
+    organization: BenefitSubscriberOrganization

@@ -54,7 +54,7 @@ from polar.models.checkout import (
     CheckoutStatus,
 )
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.organization.schemas import Organization
+from polar.organization.schemas import OrganizationPublicBase
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
@@ -537,6 +537,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         return self.net_amount
 
 
+class CheckoutOrganization(OrganizationPublicBase): ...
+
+
 class CheckoutProduct(ProductBase):
     """Product data for a checkout session."""
 
@@ -643,7 +646,7 @@ class CheckoutPublic(CheckoutBase):
         description="Price of the selected product."
     )
     discount: CheckoutDiscount | None
-    organization: Organization
+    organization: CheckoutOrganization
     attached_custom_fields: list[AttachedCustomField] | None
 
 

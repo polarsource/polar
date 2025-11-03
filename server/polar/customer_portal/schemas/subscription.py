@@ -8,7 +8,6 @@ from polar.enums import SubscriptionProrationBehavior
 from polar.kit.schemas import IDSchema, Schema, SetSchemaReference, TimestampedSchema
 from polar.meter.schemas import NAME_DESCRIPTION as METER_NAME_DESCRIPTION
 from polar.models.subscription import CustomerCancellationReason
-from polar.organization.schemas import Organization
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
@@ -18,12 +17,14 @@ from polar.product.schemas import (
 )
 from polar.subscription.schemas import SubscriptionBase, SubscriptionMeterBase
 
+from .organization import CustomerOrganization
+
 
 class CustomerSubscriptionProduct(ProductBase):
     prices: ProductPriceList
     benefits: BenefitPublicList
     medias: ProductMediaList
-    organization: Organization
+    organization: CustomerOrganization
 
 
 class CustomerSubscriptionMeterMeter(IDSchema, TimestampedSchema):

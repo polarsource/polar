@@ -14,6 +14,7 @@ from pydantic.json_schema import SkipJsonSchema
 from pydantic.networks import HttpUrl
 
 from polar.config import settings
+from polar.enums import SubscriptionProrationBehavior
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
     ORGANIZATION_ID_EXAMPLE,
@@ -187,8 +188,7 @@ class OrganizationProfileSettings(Schema):
     )
 
 
-class Organization(IDSchema, TimestampedSchema):
-    id: OrganizationID
+class OrganizationBase(IDSchema, TimestampedSchema):
     name: str = Field(
         description="Organization name shown in checkout, customer portal, emails etc.",
     )
@@ -198,28 +198,11 @@ class Organization(IDSchema, TimestampedSchema):
     avatar_url: str | None = Field(
         description="Avatar URL shown in checkout, customer portal, emails etc."
     )
-
-    email: str | None = Field(description="Public support email.")
-    website: str | None = Field(description="Official website of the organization.")
-    socials: list[OrganizationSocialLink] = Field(
-        description="Links to social profiles.",
+    proration_behavior: SubscriptionProrationBehavior = Field(
+        description="Proration behavior applied when customer updates their subscription from the portal.",
     )
-    status: OrganizationStatus = Field(description="Current organization status")
-    details_submitted_at: datetime | None = Field(
-        description="When the business details were submitted.",
-    )
-
-    feature_settings: OrganizationFeatureSettings | None = Field(
-        description="Organization feature settings",
-    )
-    subscription_settings: OrganizationSubscriptionSettings = Field(
-        description="Settings related to subscriptions management",
-    )
-    notification_settings: OrganizationNotificationSettings = Field(
-        description="Settings related to notifications",
-    )
-    customer_email_settings: OrganizationCustomerEmailSettings = Field(
-        description="Settings related to customer emails",
+    allow_customer_updates: bool = Field(
+        description="Whether customers can update their subscriptions from the customer portal.",
     )
 
     # Deprecated attributes
@@ -248,6 +231,47 @@ class Organization(IDSchema, TimestampedSchema):
     )
     profile_settings: SkipJsonSchema[OrganizationProfileSettings | None] = Field(
         None, deprecated=True
+    )
+
+
+class OrganizationPublicBase(OrganizationBase):
+    # Attributes that we used to have publicly, but now want to hide from
+    # the public schema.
+    # Keep it for now for backward compatibility in the SDK
+    email: SkipJsonSchema[str | None]
+    website: SkipJsonSchema[str | None]
+    socials: SkipJsonSchema[list[OrganizationSocialLink]]
+    status: SkipJsonSchema[OrganizationStatus]
+    details_submitted_at: SkipJsonSchema[datetime | None]
+
+    feature_settings: SkipJsonSchema[OrganizationFeatureSettings | None]
+    subscription_settings: SkipJsonSchema[OrganizationSubscriptionSettings]
+    notification_settings: SkipJsonSchema[OrganizationNotificationSettings]
+    customer_email_settings: SkipJsonSchema[OrganizationCustomerEmailSettings]
+
+
+class Organization(OrganizationBase):
+    email: str | None = Field(description="Public support email.")
+    website: str | None = Field(description="Official website of the organization.")
+    socials: list[OrganizationSocialLink] = Field(
+        description="Links to social profiles.",
+    )
+    status: OrganizationStatus = Field(description="Current organization status")
+    details_submitted_at: datetime | None = Field(
+        description="When the business details were submitted.",
+    )
+
+    feature_settings: OrganizationFeatureSettings | None = Field(
+        description="Organization feature settings",
+    )
+    subscription_settings: OrganizationSubscriptionSettings = Field(
+        description="Settings related to subscriptions management",
+    )
+    notification_settings: OrganizationNotificationSettings = Field(
+        description="Settings related to notifications",
+    )
+    customer_email_settings: OrganizationCustomerEmailSettings = Field(
+        description="Settings related to customer emails",
     )
 
 

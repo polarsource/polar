@@ -76,6 +76,7 @@ class OrganizationListView:
         current_sort: str,
         current_direction: str,
         align: str = "left",
+        status_filter: OrganizationStatus | None = None,
     ) -> Generator[None]:
         """Render a sortable table header with direction indicator."""
         is_active = current_sort == sort_key
@@ -94,11 +95,20 @@ class OrganizationListView:
             "right": "text-right",
         }.get(align, "")
 
+        # Build hx-vals with status filter if present
+        hx_vals_dict = {"sort": sort_key, "direction": next_direction}
+        if status_filter is not None:
+            hx_vals_dict["status"] = status_filter.value
+
+        import json
+
+        hx_vals = json.dumps(hx_vals_dict)
+
         with tag.th(
             classes=f"cursor-pointer hover:bg-base-300 {align_class}",
             **{
                 "hx-get": str(request.url_for("organizations-v2:list")),
-                "hx-vals": f'{{"sort": "{sort_key}", "direction": "{next_direction}"}}',
+                "hx-vals": hx_vals,
                 "hx-target": "#org-list",
                 "hx-include": "#filter-form",
             },
@@ -508,6 +518,7 @@ class OrganizationListView:
                                         "name",
                                         current_sort,
                                         current_direction,
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -520,6 +531,7 @@ class OrganizationListView:
                                         "country",
                                         current_sort,
                                         current_direction,
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -529,6 +541,7 @@ class OrganizationListView:
                                         "created",
                                         current_sort,
                                         current_direction,
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -539,6 +552,7 @@ class OrganizationListView:
                                         current_sort,
                                         current_direction,
                                         "center",
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -549,6 +563,7 @@ class OrganizationListView:
                                         current_sort,
                                         current_direction,
                                         "center",
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -559,6 +574,7 @@ class OrganizationListView:
                                         current_sort,
                                         current_direction,
                                         "right",
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -587,6 +603,7 @@ class OrganizationListView:
                                     "name",
                                     current_sort,
                                     current_direction,
+                                    status_filter=status_filter,
                                 ):
                                     pass
 
@@ -599,6 +616,7 @@ class OrganizationListView:
                                     "country",
                                     current_sort,
                                     current_direction,
+                                    status_filter=status_filter,
                                 ):
                                     pass
 
@@ -608,6 +626,7 @@ class OrganizationListView:
                                     "created",
                                     current_sort,
                                     current_direction,
+                                    status_filter=status_filter,
                                 ):
                                     pass
 
@@ -618,6 +637,7 @@ class OrganizationListView:
                                     current_sort,
                                     current_direction,
                                     "center",
+                                    status_filter=status_filter,
                                 ):
                                     pass
 
@@ -628,6 +648,7 @@ class OrganizationListView:
                                     current_sort,
                                     current_direction,
                                     "center",
+                                    status_filter=status_filter,
                                 ):
                                     pass
 
@@ -638,6 +659,7 @@ class OrganizationListView:
                                     current_sort,
                                     current_direction,
                                     "right",
+                                    status_filter=status_filter,
                                 ):
                                     pass
 
@@ -716,6 +738,7 @@ class OrganizationListView:
                                         "name",
                                         current_sort,
                                         current_direction,
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -728,6 +751,7 @@ class OrganizationListView:
                                         "country",
                                         current_sort,
                                         current_direction,
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -737,6 +761,7 @@ class OrganizationListView:
                                         "created",
                                         current_sort,
                                         current_direction,
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -747,6 +772,7 @@ class OrganizationListView:
                                         current_sort,
                                         current_direction,
                                         "center",
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -757,6 +783,7 @@ class OrganizationListView:
                                         current_sort,
                                         current_direction,
                                         "center",
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -767,6 +794,7 @@ class OrganizationListView:
                                         current_sort,
                                         current_direction,
                                         "right",
+                                        status_filter=status_filter,
                                     ):
                                         pass
 
@@ -795,6 +823,7 @@ class OrganizationListView:
                                     "name",
                                     current_sort,
                                     current_direction,
+                                    status_filter=status_filter,
                                 ):
                                     pass
 
@@ -807,6 +836,7 @@ class OrganizationListView:
                                     "country",
                                     current_sort,
                                     current_direction,
+                                    status_filter=status_filter,
                                 ):
                                     pass
 
@@ -816,6 +846,7 @@ class OrganizationListView:
                                     "created",
                                     current_sort,
                                     current_direction,
+                                    status_filter=status_filter,
                                 ):
                                     pass
 
@@ -826,6 +857,7 @@ class OrganizationListView:
                                     current_sort,
                                     current_direction,
                                     "center",
+                                    status_filter=status_filter,
                                 ):
                                     pass
 
@@ -836,6 +868,7 @@ class OrganizationListView:
                                     current_sort,
                                     current_direction,
                                     "center",
+                                    status_filter=status_filter,
                                 ):
                                     pass
 
@@ -846,6 +879,7 @@ class OrganizationListView:
                                     current_sort,
                                     current_direction,
                                     "right",
+                                    status_filter=status_filter,
                                 ):
                                     pass
 

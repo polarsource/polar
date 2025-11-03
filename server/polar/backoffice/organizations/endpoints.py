@@ -1425,6 +1425,17 @@ async def get(
                         hx_target="#modal",
                     ):
                         text("Edit")
+                    with tag.a(
+                        classes="btn",
+                        href=str(
+                            request.url_for(
+                                "organizations-v2:detail",
+                                organization_id=organization.id,
+                            )
+                        ),
+                        title="Switch to new view",
+                    ):
+                        text("View V2")
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with description_list.DescriptionList[Organization](
                     description_list.DescriptionListAttrItem(

@@ -82,6 +82,130 @@ class TestListEvents:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(event2.id)
 
+    @pytest.mark.auth
+    async def test_children_sorting(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test that children are sorted according to sorting parameter."""
+        base_time = utc_now()
+
+        root_event1 = await create_event(
+            save_fixture,
+            organization=organization,
+            name="root1",
+            timestamp=base_time - timedelta(hours=10),
+        )
+
+        root_event2 = await create_event(
+            save_fixture,
+            organization=organization,
+            name="root2",
+            timestamp=base_time - timedelta(hours=5),
+        )
+
+        child1 = await create_event(
+            save_fixture,
+            organization=organization,
+            name="child1",
+            parent_id=root_event1.id,
+            timestamp=base_time - timedelta(hours=3),
+        )
+
+        child2 = await create_event(
+            save_fixture,
+            organization=organization,
+            name="child2",
+            parent_id=root_event1.id,
+            timestamp=base_time - timedelta(hours=1),
+        )
+
+        child3 = await create_event(
+            save_fixture,
+            organization=organization,
+            name="child3",
+            parent_id=root_event1.id,
+            timestamp=base_time - timedelta(hours=2),
+        )
+
+        # Test descending sort (newest first)
+        response = await client.get(
+            "/v1/events/",
+            params={
+                "organization_id": str(organization.id),
+                "sorting": "-timestamp",
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+
+        items = json["items"]
+        assert len(items) == 2
+
+        # Root events should be sorted newest to oldest
+        assert items[0]["id"] == str(root_event2.id)  # 5 hours ago
+        assert items[1]["id"] == str(root_event1.id)  # 10 hours ago
+        assert items[1]["child_count"] == 3
+
+        # Query children with descending sort
+        response = await client.get(
+            "/v1/events/",
+            params={
+                "organization_id": str(organization.id),
+                "parent_id": str(root_event1.id),
+                "sorting": "-timestamp",
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        children = json["items"]
+        assert len(children) == 3
+        assert children[0]["id"] == str(child2.id)  # 1 hour ago
+        assert children[1]["id"] == str(child3.id)  # 2 hours ago
+        assert children[2]["id"] == str(child1.id)  # 3 hours ago
+
+        # Test ascending sort (oldest first)
+        response = await client.get(
+            "/v1/events/",
+            params={
+                "organization_id": str(organization.id),
+                "sorting": "timestamp",
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+
+        items = json["items"]
+        assert len(items) == 2
+
+        # Root events should be sorted oldest to newest
+        assert items[0]["id"] == str(root_event1.id)  # 10 hours ago
+        assert items[1]["id"] == str(root_event2.id)  # 5 hours ago
+
+        # Query children with ascending sort
+        response = await client.get(
+            "/v1/events/",
+            params={
+                "organization_id": str(organization.id),
+                "parent_id": str(root_event1.id),
+                "sorting": "timestamp",
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        children = json["items"]
+        assert len(children) == 3
+        assert children[0]["id"] == str(child1.id)  # 3 hours ago
+        assert children[1]["id"] == str(child3.id)  # 2 hours ago
+        assert children[2]["id"] == str(child2.id)  # 1 hour ago
+
 
 @pytest.mark.asyncio
 class TestIngest:

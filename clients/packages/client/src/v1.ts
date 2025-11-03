@@ -5603,6 +5603,12 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -6901,6 +6907,12 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -7453,6 +7465,12 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -7523,6 +7541,12 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -11579,6 +11603,12 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -11745,6 +11775,12 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -13542,6 +13578,12 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -14822,6 +14864,16 @@ export interface components {
        */
       organization_id?: string | null
       /**
+       * External Id
+       * @description Your unique identifier for this event. Useful for deduplication and parent-child relationships.
+       */
+      external_id?: string | null
+      /**
+       * Parent Id
+       * @description The ID of the parent event. Can be either a Polar event ID (UUID) or an external event ID.
+       */
+      parent_id?: string | null
+      /**
        * @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
        *
        *     The key must be a string with a maximum length of **40 characters**.
@@ -14860,6 +14912,16 @@ export interface components {
        * @description The ID of the organization owning the event. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /**
+       * External Id
+       * @description Your unique identifier for this event. Useful for deduplication and parent-child relationships.
+       */
+      external_id?: string | null
+      /**
+       * Parent Id
+       * @description The ID of the parent event. Can be either a Polar event ID (UUID) or an external event ID.
+       */
+      parent_id?: string | null
       /**
        * @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
        *
@@ -14962,6 +15024,12 @@ export interface components {
        * @description Number of events inserted.
        */
       inserted: number
+      /**
+       * Duplicates
+       * @description Number of duplicate events skipped.
+       * @default 0
+       */
+      duplicates: number
     }
     /**
      * ExistingProductPrice
@@ -16384,6 +16452,12 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -16467,6 +16541,12 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -17529,6 +17609,12 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -17654,6 +17740,12 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -20803,6 +20895,12 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -20918,6 +21016,12 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -21029,6 +21133,12 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -21643,6 +21753,12 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
       /**
        * Name
        * @description The name of the event.
@@ -26912,7 +27028,6 @@ export interface operations {
           | 'America/Coral_Harbour'
           | 'America/Cordoba'
           | 'America/Costa_Rica'
-          | 'America/Coyhaique'
           | 'America/Creston'
           | 'America/Cuiaba'
           | 'America/Curacao'
@@ -31358,6 +31473,8 @@ export interface operations {
           | null
         /** @description Query to filter events. */
         query?: string | null
+        /** @description Filter events by parent event ID. When not specified, returns root events only. */
+        parent_id?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -33502,7 +33619,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'America/Coral_Harbour',
   'America/Cordoba',
   'America/Costa_Rica',
-  'America/Coyhaique',
   'America/Creston',
   'America/Cuiaba',
   'America/Curacao',

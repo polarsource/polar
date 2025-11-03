@@ -38,7 +38,7 @@ export const EventRow = ({
       page: childrenPage,
       limit: PAGE_SIZE,
     },
-    isExpanded && event.child_count > 0 && depth < 1,
+    isExpanded && event.child_count > 0,
   )
 
   const hasChildren = event.child_count > 0

@@ -1,5 +1,4 @@
 import { schemas } from '@polar-sh/client'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import LogoIcon from '../Brand/LogoIcon'
 import Login from './Login'
 
@@ -25,7 +24,7 @@ export const AuthModal = ({
   ) : null
 
   return (
-    <ShadowBox className="overflow-y-auto p-12">
+    <div className="overflow-y-auto p-12">
       <div className="flex flex-col justify-between gap-y-16">
         <LogoIcon className="text-black dark:text-white" size={60} />
 
@@ -42,6 +41,6 @@ export const AuthModal = ({
           />
         </div>
       </div>
-    </ShadowBox>
+    </div>
   )
 }

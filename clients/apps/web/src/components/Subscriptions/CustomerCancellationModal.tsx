@@ -42,7 +42,7 @@ const CancellationReasonRadio = ({
 }
 
 interface CustomerCancellationModalProps
-  extends Omit<ModalProps, 'modalContent'> {
+  extends Omit<ModalProps, 'title' | 'modalContent'> {
   subscription: schemas['CustomerSubscription']
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
   onAbort?: () => void
@@ -103,6 +103,7 @@ const CustomerCancellationModal = ({
   return (
     <Modal
       {...props}
+      title="Cancel Subscription"
       className="md:min-w-[600px]"
       modalContent={
         <div className="flex flex-col gap-y-6 p-6 sm:p-12">

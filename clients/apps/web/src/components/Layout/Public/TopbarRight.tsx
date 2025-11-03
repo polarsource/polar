@@ -54,6 +54,7 @@ const TopbarRight = ({
           />
 
           <Modal
+            title="Login"
             isShown={isModalShown}
             hide={hideModal}
             modalContent={<AuthModal returnTo={loginReturnTo} />}

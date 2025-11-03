@@ -236,60 +236,6 @@ async def process_dunning_order(order_id: uuid.UUID) -> None:
 
 
 @actor(
-    actor_name="order.remove_backfilled_events",
-    priority=TaskPriority.LOW,
-    time_limit=3600_000,
-)
-async def remove_backfilled_events(
-    batch_size: int = 1000, rate_limit_delay: float = 0.1
-) -> None:
-    """
-    Remove all previously backfilled order events (events with backfilled=true flag).
-    Useful for cleaning up before re-running backfill with updated logic.
-
-    Args:
-        batch_size: The number of events to delete at a time (default 100)
-        rate_limit_delay: Seconds to wait between batch deletes (default: 0.1)
-    """
-    async with AsyncSessionMaker() as session:
-        total_deleted = 0
-
-        # while True:
-        #     result = await session.execute(
-        #         delete(Event).where(
-        #             Event.id.in_(
-        #                 select(Event.id)
-        #                 .where(
-        #                     Event.name.in_(
-        #                         [SystemEvent.order_paid, SystemEvent.order_refunded]
-        #                     ),
-        #                     Event.user_metadata["backfilled"].as_boolean().is_(True),
-        #                 )
-        #                 .limit(batch_size)
-        #             )
-        #         )
-        #     )
-        #     await session.commit()
-
-        #     batch_deleted = cast(CursorResult[Any], result).rowcount
-        #     if batch_deleted == 0:
-        #         break
-
-        #     total_deleted += batch_deleted
-        #     log.info(
-        #         "remove_backfilled_events.progress",
-        #         deleted=total_deleted,
-        #     )
-
-        #     await asyncio.sleep(rate_limit_delay)
-
-        log.info(
-            "remove_backfilled_events.completed",
-            total_deleted=total_deleted,
-        )
-
-
-@actor(
     actor_name="order.backfill_order_events",
     priority=TaskPriority.LOW,
     time_limit=3600_000,

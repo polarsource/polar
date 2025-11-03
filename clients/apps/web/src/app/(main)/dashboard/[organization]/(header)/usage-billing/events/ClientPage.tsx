@@ -341,6 +341,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             </div>
           </div>
           <Modal
+            title="Create Event"
             isShown={isEventCreationGuideShown}
             hide={hideEventCreationGuide}
             modalContent={

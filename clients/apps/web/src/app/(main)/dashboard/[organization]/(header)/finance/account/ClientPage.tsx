@@ -315,6 +315,7 @@ export default function ClientPage({
         ) : null}
 
         <Modal
+          title="Create Payout Account"
           isShown={isShownSetupModal}
           className="min-w-[400px]"
           hide={hideSetupModal}

@@ -1,3 +1,4 @@
+import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import React, {
@@ -12,6 +13,7 @@ import FocusLock from 'react-focus-lock'
 import { twMerge } from 'tailwind-merge'
 
 export interface ModalProps {
+  title: string
   isShown: boolean
   hide: () => void
   modalContent: JSX.Element
@@ -19,6 +21,7 @@ export interface ModalProps {
 }
 
 export const Modal: FunctionComponent<ModalProps> = ({
+  title,
   isShown,
   hide,
   modalContent,
@@ -69,7 +72,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
             <div className="block h-[80px] w-2 lg:max-h-[10%] lg:grow-2"></div>
             <motion.div
               className={twMerge(
-                'dark:bg-polar-900 dark:border-polar-800 relative z-10 flex max-h-full w-full flex-col overflow-x-hidden overflow-y-auto rounded-4xl bg-white shadow-sm lg:w-[800px] lg:max-w-full dark:border',
+                'dark:bg-polar-900 dark:border-polar-800 relative z-10 flex max-h-full w-full flex-col gap-y-1 overflow-x-hidden overflow-y-auto rounded-3xl bg-gray-100 p-1 shadow-sm lg:w-[800px] lg:max-w-full dark:border',
                 className,
               )}
               initial={{ opacity: 0, scale: 0.99 }}
@@ -77,7 +80,20 @@ export const Modal: FunctionComponent<ModalProps> = ({
               transition={{ duration: 0.1, ease: 'easeInOut' }}
               onClick={onInnerClick}
             >
-              {modalContent}
+              <div className="flex flex-row items-center justify-between px-4 py-1 text-sm">
+                <span className="font-medium">{title}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="size-8 rounded-full"
+                  onClick={hide}
+                >
+                  <CloseOutlined fontSize="inherit" />
+                </Button>
+              </div>
+              <div className="dark:bg-polar-800 flex flex-col overflow-y-auto rounded-[20px] bg-white">
+                {modalContent}
+              </div>
             </motion.div>
           </div>
         </div>

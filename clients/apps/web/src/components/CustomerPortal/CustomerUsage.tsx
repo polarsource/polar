@@ -6,7 +6,7 @@ import { Client, schemas } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import FormattedUnits from '../Meter/FormattedUnits'
@@ -20,9 +20,7 @@ export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {
   const { data, isLoading } = useCustomerCustomerMeters(api, { query })
   const customerMeters = useMemo(() => data?.items ?? [], [data])
 
-  const themingPreset = useThemePreset(
-    organization.slug === 'midday' ? 'midday' : 'polar',
-  )
+  const themingPreset = getThemePreset(organization.slug)
 
   return (
     <div className="flex flex-col">

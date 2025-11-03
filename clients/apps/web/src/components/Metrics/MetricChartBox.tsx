@@ -294,6 +294,7 @@ const MetricChartBox = ({
       </div>
       {shareable && data && (
         <Modal
+          title={`Share ${selectedMetric?.display_name} Metric`}
           className="lg:w-fit!"
           isShown={isModalOpen}
           hide={hideModal}

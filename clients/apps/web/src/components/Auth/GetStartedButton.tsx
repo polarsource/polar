@@ -75,6 +75,7 @@ const GetStartedButton = ({
       </Button>
 
       <Modal
+        title="Login"
         isShown={isModalShown}
         hide={hideModal}
         modalContent={

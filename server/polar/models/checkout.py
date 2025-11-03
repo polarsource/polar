@@ -144,20 +144,20 @@ class Checkout(
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
 
-    product_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False
+    product_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=True
     )
 
     @declared_attr
-    def product(cls) -> Mapped[Product]:
+    def product(cls) -> Mapped[Product | None]:
         return relationship(Product, lazy="raise")
 
-    product_price_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=False
+    product_price_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=True
     )
 
     @declared_attr
-    def product_price(cls) -> Mapped[ProductPrice]:
+    def product_price(cls) -> Mapped[ProductPrice | None]:
         return relationship(ProductPrice, lazy="raise")
 
     checkout_products: Mapped[list["CheckoutProduct"]] = relationship(
@@ -278,14 +278,20 @@ class Checkout(
 
     @property
     def is_discount_applicable(self) -> bool:
+        if self.product is None:
+            return False
         return any(is_discount_applicable(price) for price in self.product.prices)
 
     @property
     def is_free_product_price(self) -> bool:
+        if self.product is None:
+            return False
         return all(is_free_price(price) for price in self.product.prices)
 
     @property
     def has_metered_prices(self) -> bool:
+        if self.product is None:
+            return False
         return any(is_metered_price(price) for price in self.product.prices)
 
     @property
@@ -294,7 +300,13 @@ class Checkout(
 
     @property
     def is_payment_setup_required(self) -> bool:
+        if self.product is None:
+            return False
         return self.product.is_recurring and not self.is_free_product_price
+
+    @property
+    def should_save_payment_method(self) -> bool:
+        return self.product is not None and self.product.is_recurring
 
     @property
     def is_payment_form_required(self) -> bool:
@@ -312,9 +324,9 @@ class Checkout(
     def customer_session_token(self, value: str) -> None:
         self._customer_session_token = value
 
-    attached_custom_fields: AssociationProxy[Sequence["AttachedCustomFieldMixin"]] = (
-        association_proxy("product", "attached_custom_fields")
-    )
+    attached_custom_fields: AssociationProxy[
+        Sequence["AttachedCustomFieldMixin"] | None
+    ] = association_proxy("product", "attached_custom_fields")
 
     @property
     def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
@@ -362,10 +374,14 @@ class Checkout(
 
     @property
     def active_trial_interval(self) -> TrialInterval | None:
+        if self.product is None:
+            return None
         return self.trial_interval or self.product.trial_interval
 
     @property
     def active_trial_interval_count(self) -> int | None:
+        if self.product is None:
+            return None
         return self.trial_interval_count or self.product.trial_interval_count
 
     @property
@@ -377,6 +393,12 @@ class Checkout(
             return None
 
         return self.product_price.get_price_per_seat(self.seats)
+
+    @property
+    def description(self) -> str:
+        if self.product is not None:
+            return f"{self.organization.name} — {self.product.name}"
+        raise NotImplementedError()
 
 
 @event.listens_for(Checkout, "before_update")

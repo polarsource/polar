@@ -471,8 +471,10 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     organization_id: UUID4 = Field(
         description="ID of the organization owning the checkout session."
     )
-    product_id: UUID4 = Field(description="ID of the product to checkout.")
-    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    product_id: UUID4 | None = Field(description="ID of the product to checkout.")
+    product_price_id: UUID4 | None = Field(
+        description="ID of the product price to checkout."
+    )
     discount_id: UUID4 | None = Field(
         description="ID of the discount applied to the checkout."
     )
@@ -623,11 +625,13 @@ class Checkout(MetadataOutputMixin, TrialConfigurationOutputMixin, CheckoutBase)
     products: list[CheckoutProduct] = Field(
         description="List of products available to select."
     )
-    product: CheckoutProduct = Field(description="Product selected to checkout.")
-    product_price: ProductPrice = Field(description="Price of the selected product.")
+    product: CheckoutProduct | None = Field(description="Product selected to checkout.")
+    product_price: ProductPrice | None = Field(
+        description="Price of the selected product."
+    )
     discount: CheckoutDiscount | None
     subscription_id: UUID4 | None
-    attached_custom_fields: list[AttachedCustomField]
+    attached_custom_fields: list[AttachedCustomField] | None
     customer_metadata: dict[str, str | int | bool]
 
 
@@ -637,11 +641,13 @@ class CheckoutPublic(CheckoutBase):
     products: list[CheckoutProduct] = Field(
         description="List of products available to select."
     )
-    product: CheckoutProduct = Field(description="Product selected to checkout.")
-    product_price: ProductPrice = Field(description="Price of the selected product.")
+    product: CheckoutProduct | None = Field(description="Product selected to checkout.")
+    product_price: ProductPrice | None = Field(
+        description="Price of the selected product."
+    )
     discount: CheckoutDiscount | None
     organization: Organization
-    attached_custom_fields: list[AttachedCustomField]
+    attached_custom_fields: list[AttachedCustomField] | None
 
 
 class CheckoutPublicConfirmed(CheckoutPublic):

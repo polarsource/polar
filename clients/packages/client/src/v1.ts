@@ -7802,16 +7802,14 @@ export interface components {
       organization_id: string
       /**
        * Product Id
-       * Format: uuid4
        * @description ID of the product to checkout.
        */
-      product_id: string
+      product_id: string | null
       /**
        * Product Price Id
-       * Format: uuid4
        * @description ID of the product price to checkout.
        */
-      product_price_id: string
+      product_price_id: string | null
       /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
@@ -7909,14 +7907,17 @@ export interface components {
        */
       products: components['schemas']['CheckoutProduct'][]
       /** @description Product selected to checkout. */
-      product: components['schemas']['CheckoutProduct']
+      product: components['schemas']['CheckoutProduct'] | null
       /**
        * Product Price
        * @description Price of the selected product.
        */
       product_price:
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | (
+            | components['schemas']['LegacyRecurringProductPrice']
+            | components['schemas']['ProductPrice']
+          )
+        | null
       /** Discount */
       discount:
         | (
@@ -7929,7 +7930,9 @@ export interface components {
       /** Subscription Id */
       subscription_id: string | null
       /** Attached Custom Fields */
-      attached_custom_fields: components['schemas']['AttachedCustomField'][]
+      attached_custom_fields:
+        | components['schemas']['AttachedCustomField'][]
+        | null
       /** Customer Metadata */
       customer_metadata: {
         [key: string]: string | number | boolean
@@ -9229,16 +9232,14 @@ export interface components {
       organization_id: string
       /**
        * Product Id
-       * Format: uuid4
        * @description ID of the product to checkout.
        */
-      product_id: string
+      product_id: string | null
       /**
        * Product Price Id
-       * Format: uuid4
        * @description ID of the product price to checkout.
        */
-      product_price_id: string
+      product_price_id: string | null
       /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
@@ -9315,14 +9316,17 @@ export interface components {
        */
       products: components['schemas']['CheckoutProduct'][]
       /** @description Product selected to checkout. */
-      product: components['schemas']['CheckoutProduct']
+      product: components['schemas']['CheckoutProduct'] | null
       /**
        * Product Price
        * @description Price of the selected product.
        */
       product_price:
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | (
+            | components['schemas']['LegacyRecurringProductPrice']
+            | components['schemas']['ProductPrice']
+          )
+        | null
       /** Discount */
       discount:
         | (
@@ -9334,7 +9338,9 @@ export interface components {
         | null
       organization: components['schemas']['Organization']
       /** Attached Custom Fields */
-      attached_custom_fields: components['schemas']['AttachedCustomField'][]
+      attached_custom_fields:
+        | components['schemas']['AttachedCustomField'][]
+        | null
     }
     /**
      * CheckoutPublicConfirmed
@@ -9466,16 +9472,14 @@ export interface components {
       organization_id: string
       /**
        * Product Id
-       * Format: uuid4
        * @description ID of the product to checkout.
        */
-      product_id: string
+      product_id: string | null
       /**
        * Product Price Id
-       * Format: uuid4
        * @description ID of the product price to checkout.
        */
-      product_price_id: string
+      product_price_id: string | null
       /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
@@ -9552,14 +9556,17 @@ export interface components {
        */
       products: components['schemas']['CheckoutProduct'][]
       /** @description Product selected to checkout. */
-      product: components['schemas']['CheckoutProduct']
+      product: components['schemas']['CheckoutProduct'] | null
       /**
        * Product Price
        * @description Price of the selected product.
        */
       product_price:
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | (
+            | components['schemas']['LegacyRecurringProductPrice']
+            | components['schemas']['ProductPrice']
+          )
+        | null
       /** Discount */
       discount:
         | (
@@ -9571,7 +9578,9 @@ export interface components {
         | null
       organization: components['schemas']['Organization']
       /** Attached Custom Fields */
-      attached_custom_fields: components['schemas']['AttachedCustomField'][]
+      attached_custom_fields:
+        | components['schemas']['AttachedCustomField'][]
+        | null
       /** Customer Session Token */
       customer_session_token: string
     }

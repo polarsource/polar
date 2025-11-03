@@ -36,6 +36,7 @@ class EmailTemplate(StrEnum):
     subscription_revoked = "subscription_revoked"
     subscription_uncanceled = "subscription_uncanceled"
     subscription_updated = "subscription_updated"
+    webhook_endpoint_disabled = "webhook_endpoint_disabled"
     notification_account_under_review = "notification_account_under_review"
     notification_account_reviewed = "notification_account_reviewed"
     notification_new_sale = "notification_new_sale"
@@ -266,6 +267,19 @@ class SubscriptionUpdatedEmail(BaseModel):
     props: SubscriptionUpdatedProps
 
 
+class WebhookEndpointDisabledProps(EmailProps):
+    organization: Organization
+    webhook_endpoint_url: str
+    dashboard_url: str
+
+
+class WebhookEndpointDisabledEmail(BaseModel):
+    template: Literal[EmailTemplate.webhook_endpoint_disabled] = (
+        EmailTemplate.webhook_endpoint_disabled
+    )
+    props: WebhookEndpointDisabledProps
+
+
 class NotificationAccountUnderReviewEmail(BaseModel):
     template: Literal[EmailTemplate.notification_account_under_review] = (
         EmailTemplate.notification_account_under_review
@@ -319,6 +333,7 @@ Email = Annotated[
     | SubscriptionRevokedEmail
     | SubscriptionUncanceledEmail
     | SubscriptionUpdatedEmail
+    | WebhookEndpointDisabledEmail
     | NotificationAccountUnderReviewEmail
     | NotificationAccountReviewedEmail
     | NotificationNewSaleEmail

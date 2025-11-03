@@ -12,6 +12,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import Anonymous, AuthSubject
+from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutConfirmStripe,
@@ -2141,6 +2142,7 @@ class TestUpdate:
         locker: Locker,
         checkout_one_time_custom: Checkout,
     ) -> None:
+        assert has_product_checkout(checkout_one_time_custom)
         price = checkout_one_time_custom.product.prices[0]
         assert isinstance(price, ProductPriceCustom)
         price.minimum_amount = 1000
@@ -2824,6 +2826,7 @@ class TestUpdate:
         checkout_recurring_fixed: Checkout,
         customer: Customer,
     ) -> None:
+        assert has_product_checkout(checkout_recurring_fixed)
         organization.subscription_settings = {
             **organization.subscription_settings,
             "allow_multiple_subscriptions": True,
@@ -2860,6 +2863,7 @@ class TestUpdate:
         checkout_recurring_fixed: Checkout,
         customer: Customer,
     ) -> None:
+        assert has_product_checkout(checkout_recurring_fixed)
         organization.subscription_settings = {
             **organization.subscription_settings,
             "allow_multiple_subscriptions": False,
@@ -3149,6 +3153,7 @@ class TestConfirm:
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
+        assert has_product_checkout(checkout_one_time_fixed)
         archived_price = await create_product_price_fixed(
             save_fixture, product=checkout_one_time_fixed.product, is_archived=True
         )
@@ -3863,6 +3868,7 @@ class TestConfirm:
                 CheckoutConfirm(
                     customer_email="test@example.com",
                     customer_name="Test Customer",
+                    confirmation_token_id=None,
                 ),
             )
 
@@ -3959,6 +3965,7 @@ class TestConfirm:
             CheckoutConfirm(
                 customer_email="test@example.com",
                 customer_name="Test Customer",
+                confirmation_token_id=None,
             ),
         )
 

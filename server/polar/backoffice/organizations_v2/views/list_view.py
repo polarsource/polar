@@ -70,6 +70,7 @@ class OrganizationListView:
     @contextlib.contextmanager
     def sortable_header(
         self,
+        request: Request,
         label: str,
         sort_key: str,
         current_sort: str,
@@ -105,8 +106,8 @@ class OrganizationListView:
         with tag.th(
             classes=f"cursor-pointer hover:bg-base-300 {align_class}",
             **{
-                "hx-get": "/backoffice/organizations-v2",
-                "hx-vals": hx_vals,
+                "hx-get": str(request.url_for("organizations-v2:list")),
+                "hx-vals": f'{{"sort": "{sort_key}", "direction": "{next_direction}"}}',
                 "hx-target": "#org-list",
                 "hx-include": "#filter-form",
             },
@@ -143,7 +144,11 @@ class OrganizationListView:
             with tag.td(classes="py-4"):
                 with tag.div(classes="flex flex-col gap-1"):
                     with tag.a(
-                        href=f"/backoffice/organizations-v2/{org.id}",
+                        href=str(
+                            request.url_for(
+                                "organizations-v2:detail", organization_id=org.id
+                            )
+                        ),
                         classes="font-semibold hover:underline flex items-center gap-2",
                     ):
                         text(org.name)
@@ -218,7 +223,12 @@ class OrganizationListView:
                             variant="secondary",
                             size="sm",
                             outline=True,
-                            hx_post=f"/backoffice/organizations-v2/{org.id}/approve?threshold=25000",
+                            hx_post=str(
+                                request.url_for(
+                                    "organizations-v2:approve", organization_id=org.id
+                                )
+                            )
+                            + "?threshold=25000",
                             hx_confirm="Approve with $250 threshold?",
                         ):
                             text("Approve")
@@ -226,13 +236,22 @@ class OrganizationListView:
                             variant="secondary",
                             size="sm",
                             outline=True,
-                            hx_get=f"/backoffice/organizations-v2/{org.id}/deny-dialog",
+                            hx_get=str(
+                                request.url_for(
+                                    "organizations-v2:deny_dialog",
+                                    organization_id=org.id,
+                                )
+                            ),
                             hx_target="#modal",
                         ):
                             text("Deny")
                 else:
                     with tag.a(
-                        href=f"/backoffice/organizations-v2/{org.id}",
+                        href=str(
+                            request.url_for(
+                                "organizations-v2:detail", organization_id=org.id
+                            )
+                        ),
                         classes="btn btn-ghost btn-sm",
                     ):
                         text("View →")
@@ -260,7 +279,7 @@ class OrganizationListView:
             with action_bar(position="right"):
                 with button(
                     variant="primary",
-                    hx_get="/backoffice/organizations-v2/new",
+                    hx_get=str(request.url_for("organizations-v2:list")) + "/new",
                     hx_target="#modal",
                 ):
                     text("+ Create Thread")
@@ -269,27 +288,28 @@ class OrganizationListView:
         tabs = [
             Tab(
                 label="All",
-                url="/backoffice/organizations-v2",
+                url=str(request.url_for("organizations-v2:list")),
                 active=status_filter is None,
                 count=sum(status_counts.values()),
             ),
             Tab(
                 label="Under Review",
-                url="/backoffice/organizations-v2?status=under_review",
+                url=str(request.url_for("organizations-v2:list"))
+                + "?status=under_review",
                 active=status_filter == OrganizationStatus.UNDER_REVIEW,
                 count=status_counts.get(OrganizationStatus.UNDER_REVIEW, 0),
                 badge_variant="warning",
             ),
             Tab(
                 label="Active",
-                url="/backoffice/organizations-v2?status=active",
+                url=str(request.url_for("organizations-v2:list")) + "?status=active",
                 active=status_filter == OrganizationStatus.ACTIVE,
                 count=status_counts.get(OrganizationStatus.ACTIVE, 0),
                 badge_variant="success",
             ),
             Tab(
                 label="Denied",
-                url="/backoffice/organizations-v2?status=denied",
+                url=str(request.url_for("organizations-v2:list")) + "?status=denied",
                 active=status_filter == OrganizationStatus.DENIED,
                 count=status_counts.get(OrganizationStatus.DENIED, 0),
                 badge_variant="error",
@@ -304,7 +324,7 @@ class OrganizationListView:
             with tag.form(
                 id="filter-form",
                 classes="space-y-4",
-                hx_get="/backoffice/organizations-v2",
+                hx_get=str(request.url_for("organizations-v2:list")),
                 hx_trigger="submit, change from:.filter-select",
                 hx_target="#org-list",
             ):
@@ -492,6 +512,7 @@ class OrganizationListView:
                             with tag.thead():
                                 with tag.tr():
                                     with self.sortable_header(
+                                        request,
                                         "Organization",
                                         "name",
                                         current_sort,
@@ -504,6 +525,7 @@ class OrganizationListView:
                                         text("Email")
 
                                     with self.sortable_header(
+                                        request,
                                         "Country",
                                         "country",
                                         current_sort,
@@ -513,6 +535,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Created",
                                         "created",
                                         current_sort,
@@ -522,6 +545,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "In Status",
                                         "status_duration",
                                         current_sort,
@@ -532,6 +556,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Risk",
                                         "risk",
                                         current_sort,
@@ -542,6 +567,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Next Review",
                                         "next_review",
                                         current_sort,
@@ -571,6 +597,7 @@ class OrganizationListView:
                         with tag.thead():
                             with tag.tr():
                                 with self.sortable_header(
+                                    request,
                                     "Organization",
                                     "name",
                                     current_sort,
@@ -583,6 +610,7 @@ class OrganizationListView:
                                     text("Email")
 
                                 with self.sortable_header(
+                                    request,
                                     "Country",
                                     "country",
                                     current_sort,
@@ -592,6 +620,7 @@ class OrganizationListView:
                                     pass
 
                                 with self.sortable_header(
+                                    request,
                                     "Created",
                                     "created",
                                     current_sort,
@@ -601,6 +630,7 @@ class OrganizationListView:
                                     pass
 
                                 with self.sortable_header(
+                                    request,
                                     "In Status",
                                     "status_duration",
                                     current_sort,
@@ -611,6 +641,7 @@ class OrganizationListView:
                                     pass
 
                                 with self.sortable_header(
+                                    request,
                                     "Risk",
                                     "risk",
                                     current_sort,
@@ -621,6 +652,7 @@ class OrganizationListView:
                                     pass
 
                                 with self.sortable_header(
+                                    request,
                                     "Next Review",
                                     "next_review",
                                     current_sort,
@@ -646,7 +678,8 @@ class OrganizationListView:
                     with tag.div(classes="flex justify-center mt-6"):
                         with button(
                             variant="secondary",
-                            hx_get=f"/backoffice/organizations-v2?page={page + 1}",
+                            hx_get=str(request.url_for("organizations-v2:list"))
+                            + f"?page={page + 1}",
                             hx_target="#org-list",
                             hx_swap="beforeend",
                         ):
@@ -699,6 +732,7 @@ class OrganizationListView:
                             with tag.thead():
                                 with tag.tr():
                                     with self.sortable_header(
+                                        request,
                                         "Organization",
                                         "name",
                                         current_sort,
@@ -711,6 +745,7 @@ class OrganizationListView:
                                         text("Email")
 
                                     with self.sortable_header(
+                                        request,
                                         "Country",
                                         "country",
                                         current_sort,
@@ -720,6 +755,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Created",
                                         "created",
                                         current_sort,
@@ -729,6 +765,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "In Status",
                                         "status_duration",
                                         current_sort,
@@ -739,6 +776,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Risk",
                                         "risk",
                                         current_sort,
@@ -749,6 +787,7 @@ class OrganizationListView:
                                         pass
 
                                     with self.sortable_header(
+                                        request,
                                         "Next Review",
                                         "next_review",
                                         current_sort,
@@ -778,6 +817,7 @@ class OrganizationListView:
                         with tag.thead():
                             with tag.tr():
                                 with self.sortable_header(
+                                    request,
                                     "Organization",
                                     "name",
                                     current_sort,
@@ -790,6 +830,7 @@ class OrganizationListView:
                                     text("Email")
 
                                 with self.sortable_header(
+                                    request,
                                     "Country",
                                     "country",
                                     current_sort,
@@ -799,6 +840,7 @@ class OrganizationListView:
                                     pass
 
                                 with self.sortable_header(
+                                    request,
                                     "Created",
                                     "created",
                                     current_sort,
@@ -808,6 +850,7 @@ class OrganizationListView:
                                     pass
 
                                 with self.sortable_header(
+                                    request,
                                     "In Status",
                                     "status_duration",
                                     current_sort,
@@ -818,6 +861,7 @@ class OrganizationListView:
                                     pass
 
                                 with self.sortable_header(
+                                    request,
                                     "Risk",
                                     "risk",
                                     current_sort,
@@ -828,6 +872,7 @@ class OrganizationListView:
                                     pass
 
                                 with self.sortable_header(
+                                    request,
                                     "Next Review",
                                     "next_review",
                                     current_sort,
@@ -853,7 +898,8 @@ class OrganizationListView:
                     with tag.div(classes="flex justify-center mt-6"):
                         with button(
                             variant="secondary",
-                            hx_get=f"/backoffice/organizations-v2?page={page + 1}",
+                            hx_get=str(request.url_for("organizations-v2:list"))
+                            + f"?page={page + 1}",
                             hx_target="#org-list",
                             hx_swap="beforeend",
                         ):

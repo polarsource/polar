@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 import pycountry
 import pycountry.db
+import structlog
 from babel.numbers import format_currency
 from plain_client import (
     ComponentContainerContentInput,
@@ -28,6 +29,7 @@ from plain_client import (
     CustomerIdentifierInput,
     EmailAddressInput,
     Plain,
+    ThreadsFilter,
     UpsertCustomerIdentifierInput,
     UpsertCustomerInput,
     UpsertCustomerOnCreateInput,
@@ -57,6 +59,8 @@ from .schemas import (
     CustomerCardsRequest,
     CustomerCardsResponse,
 )
+
+log = structlog.get_logger(__name__)
 
 
 class PlainServiceError(PolarError): ...
@@ -1257,6 +1261,33 @@ class PlainService:
             )
 
         return CustomerIdentifierInput(email_address=email)
+
+    async def check_thread_exists(self, customer_email: str, thread_title: str) -> bool:
+        """
+        Check if a thread with the given title exists for a customer.
+        Only considers threads that are not done/closed.
+        """
+        if not self.enabled:
+            log.warning("Plain integration is disabled, assuming no thread exists")
+            return False
+
+        log.info("Checking thread existence", customer_email=customer_email)
+
+        async with self._get_plain_client() as plain:
+            user = await plain.customer_by_email(email=customer_email)
+            log.info("User found", user_id=user)
+            if not user:
+                log.warning("User not found", email=customer_email)
+                return False
+            filters = ThreadsFilter(customer_ids=[user.id])
+            threads = await plain.threads(filters=filters)
+            nr_threads = 0
+            for edge in threads.edges:
+                thread = edge.node
+                if thread.title == thread_title:
+                    nr_threads += 1
+            log.info(f"There are {nr_threads} threads for user {customer_email}")
+            return nr_threads > 0
 
     @contextlib.asynccontextmanager
     async def _get_plain_client(self) -> AsyncIterator[Plain]:

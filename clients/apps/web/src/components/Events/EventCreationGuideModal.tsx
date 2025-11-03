@@ -17,7 +17,7 @@ export const EventCreationGuideModal = ({
       <div className="flex flex-col gap-4 p-8">
         <h1 className="text-2xl">Event Ingestion</h1>
         <p>Events can only be created through the Polar Ingestion API.</p>
-        <Well className="dark:border-polar-700 rounded-lg border border-gray-200 p-4 text-sm">
+        <Well className="dark:bg-polar-900 rounded-lg bg-gray-100 p-4 text-sm">
           <SyntaxHighlighterClient
             lang="typescript"
             code={`import { Polar } from "@polar-sh/sdk";

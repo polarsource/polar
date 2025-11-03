@@ -1,6 +1,7 @@
 import { useMetrics } from '@/hooks/queries/metrics'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
+import { formatAccountingFriendlyCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -12,7 +13,6 @@ import Link from 'next/link'
 import { useCallback, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
-import AmountLabel from '../Shared/AmountLabel'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
 import { CustomerStatBox } from './CustomerStatBox'
@@ -87,13 +87,10 @@ export const CustomerContextView = ({
         </Link>
         <div className="flex flex-row justify-between gap-4">
           <CustomerStatBox title="Cumulative Revenue">
-            <AmountLabel
-              amount={
-                metrics.data?.periods[metrics.data.periods.length - 1]
-                  .cumulative_revenue ?? 0
-              }
-              currency="USD"
-            />
+            {formatAccountingFriendlyCurrency(
+              metrics.data?.periods[metrics.data.periods.length - 1]
+                .cumulative_revenue ?? 0,
+            )}
           </CustomerStatBox>
           <CustomerStatBox title="First Seen">
             <FormattedDateTime datetime={customer.created_at} />

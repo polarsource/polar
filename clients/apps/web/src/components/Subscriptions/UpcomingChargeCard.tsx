@@ -1,8 +1,8 @@
 'use client'
 
-import AmountLabel from '@/components/Shared/AmountLabel'
 import { DetailRow } from '@/components/Shared/DetailRow'
 import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
+import { formatCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 
@@ -77,11 +77,7 @@ const UpcomingChargeCard = ({
               isCancelingAtPeriodEnd ? (
                 <span className="text-gray-500">Canceled</span>
               ) : (
-                <AmountLabel
-                  amount={subscription.amount || 0}
-                  currency={subscription.currency}
-                  minimumFractionDigits={2}
-                />
+                formatCurrency(subscription.amount || 0)
               )
             }
           />
@@ -96,13 +92,7 @@ const UpcomingChargeCard = ({
                 <DetailRow
                   key={meter.id}
                   label={meter.meter.name}
-                  value={
-                    <AmountLabel
-                      amount={meter.amount}
-                      currency={subscription.currency}
-                      minimumFractionDigits={2}
-                    />
-                  }
+                  value={formatCurrency(meter.amount)}
                 />
               ))}
             </>
@@ -122,15 +112,7 @@ const UpcomingChargeCard = ({
                   {(hasTaxes || hasDiscount) && (
                     <DetailRow
                       label="Subtotal"
-                      value={
-                        <AmountLabel
-                          amount={chargePreview.subtotal_amount}
-                          currency={subscription.currency}
-                          minimumFractionDigits={
-                            chargePreview.subtotal_amount % 100 === 0 ? 0 : 2
-                          }
-                        />
-                      }
+                      value={formatCurrency(chargePreview.subtotal_amount)}
                       valueClassName="dark:text-polar-500 text-gray-500"
                       labelClassName="dark:text-polar-500 text-gray-500"
                     />
@@ -139,15 +121,7 @@ const UpcomingChargeCard = ({
                   {hasDiscount && (
                     <DetailRow
                       label="Discount"
-                      value={
-                        <AmountLabel
-                          amount={-1 * chargePreview.discount_amount}
-                          currency={subscription.currency}
-                          minimumFractionDigits={
-                            chargePreview.discount_amount % 100 === 0 ? 0 : 2
-                          }
-                        />
-                      }
+                      value={formatCurrency(-1 * chargePreview.discount_amount)}
                       valueClassName="dark:text-polar-500 text-gray-500"
                       labelClassName="dark:text-polar-500 text-gray-500"
                     />
@@ -156,15 +130,7 @@ const UpcomingChargeCard = ({
                   {hasTaxes && (
                     <DetailRow
                       label="Taxes"
-                      value={
-                        <AmountLabel
-                          amount={chargePreview.tax_amount}
-                          currency={subscription.currency}
-                          minimumFractionDigits={
-                            chargePreview.tax_amount % 100 === 0 ? 0 : 2
-                          }
-                        />
-                      }
+                      value={formatCurrency(chargePreview.tax_amount)}
                       valueClassName="dark:text-polar-500 text-gray-500"
                       labelClassName="dark:text-polar-500 text-gray-500"
                     />
@@ -179,13 +145,7 @@ const UpcomingChargeCard = ({
                       .join(' ')}
                     value={
                       <span className="text-lg font-semibold">
-                        <AmountLabel
-                          amount={chargePreview.total_amount}
-                          currency={subscription.currency}
-                          minimumFractionDigits={
-                            chargePreview.total_amount % 100 === 0 ? 0 : 2
-                          }
-                        />
+                        {formatCurrency(chargePreview.total_amount)}
                       </span>
                     }
                     valueClassName="font-medium"

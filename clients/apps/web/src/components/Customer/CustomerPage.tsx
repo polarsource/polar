@@ -231,7 +231,6 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                   original.amount && original.currency ? (
                     <AmountLabel
                       amount={original.amount}
-                      currency={original.currency}
                       interval={original.recurring_interval}
                       intervalCount={original.recurring_interval_count}
                     />
@@ -289,12 +288,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               {
                 header: 'Amount',
                 accessorKey: 'amount',
-                cell: ({ row: { original } }) => (
-                  <AmountLabel
-                    amount={original.net_amount}
-                    currency={original.currency}
-                  />
-                ),
+                cell: ({ row: { original } }) =>
+                  formatCurrency(original.net_amount),
               },
               {
                 header: '',

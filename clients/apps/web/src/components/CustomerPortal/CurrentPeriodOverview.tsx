@@ -1,9 +1,9 @@
 import { useCustomerSubscriptionChargePreview } from '@/hooks/queries/customerPortal'
+import { formatCurrency } from '@/utils/formatters'
 import { Client, schemas } from '@polar-sh/client'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { twMerge } from 'tailwind-merge'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
-import AmountLabel from '../Shared/AmountLabel'
 
 interface CurrentPeriodOverviewProps {
   subscription: schemas['CustomerSubscription']
@@ -112,11 +112,7 @@ export const CurrentPeriodOverview = ({
                   {meter.meter.name}
                 </span>
                 <span className="font-medium">
-                  <AmountLabel
-                    amount={meter.amount}
-                    currency={subscription.currency}
-                    minimumFractionDigits={meter.amount % 100 === 0 ? 0 : 2}
-                  />
+                  {formatCurrency(meter.amount)}
                 </span>
               </div>
             ))}
@@ -127,15 +123,7 @@ export const CurrentPeriodOverview = ({
           {(hasTaxes || hasDiscount) && (
             <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
               <span>Subtotal</span>
-              <span>
-                <AmountLabel
-                  amount={subscriptionPreview.subtotal_amount}
-                  currency={subscription.currency}
-                  minimumFractionDigits={
-                    subscriptionPreview.subtotal_amount % 100 === 0 ? 0 : 2
-                  }
-                />
-              </span>
+              <span>{formatCurrency(subscriptionPreview.subtotal_amount)}</span>
             </div>
           )}
 
@@ -143,13 +131,7 @@ export const CurrentPeriodOverview = ({
             <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
               <span>Discount</span>
               <span>
-                <AmountLabel
-                  amount={-1 * subscriptionPreview.discount_amount}
-                  currency={subscription.currency}
-                  minimumFractionDigits={
-                    subscriptionPreview.discount_amount % 100 === 0 ? 0 : 2
-                  }
-                />
+                {formatCurrency(-1 * subscriptionPreview.discount_amount)}
               </span>
             </div>
           )}
@@ -157,15 +139,7 @@ export const CurrentPeriodOverview = ({
           {hasTaxes && (
             <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
               <span>Taxes</span>
-              <span>
-                <AmountLabel
-                  amount={subscriptionPreview.tax_amount}
-                  currency={subscription.currency}
-                  minimumFractionDigits={
-                    subscriptionPreview.tax_amount % 100 === 0 ? 0 : 2
-                  }
-                />
-              </span>
+              <span>{formatCurrency(subscriptionPreview.tax_amount)}</span>
             </div>
           )}
 
@@ -175,13 +149,7 @@ export const CurrentPeriodOverview = ({
             </span>
             <span className="text-lg font-semibold">
               {subscriptionPreview ? (
-                <AmountLabel
-                  amount={subscriptionPreview.total_amount}
-                  currency={subscription.currency}
-                  minimumFractionDigits={
-                    subscriptionPreview.total_amount % 100 === 0 ? 0 : 2
-                  }
-                />
+                formatCurrency(subscriptionPreview.total_amount)
               ) : (
                 <span className="dark:bg-polar-700 animate-pulse rounded-md bg-gray-50 text-gray-500/0 dark:text-gray-400">
                   Loading…

@@ -2,6 +2,7 @@ import hashlib
 from datetime import datetime
 from typing import Annotated
 
+from annotated_types import MaxLen
 from fastapi import Path
 from pydantic import UUID4, Field, computed_field
 
@@ -38,6 +39,13 @@ _email_example = "customer@example.com"
 _name_description = "The name of the customer."
 _name_example = "John Doe"
 
+CustomerNameInput = Annotated[
+    str,
+    MaxLen(256),
+    Field(description=_name_description, examples=[_name_example]),
+    EmptyStrToNoneValidator,
+]
+
 
 class CustomerCreate(MetadataInputMixin, Schema):
     external_id: Annotated[str | None, EmptyStrToNoneValidator] = Field(
@@ -48,9 +56,7 @@ class CustomerCreate(MetadataInputMixin, Schema):
     email: EmailStrDNS = Field(
         description=_email_description, examples=[_email_example]
     )
-    name: str | None = Field(
-        default=None, description=_name_description, examples=[_name_example]
-    )
+    name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
     organization_id: OrganizationID | None = Field(
@@ -66,9 +72,7 @@ class CustomerUpdateBase(MetadataInputMixin, Schema):
     email: EmailStrDNS | None = Field(
         default=None, description=_email_description, examples=[_email_example]
     )
-    name: str | None = Field(
-        default=None, description=_name_description, examples=[_name_example]
-    )
+    name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
 

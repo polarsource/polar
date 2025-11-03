@@ -19,6 +19,7 @@ from polar.custom_field.data import (
     CustomFieldDataOutputMixin,
 )
 from polar.custom_field.schemas import AttachedCustomField
+from polar.customer.schemas.customer import CustomerNameInput
 from polar.discount.schemas import (
     DiscountFixedBase,
     DiscountOnceForeverDurationBase,
@@ -76,10 +77,6 @@ Amount = Annotated[
     ),
     Ge(MINIMUM_PRICE_AMOUNT),
     Le(MAXIMUM_PRICE_AMOUNT),
-]
-CustomerName = Annotated[
-    str,
-    Field(description="Name of the customer."),
 ]
 CustomerEmail = Annotated[
     EmailStrDNS,
@@ -201,7 +198,7 @@ class CheckoutCreateBase(
         description=_external_customer_id_description,
         validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
     )
-    customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
+    customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
@@ -327,7 +324,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
         description="Number of seats for seat-based pricing.",
     )
     is_business_customer: bool | None = None
-    customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
+    customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_billing_address: CustomerBillingAddressInput | None = None

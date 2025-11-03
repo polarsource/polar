@@ -220,6 +220,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
             data={metrics}
             interval={allTimeInterval}
             loading={metricsLoading}
+            product={product}
           />
         </TabsContent>
         <ConfirmModal

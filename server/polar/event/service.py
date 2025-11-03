@@ -4,18 +4,7 @@ from datetime import datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import (
-    Select,
-    String,
-    UnaryExpression,
-    asc,
-    cast,
-    desc,
-    func,
-    or_,
-    select,
-    text,
-)
+from sqlalchemy import String, UnaryExpression, asc, cast, desc, func, or_, select, text
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.customer.repository import CustomerRepository
@@ -32,12 +21,7 @@ from polar.postgres import AsyncSession
 from polar.worker import enqueue_events
 
 from .repository import EventRepository
-from .schemas import (
-    EventCreateCustomer,
-    EventName,
-    EventsIngest,
-    EventsIngestResponse,
-)
+from .schemas import EventCreateCustomer, EventName, EventsIngest, EventsIngestResponse
 from .sorting import EventNamesSortProperty, EventSortProperty
 
 log: Logger = structlog.get_logger()
@@ -53,11 +37,10 @@ class EventIngestValidationError(EventError):
 
 
 class EventService:
-    async def _build_filtered_statement(
+    async def list(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        repository: EventRepository,
         *,
         filter: Filter | None = None,
         start_timestamp: datetime | None = None,
@@ -69,11 +52,13 @@ class EventService:
         name: Sequence[str] | None = None,
         source: Sequence[EventSource] | None = None,
         metadata: MetadataQuery | None = None,
-        sorting: Sequence[Sorting[EventSortProperty]] = (
-            (EventSortProperty.timestamp, True),
-        ),
+        pagination: PaginationParams,
+        sorting: list[Sorting[EventSortProperty]] = [
+            (EventSortProperty.timestamp, True)
+        ],
         query: str | None = None,
-    ) -> Select[tuple[Event]]:
+    ) -> tuple[Sequence[Event], int]:
+        repository = EventRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).options(
             *repository.get_eager_options()
         )
@@ -153,54 +138,6 @@ class EventService:
             if criterion == EventSortProperty.timestamp:
                 order_by_clauses.append(clause_function(Event.timestamp))
         statement = statement.order_by(*order_by_clauses)
-
-        return statement
-
-    async def list(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        *,
-        filter: Filter | None = None,
-        start_timestamp: datetime | None = None,
-        end_timestamp: datetime | None = None,
-        organization_id: Sequence[uuid.UUID] | None = None,
-        customer_id: Sequence[uuid.UUID] | None = None,
-        external_customer_id: Sequence[str] | None = None,
-        meter_id: uuid.UUID | None = None,
-        name: Sequence[str] | None = None,
-        source: Sequence[EventSource] | None = None,
-        metadata: MetadataQuery | None = None,
-        pagination: PaginationParams,
-        sorting: Sequence[Sorting[EventSortProperty]] = (
-            (EventSortProperty.timestamp, True),
-        ),
-        query: str | None = None,
-        parent_id: uuid.UUID | None = None,
-    ) -> tuple[Sequence[Event], int]:
-        repository = EventRepository.from_session(session)
-        statement = await self._build_filtered_statement(
-            session,
-            auth_subject,
-            repository,
-            filter=filter,
-            start_timestamp=start_timestamp,
-            end_timestamp=end_timestamp,
-            organization_id=organization_id,
-            customer_id=customer_id,
-            external_customer_id=external_customer_id,
-            meter_id=meter_id,
-            name=name,
-            source=source,
-            metadata=metadata,
-            sorting=sorting,
-            query=query,
-        )
-
-        if parent_id is not None:
-            statement = statement.where(Event.parent_id == parent_id)
-        else:
-            statement = statement.where(Event.parent_id.is_(None))
 
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
@@ -309,36 +246,28 @@ class EventService:
                 )
                 if isinstance(event_create, EventCreateCustomer):
                     validate_customer_id(index, event_create.customer_id)
-
-                parent_id: uuid.UUID | None = None
-                if event_create.parent_id is not None:
-                    parent_id = await self._resolve_parent_id(
-                        session, index, event_create.parent_id, organization_id
-                    )
             except EventIngestValidationError as e:
                 errors.extend(e.errors)
                 continue
             else:
-                event_dict = event_create.model_dump(
-                    exclude={"organization_id", "parent_id"}, by_alias=True
+                events.append(
+                    {
+                        "source": EventSource.user,
+                        "organization_id": organization_id,
+                        **event_create.model_dump(
+                            exclude={"organization_id"}, by_alias=True
+                        ),
+                    }
                 )
-                event_dict["source"] = EventSource.user
-                event_dict["organization_id"] = organization_id
-                if parent_id is not None:
-                    event_dict["parent_id"] = parent_id
-
-                events.append(event_dict)
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
 
         repository = EventRepository.from_session(session)
-        event_ids, duplicates_count = await repository.insert_batch(events)
+        event_ids = await repository.insert_batch(events)
         enqueue_events(*event_ids)
 
-        return EventsIngestResponse(
-            inserted=len(event_ids), duplicates=duplicates_count
-        )
+        return EventsIngestResponse(inserted=len(events))
 
     async def create_event(self, session: AsyncSession, event: Event) -> Event:
         repository = EventRepository.from_session(session)
@@ -474,48 +403,6 @@ class EventService:
             return customer_id
 
         return _validate_customer_id
-
-    async def _resolve_parent_id(
-        self,
-        session: AsyncSession,
-        index: int,
-        parent_id: str,
-        organization_id: uuid.UUID,
-    ) -> uuid.UUID:
-        try:
-            parent_uuid = uuid.UUID(parent_id)
-            statement = select(Event.id).where(
-                Event.id == parent_uuid, Event.organization_id == organization_id
-            )
-            result = await session.execute(statement)
-            found_id = result.scalar_one_or_none()
-
-            if found_id is not None:
-                return found_id
-
-        except ValueError:
-            pass
-
-        statement = select(Event.id).where(
-            Event.external_id == parent_id,
-            Event.organization_id == organization_id,
-        )
-        result = await session.execute(statement)
-        found_id = result.scalar_one_or_none()
-
-        if found_id is not None:
-            return found_id
-
-        raise EventIngestValidationError(
-            [
-                {
-                    "type": "parent_id",
-                    "msg": "Parent event not found.",
-                    "loc": ("body", "events", index, "parent_id"),
-                    "input": parent_id,
-                }
-            ]
-        )
 
 
 event = EventService()

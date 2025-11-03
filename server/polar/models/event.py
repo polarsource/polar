@@ -12,13 +12,10 @@ from sqlalchemy import (
     Uuid,
     and_,
     case,
-    column,
     exists,
     extract,
-    func,
     or_,
     select,
-    table,
 )
 from sqlalchemy import (
     cast as sql_cast,
@@ -139,10 +136,6 @@ class Event(Model, MetadataMixin):
     )
 
     @declared_attr
-    def parent(cls) -> Mapped["Event | None"]:
-        return relationship("Event", remote_side="Event.id", lazy="raise")
-
-    @declared_attr
     def customer(cls) -> Mapped[Customer | None]:
         return relationship(
             Customer,
@@ -166,17 +159,6 @@ class Event(Model, MetadataMixin):
             else_=external_customer_id,
         )
     )
-
-    @declared_attr
-    def child_count(cls) -> Mapped[int]:
-        child_events = table("events", column("parent_id")).alias("child_events")
-        return column_property(
-            select(func.count())
-            .select_from(child_events)
-            .where(child_events.c.parent_id == cls.id)
-            .correlate_except(child_events)
-            .scalar_subquery()
-        )
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,

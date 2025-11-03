@@ -96,17 +96,17 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       </Popover>
 
       <Popover>
-        <PopoverTrigger className="dark:hover:bg-polar-700 flex-1 cursor-pointer px-6 text-sm duration-150 hover:bg-gray-100">
+        <PopoverTrigger className="dark:hover:bg-polar-700 flex-1 cursor-pointer truncate px-4 text-sm duration-150 hover:bg-gray-100">
           {interval ? (
             interval.label
           ) : date?.from ? (
             date.to ? (
               <>
-                {format(date.from, 'LLL dd, y')} -{' '}
-                {format(date.to, 'LLL dd, y')}
+                {format(date.from, 'LLL dd, yy')} -{' '}
+                {format(date.to, 'LLL dd, yy')}
               </>
             ) : (
-              format(date.from, 'LLL dd, y')
+              format(date.from, 'LLL dd, yy')
             )
           ) : (
             <span>Pick a date</span>

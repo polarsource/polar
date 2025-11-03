@@ -92,6 +92,7 @@ export const useEventCostBadge = (event: schemas['Event']) => {
     if ('_cost' in event.metadata && event.metadata._cost) {
       return (
         <EventCostBadge
+          type={event.name === 'order.paid' ? 'revenue' : 'cost'}
           cost={event.metadata._cost?.amount}
           currency={event.metadata._cost?.currency}
         />
@@ -99,10 +100,11 @@ export const useEventCostBadge = (event: schemas['Event']) => {
     } else if (isOrderEvent(event)) {
       return (
         <EventCostBadge
+          type={event.name === 'order.paid' ? 'revenue' : 'cost'}
           currency={event.metadata.currency}
           cost={
             event.name === 'order.paid'
-              ? -event.metadata.amount
+              ? event.metadata.amount
               : event.metadata.refunded_amount
           }
         />

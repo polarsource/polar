@@ -6,7 +6,6 @@ from polar.customer_portal.endpoints.downloadables import router as downloadable
 from polar.customer_portal.endpoints.license_keys import router as license_keys_router
 from polar.customer_portal.endpoints.order import router as order_router
 from polar.customer_portal.endpoints.subscription import router as subscription_router
-from polar.exceptions import PolarError
 from polar.models import User
 from polar.models.user import OAuthPlatform
 from polar.openapi import APITag
@@ -48,22 +47,6 @@ async def create_identity_verification(
     )
 
 
-class OAuthAccountNotFound(PolarError):
-    def __init__(self, platform: OAuthPlatform) -> None:
-        self.platform = platform
-        message = f"No {platform} OAuth account found for this user."
-        super().__init__(message, 404)
-
-
-class CannotDisconnectLastAuthMethod(PolarError):
-    def __init__(self) -> None:
-        message = (
-            "Cannot disconnect this OAuth account as it's your only authentication method. "
-            "Please verify your email or connect another OAuth provider before disconnecting."
-        )
-        super().__init__(message, 400)
-
-
 @router.delete(
     "/me/oauth-accounts/{platform}",
     status_code=204,
@@ -86,21 +69,4 @@ async def disconnect_oauth_account(
     Note: You cannot disconnect your last authentication method if your email is not verified.
     """
     user = auth_subject.subject
-
-    oauth_account = await oauth_account_service.get_by_platform_and_user_id(
-        session, platform, user.id
-    )
-
-    if oauth_account is None:
-        raise OAuthAccountNotFound(platform)
-
-    can_disconnect = await oauth_account_service.can_disconnect_oauth_account(
-        session, user, oauth_account.id
-    )
-
-    if not can_disconnect:
-        raise CannotDisconnectLastAuthMethod()
-
-    await oauth_account_service.disconnect_oauth_account(
-        session, user, oauth_account.id, platform
-    )
+    await oauth_account_service.disconnect_platform(session, user, platform)

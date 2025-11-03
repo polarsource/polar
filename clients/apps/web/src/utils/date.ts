@@ -1,5 +1,5 @@
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { endOfToday } from 'date-fns'
+import { endOfToday, startOfDay } from 'date-fns'
 import { parseAsIsoDateTime, useQueryState } from 'nuqs'
 import { useContext } from 'react'
 
@@ -13,7 +13,7 @@ export const useDateRange = ({
   defaultEndDate,
 }: DateRangeProps = {}) => {
   const { organization } = useContext(OrganizationContext)
-  const organizationCreatedAt = new Date(organization.created_at)
+  const organizationCreatedAt = startOfDay(new Date(organization.created_at))
 
   const [startDate, setStartDate] = useQueryState(
     'startDate',

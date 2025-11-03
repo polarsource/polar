@@ -95,17 +95,6 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     customer_id: [customer.id],
   })
 
-  const { data: currentPeriodMetrics } = useMetrics(
-    {
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-      organization_id: organization.id,
-      interval: 'day',
-      customer_id: [customer.id],
-    },
-    organization.feature_settings?.revops_enabled ?? false,
-  )
-
   const { data: previousPeriodMetrics } = useMetrics(
     {
       startDate: getPreviousDateRange(
@@ -114,7 +103,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       )[0],
       endDate: getPreviousDateRange(dateRange.startDate, dateRange.endDate)[1],
       organization_id: organization.id,
-      interval: 'day',
+      interval: interval,
       customer_id: [customer.id],
     },
     organization.feature_settings?.revops_enabled ?? false,
@@ -131,12 +120,12 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           previousValue: number
         }
       | undefined => {
-      if (!currentPeriodMetrics?.totals || !previousPeriodMetrics?.totals) {
+      if (!metricsData?.totals || !previousPeriodMetrics?.totals) {
         return undefined
       }
 
-      const metric = currentPeriodMetrics.metrics[metricKey]
-      const currentValue = currentPeriodMetrics.totals[metricKey]
+      const metric = metricsData.metrics[metricKey]
+      const currentValue = metricsData.totals[metricKey]
       const previousValue = previousPeriodMetrics.totals[metricKey]
 
       if (
@@ -166,7 +155,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         metric,
       }
     },
-    [currentPeriodMetrics, previousPeriodMetrics],
+    [metricsData, previousPeriodMetrics],
   )
 
   const relevantMetricsData = useMemo(() => {
@@ -233,10 +222,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 size="lg"
                 trend={calculateTrend('revenue')}
               >
-                {typeof currentPeriodMetrics?.totals.revenue === 'number'
-                  ? formatHumanFriendlyCurrency(
-                      currentPeriodMetrics.totals.revenue,
-                    )
+                {typeof metricsData?.totals.revenue === 'number'
+                  ? formatHumanFriendlyCurrency(metricsData.totals.revenue)
                   : '—'}
               </CustomerTrendStatBox>
               <CustomerTrendStatBox
@@ -244,8 +231,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 size="lg"
                 trend={calculateTrend('costs')}
               >
-                {typeof currentPeriodMetrics?.totals.costs === 'number'
-                  ? formatSubCentCurrency(currentPeriodMetrics.totals.costs)
+                {typeof metricsData?.totals.costs === 'number'
+                  ? formatSubCentCurrency(metricsData.totals.costs)
                   : '—'}
               </CustomerTrendStatBox>
               <CustomerTrendStatBox
@@ -253,10 +240,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 size="lg"
                 trend={calculateTrend('gross_margin')}
               >
-                {typeof currentPeriodMetrics?.totals.gross_margin === 'number'
-                  ? formatHumanFriendlyCurrency(
-                      currentPeriodMetrics.totals.gross_margin,
-                    )
+                {typeof metricsData?.totals.gross_margin === 'number'
+                  ? formatHumanFriendlyCurrency(metricsData.totals.gross_margin)
                   : '—'}
               </CustomerTrendStatBox>
               <CustomerTrendStatBox
@@ -264,11 +249,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 size="lg"
                 trend={calculateTrend('gross_margin_percentage')}
               >
-                {typeof currentPeriodMetrics?.totals.gross_margin_percentage ===
-                'number'
-                  ? formatPercentage(
-                      currentPeriodMetrics.totals.gross_margin_percentage,
-                    )
+                {typeof metricsData?.totals.gross_margin_percentage === 'number'
+                  ? formatPercentage(metricsData.totals.gross_margin_percentage)
                   : '—'}
               </CustomerTrendStatBox>
             </>

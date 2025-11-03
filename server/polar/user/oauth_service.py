@@ -33,16 +33,6 @@ class OAuthAccountService(ResourceServiceReader[OAuthAccount]):
         result = await session.execute(stmt)
         return result.scalars().one_or_none()
 
-    async def get_by_platform_and_username(
-        self, session: AsyncSession, platform: OAuthPlatform, username: str
-    ) -> OAuthAccount | None:
-        stmt = select(OAuthAccount).where(
-            OAuthAccount.platform == platform,
-            OAuthAccount.account_username == username,
-        )
-        result = await session.execute(stmt)
-        return result.scalars().one_or_none()
-
     async def can_disconnect_oauth_account(
         self, session: AsyncSession, user: User, oauth_account_id: UUID
     ) -> bool:

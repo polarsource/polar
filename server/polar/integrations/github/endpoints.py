@@ -6,7 +6,6 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
-from pydantic import ValidationError
 
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
@@ -16,14 +15,12 @@ from polar.exceptions import NotPermitted, PolarRedirectionError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit import jwt
 from polar.kit.http import ReturnTo
-from polar.locker import Locker, get_locker
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.routing import APIRouter
 from polar.user.schemas import UserSignupAttribution, UserSignupAttributionQuery
 
-from .schemas import OAuthAccessToken
 from .service.secret_scanning import secret_scanning as secret_scanning_service
 from .service.user import GithubUserServiceError, github_user
 
@@ -86,7 +83,6 @@ async def github_callback(
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_authorize_callback
     ),
-    locker: Locker = Depends(get_locker),
 ) -> RedirectResponse:
     token_data, state = access_token_state
     error_description = token_data.get("error_description")
@@ -103,12 +99,6 @@ async def github_callback(
         raise OAuthCallbackError("Invalid state") from e
 
     return_to = state_data.get("return_to", None)
-
-    try:
-        tokens = OAuthAccessToken(**token_data)
-    except ValidationError as e:
-        raise OAuthCallbackError("Invalid token data", return_to=return_to) from e
-
     state_user_id = state_data.get("user_id")
 
     state_signup_attribution = state_data.get("signup_attribution")
@@ -124,14 +114,13 @@ async def github_callback(
             and auth_subject.subject.id == UUID(state_user_id)
         ):
             is_signup = False
-            user = await github_user.link_existing_user(
-                session, user=auth_subject.subject, tokens=tokens
+            user = await github_user.link_user(
+                session, user=auth_subject.subject, token=token_data
             )
         else:
             user, is_signup = await github_user.get_updated_or_create(
                 session,
-                locker,
-                tokens=tokens,
+                token=token_data,
                 signup_attribution=state_signup_attribution,
             )
 

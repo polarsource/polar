@@ -11551,11 +11551,7 @@ export interface components {
        * @example customer@example.com
        */
       email: string
-      /**
-       * Name
-       * @description The name of the customer.
-       * @example John Doe
-       */
+      /** Name */
       name?: string | null
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
@@ -13490,11 +13486,7 @@ export interface components {
        * @example customer@example.com
        */
       email?: string | null
-      /**
-       * Name
-       * @description The name of the customer.
-       * @example John Doe
-       */
+      /** Name */
       name?: string | null
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
@@ -13531,11 +13523,7 @@ export interface components {
        * @example customer@example.com
        */
       email?: string | null
-      /**
-       * Name
-       * @description The name of the customer.
-       * @example John Doe
-       */
+      /** Name */
       name?: string | null
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
@@ -27028,6 +27016,7 @@ export interface operations {
           | 'America/Coral_Harbour'
           | 'America/Cordoba'
           | 'America/Costa_Rica'
+          | 'America/Coyhaique'
           | 'America/Creston'
           | 'America/Cuiaba'
           | 'America/Curacao'
@@ -33619,6 +33608,7 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'America/Coral_Harbour',
   'America/Cordoba',
   'America/Costa_Rica',
+  'America/Coyhaique',
   'America/Creston',
   'America/Cuiaba',
   'America/Curacao',

@@ -21,6 +21,9 @@ Usage:
 
     Actually perform the unlink:
         uv run python -m scripts.unlink_organization_account ACCOUNT_UUID --no-dry-run
+
+    Send email notification to admin:
+        uv run python -m scripts.unlink_organization_account ACCOUNT_UUID --no-dry-run --send-email
 """
 
 import asyncio
@@ -35,6 +38,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
 from polar.account.repository import AccountRepository
+from polar.email.react import render_email_template
+from polar.email.schemas import (
+    OrganizationAccountUnlinkEmail,
+    OrganizationAccountUnlinkProps,
+)
+from polar.email.sender import email_sender
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Account, Customer, Order, Organization
 from polar.organization.repository import OrganizationRepository
@@ -112,6 +121,9 @@ async def unlink_organizations(
     account_id: str = typer.Argument(..., help="UUID of the account to process"),
     dry_run: bool = typer.Option(
         True, help="If True, only show what would be done without making changes"
+    ),
+    send_email: bool = typer.Option(
+        False, help="If True, send email notification to the admin"
     ),
 ) -> None:
     account_uuid = UUID(account_id)
@@ -228,6 +240,36 @@ async def unlink_organizations(
 
         typer.echo()
         typer.echo(f"✅ Successfully unlinked {len(orgs_to_unlink)} organization(s)")
+
+        if send_email:
+            typer.echo()
+            typer.echo("📧 Sending email notification to admin...")
+
+            try:
+                orgs_unlinked_names = [org.slug for org in orgs_to_unlink]
+
+                email_data = OrganizationAccountUnlinkEmail(
+                    props=OrganizationAccountUnlinkProps(
+                        email=account.admin.email,
+                        organization_kept_name=org_to_keep.slug,
+                        organizations_unlinked=orgs_unlinked_names,
+                    )
+                )
+
+                email_html = render_email_template(email_data)
+
+                await email_sender.send(
+                    to_email_addr=account.admin.email,
+                    subject="Important: Organization Account Update",
+                    html_content=email_html,
+                )
+
+                typer.echo(f"   ✓ Email sent to {account.admin.email}")
+            except Exception as e:
+                typer.echo(f"   ❌ Failed to send email: {str(e)}")
+                typer.echo(
+                    "   ⚠️  Organizations were unlinked successfully, but email notification failed"
+                )
 
 
 if __name__ == "__main__":

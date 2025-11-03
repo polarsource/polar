@@ -26,7 +26,13 @@ export const CustomerStatBox = ({
       )}
     >
       <span className="dark:text-polar-500 text-gray-500">{title}</span>
-      <span className={twMerge(valueClassName, size === 'lg' ? 'text-lg' : '')}>
+      <span
+        className={twMerge(
+          'font-mono',
+          valueClassName,
+          size === 'lg' ? 'text-lg' : '',
+        )}
+      >
         {children}
       </span>
     </div>

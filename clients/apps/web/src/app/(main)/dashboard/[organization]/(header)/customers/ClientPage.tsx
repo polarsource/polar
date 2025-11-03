@@ -4,6 +4,7 @@ import { CreateCustomerModal } from '@/components/Customer/CreateCustomerModal'
 import { CustomerPage } from '@/components/Customer/CustomerPage'
 import { EditCustomerModal } from '@/components/Customer/EditCustomerModal'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -15,6 +16,7 @@ import { useInViewport } from '@/hooks/utils'
 import { getServerURL } from '@/utils/api'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
+import { useDateRange } from '@/utils/date'
 
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ArrowDownward from '@mui/icons-material/ArrowDownward'
@@ -39,9 +41,16 @@ import { twMerge } from 'tailwind-merge'
 const CustomerHeader = ({
   customer,
   organization,
+  metrics,
 }: {
   customer: schemas['Customer']
   organization: schemas['Organization']
+  metrics: {
+    startDate: Date
+    endDate: Date
+    setStartDate: (date: Date) => void
+    setEndDate: (date: Date) => void
+  }
 }) => {
   const {
     show: showEditCustomerModal,
@@ -101,9 +110,20 @@ const CustomerHeader = ({
 
   return (
     <div className="flex flex-row gap-2">
+      <DateRangePicker
+        date={
+          metrics.startDate && metrics.endDate
+            ? { from: metrics.startDate, to: metrics.endDate }
+            : undefined
+        }
+        onDateChange={(date) => {
+          metrics.setStartDate(date.from)
+          metrics.setEndDate(date.to)
+        }}
+      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="icon" variant="secondary">
+          <Button size="default" className="size-10" variant="secondary">
             <MoreVert fontSize="small" />
           </Button>
         </DropdownMenuTrigger>
@@ -183,6 +203,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     parseAsString,
   )
 
+  const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
+
   const { data, fetchNextPage, hasNextPage } = useCustomers(organization.id, {
     query: query ?? undefined,
     sorting: [sorting],
@@ -251,6 +273,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           <CustomerHeader
             organization={organization}
             customer={selectedCustomer}
+            metrics={{ startDate, endDate, setStartDate, setEndDate }}
           />
         ) : undefined
       }
@@ -357,7 +380,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       }
     >
       {selectedCustomer ? (
-        <CustomerPage customer={selectedCustomer} organization={organization} />
+        <CustomerPage
+          customer={selectedCustomer}
+          organization={organization}
+          metrics={{ startDate, endDate }}
+        />
       ) : (
         <div className="mt-96 flex w-full flex-col items-center justify-center gap-4">
           <h1 className="text-2xl font-normal">No Customer Selected</h1>

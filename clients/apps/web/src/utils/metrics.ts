@@ -170,3 +170,13 @@ export const getPreviousParams = (
       return [startOfYesterday(), startDate]
   }
 }
+
+export const getPreviousDateRange = (
+  startDate: Date,
+  endDate: Date,
+): [Date, Date] => {
+  const delta = endDate.getTime() - startDate.getTime()
+  const previousEndDate = new Date(startDate.getTime())
+  const previousStartDate = new Date(startDate.getTime() - delta)
+  return [previousStartDate, previousEndDate]
+}

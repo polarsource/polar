@@ -20,7 +20,7 @@ import {
   formatScalar,
   formatSubCentCurrency,
 } from '@/utils/formatters'
-import { getChartRangeParams } from '@/utils/metrics'
+import { dateRangeToInterval, getPreviousDateRange } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -38,15 +38,18 @@ import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerStatBox } from './CustomerStatBox'
+import { CustomerTrendStatBox } from './CustomerTrendStatBox'
 
 interface CustomerPageProps {
   organization: schemas['Organization']
   customer: schemas['Customer']
+  metrics: { startDate: Date; endDate: Date }
 }
 
 export const CustomerPage: React.FC<CustomerPageProps> = ({
   organization,
   customer,
+  metrics,
 }) => {
   const { data: orders, isLoading: ordersLoading } = useOrders(
     customer.organization_id,
@@ -78,17 +81,79 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     keyof schemas['Metrics']
   >(organization.feature_settings?.revops_enabled ? 'cashflow' : 'revenue')
 
-  const [startDate, endDate, interval] = React.useMemo(
-    () => getChartRangeParams('all_time', customer.created_at),
-    [customer.created_at],
-  )
+  const interval = React.useMemo(() => {
+    return metrics.startDate && metrics.endDate
+      ? dateRangeToInterval(metrics.startDate, metrics.endDate)
+      : 'day'
+  }, [metrics.startDate, metrics.endDate])
+
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
-    startDate,
-    endDate,
+    startDate: metrics.startDate,
+    endDate: metrics.endDate,
     organization_id: organization.id,
     interval,
     customer_id: [customer.id],
   })
+
+  const { data: currentPeriodMetrics } = useMetrics(
+    {
+      startDate: metrics.startDate,
+      endDate: metrics.endDate,
+      organization_id: organization.id,
+      interval: 'day',
+      customer_id: [customer.id],
+    },
+    organization.feature_settings?.revops_enabled ?? false,
+  )
+
+  const { data: previousPeriodMetrics } = useMetrics(
+    {
+      startDate: getPreviousDateRange(metrics.startDate, metrics.endDate)[0],
+      endDate: getPreviousDateRange(metrics.startDate, metrics.endDate)[1],
+      organization_id: organization.id,
+      interval: 'day',
+      customer_id: [customer.id],
+    },
+    organization.feature_settings?.revops_enabled ?? false,
+  )
+
+  const calculateTrend = React.useCallback(
+    (
+      metricKey: keyof schemas['MetricsTotals'],
+    ): { value: number; direction: 'up' | 'down' | 'none' } | undefined => {
+      if (!currentPeriodMetrics?.totals || !previousPeriodMetrics?.totals) {
+        return undefined
+      }
+
+      const currentValue = currentPeriodMetrics.totals[metricKey]
+      const previousValue = previousPeriodMetrics.totals[metricKey]
+
+      if (
+        typeof currentValue !== 'number' ||
+        typeof previousValue !== 'number'
+      ) {
+        return undefined
+      }
+
+      if (previousValue === 0) {
+        if (currentValue === 0) return { value: 0, direction: 'none' }
+        return { value: 100, direction: 'up' }
+      }
+
+      const percentageChange =
+        ((currentValue - previousValue) / Math.abs(previousValue)) * 100
+
+      if (Math.abs(percentageChange) < 0.01) {
+        return { value: 0, direction: 'none' }
+      }
+
+      return {
+        value: percentageChange,
+        direction: percentageChange > 0 ? 'up' : 'down',
+      }
+    },
+    [currentPeriodMetrics, previousPeriodMetrics],
+  )
 
   const relevantMetricsData = useMemo(() => {
     if (!metricsData) {
@@ -147,40 +212,67 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-8">
         <div className="flex flex-col gap-4 md:flex-row md:gap-6">
-          <CustomerStatBox title="Lifetime Revenue" size="lg">
-            {typeof metricsData?.totals.cumulative_revenue === 'number'
-              ? formatAccountingFriendlyCurrency(
-                  metricsData.totals.cumulative_revenue,
-                )
-              : '—'}
-          </CustomerStatBox>
-
           {organization.feature_settings?.revops_enabled ? (
             <>
-              <CustomerStatBox title="Lifetime Costs" size="lg">
-                {typeof metricsData?.totals.cumulative_costs === 'number'
-                  ? formatSubCentCurrency(metricsData.totals.cumulative_costs)
-                  : '—'}
-              </CustomerStatBox>
-              <CustomerStatBox title="Lifetime Profit" size="lg">
-                {typeof metricsData?.totals.gross_margin === 'number'
+              <CustomerTrendStatBox
+                title="Revenue"
+                size="lg"
+                trend={calculateTrend('revenue')}
+              >
+                {typeof currentPeriodMetrics?.totals.revenue === 'number'
                   ? formatAccountingFriendlyCurrency(
-                      metricsData.totals.gross_margin,
+                      currentPeriodMetrics.totals.revenue,
+                    )
+                  : '—'}
+              </CustomerTrendStatBox>
+              <CustomerTrendStatBox
+                title="Cost"
+                size="lg"
+                trend={calculateTrend('costs')}
+              >
+                {typeof currentPeriodMetrics?.totals.costs === 'number'
+                  ? formatSubCentCurrency(currentPeriodMetrics.totals.costs)
+                  : '—'}
+              </CustomerTrendStatBox>
+              <CustomerTrendStatBox
+                title="Profit"
+                size="lg"
+                trend={calculateTrend('gross_margin')}
+              >
+                {typeof currentPeriodMetrics?.totals.gross_margin === 'number'
+                  ? formatAccountingFriendlyCurrency(
+                      currentPeriodMetrics.totals.gross_margin,
+                    )
+                  : '—'}
+              </CustomerTrendStatBox>
+              <CustomerTrendStatBox
+                title="Profit Margin"
+                size="lg"
+                trend={calculateTrend('gross_margin_percentage')}
+              >
+                {typeof currentPeriodMetrics?.totals.gross_margin_percentage ===
+                'number'
+                  ? formatPercentage(
+                      currentPeriodMetrics.totals.gross_margin_percentage,
+                    )
+                  : '—'}
+              </CustomerTrendStatBox>
+            </>
+          ) : (
+            <>
+              <CustomerStatBox title="Lifetime Revenue" size="lg">
+                {typeof metricsData?.totals.cumulative_revenue === 'number'
+                  ? formatAccountingFriendlyCurrency(
+                      metricsData.totals.cumulative_revenue,
                     )
                   : '—'}
               </CustomerStatBox>
-              <CustomerStatBox title="Profit Margin" size="lg">
-                {typeof metricsData?.totals.gross_margin_percentage === 'number'
-                  ? formatPercentage(metricsData.totals.gross_margin_percentage)
+              <CustomerStatBox title="Orders" size="lg">
+                {metricsData?.totals.orders
+                  ? formatScalar(metricsData?.totals.orders)
                   : '—'}
               </CustomerStatBox>
             </>
-          ) : (
-            <CustomerStatBox title="Orders" size="lg">
-              {metricsData?.totals.orders
-                ? formatScalar(metricsData?.totals.orders)
-                : '—'}
-            </CustomerStatBox>
           )}
           <CustomerStatBox title="Customer Balance" size="lg">
             {formatCurrency(customerBalance?.balance ?? 0)}

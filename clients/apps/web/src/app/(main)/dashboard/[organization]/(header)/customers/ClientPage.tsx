@@ -34,7 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { startOfDay } from 'date-fns'
+import { endOfToday, startOfDay } from 'date-fns'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useCallback, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -241,8 +241,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   useEffect(() => {
     if (selectedCustomer) {
       setStartDate(startOfDay(new Date(selectedCustomer.created_at)))
+      setEndDate(endOfToday())
     }
-  }, [selectedCustomer, setStartDate])
+  }, [selectedCustomer, setStartDate, setEndDate])
 
   const onExport = () => {
     const url = new URL(

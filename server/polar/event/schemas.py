@@ -207,9 +207,6 @@ class BaseEvent(IDSchema):
     external_customer_id: str | None = Field(
         description="ID of the customer in your system associated with the event."
     )
-    child_count: int = Field(
-        default=0, description="Number of direct child events linked to this event."
-    )
 
 
 class SystemEventBase(BaseEvent):

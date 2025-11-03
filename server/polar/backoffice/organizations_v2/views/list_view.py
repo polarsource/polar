@@ -108,7 +108,7 @@ class OrganizationListView:
             classes=f"cursor-pointer hover:bg-base-300 {align_class}",
             **{
                 "hx-get": str(request.url_for("organizations-v2:list")),
-                "hx-vals": f'{{"sort": "{sort_key}", "direction": "{next_direction}"}}',
+                "hx-vals": hx_vals,
                 "hx-target": "#org-list",
                 "hx-include": "#filter-form",
             },

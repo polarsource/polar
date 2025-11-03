@@ -11,7 +11,7 @@ from sqlalchemy.engine import CursorResult
 
 from polar.event.system import SystemEvent
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.models import Event
+from polar.models import Event, Meter
 from polar.postgres import create_async_engine
 
 cli = typer.Typer()
@@ -58,13 +58,15 @@ async def remove_backfilled_events(
     async with sessionmaker() as session:
         total_deleted = 0
 
-        # Count total events to process
+        # Count total events to process (excluding those referenced by meters)
         count_statement = (
             select(func.count())
             .select_from(Event)
+            .outerjoin(Meter, Meter.last_billed_event_id == Event.id)
             .where(
                 Event.name.in_([SystemEvent.order_paid, SystemEvent.order_refunded]),
                 Event.user_metadata["backfilled"].as_boolean().is_(True),
+                Meter.id.is_(None),
             )
         )
         total_count = (await session.execute(count_statement)).scalar_one()
@@ -86,6 +88,7 @@ async def remove_backfilled_events(
                     delete(Event).where(
                         Event.id.in_(
                             select(Event.id)
+                            .outerjoin(Meter, Meter.last_billed_event_id == Event.id)
                             .where(
                                 Event.name.in_(
                                     [SystemEvent.order_paid, SystemEvent.order_refunded]
@@ -93,6 +96,7 @@ async def remove_backfilled_events(
                                 Event.user_metadata["backfilled"]
                                 .as_boolean()
                                 .is_(True),
+                                Meter.id.is_(None),
                             )
                             .limit(batch_size)
                         )

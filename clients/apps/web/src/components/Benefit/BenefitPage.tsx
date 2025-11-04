@@ -52,7 +52,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
         : updaterOrValue
 
     router.push(
-      `/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}&${getSearchParams(
+      `/dashboard/${organization.slug}/benefits/${benefit.id}?${getSearchParams(
         updatedPagination,
         sorting,
       )}`,
@@ -70,7 +70,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
         : updaterOrValue
 
     router.push(
-      `/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}&${getSearchParams(
+      `/dashboard/${organization.slug}/benefits/${benefit.id}?${getSearchParams(
         pagination,
         updatedSorting,
       )}`,

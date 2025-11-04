@@ -192,7 +192,7 @@ export const ProductOverview = ({
                 cell: (props) => (
                   <span className="flex flex-row justify-end gap-x-2">
                     <Link
-                      href={`/dashboard/${organization.slug}/customers?customerId=${props.row.original.customer.id}`}
+                      href={`/dashboard/${organization.slug}/customers/${props.row.original.customer.id}`}
                     >
                       <Button variant="secondary" size="sm">
                         View Customer

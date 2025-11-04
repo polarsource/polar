@@ -62,6 +62,57 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Redirect old customer query string URLs to path-based URLs
+  const customersMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/customers$/,
+  )
+  if (customersMatch && request.nextUrl.searchParams.has('customerId')) {
+    const customerId = request.nextUrl.searchParams.get('customerId')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${customersMatch[1]}/customers/${customerId}`
+    redirectURL.searchParams.delete('customerId')
+    return NextResponse.redirect(redirectURL)
+  }
+
+  // Redirect old benefit query string URLs to path-based URLs
+  const benefitsMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/benefits$/,
+  )
+  if (benefitsMatch && request.nextUrl.searchParams.has('benefitId')) {
+    const benefitId = request.nextUrl.searchParams.get('benefitId')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${benefitsMatch[1]}/benefits/${benefitId}`
+    redirectURL.searchParams.delete('benefitId')
+    return NextResponse.redirect(redirectURL)
+  }
+
+  // Redirect old checkout link query string URLs to path-based URLs
+  const checkoutLinksMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/products\/checkout-links$/,
+  )
+  if (
+    checkoutLinksMatch &&
+    request.nextUrl.searchParams.has('checkoutLinkId')
+  ) {
+    const checkoutLinkId = request.nextUrl.searchParams.get('checkoutLinkId')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${checkoutLinksMatch[1]}/products/checkout-links/${checkoutLinkId}`
+    redirectURL.searchParams.delete('checkoutLinkId')
+    return NextResponse.redirect(redirectURL)
+  }
+
+  // Redirect old meter query string URLs to path-based URLs
+  const metersMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/usage-billing\/meters$/,
+  )
+  if (metersMatch && request.nextUrl.searchParams.has('selectedMeter')) {
+    const selectedMeter = request.nextUrl.searchParams.get('selectedMeter')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${metersMatch[1]}/usage-billing/meters/${selectedMeter}`
+    redirectURL.searchParams.delete('selectedMeter')
+    return NextResponse.redirect(redirectURL)
+  }
+
   let user: schemas['UserRead'] | undefined = undefined
 
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {

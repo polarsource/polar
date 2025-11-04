@@ -9,7 +9,7 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
 
   return (
     <Link
-      href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}&query=${event.customer?.email}`}
+      href={`/dashboard/${organization.slug}/customers/${event.customer?.id}?query=${event.customer?.email}`}
       className="flex flex-row items-center gap-x-2 px-3 py-2"
     >
       <div className="flex flex-row items-center gap-x-2 font-sans">

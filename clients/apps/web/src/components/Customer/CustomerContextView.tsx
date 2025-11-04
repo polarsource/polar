@@ -63,7 +63,7 @@ export const CustomerContextView = ({
     <div className="flex h-full flex-col gap-2 overflow-y-auto">
       <ShadowBox className="dark:border-polar-800 flex flex-col gap-6 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
         <Link
-          href={`/dashboard/${organization.slug}/customers?customerId=${customer.id}&query=${customer.email}`}
+          href={`/dashboard/${organization.slug}/customers/${customer.id}?query=${customer.email}`}
           className="flex flex-row items-center gap-4"
         >
           <Avatar

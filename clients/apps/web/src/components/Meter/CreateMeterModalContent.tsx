@@ -1,4 +1,3 @@
-import { useEventNames } from '@/hooks/queries/events'
 import { useCreateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
@@ -53,12 +52,6 @@ const CreateMeterModalContent = ({
 
   const createMeter = useCreateMeter(organization.id)
 
-  const { data: eventNames } = useEventNames(organization.id, {
-    limit: 1,
-    sorting: ['-occurrences'],
-  })
-  const flatEventNames = eventNames?.pages.flatMap((page) => page.items) ?? []
-
   const handleCreateNewMeter = useCallback(
     async (body: schemas['MeterCreate']) => {
       const { data: meter, error } = await createMeter.mutateAsync(body)
@@ -102,7 +95,7 @@ const CreateMeterModalContent = ({
       <div className="flex flex-col gap-y-6">
         <Form {...form}>
           <form className="flex flex-col gap-y-6">
-            <MeterForm eventNames={flatEventNames} />
+            <MeterForm organizationId={organization.id} />
             {errors.root && (
               <p className="text-destructive-foreground text-sm">
                 {errors.root.message}

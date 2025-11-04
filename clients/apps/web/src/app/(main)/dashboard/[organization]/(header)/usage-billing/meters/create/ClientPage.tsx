@@ -4,7 +4,7 @@ import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MeterForm from '@/components/Meter/MeterForm'
 import { toast } from '@/components/Toast/use-toast'
-import { useEventNames, useEvents } from '@/hooks/queries/events'
+import { useEvents } from '@/hooks/queries/events'
 import { useCreateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
@@ -60,12 +60,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
     setPreviewFilter(filter ? JSON.stringify(filter) : null)
   }, [getValues])
 
-  const { data: eventNames } = useEventNames(organization.id, {
-    limit: 1,
-    sorting: ['-occurrences'],
-  })
-  const flatEventNames = eventNames?.pages.flatMap((page) => page.items) ?? []
-
   const onSubmit = useCallback(
     async (body: schemas['MeterCreate']) => {
       const { data: meter, error } = await createMeter.mutateAsync(body)
@@ -105,7 +99,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
           className="dark:divide-polar-700 flex h-full w-full flex-col gap-y-6 divide-gray-200 md:flex-row md:divide-x"
         >
           <div className="flex h-full flex-1 flex-col gap-y-6 pb-8 md:w-1/2 md:pr-12">
-            <MeterForm eventNames={flatEventNames} />
+            <MeterForm organizationId={organization.id} />
             <Button
               className="self-start"
               onClick={updatePreview}

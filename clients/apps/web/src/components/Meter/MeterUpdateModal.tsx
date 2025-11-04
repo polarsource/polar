@@ -13,12 +13,14 @@ export interface MeterUpdateModalProps {
   meter: schemas['Meter']
   hide: () => void
   hasProcessedEvents: boolean
+  organizationId: string
 }
 
 export const MeterUpdateModal = ({
   meter: _meter,
   hide,
   hasProcessedEvents,
+  organizationId,
 }: MeterUpdateModalProps) => {
   const { data: meter } = useMeter(_meter.id, _meter)
   const form = useForm<schemas['MeterUpdate']>({
@@ -68,7 +70,7 @@ export const MeterUpdateModal = ({
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-8"
           >
-            <MeterForm />
+            <MeterForm organizationId={organizationId} />
             {hasProcessedEvents && (
               <Well className="gap-y-2 rounded-2xl p-6">
                 <WellHeader>Updating Meter</WellHeader>

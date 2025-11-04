@@ -159,6 +159,7 @@ export const MeterPage = ({
             meter={meter}
             hide={hideEditMeterModal}
             hasProcessedEvents={meterEvents.length > 0}
+            organizationId={organization.id}
           />
         }
       />

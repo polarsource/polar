@@ -38,7 +38,7 @@ const AGGREGATION_FUNCTION_DISPLAY_NAMES: Record<
   unique: 'Unique',
 }
 
-const MeterForm = ({ eventNames }: { eventNames?: schemas['EventName'][] }) => {
+const MeterForm = ({ organizationId }: { organizationId: string }) => {
   const form = useFormContext<schemas['MeterCreate']>()
   const { control, watch } = form
   const aggregationFunction = watch('aggregation.func')
@@ -80,7 +80,7 @@ const MeterForm = ({ eventNames }: { eventNames?: schemas['EventName'][] }) => {
         <FormDescription>
           Specify how events are filtered before they are aggregated.
         </FormDescription>
-        <MeterFilterInput eventNames={eventNames} prefix="filter" />
+        <MeterFilterInput prefix="filter" organizationId={organizationId} />
         <FormMessage />
       </FormItem>
       <FormItem>

@@ -5609,6 +5609,11 @@ export interface components {
        */
       child_count: number
       /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -6913,6 +6918,11 @@ export interface components {
        */
       child_count: number
       /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -7471,6 +7481,11 @@ export interface components {
        */
       child_count: number
       /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -7589,6 +7604,11 @@ export interface components {
        * @default 0
        */
       child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -11689,6 +11709,11 @@ export interface components {
        */
       child_count: number
       /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -11861,6 +11886,11 @@ export interface components {
        * @default 0
        */
       child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -13697,6 +13727,11 @@ export interface components {
        * @default 0
        */
       child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -16547,6 +16582,11 @@ export interface components {
        */
       child_count: number
       /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -16636,6 +16676,11 @@ export interface components {
        * @default 0
        */
       child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -17702,6 +17747,11 @@ export interface components {
        */
       child_count: number
       /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -17833,6 +17883,11 @@ export interface components {
        * @default 0
        */
       child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -20995,6 +21050,11 @@ export interface components {
        */
       child_count: number
       /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -21116,6 +21176,11 @@ export interface components {
        */
       child_count: number
       /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -21233,6 +21298,11 @@ export interface components {
        * @default 0
        */
       child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -21864,6 +21934,11 @@ export interface components {
        * @default 0
        */
       child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
       /**
        * Name
        * @description The name of the event.

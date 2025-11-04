@@ -27208,7 +27208,6 @@ export interface operations {
           | 'America/Coral_Harbour'
           | 'America/Cordoba'
           | 'America/Costa_Rica'
-          | 'America/Coyhaique'
           | 'America/Creston'
           | 'America/Cuiaba'
           | 'America/Curacao'
@@ -31654,8 +31653,10 @@ export interface operations {
           | null
         /** @description Query to filter events. */
         query?: string | null
-        /** @description Filter events by parent event ID. When not specified, returns root events only. */
+        /** @description Filter events by parent event ID when hierarchical is set to true. When not specified or null, returns root events only. */
         parent_id?: string | null
+        /** @description When true, filters by parent_id (root events if not specified). When false, returns all events regardless of hierarchy. */
+        hierarchical?: boolean
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -33827,7 +33828,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'America/Coral_Harbour',
   'America/Cordoba',
   'America/Costa_Rica',
-  'America/Coyhaique',
   'America/Creston',
   'America/Cuiaba',
   'America/Curacao',

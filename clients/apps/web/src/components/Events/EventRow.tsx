@@ -43,6 +43,7 @@ export const EventRow = ({
     organization.id,
     {
       parent_id: event.id,
+      hierarchical: true,
       limit: PAGE_SIZE,
     },
     isExpanded && hasChildren && depth < 1 && renderChildren,

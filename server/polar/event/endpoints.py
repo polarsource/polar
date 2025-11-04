@@ -82,7 +82,11 @@ async def list(
     ),
     parent_id: EventID | None = Query(
         None,
-        description="Filter events by parent event ID. When not specified, returns root events only.",
+        description="Filter events by parent event ID when hierarchical is set to true. When not specified or null, returns root events only.",
+    ),
+    hierarchical: bool = Query(
+        False,
+        description="When true, filters by parent_id (root events if not specified). When false, returns all events regardless of hierarchy.",
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[EventSchema]:
@@ -124,6 +128,7 @@ async def list(
         sorting=sorting,
         query=query,
         parent_id=parent_id,
+        hierarchical=hierarchical,
     )
 
     return ListResource.from_paginated_results(

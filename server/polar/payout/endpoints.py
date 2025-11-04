@@ -18,6 +18,7 @@ from . import auth as payouts_auth
 from . import sorting
 from .schemas import Payout as PayoutSchema
 from .schemas import PayoutCreate, PayoutEstimate, PayoutGenerateInvoice, PayoutInvoice
+from .service import InsufficientBalance, UnderReviewAccount
 from .service import payout as payout_service
 
 router = APIRouter(prefix="/payouts", tags=["payouts", APITag.private])
@@ -51,7 +52,24 @@ async def list(
     )
 
 
-@router.get("/estimate", response_model=PayoutEstimate)
+@router.get(
+    "/estimate",
+    response_model=PayoutEstimate,
+    responses={
+        200: {
+            "description": "Payout estimate computed successfully.",
+        },
+        400: {
+            "description": "The balance is insufficient to create a payout.",
+            "model": InsufficientBalance.schema(),
+        },
+        403: {
+            "description": "The account is under review or not ready.",
+            "model": UnderReviewAccount.schema(),
+        },
+        404: {"description": "Account not found.", "model": ResourceNotFound.schema()},
+    },
+)
 async def get_estimate(
     auth_subject: payouts_auth.PayoutsRead,
     account_id: UUID4,

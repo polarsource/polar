@@ -807,16 +807,6 @@ export interface components {
       /** Code Lifetime Minutes */
       code_lifetime_minutes: number
     }
-    /** MaintainerAccountReviewedNotificationPayload */
-    MaintainerAccountReviewedNotificationPayload: {
-      /** Account Type */
-      account_type: string
-    }
-    /** MaintainerAccountUnderReviewNotificationPayload */
-    MaintainerAccountUnderReviewNotificationPayload: {
-      /** Account Type */
-      account_type: string
-    }
     /** MaintainerCreateAccountNotificationPayload */
     MaintainerCreateAccountNotificationPayload: {
       /** Organization Name */
@@ -851,26 +841,6 @@ export interface components {
       organization_name: string
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
-    }
-    /** NotificationAccountReviewedEmail */
-    NotificationAccountReviewedEmail: {
-      /**
-       * Template
-       * @default notification_account_reviewed
-       * @constant
-       */
-      template: 'notification_account_reviewed'
-      props: components['schemas']['MaintainerAccountReviewedNotificationPayload']
-    }
-    /** NotificationAccountUnderReviewEmail */
-    NotificationAccountUnderReviewEmail: {
-      /**
-       * Template
-       * @default notification_account_under_review
-       * @constant
-       */
-      template: 'notification_account_under_review'
-      props: components['schemas']['MaintainerAccountUnderReviewNotificationPayload']
     }
     /** NotificationCreateAccountEmail */
     NotificationCreateAccountEmail: {
@@ -1175,8 +1145,7 @@ export interface components {
       /**
        * Id
        * Format: uuid4
-       * @description The organization ID.
-       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       * @description The ID of the object.
        */
       id: string
       /**
@@ -1194,6 +1163,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
+      /** @description Proration behavior applied when customer updates their subscription from the portal. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
       /**
        * Email
        * @description Public support email.
@@ -1322,6 +1298,22 @@ export interface components {
       /** New Subscription */
       new_subscription: boolean
     }
+    /** OrganizationReviewedEmail */
+    OrganizationReviewedEmail: {
+      /**
+       * Template
+       * @default organization_reviewed
+       * @constant
+       */
+      template: 'organization_reviewed'
+      props: components['schemas']['OrganizationReviewedProps']
+    }
+    /** OrganizationReviewedProps */
+    OrganizationReviewedProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+    }
     /** OrganizationSocialLink */
     OrganizationSocialLink: {
       /** @description The social platform of the URL */
@@ -1353,7 +1345,8 @@ export interface components {
     OrganizationStatus:
       | 'created'
       | 'onboarding_started'
-      | 'under_review'
+      | 'initial_review'
+      | 'ongoing_review'
       | 'denied'
       | 'active'
     /** OrganizationSubscriptionSettings */
@@ -1365,6 +1358,22 @@ export interface components {
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
+    }
+    /** OrganizationUnderReviewEmail */
+    OrganizationUnderReviewEmail: {
+      /**
+       * Template
+       * @default organization_under_review
+       * @constant
+       */
+      template: 'organization_under_review'
+      props: components['schemas']['OrganizationUnderReviewProps']
+    }
+    /** OrganizationUnderReviewProps */
+    OrganizationUnderReviewProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
     }
     /** PersonalAccessTokenLeakedEmail */
     PersonalAccessTokenLeakedEmail: {

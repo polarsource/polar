@@ -1,8 +1,6 @@
 import { CustomerSessionCode } from './customer_session_code'
 import { EmailUpdate } from './email_update'
 import { LoginCode } from './login_code'
-import { NotificationAccountReviewed } from './notification_account_reviewed'
-import { NotificationAccountUnderReview } from './notification_account_under_review'
 import { NotificationCreateAccount } from './notification_create_account'
 import { NotificationNewSale } from './notification_new_sale'
 import { NotificationNewSubscription } from './notification_new_subscription'
@@ -12,6 +10,8 @@ import { OrderConfirmation } from './order_confirmation'
 import { OrganizationAccessTokenLeaked } from './organization_access_token_leaked'
 import { OrganizationAccountUnlink } from './organization_account_unlink'
 import { OrganizationInvite } from './organization_invite'
+import OrganizationReviewed from './organization_reviewed'
+import { OrganizationUnderReview } from './organization_under_review'
 import { PersonalAccessTokenLeaked } from './personal_access_token_leaked'
 import { SeatInvitation } from './seat_invitation'
 import { SubscriptionCancellation } from './subscription_cancellation'
@@ -33,6 +33,8 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   organization_access_token_leaked: OrganizationAccessTokenLeaked,
   organization_account_unlink: OrganizationAccountUnlink,
   organization_invite: OrganizationInvite,
+  organization_under_review: OrganizationUnderReview,
+  organization_reviewed: OrganizationReviewed,
   personal_access_token_leaked: PersonalAccessTokenLeaked,
   seat_invitation: SeatInvitation,
   subscription_cancellation: SubscriptionCancellation,
@@ -43,8 +45,6 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   subscription_uncanceled: SubscriptionUncanceled,
   subscription_updated: SubscriptionUpdated,
   webhook_endpoint_disabled: WebhookEndpointDisabled,
-  notification_account_under_review: NotificationAccountUnderReview,
-  notification_account_reviewed: NotificationAccountReviewed,
   notification_new_sale: NotificationNewSale,
   notification_new_subscription: NotificationNewSubscription,
   notification_create_account: NotificationCreateAccount,

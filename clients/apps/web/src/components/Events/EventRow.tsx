@@ -10,7 +10,8 @@ import {
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { EventCustomer } from './EventCustomer'
 import { EventSourceBadge } from './EventSourceBadge'
@@ -24,12 +25,14 @@ export const EventRow = ({
   expanded = false,
   depth = 0,
   renderChildren = true,
+  renderEventLink = true,
 }: {
   event: schemas['Event']
   organization: schemas['Organization']
   expanded?: boolean
   depth?: number
   renderChildren?: boolean
+  renderEventLink?: boolean
 }) => {
   const [isExpanded, setIsExpanded] = useState(expanded)
   const hasChildren = event.child_count > 0
@@ -84,10 +87,26 @@ export const EventRow = ({
   const eventCard = useEventCard(event)
   const eventCostBadge = useEventCostBadge(event)
 
+  const router = useRouter()
+
+  const handleNavigateToEvent = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      e.stopPropagation()
+      e.preventDefault()
+      router.push(
+        `/dashboard/${organization.slug}/usage-billing/events/${event.id}`,
+      )
+    },
+    [organization, event.id, router],
+  )
+
   return (
-    <Link
-      href={`/dashboard/${organization.slug}/usage-billing/events/${event.id}`}
-      className={twMerge('group flex flex-col', isExpanded && 'pb-4')}
+    <div
+      className={twMerge(
+        'group flex cursor-pointer flex-col',
+        isExpanded && 'pb-4',
+      )}
+      onClick={depth === 0 ? handleToggleExpand : handleNavigateToEvent}
     >
       <div
         className={twMerge(
@@ -105,14 +124,7 @@ export const EventRow = ({
         <div className="flex flex-row items-center justify-between p-3 select-none">
           <div className="flex flex-row items-center gap-x-4">
             {depth === 0 ? (
-              <div
-                className="dark:bg-polar-700 dark:hover:bg-polar-600 flex cursor-pointer flex-row items-center justify-center rounded-sm border border-gray-200 bg-gray-100 p-1 transition-colors duration-150 hover:bg-gray-200 dark:border-white/5"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  event.preventDefault()
-                  handleToggleExpand()
-                }}
-              >
+              <div className="dark:bg-polar-700 dark:hover:bg-polar-600 flex flex-row items-center justify-center rounded-sm border border-gray-200 bg-gray-100 p-1 transition-colors duration-150 hover:bg-gray-200 dark:border-white/5">
                 {isExpanded ? (
                   <KeyboardArrowDownOutlined fontSize="inherit" />
                 ) : (
@@ -139,45 +151,75 @@ export const EventRow = ({
             </span>
           </div>
           <div className="flex flex-row items-center gap-x-6">
-            {eventCostBadge}
-            <Tooltip>
-              <TooltipTrigger>
+            {isExpanded ? null : eventCostBadge}
+            {isExpanded ? (
+              renderEventLink ? (
                 <Link
-                  href={`/dashboard/${organization.slug}/customers/${event.customer?.id}?query=${event.customer?.email}`}
-                  className="flex items-center gap-x-3"
+                  href={`/dashboard/${organization.slug}/usage-billing/events/${event.id}`}
+                  className={twMerge('flex flex-col')}
                   onClick={(e) => {
                     e.stopPropagation()
                   }}
                 >
-                  <Avatar
-                    className="text-xxs h-6 w-6 font-sans"
-                    name={event.customer?.name ?? event.customer?.email ?? '—'}
-                    avatar_url={event.customer?.avatar_url ?? null}
-                  />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    wrapperClassNames="gap-x-1"
+                    className="text-xxs h-6 rounded-sm px-2 font-mono"
+                  >
+                    <span className="text-xxs font-mono">View Event</span>
+                  </Button>
                 </Link>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="end">
-                <div className="flex flex-row items-center gap-x-2 font-sans">
-                  <Avatar
-                    className="text-xxs h-8 w-8 font-sans"
-                    name={event.customer?.name ?? event.customer?.email ?? '—'}
-                    avatar_url={event.customer?.avatar_url ?? null}
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-xs">
-                      {event.customer?.name ?? '—'}
-                    </span>
-                    <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
-                      {event.customer?.email}
-                    </span>
+              ) : null
+            ) : (
+              <Tooltip>
+                <TooltipTrigger>
+                  <Link
+                    href={`/dashboard/${organization.slug}/customers/${event.customer?.id}?query=${event.customer?.email}`}
+                    className="flex items-center gap-x-3"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                    }}
+                  >
+                    <Avatar
+                      className="text-xxs h-6 w-6 font-sans"
+                      name={
+                        event.customer?.name ?? event.customer?.email ?? '—'
+                      }
+                      avatar_url={event.customer?.avatar_url ?? null}
+                    />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end">
+                  <div className="flex flex-row items-center gap-x-2 font-sans">
+                    <Avatar
+                      className="text-xxs h-8 w-8 font-sans"
+                      name={
+                        event.customer?.name ?? event.customer?.email ?? '—'
+                      }
+                      avatar_url={event.customer?.avatar_url ?? null}
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-xs">
+                        {event.customer?.name ?? '—'}
+                      </span>
+                      <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
+                        {event.customer?.email}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </div>
         {isExpanded ? eventCard : null}
-        {isExpanded ? <EventCustomer event={event} /> : null}
+        {isExpanded ? (
+          <div className="flex flex-row items-center justify-between gap-x-2 px-3 py-2">
+            <EventCustomer event={event} />
+            {eventCostBadge}
+          </div>
+        ) : null}
       </div>
       {isExpanded && hasChildren && renderChildren && (
         <div className="flex flex-col">
@@ -187,6 +229,7 @@ export const EventRow = ({
               event={child}
               organization={organization}
               depth={depth + 1}
+              renderEventLink={false}
             />
           ))}
           {hasNextPage && (
@@ -206,6 +249,6 @@ export const EventRow = ({
           )}
         </div>
       )}
-    </Link>
+    </div>
   )
 }

@@ -74,8 +74,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       sorting: ['-granted_at'],
     })
 
-  const { data: customerBalance, isLoading: balanceLoading } =
-    useCustomerBalance(customer.id)
+  const { data: customerBalance } = useCustomerBalance(customer.id)
 
   const [selectedMetric, setSelectedMetric] = React.useState<
     keyof schemas['Metrics']
@@ -458,7 +457,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 cell: ({ row: { original } }) => (
                   <div className="flex justify-end">
                     <Link
-                      href={`/dashboard/${organization.slug}/benefits?benefitId=${original.benefit.id}`}
+                      href={`/dashboard/${organization.slug}/benefits/${original.benefit.id}`}
                     >
                       <Button variant="secondary" size="sm">
                         View Benefit

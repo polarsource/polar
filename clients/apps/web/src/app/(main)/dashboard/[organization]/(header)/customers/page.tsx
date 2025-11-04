@@ -11,8 +11,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page(props: {
   params: Promise<{ organization: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const params = await props.params
+  const searchParams = await props.searchParams
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,
@@ -30,9 +32,13 @@ export default async function Page(props: {
     },
   })
 
-  // If there's a newest customer, redirect to it
+  // If there's a newest customer, redirect to it (preserving query params)
   if (data?.items && data.items.length > 0) {
-    redirect(`/dashboard/${organization.slug}/customers/${data.items[0].id}`)
+    const queryString = new URLSearchParams(
+      searchParams as Record<string, string>,
+    ).toString()
+    const redirectUrl = `/dashboard/${organization.slug}/customers/${data.items[0].id}${queryString ? `?${queryString}` : ''}`
+    redirect(redirectUrl)
   }
 
   // Otherwise show empty state

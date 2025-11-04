@@ -74,6 +74,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectURL)
   }
 
+  // Redirect old benefit query string URLs to path-based URLs
+  const benefitsMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/benefits$/,
+  )
+  if (benefitsMatch && request.nextUrl.searchParams.has('benefitId')) {
+    const benefitId = request.nextUrl.searchParams.get('benefitId')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${benefitsMatch[1]}/benefits/${benefitId}`
+    redirectURL.searchParams.delete('benefitId')
+    return NextResponse.redirect(redirectURL)
+  }
+
   let user: schemas['UserRead'] | undefined = undefined
 
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {

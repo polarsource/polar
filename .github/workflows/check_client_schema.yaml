@@ -107,7 +107,7 @@ jobs:
           AUTHLIB_INSECURE_TRANSPORT: "true"
         run: |
           uv run uvicorn polar.app:app --host 127.0.0.1 --port 8000 &
-          echo $! > api_server.pid
+          echo $! > ${{ github.workspace }}/server/api_server.pid
           # Wait for server to be ready
           for i in {1..30}; do
             if curl -s http://127.0.0.1:8000/openapi.json > /dev/null; then
@@ -133,7 +133,7 @@ jobs:
 
       - name: Install client dependencies
         working-directory: ./clients
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Generate client schema
         working-directory: ./clients
@@ -150,8 +150,7 @@ jobs:
 
       - name: Stop API server
         if: always()
-        working-directory: ./server
         run: |
-          if [ -f api_server.pid ]; then
-            kill $(cat api_server.pid) || true
+          if [ -f ${{ github.workspace }}/server/api_server.pid ]; then
+            kill $(cat ${{ github.workspace }}/server/api_server.pid) || true
           fi

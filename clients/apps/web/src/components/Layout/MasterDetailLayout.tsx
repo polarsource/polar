@@ -8,15 +8,20 @@ export const MasterDetailLayout = ({
   wrapperClassName,
   listView,
   listViewClassName,
+  placement = 'left',
 }: {
   children?: React.ReactNode
   wrapperClassName?: string
   listView?: React.ReactNode
   listViewClassName?: string
+  placement?: 'left' | 'right'
 }) => {
   return (
     <motion.div
-      className="flex h-full w-full flex-row gap-x-2"
+      className={twMerge(
+        'flex h-full w-full flex-row gap-x-2',
+        placement === 'right' ? 'flex-row-reverse' : '',
+      )}
       initial="initial"
       animate="animate"
       exit="exit"

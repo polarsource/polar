@@ -1,5 +1,6 @@
 'use client'
 
+import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { EventRow } from '@/components/Events/EventRow'
 import { useEventDisplayName } from '@/components/Events/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -71,6 +72,14 @@ export default function EventDetailPage({
         </div>
       }
       className="flex flex-col gap-y-12"
+      contextViewPlacement="right"
+      contextView={
+        <CustomerContextView
+          organization={organization}
+          customer={event.customer as schemas['Customer']}
+        />
+      }
+      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
     >
       <div className="flex flex-col gap-y-4">
         <div className="flex flex-row items-center justify-between gap-x-4">
@@ -99,6 +108,7 @@ export default function EventDetailPage({
           expanded={true}
           depth={0}
           renderChildren={false}
+          renderEventLink={false}
         />
       </div>
       {children.length > 0 ? (

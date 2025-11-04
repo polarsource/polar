@@ -1,3 +1,5 @@
+'use client'
+
 import { useMetrics } from '@/hooks/queries/metrics'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'

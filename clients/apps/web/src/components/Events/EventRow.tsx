@@ -16,18 +16,22 @@ import { EventCustomer } from './EventCustomer'
 import { EventSourceBadge } from './EventSourceBadge'
 import { useEventCard, useEventCostBadge, useEventDisplayName } from './utils'
 
-const PAGE_SIZE = 1
+const PAGE_SIZE = 10
 
 export const EventRow = ({
   event,
   organization,
+  expanded = false,
   depth = 0,
+  renderChildren = true,
 }: {
   event: schemas['Event']
   organization: schemas['Organization']
+  expanded?: boolean
   depth?: number
+  renderChildren?: boolean
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(expanded)
   const hasChildren = event.child_count > 0
 
   const {
@@ -41,7 +45,7 @@ export const EventRow = ({
       parent_id: event.id,
       limit: PAGE_SIZE,
     },
-    isExpanded && hasChildren && depth < 1,
+    isExpanded && hasChildren && depth < 1 && renderChildren,
   )
 
   const children = useMemo(() => {
@@ -81,17 +85,20 @@ export const EventRow = ({
 
   return (
     <Link
-      href={`/dashboard/${organization.slug}/events/${event.id}`}
+      href={`/dashboard/${organization.slug}/usage-billing/events/${event.id}`}
       className={twMerge('group flex flex-col', isExpanded && 'pb-4')}
     >
       <div
         className={twMerge(
           'dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col rounded-xl border border-gray-200 bg-white font-mono text-sm transition-colors duration-150 hover:bg-gray-50',
-          isExpanded && hasChildren && 'rounded-b-none! border-b-4',
-          depth > 0 && !isExpanded
+          isExpanded &&
+            hasChildren &&
+            renderChildren &&
+            'rounded-b-none! border-b-4',
+          depth > 0 && !isExpanded && renderChildren
             ? 'rounded-t-none! rounded-b-none! group-last:rounded-b-xl!'
             : '',
-          depth > 0 && isExpanded ? 'rounded-t-none!' : '',
+          depth > 0 && isExpanded && renderChildren ? 'rounded-t-none!' : '',
         )}
       >
         <div className="flex flex-row items-center justify-between p-3 select-none">
@@ -119,6 +126,12 @@ export const EventRow = ({
             <div className="flex flex-row items-center gap-x-4">
               <span className="text-xs">{eventDisplayName}</span>
               <EventSourceBadge source={event.source} />
+              {event.child_count > 0 && (
+                <span className="dark:text-polar-500 dark:bg-polar-700 text-xxs rounded-md bg-gray-100 px-2 py-1 text-gray-500 capitalize">
+                  {event.child_count}{' '}
+                  {event.child_count === 1 ? 'child' : 'children'}
+                </span>
+              )}
             </div>
             <span className="dark:text-polar-500 text-xs text-gray-500 capitalize">
               {formattedTimestamp}
@@ -165,7 +178,7 @@ export const EventRow = ({
         {isExpanded ? eventCard : null}
         {isExpanded ? <EventCustomer event={event} /> : null}
       </div>
-      {isExpanded && hasChildren && (
+      {isExpanded && hasChildren && renderChildren && (
         <div className="flex flex-col">
           {children.map((child) => (
             <EventRow

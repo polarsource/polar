@@ -210,6 +210,10 @@ class BaseEvent(IDSchema):
     child_count: int = Field(
         default=0, description="Number of direct child events linked to this event."
     )
+    parent_id: UUID4 | None = Field(
+        default=None,
+        description="The ID of the parent event.",
+    )
 
 
 class SystemEventBase(BaseEvent):

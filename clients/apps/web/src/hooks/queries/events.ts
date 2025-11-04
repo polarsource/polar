@@ -64,6 +64,16 @@ export const useEvents = (
   })
 }
 
+export const useEvent = (organizationId: string, eventId: string) => {
+  return useQuery({
+    queryKey: ['event', organizationId, eventId],
+    queryFn: () =>
+      unwrap(api.GET('/v1/events/{id}', { params: { path: { id: eventId } } })),
+    retry: defaultRetry,
+    enabled: !!eventId,
+  })
+}
+
 export const useEventNames = (
   organizationId: string,
   parameters?: operations['events:list_names']['parameters']['query'],

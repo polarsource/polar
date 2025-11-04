@@ -19,6 +19,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      migrations: ${{ steps.filter.outputs.migrations }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
@@ -34,6 +35,8 @@ jobs:
               - 'clients/**'
               - '.github/workflows/deploy.yml'
               - '.github/workflows/deploy-environment.yml'
+            migrations:
+              - 'server/migrations/**'
 
   build:
     name: "Build Docker Image 🐳"
@@ -103,7 +106,9 @@ jobs:
     with:
       environment: sandbox
       docker-digest: ${{ needs.build.outputs.digest }}
-      render-service-ids: "srv-crkocgbtq21c73ddsdbg,srv-d089jj7diees73934kgg"
+      render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
+      render-worker-service-ids: "srv-d089jj7diees73934kgg"
+      has-migrations: ${{ needs.changes.outputs.migrations == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend != 'true' && github.event_name != 'workflow_dispatch' }}
     secrets:
@@ -122,7 +127,9 @@ jobs:
     with:
       environment: production
       docker-digest: ${{ needs.build.outputs.digest }}
-      render-service-ids: "srv-ci4r87h8g3ne0dmvvl60,srv-d4k6otfgi27c73cicnpg,srv-d4k62svpm1nc73af5e3g,srv-d3hrh1j3fgac73a1t4r0"
+      render-api-service-id: "srv-ci4r87h8g3ne0dmvvl60"
+      render-worker-service-ids: "srv-d4k6otfgi27c73cicnpg,srv-d4k62svpm1nc73af5e3g,srv-d3hrh1j3fgac73a1t4r0"
+      has-migrations: ${{ needs.changes.outputs.migrations == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend != 'true' && github.event_name != 'workflow_dispatch' }}
     secrets:

@@ -20,6 +20,7 @@ import {
 import { Plus, X } from 'lucide-react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
+import MeterFilterInputProperty from './MeterFilterInputProperty'
 
 const OPERATOR_DISPLAY_NAMES: Record<schemas['FilterOperator'], string> = {
   eq: 'Equals',
@@ -38,11 +39,15 @@ const isFilterClause = (
   return 'property' in filter
 }
 
-const MeterFilterInput: React.FC<{
+const MeterFilterInput = ({
+  prefix,
+  removeParent,
+  eventNames,
+}: {
   prefix: string
   removeParent?: () => void
   eventNames?: schemas['EventName'][]
-}> = ({ prefix, removeParent, eventNames }) => {
+}) => {
   const { control, watch } = useFormContext()
   const conjunction = watch(`${prefix}.conjunction`) as string
   const {
@@ -113,11 +118,7 @@ const MeterFilterInput: React.FC<{
                       return (
                         <FormItem>
                           <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value || ''}
-                              autoComplete="off"
-                            />
+                            <MeterFilterInputProperty field={field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -170,6 +171,7 @@ const MeterFilterInput: React.FC<{
                             <Input
                               {...field}
                               value={field.value || ''}
+                              className="font-mono md:text-xs"
                               autoComplete="off"
                               placeholder={
                                 property === 'name'

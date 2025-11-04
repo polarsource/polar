@@ -28,7 +28,7 @@ export const MasterDetailLayout = ({
             animate: { opacity: 1, transition: { duration: 0.3 } },
             exit: { opacity: 0, transition: { duration: 0.3 } },
           }}
-          className="dark:bg-polar-900 dark:border-polar-800 h-full w-full overflow-y-hidden rounded-2xl border border-gray-200 bg-white md:max-w-[320px] md:shadow-xs lg:max-w-[320px] xl:max-w-[320px] xl:max-w-[440px]"
+          className="dark:bg-polar-900 dark:border-polar-800 h-full w-full overflow-y-hidden rounded-2xl border border-gray-200 bg-white md:max-w-[300px] md:shadow-xs xl:max-w-[340px]"
         >
           {listView}
         </motion.div>

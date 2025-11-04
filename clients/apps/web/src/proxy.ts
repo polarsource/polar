@@ -86,6 +86,21 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectURL)
   }
 
+  // Redirect old checkout link query string URLs to path-based URLs
+  const checkoutLinksMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/products\/checkout-links$/,
+  )
+  if (
+    checkoutLinksMatch &&
+    request.nextUrl.searchParams.has('checkoutLinkId')
+  ) {
+    const checkoutLinkId = request.nextUrl.searchParams.get('checkoutLinkId')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${checkoutLinksMatch[1]}/products/checkout-links/${checkoutLinkId}`
+    redirectURL.searchParams.delete('checkoutLinkId')
+    return NextResponse.redirect(redirectURL)
+  }
+
   let user: schemas['UserRead'] | undefined = undefined
 
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {

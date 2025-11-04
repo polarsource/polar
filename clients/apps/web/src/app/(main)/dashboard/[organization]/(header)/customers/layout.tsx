@@ -18,7 +18,6 @@ export default async function Layout(
 
   return (
     <MasterDetailLayout
-      listViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
       listView={<CustomerListSidebar organization={organization} />}
     >
       {props.children}

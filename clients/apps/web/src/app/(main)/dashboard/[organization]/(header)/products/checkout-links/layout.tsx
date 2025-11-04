@@ -18,8 +18,8 @@ export default async function Layout(
 
   return (
     <MasterDetailLayout
-      listViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
       listView={<CheckoutLinkListSidebar organization={organization} />}
+      wrapperClassName="max-w-(--breakpoint-sm)!"
     >
       {props.children}
     </MasterDetailLayout>

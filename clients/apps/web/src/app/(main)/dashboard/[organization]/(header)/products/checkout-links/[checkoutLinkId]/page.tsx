@@ -10,14 +10,11 @@ export async function generateMetadata(props: {
   const params = await props.params
   const api = await getServerSideAPI()
 
-  const { data: checkoutLink } = await api.GET(
-    '/v1/checkout-links/{id}',
-    {
-      params: {
-        path: { id: params.checkoutLinkId },
-      },
+  const { data: checkoutLink } = await api.GET('/v1/checkout-links/{id}', {
+    params: {
+      path: { id: params.checkoutLinkId },
     },
-  )
+  })
 
   if (!checkoutLink) {
     return {
@@ -42,14 +39,11 @@ export default async function Page(props: {
     params.organization,
   )
 
-  const { data: checkoutLink } = await api.GET(
-    '/v1/checkout-links/{id}',
-    {
-      params: {
-        path: { id: params.checkoutLinkId },
-      },
+  const { data: checkoutLink } = await api.GET('/v1/checkout-links/{id}', {
+    params: {
+      path: { id: params.checkoutLinkId },
     },
-  )
+  })
 
   if (!checkoutLink) {
     notFound()

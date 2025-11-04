@@ -131,7 +131,9 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
             size="icon"
             className="h-6 w-6"
             onClick={() =>
-              setSorting(sorting === '-created_at' ? 'created_at' : '-created_at')
+              setSorting(
+                sorting === '-created_at' ? 'created_at' : '-created_at',
+              )
             }
           >
             {sorting === 'created_at' ? (

@@ -28,24 +28,26 @@ export const MasterDetailLayout = ({
             animate: { opacity: 1, transition: { duration: 0.3 } },
             exit: { opacity: 0, transition: { duration: 0.3 } },
           }}
-          className={twMerge(
-            'dark:bg-polar-900 dark:border-polar-800 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white md:max-w-[320px] md:shadow-xs xl:max-w-[440px]',
-            listViewClassName,
-          )}
+          className="dark:bg-polar-900 dark:border-polar-800 h-full w-full overflow-y-hidden rounded-2xl border border-gray-200 bg-white md:max-w-[320px] md:shadow-xs lg:max-w-[320px] xl:max-w-[320px] xl:max-w-[440px]"
         >
           {listView}
         </motion.div>
       ) : null}
 
       <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-xs">
-        <div
+        <motion.div
           className={twMerge(
             'flex h-full w-full max-w-(--breakpoint-xl) flex-col',
             wrapperClassName,
           )}
+          variants={{
+            initial: { opacity: 0 },
+            animate: { opacity: 1, transition: { duration: 0.3 } },
+            exit: { opacity: 0, transition: { duration: 0.3 } },
+          }}
         >
           {children}
-        </div>
+        </motion.div>
       </div>
     </motion.div>
   )

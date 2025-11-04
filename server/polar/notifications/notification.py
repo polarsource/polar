@@ -11,8 +11,6 @@ from polar.kit.schemas import Schema
 
 
 class NotificationType(StrEnum):
-    maintainer_account_under_review = "MaintainerAccountUnderReviewNotification"
-    maintainer_account_reviewed = "MaintainerAccountReviewedNotification"
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
     maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
     maintainer_create_account = "MaintainerCreateAccountNotification"
@@ -56,27 +54,6 @@ class MaintainerAccountUnderReviewNotificationPayload(NotificationPayloadBase):
     @classmethod
     def template_name(cls) -> str:
         return "notification_account_under_review"
-
-
-class MaintainerAccountUnderReviewNotification(NotificationBase):
-    type: Literal[NotificationType.maintainer_account_under_review]
-    payload: MaintainerAccountUnderReviewNotificationPayload
-
-
-class MaintainerAccountReviewedNotificationPayload(NotificationPayloadBase):
-    account_type: str
-
-    def subject(self) -> str:
-        return "Your Polar account review is now complete"
-
-    @classmethod
-    def template_name(cls) -> str:
-        return "notification_account_reviewed"
-
-
-class MaintainerAccountReviewedNotification(NotificationBase):
-    type: Literal[NotificationType.maintainer_account_reviewed]
-    payload: MaintainerAccountReviewedNotificationPayload
 
 
 class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
@@ -154,17 +131,13 @@ class MaintainerCreateAccountNotification(NotificationBase):
 
 
 NotificationPayload = (
-    MaintainerAccountUnderReviewNotificationPayload
-    | MaintainerAccountReviewedNotificationPayload
-    | MaintainerNewPaidSubscriptionNotificationPayload
+    MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerCreateAccountNotificationPayload
 )
 
 Notification = Annotated[
-    MaintainerAccountUnderReviewNotification
-    | MaintainerAccountReviewedNotification
-    | MaintainerNewPaidSubscriptionNotification
+    MaintainerNewPaidSubscriptionNotification
     | MaintainerNewProductSaleNotification
     | MaintainerCreateAccountNotification,
     Discriminator(discriminator="type"),

@@ -437,8 +437,11 @@ class OrganizationService:
         organization.status = OrganizationStatus.ACTIVE
         organization.status_updated_at = datetime.now(UTC)
         organization.next_review_threshold = next_review_threshold
+
+        initial_review = False
         if organization.initially_reviewed_at is None:
             organization.initially_reviewed_at = datetime.now(UTC)
+            initial_review = True
 
         await self._sync_account_status(session, organization)
         session.add(organization)
@@ -451,7 +454,11 @@ class OrganizationService:
             review.appeal_reviewed_at = datetime.now(UTC)
             session.add(review)
 
-        enqueue_job("organization.reviewed", organization_id=organization.id)
+        enqueue_job(
+            "organization.reviewed",
+            organization_id=organization.id,
+            initial_review=initial_review,
+        )
         return organization
 
     async def deny_organization(

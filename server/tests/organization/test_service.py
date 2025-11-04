@@ -420,7 +420,9 @@ class TestConfirmOrganizationReviewed:
         assert result.initially_reviewed_at is not None
         assert result.next_review_threshold == 15000
         enqueue_job_mock.assert_called_once_with(
-            "organization.reviewed", organization_id=organization.id
+            "organization.reviewed",
+            organization_id=organization.id,
+            initial_review=True,
         )
 
     async def test_ongoing_review(
@@ -446,7 +448,9 @@ class TestConfirmOrganizationReviewed:
         assert result.initially_reviewed_at == initially_reviewed_at
         assert result.next_review_threshold == 15000
         enqueue_job_mock.assert_called_once_with(
-            "organization.reviewed", organization_id=organization.id
+            "organization.reviewed",
+            organization_id=organization.id,
+            initial_review=False,
         )
 
 

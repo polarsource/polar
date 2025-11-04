@@ -1,11 +1,7 @@
-import {
-  ACCOUNT_TYPE_DISPLAY_NAMES,
-  ORGANIZATION_STATUS_DISPLAY_NAMES,
-} from '@/utils/account'
+import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import Link from 'next/link'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -83,7 +79,6 @@ const AccountListItem = ({ account, organization }: AccountListItemProps) => {
 
   const isActive =
     organization?.status === 'active' && account?.stripe_id !== null
-  const isUnderReview = organization?.status === 'under_review'
 
   const goToDashboard = async () => {
     const link = await unwrap(
@@ -103,19 +98,8 @@ const AccountListItem = ({ account, organization }: AccountListItemProps) => {
       <td className={twMerge(childClass, 'rounded-l-xl')}>
         {ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}
       </td>
-      <td className={childClass}>
-        {organization
-          ? ORGANIZATION_STATUS_DISPLAY_NAMES[organization.status]
-          : 'No Status'}
-      </td>
       <td className={childClass}>{organization.slug}</td>
       <td className={twMerge(childClass, 'rounded-r-xl uppercase')}>
-        {!isActive && !isUnderReview && (
-          <Link href={`/dashboard/${organization.slug}/finance/account`}>
-            <Button size="sm">Continue setup</Button>
-          </Link>
-        )}
-
         {isActive && (
           <Button size="sm" onClick={goToDashboard}>
             Open dashboard

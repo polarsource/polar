@@ -1,7 +1,6 @@
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import BoltOutlined from '@mui/icons-material/BoltOutlined'
-import FaceOutlined from '@mui/icons-material/FaceOutlined'
 import InfoOutlined from '@mui/icons-material/InfoOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import { schemas } from '@polar-sh/client'
@@ -159,53 +158,6 @@ const Item = ({
   )
 }
 
-const MaintainerAccountUnderReview = ({
-  n,
-}: {
-  n: schemas['MaintainerAccountUnderReviewNotification']
-}) => {
-  return (
-    <Item n={n} iconClasses="bg-yellow-200 text-yellow-500">
-      {{
-        text: (
-          <>
-            Your{' '}
-            <InternalLink href="/finance/account">
-              <>payout account</>
-            </InternalLink>{' '}
-            is under review. Transfers are paused until we complete the review
-            of your account.
-          </>
-        ),
-        icon: <FaceOutlined fontSize="small" />,
-      }}
-    </Item>
-  )
-}
-
-const MaintainerAccountReviewed = ({
-  n,
-}: {
-  n: schemas['MaintainerAccountReviewedNotification']
-}) => {
-  return (
-    <Item n={n} iconClasses="bg-green-200 text-green-500">
-      {{
-        text: (
-          <>
-            Your{' '}
-            <InternalLink href="/finance/account">
-              <>payout account</>
-            </InternalLink>{' '}
-            has been reviewed successfully. Transfers are resumed.
-          </>
-        ),
-        icon: <FaceOutlined fontSize="small" />,
-      }}
-    </Item>
-  )
-}
-
 const MaintainerNewPaidSubscription = ({
   n,
 }: {
@@ -294,11 +246,6 @@ export const Notification = ({
   setIsInNestedModal: (_: boolean) => void
 }) => {
   switch (n.type) {
-    case 'MaintainerAccountUnderReviewNotification':
-      return <MaintainerAccountUnderReview n={n} />
-    case 'MaintainerAccountReviewedNotification':
-      return <MaintainerAccountReviewed n={n} />
-
     case 'MaintainerNewPaidSubscriptionNotification':
       return <MaintainerNewPaidSubscription n={n} />
 

@@ -111,11 +111,13 @@ jobs:
           for i in {1..30}; do
             if curl -s http://127.0.0.1:8000/openapi.json > /dev/null; then
               echo "Server is ready"
-              break
+              exit 0
             fi
             echo "Waiting for server to start... ($i/30)"
             sleep 2
           done
+          echo "❌ Server failed to start within 60 seconds"
+          exit 1
 
       - uses: pnpm/action-setup@v4
         with:

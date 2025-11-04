@@ -33,6 +33,7 @@ export default function EventDetailPage({
     parent_id: eventId,
     limit: PAGE_SIZE,
     sorting: ['timestamp'],
+    hierarchical: true,
   })
 
   const children = useMemo(() => {

@@ -111,7 +111,7 @@ export const EventRow = ({
           <Tooltip>
             <TooltipTrigger>
               <Link
-                href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}&query=${event.customer?.email}`}
+                href={`/dashboard/${organization.slug}/customers/${event.customer?.id}?query=${event.customer?.email}`}
                 className="flex items-center gap-x-3"
                 onClick={(e) => {
                   e.stopPropagation()

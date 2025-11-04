@@ -62,6 +62,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Redirect old customer query string URLs to path-based URLs
+  const customersMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/customers$/,
+  )
+  if (customersMatch && request.nextUrl.searchParams.has('customerId')) {
+    const customerId = request.nextUrl.searchParams.get('customerId')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${customersMatch[1]}/customers/${customerId}`
+    redirectURL.searchParams.delete('customerId')
+    return NextResponse.redirect(redirectURL)
+  }
+
   let user: schemas['UserRead'] | undefined = undefined
 
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {

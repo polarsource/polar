@@ -85,7 +85,8 @@ export default function EventDetailPage({
           <div className="flex flex-row justify-between">
             <h3 className="text-2xl">Child Events</h3>
             <h3 className="dark:text-polar-500 text-2xl text-gray-500">
-              {childrenData?.pagination.total_count} Events
+              {childrenData?.pagination.total_count}{' '}
+              {childrenData?.pagination.total_count === 1 ? 'Event' : 'Events'}
             </h3>
           </div>
           <div className="flex flex-col gap-y-3">

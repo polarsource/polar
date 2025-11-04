@@ -35,7 +35,7 @@ class TransactionProduct(IDSchema, TimestampedSchema):
 
 
 class TransactionOrder(IDSchema, TimestampedSchema):
-    product: TransactionProduct
+    product: TransactionProduct | None
     subscription_id: UUID4 | None
 
 

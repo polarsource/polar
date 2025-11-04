@@ -50,6 +50,7 @@ class PaymentMethodService:
             customer.id,
             PaymentProcessor.stripe,
             stripe_payment_method.id,
+            include_deleted=True,
             options=repository.get_eager_options(),
         )
         if payment_method is None:
@@ -63,6 +64,7 @@ class PaymentMethodService:
         payment_method.method_metadata = stripe_payment_method[
             stripe_payment_method.type
         ]
+        payment_method.deleted_at = None  # Restore if it was soft-deleted
 
         return await repository.update(payment_method, flush=flush)
 

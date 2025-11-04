@@ -101,6 +101,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectURL)
   }
 
+  // Redirect old meter query string URLs to path-based URLs
+  const metersMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/usage-billing\/meters$/,
+  )
+  if (metersMatch && request.nextUrl.searchParams.has('selectedMeter')) {
+    const selectedMeter = request.nextUrl.searchParams.get('selectedMeter')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${metersMatch[1]}/usage-billing/meters/${selectedMeter}`
+    redirectURL.searchParams.delete('selectedMeter')
+    return NextResponse.redirect(redirectURL)
+  }
+
   let user: schemas['UserRead'] | undefined = undefined
 
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {

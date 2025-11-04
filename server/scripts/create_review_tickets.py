@@ -37,7 +37,6 @@ from sqlalchemy.orm import joinedload
 from polar.integrations.plain.service import plain as plain_service
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
-from polar.models.organization import OrganizationStatus
 from polar.models.transaction import TransactionType
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import create_async_engine
@@ -64,10 +63,10 @@ async def process_organizations(dry_run: bool = False, limit: int = 1) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
 
-        # Query all organizations with status == UNDER_REVIEW
+        # Query all organizations under review
         statement = (
             select(Organization)
-            .where(Organization.status == OrganizationStatus.UNDER_REVIEW)
+            .where(Organization.is_under_review.is_(True))
             .options(joinedload(Organization.account))
         )
 

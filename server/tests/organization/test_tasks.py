@@ -54,7 +54,7 @@ class TestOrganizationUnderReview:
         organization: Organization,
     ) -> None:
         # Update organization to have under review status
-        organization.status = OrganizationStatus.UNDER_REVIEW
+        organization.status = OrganizationStatus.INITIAL_REVIEW
         await save_fixture(organization)
 
         # then
@@ -88,7 +88,7 @@ class TestOrganizationUnderReview:
         account: Account,
     ) -> None:
         # Update organization to have under review status and account
-        organization.status = OrganizationStatus.UNDER_REVIEW
+        organization.status = OrganizationStatus.INITIAL_REVIEW
         organization.account_id = account.id
         await save_fixture(organization)
 

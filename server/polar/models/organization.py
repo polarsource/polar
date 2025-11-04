@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Self, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
@@ -110,7 +110,8 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
 class OrganizationStatus(StrEnum):
     CREATED = "created"
     ONBOARDING_STARTED = "onboarding_started"
-    UNDER_REVIEW = "under_review"
+    INITIAL_REVIEW = "initial_review"
+    ONGOING_REVIEW = "ongoing_review"
     DENIED = "denied"
     ACTIVE = "active"
 
@@ -118,10 +119,19 @@ class OrganizationStatus(StrEnum):
         return {
             OrganizationStatus.CREATED: "Created",
             OrganizationStatus.ONBOARDING_STARTED: "Onboarding Started",
-            OrganizationStatus.UNDER_REVIEW: "Under Review",
+            OrganizationStatus.INITIAL_REVIEW: "Initial Review",
+            OrganizationStatus.ONGOING_REVIEW: "Ongoing Review",
             OrganizationStatus.DENIED: "Denied",
             OrganizationStatus.ACTIVE: "Active",
         }[self]
+
+    @classmethod
+    def review_statuses(cls) -> set[Self]:
+        return {cls.INITIAL_REVIEW, cls.ONGOING_REVIEW}  # type: ignore
+
+    @classmethod
+    def payment_ready_statuses(cls) -> set[Self]:
+        return {cls.ACTIVE, *cls.review_statuses()}  # type: ignore
 
 
 class Organization(RateLimitGroupMixin, RecordModel):
@@ -166,6 +176,9 @@ class Organization(RateLimitGroupMixin, RecordModel):
         Integer, nullable=False, default=0
     )
     status_updated_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    initially_reviewed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
 
@@ -250,6 +263,15 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def _storefront_enabled_expression(cls) -> ColumnElement[bool]:
         return Organization.profile_settings["enabled"].as_boolean()
 
+    @hybrid_property
+    def is_under_review(self) -> bool:
+        return self.status in OrganizationStatus.review_statuses()
+
+    @is_under_review.inplace.expression
+    @classmethod
+    def _is_under_review_expression(cls) -> ColumnElement[bool]:
+        return cls.status.in_(OrganizationStatus.review_statuses())
+
     @property
     def polar_site_url(self) -> str:
         return f"{settings.FRONTEND_BASE_URL}/{self.slug}"
@@ -312,9 +334,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
         if self.blocked_at is not None:
             return True
         return False
-
-    def is_under_review(self) -> bool:
-        return self.status == OrganizationStatus.UNDER_REVIEW
 
     def is_active(self) -> bool:
         return self.status == OrganizationStatus.ACTIVE

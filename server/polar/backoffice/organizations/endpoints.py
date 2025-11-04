@@ -2,8 +2,8 @@ import builtins
 import contextlib
 import uuid
 from collections.abc import Generator
-from datetime import UTC
-from typing import Annotated, Any, override
+from datetime import UTC, datetime
+from typing import Annotated, Any, Literal, override
 
 import structlog
 from babel.numbers import format_currency
@@ -109,7 +109,7 @@ def organization_badge(organization: Organization) -> Generator[None]:
         if organization.status == OrganizationStatus.ACTIVE:
             classes("badge-success")
         elif (
-            organization.status == OrganizationStatus.UNDER_REVIEW
+            organization.is_under_review
             or organization.status == OrganizationStatus.DENIED
         ):
             classes("badge-warning")
@@ -142,8 +142,6 @@ class DaysInStatusColumn(
     datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
 ):
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
-        from datetime import datetime
-
         if item.status_updated_at:
             delta = datetime.now(UTC) - item.status_updated_at
             days = delta.days
@@ -151,7 +149,7 @@ class DaysInStatusColumn(
             delta = datetime.now(UTC) - item.created_at
             days = delta.days
 
-        if item.status == OrganizationStatus.UNDER_REVIEW:
+        if item.is_under_review:
             text(f"{days} days in review")
         else:
             text(f"{days} days since review")
@@ -313,8 +311,10 @@ async def list(
         bool | None, BeforeValidator(empty_str_to_none_before_bool), Query()
     ] = None,
     review_cycle: Annotated[
-        str | None, BeforeValidator(empty_str_to_none), Query()
-    ] = None,  # "first" or "subsequent"
+        Literal["first", "subsequent"] | None,
+        BeforeValidator(empty_str_to_none),
+        Query(),
+    ] = None,
 ) -> None:
     # Create custom pagination with default limit of 100
     pagination = PaginationParams(page, min(100, limit))
@@ -360,16 +360,12 @@ async def list(
 
     # Add review cycle filter
     if review_cycle:
-        if review_cycle == "first":
-            statement = statement.where(
-                Organization.status == OrganizationStatus.UNDER_REVIEW,
-                Organization.next_review_threshold == 0,
-            )
-        elif review_cycle == "subsequent":
-            statement = statement.where(
-                Organization.status == OrganizationStatus.UNDER_REVIEW,
-                Organization.next_review_threshold > 0,
-            )
+        match review_cycle:
+            case "first":
+                status = OrganizationStatus.INITIAL_REVIEW
+            case "subsequent":
+                status = OrganizationStatus.ONGOING_REVIEW
+        statement = statement.where(Organization.status == status)
 
     statement = repository.apply_sorting(statement, sorting)
     items, count = await repository.paginate(

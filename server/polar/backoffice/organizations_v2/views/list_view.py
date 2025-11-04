@@ -50,7 +50,7 @@ class OrganizationListView:
         days_in_status = self.calculate_days_in_status(org)
 
         # Under review for more than 3 days
-        if org.status == OrganizationStatus.UNDER_REVIEW and days_in_status > 3:
+        if org.is_under_review and days_in_status > 3:
             return True
 
         # Has pending appeal
@@ -297,8 +297,11 @@ class OrganizationListView:
                 label="Under Review",
                 url=str(request.url_for("organizations-v2:list"))
                 + "?status=under_review",
-                active=status_filter == OrganizationStatus.UNDER_REVIEW,
-                count=status_counts.get(OrganizationStatus.UNDER_REVIEW, 0),
+                active=status_filter in OrganizationStatus.review_statuses(),
+                count=sum(
+                    status_counts.get(status, 0)
+                    for status in OrganizationStatus.review_statuses()
+                ),
                 badge_variant="warning",
             ),
             Tab(

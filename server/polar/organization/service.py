@@ -405,7 +405,7 @@ class OrganizationService:
     async def check_review_threshold(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
-        if organization.is_under_review():
+        if organization.is_under_review:
             return organization
 
         transfers_sum = await transaction_service.get_transactions_sum(
@@ -415,7 +415,11 @@ class OrganizationService:
             organization.next_review_threshold >= 0
             and transfers_sum >= organization.next_review_threshold
         ):
-            organization.status = OrganizationStatus.UNDER_REVIEW
+            organization.status = (
+                OrganizationStatus.ONGOING_REVIEW
+                if organization.initially_reviewed_at is not None
+                else OrganizationStatus.INITIAL_REVIEW
+            )
             organization.status_updated_at = datetime.now(UTC)
             await self._sync_account_status(session, organization)
             session.add(organization)
@@ -433,6 +437,9 @@ class OrganizationService:
         organization.status = OrganizationStatus.ACTIVE
         organization.status_updated_at = datetime.now(UTC)
         organization.next_review_threshold = next_review_threshold
+        if organization.initially_reviewed_at is None:
+            organization.initially_reviewed_at = datetime.now(UTC)
+
         await self._sync_account_status(session, organization)
         session.add(organization)
 
@@ -468,7 +475,7 @@ class OrganizationService:
     async def set_organization_under_review(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
-        organization.status = OrganizationStatus.UNDER_REVIEW
+        organization.status = OrganizationStatus.ONGOING_REVIEW
         organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
@@ -490,7 +497,7 @@ class OrganizationService:
             # If account is fully set up, set organization to ACTIVE
             if all(
                 (
-                    not organization.is_under_review(),
+                    not organization.is_under_review,
                     not organization.is_active(),
                     account.currency is not None,
                     account.is_details_submitted,
@@ -526,7 +533,8 @@ class OrganizationService:
         status_mapping = {
             OrganizationStatus.ONBOARDING_STARTED: Account.Status.ONBOARDING_STARTED,
             OrganizationStatus.ACTIVE: Account.Status.ACTIVE,
-            OrganizationStatus.UNDER_REVIEW: Account.Status.UNDER_REVIEW,
+            OrganizationStatus.INITIAL_REVIEW: Account.Status.UNDER_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW: Account.Status.UNDER_REVIEW,
             OrganizationStatus.DENIED: Account.Status.DENIED,
         }
 
@@ -644,10 +652,7 @@ class OrganizationService:
             return True
 
         # For new organizations, check basic conditions first
-        if organization.status not in [
-            OrganizationStatus.ACTIVE,
-            OrganizationStatus.UNDER_REVIEW,
-        ]:
+        if organization.status not in OrganizationStatus.payment_ready_statuses():
             return False
 
         # Details must be submitted (check for empty dict as well)

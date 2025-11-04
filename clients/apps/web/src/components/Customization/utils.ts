@@ -118,7 +118,7 @@ const ORGANIZATION: schemas['CustomerOrganization'] = {
 
 export const createCheckoutPreview = (
   product: schemas['CheckoutProduct'],
-  organization: schemas['Organization'],
+  organization: schemas['CustomerOrganization'],
 ): CheckoutPublic => {
   const prices = product.prices.map((price, index) => ({
     ...price,

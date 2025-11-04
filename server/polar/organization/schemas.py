@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal
 from pydantic import (
     UUID4,
     AfterValidator,
+    BeforeValidator,
     EmailStr,
     Field,
     StringConstraints,
@@ -234,6 +235,36 @@ class OrganizationBase(IDSchema, TimestampedSchema):
     )
 
 
+class LegacyOrganizationStatus(StrEnum):
+    """
+    Legacy organization status values kept for backward compatibility in schemas
+    using OrganizationPublicBase.
+    """
+
+    CREATED = "created"
+    ONBOARDING_STARTED = "onboarding_started"
+    UNDER_REVIEW = "under_review"
+    DENIED = "denied"
+    ACTIVE = "active"
+
+    @classmethod
+    def from_status(cls, status: OrganizationStatus) -> "LegacyOrganizationStatus":
+        mapping = {
+            OrganizationStatus.CREATED: LegacyOrganizationStatus.CREATED,
+            OrganizationStatus.ONBOARDING_STARTED: (
+                LegacyOrganizationStatus.ONBOARDING_STARTED
+            ),
+            OrganizationStatus.INITIAL_REVIEW: LegacyOrganizationStatus.UNDER_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW: LegacyOrganizationStatus.UNDER_REVIEW,
+            OrganizationStatus.DENIED: LegacyOrganizationStatus.DENIED,
+            OrganizationStatus.ACTIVE: LegacyOrganizationStatus.ACTIVE,
+        }
+        try:
+            return mapping[status]
+        except KeyError as e:
+            raise ValueError("Unknown OrganizationStatus") from e
+
+
 class OrganizationPublicBase(OrganizationBase):
     # Attributes that we used to have publicly, but now want to hide from
     # the public schema.
@@ -241,7 +272,10 @@ class OrganizationPublicBase(OrganizationBase):
     email: SkipJsonSchema[str | None]
     website: SkipJsonSchema[str | None]
     socials: SkipJsonSchema[list[OrganizationSocialLink]]
-    status: SkipJsonSchema[OrganizationStatus]
+    status: Annotated[
+        SkipJsonSchema[LegacyOrganizationStatus],
+        BeforeValidator(LegacyOrganizationStatus.from_status),
+    ]
     details_submitted_at: SkipJsonSchema[datetime | None]
 
     feature_settings: SkipJsonSchema[OrganizationFeatureSettings | None]

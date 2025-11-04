@@ -307,7 +307,7 @@ class TestCheckReviewThreshold:
         organization: Organization,
     ) -> None:
         # Given organization already under review
-        organization.status = OrganizationStatus.UNDER_REVIEW
+        organization.status = OrganizationStatus.INITIAL_REVIEW
         organization.next_review_threshold = 1000
 
         # When
@@ -316,31 +316,7 @@ class TestCheckReviewThreshold:
         )
 
         # Then
-        assert result.status == OrganizationStatus.UNDER_REVIEW
-
-    async def test_zero_threshold(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        # Given organization with review threshold set to 0
-        organization.status = OrganizationStatus.ACTIVE
-        organization.next_review_threshold = 0
-
-        transaction_sum_mock = mocker.patch(
-            "polar.organization.service.transaction_service.get_transactions_sum",
-            return_value=5000,
-        )
-
-        # When
-        result = await organization_service.check_review_threshold(
-            session, organization
-        )
-
-        # Then
-        assert result.status == OrganizationStatus.UNDER_REVIEW
-        transaction_sum_mock.assert_called_once()
+        assert result.status == OrganizationStatus.INITIAL_REVIEW
 
     async def test_below_review_threshold(
         self,
@@ -366,7 +342,32 @@ class TestCheckReviewThreshold:
         assert result.status == OrganizationStatus.ACTIVE
         transaction_sum_mock.assert_called_once()
 
-    async def test_above_review_threshold(
+    async def test_initial_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization with review threshold set to 0
+        organization.status = OrganizationStatus.ACTIVE
+        organization.initially_reviewed_at = None
+        organization.next_review_threshold = 0
+
+        transaction_sum_mock = mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=5000,
+        )
+
+        # When
+        result = await organization_service.check_review_threshold(
+            session, organization
+        )
+
+        # Then
+        assert result.status == OrganizationStatus.INITIAL_REVIEW
+        transaction_sum_mock.assert_called_once()
+
+    async def test_ongoing_review(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -374,6 +375,7 @@ class TestCheckReviewThreshold:
     ) -> None:
         # Given organization above review threshold
         organization.status = OrganizationStatus.ACTIVE
+        organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
         organization.next_review_threshold = 1000
 
         transaction_sum_mock = mocker.patch(
@@ -388,7 +390,7 @@ class TestCheckReviewThreshold:
         )
 
         # Then
-        assert result.status == OrganizationStatus.UNDER_REVIEW
+        assert result.status == OrganizationStatus.ONGOING_REVIEW
         transaction_sum_mock.assert_called_once()
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
@@ -397,14 +399,14 @@ class TestCheckReviewThreshold:
 
 @pytest.mark.asyncio
 class TestConfirmOrganizationReviewed:
-    async def test_confirm_organization_reviewed(
+    async def test_initial_review(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
         # Given organization under review
-        organization.status = OrganizationStatus.UNDER_REVIEW
+        organization.status = OrganizationStatus.INITIAL_REVIEW
 
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
 
@@ -415,6 +417,33 @@ class TestConfirmOrganizationReviewed:
 
         # Then
         assert result.status == OrganizationStatus.ACTIVE
+        assert result.initially_reviewed_at is not None
+        assert result.next_review_threshold == 15000
+        enqueue_job_mock.assert_called_once_with(
+            "organization.reviewed", organization_id=organization.id
+        )
+
+    async def test_ongoing_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization under review
+        organization.status = OrganizationStatus.ONGOING_REVIEW
+        initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
+        organization.initially_reviewed_at = initially_reviewed_at
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        # When
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization, 15000
+        )
+
+        # Then
+        assert result.status == OrganizationStatus.ACTIVE
+        assert result.initially_reviewed_at == initially_reviewed_at
         assert result.next_review_threshold == 15000
         enqueue_job_mock.assert_called_once_with(
             "organization.reviewed", organization_id=organization.id
@@ -457,7 +486,7 @@ class TestSetOrganizationUnderReview:
         )
 
         # Then
-        assert result.status == OrganizationStatus.UNDER_REVIEW
+        assert result.status == OrganizationStatus.ONGOING_REVIEW
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
         )
@@ -1192,7 +1221,7 @@ class TestApproveAppeal:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.status = OrganizationStatus.UNDER_REVIEW
+        organization.status = OrganizationStatus.INITIAL_REVIEW
         review = OrganizationReview(
             organization_id=organization.id,
             verdict=OrganizationReview.Verdict.FAIL,

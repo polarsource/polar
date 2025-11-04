@@ -188,7 +188,7 @@ class OrganizationDetailView:
                             ):
                                 text("Deny")
 
-                    elif self.org.status == OrganizationStatus.UNDER_REVIEW:
+                    elif self.org.is_under_review:
                         # Quick approve with default threshold
                         max_threshold = (self.org.next_review_threshold or 25000000) * 2
                         max_threshold_display = f"${max_threshold / 100:,.0f}"

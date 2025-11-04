@@ -66,7 +66,7 @@ export default function EventDetailPage({
       <div className="flex flex-row items-center justify-between gap-x-4">
         <h3 className="text-4xl">{eventDisplayName}</h3>
         {'_cost' in event.metadata && event.metadata._cost && (
-          <h3 className="dark:text-polar-500 font-mono text-4xl text-gray-500">
+          <h3 className="dark:text-polar-500 font-mono text-4xl text-gray-400">
             {formatSubCentCurrency(Number(event.metadata._cost?.amount ?? 0))}
           </h3>
         )}
@@ -84,7 +84,7 @@ export default function EventDetailPage({
         <div className="flex flex-col gap-y-8">
           <div className="flex flex-row justify-between">
             <h3 className="text-2xl">Child Events</h3>
-            <h3 className="dark:text-polar-500 text-2xl text-gray-500">
+            <h3 className="dark:text-polar-500 text-2xl text-gray-400">
               {childrenData?.pagination.total_count}{' '}
               {childrenData?.pagination.total_count === 1 ? 'Event' : 'Events'}
             </h3>

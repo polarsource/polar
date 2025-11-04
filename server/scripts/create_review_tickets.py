@@ -204,7 +204,7 @@ async def process_organizations(dry_run: bool = False, limit: int = 1) -> None:
             for ticket_data in tickets_to_create:
                 organization = cast(Organization, ticket_data["organization"])
                 try:
-                    await plain_service.create_account_review_thread(
+                    await plain_service.create_organization_review_thread(
                         session, organization
                     )
                     log.info(

@@ -49,6 +49,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
@@ -139,7 +140,7 @@ class PlainService:
         cards = [card for task in tasks if (card := task.result()) is not None]
         return CustomerCardsResponse(cards=cards)
 
-    async def create_account_review_thread(
+    async def create_organization_review_thread(
         self, session: AsyncSession, organization: Organization
     ) -> None:
         if not self.enabled:
@@ -177,17 +178,25 @@ class PlainService:
                     organization.account.id, customer_result.error.message
                 )
 
+            match organization.status:
+                case OrganizationStatus.INITIAL_REVIEW:
+                    title = "Initial Account Review"
+                case OrganizationStatus.ONGOING_REVIEW:
+                    title = "Ongoing Account Review"
+                case _:
+                    raise ValueError("Organization is not under review")
+
             thread_result = await plain.create_thread(
                 CreateThreadInput(
                     customer_identifier=self._get_customer_identifier(
                         customer_result, admin.email
                     ),
-                    title="Account Review",
+                    title=title,
                     label_type_ids=["lt_01JFG7F4N67FN3MAWK06FJ8FPG"],
                     components=[
                         ComponentInput(
                             component_text=ComponentTextInput(
-                                text=f"The organization `{organization.slug}` should be reviewed, as it hit a threshold. It's used by the following organizations:"
+                                text=f"The organization `{organization.slug}` should be reviewed, as it hit a threshold."
                             )
                         ),
                         ComponentInput(
@@ -200,7 +209,7 @@ class PlainService:
                                 link_button_url=settings.generate_backoffice_url(
                                     f"/organizations/{organization.id}"
                                 ),
-                                link_button_label="Review account ↗",
+                                link_button_label="Review organization ↗",
                             )
                         ),
                     ],

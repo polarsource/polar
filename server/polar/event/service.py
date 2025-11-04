@@ -177,6 +177,7 @@ class EventService:
         ),
         query: str | None = None,
         parent_id: uuid.UUID | None = None,
+        hierarchical: bool = False,
     ) -> tuple[Sequence[Event], int]:
         repository = EventRepository.from_session(session)
         statement = await self._build_filtered_statement(
@@ -197,10 +198,11 @@ class EventService:
             query=query,
         )
 
-        if parent_id is not None:
-            statement = statement.where(Event.parent_id == parent_id)
-        else:
-            statement = statement.where(Event.parent_id.is_(None))
+        if hierarchical:
+            if parent_id is not None:
+                statement = statement.where(Event.parent_id == parent_id)
+            else:
+                statement = statement.where(Event.parent_id.is_(None))
 
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page

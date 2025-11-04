@@ -104,7 +104,7 @@ export const EventRow = ({
     <div
       className={twMerge(
         'group flex cursor-pointer flex-col',
-        isExpanded && 'pb-4',
+        isExpanded && 'mb-4',
       )}
       onClick={depth === 0 ? handleToggleExpand : handleNavigateToEvent}
     >

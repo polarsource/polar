@@ -2,18 +2,20 @@
 
 set -euo pipefail
 
-# Usage: ./deploy_server.sh <docker_digest> <service_id_1> [service_id_2] [service_id_n]
-if [ $# -lt 2 ]; then
-  echo "Usage: $0 <docker_digest> <service_id_1> [service_id_2] [service_id_n]"
-  echo "Example: $0 sha256:abc123... srv-123 srv-456"
+# Usage: ./deploy_server.sh <docker_digest> <has_migrations> <api_service_id> <worker_service_ids>
+if [ $# -lt 4 ]; then
+  echo "Usage: $0 <docker_digest> <has_migrations> <api_service_id> <worker_service_ids>"
+  echo "Example: $0 sha256:abc123... true srv-123 srv-456,srv-789"
   exit 1
 fi
 
 IMG="ghcr.io/polarsource/polar@${1}"
-shift # Remove the first argument, leaving only service IDs
+HAS_MIGRATIONS="${2}"
+API_SERVICE_ID="${3}"
+WORKER_SERVICE_IDS="${4}"
 
-# Read service IDs from remaining arguments
-declare -a servers=("$@")
+# Convert worker service IDs from comma-separated string to array
+IFS=',' read -ra WORKER_SERVERS <<< "$WORKER_SERVICE_IDS"
 
 # Configuration
 TIMEOUT=300  # 5 minutes timeout
@@ -37,9 +39,10 @@ check_deployment_status() {
 # Function to deploy a set of servers
 deploy_servers() {
   local -n servers_ref=$1
-  local environment=${2:-"unknown"}
+  local services=${2:-"unknown"}
+  local environment=${3:-"unknown"}
 
-  echo "🚀 Starting deployment to ${environment}..."
+  echo "🚀 Starting deployment of ${services} to ${environment}..."
 
   # Trigger deployments
   local -A deploy_map=()  # Maps service_id to deploy_id
@@ -66,7 +69,7 @@ deploy_servers() {
   done
 
   # Wait for deployments to complete
-  echo "⏳ Waiting for ${environment} deployments to complete..."
+  echo "⏳ Waiting for ${services} in ${environment} deployments to complete..."
 
   local start_time=$(date +%s)
   local all_complete=false
@@ -116,10 +119,27 @@ deploy_servers() {
     fi
   done
 
-  echo "✅ All deployments completed successfully!"
+  echo "✅ ${services} deployments completed successfully!"
 }
 
-# Deploy the provided servers
-deploy_servers servers "environment"
+# Deploy based on migration status
+if [ "$HAS_MIGRATIONS" = "true" ]; then
+  echo "📋 Deploying sequentially (migrations detected)"
+
+  # Deploy API first (runs migrations via preDeployCommand)
+  api_server=("$API_SERVICE_ID")
+  deploy_servers api_server "API" "environment"
+
+  # Deploy workers after API completes
+  if [ ${#WORKER_SERVERS[@]} -gt 0 ]; then
+    deploy_servers WORKER_SERVERS "workers" "environment"
+  fi
+else
+  echo "📋 Deploying all services in parallel"
+
+  # Deploy all services in parallel
+  all_servers=("$API_SERVICE_ID" "${WORKER_SERVERS[@]}")
+  deploy_servers all_servers "All" "environment"
+fi
 
 echo "🎉 Deployment completed successfully!"

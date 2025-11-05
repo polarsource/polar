@@ -1,3 +1,4 @@
+import inspect
 from collections.abc import Callable, Iterator
 from typing import (
     Annotated,
@@ -24,10 +25,12 @@ _TASK_DEFINITIONS: dict[str, dramatiq.Actor[Any, Any]] = {
 _TaskName = Literal[tuple(_TASK_DEFINITIONS.keys())]  # type: ignore[valid-type]
 
 
-def _get_function_arguments(f: Callable[..., Any]) -> Iterator[tuple[str, Any]]:
-    for key, type_hint in get_type_hints(f).items():
-        if key in {"ctx", "polar_context", "return"}:
-            continue
+def _get_function_arguments(
+    f: Callable[..., Any],
+) -> Iterator[tuple[str, Any]]:
+    signature = inspect.signature(f)
+    for key, parameter in signature.parameters.items():
+        type_hint = parameter.annotation
         if get_origin(type_hint) is Unpack:
             type_hints_args = get_args(type_hint)
             if is_typeddict(type_hints_args[0]):
@@ -64,7 +67,10 @@ def build_enqueue_task_form_class(
     if task is not None:
         task_function = _TASK_DEFINITIONS[task]
         for key, type_hint in _get_function_arguments(task_function.fn):
-            field_definitions[key] = (type_hint, ...)
+            default: Any = ...
+            if type_hint is bool:
+                default = False
+            field_definitions[key] = (type_hint, default)
 
     return create_model(
         "EnqueueTaskForm",

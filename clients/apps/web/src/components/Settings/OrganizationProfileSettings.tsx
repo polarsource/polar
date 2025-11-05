@@ -607,14 +607,16 @@ const OrganizationProfileSettings: React.FC<
       } else {
         setError('root', { message: error.detail })
       }
+
+      toast({
+        title: 'Organization Update Failed',
+        description: `Error updating organization: ${error.detail}`,
+      })
+
       return
     }
 
     reset(data)
-    toast({
-      title: 'Organization Updated',
-      description: `Organization was updated successfully`,
-    })
 
     if (onSubmitted) {
       onSubmitted()

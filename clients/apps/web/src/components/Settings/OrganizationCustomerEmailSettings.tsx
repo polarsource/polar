@@ -94,15 +94,16 @@ const OrganizationCustomerEmailSettings: React.FC<
       } else {
         setError('root', { message: error.detail })
       }
+
+      toast({
+        title: 'Customer Email Settings Update Failed',
+        description: `Error updating customer email settings: ${error.detail}`,
+      })
+
       return
     }
 
     reset(data.customer_email_settings)
-
-    toast({
-      title: 'Settings Updated',
-      description: `Settings were updated successfully`,
-    })
   }
 
   useAutoSave({

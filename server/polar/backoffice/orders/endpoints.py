@@ -502,10 +502,19 @@ async def refund(
     # Calculate max refundable amount
     max_refundable = (order.net_amount or 0) - (order.refunded_amount or 0)
 
+    # Format amount for display
+    from babel.numbers import format_currency
+
+    max_refundable_display = format_currency(
+        max_refundable / 100,
+        order.currency.upper() if order.currency else "USD",
+        locale="en_US",
+    )
+
     with modal("Refund order", open=True):
         with tag.div(classes="flex flex-col gap-4"):
             with tag.p():
-                text(f"Maximum refundable amount: {max_refundable} cents")
+                text(f"Maximum refundable amount: {max_refundable_display}")
             with RefundForm.render(
                 hx_post=str(request.url_for("orders:refund", id=id)),
                 hx_target="#modal",

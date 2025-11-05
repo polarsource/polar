@@ -133,8 +133,13 @@ const MeterFilterInput = ({
                       required: 'This field is required',
                     }}
                     render={({ field }) => {
+                      const allowedOperators =
+                        property === 'name'
+                          ? (['eq', 'ne', 'like', 'not_like'] as const)
+                          : Object.keys(OPERATOR_DISPLAY_NAMES)
+
                       return (
-                        <FormItem className="grow">
+                        <FormItem>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value || undefined}
@@ -143,13 +148,15 @@ const MeterFilterInput = ({
                               <SelectValue placeholder="Select operator" />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(OPERATOR_DISPLAY_NAMES).map(
-                                ([operator, displayName]) => (
-                                  <SelectItem key={operator} value={operator}>
-                                    {displayName}
-                                  </SelectItem>
-                                ),
-                              )}
+                              {allowedOperators.map((operator) => (
+                                <SelectItem key={operator} value={operator}>
+                                  {
+                                    OPERATOR_DISPLAY_NAMES[
+                                      operator as schemas['FilterOperator']
+                                    ]
+                                  }
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />

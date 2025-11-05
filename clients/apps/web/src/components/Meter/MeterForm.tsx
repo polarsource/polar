@@ -1,6 +1,7 @@
 'use client'
 
 import MeterFilterInput from '@/components/Meter/MeterFilterInput'
+import MeterFilterReadOnlyConfiguration from '@/components/Meter/MeterFilterReadOnlyConfiguration'
 import MeterFormAggregation from '@/components/Meter/MeterFormAggregation'
 import { schemas } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -14,9 +15,18 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useFormContext } from 'react-hook-form'
 
-const MeterForm = ({ organizationId }: { organizationId: string }) => {
+const MeterForm = ({
+  organizationId,
+  readOnly = false,
+}: {
+  organizationId: string
+  readOnly?: boolean
+}) => {
   const form = useFormContext<schemas['MeterCreate']>()
-  const { control } = form
+  const { control, watch } = form
+
+  const filter = watch('filter')
+  const aggregation = watch('aggregation')
 
   return (
     <>
@@ -50,16 +60,27 @@ const MeterForm = ({ organizationId }: { organizationId: string }) => {
         }}
       />
 
-      <FormItem>
-        <FormLabel>Filters</FormLabel>
-        <FormDescription>
-          Specify how events are filtered before they are aggregated.
-        </FormDescription>
-        <MeterFilterInput prefix="filter" organizationId={organizationId} />
-        <FormMessage />
-      </FormItem>
+      {readOnly ? (
+        aggregation && (
+          <MeterFilterReadOnlyConfiguration
+            filter={filter}
+            aggregation={aggregation}
+          />
+        )
+      ) : (
+        <>
+          <FormItem>
+            <FormLabel>Filters</FormLabel>
+            <FormDescription>
+              Specify how events are filtered before they are aggregated.
+            </FormDescription>
+            <MeterFilterInput prefix="filter" organizationId={organizationId} />
+            <FormMessage />
+          </FormItem>
 
-      <MeterFormAggregation organizationId={organizationId} />
+          <MeterFormAggregation />
+        </>
+      )}
     </>
   )
 }

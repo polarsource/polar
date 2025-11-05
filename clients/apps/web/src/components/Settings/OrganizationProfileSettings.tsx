@@ -39,7 +39,11 @@ import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
 import ConfirmationButton from '../ui/ConfirmationButton'
-import { SettingsGroup, SettingsGroupActions, SettingsGroupItem } from './SettingsGroup'
+import {
+  SettingsGroup,
+  SettingsGroupActions,
+  SettingsGroupItem,
+} from './SettingsGroup'
 
 interface OrganizationDetailsFormProps {
   organization: schemas['Organization']

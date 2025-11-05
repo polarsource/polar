@@ -5,7 +5,7 @@ from collections.abc import Generator
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import UUID4, BeforeValidator
+from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import attr, classes, tag, text
@@ -17,12 +17,16 @@ from polar.models import Customer, Order, Organization, Product
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.order import sorting
 from polar.order.repository import OrderRepository
-from polar.postgres import AsyncSession, get_db_read_session
+from polar.postgres import AsyncSession, get_db_read_session, get_db_session
+from polar.refund.service import refund as refund_service
 
 from .. import formatters
-from ..components import button, datatable, description_list, input
+from ..components import button, datatable, description_list, input, modal
 from ..layout import layout
+from ..responses import HXRedirectResponse
+from ..toast import add_toast
 from .components import orders_datatable
+from .forms import RefundForm
 
 router = APIRouter()
 
@@ -255,6 +259,15 @@ async def get(
             with tag.div(classes="flex justify-between items-center"):
                 with tag.h1(classes="text-4xl"):
                     text(f"Order {order.invoice_number}")
+                # Add Refund button if order is paid and can be refunded
+                if order.paid and (order.refunded_amount or 0) < (
+                    order.net_amount or 0
+                ):
+                    with button(
+                        hx_get=str(request.url_for("orders:refund", id=order.id)),
+                        hx_target="#modal",
+                    ):
+                        text("Refund")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Order Details
@@ -434,3 +447,74 @@ async def get(
                                 request, order
                             ):
                                 pass
+
+
+@router.api_route("/{id}/refund", name="orders:refund", methods=["GET", "POST"])
+async def refund(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    order_repository = OrderRepository.from_session(session)
+    order = await order_repository.get_by_id(
+        id,
+        options=order_repository.get_eager_options(),
+    )
+
+    if order is None:
+        raise HTTPException(status_code=404)
+
+    # Check if order can be refunded
+    if not order.paid:
+        await add_toast(request, "This order has not been paid yet.", "error")
+        return
+
+    if (order.refunded_amount or 0) >= (order.net_amount or 0):
+        await add_toast(request, "This order has already been fully refunded.", "error")
+        return
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = RefundForm.model_validate_form(data)
+            from polar.refund.schemas import RefundCreate
+
+            refund_create = RefundCreate(
+                order_id=order.id,
+                reason=form.reason,
+                amount=form.amount,
+                comment=form.comment,
+                revoke_benefits=form.revoke_benefits,
+            )
+            await refund_service.create(session, order, refund_create)
+            await add_toast(request, "Refund created successfully.", "success")
+            return HXRedirectResponse(
+                request, str(request.url_for("orders:get", id=id)), 303
+            )
+        except ValidationError as e:
+            validation_error = e
+        except Exception as e:
+            await add_toast(request, f"Failed to create refund: {e}", "error")
+            validation_error = None
+
+    # Calculate max refundable amount
+    max_refundable = (order.net_amount or 0) - (order.refunded_amount or 0)
+
+    with modal("Refund order", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(f"Maximum refundable amount: {max_refundable} cents")
+            with RefundForm.render(
+                hx_post=str(request.url_for("orders:refund", id=id)),
+                hx_target="#modal",
+                classes="flex flex-col",
+                validation_error=validation_error,
+            ):
+                with tag.div(classes="modal-action"):
+                    with tag.form(method="dialog"):
+                        with button(ghost=True):
+                            text("Cancel")
+                    with button(type="submit", variant="primary"):
+                        text("Submit")

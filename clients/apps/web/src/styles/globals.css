@@ -32,7 +32,7 @@
   --color-blue-800: oklch(0.424 0.199 265.638);
   --color-blue-900: oklch(0.379 0.146 265.522);
   --color-blue-950: oklch(0.282 0.091 267.935);
-  --color-blue: var(--color-blue-500);
+  --color-blue: var(--color-blue-600);
 
   --color-green-50: oklch(0.979 0.021 166.113);
   --color-green-100: oklch(0.95 0.052 163.051);

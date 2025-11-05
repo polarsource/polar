@@ -60,7 +60,7 @@ export const Events = () => {
     <Section className="flex flex-col gap-y-32 py-0 md:py-0">
       <div className="dark:bg-polar-900 flex w-full flex-col gap-y-6 overflow-hidden rounded-4xl bg-gray-200 p-2 xl:flex-row">
         <div className="flex w-full flex-1 flex-col gap-y-8 p-6 md:p-12">
-          <span className="w-fit rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white">
+          <span className="bg-blue w-fit rounded-full px-3 py-1 text-xs font-medium text-white">
             Now in Beta
           </span>
           <h3 className="text-3xl leading-tight! text-balance md:text-4xl">

@@ -427,7 +427,7 @@ const BenefitsContainer = ({
         </div>
         <span className="flex flex-row items-center gap-x-4">
           {hasEnabledBenefits ? (
-            <div className="h-2 w-2 rounded-full bg-blue-500" />
+            <div className="bg-blue h-2 w-2 rounded-full" />
           ) : null}
           <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
             {benefits.length}

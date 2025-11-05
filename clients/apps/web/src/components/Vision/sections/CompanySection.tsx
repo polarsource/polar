@@ -33,6 +33,16 @@ const team = [
     title: 'Software Engineer',
     image: '/assets/team/pieter.png',
   },
+  {
+    name: 'Jesper Bränn',
+    title: 'Software Engineer',
+    image: '/assets/team/jesper.jpg',
+  },
+  {
+    name: 'Isac Lidén',
+    title: 'Customer Support Specialist',
+    image: '/assets/team/isac.jpg',
+  },
 ]
 
 export const CompanySection = ({ active }: { active: boolean }) => {
@@ -43,7 +53,7 @@ export const CompanySection = ({ active }: { active: boolean }) => {
       title="Small team, big ambitions"
       context={
         <div className="flex flex-col gap-y-8">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
             {team.map((profile) => (
               <Profile key={profile.name} {...profile} />
             ))}

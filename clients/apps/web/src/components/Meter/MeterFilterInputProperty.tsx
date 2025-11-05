@@ -84,7 +84,7 @@ const MeterFilterInputProperty = ({ field }: MeterFilterInputPropertyProps) => {
 
   if (propertyType === 'metadata') {
     return (
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
         <Select value={propertyType} onValueChange={handleTypeChange}>
           <SelectTrigger className="flex-1">
             <SelectValue />
@@ -100,7 +100,7 @@ const MeterFilterInputProperty = ({ field }: MeterFilterInputPropertyProps) => {
         <Input
           value={metadataPath}
           onChange={(e) => handleMetadataPathChange(e.target.value)}
-          placeholder="property name"
+          placeholder="metadata key"
           autoComplete="off"
           className="flex-1 font-mono md:text-xs"
         />

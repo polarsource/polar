@@ -23,14 +23,14 @@ import MeterFilterInputProperty from './MeterFilterInputProperty'
 import MeterFilterInputValue from './MeterFilterInputValue'
 
 const OPERATOR_DISPLAY_NAMES: Record<schemas['FilterOperator'], string> = {
-  eq: 'Equals',
-  ne: 'Not Equals',
-  gt: 'Greater Than',
-  gte: 'Greater Than or Equals',
-  lt: 'Less Than',
-  lte: 'Less Than or Equals',
-  like: 'Contains',
-  not_like: 'Does Not Contain',
+  eq: 'equals',
+  ne: 'does not equal',
+  gt: 'is greater than',
+  gte: 'is greater than or equal to',
+  lt: 'is less than',
+  lte: 'is less than or equal to',
+  like: 'contains',
+  not_like: 'does not contain',
 }
 
 const isFilterClause = (
@@ -102,7 +102,7 @@ const MeterFilterInput = ({
               <div className="flex w-full flex-row items-start gap-x-2">
                 <div
                   className={twMerge(
-                    'text-muted-foreground flex h-10 w-8 items-center justify-center text-sm',
+                    'text-muted-foreground flex h-10 w-8 flex-none items-center justify-center text-sm',
                     index === 0 ? 'opacity-20' : '',
                   )}
                 >

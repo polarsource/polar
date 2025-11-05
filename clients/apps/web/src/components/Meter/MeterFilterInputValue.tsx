@@ -60,6 +60,7 @@ const EventNameInput = ({ field, organizationId }: EventNameInputProps) => {
       renderItem={(item) => (
         <div className="font-mono text-xs">{item.name}</div>
       )}
+      className="font-mono text-xs"
       placeholder="Select event name"
     ></Combobox>
   )
@@ -93,6 +94,7 @@ const MetadataInput = ({ field }: ValueInputProps) => {
       value={field.value || ''}
       autoComplete="off"
       className="font-mono md:text-xs"
+      placeholder="property value"
       onChange={(e) => {
         const val = e.target.value
         // Try parsing as float

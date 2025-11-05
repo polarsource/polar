@@ -1,15 +1,9 @@
 'use client'
 
 import MeterFilterInput from '@/components/Meter/MeterFilterInput'
-import { enums, schemas } from '@polar-sh/client'
+import MeterFormAggregation from '@/components/Meter/MeterFormAggregation'
+import { schemas } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
 import {
   FormControl,
   FormDescription,
@@ -20,28 +14,9 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useFormContext } from 'react-hook-form'
 
-const AGGREGATION_FUNCTIONS = [
-  ...enums.countAggregationFuncValues,
-  ...enums.propertyAggregationFuncValues,
-  ...enums.uniqueAggregationFuncValues,
-]
-
-const AGGREGATION_FUNCTION_DISPLAY_NAMES: Record<
-  (typeof AGGREGATION_FUNCTIONS)[number],
-  string
-> = {
-  count: 'Count',
-  sum: 'Sum',
-  avg: 'Average',
-  min: 'Minimum',
-  max: 'Maximum',
-  unique: 'Unique',
-}
-
 const MeterForm = ({ organizationId }: { organizationId: string }) => {
   const form = useFormContext<schemas['MeterCreate']>()
-  const { control, watch } = form
-  const aggregationFunction = watch('aggregation.func')
+  const { control } = form
 
   return (
     <>
@@ -83,67 +58,8 @@ const MeterForm = ({ organizationId }: { organizationId: string }) => {
         <MeterFilterInput prefix="filter" organizationId={organizationId} />
         <FormMessage />
       </FormItem>
-      <FormItem>
-        <FormLabel>Aggregation</FormLabel>
-        <FormDescription>
-          The function that will turn the filtered events into a unit values.
-        </FormDescription>
-        <div className="flex flex-row items-center gap-x-4">
-          <FormField
-            control={control}
-            name="aggregation.func"
-            rules={{
-              required: 'This field is required',
-            }}
-            render={({ field }) => {
-              return (
-                <FormItem className="flex-1">
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value || undefined}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select aggregation function" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(AGGREGATION_FUNCTION_DISPLAY_NAMES).map(
-                        ([func, displayName]) => (
-                          <SelectItem key={func} value={func}>
-                            {displayName}
-                          </SelectItem>
-                        ),
-                      )}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )
-            }}
-          />
-          {aggregationFunction !== 'count' && (
-            <FormField
-              control={control}
-              name="aggregation.property"
-              rules={{
-                required: 'This field is required',
-              }}
-              render={({ field }) => {
-                return (
-                  <FormItem className="flex-1">
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={field.value || ''}
-                        placeholder="Over property"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
-            />
-          )}
-        </div>
-      </FormItem>
+
+      <MeterFormAggregation organizationId={organizationId} />
     </>
   )
 }

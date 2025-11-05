@@ -1,7 +1,7 @@
 import { useUpdateOrganization } from '@/hooks/queries'
+import { useAutoSave } from '@/hooks/useAutoSave'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   Form,
@@ -15,11 +15,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import { BenefitRevocationGracePeriod } from './BenefitRevocationGracePeriod'
 import { ProrationBehavior } from './ProrationBehavior'
-import {
-  SettingsGroup,
-  SettingsGroupActions,
-  SettingsGroupItem,
-} from './SettingsGroup'
+import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationSubscriptionSettingsProps {
   organization: schemas['Organization']
@@ -31,10 +27,10 @@ const OrganizationSubscriptionSettings: React.FC<
   const form = useForm<schemas['OrganizationSubscriptionSettings']>({
     defaultValues: organization.subscription_settings,
   })
-  const { control, handleSubmit, setError, reset, formState } = form
+  const { control, setError, reset } = form
 
   const updateOrganization = useUpdateOrganization()
-  const onSubmit = async (
+  const onSave = async (
     subscription_settings: schemas['OrganizationSubscriptionSettings'],
   ) => {
     const { data, error } = await updateOrganization.mutateAsync({
@@ -56,14 +52,24 @@ const OrganizationSubscriptionSettings: React.FC<
     reset(data.subscription_settings)
 
     toast({
-      title: 'Settings Updated',
-      description: `Settings were updated successfully`,
+      title: 'Subscription Settings Updated',
+      description: `Subscription settings were updated successfully`,
     })
   }
 
+  useAutoSave({
+    form,
+    onSave,
+    delay: 1000,
+  })
+
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+        }}
+      >
         <SettingsGroup>
           <SettingsGroupItem
             title="Allow multiple subscriptions"
@@ -149,18 +155,6 @@ const OrganizationSubscriptionSettings: React.FC<
               )}
             />
           </SettingsGroupItem>
-
-          <SettingsGroupActions>
-            <Button
-              className="self-start"
-              type="submit"
-              size="sm"
-              disabled={!formState.isDirty}
-              loading={updateOrganization.isPending}
-            >
-              Save
-            </Button>
-          </SettingsGroupActions>
         </SettingsGroup>
       </form>
     </Form>

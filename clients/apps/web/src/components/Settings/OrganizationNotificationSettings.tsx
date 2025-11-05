@@ -1,7 +1,7 @@
 import { useUpdateOrganization } from '@/hooks/queries'
+import { useAutoSave } from '@/hooks/useAutoSave'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   Form,
@@ -13,11 +13,7 @@ import {
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
-import {
-  SettingsGroup,
-  SettingsGroupActions,
-  SettingsGroupItem,
-} from './SettingsGroup'
+import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationNotificationSettingsProps {
   organization: schemas['Organization']
@@ -29,10 +25,10 @@ const OrganizationNotificationSettings: React.FC<
   const form = useForm<schemas['OrganizationNotificationSettings']>({
     defaultValues: organization.notification_settings,
   })
-  const { control, handleSubmit, setError, reset, formState } = form
+  const { control, setError, reset } = form
 
   const updateOrganization = useUpdateOrganization()
-  const onSubmit = async (
+  const onSave = async (
     notification_settings: schemas['OrganizationNotificationSettings'],
   ) => {
     const { data, error } = await updateOrganization.mutateAsync({
@@ -62,9 +58,19 @@ const OrganizationNotificationSettings: React.FC<
     })
   }
 
+  useAutoSave({
+    form,
+    onSave,
+    delay: 1000,
+  })
+
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+        }}
+      >
         <SettingsGroup>
           <SettingsGroupItem
             title="New Orders"
@@ -108,18 +114,6 @@ const OrganizationNotificationSettings: React.FC<
               )}
             />
           </SettingsGroupItem>
-
-          <SettingsGroupActions>
-            <Button
-              className="self-start"
-              type="submit"
-              size="sm"
-              disabled={!formState.isDirty}
-              loading={updateOrganization.isPending}
-            >
-              Save
-            </Button>
-          </SettingsGroupActions>
         </SettingsGroup>
       </form>
     </Form>

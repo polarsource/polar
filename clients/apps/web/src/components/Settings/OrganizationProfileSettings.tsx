@@ -1,4 +1,5 @@
 import { useUpdateOrganization } from '@/hooks/queries'
+import { useAutoSave } from '@/hooks/useAutoSave'
 import { setValidationErrors } from '@/utils/api/errors'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
@@ -38,11 +39,7 @@ import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
 import ConfirmationButton from '../ui/ConfirmationButton'
-import {
-  SettingsGroup,
-  SettingsGroupActions,
-  SettingsGroupItem,
-} from './SettingsGroup'
+import { SettingsGroup, SettingsGroupActions, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationDetailsFormProps {
   organization: schemas['Organization']
@@ -594,7 +591,7 @@ const OrganizationProfileSettings: React.FC<
 
   const updateOrganization = useUpdateOrganization()
 
-  const onSubmit = async (body: schemas['OrganizationUpdate']) => {
+  const onSave = async (body: schemas['OrganizationUpdate']) => {
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
       body,
@@ -621,8 +618,15 @@ const OrganizationProfileSettings: React.FC<
   }
 
   const handleFormSubmit = () => {
-    handleSubmit(onSubmit)()
+    handleSubmit(onSave)()
   }
+
+  useAutoSave({
+    form,
+    onSave,
+    delay: 1000,
+    enabled: !inKYCMode,
+  })
 
   return (
     <Form {...form}>
@@ -676,18 +680,20 @@ const OrganizationProfileSettings: React.FC<
             />
           </div>
 
-          <SettingsGroupActions>
-            <ConfirmationButton
-              onConfirm={handleFormSubmit}
-              warningMessage="This information cannot be changed once submitted. Are you sure?"
-              buttonText={inKYCMode ? 'Submit for Review' : 'Save'}
-              size={inKYCMode ? 'default' : 'sm'}
-              confirmText="Submit"
-              disabled={!formState.isDirty}
-              loading={updateOrganization.isPending}
-              requireConfirmation={inKYCMode}
-            />
-          </SettingsGroupActions>
+          {inKYCMode && (
+            <SettingsGroupActions>
+              <ConfirmationButton
+                onConfirm={handleFormSubmit}
+                warningMessage="This information cannot be changed once submitted. Are you sure?"
+                buttonText="Submit for Review"
+                size="default"
+                confirmText="Submit"
+                disabled={!formState.isDirty}
+                loading={updateOrganization.isPending}
+                requireConfirmation={true}
+              />
+            </SettingsGroupActions>
+          )}
         </SettingsGroup>
       </form>
     </Form>

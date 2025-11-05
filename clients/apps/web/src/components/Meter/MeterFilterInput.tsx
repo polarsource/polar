@@ -2,7 +2,6 @@
 
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
@@ -17,19 +16,21 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { Plus, X } from 'lucide-react'
+import { PlusIcon, TrashIcon, XIcon } from 'lucide-react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
+import MeterFilterInputProperty from './MeterFilterInputProperty'
+import MeterFilterInputValue from './MeterFilterInputValue'
 
 const OPERATOR_DISPLAY_NAMES: Record<schemas['FilterOperator'], string> = {
-  eq: 'Equals',
-  ne: 'Not Equals',
-  gt: 'Greater Than',
-  gte: 'Greater Than or Equals',
-  lt: 'Less Than',
-  lte: 'Less Than or Equals',
-  like: 'Contains',
-  not_like: 'Does Not Contain',
+  eq: 'equals',
+  ne: 'does not equal',
+  gt: 'is greater than',
+  gte: 'is greater than or equal to',
+  lt: 'is less than',
+  lte: 'is less than or equal to',
+  like: 'contains',
+  not_like: 'does not contain',
 }
 
 const isFilterClause = (
@@ -38,11 +39,15 @@ const isFilterClause = (
   return 'property' in filter
 }
 
-const MeterFilterInput: React.FC<{
+const MeterFilterInput = ({
+  prefix,
+  removeParent,
+  organizationId,
+}: {
   prefix: string
   removeParent?: () => void
-  eventNames?: schemas['EventName'][]
-}> = ({ prefix, removeParent, eventNames }) => {
+  organizationId: string
+}) => {
   const { control, watch } = useFormContext()
   const conjunction = watch(`${prefix}.conjunction`) as string
   const {
@@ -59,28 +64,28 @@ const MeterFilterInput: React.FC<{
       {/* To make the UI more digest, we don't allow to add single clause at the root level */}
       {prefix !== 'filter' && (
         <div className="flex items-center justify-between gap-2">
-          <h3>Filter</h3>
+          <h3>Condition group</h3>
           <div className="flex flex-row items-center gap-x-2">
             <Button
               type="button"
               variant="secondary"
               size="sm"
-              className="h-8 w-8"
               onClick={() =>
                 append({ property: '', operator: 'eq', value: '' })
               }
             >
-              <Plus className="h-2 w-2" />
+              <PlusIcon className="mr-1.5 size-3" strokeWidth={1.5} />
+              <span>Add condition</span>
             </Button>
             {removeParent && (
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="h-8 w-8"
                 onClick={() => removeParent()}
               >
-                <X className="h-2 w-2" />
+                <XIcon className="mr-1.5 size-3" strokeWidth={1.5} />
+                Remove condition group
               </Button>
             )}
           </div>
@@ -97,10 +102,11 @@ const MeterFilterInput: React.FC<{
               <div className="flex w-full flex-row items-start gap-x-2">
                 <div
                   className={twMerge(
-                    'text-muted-foreground flex h-10 w-8 items-center justify-center',
+                    'text-muted-foreground flex h-10 w-8 flex-none items-center justify-center text-sm',
+                    index === 0 ? 'opacity-20' : '',
                   )}
                 >
-                  {index === 0 ? '•' : conjunction}
+                  {index === 0 ? '|' : conjunction}
                 </div>
                 <div className="grid grow grid-cols-[1fr_1fr_1fr_auto] items-start gap-x-2">
                   <FormField
@@ -113,11 +119,7 @@ const MeterFilterInput: React.FC<{
                       return (
                         <FormItem>
                           <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value || ''}
-                              autoComplete="off"
-                            />
+                            <MeterFilterInputProperty field={field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -131,8 +133,13 @@ const MeterFilterInput: React.FC<{
                       required: 'This field is required',
                     }}
                     render={({ field }) => {
+                      const allowedOperators =
+                        property === 'name'
+                          ? (['eq', 'ne', 'like', 'not_like'] as const)
+                          : Object.keys(OPERATOR_DISPLAY_NAMES)
+
                       return (
-                        <FormItem className="grow">
+                        <FormItem>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value || undefined}
@@ -141,13 +148,15 @@ const MeterFilterInput: React.FC<{
                               <SelectValue placeholder="Select operator" />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(OPERATOR_DISPLAY_NAMES).map(
-                                ([operator, displayName]) => (
-                                  <SelectItem key={operator} value={operator}>
-                                    {displayName}
-                                  </SelectItem>
-                                ),
-                              )}
+                              {allowedOperators.map((operator) => (
+                                <SelectItem key={operator} value={operator}>
+                                  {
+                                    OPERATOR_DISPLAY_NAMES[
+                                      operator as schemas['FilterOperator']
+                                    ]
+                                  }
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -162,40 +171,13 @@ const MeterFilterInput: React.FC<{
                       required: 'This field is required',
                     }}
                     render={({ field }) => {
-                      const mostCommonEventName = eventNames?.[0]?.name
-
                       return (
                         <FormItem className="grow">
                           <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value || ''}
-                              autoComplete="off"
-                              placeholder={
-                                property === 'name'
-                                  ? mostCommonEventName
-                                  : undefined
-                              }
-                              onChange={(e) => {
-                                const val = e.target.value
-                                // Try parsing as float
-                                const floatVal = parseFloat(val)
-                                if (!isNaN(floatVal)) {
-                                  field.onChange(floatVal)
-                                  return
-                                }
-                                // Try parsing as boolean
-                                if (val.toLowerCase() === 'true') {
-                                  field.onChange(true)
-                                  return
-                                }
-                                if (val.toLowerCase() === 'false') {
-                                  field.onChange(false)
-                                  return
-                                }
-                                // Fallback to string
-                                field.onChange(val)
-                              }}
+                            <MeterFilterInputValue
+                              field={field}
+                              property={property}
+                              organizationId={organizationId}
                             />
                           </FormControl>
                           <FormMessage />
@@ -209,12 +191,12 @@ const MeterFilterInput: React.FC<{
                       variant="secondary"
                       size="sm"
                       className={twMerge(
-                        'h-8 w-8',
+                        'size-10',
                         index === 0 ? 'invisible' : '',
                       )}
                       onClick={() => remove(index)}
                     >
-                      <X className="h-2 w-2" />
+                      <TrashIcon className="size-3" strokeWidth={1.5} />
                     </Button>
                   </div>
                 </div>
@@ -222,7 +204,7 @@ const MeterFilterInput: React.FC<{
             ) : (
               <div className="flex flex-col gap-4">
                 {index > 0 && (
-                  <div className="text-muted-foreground ml-4">
+                  <div className="text-muted-foreground w-12 pl-4 text-center text-sm">
                     {conjunction}
                   </div>
                 )}
@@ -232,7 +214,7 @@ const MeterFilterInput: React.FC<{
                     removeParent={
                       clauses.length > 1 ? () => remove(index) : undefined
                     }
-                    eventNames={eventNames}
+                    organizationId={organizationId}
                   />
                 </ShadowBox>
               </div>
@@ -245,6 +227,7 @@ const MeterFilterInput: React.FC<{
         <div className="flex justify-start">
           <Button
             type="button"
+            size="sm"
             variant="secondary"
             onClick={() =>
               append({
@@ -253,7 +236,8 @@ const MeterFilterInput: React.FC<{
               })
             }
           >
-            Add Condition Group
+            <PlusIcon className="mr-1.5 size-3" strokeWidth={1.5} />
+            Add condition group
           </Button>
         </div>
       )}

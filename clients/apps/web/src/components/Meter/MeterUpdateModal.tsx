@@ -3,6 +3,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
+import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
@@ -13,12 +14,14 @@ export interface MeterUpdateModalProps {
   meter: schemas['Meter']
   hide: () => void
   hasProcessedEvents: boolean
+  organizationId: string
 }
 
 export const MeterUpdateModal = ({
   meter: _meter,
   hide,
   hasProcessedEvents,
+  organizationId,
 }: MeterUpdateModalProps) => {
   const { data: meter } = useMeter(_meter.id, _meter)
   const form = useForm<schemas['MeterUpdate']>({
@@ -30,10 +33,17 @@ export const MeterUpdateModal = ({
   const { handleSubmit, setError } = form
   const updateMeter = useUpdateMeter(_meter.id)
   const { toast } = useToast()
+  const router = useRouter()
 
   const onSubmit = useCallback(
     async (body: schemas['MeterUpdate']) => {
-      const { data: meter, error } = await updateMeter.mutateAsync(body)
+      const allowedBody: schemas['MeterUpdate'] = hasProcessedEvents
+        ? {
+            name: body.name,
+          }
+        : body
+
+      const { data: meter, error } = await updateMeter.mutateAsync(allowedBody)
 
       if (error) {
         if (isValidationError(error.detail)) {
@@ -48,9 +58,11 @@ export const MeterUpdateModal = ({
         description: `Meter successfully updated.`,
       })
 
+      router.refresh()
+
       hide()
     },
-    [updateMeter, hide, toast, setError],
+    [router, hasProcessedEvents, updateMeter, hide, toast, setError],
   )
 
   if (!meter) return null
@@ -68,7 +80,11 @@ export const MeterUpdateModal = ({
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-8"
           >
-            <MeterForm />
+            <MeterForm
+              organizationId={organizationId}
+              readOnly={hasProcessedEvents}
+            />
+
             {hasProcessedEvents && (
               <Well className="gap-y-2 rounded-2xl p-6">
                 <WellHeader>Updating Meter</WellHeader>
@@ -82,11 +98,7 @@ export const MeterUpdateModal = ({
             )}
 
             <div className="flex flex-row items-center gap-4">
-              <Button
-                type="submit"
-                loading={updateMeter.isPending}
-                disabled={hasProcessedEvents}
-              >
+              <Button type="submit" loading={updateMeter.isPending}>
                 Update Meter
               </Button>
               <Button variant="secondary" onClick={hide}>

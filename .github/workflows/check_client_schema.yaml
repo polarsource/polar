@@ -137,7 +137,7 @@ jobs:
 
       - name: Generate client schema
         working-directory: ./clients/packages/client
-        run: openapi-typescript http://127.0.0.1:8000/openapi.json --enum-values -o ./src/v1.ts && prettier --write ./src/v1.ts
+        run: pnpm exec openapi-typescript http://127.0.0.1:8000/openapi.json --enum-values -o ./src/v1.ts && pnpm exec prettier --write ./src/v1.ts
 
       - name: Check for changes in v1.ts
         run: |

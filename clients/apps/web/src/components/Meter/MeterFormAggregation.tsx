@@ -83,8 +83,8 @@ const AggregationRadioItem = ({
       htmlFor={`aggregation-${option.value}`}
       className={`flex flex-col gap-3 rounded-lg border p-4 font-normal transition-colors ${
         isSelected
-          ? 'border-gray-300 bg-gray-50 dark:bg-gray-950/20'
-          : 'border-gray-100 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'
+          ? 'dark:bg-polar-700 dark:border-polar-600/50 border-gray-300 bg-gray-50'
+          : 'dark:border-polar-700 dark:hover:border-polar-700 dark:hover:bg-polar-700 dark:bg-polar-800 border-gray-100 hover:border-gray-300'
       }`}
     >
       <div className="flex items-start gap-3">

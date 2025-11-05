@@ -18,6 +18,7 @@ from polar.models.order import OrderBillingReason, OrderStatus
 from polar.order import sorting
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
+from polar.refund.schemas import RefundCreate
 from polar.refund.service import refund as refund_service
 
 from .. import formatters
@@ -479,7 +480,6 @@ async def refund(
         data = await request.form()
         try:
             form = RefundForm.model_validate_form(data)
-            from polar.refund.schemas import RefundCreate
 
             refund_create = RefundCreate(
                 order_id=order.id,

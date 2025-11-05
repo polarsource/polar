@@ -71,6 +71,11 @@ const customerEmails: {
     title: 'Subscription past due',
     description: 'Sent when a subscription payment fails and becomes overdue',
   },
+  {
+    key: 'subscription_renewal_reminder',
+    title: 'Subscription renewal reminder',
+    description: 'Sent 7 days before a yearly subscription renews automatically',
+  },
 ]
 
 const OrganizationCustomerEmailSettings: React.FC<

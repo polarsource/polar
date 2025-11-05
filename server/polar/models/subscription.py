@@ -169,6 +169,10 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
+    renewal_reminder_sent_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+
     scheduler_locked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )

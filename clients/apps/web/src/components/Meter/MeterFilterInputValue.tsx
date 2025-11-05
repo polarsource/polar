@@ -138,20 +138,6 @@ const TimestampInput = ({ field }: ValueInputProps) => {
   )
 }
 
-const SourceInput = ({ field }: ValueInputProps) => {
-  return (
-    <Select value={field.value || undefined} onValueChange={field.onChange}>
-      <SelectTrigger>
-        <SelectValue placeholder="Select source" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="system">System</SelectItem>
-        <SelectItem value="user">User</SelectItem>
-      </SelectContent>
-    </Select>
-  )
-}
-
 const MetadataInput = ({ field }: ValueInputProps) => {
   return (
     <Input
@@ -199,8 +185,6 @@ const MeterFilterInputValue = ({
       return <EventNameInput field={field} organizationId={organizationId} />
     case 'timestamp':
       return <TimestampInput field={field} />
-    case 'source':
-      return <SourceInput field={field} />
     default:
       return <MetadataInput field={field} />
   }

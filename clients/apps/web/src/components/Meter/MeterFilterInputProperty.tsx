@@ -11,14 +11,13 @@ import {
 import { useEffect, useState } from 'react'
 import { ControllerRenderProps } from 'react-hook-form'
 
-const STANDARD_FIELDS = ['name', 'timestamp', 'source'] as const
+const STANDARD_FIELDS = ['name', 'timestamp'] as const
 type StandardField = (typeof STANDARD_FIELDS)[number]
 type PropertyType = StandardField | 'metadata'
 
 const PROPERTY_DISPLAY_NAMES: Record<PropertyType, string> = {
   name: 'Name',
   timestamp: 'Timestamp',
-  source: 'Source',
   metadata: 'Metadata',
 }
 

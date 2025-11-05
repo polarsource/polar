@@ -30,6 +30,8 @@ def _get_function_arguments(
 ) -> Iterator[tuple[str, Any]]:
     signature = inspect.signature(f)
     for key, parameter in signature.parameters.items():
+        if key in {"self"}:
+            continue
         type_hint = parameter.annotation
         if get_origin(type_hint) is Unpack:
             type_hints_args = get_args(type_hint)

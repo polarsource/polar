@@ -47,15 +47,16 @@ const OrganizationNotificationSettings: React.FC<
       } else {
         setError('root', { message: error.detail })
       }
+
+      toast({
+        title: 'Notification Settings Update Failed',
+        description: `Error updating notification settings: ${error.detail}`,
+      })
+
       return
     }
 
     reset(data.notification_settings)
-
-    toast({
-      title: 'Notification Settings Updated',
-      description: `Notifications settings were updated successfully`,
-    })
   }
 
   useAutoSave({

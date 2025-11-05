@@ -42,13 +42,9 @@ export default function FeatureSettings({
         title: 'Feature Settings Update Failed',
         description: `Error updating feature settings: ${error.detail}`,
       })
+
       return
     } else {
-      toast({
-        title: 'Feature Settings Updated',
-        description: `Feature settings were updated successfully`,
-      })
-
       if (data?.feature_settings) {
         reset(data.feature_settings)
       }

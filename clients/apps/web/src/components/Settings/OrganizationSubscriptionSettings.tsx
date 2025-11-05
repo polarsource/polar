@@ -46,15 +46,16 @@ const OrganizationSubscriptionSettings: React.FC<
       } else {
         setError('root', { message: error.detail })
       }
+
+      toast({
+        title: 'Subscription Settings Update Failed',
+        description: `Error updating subscription settings: ${error.detail}`,
+      })
+
       return
     }
 
     reset(data.subscription_settings)
-
-    toast({
-      title: 'Subscription Settings Updated',
-      description: `Subscription settings were updated successfully`,
-    })
   }
 
   useAutoSave({

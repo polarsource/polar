@@ -484,7 +484,7 @@ async def refund(
             refund_create = RefundCreate(
                 order_id=order.id,
                 reason=form.reason,
-                amount=form.amount,
+                amount=int(form.amount * 100),
                 comment=form.comment,
                 revoke_benefits=form.revoke_benefits,
             )

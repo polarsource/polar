@@ -185,7 +185,6 @@ export const AddPaymentMethodModal = ({
 
   return (
     <div className="flex flex-col gap-6 p-8">
-      <h3 className="text-xl">Add Payment Method</h3>
       <Elements
         stripe={stripePromise}
         options={{

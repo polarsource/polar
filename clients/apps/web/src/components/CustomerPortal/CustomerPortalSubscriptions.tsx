@@ -5,6 +5,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 import { useCallback, useMemo, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
@@ -66,7 +67,11 @@ export const InactiveSubscriptionsOverview = ({
   api,
   customerSessionToken,
 }: SubscriptionsOverviewProps) => {
-  const themingPreset = getThemePreset(organization.slug)
+  const theme = useTheme()
+  const themingPreset = getThemePreset(
+    organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
+  )
 
   const [selectedSubscription, setSelectedSubscription] = useState<
     schemas['CustomerSubscription'] | null

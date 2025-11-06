@@ -10,6 +10,7 @@ import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
+import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -22,7 +23,11 @@ export default function ClientPage({
   invitationToken?: string
 }) {
   const router = useRouter()
-  const themePreset = getThemePreset(organization.slug)
+  const theme = useTheme()
+  const themePreset = getThemePreset(
+    organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
+  )
   const [claimingState, setClaimingState] = useState<
     'idle' | 'claiming' | 'redirecting'
   >('idle')

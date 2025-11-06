@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
@@ -62,13 +63,17 @@ const ClientPage = ({
     [sessionRequest, setError, router, organization],
   )
 
-  const themingPreset = getThemePreset(organization.slug)
+  const theme = useTheme()
+  const themePreset = getThemePreset(
+    organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
+  )
 
   return (
     <ShadowBox
       className={twMerge(
         'flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24',
-        themingPreset.polar.wellSecondary,
+        themePreset.polar.wellSecondary,
       )}
     >
       <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
@@ -127,7 +132,7 @@ const ClientPage = ({
             <Button
               type="submit"
               size="lg"
-              className={twMerge('w-full', themingPreset.polar.button)}
+              className={twMerge('w-full', themePreset.polar.button)}
               loading={sessionRequest.isPending}
               disabled={sessionRequest.isPending || code.length !== 6}
             >

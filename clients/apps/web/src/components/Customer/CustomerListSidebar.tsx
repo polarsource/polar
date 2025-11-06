@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useCallback, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -37,6 +37,7 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
   organization,
 }) => {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const [sorting, setSorting] = useQueryState(
     'sorting',
@@ -154,33 +155,38 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
           </div>
         </div>
         <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
-          {customers.map((customer) => (
-            <Link
-              key={customer.id}
-              href={`/dashboard/${organization.slug}/customers/${customer.id}`}
-              className={twMerge(
-                'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
-                selectedCustomerId === customer.id &&
-                  'dark:bg-polar-800 bg-gray-100',
-              )}
-            >
-              <div className="flex flex-row items-center gap-3 px-4 py-3">
-                <Avatar
-                  className="h-8 w-8"
-                  avatar_url={customer.avatar_url}
-                  name={customer.name || customer.email}
-                />
-                <div className="flex min-w-0 flex-col">
-                  <div className="w-full truncate text-sm">
-                    {customer.name ?? '—'}
-                  </div>
-                  <div className="w-full truncate text-xs text-gray-500 dark:text-gray-500">
-                    {customer.email}
+          {customers.map((customer) => {
+            const queryString = searchParams.toString()
+            const customerHref = `/dashboard/${organization.slug}/customers/${customer.id}${queryString ? `?${queryString}` : ''}`
+
+            return (
+              <Link
+                key={customer.id}
+                href={customerHref}
+                className={twMerge(
+                  'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
+                  selectedCustomerId === customer.id &&
+                    'dark:bg-polar-800 bg-gray-100',
+                )}
+              >
+                <div className="flex flex-row items-center gap-3 px-4 py-3">
+                  <Avatar
+                    className="h-8 w-8"
+                    avatar_url={customer.avatar_url}
+                    name={customer.name || customer.email}
+                  />
+                  <div className="flex min-w-0 flex-col">
+                    <div className="w-full truncate text-sm">
+                      {customer.name ?? '—'}
+                    </div>
+                    <div className="w-full truncate text-xs text-gray-500 dark:text-gray-500">
+                      {customer.email}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
           {hasNextPage && (
             <div
               ref={loadingRef}

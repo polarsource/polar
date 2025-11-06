@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -33,6 +33,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
   organization,
 }) => {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const [sorting, setSorting] = useQueryState(
     'sorting',
@@ -166,32 +167,37 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
         />
       </div>
       <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
-        {meters.map((meter) => (
-          <Link
-            key={meter.id}
-            href={`/dashboard/${organization.slug}/usage-billing/meters/${meter.id}`}
-            className={twMerge(
-              'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
-              selectedMeterId === meter.id && 'dark:bg-polar-800 bg-gray-100',
-            )}
-          >
-            <div className="flex min-w-0 flex-col gap-y-1 px-6 py-2">
-              <div className="flex items-center gap-x-2">
-                {meter.archived_at && archivedFilter === 'all' && (
-                  <Status
-                    className="bg-red-50 text-xs font-medium text-red-500 dark:bg-red-950 dark:text-red-500"
-                    status="Archived"
-                  />
-                )}
+        {meters.map((meter) => {
+          const queryString = searchParams.toString()
+          const meterHref = `/dashboard/${organization.slug}/usage-billing/meters/${meter.id}${queryString ? `?${queryString}` : ''}`
 
-                <div className="truncate text-sm">{meter.name}</div>
+          return (
+            <Link
+              key={meter.id}
+              href={meterHref}
+              className={twMerge(
+                'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
+                selectedMeterId === meter.id && 'dark:bg-polar-800 bg-gray-100',
+              )}
+            >
+              <div className="flex min-w-0 flex-col gap-y-1 px-6 py-2">
+                <div className="flex items-center gap-x-2">
+                  {meter.archived_at && archivedFilter === 'all' && (
+                    <Status
+                      className="bg-red-50 text-xs font-medium text-red-500 dark:bg-red-950 dark:text-red-500"
+                      status="Archived"
+                    />
+                  )}
+
+                  <div className="truncate text-sm">{meter.name}</div>
+                </div>
+                <div className="w-full truncate text-xs text-gray-500 capitalize dark:text-gray-500">
+                  {meter.aggregation.func}
+                </div>
               </div>
-              <div className="w-full truncate text-xs text-gray-500 capitalize dark:text-gray-500">
-                {meter.aggregation.func}
-              </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          )
+        })}
         {hasNextPage && (
           <div
             ref={loadingRef}

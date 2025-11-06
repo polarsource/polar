@@ -59,7 +59,7 @@ const DatePicker: React.FC<DatePickerProps> = (props) => {
           selected={internalValue}
           onSelect={onChange}
           disabled={disabled}
-          initialFocus
+          autoFocus
         />
       </PopoverContent>
     </Popover>

@@ -18,7 +18,7 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import {
   parseAsBoolean,
   parseAsString,
@@ -34,6 +34,7 @@ export const BenefitListSidebar = ({
   organization: schemas['Organization']
 }) => {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const [sorting, setSorting] = useQueryState(
     'sorting',
@@ -143,31 +144,36 @@ export const BenefitListSidebar = ({
           />
         </div>
         <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
-          {benefits.map((benefit) => (
-            <Link
-              key={benefit.id}
-              href={`/dashboard/${organization.slug}/benefits/${benefit.id}`}
-              className={twMerge(
-                'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
-                selectedBenefitId === benefit.id &&
-                  'dark:bg-polar-800 bg-gray-100',
-              )}
-            >
-              <div className="flex flex-row items-center gap-3 px-4 py-3">
-                <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-gray-200 text-2xl text-black dark:text-white">
-                  {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
-                </span>
-                <div className="flex min-w-0 flex-col">
-                  <div className="w-full truncate text-sm">
-                    {benefit.description}
-                  </div>
-                  <div className="w-full truncate text-xs text-gray-500 dark:text-gray-500">
-                    {benefitsDisplayNames[benefit.type]}
+          {benefits.map((benefit) => {
+            const queryString = searchParams.toString()
+            const benefitHref = `/dashboard/${organization.slug}/benefits/${benefit.id}${queryString ? `?${queryString}` : ''}`
+
+            return (
+              <Link
+                key={benefit.id}
+                href={benefitHref}
+                className={twMerge(
+                  'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
+                  selectedBenefitId === benefit.id &&
+                    'dark:bg-polar-800 bg-gray-100',
+                )}
+              >
+                <div className="flex flex-row items-center gap-3 px-4 py-3">
+                  <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-gray-200 text-2xl text-black dark:text-white">
+                    {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
+                  </span>
+                  <div className="flex min-w-0 flex-col">
+                    <div className="w-full truncate text-sm">
+                      {benefit.description}
+                    </div>
+                    <div className="w-full truncate text-xs text-gray-500 dark:text-gray-500">
+                      {benefitsDisplayNames[benefit.type]}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
           {hasNextPage && (
             <div
               ref={loadingRef}

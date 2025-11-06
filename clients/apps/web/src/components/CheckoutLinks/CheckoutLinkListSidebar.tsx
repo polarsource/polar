@@ -15,7 +15,7 @@ import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   parseAsArrayOf,
   parseAsBoolean,
@@ -33,6 +33,7 @@ export const CheckoutLinkListSidebar = ({
 }) => {
   const pathname = usePathname()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [productIds, setProductIds] = useQueryState(
     'productId',
@@ -141,10 +142,13 @@ export const CheckoutLinkListSidebar = ({
                 ? checkoutLink.products[0].name
                 : `${checkoutLink.products.length} Products`
 
+            const queryString = searchParams.toString()
+            const checkoutLinkHref = `/dashboard/${organization.slug}/products/checkout-links/${checkoutLink.id}${queryString ? `?${queryString}` : ''}`
+
             return (
               <Link
                 key={checkoutLink.id}
-                href={`/dashboard/${organization.slug}/products/checkout-links/${checkoutLink.id}`}
+                href={checkoutLinkHref}
                 className={twMerge(
                   'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
                   selectedCheckoutLinkId === checkoutLink.id &&

@@ -48,8 +48,8 @@ export const Events = () => {
     const profit = events.reduce((acc, event) => {
       return (
         acc +
-        (event.cost?.amount ?? 0) +
-        (event.revenue?.amount ? -event.revenue.amount : 0)
+        (event.cost?.amount ? -event.cost.amount : 0) +
+        (event.revenue?.amount ? event.revenue.amount : 0)
       )
     }, 0)
 

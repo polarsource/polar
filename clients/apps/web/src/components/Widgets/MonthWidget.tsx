@@ -144,7 +144,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
                           day.orders > 0 &&
                             'dark:bg-polar-700 dark:text-polar-500 bg-gray-300 text-gray-500',
                           isToday(day.timestamp) &&
-                            'bg-blue-500 text-white dark:bg-blue-500 dark:text-white',
+                            'bg-blue dark:bg-blue text-white dark:text-white',
                           isPreviousDay && '',
                         )}
                       >
@@ -161,7 +161,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
                             className={twMerge(
                               'dark:text-polar-700 relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 text-sm text-gray-200',
                               isToday(day.timestamp)
-                                ? 'border-blue-500'
+                                ? 'border-blue'
                                 : 'dark:border-polar-700 border-gray-200',
                             )}
                           >

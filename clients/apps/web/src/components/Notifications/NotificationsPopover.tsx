@@ -93,7 +93,7 @@ export const NotificationsPopover = () => {
             aria-hidden="true"
           />
           {showBadge && (
-            <div className="dark:border-polar-700 absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-blue-500" />
+            <div className="dark:border-polar-700 bg-blue absolute top-1 right-1 h-1.5 w-1.5 rounded-full" />
           )}
         </PopoverTrigger>
       </Button>

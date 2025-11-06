@@ -43,7 +43,7 @@ const GenericAccountBanner: React.FC<{
           </Link>
         }
       >
-        <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
+        <Icon classes="bg-blue p-1" icon={<AccountTypeIcon />} />
         <span className="text-sm">
           Continue the setup of your{' '}
           <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}</strong>{' '}

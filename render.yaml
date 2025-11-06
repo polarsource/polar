@@ -36,6 +36,8 @@ services:
         value: '["polar.sh", "backoffice.polar.sh"]'
       - key: POLAR_CORS_ORIGINS
         value: '["https://polar.sh", "https://github.com", "https://docs.polar.sh"]'
+      - key: DATABASE_POOL_SIZE
+        value: 20
       - key: POLAR_POSTGRES_DATABASE
         fromDatabase:
           name: db

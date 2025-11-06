@@ -29,6 +29,7 @@ export default async function Page(props: {
         organization_id: organization.id,
         limit: 1,
         sorting: ['-created_at'],
+        is_archived: false,
       },
     },
   })

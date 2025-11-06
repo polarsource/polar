@@ -223,7 +223,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
           role="combobox"
           aria-expanded={open}
           className={twMerge(
-            'ring-offset-background placeholder:text-muted-foreground focus:ring-ring dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 flex h-10 w-full! flex-row items-center justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-normal shadow-xs transition-colors hover:bg-gray-100 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
+            'ring-offset-background placeholder:text-muted-foreground focus:ring-ring dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 dark:hover:border-polar-700 flex h-10 w-full! flex-row items-center justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-normal shadow-xs transition-colors hover:border-gray-300 hover:bg-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
             className,
           )}
           wrapperClassNames="justify-between w-full min-w-[200px]"
@@ -254,7 +254,8 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
                     value.length > 0 ? selectedProducts || [] : []
                   }
                 />
-                <CommandSeparator />
+                {groupedProducts.one_time.length > 0 &&
+                  groupedProducts.recurring.length > 0 && <CommandSeparator />}
                 <ProductsCommandGroup
                   groupedProducts={groupedProducts}
                   productPriceType="recurring"

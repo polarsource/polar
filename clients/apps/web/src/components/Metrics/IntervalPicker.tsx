@@ -22,14 +22,12 @@ const getIntervalLabel = (interval: schemas['TimeInterval']) => {
   }
 }
 
-interface IntervalPickerProps {
-  interval: schemas['TimeInterval']
-  onChange: (interval: schemas['TimeInterval']) => void
-}
-
-const IntervalPicker: React.FC<IntervalPickerProps> = ({
+const IntervalPicker = ({
   interval,
   onChange,
+}: {
+  interval: schemas['TimeInterval']
+  onChange: (interval: schemas['TimeInterval']) => void
 }) => {
   return (
     <Select value={interval} onValueChange={onChange}>
@@ -38,7 +36,7 @@ const IntervalPicker: React.FC<IntervalPickerProps> = ({
       </SelectTrigger>
       <SelectContent>
         {Object.values(enums.timeIntervalValues).map((interval) => (
-          <SelectItem value={interval} key={interval} className="font-medium">
+          <SelectItem value={interval} key={interval}>
             {getIntervalLabel(interval)}
           </SelectItem>
         ))}

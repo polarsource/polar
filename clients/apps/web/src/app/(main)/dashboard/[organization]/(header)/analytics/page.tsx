@@ -2,7 +2,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas, unwrap } from '@polar-sh/client'
-import { addDays, max, min, subMonths } from 'date-fns'
+import { addDays, endOfDay, max, min, subMonths } from 'date-fns'
 import { RedirectType, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -53,7 +53,7 @@ export default async function Page(props: {
     ? fromISODate(searchParams.start_date)
     : defaultStartDate
   const endDate = searchParams.end_date
-    ? fromISODate(searchParams.end_date)
+    ? endOfDay(fromISODate(searchParams.end_date))
     : defaultEndDate
 
   const limits = await unwrap(api.GET('/v1/metrics/limits'))

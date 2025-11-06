@@ -14,7 +14,7 @@ import {
   StripeError,
 } from '@stripe/stripe-js'
 import { WalletCards } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface OrderPaymentRetryProps {
   order: schemas['CustomerOrder']
@@ -65,213 +65,25 @@ export const OrderPaymentRetry = ({
     cleanupPolling()
   }
 
-  const handlePaymentCompletion = (success: boolean, message?: string) => {
-    setIsProcessing(false)
-    setIsPolling(false)
-    setPaymentComplete(true)
+  const handlePaymentCompletion = useCallback(
+    (success: boolean, message?: string) => {
+      setIsProcessing(false)
+      setIsPolling(false)
+      setPaymentComplete(true)
 
-    if (success) {
-      onSuccess()
-    } else {
-      setShowRetryButton(true)
-      if (message) {
-        onError(message)
+      if (success) {
+        onSuccess()
+      } else {
+        setShowRetryButton(true)
+        if (message) {
+          onError(message)
+        }
       }
-    }
-  }
+    },
+    [onSuccess, onError],
+  )
 
-  const handlePaymentStatus = async (result: any) => {
-    switch (result.status) {
-      case 'succeeded':
-        handlePaymentCompletion(true)
-        break
-
-      case 'requires_action':
-        await handlePaymentAction(result)
-        break
-
-      default:
-        handlePaymentCompletion(
-          false,
-          result.error || 'Payment failed, please try again.',
-        )
-    }
-  }
-
-  const handlePaymentAction = async (result: any) => {
-    if (!stripe) {
-      handlePaymentCompletion(
-        false,
-        'Stripe instance is required for payment actions',
-      )
-      return
-    }
-
-    if (!result.client_secret) {
-      handlePaymentCompletion(
-        false,
-        'Payment requires additional authentication',
-      )
-      return
-    }
-
-    const { error } = await stripe.handleNextAction({
-      clientSecret: result.client_secret,
-    })
-
-    if (error) {
-      handlePaymentCompletion(
-        false,
-        error.message || 'Payment authentication failed',
-      )
-    } else {
-      pollForWebhookResult()
-    }
-  }
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      cleanupPolling()
-    }
-  }, [])
-
-  // Auto-trigger payment for saved payment methods
-  useEffect(() => {
-    if (paymentMethodId && !hasSubmitted && !isProcessing && !isPolling) {
-      setHasSubmitted(true)
-      handleSavedPaymentMethod()
-    }
-  }, [paymentMethodId, hasSubmitted, isProcessing, isPolling])
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
-    if (isProcessing || isPolling || hasSubmitted) {
-      return
-    }
-
-    if (!stripe || !elements) {
-      return
-    }
-
-    setIsProcessing(true)
-    setHasSubmitted(true)
-
-    const { error: submitError } = await elements.submit()
-
-    if (submitError) {
-      const errorMessage =
-        submitError.message ||
-        'Failed to process payment details. Please check your information and try again.'
-      handlePaymentCompletion(false, errorMessage)
-      return
-    }
-
-    let confirmationToken: ConfirmationToken | undefined
-    let error: StripeError | undefined
-    try {
-      const confirmationTokenResponse = await stripe.createConfirmationToken({
-        elements,
-        params: {
-          payment_method_data: {
-            // Stripe requires fields to be explicitly set to null if they are not provided
-            billing_details: {
-              name: null,
-              email: null,
-              address: {
-                line1: null,
-                line2: null,
-                postal_code: null,
-                city: null,
-                state: null,
-                country: null,
-              },
-              phone: null,
-            },
-          },
-        },
-      })
-      confirmationToken = confirmationTokenResponse.confirmationToken
-      error = confirmationTokenResponse.error
-    } catch (err) {
-      console.error('Failed to create confirmation token:', {
-        orderId: order.id,
-        error: err,
-      })
-      handlePaymentCompletion(
-        false,
-        'Failed to create payment token. Please try again.',
-      )
-      return
-    }
-
-    if (!confirmationToken || error) {
-      const errorMessage =
-        error?.message ||
-        'Failed to process payment. Please check your payment information and try again.'
-      handlePaymentCompletion(false, errorMessage)
-      return
-    }
-
-    try {
-      const { data: result, error: confirmPaymentError } =
-        await confirmOrderPayment.mutateAsync({
-          orderId: order.id,
-          confirmation_token_id: confirmationToken.id,
-        })
-
-      if (confirmPaymentError) {
-        const errorMessage =
-          confirmPaymentError.detail || 'Payment failed. Please try again.'
-        handlePaymentCompletion(false, errorMessage)
-        return
-      }
-
-      if (result) {
-        await handlePaymentStatus(result)
-      }
-    } catch (err) {
-      handlePaymentCompletion(
-        false,
-        'Network error occurred. Please check your connection and try again.',
-      )
-    }
-  }
-
-  const handleSavedPaymentMethod = async () => {
-    if (isProcessing || isPolling || !paymentMethodId) {
-      return
-    }
-
-    setIsProcessing(true)
-
-    try {
-      const { data: result, error: confirmPaymentError } =
-        await confirmOrderPayment.mutateAsync({
-          orderId: order.id,
-          payment_method_id: paymentMethodId,
-        })
-
-      if (confirmPaymentError) {
-        const errorMessage =
-          confirmPaymentError.detail || 'Payment failed. Please try again.'
-        handlePaymentCompletion(false, errorMessage)
-        return
-      }
-
-      if (result) {
-        await handlePaymentStatus(result)
-      }
-    } catch (err) {
-      handlePaymentCompletion(
-        false,
-        'Network error occurred. Please check your connection and try again.',
-      )
-    }
-  }
-
-  const pollForWebhookResult = () => {
+  const pollForWebhookResult = useCallback(() => {
     setIsPolling(true)
     let attemptCount = 0
     const maxAttempts = 150 // 5 minutes at 2-second intervals
@@ -329,7 +141,231 @@ export const OrderPaymentRetry = ({
         }
       }
     }, 2000) // Check every 2 seconds
-  }
+  }, [checkPaymentStatus, order.id, handlePaymentCompletion])
+
+  const handlePaymentAction = useCallback(
+    async (result: any) => {
+      if (!stripe) {
+        handlePaymentCompletion(
+          false,
+          'Stripe instance is required for payment actions',
+        )
+        return
+      }
+
+      if (!result.client_secret) {
+        handlePaymentCompletion(
+          false,
+          'Payment requires additional authentication',
+        )
+        return
+      }
+
+      const { error } = await stripe.handleNextAction({
+        clientSecret: result.client_secret,
+      })
+
+      if (error) {
+        handlePaymentCompletion(
+          false,
+          error.message || 'Payment authentication failed',
+        )
+      } else {
+        pollForWebhookResult()
+      }
+    },
+    [stripe, handlePaymentCompletion, pollForWebhookResult],
+  )
+
+  const handlePaymentStatus = useCallback(
+    async (result: any) => {
+      switch (result.status) {
+        case 'succeeded':
+          handlePaymentCompletion(true)
+          break
+
+        case 'requires_action':
+          await handlePaymentAction(result)
+          break
+
+        default:
+          handlePaymentCompletion(
+            false,
+            result.error || 'Payment failed, please try again.',
+          )
+      }
+    },
+    [handlePaymentCompletion, handlePaymentAction],
+  )
+
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+
+      if (isProcessing || isPolling || hasSubmitted) {
+        return
+      }
+
+      if (!stripe || !elements) {
+        return
+      }
+
+      setIsProcessing(true)
+      setHasSubmitted(true)
+
+      const { error: submitError } = await elements.submit()
+
+      if (submitError) {
+        const errorMessage =
+          submitError.message ||
+          'Failed to process payment details. Please check your information and try again.'
+        handlePaymentCompletion(false, errorMessage)
+        return
+      }
+
+      let confirmationToken: ConfirmationToken | undefined
+      let error: StripeError | undefined
+      try {
+        const confirmationTokenResponse = await stripe.createConfirmationToken({
+          elements,
+          params: {
+            payment_method_data: {
+              // Stripe requires fields to be explicitly set to null if they are not provided
+              billing_details: {
+                name: null,
+                email: null,
+                address: {
+                  line1: null,
+                  line2: null,
+                  postal_code: null,
+                  city: null,
+                  state: null,
+                  country: null,
+                },
+                phone: null,
+              },
+            },
+          },
+        })
+        confirmationToken = confirmationTokenResponse.confirmationToken
+        error = confirmationTokenResponse.error
+      } catch (err) {
+        console.error('Failed to create confirmation token:', {
+          orderId: order.id,
+          error: err,
+        })
+        handlePaymentCompletion(
+          false,
+          'Failed to create payment token. Please try again.',
+        )
+        return
+      }
+
+      if (!confirmationToken || error) {
+        const errorMessage =
+          error?.message ||
+          'Failed to process payment. Please check your payment information and try again.'
+        handlePaymentCompletion(false, errorMessage)
+        return
+      }
+
+      try {
+        const { data: result, error: confirmPaymentError } =
+          await confirmOrderPayment.mutateAsync({
+            orderId: order.id,
+            confirmation_token_id: confirmationToken.id,
+          })
+
+        if (confirmPaymentError) {
+          const errorMessage =
+            confirmPaymentError.detail || 'Payment failed. Please try again.'
+          handlePaymentCompletion(false, errorMessage)
+          return
+        }
+
+        if (result) {
+          await handlePaymentStatus(result)
+        }
+      } catch (err) {
+        handlePaymentCompletion(
+          false,
+          'Network error occurred. Please check your connection and try again.',
+        )
+      }
+    },
+    [
+      isProcessing,
+      isPolling,
+      hasSubmitted,
+      stripe,
+      elements,
+      order.id,
+      confirmOrderPayment,
+      handlePaymentCompletion,
+      handlePaymentStatus,
+    ],
+  )
+
+  const handleSavedPaymentMethod = useCallback(async () => {
+    if (isProcessing || isPolling || !paymentMethodId) {
+      return
+    }
+
+    setIsProcessing(true)
+
+    try {
+      const { data: result, error: confirmPaymentError } =
+        await confirmOrderPayment.mutateAsync({
+          orderId: order.id,
+          payment_method_id: paymentMethodId,
+        })
+
+      if (confirmPaymentError) {
+        const errorMessage =
+          confirmPaymentError.detail || 'Payment failed. Please try again.'
+        handlePaymentCompletion(false, errorMessage)
+        return
+      }
+
+      if (result) {
+        await handlePaymentStatus(result)
+      }
+    } catch (err) {
+      handlePaymentCompletion(
+        false,
+        'Network error occurred. Please check your connection and try again.',
+      )
+    }
+  }, [
+    isProcessing,
+    isPolling,
+    paymentMethodId,
+    confirmOrderPayment,
+    order.id,
+    handlePaymentCompletion,
+    handlePaymentStatus,
+  ])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanupPolling()
+    }
+  }, [])
+
+  // Auto-trigger payment for saved payment methods
+  useEffect(() => {
+    if (paymentMethodId && !hasSubmitted && !isProcessing && !isPolling) {
+      setHasSubmitted(true)
+      handleSavedPaymentMethod()
+    }
+  }, [
+    paymentMethodId,
+    hasSubmitted,
+    isProcessing,
+    isPolling,
+    handleSavedPaymentMethod,
+  ])
 
   return (
     <div className="space-y-4">

@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
@@ -51,7 +52,11 @@ const ClientPage = ({
     [sessionRequest, setError, router, organization],
   )
 
-  const themingPreset = getThemePreset(organization.slug)
+  const theme = useTheme()
+  const themingPreset = getThemePreset(
+    organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
+  )
 
   return (
     <ShadowBox

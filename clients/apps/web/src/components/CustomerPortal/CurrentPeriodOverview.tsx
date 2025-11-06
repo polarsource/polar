@@ -2,6 +2,7 @@ import { useCustomerSubscriptionChargePreview } from '@/hooks/queries/customerPo
 import { formatCurrency } from '@/utils/formatters'
 import { Client, schemas } from '@polar-sh/client'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 import { twMerge } from 'tailwind-merge'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 
@@ -14,7 +15,11 @@ export const CurrentPeriodOverview = ({
   subscription,
   api,
 }: CurrentPeriodOverviewProps) => {
-  const themePreset = getThemePreset(subscription.product.organization.slug)
+  const theme = useTheme()
+  const themePreset = getThemePreset(
+    subscription.product.organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
+  )
 
   const { data: subscriptionPreview } = useCustomerSubscriptionChargePreview(
     api,

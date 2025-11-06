@@ -18,6 +18,7 @@ jobs:
     env:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
+      PYTHONHASHSEED: 0
 
     services:
       postgres:

@@ -126,8 +126,11 @@ class TestBackfillOrderEvents:
 
         refunded_events = [e for e in events if e.name == SystemEvent.order_refunded]
         assert len(refunded_events) == 2
-        assert refunded_events[0].timestamp == refund_1.created_at
-        assert refunded_events[1].timestamp == refund_2.created_at
+
+        # Events should have timestamps matching the refunds, but order may vary
+        event_timestamps = {e.timestamp for e in refunded_events}
+        refund_timestamps = {refund_1.created_at, refund_2.created_at}
+        assert event_timestamps == refund_timestamps
 
     async def test_skips_orders_with_existing_events(
         self,

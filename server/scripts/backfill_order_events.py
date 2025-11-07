@@ -1,5 +1,6 @@
 import asyncio
 import logging.config
+import uuid
 from collections.abc import Sequence
 from functools import wraps
 from typing import Any
@@ -39,7 +40,6 @@ async def _build_events_for_orders(
     session: AsyncSession, orders: Sequence[Order]
 ) -> list[dict[str, Any]]:
     """Build events for a batch of orders using order and refund timestamps."""
-    import uuid
 
     order_ids = [order.id for order in orders]
     orders_by_id = {order.id: order for order in orders}

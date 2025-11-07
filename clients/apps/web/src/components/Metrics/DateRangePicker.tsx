@@ -12,6 +12,7 @@ import {
   startOfMonth,
   startOfToday,
   startOfWeek,
+  startOfYear,
   startOfYesterday,
   subMonths,
   subYears,
@@ -70,13 +71,13 @@ const intervals = (
   {
     slug: 'thisYear',
     label: 'This Year',
-    value: [endOfYear(subYears(new Date(), 1)), endOfYear(new Date())],
+    value: [startOfYear(new Date()), endOfYear(new Date())],
   },
   {
     slug: 'lastYear',
     label: 'Last Year',
     value: [
-      endOfYear(subYears(new Date(), 2)),
+      startOfYear(subYears(new Date(), 1)),
       endOfYear(subYears(new Date(), 1)),
     ],
   },
@@ -91,11 +92,15 @@ const dateToInterval = (
   date: DateRange,
   organization: schemas['Organization'],
 ) => {
+  // Compare dates by their date-only representation (ignoring time)
+  // to handle cases where times differ after roundtripping through query params
+  const fromDate = format(date.from, 'yyyy-MM-dd')
+  const toDate = format(date.to, 'yyyy-MM-dd')
+
   return intervals(organization).find((interval) => {
-    return (
-      date.from.toISOString() === interval.value[0].toISOString() &&
-      date.to.toISOString() === interval.value[1].toISOString()
-    )
+    const intervalFromDate = format(interval.value[0], 'yyyy-MM-dd')
+    const intervalToDate = format(interval.value[1], 'yyyy-MM-dd')
+    return fromDate === intervalFromDate && toDate === intervalToDate
   })
 }
 

@@ -10,11 +10,32 @@ import IntervalPicker, {
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { ParsedMetricsResponse, useMetrics, useProducts } from '@/hooks/queries'
+import { useEventHierarchyStats } from '@/hooks/queries/events'
+import {
+  DataTableSortingState,
+  parseSearchParams,
+  serializeSearchParams,
+} from '@/utils/datatable'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { useRouter } from 'next/navigation'
+import {
+  DataTable,
+  DataTableColumnDef,
+  DataTableColumnHeader,
+} from '@polar-sh/ui/components/atoms/DataTable'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+const formatCost = (value: string | undefined): string => {
+  if (!value) return '$0.00'
+  const numValue = parseFloat(value)
+  return `$${numValue.toFixed(3)}`
+}
+
+const formatOccurrences = (value: number): string => {
+  return value.toLocaleString('en-US')
+}
 
 export default function ClientPage({
   organization,
@@ -32,6 +53,11 @@ export default function ClientPage({
   productId?: string[]
 }) {
   const router = useRouter()
+  const searchParamsMap = useSearchParams()
+  const searchParamsObj = Object.fromEntries(searchParamsMap.entries())
+  const { sorting: costSorting } = parseSearchParams(searchParamsObj, [
+    { id: 'total', desc: true },
+  ])
 
   const minDate = useMemo(() => fromISODate(limits.min_date), [limits])
 
@@ -187,6 +213,17 @@ export default function ClientPage({
     ]
   }, [hasRecurringProducts, hasOneTimeProducts])
 
+  const sortingParam = useMemo(() => {
+    if (costSorting.length === 0) return ['-total']
+    return costSorting.map((s) => (s.desc ? `-${s.id}` : s.id))
+  }, [costSorting])
+
+  const { data: costData, isLoading: costDataLoading } = useEventHierarchyStats(
+    organization.id,
+    ['_cost.amount'],
+    sortingParam,
+  )
+
   return (
     <DashboardBody
       wide
@@ -290,6 +327,98 @@ export default function ClientPage({
                 data={data}
                 interval={interval}
               />
+            )}
+
+            {organization.feature_settings?.revops_enabled && (
+              <div className="flex flex-col gap-y-6">
+                <h3 className="text-2xl">Event Costs</h3>
+                <DataTable
+              data={costData || []}
+              isLoading={costDataLoading}
+              sorting={costSorting}
+              onSortingChange={(updaterOrValue) => {
+                const updatedSorting =
+                  typeof updaterOrValue === 'function'
+                    ? updaterOrValue(costSorting)
+                    : updaterOrValue
+
+                const params = getSearchParams(
+                  { from: startDate, to: endDate },
+                  interval,
+                  productId,
+                )
+                const sortingParams = serializeSearchParams(
+                  { pageIndex: 0, pageSize: 100 },
+                  updatedSorting,
+                )
+                const combinedParams = new URLSearchParams([...params, ...sortingParams])
+                router.push(`/dashboard/${organization.slug}/analytics?${combinedParams}`)
+              }}
+              columns={
+                [
+                  {
+                    accessorKey: 'name',
+                    enableSorting: true,
+                    header: ({ column }) => (
+                      <DataTableColumnHeader column={column} title="Name" />
+                    ),
+                    cell: ({ row }) => (
+                      <span className="font-medium">{row.original.name}</span>
+                    ),
+                  },
+                  {
+                    id: 'total',
+                    accessorFn: (row) => row.totals?.['_cost_amount'],
+                    enableSorting: true,
+                    header: ({ column }) => (
+                      <DataTableColumnHeader column={column} title="Total Cost" />
+                    ),
+                    cell: ({ row }) =>
+                      formatCost(row.original.totals?.['_cost_amount']),
+                  },
+                {
+                  accessorKey: 'occurrences',
+                  enableSorting: true,
+                  header: ({ column }) => (
+                    <DataTableColumnHeader column={column} title="Occurrences" />
+                  ),
+                  cell: ({ row }) =>
+                    formatOccurrences(row.original.occurrences),
+                },
+                  {
+                    id: 'average',
+                    accessorFn: (row) => row.averages?.['_cost_amount'],
+                    enableSorting: true,
+                    header: ({ column }) => (
+                      <DataTableColumnHeader column={column} title="Average Cost" />
+                    ),
+                    cell: ({ row }) =>
+                      formatCost(row.original.averages?.['_cost_amount']),
+                  },
+                  {
+                    id: 'p95',
+                    accessorFn: (row) => row.p95?.['_cost_amount'],
+                    enableSorting: true,
+                    header: ({ column }) => (
+                      <DataTableColumnHeader column={column} title="p95 Cost" />
+                    ),
+                    cell: ({ row }) =>
+                      formatCost(row.original.p95?.['_cost_amount']),
+                  },
+                  {
+                    id: 'p99',
+                    accessorFn: (row) => row.p99?.['_cost_amount'],
+                    enableSorting: true,
+                    header: ({ column }) => (
+                      <DataTableColumnHeader column={column} title="p99 Cost" />
+                    ),
+                    cell: ({ row }) =>
+                      formatCost(row.original.p99?.['_cost_amount']),
+                  },
+                ] as DataTableColumnDef<schemas['EventHierarchyStats']>[]
+              }
+                />
+              </div>
             )}
           </>
         )}

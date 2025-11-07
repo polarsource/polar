@@ -3387,6 +3387,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/events/hierarchy-stats': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Hierarchy Statistics
+     * @description Get aggregate statistics grouped by root event name.
+     *
+     *     Returns sum, average, p95, and p99 for specified fields across all events
+     *     in hierarchies with the same root event name.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['events:get_hierarchy_stats_endpoint']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/events/names': {
     parameters: {
       query?: never
@@ -15091,6 +15116,67 @@ export interface components {
        */
       external_customer_id: string
     }
+    /**
+     * EventHierarchyStats
+     * @description Aggregate statistics for events grouped by root event name.
+     */
+    EventHierarchyStats: {
+      /**
+       * Name
+       * @description The name of the root event.
+       */
+      name: string
+      /**
+       * Occurrences
+       * @description Number of root events with this name (i.e., number of traces).
+       */
+      occurrences: number
+      /**
+       * Totals
+       * @description Sum of each field across all events in all hierarchies.
+       */
+      totals?: {
+        [key: string]: string
+      }
+      /**
+       * Averages
+       * @description Average value of each field across all events in all hierarchies.
+       */
+      averages?: {
+        [key: string]: string
+      }
+      /**
+       * P95
+       * @description 95th percentile of each field across all events in all hierarchies.
+       */
+      p95?: {
+        [key: string]: string
+      }
+      /**
+       * P99
+       * @description 99th percentile of each field across all events in all hierarchies.
+       */
+      p99?: {
+        [key: string]: string
+      }
+    }
+    /**
+     * EventHierarchyStatsSortProperty
+     * @enum {string}
+     */
+    EventHierarchyStatsSortProperty:
+      | 'name'
+      | '-name'
+      | 'occurrences'
+      | '-occurrences'
+      | 'total'
+      | '-total'
+      | 'average'
+      | '-average'
+      | 'p95'
+      | '-p95'
+      | 'p99'
+      | '-p99'
     /** EventMetadataInput */
     EventMetadataInput: {
       _cost?: components['schemas']['CostMetadata-Input']
@@ -27210,7 +27296,6 @@ export interface operations {
           | 'America/Coral_Harbour'
           | 'America/Cordoba'
           | 'America/Costa_Rica'
-          | 'America/Coyhaique'
           | 'America/Creston'
           | 'America/Cuiaba'
           | 'America/Curacao'
@@ -31660,6 +31745,8 @@ export interface operations {
         parent_id?: string | null
         /** @description When true, filters by parent_id (root events if not specified). When false, returns all events regardless of hierarchy. */
         hierarchical?: boolean
+        /** @description When true, aggregates descendant costs into parent events and uses descendant count for child_count. When false, uses direct child count only. */
+        aggregate_costs?: boolean
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -31682,6 +31769,67 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_Event_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'events:get_hierarchy_stats_endpoint': {
+    parameters: {
+      query?: {
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        filter?: string | null
+        /** @description Filter events after this timestamp. */
+        start_timestamp?: string | null
+        /** @description Filter events before this timestamp. */
+        end_timestamp?: string | null
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Filter by a meter filter clause. */
+        meter_id?: string | null
+        /** @description Filter by event name. */
+        name?: string | string[] | null
+        /** @description Filter by event source. */
+        source?:
+          | components['schemas']['EventSource']
+          | components['schemas']['EventSource'][]
+          | null
+        /** @description Query to filter events. */
+        query?: string | null
+        /** @description Metadata field paths to aggregate (e.g., 'cost.amount', 'duration_ns'). Use dot notation for nested fields. */
+        aggregate_fields?: string[]
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?:
+          | components['schemas']['EventHierarchyStatsSortProperty'][]
+          | null
+        /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+        metadata?: components['schemas']['MetadataQuery']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['EventHierarchyStats'][]
         }
       }
       /** @description Validation Error */
@@ -33831,7 +33979,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'America/Coral_Harbour',
   'America/Cordoba',
   'America/Costa_Rica',
-  'America/Coyhaique',
   'America/Creston',
   'America/Cuiaba',
   'America/Curacao',
@@ -35736,6 +35883,22 @@ export const downloadableFileCreateServiceValues: ReadonlyArray<
 export const downloadableFileReadServiceValues: ReadonlyArray<
   components['schemas']['DownloadableFileRead']['service']
 > = ['downloadable']
+export const eventHierarchyStatsSortPropertyValues: ReadonlyArray<
+  components['schemas']['EventHierarchyStatsSortProperty']
+> = [
+  'name',
+  '-name',
+  'occurrences',
+  '-occurrences',
+  'total',
+  '-total',
+  'average',
+  '-average',
+  'p95',
+  '-p95',
+  'p99',
+  '-p99',
+]
 export const eventNamesSortPropertyValues: ReadonlyArray<
   components['schemas']['EventNamesSortProperty']
 > = [

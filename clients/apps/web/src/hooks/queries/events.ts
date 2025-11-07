@@ -55,7 +55,11 @@ export const useEvents = (
       unwrap(
         api.GET('/v1/events/', {
           params: {
-            query: { organization_id: organizationId, ...(parameters || {}) },
+            query: {
+              organization_id: organizationId,
+              aggregate_costs: true,
+              ...(parameters || {}),
+            },
           },
         }),
       ),
@@ -100,5 +104,36 @@ export const useEventNames = (
 
       return lastPageParam + 1
     },
+  })
+}
+
+export const useEventHierarchyStats = (
+  organizationId: string,
+  aggregateFields: string[] = ['cost.amount'],
+  sorting?: string[],
+  enabled: boolean = true,
+) => {
+  return useQuery({
+    queryKey: [
+      'eventHierarchyStats',
+      organizationId,
+      { aggregate_fields: aggregateFields, sorting },
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/hierarchy-stats', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              aggregate_fields: aggregateFields,
+              parent_id: null,
+              hierarchical: true,
+              ...(sorting ? { sorting } : {}),
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
   })
 }

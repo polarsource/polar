@@ -8,18 +8,12 @@ from sqlalchemy import (
     ColumnExpressionArgument,
     Select,
     and_,
-    case,
-    cast,
     func,
-    literal_column,
     or_,
-    over,
     select,
-    text,
 )
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
-from sqlalchemy.types import Numeric
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
@@ -29,7 +23,6 @@ from polar.models import (
     BillingEntry,
     Customer,
     Event,
-    EventClosure,
     Meter,
     UserOrganization,
 )

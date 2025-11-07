@@ -22,8 +22,9 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
-import { useContext, useMemo, useState } from 'react'
+import { useCallback, useContext, useMemo, useState } from 'react'
 import DateRangePicker from '../Metrics/DateRangePicker'
+import IntervalPicker, { getNextValidInterval } from '../Metrics/IntervalPicker'
 import MetricChart from '../Metrics/MetricChart'
 import { InlineModal } from '../Modal/InlineModal'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
@@ -51,9 +52,23 @@ export const MeterPage = ({
     to: new Date(),
   })
 
-  const interval = useMemo(
-    () => dateRangeToInterval(dateRange.from, dateRange.to),
-    [dateRange],
+  const [interval, setInterval] = useState<schemas['TimeInterval']>(() =>
+    dateRangeToInterval(dateRange.from, dateRange.to),
+  )
+
+  const onDateChange = useCallback(
+    (newDateRange: { from: Date; to: Date }) => {
+      const validInterval = getNextValidInterval(
+        interval,
+        newDateRange.from,
+        newDateRange.to,
+      )
+      setDateRange(newDateRange)
+      if (validInterval !== interval) {
+        setInterval(validInterval)
+      }
+    },
+    [interval],
   )
 
   const { data: chartQuantities, isLoading: chartLoading } = useMeterQuantities(
@@ -87,10 +102,18 @@ export const MeterPage = ({
           <Well className="flex flex-col rounded-4xl p-2">
             <WellHeader className="flex flex-col gap-4 px-4 pt-4 md:flex-row md:items-center md:justify-between">
               <h2 className="text-xl">Meter Quantities</h2>
-              <div className="w-full lg:w-auto">
+              <div className="flex flex-col gap-2 lg:flex-row">
+                <div>
+                  <IntervalPicker
+                    interval={interval}
+                    onChange={setInterval}
+                    startDate={dateRange.from}
+                    endDate={dateRange.to}
+                  />
+                </div>
                 <DateRangePicker
                   date={dateRange}
-                  onDateChange={setDateRange}
+                  onDateChange={onDateChange}
                   className="w-full"
                 />
               </div>

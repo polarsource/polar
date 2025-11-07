@@ -21,6 +21,7 @@ import * as React from 'react'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
 import { schemas } from '@polar-sh/client'
+import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import { Calendar } from '@polar-sh/ui/components/ui/calendar'
 import {
   Popover,
@@ -106,7 +107,6 @@ export type DateRange = {
 interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
   date: DateRange | undefined
   onDateChange: (v: DateRange) => void
-  maxDaysRange?: number
   minDate?: Date
 }
 
@@ -114,7 +114,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   className,
   date,
   onDateChange,
-  maxDaysRange,
   minDate,
 }) => {
   const { organization } = useContext(OrganizationContext)
@@ -137,7 +136,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             mode="range"
             defaultMonth={date?.to}
             selected={date}
-            max={maxDaysRange}
             disabled={minDate ? { before: minDate } : undefined}
             onSelect={(v) => {
               onDateChange({
@@ -155,10 +153,10 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             interval.label
           ) : date?.from ? (
             date.to ? (
-              <>
-                {format(date.from, 'LLL dd, yy')} -{' '}
-                {format(date.to, 'LLL dd, yy')}
-              </>
+              <FormattedInterval
+                startDatetime={date.from}
+                endDatetime={date.to}
+              />
             ) : (
               format(date.from, 'LLL dd, yy')
             )

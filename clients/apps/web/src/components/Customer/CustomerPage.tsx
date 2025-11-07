@@ -20,7 +20,7 @@ import {
   formatScalar,
   formatSubCentCurrency,
 } from '@/utils/formatters'
-import { dateRangeToInterval, getPreviousDateRange } from '@/utils/metrics'
+import { getPreviousDateRange } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -44,12 +44,14 @@ interface CustomerPageProps {
   organization: schemas['Organization']
   customer: schemas['Customer']
   dateRange: { startDate: Date; endDate: Date }
+  interval: schemas['TimeInterval']
 }
 
 export const CustomerPage: React.FC<CustomerPageProps> = ({
   organization,
   customer,
   dateRange,
+  interval,
 }) => {
   const { data: orders, isLoading: ordersLoading } = useOrders(
     customer.organization_id,
@@ -79,12 +81,6 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
   const [selectedMetric, setSelectedMetric] = React.useState<
     keyof schemas['Metrics']
   >(organization.feature_settings?.revops_enabled ? 'cashflow' : 'revenue')
-
-  const interval = React.useMemo(() => {
-    return dateRange.startDate && dateRange.endDate
-      ? dateRangeToInterval(dateRange.startDate, dateRange.endDate)
-      : 'day'
-  }, [dateRange])
 
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
     startDate: dateRange.startDate,
@@ -526,7 +522,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </div>
         </ShadowBox>
       </TabsContent>
-      <CustomerUsageView customer={customer} dateRange={dateRange} />
+      <CustomerUsageView
+        customer={customer}
+        dateRange={dateRange}
+        interval={interval}
+      />
       <CustomerEventsView
         customer={customer}
         organization={organization}

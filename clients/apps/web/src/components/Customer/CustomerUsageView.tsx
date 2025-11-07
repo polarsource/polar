@@ -9,9 +9,11 @@ import { CustomerMeter } from './CustomerMeter'
 export const CustomerUsageView = ({
   customer,
   dateRange,
+  interval,
 }: {
   customer: schemas['Customer']
   dateRange: { startDate: Date; endDate: Date }
+  interval: schemas['TimeInterval']
 }) => {
   const { data: customerMetersData, isLoading } = useCustomerMeters(
     customer.organization_id,
@@ -59,6 +61,7 @@ export const CustomerUsageView = ({
             customerMeter={customerMeter}
             startDate={dateRange.startDate}
             endDate={dateRange.endDate}
+            interval={interval}
           />
         ))}
         {!isLoading && customerMeters.length === 0 && (
@@ -80,17 +83,19 @@ const CustomerMeterItem = ({
   customerMeter,
   startDate,
   endDate,
+  interval,
 }: {
   customerMeter: schemas['CustomerMeter'] & {
     subscription: schemas['Subscription'] | null
   }
   startDate: Date
   endDate: Date
+  interval: schemas['TimeInterval']
 }) => {
   const { data } = useMeterQuantities(customerMeter.meter_id, {
     start_timestamp: startDate.toISOString(),
     end_timestamp: endDate.toISOString(),
-    interval: 'day',
+    interval,
     customer_id: customerMeter.customer_id,
   })
 

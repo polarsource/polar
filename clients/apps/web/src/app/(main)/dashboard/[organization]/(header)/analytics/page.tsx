@@ -2,7 +2,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas, unwrap } from '@polar-sh/client'
-import { addDays, endOfDay, max, min, subMonths } from 'date-fns'
+import { addDays, endOfDay, max, subMonths } from 'date-fns'
 import { RedirectType, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -58,13 +58,48 @@ export default async function Page(props: {
 
   const limits = await unwrap(api.GET('/v1/metrics/limits'))
   const minDate = fromISODate(limits.min_date)
-  const maxDate = addDays(startDate, limits.intervals[interval].max_days - 1)
 
-  if (startDate < minDate || endDate > maxDate) {
+  const findValidInterval = (
+    start: Date,
+    end: Date,
+    currentInterval: schemas['TimeInterval'],
+  ): schemas['TimeInterval'] => {
+    const maxDate = addDays(
+      start,
+      limits.intervals[currentInterval].max_days - 1,
+    )
+    if (end <= maxDate) {
+      return currentInterval
+    }
+
+    const intervalOrder: schemas['TimeInterval'][] = [
+      'hour',
+      'day',
+      'week',
+      'month',
+      'year',
+    ]
+
+    return (
+      intervalOrder.find((int) => {
+        const maxDateForInterval = addDays(
+          start,
+          limits.intervals[int].max_days - 1,
+        )
+
+        return end <= maxDateForInterval
+      }) || intervalOrder.at(-1)!
+    )
+  }
+
+  const validInterval = findValidInterval(startDate, endDate, interval)
+
+  if (startDate < minDate || validInterval !== interval) {
     const urlSearchParams = new URLSearchParams({
       ...restSearchParams,
       start_date: toISODate(max([minDate, startDate])),
-      end_date: toISODate(min([endDate, maxDate])),
+      end_date: toISODate(endDate),
+      interval: validInterval,
     })
     productId?.forEach((id) => urlSearchParams.append('product_id', id))
     redirect(
@@ -79,7 +114,7 @@ export default async function Page(props: {
       limits={limits}
       startDate={startDate}
       endDate={endDate}
-      interval={interval}
+      interval={validInterval}
       productId={productId}
     />
   )

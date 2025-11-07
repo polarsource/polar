@@ -1,3 +1,4 @@
+import { isSameDay } from 'date-fns/isSameDay'
 import { useMemo } from 'react'
 
 interface FormattedIntervalProps {
@@ -28,6 +29,14 @@ const FormattedInterval: React.FC<FormattedIntervalProps> = ({
     const shouldHideYear =
       hideCurrentYear && endYear === currentYear && startYear === endYear
 
+    if (isSameDay(startDate, endDate)) {
+      return endDate.toLocaleDateString(locale, {
+        month: 'short',
+        day: 'numeric',
+        ...(shouldHideYear ? {} : { year: 'numeric' }),
+      })
+    }
+
     if (startYear === endYear && startMonth === endMonth) {
       const monthYear = endDate.toLocaleDateString(locale, {
         month: 'short',
@@ -56,6 +65,7 @@ const FormattedInterval: React.FC<FormattedIntervalProps> = ({
       day: 'numeric',
       year: 'numeric',
     })
+
     const endFormatted = endDate.toLocaleDateString(locale, {
       month: 'short',
       day: 'numeric',

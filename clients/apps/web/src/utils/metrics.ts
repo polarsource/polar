@@ -4,7 +4,6 @@ import {
   differenceInMonths,
   differenceInWeeks,
   differenceInYears,
-  format,
   parse,
   startOfDay,
   startOfMonth,
@@ -23,10 +22,23 @@ import {
   formatSubCentCurrency,
 } from './formatters'
 
-export const toISODate = (date: Date) => format(date, 'yyyy-MM-dd')
+/**
+ * Converts a Date object to an ISO date string (YYYY-MM-DD) in local timezone.
+ * Adjusts for timezone offset to ensure the local date is preserved.
+ */
+export const toISODate = (date: Date) => {
+  // Offset the date by the timezone offset so that when converted to UTC,
+  // we get the correct local date values
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  return offsetDate.toISOString().split('T')[0]
+}
 
+/**
+ * Parses an ISO date string (YYYY-MM-DD) to a Date object at midnight local time.
+ * Uses a local reference date to avoid timezone issues.
+ */
 export const fromISODate = (date: string) =>
-  parse(date, 'yyyy-MM-dd', new Date('1970-01-01T12:00:00Z'))
+  parse(date, 'yyyy-MM-dd', new Date(1970, 0, 1, 0, 0, 0))
 
 export const getTickFormatter = (
   metric: schemas['Metric'],

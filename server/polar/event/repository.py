@@ -8,17 +8,31 @@ from sqlalchemy import (
     ColumnExpressionArgument,
     Select,
     and_,
+    case,
+    cast,
     func,
+    literal_column,
     or_,
+    over,
     select,
+    text,
 )
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
+from sqlalchemy.types import Numeric
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
-from polar.models import BillingEntry, Customer, Event, Meter, UserOrganization
+from polar.kit.utils import generate_uuid
+from polar.models import (
+    BillingEntry,
+    Customer,
+    Event,
+    EventClosure,
+    Meter,
+    UserOrganization,
+)
 from polar.models.event import EventSource
 from polar.models.product_price import ProductPriceMeteredUnit
 
@@ -44,13 +58,42 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if not events:
             return [], 0
 
+        events_needing_parent_lookup = []
+
+        # Set root_id for root events before insertion
+        for event in events:
+            if event.get("root_id") is not None:
+                continue
+            elif event.get("parent_id") is None:
+                event["id"] = generate_uuid()
+                event["root_id"] = event["id"]
+            else:
+                # Child event without root_id - needs to be looked up from parent
+                # This is a fail-safe in the event that we did not set this before calling
+                # insert_batch
+                events_needing_parent_lookup.append(event)
+
+        # Look up root_id from parents for events that need it
+        if events_needing_parent_lookup:
+            parent_ids = {event["parent_id"] for event in events_needing_parent_lookup}
+            result = await self.session.execute(
+                select(Event.id, Event.root_id).where(Event.id.in_(parent_ids))
+            )
+            parent_root_map = {
+                parent_id: root_id or parent_id for parent_id, root_id in result
+            }
+
+            for event in events_needing_parent_lookup:
+                parent_id = event["parent_id"]
+                event["root_id"] = parent_root_map.get(parent_id, parent_id)
+
         statement = (
             insert(Event)
             .on_conflict_do_nothing(index_elements=["external_id"])
             .returning(Event.id)
         )
         result = await self.session.execute(statement, events)
-        inserted_ids = result.scalars().all()
+        inserted_ids = [row[0] for row in result.all()]
 
         duplicates_count = len(events) - len(inserted_ids)
 

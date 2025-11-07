@@ -10,9 +10,10 @@ from rich.progress import Progress
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
+from polar.config import settings
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
+from polar.kit.db.postgres import create_async_engine as _create_async_engine
 from polar.models import Event, EventClosure
-from polar.postgres import create_async_engine
 
 cli = typer.Typer()
 
@@ -41,7 +42,14 @@ async def run_backfill(
     own_session = False
 
     if session is None:
-        engine = create_async_engine("script")
+        engine = _create_async_engine(
+            dsn=str(settings.get_postgres_dsn("asyncpg")),
+            application_name=f"{settings.ENV.value}.script",
+            debug=False,
+            pool_size=settings.DATABASE_POOL_SIZE,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+            command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
+        )
         sessionmaker = create_async_sessionmaker(engine)
         session = sessionmaker()
         own_session = True
@@ -67,36 +75,52 @@ async def run_backfill(
             processed = 0
 
             typer.echo("Step 1: Processing root events (no parent)...")
-            root_events_result = await session.execute(
-                select(Event.id).where(Event.parent_id.is_(None))
+            root_count_result = await session.execute(
+                select(func.count()).select_from(Event).where(Event.parent_id.is_(None))
             )
-            root_ids = [row[0] for row in root_events_result]
-            typer.echo(f"Found {len(root_ids)} root events")
+            total_roots = root_count_result.scalar_one()
+            typer.echo(f"Found {total_roots} root events")
 
-            if root_ids:
-                await session.execute(
-                    update(Event).where(Event.id.in_(root_ids)).values(root_id=Event.id)
-                )
-
-                closure_entries = [
-                    {
-                        "ancestor_id": event_id,
-                        "descendant_id": event_id,
-                        "depth": 0,
-                    }
-                    for event_id in root_ids
-                ]
-                await session.execute(
-                    insert(EventClosure)
-                    .values(closure_entries)
-                    .on_conflict_do_nothing(
-                        index_elements=["ancestor_id", "descendant_id"]
+            if total_roots > 0:
+                offset = 0
+                while offset < total_roots:
+                    root_events_result = await session.execute(
+                        select(Event.id)
+                        .where(Event.parent_id.is_(None))
+                        .limit(batch_size)
+                        .offset(offset)
                     )
-                )
-                await session.commit()
+                    root_ids = [row[0] for row in root_events_result]
 
-                processed += len(root_ids)
-                progress.update(task, advance=len(root_ids))
+                    if not root_ids:
+                        break
+
+                    await session.execute(
+                        update(Event)
+                        .where(Event.id.in_(root_ids))
+                        .values(root_id=Event.id)
+                    )
+
+                    closure_entries = [
+                        {
+                            "ancestor_id": event_id,
+                            "descendant_id": event_id,
+                            "depth": 0,
+                        }
+                        for event_id in root_ids
+                    ]
+                    await session.execute(
+                        insert(EventClosure)
+                        .values(closure_entries)
+                        .on_conflict_do_nothing(
+                            index_elements=["ancestor_id", "descendant_id"]
+                        )
+                    )
+                    await session.commit()
+
+                    processed += len(root_ids)
+                    progress.update(task, advance=len(root_ids))
+                    offset += batch_size
 
             typer.echo("Step 2: Processing child events level by level...")
             level = 1
@@ -120,7 +144,6 @@ async def run_backfill(
                 if not events:
                     break
 
-                event_ids = [event_id for event_id, _ in events]
                 parent_map: dict[UUID, UUID] = {
                     event_id: parent_id for event_id, parent_id in events
                 }

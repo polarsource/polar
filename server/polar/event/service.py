@@ -187,6 +187,7 @@ class EventService:
         query: str | None = None,
         parent_id: uuid.UUID | None = None,
         hierarchical: bool = False,
+        aggregate_costs: bool = False,
     ) -> tuple[Sequence[Event], int]:
         repository = EventRepository.from_session(session)
         statement = await self._build_filtered_statement(
@@ -213,8 +214,11 @@ class EventService:
             else:
                 statement = statement.where(Event.parent_id.is_(None))
 
-        return await repository.paginate(
-            statement, limit=pagination.limit, page=pagination.page
+        return await repository.list_with_closure_table(
+            statement,
+            limit=pagination.limit,
+            page=pagination.page,
+            aggregate_costs=aggregate_costs,
         )
 
     async def get(

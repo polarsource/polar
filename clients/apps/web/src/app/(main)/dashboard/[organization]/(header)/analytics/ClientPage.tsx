@@ -4,7 +4,9 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import CancellationsDistributionChart from '@/components/Metrics/CancellationsDistributionChart'
 import CancellationsStackedChart from '@/components/Metrics/CancellationsStackedChart'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
-import IntervalPicker, { getNextValidInterval } from '@/components/Metrics/IntervalPicker'
+import IntervalPicker, {
+  getNextValidInterval,
+} from '@/components/Metrics/IntervalPicker'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { ParsedMetricsResponse, useMetrics, useProducts } from '@/hooks/queries'
@@ -100,7 +102,11 @@ export default function ClientPage({
 
   const onDateChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
-      const validInterval = getNextValidInterval(interval, dateRange.from, dateRange.to)
+      const validInterval = getNextValidInterval(
+        interval,
+        dateRange.from,
+        dateRange.to,
+      )
       const params = getSearchParams(dateRange, validInterval, productId)
       router.push(`/dashboard/${organization.slug}/analytics?${params}`)
     },

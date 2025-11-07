@@ -130,6 +130,10 @@ uv run task test
 - **Session management**: Use `AsyncSession` with proper dependency injection.
 - **Repository patterns**: Encapsulate database logic in repository classes inheriting from `RepositoryBase`.
 
+In most cases, you should never call `session.commit()` directly in business logic. We have established patterns for that: the API backend automatically commits the session at the end of each request, and background workers commit the session at the end of each task. It avoids to have a database in an inconsistent state in case of exceptions. If you have a `session.commit()` in your code, it's likely a mistake. Otherwise, please explicitly document why it's necessary.
+
+If you need to ensure that data is flushed to the database, to run constraints or fill server defaults, use `session.flush()` instead. Bear in mind though that it might not be necessary, as SQLAlchemy automatically flushes pending changes before read operations.
+
 ### Testing Standards
 
 - **Avoid redundant fixture setup**: Don't manually set data that fixtures already provide (e.g., `customer.stripe_customer_id` when the `customer` fixture includes it).

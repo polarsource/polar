@@ -212,7 +212,7 @@ async def test_get_next_invoice_number_customer(
         next_invoice_number
         == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0001"
     )
-    await session.commit()
+    await session.flush()
     await session.refresh(customer)
     assert customer.invoice_next_number == 2
 
@@ -229,7 +229,7 @@ async def test_get_next_invoice_number_customer(
         next_invoice_number
         == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0002"
     )
-    await session.commit()
+    await session.flush()
     await session.refresh(customer)
     assert customer.invoice_next_number == 3
 
@@ -261,7 +261,7 @@ async def test_get_next_invoice_number_multiple_customers(
         invoice1
         == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0001"
     )
-    await session.commit()
+    await session.flush()
     assert (
         invoice1
         == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0001"
@@ -274,7 +274,7 @@ async def test_get_next_invoice_number_multiple_customers(
         invoice2
         == f"{organization.customer_invoice_prefix}-{customer2.short_id_str}-0001"
     )
-    await session.commit()
+    await session.flush()
     assert (
         invoice2
         == f"{organization.customer_invoice_prefix}-{customer2.short_id_str}-0001"
@@ -287,7 +287,7 @@ async def test_get_next_invoice_number_multiple_customers(
         invoice3
         == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0002"
     )
-    await session.commit()
+    await session.flush()
     assert (
         invoice3
         == f"{organization.customer_invoice_prefix}-{customer.short_id_str}-0002"
@@ -761,7 +761,7 @@ class TestValidateWithAI:
         mock_fetch_policy.return_value = "Mock policy content"
         organization.details = {"description": "A test software company"}  # type: ignore[assignment]
         session.add(organization)
-        await session.commit()
+        await session.flush()
 
         # When
         validator = OrganizationAIValidator()
@@ -806,7 +806,7 @@ class TestValidateWithAI:
         mock_fetch_policy.return_value = "Mock policy content"
         organization.details = {"description": "A test software company"}  # type: ignore[assignment]
         session.add(organization)
-        await session.commit()
+        await session.flush()
 
         # When
         validator = OrganizationAIValidator()
@@ -848,7 +848,7 @@ class TestValidateWithAI:
         mock_fetch_policy.return_value = "Mock policy content"
         organization.details = {"description": "A test software company"}  # type: ignore[assignment]
         session.add(organization)
-        await session.commit()
+        await session.flush()
 
         # When - simulate timeout with very short timeout
         validator = OrganizationAIValidator()
@@ -902,7 +902,7 @@ class TestValidateWithAI:
         # Given
         organization.details = {"description": "A test software company"}  # type: ignore[assignment]
         session.add(organization)
-        await session.commit()
+        await session.flush()
 
         # When - simulate an error
         validator = OrganizationAIValidator()
@@ -945,7 +945,7 @@ class TestValidateWithAI:
             },
         )
         session.add(org)
-        await session.commit()
+        await session.flush()
 
         # When
         validator = OrganizationAIValidator()
@@ -984,7 +984,7 @@ class TestValidateWithAI:
         mock_fetch_policy.return_value = "Mock policy content"
         organization.details = {"description": "A test software company"}  # type: ignore[assignment]
         session.add(organization)
-        await session.commit()
+        await session.flush()
 
         # When
         validator = OrganizationAIValidator()

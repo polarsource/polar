@@ -367,7 +367,7 @@ class TestAssignSeat:
         await session.refresh(revoked_seat.subscription.product, ["organization"])
 
         revoked_seat = await seat_service.revoke_seat(session, revoked_seat)
-        await session.commit()
+        await session.flush()
 
         original_seat_id = revoked_seat.id
         assert revoked_seat.status == SeatStatus.revoked
@@ -540,15 +540,14 @@ class TestAssignSeat:
         )
         original_seat_id = original_seat.id
         await session.flush()
-        await session.commit()
 
         # Claim it first
         await seat_service.claim_seat(session, original_seat.invitation_token or "")
-        await session.commit()
+        await session.flush()
 
         # Revoke the seat
         await seat_service.revoke_seat(session, original_seat)
-        await session.commit()
+        await session.flush()
 
         # Now assign a new seat with immediate claim
         new_customer = await create_customer(
@@ -592,7 +591,7 @@ class TestAssignSeat:
             email="test@example.com",
             immediate_claim=True,
         )
-        await session.commit()
+        await session.flush()
 
         # Second assignment should fail
         with pytest.raises(SeatAlreadyAssigned):

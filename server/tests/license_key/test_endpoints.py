@@ -359,7 +359,7 @@ class TestLicenseKeyEndpoints:
 
         lk.expires_at = utc_now() - relativedelta(days=1)
         session.add(lk)
-        await session.commit()
+        await session.flush()
 
         activate = await client.post(
             activate_path,

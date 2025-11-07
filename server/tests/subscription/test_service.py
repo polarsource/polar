@@ -3399,7 +3399,6 @@ class TestUpdateSeats:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip_db_asserts
 class TestEnqueueBenefitsGrantsGracePeriod:
     async def test_grace_period_not_expired(
         self,

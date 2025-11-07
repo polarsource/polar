@@ -8,9 +8,12 @@ from sqlalchemy import (
     ColumnExpressionArgument,
     Numeric,
     Select,
+    UnaryExpression,
     and_,
+    asc,
     case,
     cast,
+    desc,
     func,
     literal_column,
     or_,
@@ -332,3 +335,138 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             total_count = row.total_count
 
         return events, total_count
+
+    async def get_hierarchy_stats(
+        self,
+        statement: Select[tuple[Event]],
+        aggregate_fields: Sequence[str] = ("cost.amount",),
+        sorting: Sequence[tuple[str, bool]] = (("total", True),),
+    ) -> Sequence[dict[str, Any]]:
+        """
+        Get aggregate statistics grouped by root event name across all hierarchies.
+
+        Args:
+            statement: Base query for root events to include
+            aggregate_fields: List of user_metadata field paths to aggregate
+            sorting: List of (property, is_desc) tuples for sorting
+
+        Returns:
+            List of dicts containing name, occurrences, and statistics for each field
+        """
+        root_events_subquery = statement.where(Event.parent_id.is_(None)).subquery()
+
+        descendant_event = Event.__table__.alias("descendant_event")
+
+        aggregation_exprs = []
+        having_clauses = []
+        for field_path in aggregate_fields:
+            field_parts = field_path.split(".")
+            pg_path = "{" + ",".join(field_parts) + "}"
+            safe_field_name = field_path.replace(".", "_")
+
+            field_expr = cast(
+                descendant_event.c.user_metadata.op("#>>")(
+                    literal_column(f"'{pg_path}'")
+                ),
+                Numeric,
+            )
+
+            sum_expr = func.sum(field_expr)
+
+            aggregation_exprs.extend(
+                [
+                    sum_expr.label(f"{safe_field_name}_sum"),
+                    func.avg(field_expr).label(f"{safe_field_name}_avg"),
+                    func.percentile_cont(0.95)
+                    .within_group(field_expr)
+                    .label(f"{safe_field_name}_p95"),
+                    func.percentile_cont(0.99)
+                    .within_group(field_expr)
+                    .label(f"{safe_field_name}_p99"),
+                ]
+            )
+
+            having_clauses.append(sum_expr > 0)
+
+        stats_query = (
+            select(
+                literal_column("root_event.name").label("name"),
+                func.count(func.distinct(literal_column("root_event.id"))).label(
+                    "occurrences"
+                ),
+                *aggregation_exprs,
+            )
+            .select_from(root_events_subquery.alias("root_event"))
+            .join(
+                EventClosure,
+                literal_column("root_event.id") == EventClosure.ancestor_id,
+            )
+            .join(descendant_event, EventClosure.descendant_id == descendant_event.c.id)
+            .group_by(literal_column("root_event.name"))
+        )
+
+        if having_clauses:
+            stats_query = stats_query.having(or_(*having_clauses))
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc_sort in sorting:
+            clause_function = desc if is_desc_sort else asc
+            if criterion == "name":
+                order_by_clauses.append(clause_function(text("name")))
+            elif criterion == "occurrences":
+                order_by_clauses.append(clause_function(text("occurrences")))
+            elif criterion in ("total", "average", "p95", "p99"):
+                if aggregate_fields:
+                    safe_field_name = aggregate_fields[0].replace(".", "_")
+                    suffix_map = {
+                        "total": "sum",
+                        "average": "avg",
+                        "p95": "p95",
+                        "p99": "p99",
+                    }
+                    suffix = suffix_map[criterion]
+                    order_by_clauses.append(
+                        clause_function(text(f"{safe_field_name}_{suffix}"))
+                    )
+
+        if order_by_clauses:
+            stats_query = stats_query.order_by(*order_by_clauses)
+
+        result = await self.session.execute(stats_query)
+        rows = result.all()
+
+        return [
+            {
+                "name": row.name,
+                "occurrences": row.occurrences,
+                "totals": {
+                    field.replace(".", "_"): getattr(
+                        row, f"{field.replace('.', '_')}_sum"
+                    )
+                    or 0
+                    for field in aggregate_fields
+                },
+                "averages": {
+                    field.replace(".", "_"): getattr(
+                        row, f"{field.replace('.', '_')}_avg"
+                    )
+                    or 0
+                    for field in aggregate_fields
+                },
+                "p95": {
+                    field.replace(".", "_"): getattr(
+                        row, f"{field.replace('.', '_')}_p95"
+                    )
+                    or 0
+                    for field in aggregate_fields
+                },
+                "p99": {
+                    field.replace(".", "_"): getattr(
+                        row, f"{field.replace('.', '_')}_p99"
+                    )
+                    or 0
+                    for field in aggregate_fields
+                },
+            }
+            for row in rows
+        ]

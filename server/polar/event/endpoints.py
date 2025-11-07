@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from fastapi import Depends, Query
 from fastapi.exceptions import RequestValidationError
 from pydantic import AwareDatetime, ValidationError
@@ -24,6 +26,7 @@ from .schemas import (
     EventsIngest,
     EventsIngestResponse,
     EventTypeAdapter,
+    RootEventStatistics,
 )
 from .service import event as event_service
 
@@ -141,6 +144,103 @@ async def list(
         count,
         pagination,
     )
+
+
+@router.get(
+    "/hierarchy-stats",
+    summary="Get Hierarchy Statistics",
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    tags=[APITag.private],
+)
+async def get_hierarchy_stats_endpoint(
+    auth_subject: auth.EventRead,
+    metadata: MetadataQuery,
+    hierarchy_sorting: sorting.RootEventStatisticsSorting,
+    filter: str | None = Query(
+        None,
+        description=(
+            "Filter events following filter clauses. "
+            "JSON string following the same schema a meter filter clause. "
+        ),
+    ),
+    start_timestamp: AwareDatetime | None = Query(
+        None, description="Filter events after this timestamp."
+    ),
+    end_timestamp: AwareDatetime | None = Query(
+        None, description="Filter events before this timestamp."
+    ),
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
+    external_customer_id: MultipleQueryFilter[str] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    ),
+    meter_id: MeterID | None = Query(
+        None, title="MeterID Filter", description="Filter by a meter filter clause."
+    ),
+    name: MultipleQueryFilter[str] | None = Query(
+        None, title="Name Filter", description="Filter by event name."
+    ),
+    source: MultipleQueryFilter[EventSource] | None = Query(
+        None, title="Source Filter", description="Filter by event source."
+    ),
+    query: str | None = Query(
+        None, title="Query", description="Query to filter events."
+    ),
+    aggregate_fields: Sequence[str] = Query(
+        default=["cost.amount"],
+        description="Metadata field paths to aggregate (e.g., 'cost.amount', 'duration_ns'). Use dot notation for nested fields.",
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> Sequence[RootEventStatistics]:
+    """
+    Get aggregate statistics grouped by root event name.
+
+    Returns sum, average, p95, and p99 for specified fields across all events
+    in hierarchies with the same root event name.
+    """
+
+    parsed_filter: Filter | None = None
+    if filter is not None:
+        try:
+            parsed_filter = Filter.model_validate_json(filter)
+        except ValidationError as e:
+            raise RequestValidationError(e.errors()) from e
+
+    if query is not None and organization_id is None:
+        raise RequestValidationError(
+            [
+                {
+                    "type": "query",
+                    "msg": "Query is only supported when organization_id is provided.",
+                }
+            ]
+        )
+
+    results = await event_service.get_hierarchy_stats(
+        session,
+        auth_subject,
+        filter=parsed_filter,
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
+        organization_id=organization_id,
+        customer_id=customer_id,
+        external_customer_id=external_customer_id,
+        meter_id=meter_id,
+        name=name,
+        source=source,
+        metadata=metadata,
+        query=query,
+        aggregate_fields=tuple(aggregate_fields),
+        hierarchy_stats_sorting=hierarchy_sorting,
+    )
+
+    return [RootEventStatistics(**result) for result in results]
 
 
 @router.get(

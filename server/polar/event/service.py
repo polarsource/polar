@@ -235,6 +235,51 @@ class EventService:
         )
         return await repository.get_one_or_none(statement)
 
+    async def get_hierarchy_stats(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        filter: Filter | None = None,
+        start_timestamp: datetime | None = None,
+        end_timestamp: datetime | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        meter_id: uuid.UUID | None = None,
+        name: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        metadata: MetadataQuery | None = None,
+        sorting: Sequence[Sorting[EventSortProperty]] = (
+            (EventSortProperty.timestamp, True),
+        ),
+        query: str | None = None,
+        aggregate_fields: Sequence[str] = ("cost.amount",),
+        hierarchy_stats_sorting: Sequence[tuple[str, bool]] = (("total", True),),
+    ) -> Sequence[dict[str, Any]]:
+        repository = EventRepository.from_session(session)
+        statement = await self._build_filtered_statement(
+            session,
+            auth_subject,
+            repository,
+            filter=filter,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            organization_id=organization_id,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            meter_id=meter_id,
+            name=name,
+            source=source,
+            metadata=metadata,
+            sorting=sorting,
+            query=query,
+        )
+
+        return await repository.get_hierarchy_stats(
+            statement, aggregate_fields, hierarchy_stats_sorting
+        )
+
     async def list_names(
         self,
         session: AsyncSession,

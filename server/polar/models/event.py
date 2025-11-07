@@ -163,17 +163,6 @@ class Event(Model, MetadataMixin):
         )
 
     @declared_attr
-    def child_count(cls) -> Mapped[int]:
-        child_events = table("events", column("parent_id")).alias("child_events")
-        return column_property(
-            select(func.count())
-            .select_from(child_events)
-            .where(child_events.c.parent_id == cls.id)
-            .correlate_except(child_events)
-            .scalar_subquery()
-        )
-
-    @declared_attr
     def customer(cls) -> Mapped[Customer | None]:
         return relationship(
             Customer,

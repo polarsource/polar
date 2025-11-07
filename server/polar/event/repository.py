@@ -234,3 +234,102 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
     def get_eager_options(self) -> Options:
         return (joinedload(Event.customer),)
+
+    async def list_with_closure_table(
+        self,
+        statement: Select[tuple[Event]],
+        limit: int,
+        page: int,
+        aggregate_costs: bool = False,
+    ) -> tuple[Sequence[Event], int]:
+        """
+        List events using closure table to get a correct children_count.
+        Optionally aggregates costs from descendants into user_metadata._cost.amount.
+        """
+        descendant_event = Event.__table__.alias("descendant_event")
+
+        # Build columns for aggregations CTE
+        aggregation_columns: list[Any] = [
+            EventClosure.ancestor_id,
+            (func.count() - 1).label("descendant_count"),
+        ]
+
+        if aggregate_costs:
+            pg_path = "{_cost,amount}"
+            field_expr = cast(
+                descendant_event.c.user_metadata.op("#>>")(
+                    literal_column(f"'{pg_path}'")
+                ),
+                Numeric,
+            )
+            aggregation_columns.append(
+                func.coalesce(func.sum(field_expr), 0).label("cost_sum")
+            )
+
+        aggregations_cte = (
+            select(*aggregation_columns)
+            .select_from(EventClosure)
+            .join(descendant_event, EventClosure.descendant_id == descendant_event.c.id)
+            .group_by(EventClosure.ancestor_id)
+        ).cte("aggregations")
+
+        metadata_expr = (
+            case(
+                (
+                    aggregations_cte.c.cost_sum > 0,
+                    case(
+                        (
+                            Event.user_metadata.op("?")("_cost"),
+                            func.jsonb_set(
+                                Event.user_metadata,
+                                text("'{_cost,amount}'"),
+                                func.to_jsonb(aggregations_cte.c.cost_sum),
+                            ),
+                        ),
+                        else_=Event.user_metadata.op("||")(
+                            func.jsonb_build_object(
+                                "_cost",
+                                func.jsonb_build_object(
+                                    "amount",
+                                    aggregations_cte.c.cost_sum,
+                                    "currency",
+                                    "usd",
+                                ),
+                            )
+                        ),
+                    ),
+                ),
+                else_=Event.user_metadata,
+            )
+            if aggregate_costs
+            else Event.user_metadata
+        )
+
+        final_query = (
+            statement.add_columns(
+                func.coalesce(aggregations_cte.c.descendant_count, 0).label(
+                    "child_count"
+                ),
+                metadata_expr.label("aggregated_metadata"),
+                over(func.count()).label("total_count"),
+            )
+            .outerjoin(aggregations_cte, Event.id == aggregations_cte.c.ancestor_id)
+            .options(*self.get_eager_options())
+            .limit(limit)
+            .offset((page - 1) * limit)
+        )
+
+        result = await self.session.execute(final_query)
+        rows = result.all()
+
+        events = []
+        total_count = 0
+        for row in rows:
+            event = row[0]
+            event.child_count = row.child_count
+            if aggregate_costs:
+                event.user_metadata = row.aggregated_metadata
+            events.append(event)
+            total_count = row.total_count
+
+        return events, total_count

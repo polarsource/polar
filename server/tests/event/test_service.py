@@ -514,6 +514,108 @@ class TestIngest:
 
 
 @pytest.mark.asyncio
+class TestListWithAggregateCosts:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_aggregate_costs(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        root_with_cost = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="request",
+            metadata={"_cost": {"amount": 10, "currency": "usd"}},
+        )
+        child1 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="child",
+            parent_id=root_with_cost.id,
+            metadata={"_cost": {"amount": 5, "currency": "usd"}},
+        )
+        child2 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="child",
+            parent_id=root_with_cost.id,
+            metadata={"_cost": {"amount": 3, "currency": "usd"}},
+        )
+        root_without_cost = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="request",
+            metadata={"conversationId": "123"},
+        )
+        child3 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="child",
+            parent_id=root_without_cost.id,
+            metadata={"_cost": {"amount": 7, "currency": "usd"}},
+        )
+
+        events_without_agg, _ = await event_service.list(
+            session,
+            auth_subject,
+            pagination=PaginationParams(1, 10),
+            aggregate_costs=False,
+        )
+
+        root1_no_agg = next(e for e in events_without_agg if e.id == root_with_cost.id)
+        child1_no_agg = next(e for e in events_without_agg if e.id == child1.id)
+        child2_no_agg = next(e for e in events_without_agg if e.id == child2.id)
+        root2_no_agg = next(
+            e for e in events_without_agg if e.id == root_without_cost.id
+        )
+
+        assert root1_no_agg.child_count == 2  # type: ignore[attr-defined]
+        assert root1_no_agg.user_metadata["_cost"]["amount"] == 10
+        assert child1_no_agg.child_count == 0  # type: ignore[attr-defined]
+        assert child1_no_agg.user_metadata["_cost"]["amount"] == 5
+        assert child2_no_agg.child_count == 0  # type: ignore[attr-defined]
+        assert child2_no_agg.user_metadata["_cost"]["amount"] == 3
+        assert root2_no_agg.child_count == 1  # type: ignore[attr-defined]
+        assert "_cost" not in root2_no_agg.user_metadata
+
+        events_with_agg, _ = await event_service.list(
+            session,
+            auth_subject,
+            pagination=PaginationParams(1, 10),
+            aggregate_costs=True,
+        )
+
+        root1_agg = next(e for e in events_with_agg if e.id == root_with_cost.id)
+        child1_agg = next(e for e in events_with_agg if e.id == child1.id)
+        child2_agg = next(e for e in events_with_agg if e.id == child2.id)
+        root2_agg = next(e for e in events_with_agg if e.id == root_without_cost.id)
+
+        assert root1_agg.child_count == 2  # type: ignore[attr-defined]
+        assert root1_agg.user_metadata["_cost"]["amount"] == 18
+        assert child1_agg.child_count == 0  # type: ignore[attr-defined]
+        assert child1_agg.user_metadata["_cost"]["amount"] == 5
+        assert child2_agg.child_count == 0  # type: ignore[attr-defined]
+        assert child2_agg.user_metadata["_cost"]["amount"] == 3
+        assert root2_agg.child_count == 1  # type: ignore[attr-defined]
+        assert "_cost" in root2_agg.user_metadata
+        assert root2_agg.user_metadata["_cost"]["amount"] == 7
+        assert root2_agg.user_metadata["_cost"]["currency"] == "usd"
+        assert root2_agg.user_metadata["conversationId"] == "123"
+
+
+@pytest.mark.asyncio
 class TestIngested:
     async def test_basic(
         self,

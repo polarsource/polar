@@ -84,7 +84,7 @@ export const Events = () => {
             </Button>
           </Link>
         </div>
-        <div className="dark:bg-polar-950 flex w-full flex-1 flex-col gap-y-4 rounded-3xl bg-gray-100 p-8">
+        <div className="dark:bg-polar-800 flex w-full flex-1 flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
           <div className="flex flex-row items-center justify-between gap-x-4">
             <h3>Activity</h3>
             <div className="flex flex-row items-center gap-x-4">
@@ -125,7 +125,7 @@ export const Events = () => {
               {mockedEvents.map((event, idx) => (
                 <motion.div
                   key={idx}
-                  className="dark:bg-polar-900 flex flex-row items-center justify-between gap-x-8 rounded-md border border-gray-100 bg-white p-2 pl-4 font-mono text-xs md:justify-start dark:border-white/5"
+                  className="dark:bg-polar-700 flex flex-row items-center justify-between gap-x-8 rounded-md border border-gray-100 bg-gray-100 p-2 pl-4 font-mono text-xs md:justify-start dark:border-white/5"
                 >
                   <h3 className="w-full truncate xl:w-36">{event.name}</h3>
                   <p className="dark:text-polar-500 hidden w-28 text-xs text-gray-500 xl:flex">

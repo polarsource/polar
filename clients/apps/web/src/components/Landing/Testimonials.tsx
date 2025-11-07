@@ -65,7 +65,7 @@ export const testimonials = [
     ),
   },
   {
-    name: 'Andrea Bizzotto 🇺',
+    name: 'Andrea Bizzotto',
     username: 'biz84',
     avatar: '/assets/landing/testamonials/andrea.png',
     link: 'https://x.com/biz84/status/1883284175459135808',
@@ -285,7 +285,7 @@ export const Testamonial = ({
     <Link
       href={link}
       target="_blank"
-      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-row gap-x-4 rounded-xl border border-transparent bg-white p-4 transition-colors hover:bg-white"
+      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-row gap-x-4 rounded-xl border border-transparent bg-white p-6 transition-colors hover:bg-white"
     >
       <div className="flex flex-col gap-y-4 pt-1.5">
         <div className="flex flex-row items-center gap-x-3">
@@ -301,7 +301,6 @@ export const Testamonial = ({
           <div className="flex flex-col text-sm">
             <div className="flex flex-row items-center gap-x-2">
               <span>{name}</span>
-              {verified && <VerifiedBadge />}
             </div>
             <span className="dark:text-polar-500 text-gray-500">
               @{username}

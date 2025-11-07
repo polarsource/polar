@@ -124,7 +124,9 @@ const LandingPageMobileNavigation = () => {
     <>
       <Sidebar className="md:hidden">
         <SidebarHeader className="p-4">
-          <PolarLogotype logoVariant="icon" />
+          <Link href="/">
+            <PolarLogotype logoVariant="icon" />
+          </Link>
         </SidebarHeader>
         <SidebarContent className="flex flex-col gap-y-6 px-6 py-2">
           <div className="flex flex-col gap-y-1">
@@ -285,7 +287,9 @@ const LandingPageDesktopNavigation = () => {
   return (
     <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-8 md:flex">
       <div className="relative flex w-full flex-row items-center justify-between lg:max-w-6xl">
-        <PolarLogotype logoVariant="icon" size={40} />
+        <Link href="/">
+          <PolarLogotype logoVariant="icon" size={40} />
+        </Link>
 
         <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-8 font-medium">
           <li>

@@ -56,7 +56,7 @@ export const PageContent = () => {
         </Hero>
         <Features />
         {isMobile ? null : (
-          <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl dark:border-gray-800">
+          <div className="dark:border-polar-700 relative aspect-video w-full overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl">
             <Stream
               src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
               letterboxColor="black"

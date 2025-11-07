@@ -8,6 +8,7 @@ from sqlalchemy import (
     BigInteger,
     ColumnElement,
     ForeignKey,
+    Index,
     String,
     Uuid,
     and_,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     exists,
     extract,
     func,
+    literal_column,
     or_,
     select,
     table,
@@ -109,6 +111,14 @@ class CustomerComparator(Relationship.Comparator[Customer]):
 
 class Event(Model, MetadataMixin):
     __tablename__ = "events"
+    __table_args__ = (
+        Index(
+            "ix_events_org_timestamp_id",
+            "organization_id",
+            literal_column("timestamp DESC"),
+            "id",
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)
     ingested_at: Mapped[datetime.datetime] = mapped_column(
@@ -138,9 +148,29 @@ class Event(Model, MetadataMixin):
         Uuid, ForeignKey("events.id"), nullable=True, index=True
     )
 
+    root_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("events.id"), nullable=True, index=True
+    )
+
     @declared_attr
     def parent(cls) -> Mapped["Event | None"]:
-        return relationship("Event", remote_side="Event.id", lazy="raise")
+        return relationship(
+            "Event",
+            foreign_keys="Event.parent_id",
+            remote_side="Event.id",
+            lazy="raise",
+        )
+
+    @declared_attr
+    def child_count(cls) -> Mapped[int]:
+        child_events = table("events", column("parent_id")).alias("child_events")
+        return column_property(
+            select(func.count())
+            .select_from(child_events)
+            .where(child_events.c.parent_id == cls.id)
+            .correlate_except(child_events)
+            .scalar_subquery()
+        )
 
     @declared_attr
     def customer(cls) -> Mapped[Customer | None]:
@@ -166,17 +196,6 @@ class Event(Model, MetadataMixin):
             else_=external_customer_id,
         )
     )
-
-    @declared_attr
-    def child_count(cls) -> Mapped[int]:
-        child_events = table("events", column("parent_id")).alias("child_events")
-        return column_property(
-            select(func.count())
-            .select_from(child_events)
-            .where(child_events.c.parent_id == cls.id)
-            .correlate_except(child_events)
-            .scalar_subquery()
-        )
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
@@ -212,3 +231,55 @@ class Event(Model, MetadataMixin):
         "name": (str, name),
         "source": (str, source),
     }
+
+
+class EventClosure(Model):
+    __tablename__ = "events_closure"
+    __table_args__ = (
+        Index(
+            "ix_events_closure_ancestor_descendant",
+            "ancestor_id",
+            "descendant_id",
+        ),
+        Index(
+            "ix_events_closure_descendant_ancestor",
+            "descendant_id",
+            "ancestor_id",
+        ),
+    )
+
+    ancestor_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("events.id", ondelete="cascade"),
+        primary_key=True,
+        nullable=False,
+    )
+
+    descendant_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("events.id", ondelete="cascade"),
+        primary_key=True,
+        nullable=False,
+    )
+
+    depth: Mapped[int] = mapped_column(
+        BigInteger,
+        nullable=False,
+        index=True,
+    )
+
+    @declared_attr
+    def ancestor(cls) -> Mapped[Event]:
+        return relationship(
+            Event,
+            foreign_keys="EventClosure.ancestor_id",
+            lazy="raise",
+        )
+
+    @declared_attr
+    def descendant(cls) -> Mapped[Event]:
+        return relationship(
+            Event,
+            foreign_keys="EventClosure.descendant_id",
+            lazy="raise",
+        )

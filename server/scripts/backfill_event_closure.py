@@ -1,0 +1,235 @@
+import asyncio
+import logging.config
+from functools import wraps
+from typing import Any
+from uuid import UUID
+
+import structlog
+import typer
+from rich.progress import Progress
+from sqlalchemy import func, select, update
+from sqlalchemy.dialects.postgresql import insert
+
+from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
+from polar.models import Event, EventClosure
+from polar.postgres import create_async_engine
+
+cli = typer.Typer()
+
+
+def typer_async(f):  # type: ignore
+    @wraps(f)
+    def wrapper(*args, **kwargs):  # type: ignore
+        return asyncio.run(f(*args, **kwargs))
+
+    return wrapper
+
+
+async def run_backfill(
+    batch_size: int = 1000,
+    session: AsyncSession | None = None,
+) -> None:
+    """
+    Backfill root_id and event_closure table for existing events.
+
+    This script processes events level by level:
+    1. Sets root_id for root events (no parent)
+    2. Creates self-referencing closure entries for roots
+    3. Processes children iteratively, setting root_id and closure entries
+    """
+    engine = None
+    own_session = False
+
+    if session is None:
+        engine = create_async_engine("script")
+        sessionmaker = create_async_sessionmaker(engine)
+        session = sessionmaker()
+        own_session = True
+
+    try:
+        total_events = (
+            await session.execute(select(func.count()).select_from(Event))
+        ).scalar_one()
+
+        if total_events == 0:
+            typer.echo("No events to process")
+            if engine is not None:
+                await engine.dispose()
+            raise typer.Exit(0)
+
+        typer.echo(f"Found {total_events} events to backfill")
+
+        with Progress() as progress:
+            task = progress.add_task(
+                "[cyan]Backfilling event closure data...", total=total_events
+            )
+
+            processed = 0
+
+            typer.echo("Step 1: Processing root events (no parent)...")
+            root_events_result = await session.execute(
+                select(Event.id).where(Event.parent_id.is_(None))
+            )
+            root_ids = [row[0] for row in root_events_result]
+            typer.echo(f"Found {len(root_ids)} root events")
+
+            if root_ids:
+                await session.execute(
+                    update(Event).where(Event.id.in_(root_ids)).values(root_id=Event.id)
+                )
+
+                closure_entries = [
+                    {
+                        "ancestor_id": event_id,
+                        "descendant_id": event_id,
+                        "depth": 0,
+                    }
+                    for event_id in root_ids
+                ]
+                await session.execute(
+                    insert(EventClosure)
+                    .values(closure_entries)
+                    .on_conflict_do_nothing(
+                        index_elements=["ancestor_id", "descendant_id"]
+                    )
+                )
+                await session.commit()
+
+                processed += len(root_ids)
+                progress.update(task, advance=len(root_ids))
+
+            typer.echo("Step 2: Processing child events level by level...")
+            level = 1
+            while processed < total_events:
+                parent_table = Event.__table__.alias("parent")
+                events_result = await session.execute(
+                    select(Event.id, Event.parent_id)
+                    .join(
+                        parent_table,
+                        Event.parent_id == parent_table.c.id,
+                    )
+                    .where(
+                        Event.parent_id.is_not(None),
+                        Event.root_id.is_(None),
+                        parent_table.c.root_id.is_not(None),
+                    )
+                    .limit(batch_size)
+                )
+                events = [(row[0], row[1]) for row in events_result]
+
+                if not events:
+                    break
+
+                event_ids = [event_id for event_id, _ in events]
+                parent_map: dict[UUID, UUID] = {
+                    event_id: parent_id for event_id, parent_id in events
+                }
+
+                parent_data_result = await session.execute(
+                    select(Event.id, Event.root_id).where(
+                        Event.id.in_(list(parent_map.values()))
+                    )
+                )
+                parent_data = {row[0]: row[1] for row in parent_data_result}
+
+                root_updates = []
+                for event_id, parent_id in parent_map.items():
+                    parent_root = parent_data.get(parent_id)
+                    if parent_root:
+                        root_updates.append({"id": event_id, "root_id": parent_root})
+
+                if root_updates:
+                    for update_data in root_updates:
+                        await session.execute(
+                            update(Event)
+                            .where(Event.id == update_data["id"])
+                            .values(root_id=update_data["root_id"])
+                        )
+
+                closure_entries = []
+                for event_id, parent_id in parent_map.items():
+                    closure_entries.append(
+                        {
+                            "ancestor_id": event_id,
+                            "descendant_id": event_id,
+                            "depth": 0,
+                        }
+                    )
+
+                    parent_closure_result = await session.execute(
+                        select(
+                            EventClosure.ancestor_id,
+                            EventClosure.depth,
+                        ).where(EventClosure.descendant_id == parent_id)
+                    )
+                    parent_closures = [
+                        (row[0], row[1]) for row in parent_closure_result
+                    ]
+
+                    for ancestor_id, depth in parent_closures:
+                        closure_entries.append(
+                            {
+                                "ancestor_id": ancestor_id,
+                                "descendant_id": event_id,
+                                "depth": depth + 1,
+                            }
+                        )
+
+                if closure_entries:
+                    await session.execute(
+                        insert(EventClosure)
+                        .values(closure_entries)
+                        .on_conflict_do_nothing(
+                            index_elements=["ancestor_id", "descendant_id"]
+                        )
+                    )
+
+                await session.commit()
+
+                processed += len(events)
+                progress.update(task, advance=len(events))
+
+                level += 1
+
+        final_count = (
+            await session.execute(select(func.count()).select_from(EventClosure))
+        ).scalar_one()
+
+        typer.echo("\n---\n")
+        typer.echo(f"Successfully backfilled {processed} events")
+        typer.echo(f"Created {final_count} closure entries")
+        typer.echo("\n---\n")
+
+    finally:
+        if own_session:
+            await session.close()
+        if engine is not None:
+            await engine.dispose()
+
+
+def drop_all(*args: Any, **kwargs: Any) -> Any:
+    raise structlog.DropEvent
+
+
+@cli.command()
+@typer_async
+async def backfill_event_closure(
+    batch_size: int = typer.Option(1000, help="Number of events to process per batch"),
+) -> None:
+    """
+    Backfill root_id and event_closure table for existing events.
+    """
+    # Disable logging when running as CLI
+    structlog.configure(processors=[drop_all])
+    logging.config.dictConfig(
+        {
+            "version": 1,
+            "disable_existing_loggers": True,
+        }
+    )
+
+    await run_backfill(batch_size=batch_size)
+
+
+if __name__ == "__main__":
+    cli()

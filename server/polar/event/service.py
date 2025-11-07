@@ -16,6 +16,7 @@ from sqlalchemy import (
     select,
     text,
 )
+from sqlalchemy.dialects.postgresql import insert
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.customer.repository import CustomerRepository
@@ -26,7 +27,14 @@ from polar.kit.sorting import Sorting
 from polar.logging import Logger
 from polar.meter.filter import Filter
 from polar.meter.repository import MeterRepository
-from polar.models import Customer, Event, Organization, User, UserOrganization
+from polar.models import (
+    Customer,
+    Event,
+    EventClosure,
+    Organization,
+    User,
+    UserOrganization,
+)
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_events
@@ -312,9 +320,9 @@ class EventService:
                 if isinstance(event_create, EventCreateCustomer):
                     validate_customer_id(index, event_create.customer_id)
 
-                parent_id: uuid.UUID | None = None
+                parent_event: Event | None = None
                 if event_create.parent_id is not None:
-                    parent_id = await self._resolve_parent_id(
+                    parent_event = await self._resolve_parent(
                         session, index, event_create.parent_id, organization_id
                     )
             except EventIngestValidationError as e:
@@ -326,8 +334,9 @@ class EventService:
                 )
                 event_dict["source"] = EventSource.user
                 event_dict["organization_id"] = organization_id
-                if parent_id is not None:
-                    event_dict["parent_id"] = parent_id
+                if parent_event is not None:
+                    event_dict["parent_id"] = parent_event.id
+                    event_dict["root_id"] = parent_event.root_id or parent_event.id
 
                 events.append(event_dict)
 
@@ -336,6 +345,7 @@ class EventService:
 
         repository = EventRepository.from_session(session)
         event_ids, duplicates_count = await repository.insert_batch(events)
+
         enqueue_events(*event_ids)
 
         return EventsIngestResponse(
@@ -346,6 +356,7 @@ class EventService:
         repository = EventRepository.from_session(session)
         event = await repository.create(event, flush=True)
         enqueue_events(event.id)
+
         log.debug(
             "Event created",
             id=event.id,
@@ -355,9 +366,55 @@ class EventService:
         )
         return event
 
+    async def populate_event_closures_batch(
+        self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
+    ) -> None:
+        if not event_ids:
+            return
+
+        result = await session.execute(
+            select(Event.id, Event.parent_id).where(Event.id.in_(event_ids))
+        )
+        events_data = result.all()
+
+        closure_entries = []
+        for event_id, parent_id in events_data:
+            closure_entries.append(
+                {
+                    "ancestor_id": event_id,
+                    "descendant_id": event_id,
+                    "depth": 0,
+                }
+            )
+
+            if parent_id is not None:
+                parent_closures_result = await session.execute(
+                    select(
+                        EventClosure.ancestor_id,
+                        EventClosure.depth,
+                    ).where(EventClosure.descendant_id == parent_id)
+                )
+
+                for ancestor_id, depth in parent_closures_result:
+                    closure_entries.append(
+                        {
+                            "ancestor_id": ancestor_id,
+                            "descendant_id": event_id,
+                            "depth": depth + 1,
+                        }
+                    )
+
+        if closure_entries:
+            await session.execute(
+                insert(EventClosure)
+                .values(closure_entries)
+                .on_conflict_do_nothing(index_elements=["ancestor_id", "descendant_id"])
+            )
+
     async def ingested(
         self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
     ) -> None:
+        await self.populate_event_closures_batch(session, event_ids)
         repository = EventRepository.from_session(session)
         statement = (
             repository.get_base_statement()
@@ -477,36 +534,39 @@ class EventService:
 
         return _validate_customer_id
 
-    async def _resolve_parent_id(
+    async def _resolve_parent(
         self,
         session: AsyncSession,
         index: int,
         parent_id: str,
         organization_id: uuid.UUID,
-    ) -> uuid.UUID:
+    ) -> Event:
+        """
+        Resolve and return the parent event.
+        """
         try:
             parent_uuid = uuid.UUID(parent_id)
-            statement = select(Event.id).where(
+            statement = select(Event).where(
                 Event.id == parent_uuid, Event.organization_id == organization_id
             )
             result = await session.execute(statement)
-            found_id = result.scalar_one_or_none()
+            parent_event = result.scalar_one_or_none()
 
-            if found_id is not None:
-                return found_id
+            if parent_event is not None:
+                return parent_event
 
         except ValueError:
             pass
 
-        statement = select(Event.id).where(
+        statement = select(Event).where(
             Event.external_id == parent_id,
             Event.organization_id == organization_id,
         )
         result = await session.execute(statement)
-        found_id = result.scalar_one_or_none()
+        parent_event = result.scalar_one_or_none()
 
-        if found_id is not None:
-            return found_id
+        if parent_event is not None:
+            return parent_event
 
         raise EventIngestValidationError(
             [

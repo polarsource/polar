@@ -11,7 +11,7 @@ from polar.checkout.repository import CheckoutRepository
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
-from polar.models import Order, Product, Subscription
+from polar.models import CustomerSeat, Order, Product, Subscription
 from polar.models.customer_seat import SeatStatus
 from polar.openapi import APITag
 from polar.order.repository import OrderRepository
@@ -237,7 +237,7 @@ async def revoke_seat(
     seat_id: UUID4,
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-) -> CustomerSeatSchema:
+) -> CustomerSeat:
     if isinstance(auth_subject.subject, Anonymous):
         raise NotPermitted("Authentication required")
 
@@ -262,10 +262,7 @@ async def revoke_seat(
 
     await seat_service.check_seat_feature_enabled(session, organization_id)
 
-    revoked_seat = await seat_service.revoke_seat(session, seat)
-    await session.commit()
-
-    return CustomerSeatSchema.model_validate(revoked_seat)
+    return await seat_service.revoke_seat(session, seat)
 
 
 @router.post(
@@ -283,7 +280,7 @@ async def resend_invitation(
     seat_id: UUID4,
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-) -> CustomerSeatSchema:
+) -> CustomerSeat:
     if isinstance(auth_subject.subject, Anonymous):
         raise NotPermitted("Authentication required")
 
@@ -308,10 +305,7 @@ async def resend_invitation(
 
     await seat_service.check_seat_feature_enabled(session, organization_id)
 
-    resent_seat = await seat_service.resend_invitation(session, seat)
-    await session.commit()
-
-    return CustomerSeatSchema.model_validate(resent_seat)
+    return await seat_service.resend_invitation(session, seat)
 
 
 @router.get(

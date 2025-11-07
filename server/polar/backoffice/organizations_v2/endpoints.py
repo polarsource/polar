@@ -491,7 +491,6 @@ async def approve_organization(
     await organization_service.confirm_organization_reviewed(
         session, organization, next_review_threshold
     )
-    await session.commit()
 
     return HXRedirectResponse(
         request,
@@ -523,7 +522,6 @@ async def deny_dialog(
     if request.method == "POST":
         # Deny the organization
         await organization_service.deny_organization(session, organization)
-        await session.commit()
 
         return HXRedirectResponse(
             request,
@@ -593,7 +591,6 @@ async def approve_denied_dialog(
         await organization_service.confirm_organization_reviewed(
             session, organization, threshold
         )
-        await session.commit()
 
         return HXRedirectResponse(
             request,
@@ -683,7 +680,6 @@ async def unblock_approve_dialog(
         await organization_service.confirm_organization_reviewed(
             session, organization, threshold
         )
-        await session.commit()
 
         return HXRedirectResponse(
             request,
@@ -765,7 +761,6 @@ async def block_dialog(
         from datetime import UTC, datetime
 
         organization.blocked_at = datetime.now(UTC)
-        await session.commit()
 
         return HXRedirectResponse(
             request,
@@ -1285,7 +1280,6 @@ async def impersonate_user(
         scopes=[Scope.web_read],  # Read-only
         expire_in=timedelta(minutes=60),  # Time-limited
     )
-    await session.commit()
 
     # Get user's first organization for redirect
     repository = OrganizationRepository(session)
@@ -1357,7 +1351,6 @@ async def make_admin(
         await account_service.change_admin(
             session, organization.account, user_id, organization_id
         )
-        await session.commit()
     except Exception as e:
         logger.error("Failed to make user admin", error=str(e))
         raise HTTPException(status_code=400, detail=str(e))
@@ -1393,7 +1386,6 @@ async def remove_member(
         )
 
         await user_organization_service.remove_member(session, organization.id, user_id)
-        await session.commit()
     except Exception as e:
         logger.error("Failed to remove member", error=str(e))
         raise HTTPException(status_code=400, detail=str(e))
@@ -1425,7 +1417,6 @@ async def delete_dialog(
 
     if request.method == "POST":
         await organization_service.delete(session, organization)
-        await session.commit()
 
         return HXRedirectResponse(
             request,
@@ -1497,7 +1488,6 @@ async def setup_account(
         raise HTTPException(
             status_code=501, detail="Manual account creation not yet implemented"
         )
-        # await session.commit()
 
         # Redirect back to account section
         redirect_url = (

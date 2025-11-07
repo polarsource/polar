@@ -115,7 +115,7 @@ async def assign_seat(
     seat_assign: SeatAssign,
     auth_subject: auth.CustomerPortalWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> CustomerSeatSchema:
+) -> CustomerSeat:
     customer = auth_subject.subject
 
     subscription: Subscription | None = None
@@ -168,8 +168,6 @@ async def assign_seat(
         metadata=seat_assign.metadata,
     )
 
-    await session.commit()
-
     # Reload seat with customer relationship
     seat_repository = CustomerSeatRepository.from_session(session)
     seat_statement = (
@@ -182,7 +180,7 @@ async def assign_seat(
     if not reloaded_seat:
         raise ResourceNotFound("Seat not found after creation")
 
-    return CustomerSeatSchema.model_validate(reloaded_seat)
+    return reloaded_seat
 
 
 @router.delete(
@@ -199,17 +197,14 @@ async def revoke_seat(
     seat_id: UUID4,
     auth_subject: auth.CustomerPortalWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> CustomerSeatSchema:
+) -> CustomerSeat:
     customer = auth_subject.subject
 
     seat = await seat_service.get_seat_for_customer(session, customer, seat_id)
     if not seat:
         raise ResourceNotFound("Seat not found")
 
-    revoked_seat = await seat_service.revoke_seat(session, seat)
-    await session.commit()
-
-    return CustomerSeatSchema.model_validate(revoked_seat)
+    return await seat_service.revoke_seat(session, seat)
 
 
 @router.post(
@@ -227,17 +222,14 @@ async def resend_invitation(
     seat_id: UUID4,
     auth_subject: auth.CustomerPortalWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> CustomerSeatSchema:
+) -> CustomerSeat:
     customer = auth_subject.subject
 
     seat = await seat_service.get_seat_for_customer(session, customer, seat_id)
     if not seat:
         raise ResourceNotFound("Seat not found")
 
-    resent_seat = await seat_service.resend_invitation(session, seat)
-    await session.commit()
-
-    return CustomerSeatSchema.model_validate(resent_seat)
+    return await seat_service.resend_invitation(session, seat)
 
 
 @router.get(

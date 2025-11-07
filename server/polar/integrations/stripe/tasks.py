@@ -124,8 +124,6 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
                         await subscription_service.update_payment_method_from_retry(
                             session, order.subscription, payment_method
                         )
-
-                    await session.commit()
                 return
 
 

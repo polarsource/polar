@@ -721,7 +721,6 @@ class OrganizationService:
             await self.deny_organization(session, organization)
 
         session.add(ai_validation)
-        await session.commit()
 
         return ai_validation
 
@@ -748,8 +747,6 @@ class OrganizationService:
         session.add(review)
 
         await plain_service.create_appeal_review_thread(session, organization, review)
-
-        await session.commit()
 
         return review
 
@@ -779,7 +776,6 @@ class OrganizationService:
 
         session.add(organization)
         session.add(review)
-        await session.commit()
 
         return review
 
@@ -804,7 +800,6 @@ class OrganizationService:
         review.appeal_reviewed_at = datetime.now(UTC)
 
         session.add(review)
-        await session.commit()
 
         return review
 

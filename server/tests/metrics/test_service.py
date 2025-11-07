@@ -1417,7 +1417,7 @@ class TestGetMetrics:
         ).scalar_one()
         subscription_1.canceled_at = _date_to_datetime(date(2024, 2, 15))
         subscription_1.ended_at = _date_to_datetime(date(2024, 3, 1))
-        await session.commit()
+        await save_fixture(subscription_1)
 
         metrics = await metrics_service.get_metrics(
             session,

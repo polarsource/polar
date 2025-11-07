@@ -8,13 +8,13 @@
     "build": "npm run build:css && npm run build:js"
   },
   "dependencies": {
-    "@tailwindcss/cli": "^4.1.13",
-    "@tailwindcss/postcss": "^4.1.13",
-    "daisyui": "^5.1.23",
-    "esbuild": "^0.25.10",
-    "htmx.org": "^2.0.7",
+    "@tailwindcss/cli": "^4.1.17",
+    "@tailwindcss/postcss": "^4.1.17",
+    "daisyui": "^5.4.7",
+    "esbuild": "^0.25.12",
+    "htmx.org": "^2.0.8",
     "hyperscript.org": "^0.9.14",
-    "lucide-static": "^0.544.0",
-    "tailwindcss": "^4.1.13"
+    "lucide-static": "^0.552.0",
+    "tailwindcss": "^4.1.17"
   }
 }

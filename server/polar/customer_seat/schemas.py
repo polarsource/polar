@@ -125,9 +125,6 @@ class CustomerSeat(TimestampedSchema):
                     object.__setattr__(data, "customer_email", data.customer.email)
         return data
 
-    class Config:
-        from_attributes = True
-
 
 class SeatsList(Schema):
     seats: list[CustomerSeat] = Field(..., description="List of seats")

@@ -616,6 +616,76 @@ class TestListWithAggregateCosts:
 
 
 @pytest.mark.asyncio
+class TestGetHierarchyStats:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_hierarchy_stats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        root1 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="request",
+            metadata={"_cost": {"amount": 10, "currency": "usd"}},
+        )
+
+        child1 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="child",
+            parent_id=root1.id,
+            metadata={"_cost": {"amount": 5, "currency": "usd"}},
+        )
+
+        child2 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="child",
+            parent_id=root1.id,
+            metadata={"_cost": {"amount": 3, "currency": "usd"}},
+        )
+
+        root2 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="request",
+            metadata={"_cost": {"amount": 20, "currency": "usd"}},
+        )
+
+        child3 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="child",
+            parent_id=root2.id,
+            metadata={"_cost": {"amount": 7, "currency": "usd"}},
+        )
+
+        stats = await event_service.get_hierarchy_stats(
+            session,
+            auth_subject,
+            aggregate_fields=("_cost.amount",),
+        )
+
+        assert len(stats) == 1
+        assert stats[0]["name"] == "request"
+        assert stats[0]["occurrences"] == 2
+        assert stats[0]["totals"]["_cost_amount"] == 10 + 5 + 3 + 20 + 7
+
+
+@pytest.mark.asyncio
 class TestIngested:
     async def test_basic(
         self,

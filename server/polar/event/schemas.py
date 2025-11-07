@@ -424,4 +424,50 @@ class EventName(Schema):
     last_seen: datetime = Field(description="The last time the event occurred.")
 
 
+class EventAggregations(Schema):
+    """Aggregated values from all descendant events."""
+
+    descendant_count: int = Field(
+        description="Total number of descendant events (not including the event itself)."
+    )
+    sums: dict[str, Decimal] = Field(
+        description="Aggregated sums for requested metadata fields. Keys are field paths (e.g., 'cost_amount'), values are the summed totals.",
+        default_factory=dict,
+    )
+
+
+class EventWithAggregations(Schema):
+    """An event with aggregated values from its descendants."""
+
+    event: Event = Field(description="The event.")
+    aggregations: EventAggregations = Field(
+        description="Aggregated values from all descendant events."
+    )
+
+
+class RootEventStatistics(Schema):
+    """Aggregate statistics for events grouped by root event name."""
+
+    name: str = Field(description="The name of the root event.")
+    occurrences: int = Field(
+        description="Number of root events with this name (i.e., number of traces)."
+    )
+    totals: dict[str, Decimal] = Field(
+        description="Sum of each field across all events in all hierarchies.",
+        default_factory=dict,
+    )
+    averages: dict[str, Decimal] = Field(
+        description="Average value of each field across all events in all hierarchies.",
+        default_factory=dict,
+    )
+    p95: dict[str, Decimal] = Field(
+        description="95th percentile of each field across all events in all hierarchies.",
+        default_factory=dict,
+    )
+    p99: dict[str, Decimal] = Field(
+        description="99th percentile of each field across all events in all hierarchies.",
+        default_factory=dict,
+    )
+
+
 EventID = Annotated[UUID4, Path(description="The event ID.")]

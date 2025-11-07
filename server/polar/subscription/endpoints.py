@@ -77,6 +77,10 @@ async def list(
     active: bool | None = Query(
         None, description="Filter by active or inactive subscription."
     ),
+    cancel_at_period_end: bool | None = Query(
+        None,
+        description="Filter by subscriptions that are set to cancel at period end.",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[SubscriptionSchema]:
     """List subscriptions."""
@@ -89,6 +93,7 @@ async def list(
         external_customer_id=external_customer_id,
         discount_id=discount_id,
         active=active,
+        cancel_at_period_end=cancel_at_period_end,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,

@@ -328,6 +328,7 @@ class SubscriptionService:
         external_customer_id: Sequence[str] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
+        cancel_at_period_end: bool | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SubscriptionSortProperty]] = [
@@ -362,6 +363,11 @@ class SubscriptionService:
                 statement = statement.where(Subscription.active.is_(True))
             else:
                 statement = statement.where(Subscription.revoked.is_(True))
+
+        if cancel_at_period_end is not None:
+            statement = statement.where(
+                Subscription.cancel_at_period_end.is_(cancel_at_period_end)
+            )
 
         if metadata is not None:
             statement = apply_metadata_clause(Subscription, statement, metadata)

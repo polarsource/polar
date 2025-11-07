@@ -4,6 +4,9 @@ import { CustomerPage } from '@/components/Customer/CustomerPage'
 import { EditCustomerModal } from '@/components/Customer/EditCustomerModal'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
+import IntervalPicker, {
+  getNextValidInterval,
+} from '@/components/Metrics/IntervalPicker'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -27,6 +30,7 @@ import {
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { endOfToday, startOfDay } from 'date-fns'
 import { useRouter } from 'next/navigation'
+import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useCallback, useEffect } from 'react'
 
 const CustomerHeader = ({
@@ -41,6 +45,8 @@ const CustomerHeader = ({
     endDate: Date
     setStartDate: (date: Date) => void
     setEndDate: (date: Date) => void
+    interval: schemas['TimeInterval']
+    setInterval: (interval: schemas['TimeInterval']) => void
   }
 }) => {
   const router = useRouter()
@@ -102,18 +108,39 @@ const CustomerHeader = ({
     })
   }, [deleteCustomer, customer, organization, router])
 
+  const onDateChange = useCallback(
+    (date: { from: Date; to: Date }) => {
+      const validInterval = getNextValidInterval(
+        metrics.interval,
+        date.from,
+        date.to,
+      )
+      metrics.setStartDate(date.from)
+      metrics.setEndDate(date.to)
+      if (validInterval !== metrics.interval) {
+        metrics.setInterval(validInterval)
+      }
+    },
+    [metrics],
+  )
+
   return (
     <div className="flex flex-row gap-2">
+      <div>
+        <IntervalPicker
+          interval={metrics.interval}
+          onChange={metrics.setInterval}
+          startDate={metrics.startDate}
+          endDate={metrics.endDate}
+        />
+      </div>
       <DateRangePicker
         date={
           metrics.startDate && metrics.endDate
             ? { from: metrics.startDate, to: metrics.endDate }
             : undefined
         }
-        onDateChange={(date) => {
-          metrics.setStartDate(date.from)
-          metrics.setEndDate(date.to)
-        }}
+        onDateChange={onDateChange}
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -182,6 +209,16 @@ interface ClientPageProps {
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
   const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
+  const [interval, setInterval] = useQueryState(
+    'interval',
+    parseAsStringLiteral([
+      'hour',
+      'day',
+      'week',
+      'month',
+      'year',
+    ] as schemas['TimeInterval'][]).withDefault('day'),
+  )
 
   useEffect(() => {
     if (customer) {
@@ -213,7 +250,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
           <CustomerHeader
             organization={organization}
             customer={customer}
-            metrics={{ startDate, endDate, setStartDate, setEndDate }}
+            metrics={{
+              startDate,
+              endDate,
+              setStartDate,
+              setEndDate,
+              interval,
+              setInterval,
+            }}
           />
         </>
       }
@@ -223,6 +267,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
         customer={customer}
         organization={organization}
         dateRange={{ startDate, endDate }}
+        interval={interval}
       />
     </MasterDetailLayoutContent>
   )

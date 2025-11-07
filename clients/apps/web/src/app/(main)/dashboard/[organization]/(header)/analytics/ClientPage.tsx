@@ -4,7 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import CancellationsDistributionChart from '@/components/Metrics/CancellationsDistributionChart'
 import CancellationsStackedChart from '@/components/Metrics/CancellationsStackedChart'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
-import IntervalPicker from '@/components/Metrics/IntervalPicker'
+import IntervalPicker, { getNextValidInterval } from '@/components/Metrics/IntervalPicker'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { ParsedMetricsResponse, useMetrics, useProducts } from '@/hooks/queries'
@@ -104,7 +104,8 @@ export default function ClientPage({
 
   const onDateChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
-      const params = getSearchParams(dateRange, interval, productId)
+      const validInterval = getNextValidInterval(interval, dateRange.from, dateRange.to)
+      const params = getSearchParams(dateRange, validInterval, productId)
       router.push(`/dashboard/${organization.slug}/analytics?${params}`)
     },
     [router, organization, interval, productId],
@@ -190,7 +191,12 @@ export default function ClientPage({
       header={
         <div className="flex flex-col items-center gap-2 lg:flex-row">
           <div className="w-full lg:w-auto">
-            <IntervalPicker interval={interval} onChange={onIntervalChange} />
+            <IntervalPicker
+              interval={interval}
+              onChange={onIntervalChange}
+              startDate={startDate}
+              endDate={endDate}
+            />
           </div>
           <div className="w-full lg:w-auto">
             <DateRangePicker

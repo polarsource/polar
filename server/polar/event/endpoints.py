@@ -155,6 +155,7 @@ async def list(
 async def get_hierarchy_stats_endpoint(
     auth_subject: auth.EventRead,
     metadata: MetadataQuery,
+    hierarchy_sorting: sorting.RootEventStatisticsSorting,
     filter: str | None = Query(
         None,
         description=(
@@ -236,6 +237,7 @@ async def get_hierarchy_stats_endpoint(
         metadata=metadata,
         query=query,
         aggregate_fields=tuple(aggregate_fields),
+        hierarchy_stats_sorting=hierarchy_sorting,
     )
 
     return [RootEventStatistics(**result) for result in results]

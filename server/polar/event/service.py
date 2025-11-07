@@ -254,6 +254,7 @@ class EventService:
         ),
         query: str | None = None,
         aggregate_fields: Sequence[str] = ("cost.amount",),
+        hierarchy_stats_sorting: Sequence[tuple[str, bool]] = (("total", True),),
     ) -> Sequence[dict[str, Any]]:
         repository = EventRepository.from_session(session)
         statement = await self._build_filtered_statement(
@@ -274,7 +275,9 @@ class EventService:
             query=query,
         )
 
-        return await repository.get_hierarchy_stats(statement, aggregate_fields)
+        return await repository.get_hierarchy_stats(
+            statement, aggregate_fields, hierarchy_stats_sorting
+        )
 
     async def list_names(
         self,

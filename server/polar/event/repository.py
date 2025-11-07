@@ -7,9 +7,12 @@ from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
     Select,
+    UnaryExpression,
     and_,
+    asc,
     case,
     cast,
+    desc,
     func,
     literal_column,
     or_,
@@ -24,6 +27,7 @@ from sqlalchemy.types import Numeric
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
+from polar.kit.sorting import Sorting
 from polar.kit.utils import generate_uuid
 from polar.models import (
     BillingEntry,
@@ -337,7 +341,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     async def get_hierarchy_stats(
         self,
         statement: Select[tuple[Event]],
-        aggregate_fields: Sequence[str],
+        aggregate_fields: Sequence[str] = ("cost.amount",),
+        sorting: Sequence[tuple[str, bool]] = (("total", True),),
     ) -> Sequence[dict[str, Any]]:
         """
         Get aggregate statistics grouped by root event name across all hierarchies.
@@ -345,6 +350,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         Args:
             statement: Base query for root events to include
             aggregate_fields: List of user_metadata field paths to aggregate
+            sorting: List of (property, is_desc) tuples for sorting
 
         Returns:
             List of dicts containing name, occurrences, and statistics for each field
@@ -403,6 +409,30 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
         if having_clauses:
             stats_query = stats_query.having(or_(*having_clauses))
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc_sort in sorting:
+            clause_function = desc if is_desc_sort else asc
+            if criterion == "name":
+                order_by_clauses.append(clause_function(text("name")))
+            elif criterion == "occurrences":
+                order_by_clauses.append(clause_function(text("occurrences")))
+            elif criterion in ("total", "average", "p95", "p99"):
+                if aggregate_fields:
+                    safe_field_name = aggregate_fields[0].replace(".", "_")
+                    suffix_map = {
+                        "total": "sum",
+                        "average": "avg",
+                        "p95": "p95",
+                        "p99": "p99",
+                    }
+                    suffix = suffix_map[criterion]
+                    order_by_clauses.append(
+                        clause_function(text(f"{safe_field_name}_{suffix}"))
+                    )
+
+        if order_by_clauses:
+            stats_query = stats_query.order_by(*order_by_clauses)
 
         result = await self.session.execute(stats_query)
         rows = result.all()

@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import SubscriptionCancellationSelect from '@/components/Subscriptions/SubscriptionCancellationSelect'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
 import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
@@ -35,6 +36,7 @@ interface ClientPageProps {
   subscriptionStatus?:
     | Extract<schemas['SubscriptionStatus'], 'active' | 'canceled'>
     | 'any'
+  cancelAtPeriodEnd?: 'all' | 'true' | 'false'
   metadata?: string[]
 }
 
@@ -44,6 +46,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   sorting,
   productId,
   subscriptionStatus,
+  cancelAtPeriodEnd,
   metadata,
 }) => {
   const [selectedSubscriptionState, setSelectedSubscriptionState] =
@@ -53,11 +56,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const filter = productId || 'all'
   const status = subscriptionStatus || 'active'
+  const cancelAtPeriodEndFilter = cancelAtPeriodEnd || 'all'
   const getSearchParams = (
     pagination: DataTablePaginationState,
     sorting: DataTableSortingState,
     filter: string,
     status: string,
+    cancelAtPeriodEndFilter: string,
   ) => {
     const params = serializeSearchParams(pagination, sorting)
     if (filter !== 'all') {
@@ -65,6 +70,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
     }
 
     params.append('status', status)
+
+    if (cancelAtPeriodEndFilter !== 'all') {
+      params.append('cancel_at_period_end', cancelAtPeriodEndFilter)
+    }
 
     if (metadata) {
       metadata.forEach((key) => params.append('metadata', key))
@@ -91,6 +100,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         sorting,
         filter,
         status,
+        cancelAtPeriodEndFilter,
       )}`,
     )
   }
@@ -111,6 +121,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         updatedSorting,
         filter,
         status,
+        cancelAtPeriodEndFilter,
       )}`,
     )
   }
@@ -122,17 +133,33 @@ const ClientPage: React.FC<ClientPageProps> = ({
         sorting,
         filter,
         status,
+        cancelAtPeriodEndFilter,
       )}`,
     )
   }
 
   const setStatus = (status: string) => {
+    const newCancelAtPeriodEnd =
+      status === 'active' ? cancelAtPeriodEndFilter : 'all'
     router.push(
       `/dashboard/${organization.slug}/sales/subscriptions?${getSearchParams(
         pagination,
         sorting,
         filter,
         status,
+        newCancelAtPeriodEnd,
+      )}`,
+    )
+  }
+
+  const setCancelAtPeriodEnd = (cancelAtPeriodEnd: string) => {
+    router.push(
+      `/dashboard/${organization.slug}/sales/subscriptions?${getSearchParams(
+        pagination,
+        sorting,
+        filter,
+        status,
+        cancelAtPeriodEnd,
       )}`,
     )
   }
@@ -140,16 +167,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const subscriptionsHook = useSubscriptions(organization.id, {
     ...getAPIParams(pagination, sorting),
     ...(productId ? { product_id: productId } : {}),
-    ...(status !== 'any'
-      ? status === 'about_to_cancel'
-        ? {
-            active: true,
-            cancel_at_period_end: true,
-          }
-        : {
-            active: status === 'active',
-          }
-      : {}),
+    ...(status !== 'any' ? { active: status === 'active' } : {}),
+    ...(cancelAtPeriodEndFilter === 'false'
+      ? { cancel_at_period_end: false }
+      : cancelAtPeriodEndFilter === 'true'
+        ? { cancel_at_period_end: true }
+        : {}),
   })
 
   const subscriptions = subscriptionsHook.data?.items || []
@@ -285,11 +308,19 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <div className="flex items-center gap-4">
             <div className="w-auto">
               <SubscriptionStatusSelect
-                statuses={['active', 'about_to_cancel', 'canceled']}
+                statuses={['active', 'canceled']}
                 value={subscriptionStatus || 'any'}
                 onChange={setStatus}
               />
             </div>
+            {status === 'active' && (
+              <div className="w-auto">
+                <SubscriptionCancellationSelect
+                  value={cancelAtPeriodEnd || 'all'}
+                  onChange={setCancelAtPeriodEnd}
+                />
+              </div>
+            )}
             <div className="w-auto">
               <SubscriptionTiersSelect
                 products={subscriptionTiers.data?.items || []}

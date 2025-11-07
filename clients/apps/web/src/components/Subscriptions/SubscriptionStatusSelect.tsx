@@ -11,7 +11,7 @@ import React from 'react'
 import { subscriptionStatusDisplayNames } from './utils'
 
 interface SubscriptionStatusSelectProps {
-  statuses: ('active' | 'about_to_cancel' | 'canceled')[]
+  statuses: ('active' | 'canceled')[]
   value: string
   onChange: (value: string) => void
 }

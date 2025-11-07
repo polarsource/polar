@@ -15,7 +15,8 @@ export default async function Page(props: {
   searchParams: Promise<
     DataTableSearchParams & {
       product_id?: string
-      status?: 'active' | 'canceled' | 'about_to_cancel' | 'any'
+      status?: 'active' | 'canceled' | 'any'
+      cancel_at_period_end?: 'all' | 'true' | 'false'
       metadata?: string[]
     }
   >
@@ -47,6 +48,7 @@ export default async function Page(props: {
       sorting={sorting}
       productId={searchParams.product_id}
       subscriptionStatus={searchParams.status ?? 'active'}
+      cancelAtPeriodEnd={searchParams.cancel_at_period_end ?? 'all'}
       metadata={metadata}
     />
   )

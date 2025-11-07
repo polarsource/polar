@@ -15,7 +15,7 @@ export default async function Page(props: {
   searchParams: Promise<
     DataTableSearchParams & {
       product_id?: string
-      status?: 'active' | 'canceled' | 'any'
+      status?: 'active' | 'canceled' | 'about_to_cancel' | 'any'
       metadata?: string[]
     }
   >

@@ -7,12 +7,13 @@ import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export const subscriptionStatusDisplayNames: {
-  [key in schemas['SubscriptionStatus']]: string
+  [key in schemas['SubscriptionStatus'] | 'about_to_cancel']: string
 } = {
   incomplete: 'Incomplete',
   incomplete_expired: 'Incomplete',
   trialing: 'Trialing',
   active: 'Active',
+  about_to_cancel: 'About to Cancel',
   past_due: 'Past due',
   canceled: 'Canceled',
   unpaid: 'Unpaid',

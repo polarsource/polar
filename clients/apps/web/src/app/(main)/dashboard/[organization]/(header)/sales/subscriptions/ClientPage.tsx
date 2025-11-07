@@ -141,9 +141,14 @@ const ClientPage: React.FC<ClientPageProps> = ({
     ...getAPIParams(pagination, sorting),
     ...(productId ? { product_id: productId } : {}),
     ...(status !== 'any'
-      ? {
-          active: status === 'active',
-        }
+      ? status === 'about_to_cancel'
+        ? {
+            active: true,
+            cancel_at_period_end: true,
+          }
+        : {
+            active: status === 'active',
+          }
       : {}),
   })
 
@@ -280,7 +285,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <div className="flex items-center gap-4">
             <div className="w-auto">
               <SubscriptionStatusSelect
-                statuses={['active', 'canceled']}
+                statuses={['active', 'about_to_cancel', 'canceled']}
                 value={subscriptionStatus || 'any'}
                 onChange={setStatus}
               />

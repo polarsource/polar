@@ -24520,6 +24520,8 @@ export interface operations {
         discount_id?: string | string[] | null
         /** @description Filter by active or inactive subscription. */
         active?: boolean | null
+        /** @description Filter by subscriptions that are set to cancel at period end. */
+        cancel_at_period_end?: boolean | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

@@ -33,7 +33,13 @@ export const getNextValidInterval = (
   }
 
   // Otherwise, find the next valid interval (going up in granularity)
-  const intervalOrder: schemas['TimeInterval'][] = ['hour', 'day', 'week', 'month', 'year']
+  const intervalOrder: schemas['TimeInterval'][] = [
+    'hour',
+    'day',
+    'week',
+    'month',
+    'year',
+  ]
 
   for (const interval of intervalOrder) {
     if (days < MAX_INTERVAL_DAYS[interval] - 1) {
@@ -79,7 +85,6 @@ const IntervalPicker = ({
     const disabled = new Set<schemas['TimeInterval']>()
 
     Object.entries(MAX_INTERVAL_DAYS).forEach(([intervalKey, maxDays]) => {
-      // Account for endOfDay offset: days must be < max_days - 1
       if (days >= maxDays - 1) {
         disabled.add(intervalKey as schemas['TimeInterval'])
       }

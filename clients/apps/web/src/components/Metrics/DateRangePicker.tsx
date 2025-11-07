@@ -106,7 +106,6 @@ export type DateRange = {
 interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
   date: DateRange | undefined
   onDateChange: (v: DateRange) => void
-  maxDaysRange?: number
   minDate?: Date
 }
 
@@ -114,7 +113,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   className,
   date,
   onDateChange,
-  maxDaysRange,
   minDate,
 }) => {
   const { organization } = useContext(OrganizationContext)
@@ -137,7 +135,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             mode="range"
             defaultMonth={date?.to}
             selected={date}
-            max={maxDaysRange}
             disabled={minDate ? { before: minDate } : undefined}
             onSelect={(v) => {
               onDateChange({

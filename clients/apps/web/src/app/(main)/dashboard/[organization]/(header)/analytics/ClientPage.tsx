@@ -32,10 +32,6 @@ export default function ClientPage({
   const router = useRouter()
 
   const minDate = useMemo(() => fromISODate(limits.min_date), [limits])
-  const maxDaysRange = useMemo(
-    () => limits.intervals[interval].max_days,
-    [interval, limits],
-  )
 
   const { data } = useMetrics({
     startDate,
@@ -202,7 +198,6 @@ export default function ClientPage({
             <DateRangePicker
               date={dateRange}
               onDateChange={onDateChange}
-              maxDaysRange={maxDaysRange}
               minDate={minDate}
               className="w-full"
             />

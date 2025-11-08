@@ -12,28 +12,41 @@ import ProductSelect from '@/components/Products/ProductSelect'
 import { ParsedMetricsResponse, useMetrics, useProducts } from '@/hooks/queries'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
+import { subMonths } from 'date-fns/subMonths'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage({
   organization,
-  limits,
-  startDate,
-  endDate,
+  earliestDateISOString,
+  startDateISOString,
+  endDateISOString,
   interval,
   productId,
 }: {
   organization: schemas['Organization']
-  limits: schemas['MetricsLimits']
-  startDate: Date
-  endDate: Date
+  earliestDateISOString: string
+  startDateISOString?: string
+  endDateISOString?: string
   interval: schemas['TimeInterval']
   productId?: string[]
 }) {
   const router = useRouter()
 
-  const minDate = useMemo(() => fromISODate(limits.min_date), [limits])
+  const minDate = useMemo(
+    () => fromISODate(earliestDateISOString),
+    [earliestDateISOString],
+  )
+
+  const [startDate, endDate] = useMemo(() => {
+    const today = new Date()
+    const startDate = startDateISOString
+      ? fromISODate(startDateISOString)
+      : subMonths(today, 1)
+    const endDate = endDateISOString ? fromISODate(endDateISOString) : today
+    return [startDate, endDate]
+  }, [startDateISOString, endDateISOString])
 
   const { data } = useMetrics({
     startDate,

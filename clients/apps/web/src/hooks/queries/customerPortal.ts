@@ -316,6 +316,9 @@ export const useCustomerUpdateSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_seats'],
+      })
     },
   })
 

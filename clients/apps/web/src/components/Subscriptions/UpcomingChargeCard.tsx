@@ -102,7 +102,7 @@ const UpcomingChargeCard = ({
             {isFetching ? (
               <div className="flex items-center justify-between">
                 <span className="font-medium">Total</span>
-                <span className="dark:bg-polar-700 dark:text-polar-400 animate-pulse rounded-md bg-gray-50 text-gray-500/0">
+                <span className="dark:text-polar-500 animate-pulse text-gray-500">
                   Loading…
                 </span>
               </div>

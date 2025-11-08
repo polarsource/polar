@@ -49,8 +49,11 @@ export default async function Page(props: {
     )
   }
 
-  const startDate = searchParams.start_date
-    ? fromISODate(searchParams.start_date)
+  const startDateISOString = searchParams.start_date ?? undefined
+  const endDateISOString = searchParams.end_date ?? undefined
+
+  const startDate = startDateISOString
+    ? fromISODate(startDateISOString)
     : defaultStartDate
   const endDate = searchParams.end_date
     ? endOfDay(fromISODate(searchParams.end_date))
@@ -111,9 +114,9 @@ export default async function Page(props: {
   return (
     <ClientPage
       organization={organization}
-      limits={limits}
-      startDate={startDate}
-      endDate={endDate}
+      earliestDateISOString={limits.min_date}
+      startDateISOString={startDateISOString}
+      endDateISOString={endDateISOString}
       interval={validInterval}
       productId={productId}
     />

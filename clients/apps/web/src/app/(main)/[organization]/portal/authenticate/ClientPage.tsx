@@ -139,7 +139,7 @@ const ClientPage = ({
               Access my purchases
             </Button>
 
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="dark:text-polar-400 text-sm text-gray-500">
               Don&apos;t have a code?{' '}
               <Link href="request" className="underline hover:no-underline">
                 Request a new one

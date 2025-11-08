@@ -246,7 +246,7 @@ export const ProductPriceSeatBasedItem: React.FC<
         return (
           <div
             key={field.id}
-            className="dark:bg-polar-900 group relative rounded-2xl border border-gray-200 bg-white dark:border-gray-800"
+            className="dark:bg-polar-900 group dark:border-polar-800 relative rounded-2xl border border-gray-200 bg-white"
             role="group"
             aria-labelledby={`tier-title-${index}-${tierIndex}`}
           >
@@ -334,7 +334,7 @@ export const ProductPriceSeatBasedItem: React.FC<
                     </FormLabel>
                     <FormControl>
                       {isLast ? (
-                        <div className="dark:bg-polar-800 dark:text-polar-500 flex h-9 w-full items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm font-medium text-gray-500 dark:border-gray-800">
+                        <div className="dark:bg-polar-800 dark:text-polar-500 dark:border-polar-800 flex h-9 w-full items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm font-medium text-gray-500">
                           ∞
                         </div>
                       ) : (

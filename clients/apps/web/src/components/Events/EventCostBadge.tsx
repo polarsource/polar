@@ -11,7 +11,7 @@ const getIndicatorColor = (type: 'cost' | 'revenue' | 'neutral') => {
     negative:
       'bg-red-50 dark:bg-red-950 text-red-500 dark:text-red-500 dark:group-hover:bg-red-950 group-hover:bg-red-100',
     neutral:
-      'bg-gray-100 dark:bg-polar-700 text-gray-500 dark:text-gray-500 dark:group-hover:bg-white/5 group-hover:bg-black/5',
+      'bg-gray-100 dark:bg-polar-700 text-gray-500 dark:text-polar-500 dark:group-hover:bg-white/5 group-hover:bg-black/5',
   }
 
   if (type === 'cost') {

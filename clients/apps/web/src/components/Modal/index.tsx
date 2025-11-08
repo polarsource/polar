@@ -80,7 +80,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
               transition={{ duration: 0.1, ease: 'easeInOut' }}
               onClick={onInnerClick}
             >
-              <div className="flex flex-row items-center justify-between px-4 py-1 text-sm">
+              <div className="flex flex-row items-center justify-between px-4 pt-1 pb-0 text-sm">
                 <span className="font-medium">{title}</span>
                 <Button
                   variant="ghost"

@@ -74,7 +74,7 @@ export const ContextList = ({
               {item.icon}
               <div className="flex min-w-0 flex-col">
                 <div className="w-full truncate text-sm">{item.title}</div>
-                <div className="w-full truncate text-xs text-gray-500 dark:text-gray-500">
+                <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500">
                   {item.subtitle}
                 </div>
               </div>

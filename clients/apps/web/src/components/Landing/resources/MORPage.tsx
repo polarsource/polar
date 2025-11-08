@@ -59,7 +59,7 @@ export const MORPage = () => {
             </p>
           </div>
           <div className="flex flex-col gap-2">
-            <ul className="divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-700 dark:border-gray-700 [&>li]:py-2">
+            <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
               <Benefit>
                 Powerful, flexibile & low-level APIs to facilitate transactions
               </Benefit>
@@ -89,7 +89,7 @@ export const MORPage = () => {
             </p>
           </div>
           <div className="flex flex-col gap-2">
-            <ul className="divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-700 dark:border-gray-700 [&>li]:py-2">
+            <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
               <Benefit>
                 Powerful, Higher-level Dashboard, APIs & SDKs to better
                 facilitate digital products, services & orders beyond the
@@ -113,7 +113,7 @@ export const MORPage = () => {
             <h3 className="text-lg">Go with a PSP if...</h3>
           </div>
           <div className="flex flex-col gap-2">
-            <ul className="divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-700 dark:border-gray-700 [&>li]:py-2">
+            <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
               <Benefit>
                 You&apos;re comfortable & prefer absolute control with low-level
                 APIs.
@@ -132,7 +132,7 @@ export const MORPage = () => {
               <h3 className="text-lg">Go with Polar if...</h3>
             </div>
             <div className="flex flex-col gap-2">
-              <ul className="divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-700 dark:border-gray-700 [&>li]:py-2">
+              <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
                 <Benefit>
                   You want product-, customer-, order- and subscription
                   management via an intuitive and easy dashboard
@@ -227,7 +227,7 @@ export const MORPage = () => {
             <h3 className="text-lg">PSP</h3>
           </div>
           <div className="flex flex-col gap-2">
-            <ul className="divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-700 dark:border-gray-700 [&>li]:py-2">
+            <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
               <Benefit>
                 Your volume alone is what counts towards international
                 thresholds vs. the MoR platform, i.e customers might not need to
@@ -254,7 +254,7 @@ export const MORPage = () => {
             <h3 className="text-lg">Merchant of Record</h3>
           </div>
           <div className="flex flex-col gap-2">
-            <ul className="divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-700 dark:border-gray-700 [&>li]:py-2">
+            <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
               <Benefit>
                 We are liable for all of the above as your reseller.
               </Benefit>
@@ -277,7 +277,7 @@ export const MORPage = () => {
       </ResourceSection>
 
       {/* Call to Action */}
-      <div className="flex flex-col border-t border-gray-200 pt-16 dark:border-gray-700">
+      <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
         <div className="flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4">
             <h3 className="text-xl">Ready to make the switch?</h3>

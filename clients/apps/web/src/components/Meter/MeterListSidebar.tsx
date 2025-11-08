@@ -191,7 +191,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
 
                   <div className="truncate text-sm">{meter.name}</div>
                 </div>
-                <div className="w-full truncate text-xs text-gray-500 capitalize dark:text-gray-500">
+                <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500 capitalize">
                   {meter.aggregation.func}
                 </div>
               </div>

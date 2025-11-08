@@ -88,7 +88,7 @@ export default function Resources() {
       </div>
       <div className="flex flex-col gap-y-8">
         <h3 className="text-2xl">Guides & Tutorials</h3>
-        <div className="flex flex-col items-center justify-center gap-y-4 border border-gray-300 p-16 dark:border-gray-800">
+        <div className="dark:border-polar-800 flex flex-col items-center justify-center gap-y-4 border border-gray-300 p-16">
           <h3 className="font-mono">Coming Soon</h3>
         </div>
       </div>

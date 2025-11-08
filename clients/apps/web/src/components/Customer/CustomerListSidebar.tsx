@@ -179,7 +179,7 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
                     <div className="w-full truncate text-sm">
                       {customer.name ?? '—'}
                     </div>
-                    <div className="w-full truncate text-xs text-gray-500 dark:text-gray-500">
+                    <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500">
                       {customer.email}
                     </div>
                   </div>

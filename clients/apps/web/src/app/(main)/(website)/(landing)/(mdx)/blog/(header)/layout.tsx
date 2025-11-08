@@ -12,7 +12,7 @@ export default function BlogLayout({
       <main>
         <div className="mx-auto flex w-full max-w-6xl flex-col px-2 md:px-0">
           {/* Content Card */}
-          <div className="dark:md:bg-polar-900 flex flex-col gap-y-8 rounded-lg border-gray-200 shadow-xs md:gap-y-12 md:border md:bg-white md:p-24 md:px-16 dark:border-gray-800">
+          <div className="dark:md:bg-polar-900 dark:border-polar-800 flex flex-col gap-y-8 rounded-lg border-gray-200 shadow-xs md:gap-y-12 md:border md:bg-white md:p-24 md:px-16">
             <div className="flex flex-col items-center">{children}</div>
           </div>
         </div>

@@ -192,7 +192,7 @@ export const ToolCallGroup = ({
             configure your account
           </span>
         </button>
-        <div className="ml-6 flex flex-col gap-1.5 border-l-2 border-gray-200 pl-4 dark:border-gray-700">
+        <div className="dark:border-polar-700 ml-6 flex flex-col gap-1.5 border-l-2 border-gray-200 pl-4">
           {parts.map((part, index) => {
             const label = getToolLabel(part)
             return (

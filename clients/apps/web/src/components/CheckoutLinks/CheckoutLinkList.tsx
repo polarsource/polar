@@ -121,7 +121,7 @@ export const CheckoutLinkList = ({
                     {checkoutLink.label ?? 'Untitled'}
                   </div>
                   <div>
-                    <div className="w-full truncate text-sm text-gray-500 dark:text-gray-500">
+                    <div className="dark:text-polar-500 w-full truncate text-sm text-gray-500">
                       {productLabel}
                     </div>
                   </div>

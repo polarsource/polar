@@ -94,7 +94,7 @@ const AggregationRadioItem = ({
         />
         <div className="flex flex-1 flex-col gap-1">
           <span className="cursor-pointer font-medium">{option.label}</span>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="dark:text-polar-400 text-sm text-gray-600">
             {option.description}
           </p>
         </div>

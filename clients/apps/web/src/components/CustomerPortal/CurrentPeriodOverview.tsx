@@ -93,7 +93,7 @@ export const CurrentPeriodOverview = ({
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <span className="text-gray-600 dark:text-gray-400">
+          <span className="dark:text-polar-400 text-gray-600">
             {subscription.product.name}
           </span>
           <span
@@ -113,7 +113,7 @@ export const CurrentPeriodOverview = ({
 
             {subscription.meters.map((meter) => (
               <div key={meter.id} className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">
+                <span className="dark:text-polar-400 text-gray-600">
                   {meter.meter.name}
                 </span>
                 <span className="font-medium">
@@ -156,7 +156,7 @@ export const CurrentPeriodOverview = ({
               {subscriptionPreview ? (
                 formatCurrency(subscriptionPreview.total_amount)
               ) : (
-                <span className="dark:bg-polar-700 animate-pulse rounded-md bg-gray-50 text-gray-500/0 dark:text-gray-400">
+                <span className="dark:bg-polar-700 dark:text-polar-400 animate-pulse rounded-md bg-gray-50 text-gray-500/0">
                   Loading…
                 </span>
               )}

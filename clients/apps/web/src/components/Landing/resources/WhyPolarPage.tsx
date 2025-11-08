@@ -47,7 +47,7 @@ export const WhyPolarPage = () => {
           specifically for developers who want to monetize their software
           without the complexity of traditional payment systems.
         </p>
-        <blockquote className="flex flex-col gap-y-4 border border-gray-200 p-4 dark:border-gray-700">
+        <blockquote className="dark:border-polar-700 flex flex-col gap-y-4 border border-gray-200 p-4">
           <p>
             The speed at which Polar is executing on the financial
             infrastructure primitives the new world needs is very impressive
@@ -70,7 +70,7 @@ export const WhyPolarPage = () => {
           </p>
         </div>
         <div className="flex flex-col gap-2">
-          <ul className="divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-700 dark:border-gray-700 [&>li]:py-2">
+          <ul className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-y border-gray-200 [&>li]:py-2">
             <li>
               <CheckOutlined className="mr-3" fontSize="inherit" />
               We handle VAT, GST, and sales tax in all jurisdictions
@@ -185,7 +185,7 @@ export const WhyPolarPage = () => {
               Polar.
             </p>
           </div>
-          <div className="grid grid-cols-3 items-center divide-x divide-gray-200 border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+          <div className="dark:border-polar-700 dark:divide-polar-700 grid grid-cols-3 items-center divide-x divide-gray-200 border border-gray-200">
             {logos.map(({ logo, href }, index) => (
               <Link
                 key={index}
@@ -201,7 +201,7 @@ export const WhyPolarPage = () => {
       </ResourceSection>
 
       {/* Call to Action */}
-      <div className="flex flex-col border-t border-gray-200 pt-16 dark:border-gray-700">
+      <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
         <div className="flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4">
             <h3 className="text-xl">Ready to make the switch?</h3>

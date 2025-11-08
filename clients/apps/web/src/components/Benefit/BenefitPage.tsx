@@ -107,7 +107,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
                     <div className="w-full truncate text-sm">
                       {grant.customer.name ?? '—'}
                     </div>
-                    <div className="w-full truncate text-xs text-gray-500 dark:text-gray-500">
+                    <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500">
                       {grant.customer.email}
                     </div>
                   </div>

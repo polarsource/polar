@@ -861,7 +861,7 @@ const BaseCheckoutForm = ({
                 {(checkout.trialEnd ||
                   (checkout.activeTrialInterval &&
                     checkout.activeTrialIntervalCount)) && (
-                  <div className="mt-3 border-t border-gray-300 pt-4 dark:border-gray-700">
+                  <div className="dark:border-polar-700 mt-3 border-t border-gray-300 pt-4">
                     {checkout.activeTrialInterval &&
                       checkout.activeTrialIntervalCount && (
                         <DetailRow

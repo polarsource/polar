@@ -293,7 +293,7 @@ const UpdateDiscount = ({
 
   if (discounts?.items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-gray-50 p-6 dark:bg-gray-800">
+      <div className="dark:bg-polar-800 flex flex-col items-center justify-center gap-2 rounded-2xl bg-gray-50 p-6">
         <h3 className="text-lg font-medium">Discounts</h3>
         <p className="dark:text-polar-500 text-sm text-gray-500">
           No discounts found
@@ -483,7 +483,7 @@ const UpdateTrial = ({
     <>
       <div className="flex flex-col gap-4">
         {/* Section 2: Set/Update trial end date */}
-        <div className="flex flex-col gap-y-4 rounded-2xl bg-gray-50 p-6 dark:bg-gray-800">
+        <div className="dark:bg-polar-800 flex flex-col gap-y-4 rounded-2xl bg-gray-50 p-6">
           <div className="flex flex-col gap-y-2">
             <h3 className="text-lg font-medium">
               {subscription.status === 'trialing'
@@ -542,7 +542,7 @@ const UpdateTrial = ({
 
         {/* Section 1: End trial now */}
         {subscription.status === 'trialing' && (
-          <div className="flex flex-col items-start gap-y-4 rounded-2xl bg-gray-50 p-6 dark:bg-gray-800">
+          <div className="dark:bg-polar-800 flex flex-col items-start gap-y-4 rounded-2xl bg-gray-50 p-6">
             <div className="flex flex-col gap-2">
               <h3 className="text-lg font-medium">End Trial</h3>
               <p className="dark:text-polar-500 text-sm text-gray-500">

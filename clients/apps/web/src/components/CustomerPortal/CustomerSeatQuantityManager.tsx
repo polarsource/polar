@@ -4,11 +4,11 @@ import { useCustomerUpdateSubscription } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Client, isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { MinusIcon, PlusIcon } from 'lucide-react'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
+import { twMerge } from 'tailwind-merge'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
 
@@ -33,7 +33,7 @@ export const CustomerSeatQuantityManager = ({
 
   const availableSeats = totalSeats - assignedSeats
 
-  const { register, handleSubmit, watch, setValue, setError } = useForm<{
+  const { handleSubmit, watch, setValue, setError } = useForm<{
     seats: number
   }>({
     defaultValues: {
@@ -70,6 +70,7 @@ export const CustomerSeatQuantityManager = ({
             title: 'Seats updated',
             description: `Subscription now has ${data.seats} ${data.seats === 1 ? 'seat' : 'seats'}.`,
           })
+
           onUpdate?.()
         }
       } catch (error) {
@@ -104,77 +105,73 @@ export const CustomerSeatQuantityManager = ({
 
   return (
     <div className="flex flex-col gap-3 text-sm">
-      <DetailRow
-        label="Total Seats"
-        value={
-          <span className="dark:text-polar-200 font-medium">{totalSeats}</span>
-        }
-      />
-      <DetailRow
-        label="Assigned"
-        value={
-          <span className="dark:text-polar-200 font-medium">
-            {assignedSeats}
-          </span>
-        }
-      />
-      <DetailRow
-        label="Available"
-        value={
-          <span className="dark:text-polar-200 font-medium">
-            {availableSeats}
-          </span>
-        }
-      />
-
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="dark:border-polar-700 mt-2 flex flex-col gap-3 border-t border-gray-200 pt-4"
-      >
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            onClick={handleDecrement}
-            disabled={!canDecrease || updateSubscription.isPending}
-            className={themingPreset.polar.buttonSecondary}
-          >
-            <MinusIcon className="h-4 w-4" />
-          </Button>
-          <Input
-            {...register('seats', {
-              valueAsNumber: true,
-              min: assignedSeats,
-            })}
-            type="number"
-            min={assignedSeats}
-            className="w-20 text-center"
-            disabled={updateSubscription.isPending}
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <div className="flex flex-col">
+          <DetailRow
+            label="Total Seats"
+            value={
+              <div className="flex w-full flex-row items-center justify-between gap-2">
+                <span className="dark:text-polar-200 font-medium">{seats}</span>
+                <div className="flex flex-row items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleDecrement}
+                    disabled={!canDecrease || updateSubscription.isPending}
+                    className={twMerge(
+                      themingPreset.polar.buttonSecondary,
+                      'text-xxs h-6 w-6',
+                    )}
+                  >
+                    <MinusIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleIncrement}
+                    disabled={updateSubscription.isPending}
+                    className={twMerge(
+                      themingPreset.polar.buttonSecondary,
+                      'text-xxs h-6 w-6',
+                    )}
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            }
           />
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            onClick={handleIncrement}
-            disabled={updateSubscription.isPending}
-            className={themingPreset.polar.buttonSecondary}
-          >
-            <PlusIcon className="h-4 w-4" />
-          </Button>
-          <Button
-            type="submit"
-            disabled={!hasChanges || updateSubscription.isPending}
-            loading={updateSubscription.isPending}
-            size="sm"
-            className={themingPreset.polar.button}
-          >
-            Update
-          </Button>
+          <DetailRow
+            label="Assigned"
+            value={
+              <span className="dark:text-polar-200 font-medium">
+                {assignedSeats}
+              </span>
+            }
+          />
+          <DetailRow
+            label="Available"
+            value={
+              <span className="dark:text-polar-200 font-medium">
+                {availableSeats}
+              </span>
+            }
+          />
         </div>
 
+        {hasChanges && (
+          <Button
+            loading={updateSubscription.isPending}
+            onClick={handleSubmit(onSubmit)}
+          >
+            Update Seats
+          </Button>
+        )}
+
         {!canDecrease && seats !== undefined && seats < assignedSeats && (
-          <p className="text-xs text-red-600 dark:text-red-400">
+          <p className="text-xs text-red-500 dark:text-red-400">
             Cannot decrease below {assignedSeats} assigned seats. Revoke seats
             first.
           </p>

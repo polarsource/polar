@@ -153,6 +153,8 @@ const CustomerPortalSubscription = ({
     }
   }
 
+  console.log(seatsData)
+
   const totalSeats = seatsData?.total_seats || 0
   const availableSeats = seatsData?.available_seats || 0
   const seats = seatsData?.seats || []

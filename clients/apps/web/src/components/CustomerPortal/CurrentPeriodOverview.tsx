@@ -152,11 +152,11 @@ export const CurrentPeriodOverview = ({
             <span className="font-medium">
               {hasMeters ? 'Estimated Total' : 'Total'}
             </span>
-            <span className="text-lg font-semibold">
+            <span className="text-lg font-medium">
               {subscriptionPreview ? (
                 formatCurrency(subscriptionPreview.total_amount)
               ) : (
-                <span className="dark:bg-polar-700 dark:text-polar-400 animate-pulse rounded-md bg-gray-50 text-gray-500/0">
+                <span className="dark:text-polar-500 animate-pulse text-gray-500">
                   Loading…
                 </span>
               )}

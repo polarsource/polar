@@ -556,12 +556,12 @@
               "guides/create-checkout-session",
               "guides/create-multiple-organizations",
               "guides/create-variants",
+              "guides/customize-product-display-order-in-checkout",
               "guides/disable-subscription-changes-in-customer-portal",
               "guides/subscription-downgrades",
               "guides/subscription-upgrades",
               "guides/seat-based-pricing",
-              "guides/theme-switch-in-checkout",
-              "guides/customize-product-display-order-in-checkout"
+              "guides/theme-switch-in-checkout"
             ]
           }
         ]

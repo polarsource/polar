@@ -7,7 +7,8 @@ description: "Learn how to customize the order in which products appear in check
     Currently, customizing the products order in checkout is only supported via the APIs.
 </Info>
 
-## Obtain Access Token and Product IDs
+## Create Organization Access Token and Product IDs
+
 <Steps>
     <Step title = "Create a New Token">
         Create a new organization token by following our [Organization Access Tokens](https://polar.sh/docs/integrate/oat) guide.
@@ -18,8 +19,8 @@ description: "Learn how to customize the order in which products appear in check
     </Step>
     <Step title =  "Go to the Products Catalogue">
         In the Polar dashboard sidebar, navigate to **Products** > **Catalogue** for your organization.
-        You can also go directly to:  
-        `https://polar.sh/dashboard/${org_slug}/products`  
+        You can also go directly to `https://polar.sh/dashboard/${org_slug}/products`.
+        
         <img height="200" src="/assets/guides/customize-product-display-order-in-checkout//products-catalogue.png" />
     </Step>
     <Step title = "Access the product IDs for checkout">
@@ -29,16 +30,17 @@ description: "Learn how to customize the order in which products appear in check
     </Step>
 </Steps>
 
-## Reordering Products Using Checkout Link API
+## Reordering Products Using Checkout Links API
+
 <Steps>
     <Step title = "Create a Checkout Link using the API">
         Open your terminal and paste the following curl command to make an API call for creating a checkout link.
         Be sure to replace:
-        - \<YOUR_ACCESS_TOKEN\> with your actual access token.   
-          Make sure your token has the **`checkout_links:write`** scope enabled to use Create Checkout Link API.
-        - \<PRODUCT_ID_1\>, \<PRODUCT_ID_2\>, etc., with the product IDs you want to include in the session.  
-          Make sure to list them in the exact order you want them to appear during checkout.
-
+        - \<YOUR_ACCESS_TOKEN\> with your actual access token.
+        <Note>
+            Make sure your token has the **`checkout_links:write`** scope enabled to use [Create Checkout Link API](/api-reference/checkout-links/create). 
+        </Note>
+        - \<PRODUCT_ID_1\>, \<PRODUCT_ID_2\>, etc., with the product IDs in the order you want them to appear in the checkout.
         ```bash
         curl --request POST \
             --url https://api.polar.sh/v1/checkout-links/ \
@@ -83,19 +85,20 @@ description: "Learn how to customize the order in which products appear in check
         ```
         The checkout looks like below:
         <img height="200" src="/assets/guides/customize-product-display-order-in-checkout/Product2-Product1.png" />
-
     </Step>
 </Steps>
 
 ## Reordering Products Using Checkout Session API
+
 <Steps>
     <Step title = "Create a Checkout Session using the API">
         Open your terminal and paste the following curl command to make an API call for creating a checkout session.
         Be sure to replace:
-        - \<YOUR_ACCESS_TOKEN\> with your actual access token.   
-          Make sure your token has the **`checkouts:write`** scope enabled to use Create Checkout Session API.
-        - \<PRODUCT_ID_1\>, \<PRODUCT_ID_2\>, etc., with the product IDs you want to include in the session.  
-          Make sure to list them in the exact order you want them to appear during checkout.
+        - \<YOUR_ACCESS_TOKEN\> with your actual access token.
+        <Note>
+            Make sure your token has the **`checkouts:write`** scope enabled to use [Create Checkout Session API](/api-reference/checkouts/create-session).
+        </Note>
+        - \<PRODUCT_ID_1\>, \<PRODUCT_ID_2\>, etc., with the product IDs in the order you want them to appear in the checkout.
 command returns a JSON. Access the checkout session URL from the “url” key of the JSON and open it.
         ```bash
         curl --request POST \

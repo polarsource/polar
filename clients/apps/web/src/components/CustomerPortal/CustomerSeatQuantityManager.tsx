@@ -36,7 +36,7 @@ export const CustomerSeatQuantityManager = ({
   const { handleSubmit, watch, setValue, setError } = useForm<{
     seats: number
   }>({
-    defaultValues: {
+    values: {
       seats: totalSeats,
     },
   })

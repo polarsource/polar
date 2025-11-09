@@ -566,6 +566,7 @@
               "guides/create-checkout-session",
               "guides/create-multiple-organizations",
               "guides/create-variants",
+              "guides/customize-products-order-in-checkouts",
               "guides/disable-subscription-changes-in-customer-portal",
               "guides/subscription-downgrades",
               "guides/subscription-upgrades",

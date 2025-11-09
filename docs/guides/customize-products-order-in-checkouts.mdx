@@ -98,7 +98,6 @@ description: "Learn how to customize the order in which products appear in check
             Make sure your token has the **`checkouts:write`** scope enabled to use [Create Checkout Session API](/api-reference/checkouts/create-session).
         </Note>
         - \<PRODUCT_ID_1\>, \<PRODUCT_ID_2\>, etc., with the product IDs in the order you want them to appear in the checkout.
-command returns a JSON. Access the checkout session URL from the “url” key of the JSON and open it.
         ```bash
         curl --request POST \
             --url https://api.polar.sh/v1/checkouts/ \

@@ -41,3 +41,7 @@ class PaymentMethod(RecordModel):
             back_populates="payment_methods",
             foreign_keys=[cls.customer_id],  # type: ignore
         )
+
+    @property
+    def fingerprint(self) -> str | None:
+        return self.method_metadata.get("fingerprint")

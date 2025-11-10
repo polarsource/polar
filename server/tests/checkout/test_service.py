@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import ANY, AsyncMock, MagicMock
@@ -27,6 +27,7 @@ from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
     NotConfirmedCheckout,
     NotOpenCheckout,
+    TrialAlreadyRedeemed,
 )
 from polar.checkout.service import checkout as checkout_service
 from polar.config import Environment, settings
@@ -45,6 +46,7 @@ from polar.kit.tax import (
     calculate_tax,
 )
 from polar.kit.trial import TrialInterval
+from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import (
     Account,
@@ -76,6 +78,7 @@ from polar.order.service import OrderService
 from polar.postgres import AsyncSession
 from polar.product.guard import is_fixed_price, is_metered_price, is_seat_price
 from polar.subscription.service import SubscriptionService
+from polar.trial_redemption.repository import TrialRedemptionRepository
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -89,6 +92,7 @@ from tests.fixtures.random_objects import (
     create_product_price_fixed,
     create_product_price_seat_unit,
     create_subscription,
+    create_trial_redemption,
 )
 
 MINIMUM_AMOUNT = 2500
@@ -3709,6 +3713,109 @@ class TestConfirm:
         assert checkout.customer is not None
         assert checkout.customer.billing_name == "Example Inc"
 
+    async def test_valid_trial(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        checkout_recurring_fixed: Checkout,
+    ) -> None:
+        organization.subscription_settings["prevent_trial_abuse"] = True
+        await save_fixture(organization)
+
+        checkout_recurring_fixed.trial_end = utc_now() + timedelta(days=14)
+        await save_fixture(checkout_recurring_fixed)
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded", payment_method={}
+        )
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout_recurring_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+
+    @pytest.mark.parametrize(
+        "email,fingerprint",
+        [
+            pytest.param("customer@example.com", None, id="same email"),
+            pytest.param("customer@bar.com", "FINGERPRINT", id="same fingerprint"),
+            pytest.param("customer+alias@example.com", None, id="email alias"),
+        ],
+    )
+    async def test_valid_trial_already_redeemed(
+        self,
+        email: str,
+        fingerprint: str | None,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        checkout_recurring_fixed: Checkout,
+    ) -> None:
+        organization.subscription_settings["prevent_trial_abuse"] = True
+        await save_fixture(organization)
+
+        checkout_recurring_fixed.trial_interval = TrialInterval.day
+        checkout_recurring_fixed.trial_interval_count = 7
+        await save_fixture(checkout_recurring_fixed)
+
+        existing_customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        await create_trial_redemption(
+            save_fixture,
+            customer=existing_customer,
+            customer_email=existing_customer.email,
+            payment_method_fingerprint="FINGERPRINT",
+        )
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            payment_method=SimpleNamespace(
+                card=SimpleNamespace(fingerprint=fingerprint)
+            ),
+        )
+
+        with pytest.raises(TrialAlreadyRedeemed):
+            await checkout_service.confirm(
+                session,
+                locker,
+                auth_subject,
+                checkout_recurring_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": email,
+                        "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
+
     async def test_existing_email_external_id_provided(
         self,
         save_fixture: SaveFixture,
@@ -4191,6 +4298,50 @@ class TestHandleSuccess:
             OrderBillingReasonInternal.subscription_create,
             payment,
         )
+
+    async def test_recurring_trial(
+        self,
+        save_fixture: SaveFixture,
+        order_service_mock: MagicMock,
+        subscription_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_recurring: Checkout,
+        customer: Customer,
+        payment: Payment,
+    ) -> None:
+        subscription_mock = MagicMock()
+        subscription_service_mock.create_or_update_from_checkout.return_value = (
+            subscription_mock,
+            True,
+        )
+
+        checkout_confirmed_recurring.trial_end = utc_now() + timedelta(days=14)
+        checkout_confirmed_recurring.customer = customer
+        await save_fixture(checkout_confirmed_recurring)
+
+        checkout = await checkout_service.handle_success(
+            session, checkout_confirmed_recurring, payment
+        )
+
+        assert checkout.status == CheckoutStatus.succeeded
+        subscription_service_mock.create_or_update_from_checkout.assert_called_once_with(
+            ANY, checkout, None
+        )
+        order_service_mock.create_from_checkout_subscription.assert_called_once_with(
+            ANY,
+            checkout,
+            subscription_mock,
+            OrderBillingReasonInternal.subscription_create,
+            payment,
+        )
+
+        trial_redemption_repository = TrialRedemptionRepository.from_session(session)
+        trial_redemptions = await trial_redemption_repository.get_all(
+            trial_redemption_repository.get_base_statement()
+        )
+        assert len(trial_redemptions) == 1
+        trial_redemption = trial_redemptions[0]
+        assert trial_redemption.customer_id == customer.id
 
 
 @pytest.mark.asyncio

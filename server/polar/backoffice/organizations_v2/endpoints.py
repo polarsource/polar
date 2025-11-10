@@ -993,6 +993,96 @@ async def edit_details(
 
 
 @router.api_route(
+    "/{organization_id}/edit-order-settings",
+    name="organizations-v2:edit_order_settings",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit_order_settings(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Edit organization order settings."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        data = await request.form()
+        updated_order_settings = {
+            **organization.order_settings,
+            "invoice_numbering": data.get("invoice_numbering", "organization"),
+        }
+        await repository.update(
+            organization, update_dict={"order_settings": updated_order_settings}
+        )
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for(
+                    "organizations-v2:detail", organization_id=organization_id
+                )
+            )
+            + "?section=settings",
+            303,
+        )
+
+    current = organization.order_settings.get("invoice_numbering", "organization")
+
+    with modal("Edit Order Settings", open=True):
+        with tag.p(classes="text-sm text-base-content/60 mb-4"):
+            text("Configure how invoice numbers are generated")
+
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations-v2:edit_order_settings",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="space-y-4",
+        ):
+            with tag.div(classes="space-y-3"):
+                for value, label, desc in [
+                    (
+                        "organization",
+                        "Organization-wide",
+                        "Sequential numbering across all customers",
+                    ),
+                    ("customer", "Per-customer", "Separate numbering per customer"),
+                ]:
+                    with tag.label(
+                        classes="label cursor-pointer justify-start gap-3 p-3 border border-base-300 rounded-lg hover:bg-base-200"
+                    ):
+                        with tag.input(
+                            type="radio",
+                            name="invoice_numbering",
+                            value=value,
+                            classes="radio radio-sm",
+                            **{"checked": ""} if current == value else {},
+                        ):
+                            pass
+                        with tag.div():
+                            with tag.div(classes="font-semibold text-sm"):
+                                text(label)
+                            with tag.div(classes="text-xs text-base-content/60"):
+                                text(desc)
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(type="submit", variant="primary"):
+                    text("Save Changes")
+
+    return None
+
+
+@router.api_route(
     "/{organization_id}/edit-features",
     name="organizations-v2:edit_features",
     methods=["GET", "POST"],

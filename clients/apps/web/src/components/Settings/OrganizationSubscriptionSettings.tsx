@@ -156,6 +156,27 @@ const OrganizationSubscriptionSettings: React.FC<
               )}
             />
           </SettingsGroupItem>
+
+          <SettingsGroupItem
+            title="Prevent trial abuse"
+            description="When enabled, customers who previously had a trial on any of your products won't be eligible for another trial."
+          >
+            <FormField
+              control={control}
+              name="prevent_trial_abuse"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </SettingsGroupItem>
         </SettingsGroup>
       </form>
     </Form>

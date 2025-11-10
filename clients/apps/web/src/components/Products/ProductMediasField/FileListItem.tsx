@@ -47,9 +47,8 @@ export const FileListItem = ({
   const imageURL = useMemo(() => {
     if (file.public_url) {
       return file.public_url
-    } else if (file.buffer) {
-      const blob = new Blob([file.buffer], { type: file.mime_type })
-      return URL.createObjectURL(blob)
+    } else if (file.file) {
+      return URL.createObjectURL(file.file)
     }
     return undefined
   }, [file])

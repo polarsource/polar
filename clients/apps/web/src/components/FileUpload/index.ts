@@ -10,16 +10,14 @@ export type FileObject<
 > = T & {
   isUploading: boolean
   uploadedBytes: number
-  buffer?: ArrayBuffer
+  file?: File
 }
 
 const buildFileObject = <T extends FileRead | schemas['FileUpload']>(
   file: T,
-  buffer?: ArrayBuffer,
 ): FileObject<T> => {
   return {
     ...file,
-    buffer,
     isUploading: false,
     uploadedBytes: file.is_uploaded ? file.size : 0,
   }
@@ -84,11 +82,8 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
     })
   }
 
-  const onFileCreate = (
-    response: schemas['FileUpload'],
-    buffer: ArrayBuffer,
-  ) => {
-    const newFile = buildFileObject(response, buffer)
+  const onFileCreate = (response: schemas['FileUpload']) => {
+    const newFile = buildFileObject(response)
     newFile.isUploading = true
     setFiles((prev) => {
       return [...prev, newFile as unknown as FileObject<T>]
@@ -120,23 +115,15 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
 
   const onDrop = (acceptedFiles: File[], fileRejections: FileRejection[]) => {
     for (const file of acceptedFiles) {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        const buffer = reader.result
-        if (buffer instanceof ArrayBuffer) {
-          const upload = new Upload({
-            service,
-            organization,
-            file,
-            buffer,
-            onFileCreate,
-            onFileUploadProgress,
-            onFileUploaded,
-          })
-          await upload.run()
-        }
-      }
-      reader.readAsArrayBuffer(file)
+      const upload = new Upload({
+        service,
+        organization,
+        file,
+        onFileCreate,
+        onFileUploadProgress,
+        onFileUploaded,
+      })
+      upload.run()
     }
 
     if (onFilesRejected) {

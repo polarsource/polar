@@ -1,5 +1,6 @@
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
+import { createSHA256 } from 'hash-wasm'
 
 const CHUNK_SIZE = 10000000 // 10MB
 
@@ -12,8 +13,7 @@ interface UploadProperties {
   organization: schemas['Organization']
   service: schemas['FileServiceTypes']
   file: File
-  buffer: ArrayBuffer
-  onFileCreate: (response: schemas['FileUpload'], buffer: ArrayBuffer) => void
+  onFileCreate: (response: schemas['FileUpload']) => void
   onFileUploadProgress: (file: schemas['FileUpload'], uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
 }
@@ -22,8 +22,7 @@ export class Upload {
   organization: schemas['Organization']
   service: schemas['FileServiceTypes']
   file: File
-  buffer: ArrayBuffer
-  onFileCreate: (response: schemas['FileUpload'], buffer: ArrayBuffer) => void
+  onFileCreate: (response: schemas['FileUpload']) => void
   onFileUploadProgress: (file: schemas['FileUpload'], uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
 
@@ -31,7 +30,6 @@ export class Upload {
     organization,
     service,
     file,
-    buffer,
     onFileCreate,
     onFileUploadProgress,
     onFileUploaded,
@@ -39,7 +37,6 @@ export class Upload {
     this.organization = organization
     this.service = service
     this.file = file
-    this.buffer = buffer
     this.onFileCreate = onFileCreate
     this.onFileUploadProgress = onFileUploadProgress
     this.onFileUploaded = onFileUploaded
@@ -52,8 +49,7 @@ export class Upload {
   }
 
   async create() {
-    const sha256base64 = await this.getSha256Base64(this.buffer)
-    const parts = await this.getMultiparts()
+    const { sha256base64, parts } = await this.getMultiparts()
     const mimeType = this.file.type
       ? this.file.type
       : 'application/octet-stream'
@@ -71,9 +67,13 @@ export class Upload {
     return await api.POST('/v1/files/', { body: params })
   }
 
-  async getMultiparts(): Promise<Array<schemas['S3FileCreatePart']>> {
+  async getMultiparts(): Promise<{
+    sha256base64: string
+    parts: Array<schemas['S3FileCreatePart']>
+  }> {
     const chunkCount = Math.floor(this.file.size / CHUNK_SIZE) + 1
     const parts: Array<schemas['S3FileCreatePart']> = []
+    const hasher = await createSHA256()
 
     for (let i = 1; i <= chunkCount; i++) {
       const chunk_start = (i - 1) * CHUNK_SIZE
@@ -81,9 +81,11 @@ export class Upload {
       if (chunk_end > this.file.size) {
         chunk_end = this.file.size
       }
-      const chunk = this.buffer.slice(chunk_start, chunk_end)
+      const chunkBlob = this.file.slice(chunk_start, chunk_end)
+      const chunk = await chunkBlob.arrayBuffer()
 
       const chunkSha256base64 = await this.getSha256Base64(chunk)
+      hasher.update(new Uint8Array(chunk))
 
       const part: schemas['S3FileCreatePart'] = {
         number: i,
@@ -93,7 +95,10 @@ export class Upload {
       }
       parts.push(part)
     }
-    return parts
+
+    const hashBinary = hasher.digest('binary')
+    const sha256base64 = btoa(String.fromCharCode(...hashBinary))
+    return { sha256base64, parts }
   }
 
   async uploadMultiparts({
@@ -134,8 +139,8 @@ export class Upload {
     part: schemas['S3FileUploadPart']
     onProgress: (uploaded: number) => void
   }): Promise<schemas['S3FileUploadCompletedPart']> {
-    const data = this.buffer.slice(part.chunk_start, part.chunk_end)
-    const blob = new Blob([data], { type: this.file.type })
+    const chunkBlob = this.file.slice(part.chunk_start, part.chunk_end)
+    const blob = new Blob([chunkBlob], { type: this.file.type })
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest()
@@ -204,7 +209,7 @@ export class Upload {
     }
     const upload = createFileResponse.upload
 
-    this.onFileCreate(createFileResponse, this.buffer)
+    this.onFileCreate(createFileResponse)
 
     const uploadedParts = await this.uploadMultiparts({
       parts: upload.parts,

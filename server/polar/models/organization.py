@@ -65,6 +65,7 @@ class OrganizationSubscriptionSettings(TypedDict):
     allow_customer_updates: bool
     proration_behavior: SubscriptionProrationBehavior
     benefit_revocation_grace_period: int
+    prevent_trial_abuse: bool
 
 
 _default_subscription_settings: OrganizationSubscriptionSettings = {
@@ -72,6 +73,7 @@ _default_subscription_settings: OrganizationSubscriptionSettings = {
     "allow_customer_updates": True,
     "proration_behavior": SubscriptionProrationBehavior.prorate,
     "benefit_revocation_grace_period": 0,
+    "prevent_trial_abuse": False,
 }
 
 
@@ -297,6 +299,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def benefit_revocation_grace_period(self) -> int:
         return self.subscription_settings["benefit_revocation_grace_period"]
+
+    @property
+    def prevent_trial_abuse(self) -> bool:
+        return self.subscription_settings.get("prevent_trial_abuse", False)
 
     @property
     def invoice_numbering(self) -> InvoiceNumbering:

@@ -56,6 +56,7 @@ from polar.models import (
     Subscription,
     SubscriptionProductPrice,
     Transaction,
+    TrialRedemption,
     User,
     UserOrganization,
     Wallet,
@@ -2087,3 +2088,21 @@ async def create_wallet_transaction(
     )
     await save_fixture(wallet_transaction)
     return wallet_transaction
+
+
+async def create_trial_redemption(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    customer_email: str,
+    product: Product | None = None,
+    payment_method_fingerprint: str | None = None,
+) -> TrialRedemption:
+    trial_redemption = TrialRedemption(
+        customer_email=customer_email,
+        payment_method_fingerprint=payment_method_fingerprint,
+        customer=customer,
+        product=product,
+    )
+    await save_fixture(trial_redemption)
+    return trial_redemption

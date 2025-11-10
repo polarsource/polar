@@ -44,6 +44,7 @@ from .service import (
     ExpiredCheckoutError,
     NotOpenCheckout,
     PaymentError,
+    TrialAlreadyRedeemed,
 )
 from .service import checkout as checkout_service
 
@@ -71,7 +72,8 @@ CheckoutForbiddenError = {
     "model": Annotated[
         AlreadyActiveSubscriptionError.schema()
         | NotOpenCheckout.schema()
-        | PaymentNotReady.schema(),
+        | PaymentNotReady.schema()
+        | TrialAlreadyRedeemed.schema(),
         SetSchemaReference("CheckoutForbiddenError"),
     ],
 }

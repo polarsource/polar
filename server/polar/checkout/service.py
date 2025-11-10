@@ -39,6 +39,7 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.utils import get_fingerprint
 from polar.kit.address import AddressInput
 from polar.kit.crypto import generate_token
 from polar.kit.operator import attrgetter
@@ -92,6 +93,7 @@ from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
+from polar.trial_redemption.service import trial_redemption as trial_redemption_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -195,6 +197,16 @@ class PaymentRequired(CheckoutError):
         self.checkout = checkout
         message = f"{checkout.id} requires a payment."
         super().__init__(message)
+
+
+class TrialAlreadyRedeemed(CheckoutError):
+    def __init__(self, checkout: Checkout) -> None:
+        self.checkout = checkout
+        message = (
+            "You have already used a trial for this product. "
+            "Trials can only be used once per customer."
+        )
+        super().__init__(message, 403)
 
 
 CHECKOUT_CLIENT_SECRET_PREFIX = "polar_c_"
@@ -1018,6 +1030,7 @@ class CheckoutService:
                     "customer_id": stripe_customer_id,
                 }
 
+                intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent | None = None
                 if checkout.is_payment_form_required:
                     assert checkout_confirm.confirmation_token_id is not None
                     assert checkout.customer_billing_address is not None
@@ -1033,7 +1046,6 @@ class CheckoutService:
                     ) is not None:
                         intent_metadata["tax_state"] = state
 
-                    intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent
                     try:
                         if checkout.is_payment_required:
                             payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
@@ -1049,6 +1061,7 @@ class CheckoutService:
                                 "return_url": settings.generate_frontend_url(
                                     f"/checkout/{checkout.client_secret}/confirmation"
                                 ),
+                                "expand": ["payment_method"],
                             }
                             if checkout.should_save_payment_method:
                                 payment_intent_params["setup_future_usage"] = (
@@ -1068,6 +1081,7 @@ class CheckoutService:
                                 "return_url": settings.generate_frontend_url(
                                     f"/checkout/{checkout.client_secret}/confirmation"
                                 ),
+                                "expand": ["payment_method"],
                             }
                             intent = await stripe_service.create_setup_intent(
                                 **setup_intent_params
@@ -1083,6 +1097,28 @@ class CheckoutService:
                             "intent_client_secret": intent.client_secret,
                             "intent_status": intent.status,
                         }
+
+                # Check for trial abuse
+                if (
+                    checkout.trial_end is not None
+                    and checkout.organization.prevent_trial_abuse
+                ):
+                    trial_already_redeemed = (
+                        await trial_redemption_service.check_trial_already_redeemed(
+                            session,
+                            checkout.organization,
+                            customer=customer,
+                            payment_method_fingerprint=get_fingerprint(
+                                typing.cast(
+                                    stripe_lib.PaymentMethod, intent.payment_method
+                                )
+                            )
+                            if (intent and intent.payment_method)
+                            else None,
+                        )
+                    )
+                    if trial_already_redeemed:
+                        raise TrialAlreadyRedeemed(checkout)
 
         if not checkout.is_payment_form_required:
             enqueue_job("checkout.handle_free_success", checkout_id=checkout.id)
@@ -1149,6 +1185,18 @@ class CheckoutService:
         else:
             await order_service.create_from_checkout_one_time(
                 session, checkout, payment
+            )
+
+        # Create trial redemption record if this checkout had a trial period
+        if checkout.trial_end is not None:
+            assert checkout.customer is not None
+            await trial_redemption_service.create_trial_redemption(
+                session,
+                customer=checkout.customer,
+                product=product,
+                payment_method_fingerprint=payment_method.fingerprint
+                if payment_method
+                else None,
             )
 
         repository = CheckoutRepository.from_session(session)

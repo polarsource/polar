@@ -8242,6 +8242,7 @@ export interface components {
       | components['schemas']['AlreadyActiveSubscriptionError']
       | components['schemas']['NotOpenCheckout']
       | components['schemas']['PaymentNotReady']
+      | components['schemas']['TrialAlreadyRedeemed']
     /**
      * CheckoutLink
      * @description Checkout link data.
@@ -18716,6 +18717,8 @@ export interface components {
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
+      /** Prevent Trial Abuse */
+      prevent_trial_abuse: boolean
     }
     /** OrganizationUpdate */
     OrganizationUpdate: {
@@ -21842,6 +21845,17 @@ export interface components {
     TransactionsSummary: {
       balance: components['schemas']['TransactionsBalance']
       payout: components['schemas']['TransactionsBalance']
+    }
+    /** TrialAlreadyRedeemed */
+    TrialAlreadyRedeemed: {
+      /**
+       * Error
+       * @example TrialAlreadyRedeemed
+       * @constant
+       */
+      error: 'TrialAlreadyRedeemed'
+      /** Detail */
+      detail: string
     }
     /**
      * TrialInterval

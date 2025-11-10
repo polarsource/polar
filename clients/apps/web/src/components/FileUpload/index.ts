@@ -8,6 +8,7 @@ import { FileRead, Upload } from './Upload'
 export type FileObject<
   T extends FileRead | schemas['FileUpload'] = FileRead | schemas['FileUpload'],
 > = T & {
+  isProcessing: boolean
   isUploading: boolean
   uploadedBytes: number
   file?: File
@@ -18,6 +19,7 @@ const buildFileObject = <T extends FileRead | schemas['FileUpload']>(
 ): FileObject<T> => {
   return {
     ...file,
+    isProcessing: false,
     isUploading: false,
     uploadedBytes: file.is_uploaded ? file.size : 0,
   }
@@ -82,12 +84,27 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
     })
   }
 
-  const onFileCreate = (response: schemas['FileUpload']) => {
-    const newFile = buildFileObject(response)
-    newFile.isUploading = true
+  const onFileCreate = (tempId: string, response: schemas['FileUpload']) => {
     setFiles((prev) => {
-      return [...prev, newFile as unknown as FileObject<T>]
+      const updated = prev.filter((f) => f.id !== tempId)
+      const newFile = buildFileObject(response)
+      newFile.isUploading = true
+      return [...updated, newFile as unknown as FileObject<T>]
     })
+  }
+
+  const onFileProcessing = (tempId: string, file: File) => {
+    const processingFile = {
+      ...buildFileObject({
+        id: tempId,
+        name: file.name,
+        size: file.size,
+        mime_type: file.type || 'application/octet-stream',
+        is_uploaded: false,
+      } as any),
+      isProcessing: true,
+    }
+    setFiles((prev) => [...prev, processingFile])
   }
 
   const onFileUploaded = (response: FileRead) => {
@@ -95,6 +112,7 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
       return {
         ...prev,
         ...response,
+        isProcessing: false,
         isUploading: false,
         uploadedBytes: response.size,
       }
@@ -119,6 +137,7 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
         service,
         organization,
         file,
+        onFileProcessing,
         onFileCreate,
         onFileUploadProgress,
         onFileUploaded,

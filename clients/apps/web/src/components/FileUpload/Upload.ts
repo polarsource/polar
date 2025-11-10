@@ -13,7 +13,8 @@ interface UploadProperties {
   organization: schemas['Organization']
   service: schemas['FileServiceTypes']
   file: File
-  onFileCreate: (response: schemas['FileUpload']) => void
+  onFileProcessing: (tempId: string, file: File) => void
+  onFileCreate: (tempId: string, response: schemas['FileUpload']) => void
   onFileUploadProgress: (file: schemas['FileUpload'], uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
 }
@@ -22,7 +23,9 @@ export class Upload {
   organization: schemas['Organization']
   service: schemas['FileServiceTypes']
   file: File
-  onFileCreate: (response: schemas['FileUpload']) => void
+  tempId: string
+  onFileProcessing: (tempId: string, file: File) => void
+  onFileCreate: (tempId: string, response: schemas['FileUpload']) => void
   onFileUploadProgress: (file: schemas['FileUpload'], uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
 
@@ -30,6 +33,7 @@ export class Upload {
     organization,
     service,
     file,
+    onFileProcessing,
     onFileCreate,
     onFileUploadProgress,
     onFileUploaded,
@@ -37,6 +41,8 @@ export class Upload {
     this.organization = organization
     this.service = service
     this.file = file
+    this.tempId = `temp-${Date.now()}-${Math.random()}`
+    this.onFileProcessing = onFileProcessing
     this.onFileCreate = onFileCreate
     this.onFileUploadProgress = onFileUploadProgress
     this.onFileUploaded = onFileUploaded
@@ -203,13 +209,15 @@ export class Upload {
   }
 
   async run() {
+    this.onFileProcessing(this.tempId, this.file)
+
     const { data: createFileResponse, error } = await this.create()
     if (error) {
       return
     }
     const upload = createFileResponse.upload
 
-    this.onFileCreate(createFileResponse)
+    this.onFileCreate(this.tempId, createFileResponse)
 
     const uploadedParts = await this.uploadMultiparts({
       parts: upload.parts,

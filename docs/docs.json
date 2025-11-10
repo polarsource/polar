@@ -571,7 +571,8 @@
               "guides/subscription-downgrades",
               "guides/subscription-upgrades",
               "guides/seat-based-pricing",
-              "guides/theme-switch-in-checkout"
+              "guides/theme-switch-in-checkout",
+              "guides/customize-benefits-order-in-checkouts"
             ]
           }
         ]

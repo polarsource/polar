@@ -462,7 +462,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
     currency: str = Field(description="Currency code of the checkout session.")
 
-    allow_trial: bool = Field(description=_allow_trial_description)
+    allow_trial: bool | None = Field(description=_allow_trial_description)
     active_trial_interval: TrialInterval | None = Field(
         description=(
             "Interval unit of the trial period, if any. "

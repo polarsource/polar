@@ -2,14 +2,18 @@ import uuid
 
 import sentry_sdk
 import stripe as stripe_lib
+import structlog
 
 from polar.enums import AccountType
 from polar.exceptions import PolarTaskError
+from polar.logging import Logger
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .repository import PayoutRepository
 from .service import PayoutAlreadyTriggered
 from .service import payout as payout_service
+
+log: Logger = structlog.get_logger()
 
 
 class PayoutTaskError(PolarTaskError): ...
@@ -63,6 +67,12 @@ async def trigger_payout(payout_id: uuid.UUID) -> None:
             # while the payout has already been triggered.
             pass
         except stripe_lib.InvalidRequestError as e:
+            log.error(
+                "stripe_payout_invalid_request_error",
+                payout_id=str(payout_id),
+                error_message=str(e),
+                error_type=type(e).__name__,
+            )
             # Capture exception in Sentry for debugging purposes
             sentry_sdk.capture_exception(
                 e,

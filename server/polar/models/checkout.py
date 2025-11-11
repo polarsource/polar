@@ -129,6 +129,10 @@ class Checkout(
         String, nullable=True, default=None
     )
 
+    # TODO: proper data migration to make it non-nullable
+    allow_trial: Mapped[bool | None] = mapped_column(
+        Boolean, nullable=True, default=True
+    )
     trial_end: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
@@ -374,12 +378,16 @@ class Checkout(
 
     @property
     def active_trial_interval(self) -> TrialInterval | None:
+        if not self.allow_trial:
+            return None
         if self.product is None:
             return None
         return self.trial_interval or self.product.trial_interval
 
     @property
     def active_trial_interval_count(self) -> int | None:
+        if not self.allow_trial:
+            return None
         if self.product is None:
             return None
         return self.trial_interval_count or self.product.trial_interval_count

@@ -57,10 +57,19 @@ create_balance_transaction = partial(ro.create_balance_transaction, amount=10000
 @pytest.mark.asyncio
 class TestCreate:
     @pytest.mark.parametrize(
-        "balance", [-1000, 0, settings.ACCOUNT_PAYOUT_MINIMUM_BALANCE - 1]
+        "currency,balance",
+        [
+            ("usd", -1000),
+            ("usd", 0),
+            ("usd", settings.get_minimum_payout_for_currency("usd") - 1),
+            ("eur", -1000),
+            ("eur", 0),
+            ("eur", settings.get_minimum_payout_for_currency("eur") - 1),
+        ],
     )
     async def test_insufficient_balance(
         self,
+        currency: str,
         balance: int,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -68,7 +77,9 @@ class TestCreate:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(
+            save_fixture, organization, user, currency=currency
+        )
         await create_balance_transaction(save_fixture, account=account, amount=balance)
 
         with pytest.raises(InsufficientBalance):

@@ -255,6 +255,40 @@ class Settings(BaseSettings):
     ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(seconds=1)
     ACCOUNT_PAYOUT_MINIMUM_BALANCE: int = 1000
 
+    _DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE: int = 1000
+    ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_CURRENCY: dict[str, int] = {
+        "all": 4000,
+        "amd": 4000,
+        "aoa": 3000,
+        "azn": 4000,
+        "bam": 4000,
+        "bob": 4000,
+        "btn": 4000,
+        "chf": 1500,
+        "clp": 4000,
+        "cop": 5000,
+        "eur": 1300,
+        "gbp": 1500,
+        "gmd": 4000,
+        "gyd": 4000,
+        "khr": 4000,
+        "krw": 4000,
+        "lak": 4000,
+        "mdl": 4000,
+        "mga": 4000,
+        "mkd": 4000,
+        "mnt": 4000,
+        "myr": 4000,
+        "mzn": 4000,
+        "nad": 4000,
+        "pyg": 4000,
+        "rsd": 4000,
+        "thb": 4000,
+        "twd": 4000,
+        "uzs": 4000,
+        # USD, default
+        "usd": _DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE,
+    }
     PLATFORM_FEE_BASIS_POINTS: int = 400
     PLATFORM_FEE_FIXED: int = 40
 
@@ -381,6 +415,11 @@ class Settings(BaseSettings):
     @property
     def stripe_descriptor_suffix_max_length(self) -> int:
         return 22 - len("* ") - len(self.STRIPE_STATEMENT_DESCRIPTOR)
+
+    def get_minimum_payout_for_currency(self, currency: str) -> int:
+        return self.ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_CURRENCY.get(
+            currency.lower(), self._DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE
+        )
 
 
 settings = Settings()

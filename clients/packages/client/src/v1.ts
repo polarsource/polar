@@ -7868,6 +7868,11 @@ export interface components {
        * @description Currency code of the checkout session.
        */
       currency: string
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       */
+      allow_trial: boolean
       /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
       active_trial_interval: components['schemas']['TrialInterval'] | null
       /**
@@ -8079,6 +8084,11 @@ export interface components {
        * @description Discount code to apply to the checkout.
        */
       discount_code?: string | null
+      /**
+       * Allow Trial
+       * @description Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+       */
+      allow_trial?: false | null
       /**
        * Confirmation Token Id
        * @description ID of the Stripe confirmation token. Required for fixed prices and custom prices.
@@ -8806,6 +8816,12 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       * @default true
+       */
+      allow_trial: boolean
+      /**
        * Customer Id
        * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
        */
@@ -9025,6 +9041,12 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       * @default true
+       */
+      allow_trial: boolean
+      /**
        * Customer Id
        * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
        */
@@ -9159,6 +9181,12 @@ export interface components {
        * @description Number of seats for seat-based pricing. Required for seat-based products.
        */
       seats?: number | null
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       * @default true
+       */
+      allow_trial: boolean
       /**
        * Customer Id
        * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
@@ -9341,6 +9369,11 @@ export interface components {
        * @description Currency code of the checkout session.
        */
       currency: string
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       */
+      allow_trial: boolean
       /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
       active_trial_interval: components['schemas']['TrialInterval'] | null
       /**
@@ -9581,6 +9614,11 @@ export interface components {
        * @description Currency code of the checkout session.
        */
       currency: string
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       */
+      allow_trial: boolean
       /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
       active_trial_interval: components['schemas']['TrialInterval'] | null
       /**
@@ -9809,6 +9847,11 @@ export interface components {
        * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
        */
       require_billing_address?: boolean | null
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       */
+      allow_trial?: boolean | null
       /** Customer Ip Address */
       customer_ip_address?: string | null
       /**
@@ -9890,6 +9933,11 @@ export interface components {
        * @description Discount code to apply to the checkout.
        */
       discount_code?: string | null
+      /**
+       * Allow Trial
+       * @description Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+       */
+      allow_trial?: false | null
     }
     /** CostMetadata */
     'CostMetadata-Input': {

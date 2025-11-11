@@ -961,6 +961,10 @@
     {
       "source": "/docs/benefits/custom",
       "destination": "/features/benefits/custom"
+    },
+    {
+      "source": "/docs/features/customers",
+      "destination": "/features/customer-management"
     }
   ]
 }

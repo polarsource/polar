@@ -8,7 +8,7 @@ export const CareersSection = ({ active }: { active: boolean }) => {
       header={{ index: '02', name: 'Careers' }}
       title="Help us shape the future"
       context={
-        <div className="group flex flex-col gap-16">
+        <div className="group flex flex-col gap-8 lg:gap-16">
           <JobSection
             title="Product & Engineering"
             jobs={[
@@ -45,7 +45,7 @@ export const CareersSection = ({ active }: { active: boolean }) => {
                 experience: '7+ Years Experience',
               },
               {
-                role: 'Senior Product Designer (On-site)',
+                role: 'Senior Product Designer',
                 description:
                   'Design the future platform for developers to turn their software into a business.',
                 location: 'Stockholm, Sweden',

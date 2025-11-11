@@ -92,9 +92,9 @@ interface ProfileProps {
 
 const Profile = ({ name, title, image }: ProfileProps) => {
   return (
-    <div className="relative flex aspect-square h-fit w-full flex-col gap-y-4">
+    <div className="relative flex flex-col gap-y-4">
       <Image
-        className="w-full"
+        className="aspect-square size-64 flex-1 shrink-0"
         src={image}
         alt={name}
         width={200}

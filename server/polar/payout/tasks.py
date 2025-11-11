@@ -76,7 +76,7 @@ async def trigger_payout(payout_id: uuid.UUID) -> None:
             # Capture exception in Sentry for debugging purposes
             sentry_sdk.capture_exception(
                 e,
-                extra={"payout_id": str(payout_id)},
+                extras={"payout_id": str(payout_id)},
             )
             # Do not raise an error here: we know it happens often, because Stripe
             # has many hidden rules on payout creation that we cannot control.

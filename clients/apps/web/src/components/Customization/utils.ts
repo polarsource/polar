@@ -204,6 +204,7 @@ export const createCheckoutPreview = (
     trial_end: null,
     return_url: null,
     organization_id: organization.id,
+    allow_trial: true,
   })
 
   return {

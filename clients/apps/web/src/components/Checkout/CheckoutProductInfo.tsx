@@ -1,12 +1,12 @@
 import { markdownOptions } from '@/utils/markdown'
+import type { CheckoutOrganization } from '@polar-sh/sdk/models/components/checkoutorganization'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
-import type { Organization } from '@polar-sh/sdk/models/components/organization'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Markdown from 'markdown-to-jsx'
 import { Slideshow } from '../Products/Slideshow'
 
 interface CheckoutProductInfoProps {
-  organization: Organization
+  organization: CheckoutOrganization
   product: CheckoutProduct
 }
 

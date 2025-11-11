@@ -10,6 +10,7 @@ import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidatione
 import { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
 import { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
 import { PaymentNotReady } from '@polar-sh/sdk/models/errors/paymentnotready.js'
+import { TrialAlreadyRedeemed } from '@polar-sh/sdk/models/errors/trialalreadyredeemed'
 import type {
   ConfirmationToken,
   Stripe,
@@ -57,6 +58,7 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
       customerBillingAddress:
         checkout.customerBillingAddress as AddressInput | null,
       discountCode: checkout.discount ? checkout.discount.code : undefined,
+      allowTrial: undefined,
     },
     shouldUnregister: true,
   })
@@ -105,9 +107,13 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
         error instanceof AlreadyActiveSubscriptionError ||
         error instanceof NotOpenCheckout ||
         error instanceof PaymentError ||
-        error instanceof PaymentNotReady
+        error instanceof PaymentNotReady ||
+        error instanceof TrialAlreadyRedeemed
       ) {
         setError('root', { message: error.detail })
+        if (error instanceof TrialAlreadyRedeemed) {
+          await update({ allowTrial: false })
+        }
       }
       throw error
     },

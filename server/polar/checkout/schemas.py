@@ -143,6 +143,11 @@ _require_billing_address_description = (
     "If you preset the billing address, this setting will be automatically set to "
     "`true`."
 )
+_allow_trial_description = (
+    "Whether to enable the trial period for the checkout session. "
+    "If `false`, the trial period will be disabled, even if the selected product "
+    "has a trial configured."
+)
 _is_business_customer_description = (
     "Whether the customer is a business or an individual. "
     "If `true`, the customer will be required to fill their full billing address "
@@ -182,6 +187,7 @@ class CheckoutCreateBase(
         le=1000,
         description="Number of seats for seat-based pricing. Required for seat-based products.",
     )
+    allow_trial: bool = Field(default=True, description=_allow_trial_description)
     customer_id: UUID4 | None = Field(
         default=None,
         description=(
@@ -345,6 +351,7 @@ class CheckoutUpdate(
     require_billing_address: bool | None = Field(
         default=None, description=_require_billing_address_description
     )
+    allow_trial: bool | None = Field(default=None, description=_allow_trial_description)
     customer_ip_address: CustomerIPAddress | None = None
     customer_metadata: MetadataField | None = Field(
         default=None, description=_customer_metadata_description
@@ -359,6 +366,14 @@ class CheckoutUpdatePublic(CheckoutUpdateBase):
 
     discount_code: str | None = Field(
         default=None, description="Discount code to apply to the checkout."
+    )
+    allow_trial: Literal[False] | None = Field(
+        default=None,
+        description=(
+            "Disable the trial period for the checkout session. "
+            "It's mainly useful when the trial is blocked because the customer "
+            "already redeemed one."
+        ),
     )
 
 
@@ -447,6 +462,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
     currency: str = Field(description="Currency code of the checkout session.")
 
+    allow_trial: bool = Field(description=_allow_trial_description)
     active_trial_interval: TrialInterval | None = Field(
         description=(
             "Interval unit of the trial period, if any. "

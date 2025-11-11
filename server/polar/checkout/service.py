@@ -628,6 +628,7 @@ class CheckoutService:
             amount=amount,
             currency=currency,
             seats=checkout_create.seats,
+            allow_trial=True,
             organization=product.organization,
             checkout_products=[CheckoutProduct(product=product, order=0)],
             product=product,
@@ -769,6 +770,7 @@ class CheckoutService:
             trial_interval=checkout_link.trial_interval,
             trial_interval_count=checkout_link.trial_interval_count,
             allow_discount_codes=checkout_link.allow_discount_codes,
+            allow_trial=True,
             require_billing_address=checkout_link.require_billing_address,
             organization=checkout_link.organization,
             checkout_products=[
@@ -1784,7 +1786,6 @@ class CheckoutService:
         checkout = await self._update_checkout_ip_geolocation(
             session, checkout, ip_geolocation_client
         )
-        checkout = await self._update_trial_end(checkout)
 
         exclude = {
             "product_id",
@@ -1802,6 +1803,8 @@ class CheckoutService:
             exclude_unset=True, exclude=exclude, by_alias=True
         ).items():
             setattr(checkout, attr, value)
+
+        checkout = await self._update_trial_end(checkout)
 
         session.add(checkout)
 

@@ -3035,6 +3035,59 @@ class TestUpdate:
         assert updated_checkout.product == product_one_time
         assert updated_checkout.seats is None
 
+    async def test_trial_update(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+
+        previous_trial_end = checkout.trial_end
+        assert previous_trial_end is not None
+
+        updated_checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout,
+            CheckoutUpdate(trial_interval_count=14, trial_interval=TrialInterval.day),
+        )
+
+        assert updated_checkout.trial_end is not None
+        assert updated_checkout.trial_end > previous_trial_end
+        assert updated_checkout.active_trial_interval == TrialInterval.day
+        assert updated_checkout.active_trial_interval_count == 14
+
+    async def test_trial_disable(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_recurring_trial],
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+
+        assert checkout.trial_end is not None
+
+        updated_checkout = await checkout_service.update(
+            session, locker, checkout, CheckoutUpdatePublic(allow_trial=False)
+        )
+
+        assert updated_checkout.trial_end is None
+        assert updated_checkout.active_trial_interval is None
+        assert updated_checkout.active_trial_interval_count is None
+
 
 @pytest.mark.asyncio
 class TestConfirm:

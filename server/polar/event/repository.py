@@ -342,7 +342,19 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             event = row[0]
             event.child_count = row.child_count
             if aggregate_fields:
-                event.user_metadata = row.aggregated_metadata
+                aggregated = row.aggregated_metadata
+
+                # If _cost exists but has None/missing fields, clean it up
+                if "_cost" in aggregated:
+                    cost_obj = aggregated.get("_cost")
+                    if cost_obj is None or cost_obj.get("amount") is None:
+                        # Remove incomplete _cost object entirely
+                        del aggregated["_cost"]
+                    elif "currency" not in cost_obj:
+                        # Add default currency if missing
+                        cost_obj["currency"] = "usd"  # FIXME: Main Polar currency
+
+                event.user_metadata = aggregated
             events.append(event)
             total_count = row.total_count
 

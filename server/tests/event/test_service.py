@@ -669,11 +669,11 @@ class TestListWithAggregateCosts:
         assert child2_agg.user_metadata["_cost"]["amount"] == 3
 
         # root2 didn't have _cost originally, so only aggregated amount is set
-        # Non-numeric fields like currency are not aggregated from descendants currently
+        # Currency defaults to "usd" when not present in parent
         assert root2_agg.child_count == 1  # type: ignore[attr-defined]
         assert "_cost" in root2_agg.user_metadata
         assert root2_agg.user_metadata["_cost"]["amount"] == 7
-        # assert root2_agg.user_metadata["_cost"]["currency"] == "usd"
+        assert root2_agg.user_metadata["_cost"]["currency"] == "usd"
         assert root2_agg.user_metadata["conversationId"] == "123"
 
 

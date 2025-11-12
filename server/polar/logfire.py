@@ -106,8 +106,8 @@ def instrument_fastapi(app: FastAPI) -> None:
     logfire.instrument_fastapi(app, capture_headers=True)
 
 
-def instrument_sqlalchemy(engine: Engine) -> None:
-    SQLAlchemyInstrumentor().instrument(engine=engine)
+def instrument_sqlalchemy(engines: Sequence[Engine]) -> None:
+    SQLAlchemyInstrumentor().instrument(engines=engines)
 
 
 __all__ = [

@@ -300,6 +300,18 @@ class SubscriptionUpdateSeats(Schema):
     )
 
 
+class SubscriptionUpdateBillingPeriod(Schema):
+    current_billing_period_end: FutureDatetime = Field(
+        description=inspect.cleandoc(
+            """
+            Set a new date for the end of the current billing period. The subscription will renew on this date. Needs to be later than the current value.
+
+            It is not possible to update the current billing period on a canceled subscription.
+            """
+        )
+    )
+
+
 class SubscriptionCancelBase(Schema):
     customer_cancellation_reason: CustomerCancellationReason | None = Field(
         None,
@@ -366,6 +378,7 @@ SubscriptionUpdate = Annotated[
     | SubscriptionUpdateDiscount
     | SubscriptionUpdateTrial
     | SubscriptionUpdateSeats
+    | SubscriptionUpdateBillingPeriod
     | SubscriptionCancel
     | SubscriptionRevoke,
     SetSchemaReference("SubscriptionUpdate"),

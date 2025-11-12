@@ -21,6 +21,7 @@ class SystemEvent(StrEnum):
     subscription_revoked = "subscription.revoked"
     subscription_product_updated = "subscription.product_updated"
     subscription_seats_updated = "subscription.seats_updated"
+    subscription_billing_period_updated = "subscription.billing_period_updated"
     order_paid = "order.paid"
     order_refunded = "order.refunded"
     customer_created = "customer.created"
@@ -186,6 +187,19 @@ class SubscriptionSeatsUpdatedEvent(Event):
         user_metadata: Mapped[SubscriptionSeatsUpdatedMetadata]  # type: ignore[assignment]
 
 
+class SubscriptionBillingPeriodUpdatedMetadata(TypedDict):
+    subscription_id: str
+    old_period_end: str
+    new_period_end: str
+
+
+class SubscriptionBillingPeriodUpdatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_billing_period_updated]]
+        user_metadata: Mapped[SubscriptionBillingPeriodUpdatedMetadata]  # type: ignore[assignment]
+
+
 class OrderPaidMetadata(TypedDict):
     order_id: str
     amount: int
@@ -328,6 +342,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionSeatsUpdatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_billing_period_updated],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionBillingPeriodUpdatedMetadata,
 ) -> Event: ...
 
 

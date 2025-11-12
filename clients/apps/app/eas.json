@@ -1,0 +1,32 @@
+{
+  "cli": {
+    "version": ">= 16.2.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development"
+    },
+    "ios-simulator": {
+      "ios": {
+        "simulator": true
+      },
+      "channel": "ios-simulator",
+      "extends": "development"
+    },
+    "preview": {
+      "extends": "production",
+      "distribution": "internal",
+      "channel": "preview"
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production"
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

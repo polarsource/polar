@@ -160,6 +160,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 />
               }
             />
+            {order.discount && (
+              <DetailRow
+                label="Discount Code"
+                value={order.discount.code}
+                valueClassName="font-mono text-sm"
+              />
+            )}
             <DetailRow
               label="Billing Reason"
               value={order.billing_reason.split('_').join(' ')}

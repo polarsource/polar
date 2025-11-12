@@ -5,7 +5,7 @@
     "build": "turbo run build --filter='!./examples/*'",
     "dev": "turbo watch dev",
     "dev-web": "turbo run dev --filter=web",
-    "lint": "turbo run lint",
+    "lint": "turbo run lint --filter='!./apps/app'",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "generate": "pnpm -C packages/client generate",

@@ -78,36 +78,40 @@ class MetricsService:
             .order_by(timestamp_column.asc())
         )
 
-        result = await session.stream(
-            statement,
-            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
-        )
         periods: list[MetricsPeriod] = []
         with logfire.span(
-            "Process metrics query",
-            sql=str(statement),
+            "Stream and process metrics query",
             start_date=str(start_date),
             end_date=str(end_date),
         ):
-            async for row in result:
-                period_dict = row._asdict()
+            result = await session.stream(
+                statement,
+                execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+            )
 
-                for meta_metric in METRICS_POST_COMPUTE:
-                    period_dict[meta_metric.slug] = 0
+            row_count = 0
+            with logfire.span("Fetch and process rows"):
+                async for row in result:
+                    row_count += 1
+                    period_dict = row._asdict()
 
-                temp_period = MetricsPeriod(**period_dict)
+                    for meta_metric in METRICS_POST_COMPUTE:
+                        period_dict[meta_metric.slug] = 0
 
-                for meta_metric in METRICS_POST_COMPUTE:
-                    period_dict[meta_metric.slug] = meta_metric.compute_from_period(
-                        temp_period
-                    )
+                    temp_period = MetricsPeriod(**period_dict)
 
-                periods.append(MetricsPeriod(**period_dict))
+                    for meta_metric in METRICS_POST_COMPUTE:
+                        period_dict[meta_metric.slug] = meta_metric.compute_from_period(
+                            temp_period
+                        )
+
+                    periods.append(MetricsPeriod(**period_dict))
+
+            logfire.info("Processed {row_count} rows", row_count=row_count)
 
         totals: dict[str, int | float] = {}
         with logfire.span(
             "Get cumulative metrics",
-            sql=str(statement),
             start_date=str(start_date),
             end_date=str(end_date),
         ):

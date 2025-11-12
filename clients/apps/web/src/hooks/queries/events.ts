@@ -74,6 +74,49 @@ export const useEvent = (organizationId: string, eventId: string) => {
   })
 }
 
+export const useEventHierarchyStats = (
+  organizationId: string,
+  startTimestamp: Date,
+  endTimestamp: Date,
+  interval: NonNullable<
+    operations['events:list_statistics_timeseries']['parameters']['query']
+  >['interval'],
+  aggregateFields: string[] = ['cost.amount'],
+  sorting?: operations['events:list_statistics_timeseries']['parameters']['query']['sorting'],
+  enabled: boolean = true,
+) => {
+  return useQuery({
+    queryKey: [
+      'eventHierarchyStats',
+      organizationId,
+      {
+        aggregate_fields: aggregateFields,
+        sorting,
+        startTimestamp,
+        endTimestamp,
+        interval,
+      },
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/statistics/timeseries', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              aggregate_fields: aggregateFields,
+              start_timestamp: startTimestamp.toISOString(),
+              end_timestamp: endTimestamp.toISOString(),
+              interval,
+              ...(sorting ? { sorting } : {}),
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+}
+
 export const useEventNames = (
   organizationId: string,
   parameters?: operations['events:list_names']['parameters']['query'],

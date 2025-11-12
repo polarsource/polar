@@ -1,6 +1,5 @@
 'use client'
 
-import { CONFIG } from '@/utils/config'
 import type { schemas } from '@polar-sh/client'
 import type { JsonType } from '@posthog/core'
 import { usePostHog as useOuterPostHog } from 'posthog-js/react'
@@ -60,7 +59,6 @@ export interface PolarHog {
   ) => void
   capture: (event: EventName, properties?: { [key: string]: JsonType }) => void
   identify: (user: schemas['UserRead']) => void
-  isFeatureEnabled: (key: string) => boolean
   logout: () => void
 }
 
@@ -94,17 +92,6 @@ export const usePostHog = (): PolarHog => {
     [posthog],
   )
 
-  const isFeatureEnabled: PolarHog['isFeatureEnabled'] = useCallback(
-    (key) => {
-      if (CONFIG.ENVIRONMENT == 'development') {
-        return true
-      }
-
-      return posthog.isFeatureEnabled(key) ?? false
-    },
-    [posthog],
-  )
-
   const logout: PolarHog['logout'] = useCallback(() => {
     capture('global:user:logout:done')
     posthog?.reset()
@@ -115,10 +102,9 @@ export const usePostHog = (): PolarHog => {
       setPersistence,
       capture,
       identify,
-      isFeatureEnabled,
       logout,
     }),
-    [setPersistence, capture, identify, isFeatureEnabled, logout],
+    [setPersistence, capture, identify, logout],
   )
 
   return context

@@ -18,7 +18,6 @@ from polar.integrations.github_repository_benefit.service import (
 from polar.logging import Logger
 from polar.models import Benefit, Customer, Organization, User
 from polar.models.customer import CustomerOAuthPlatform
-from polar.posthog import posthog
 
 from ..base.service import (
     BenefitActionRequiredError,
@@ -304,24 +303,21 @@ class BenefitGitHubRepositoryService(
                 ]
             )
 
-        if posthog.client and not posthog.client.feature_enabled(
-            "github-benefit-personal-org", user.posthog_distinct_id
-        ):
-            plan = await github_repository_benefit_user_service.get_billing_plan(
-                self.redis, oauth, installation
+        plan = await github_repository_benefit_user_service.get_billing_plan(
+            self.redis, oauth, installation
+        )
+        if not plan or plan.is_personal:
+            raise BenefitPropertiesValidationError(
+                [
+                    {
+                        "type": "personal_organization_repository",
+                        "msg": "For security reasons, "
+                        "repositories on personal organizations are not supported.",
+                        "loc": ("repository_name",),
+                        "input": repository_name,
+                    }
+                ]
             )
-            if not plan or plan.is_personal:
-                raise BenefitPropertiesValidationError(
-                    [
-                        {
-                            "type": "personal_organization_repository",
-                            "msg": "For security reasons, "
-                            "repositories on personal organizations are not supported.",
-                            "loc": ("repository_name",),
-                            "input": repository_name,
-                        }
-                    ]
-                )
 
         return cast(
             BenefitGitHubRepositoryProperties,

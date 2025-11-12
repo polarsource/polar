@@ -135,7 +135,8 @@ class TestAssignSeat:
         data = response.json()
         assert data["status"] == "pending"
         assert data["subscription_id"] == str(subscription_with_seats.id)
-        assert "invitation_token" not in data
+        assert "invitation_token" in data
+        assert data["invitation_token"] is not None
         assert "customer" not in data
 
     @pytest.mark.auth(SEAT_AUTH)

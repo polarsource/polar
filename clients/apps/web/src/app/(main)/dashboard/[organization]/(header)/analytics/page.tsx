@@ -2,7 +2,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas, unwrap } from '@polar-sh/client'
-import { addDays, endOfDay, max, subMonths } from 'date-fns'
+import { endOfDay, max, subMonths } from 'date-fns'
 import { RedirectType, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -67,11 +67,11 @@ export default async function Page(props: {
     end: Date,
     currentInterval: schemas['TimeInterval'],
   ): schemas['TimeInterval'] => {
-    const maxDate = addDays(
-      start,
-      limits.intervals[currentInterval].max_days - 1,
+    // Match backend logic: ordinal difference <= max_days
+    const daysDifference = Math.floor(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
     )
-    if (end <= maxDate) {
+    if (daysDifference <= limits.intervals[currentInterval].max_days) {
       return currentInterval
     }
 
@@ -85,12 +85,7 @@ export default async function Page(props: {
 
     return (
       intervalOrder.find((int) => {
-        const maxDateForInterval = addDays(
-          start,
-          limits.intervals[int].max_days - 1,
-        )
-
-        return end <= maxDateForInterval
+        return daysDifference <= limits.intervals[int].max_days
       }) || intervalOrder.at(-1)!
     )
   }

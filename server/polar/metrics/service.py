@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
+import logfire
 from sqlalchemy import ColumnElement, FromClause, select, text
 
 from polar.auth.models import AuthSubject
@@ -82,24 +83,36 @@ class MetricsService:
             execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
         )
         periods: list[MetricsPeriod] = []
-        async for row in result:
-            period_dict = row._asdict()
+        with logfire.span(
+            "Process metrics query",
+            sql=str(statement),
+            start_date=str(start_date),
+            end_date=str(end_date),
+        ):
+            async for row in result:
+                period_dict = row._asdict()
 
-            for meta_metric in METRICS_POST_COMPUTE:
-                period_dict[meta_metric.slug] = 0
+                for meta_metric in METRICS_POST_COMPUTE:
+                    period_dict[meta_metric.slug] = 0
 
-            temp_period = MetricsPeriod(**period_dict)
+                temp_period = MetricsPeriod(**period_dict)
 
-            for meta_metric in METRICS_POST_COMPUTE:
-                period_dict[meta_metric.slug] = meta_metric.compute_from_period(
-                    temp_period
-                )
+                for meta_metric in METRICS_POST_COMPUTE:
+                    period_dict[meta_metric.slug] = meta_metric.compute_from_period(
+                        temp_period
+                    )
 
-            periods.append(MetricsPeriod(**period_dict))
+                periods.append(MetricsPeriod(**period_dict))
 
         totals: dict[str, int | float] = {}
-        for metric in METRICS:
-            totals[metric.slug] = metric.get_cumulative(periods)
+        with logfire.span(
+            "Get cumulative metrics",
+            sql=str(statement),
+            start_date=str(start_date),
+            end_date=str(end_date),
+        ):
+            for metric in METRICS:
+                totals[metric.slug] = metric.get_cumulative(periods)
 
         return MetricsResponse.model_validate(
             {

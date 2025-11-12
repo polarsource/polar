@@ -10,7 +10,6 @@ from sqlalchemy import (
     UnaryExpression,
     and_,
     asc,
-    case,
     cast,
     desc,
     func,
@@ -27,7 +26,6 @@ from sqlalchemy.types import Numeric
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
-from polar.kit.sorting import Sorting
 from polar.kit.utils import generate_uuid
 from polar.models import (
     BillingEntry,
@@ -244,11 +242,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         statement: Select[tuple[Event]],
         limit: int,
         page: int,
-        aggregate_costs: bool = False,
+        aggregate_fields: Sequence[str] = (),
     ) -> tuple[Sequence[Event], int]:
         """
         List events using closure table to get a correct children_count.
-        Optionally aggregates costs from descendants into user_metadata._cost.amount.
+        Optionally aggregates fields from descendants's metadata.
         """
         descendant_event = Event.__table__.alias("descendant_event")
 
@@ -258,17 +256,22 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             (func.count() - 1).label("descendant_count"),
         ]
 
-        if aggregate_costs:
-            pg_path = "{_cost,amount}"
-            field_expr = cast(
+        field_aggregations = {}
+        for field_path in aggregate_fields:
+            pg_path = "{" + field_path.replace(".", ",") + "}"
+            label = f"agg_{field_path.replace('.', '_')}"
+
+            # Only aggregate numeric fields by summing them
+            # Returns NULL if no values to sum or if all values are NULL
+            numeric_expr = cast(
                 descendant_event.c.user_metadata.op("#>>")(
                     literal_column(f"'{pg_path}'")
                 ),
                 Numeric,
             )
-            aggregation_columns.append(
-                func.coalesce(func.sum(field_expr), 0).label("cost_sum")
-            )
+
+            aggregation_columns.append(func.sum(numeric_expr).label(label))
+            field_aggregations[field_path] = label
 
         aggregations_cte = (
             select(*aggregation_columns)
@@ -277,37 +280,45 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             .group_by(EventClosure.ancestor_id)
         ).cte("aggregations")
 
-        metadata_expr = (
-            case(
-                (
-                    aggregations_cte.c.cost_sum > 0,
-                    case(
-                        (
-                            Event.user_metadata.op("?")("_cost"),
-                            func.jsonb_set(
-                                Event.user_metadata,
-                                text("'{_cost,amount}'"),
-                                func.to_jsonb(aggregations_cte.c.cost_sum),
-                            ),
-                        ),
-                        else_=Event.user_metadata.op("||")(
-                            func.jsonb_build_object(
-                                "_cost",
-                                func.jsonb_build_object(
-                                    "amount",
-                                    aggregations_cte.c.cost_sum,
-                                    "currency",
-                                    "usd",
-                                ),
-                            )
-                        ),
-                    ),
-                ),
-                else_=Event.user_metadata,
-            )
-            if aggregate_costs
-            else Event.user_metadata
-        )
+        metadata_expr: Any = Event.user_metadata
+        if aggregate_fields:
+            for field_path, label in field_aggregations.items():
+                parts = field_path.split(".")
+                pg_path = "{" + ",".join(parts) + "}"
+                agg_column = getattr(aggregations_cte.c, label)
+
+                # For nested paths, jsonb_set with create_if_missing doesn't work reliably
+                # Use deep merge approach: extract parent, merge, set back
+                if len(parts) > 1:
+                    # Build the full nested structure
+                    # For "_cost.amount"=7: {"_cost": {"amount": 7}}
+                    nested_value = func.to_jsonb(agg_column)
+                    for part in reversed(parts):
+                        nested_value = func.jsonb_build_object(part, nested_value)
+
+                    # Deep merge: get existing parent object, merge with new, set back
+                    parent_key = parts[0]
+                    existing_parent = func.coalesce(
+                        metadata_expr.op("->")(parent_key), text("'{}'::jsonb")
+                    )
+                    merged_parent = existing_parent.op("||")(
+                        nested_value.op("->")(parent_key)
+                    )
+
+                    metadata_expr = func.jsonb_set(
+                        metadata_expr,
+                        text(f"'{{{parent_key}}}'"),
+                        merged_parent,
+                        text("true"),
+                    )
+                else:
+                    # Simple top-level key
+                    metadata_expr = func.jsonb_set(
+                        metadata_expr,
+                        text(f"'{pg_path}'"),
+                        func.to_jsonb(agg_column),
+                        text("true"),
+                    )
 
         final_query = (
             statement.add_columns(
@@ -331,7 +342,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         for row in rows:
             event = row[0]
             event.child_count = row.child_count
-            if aggregate_costs:
+            if aggregate_fields:
                 event.user_metadata = row.aggregated_metadata
             events.append(event)
             total_count = row.total_count

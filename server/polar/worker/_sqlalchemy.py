@@ -43,7 +43,7 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
         global _sqlalchemy_engine, _sqlalchemy_async_sessionmaker
         _sqlalchemy_engine = create_async_engine("worker")
         _sqlalchemy_async_sessionmaker = create_async_sessionmaker(_sqlalchemy_engine)
-        instrument_sqlalchemy(_sqlalchemy_engine.sync_engine)
+        instrument_sqlalchemy([_sqlalchemy_engine.sync_engine])
         log.info("Created database engine")
 
     def after_worker_shutdown(

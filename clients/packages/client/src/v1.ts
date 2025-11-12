@@ -7872,7 +7872,7 @@ export interface components {
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
        */
-      allow_trial: boolean
+      allow_trial: boolean | null
       /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
       active_trial_interval: components['schemas']['TrialInterval'] | null
       /**
@@ -9373,7 +9373,7 @@ export interface components {
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
        */
-      allow_trial: boolean
+      allow_trial: boolean | null
       /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
       active_trial_interval: components['schemas']['TrialInterval'] | null
       /**
@@ -9618,7 +9618,7 @@ export interface components {
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
        */
-      allow_trial: boolean
+      allow_trial: boolean | null
       /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
       active_trial_interval: components['schemas']['TrialInterval'] | null
       /**
@@ -21479,8 +21479,20 @@ export interface components {
       | components['schemas']['SubscriptionUpdateDiscount']
       | components['schemas']['SubscriptionUpdateTrial']
       | components['schemas']['SubscriptionUpdateSeats']
+      | components['schemas']['SubscriptionUpdateBillingPeriod']
       | components['schemas']['SubscriptionCancel']
       | components['schemas']['SubscriptionRevoke']
+    /** SubscriptionUpdateBillingPeriod */
+    SubscriptionUpdateBillingPeriod: {
+      /**
+       * Current Billing Period End
+       * Format: date-time
+       * @description Set a new date for the end of the current billing period. The subscription will renew on this date. Needs to be later than the current value.
+       *
+       *     It is not possible to update the current billing period on a canceled subscription.
+       */
+      current_billing_period_end: string
+    }
     /** SubscriptionUpdateDiscount */
     SubscriptionUpdateDiscount: {
       /**

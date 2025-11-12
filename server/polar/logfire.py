@@ -6,7 +6,6 @@ import httpx
 import logfire
 from fastapi import FastAPI
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk.trace.sampling import (
     ALWAYS_OFF,
     ALWAYS_ON,
@@ -107,7 +106,7 @@ def instrument_fastapi(app: FastAPI) -> None:
 
 
 def instrument_sqlalchemy(engines: Sequence[Engine]) -> None:
-    SQLAlchemyInstrumentor().instrument(engines=engines)
+    logfire.instrument_sqlalchemy(engines=engines)
 
 
 __all__ = [

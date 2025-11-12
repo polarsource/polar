@@ -378,8 +378,7 @@ const CustomerPortalSubscription = ({
                         customerSessionToken={customerSessionToken}
                         order={row.original}
                         onInvoiceGenerated={refetchOrders}
-                        variant="secondary"
-                        className={themingPreset.polar.buttonSecondary}
+                        dropdown
                       />
                     </span>
                   ),

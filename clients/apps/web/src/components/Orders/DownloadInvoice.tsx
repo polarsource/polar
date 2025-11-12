@@ -1,3 +1,5 @@
+'use client'
+
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useCustomerSSE, useOrganizationSSE } from '@/hooks/sse'
@@ -30,8 +32,9 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import EventEmitter from 'eventemitter3'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { twMerge } from 'tailwind-merge'
 
 type Variant = NonNullable<Parameters<typeof buttonVariants>[0]>['variant']
 type Size = NonNullable<Parameters<typeof buttonVariants>[0]>['size']
@@ -43,6 +46,7 @@ const DownloadInvoice = ({
   eventEmitter,
   invoiceURL,
   orderURL,
+  dropdown = false,
   variant,
   size,
   className,
@@ -58,6 +62,7 @@ const DownloadInvoice = ({
   variant?: Variant
   size?: Size
   className?: string
+  dropdown?: boolean
 }) => {
   const [loading, setLoading] = useState(false)
   const { isShown, hide, show } = useModal()
@@ -155,25 +160,60 @@ const DownloadInvoice = ({
     }
   }, [eventEmitter, order.id, onInvoiceGenerated, downloadInvoice])
 
+  const action = useMemo(
+    () =>
+      dropdown ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="secondary" size="icon">
+              <MoreVertOutlined fontSize="inherit" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onDownload} disabled={loading}>
+              Download Invoice
+            </DropdownMenuItem>
+            {order.is_invoice_generated && (
+              <DropdownMenuItem onClick={() => show()}>
+                Edit Invoice
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <div className="flex flex-col gap-2 lg:flex-row">
+          {order.is_invoice_generated && (
+            <Button
+              type="button"
+              loading={loading}
+              disabled={loading}
+              size={size}
+              variant="secondary"
+              onClick={() => show()}
+              className={twMerge('w-full', className)}
+            >
+              Edit Invoice
+            </Button>
+          )}
+          <Button
+            type="button"
+            onClick={onDownload}
+            loading={loading}
+            disabled={loading}
+            variant={variant}
+            size={size}
+            className={twMerge('w-full', className)}
+          >
+            Download Invoice
+          </Button>
+        </div>
+      ),
+    [dropdown, order, loading, size, className, variant, onDownload, show],
+  )
+
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger>
-          <Button variant="secondary" size="icon">
-            <MoreVertOutlined fontSize="inherit" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onDownload} disabled={loading}>
-            Download Invoice
-          </DropdownMenuItem>
-          {order.is_invoice_generated && (
-            <DropdownMenuItem onClick={() => show()}>
-              Edit Invoice
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {action}
       <InlineModal
         isShown={isShown}
         hide={hide}
@@ -356,6 +396,7 @@ export const DownloadInvoiceDashboard = ({
   variant,
   size,
   className,
+  dropdown = false,
 }: {
   organization: schemas['Organization']
   order: schemas['Order']
@@ -363,6 +404,7 @@ export const DownloadInvoiceDashboard = ({
   variant?: Variant
   size?: Size
   className?: string
+  dropdown?: boolean
 }) => {
   const eventEmitter = useOrganizationSSE(organization.id)
   return (
@@ -376,6 +418,7 @@ export const DownloadInvoiceDashboard = ({
       variant={variant}
       size={size}
       className={className}
+      dropdown={dropdown}
     />
   )
 }
@@ -384,6 +427,7 @@ export const DownloadInvoicePortal = ({
   customerSessionToken,
   order,
   onInvoiceGenerated,
+  dropdown = false,
   variant,
   size,
   className,
@@ -394,6 +438,7 @@ export const DownloadInvoicePortal = ({
   variant?: Variant
   size?: Size
   className?: string
+  dropdown?: boolean
 }) => {
   const eventEmitter = useCustomerSSE(customerSessionToken)
   const api = createClientSideAPI(customerSessionToken)
@@ -405,6 +450,7 @@ export const DownloadInvoicePortal = ({
       eventEmitter={eventEmitter}
       invoiceURL="/v1/customer-portal/orders/{id}/invoice"
       orderURL="/v1/customer-portal/orders/{id}"
+      dropdown={dropdown}
       variant={variant}
       size={size}
       className={className}

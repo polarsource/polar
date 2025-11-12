@@ -91,9 +91,10 @@ async def list(
         False,
         description="When true, filters by parent_id (root events if not specified). When false, returns all events regardless of hierarchy.",
     ),
-    aggregate_costs: bool = Query(
-        False,
-        description="When true, aggregates descendant costs into parent events and uses descendant count for child_count. When false, uses direct child count only.",
+    aggregate_fields: Sequence[str] = Query(
+        default=[],
+        description="Metadata field paths to aggregate from descendants into ancestors (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
+        include_in_schema=False,
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[EventSchema]:
@@ -136,7 +137,7 @@ async def list(
         query=query,
         parent_id=parent_id,
         hierarchical=hierarchical,
-        aggregate_costs=aggregate_costs,
+        aggregate_fields=aggregate_fields,
     )
 
     return ListResource.from_paginated_results(

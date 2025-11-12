@@ -3,6 +3,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { useCustomerSSE, useOrganizationSSE } from '@/hooks/sse'
 import { setValidationErrors } from '@/utils/api/errors'
 import { api, createClientSideAPI } from '@/utils/client'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import {
   enums,
   isValidationError,
@@ -12,6 +13,12 @@ import {
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/atoms/DropdownMenu'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { buttonVariants } from '@polar-sh/ui/components/ui/button'
 import {
@@ -25,7 +32,6 @@ import {
 import EventEmitter from 'eventemitter3'
 import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
 
 type Variant = NonNullable<Parameters<typeof buttonVariants>[0]>['variant']
 type Size = NonNullable<Parameters<typeof buttonVariants>[0]>['size']
@@ -151,32 +157,23 @@ const DownloadInvoice = ({
 
   return (
     <>
-      <div className="flex flex-col gap-2 lg:flex-row">
-        <Button
-          type="button"
-          onClick={onDownload}
-          loading={loading}
-          disabled={loading}
-          variant={variant}
-          size={size}
-          className={twMerge('w-full', className)}
-        >
-          Download Invoice
-        </Button>
-        {order.is_invoice_generated && (
-          <Button
-            type="button"
-            loading={loading}
-            disabled={loading}
-            size={size}
-            variant="secondary"
-            onClick={() => show()}
-            className={twMerge('w-full', className)}
-          >
-            Edit Invoice
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <Button variant="secondary" size="icon">
+            <MoreVertOutlined fontSize="inherit" />
           </Button>
-        )}
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onDownload} disabled={loading}>
+            Download Invoice
+          </DropdownMenuItem>
+          {order.is_invoice_generated && (
+            <DropdownMenuItem onClick={() => show()}>
+              Edit Invoice
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <InlineModal
         isShown={isShown}
         hide={hide}

@@ -99,6 +99,7 @@ from .schemas import (
     SubscriptionCreateCustomer,
     SubscriptionRevoke,
     SubscriptionUpdate,
+    SubscriptionUpdateBillingPeriod,
     SubscriptionUpdateDiscount,
     SubscriptionUpdateProduct,
     SubscriptionUpdateSeats,
@@ -1084,6 +1085,13 @@ class SubscriptionService:
                 proration_behavior=update.proration_behavior,
             )
 
+        if isinstance(update, SubscriptionUpdateBillingPeriod):
+            return await self.update_currrent_billing_period_end(
+                session,
+                subscription,
+                new_period_end=update.current_billing_period_end,
+            )
+
         if isinstance(update, SubscriptionCancel):
             uncancel = update.cancel_at_period_end is False
 
@@ -1652,6 +1660,78 @@ class SubscriptionService:
         # Send webhooks and notifications
         previous_status = subscription.status
         previous_is_canceled = subscription.canceled
+
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_is_canceled=previous_is_canceled,
+        )
+
+        return subscription
+
+    async def update_currrent_billing_period_end(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        new_period_end: datetime,
+    ) -> Subscription:
+        if subscription.revoked:
+            raise AlreadyCanceledSubscription(subscription)
+
+        if not subscription.active:
+            raise InactiveSubscription(subscription)
+
+        if subscription.cancel_at_period_end:
+            raise AlreadyCanceledSubscription(subscription)
+
+        if subscription.current_period_end is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "current_billing_period_end"),
+                        "msg": "Subscription has no current period end",
+                        "input": new_period_end,
+                    }
+                ]
+            )
+
+        if new_period_end < subscription.current_period_end:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "current_billing_period_end"),
+                        "msg": "New period end is earlier than the current period end",
+                        "input": new_period_end,
+                    }
+                ]
+            )
+
+        previous_status = subscription.status
+        previous_is_canceled = subscription.canceled
+        old_period_end = subscription.current_period_end
+
+        subscription.current_period_end = new_period_end
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_billing_period_updated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_period_end": old_period_end.isoformat(),
+                    "new_period_end": new_period_end.isoformat(),
+                },
+            ),
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(subscription)
 
         await self._after_subscription_updated(
             session,

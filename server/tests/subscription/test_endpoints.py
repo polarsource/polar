@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -980,3 +980,185 @@ class TestSubscriptionUpdateSeats:
         assert response.status_code == 400
         error = response.json()
         assert "not support seat-based pricing" in error["detail"]
+
+
+@pytest.mark.asyncio
+class TestSubscriptionUpdateBillingPeriod:
+    async def test_anonymous(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+        new_period_end = (datetime.now(UTC) + timedelta(days=365)).isoformat()
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(current_billing_period_end=new_period_end),
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_tampered(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_organization_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_organization_second,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+        new_period_end = (datetime.now(UTC) + timedelta(days=365)).isoformat()
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(current_billing_period_end=new_period_end),
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid_extension(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        new_period_end = datetime.now(UTC) + timedelta(days=365)
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(current_billing_period_end=new_period_end.isoformat()),
+        )
+
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        returned_period_end = datetime.fromisoformat(
+            updated_subscription["current_period_end"]
+        )
+        assert returned_period_end == new_period_end
+        assert updated_subscription["status"] == SubscriptionStatus.active
+
+    @pytest.mark.auth
+    async def test_cannot_set_earlier_period_end(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        future_end = datetime.now(UTC) + timedelta(days=365)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=future_end,
+            stripe_subscription_id=None,
+        )
+
+        earlier_date = (datetime.now(UTC) + timedelta(days=180)).isoformat()
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(current_billing_period_end=earlier_date),
+        )
+
+        assert response.status_code == 422
+        error = response.json()
+        assert "earlier than the current period end" in error["detail"][0]["msg"]
+
+    @pytest.mark.auth
+    async def test_revoked_subscription(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+            revoke=True,
+        )
+
+        new_period_end = (datetime.now(UTC) + timedelta(days=365)).isoformat()
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(current_billing_period_end=new_period_end),
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_cannot_extend_scheduled_cancellation(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+            revoke=False,
+        )
+        assert subscription.cancel_at_period_end is True
+
+        new_period_end = datetime.now(UTC) + timedelta(days=365)
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(current_billing_period_end=new_period_end.isoformat()),
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_inactive_subscription_past_due(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        current_end = datetime.now(UTC) + timedelta(days=30)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            started_at=datetime(2023, 1, 1),
+            current_period_end=current_end,
+            stripe_subscription_id=None,
+        )
+
+        new_period_end = (datetime.now(UTC) + timedelta(days=365)).isoformat()
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(current_billing_period_end=new_period_end),
+        )
+
+        assert response.status_code == 403

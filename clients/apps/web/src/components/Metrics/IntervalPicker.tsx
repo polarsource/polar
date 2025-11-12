@@ -25,10 +25,9 @@ export const getNextValidInterval = (
   const days = differenceInDays(endDate, startDate)
 
   // If current interval is still valid, keep it
-  // Server uses endOfDay for endDate, so a 7-day range (Nov 2-8) has differenceInDays=6
-  // but server checks: endOfDay(Nov 8) > addDays(Nov 2, 6), which fails
-  // So we need days < max_days - 1 to account for the endOfDay offset
-  if (days < MAX_INTERVAL_DAYS[currentInterval] - 1) {
+  // Backend checks: end_date.toordinal() - start_date.toordinal() <= MAX_INTERVAL_DAYS
+  // differenceInDays gives us the same ordinal difference
+  if (days <= MAX_INTERVAL_DAYS[currentInterval]) {
     return currentInterval
   }
 
@@ -42,7 +41,7 @@ export const getNextValidInterval = (
   ]
 
   for (const interval of intervalOrder) {
-    if (days < MAX_INTERVAL_DAYS[interval] - 1) {
+    if (days <= MAX_INTERVAL_DAYS[interval]) {
       return interval
     }
   }
@@ -85,7 +84,7 @@ const IntervalPicker = ({
     const disabled = new Set<schemas['TimeInterval']>()
 
     Object.entries(MAX_INTERVAL_DAYS).forEach(([intervalKey, maxDays]) => {
-      if (days >= maxDays - 1) {
+      if (days > maxDays) {
         disabled.add(intervalKey as schemas['TimeInterval'])
       }
     })

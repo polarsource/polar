@@ -21,7 +21,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
@@ -247,7 +247,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         List events using closure table to get a correct children_count.
         Optionally aggregates fields from descendants's metadata.
         """
-        descendant_event = Event.__table__.alias("descendant_event")
+        descendant_event = aliased(Event, name="descendant_event")
 
         # Build columns for aggregations CTE
         aggregation_columns: list[Any] = [
@@ -263,7 +263,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             # Only aggregate numeric fields by summing them
             # Returns NULL if no values to sum or if all values are NULL
             numeric_expr = cast(
-                descendant_event.c.user_metadata.op("#>>")(
+                descendant_event.user_metadata.op("#>>")(
                     literal_column(f"'{pg_path}'")
                 ),
                 Numeric,
@@ -275,7 +275,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         aggregations_cte = (
             select(*aggregation_columns)
             .select_from(EventClosure)
-            .join(descendant_event, EventClosure.descendant_id == descendant_event.c.id)
+            .join(descendant_event, EventClosure.descendant_id == descendant_event.id)
             .group_by(EventClosure.ancestor_id)
         ).cte("aggregations")
 
@@ -367,7 +367,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         """
         root_events_subquery = statement.where(Event.parent_id.is_(None)).subquery()
 
-        descendant_event = Event.__table__.alias("descendant_event")
+        descendant_event = aliased(Event, name="descendant_event")
 
         aggregation_exprs = []
         having_clauses = []
@@ -377,7 +377,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             safe_field_name = field_path.replace(".", "_")
 
             field_expr = cast(
-                descendant_event.c.user_metadata.op("#>>")(
+                descendant_event.user_metadata.op("#>>")(
                     literal_column(f"'{pg_path}'")
                 ),
                 Numeric,
@@ -413,7 +413,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 EventClosure,
                 literal_column("root_event.id") == EventClosure.ancestor_id,
             )
-            .join(descendant_event, EventClosure.descendant_id == descendant_event.c.id)
+            .join(descendant_event, EventClosure.descendant_id == descendant_event.id)
             .group_by(literal_column("root_event.name"))
         )
 

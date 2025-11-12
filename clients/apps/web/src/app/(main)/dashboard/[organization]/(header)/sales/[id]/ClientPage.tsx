@@ -164,7 +164,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <DetailRow
               label="Discount Code"
               value={order.discount ? order.discount.code : '—'}
-              valueClassName="font-mono text-sm"
+              valueClassName="font-mono capitalize"
             />
 
             <DetailRow

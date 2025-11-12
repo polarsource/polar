@@ -463,10 +463,23 @@ def get_canceled_subscriptions_cte(
 
 def _get_readable_cost_events_statement(
     *,
+    auth_subject: AuthSubject[User | Organization],
     organization_id: Sequence[uuid.UUID] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> Select[tuple[uuid.UUID]]:
     statement = select(Event.id).where(Event.user_metadata["_cost"].is_not(None))
+
+    if is_user(auth_subject):
+        statement = statement.where(
+            Event.organization_id.in_(
+                select(UserOrganization.organization_id).where(
+                    UserOrganization.user_id == auth_subject.subject.id,
+                    UserOrganization.deleted_at.is_(None),
+                )
+            )
+        )
+    elif is_organization(auth_subject):
+        statement = statement.where(Event.organization_id == auth_subject.subject.id)
 
     if organization_id is not None:
         statement = statement.where(Event.organization_id.in_(organization_id))
@@ -502,6 +515,7 @@ def get_cost_events_cte(
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
     readable_cost_events_statement = _get_readable_cost_events_statement(
+        auth_subject=auth_subject,
         organization_id=organization_id,
         customer_id=customer_id,
     )
@@ -544,6 +558,7 @@ def get_cumulative_cost_events_cte(
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
     readable_cost_events_statement = _get_readable_cost_events_statement(
+        auth_subject=auth_subject,
         organization_id=organization_id,
         customer_id=customer_id,
     )

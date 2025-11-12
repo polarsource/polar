@@ -114,7 +114,7 @@ export const testimonials = [
   },
   {
     link: 'https://x.com/pontusab/status/1886140577634463870',
-    name: 'Pontus Abrahamssons',
+    name: 'Pontus Abrahamsson',
     company: 'Midday',
     verified: true,
     avatar: '/assets/landing/testamonials/pontus.jpg',

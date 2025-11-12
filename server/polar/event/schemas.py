@@ -27,6 +27,7 @@ from polar.event.system import (
     SubscriptionCycledMetadata,
     SubscriptionProductUpdatedMetadata,
     SubscriptionRevokedMetadata,
+    SubscriptionSeatsUpdatedMetadata,
 )
 from polar.event.system import SystemEvent as SystemEventEnum
 from polar.kit.metadata import METADATA_DESCRIPTION, MetadataValue
@@ -315,6 +316,17 @@ class SubscriptionProductUpdatedEvent(SystemEventBase):
     )
 
 
+class SubscriptionSeatsUpdatedEvent(SystemEventBase):
+    """An event created by Polar when a the seats on a subscription is changed."""
+
+    name: Literal[SystemEventEnum.subscription_seats_updated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionSeatsUpdatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class OrderPaidEvent(SystemEventBase):
     """An event created by Polar when an order is paid."""
 
@@ -376,6 +388,7 @@ SystemEvent = Annotated[
     | SubscriptionCycledEvent
     | SubscriptionRevokedEvent
     | SubscriptionProductUpdatedEvent
+    | SubscriptionSeatsUpdatedEvent
     | OrderPaidEvent
     | OrderRefundedEvent
     | CustomerCreatedEvent

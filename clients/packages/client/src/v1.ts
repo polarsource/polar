@@ -21373,6 +21373,77 @@ export interface components {
       subscription_id: string
     }
     /**
+     * SubscriptionSeatsUpdatedEvent
+     * @description An event created by Polar when a the seats on a subscription is changed.
+     */
+    SubscriptionSeatsUpdatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.seats_updated'
+      metadata: components['schemas']['SubscriptionSeatsUpdatedMetadata']
+    }
+    /** SubscriptionSeatsUpdatedMetadata */
+    SubscriptionSeatsUpdatedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Old Seats */
+      old_seats: number
+      /** New Seats */
+      new_seats: number
+      /** Proration Behavior */
+      proration_behavior: string
+    }
+    /**
      * SubscriptionSortProperty
      * @enum {string}
      */
@@ -21478,6 +21549,7 @@ export interface components {
       | components['schemas']['SubscriptionCycledEvent']
       | components['schemas']['SubscriptionRevokedEvent']
       | components['schemas']['SubscriptionProductUpdatedEvent']
+      | components['schemas']['SubscriptionSeatsUpdatedEvent']
       | components['schemas']['OrderPaidEvent']
       | components['schemas']['OrderRefundedEvent']
       | components['schemas']['CustomerCreatedEvent']
@@ -36351,6 +36423,9 @@ export const subscriptionRecurringIntervalValues: ReadonlyArray<
 export const subscriptionRevokedEventNameValues: ReadonlyArray<
   components['schemas']['SubscriptionRevokedEvent']['name']
 > = ['subscription.revoked']
+export const subscriptionSeatsUpdatedEventNameValues: ReadonlyArray<
+  components['schemas']['SubscriptionSeatsUpdatedEvent']['name']
+> = ['subscription.seats_updated']
 export const subscriptionSortPropertyValues: ReadonlyArray<
   components['schemas']['SubscriptionSortProperty']
 > = [

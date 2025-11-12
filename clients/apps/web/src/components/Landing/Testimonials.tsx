@@ -4,9 +4,38 @@ import Link from 'next/link'
 
 export const testimonials = [
   {
+    link: 'https://x.com/rauchg/status/1909810055622672851',
+    name: 'Guillermo Rauch',
+    company: 'Vercel',
+    verified: true,
+    avatar: '/assets/landing/testamonials/rauch.jpg',
+    text: (
+      <p>
+        The speed at which Polar is executing on the financial infrastructure
+        primitives the new world needs is very impressive
+      </p>
+    ),
+  },
+  {
+    link: 'https://x.com/steventey/status/1886124389357490670',
+    name: 'Steven Tey',
+    company: 'Dub',
+    verified: true,
+    avatar: '/assets/landing/testamonials/steven.jpg',
+    text: (
+      <>
+        <p>Open source + great DX + responsive support always wins.</p>
+        <p>
+          If you&apos;re selling stuff online and haven&apos;t tried @polar_sh
+          yet — 100% recommend doing so!
+        </p>
+      </>
+    ),
+  },
+  {
     link: 'https://x.com/mitchellh/status/1775925951668552005',
     name: 'Mitchell Hashimoto',
-    username: 'mitchellh',
+    company: 'Ghostty',
     verified: true,
     avatar: '/assets/landing/testamonials/mitchell.jpg',
     text: (
@@ -22,79 +51,9 @@ export const testimonials = [
     ),
   },
   {
-    link: 'https://x.com/rauchg/status/1909810055622672851',
-    name: 'Guillermo Rauch',
-    username: 'rauchg',
-    verified: true,
-    avatar: '/assets/landing/testamonials/rauch.jpg',
-    text: (
-      <p>
-        The speed at which Polar is executing on the financial infrastructure
-        primitives the new world needs is very impressive
-      </p>
-    ),
-  },
-  {
-    link: 'https://x.com/steventey/status/1886124389357490670',
-    name: 'Steven Tey',
-    username: 'steventey',
-    verified: true,
-    avatar: '/assets/landing/testamonials/steven.jpg',
-    text: (
-      <>
-        <p>Open source + great DX + responsive support always wins.</p>
-        <p>
-          If you&apos;re selling stuff online and haven&apos;t tried @polar_sh
-          yet — 100% recommend doing so!
-        </p>
-      </>
-    ),
-  },
-  {
-    link: 'https://x.com/alexhbass/status/1895688367066747251',
-    name: 'Alex Bass',
-    username: 'alexhbass',
-    verified: true,
-    avatar: '/assets/landing/testamonials/alex.jpg',
-    text: (
-      <p>
-        We switched to @polar_sh because of their killer API, UX, and product.
-        Also love that it&apos;s Open-Source. Their team cares A LOT as well.
-        Worth the minor fee difference.
-      </p>
-    ),
-  },
-  {
-    name: 'Andrea Bizzotto',
-    username: 'biz84',
-    avatar: '/assets/landing/testamonials/andrea.png',
-    link: 'https://x.com/biz84/status/1883284175459135808',
-    verified: false,
-    text: (
-      <p>
-        I&apos;ve been integrating Polar recently and had a fantastic
-        experience! Great DX and the team responds to support super quickly!
-      </p>
-    ),
-  },
-  {
-    name: 'enjie',
-    username: 'im_enjie',
-    avatar: '/assets/landing/testamonials/enjie.jpg',
-    link: 'https://x.com/im_enjie/status/1911490599980519690',
-    verified: true,
-    text: (
-      <p>
-        I finally tried @polar_sh after all the hype, and it&apos;s hands down
-        the smoothest, most developer-friendly, and straightforward payment
-        integration out there.
-      </p>
-    ),
-  },
-  {
     link: 'https://x.com/samuel_colvin/status/1676167205715582978',
     name: 'Samuel Colvin',
-    username: 'samuel_colvin',
+    company: 'Pydantic',
     verified: true,
     avatar: '/assets/landing/testamonials/samuel.jpg',
     text: (
@@ -108,157 +67,74 @@ export const testimonials = [
     ),
   },
   {
-    link: 'https://x.com/LinusEkenstam/status/1831697198280524065',
-    name: 'Linus Ekenstam',
-    username: 'LinusEkenstam',
+    link: 'https://x.com/morganlinton/status/1935336619718148373',
+    name: 'Morgan Linton',
+    company: 'Bold Metrics',
     verified: true,
-    avatar: '/assets/landing/testamonials/linus.jpg',
+    avatar: '/assets/landing/testamonials/morgan.jpg',
+    text: (
+      <>
+        <p>
+          Huge congrats to Polar, love what this team is doing. Three person
+          team, executing like crazy.
+        </p>
+        <p>Building the perfect solution at the perfect time in history.</p>
+        <p>
+          There has never been a better time to build software, and now, there
+          has never been an easier way to charge for the software you build.
+        </p>
+      </>
+    ),
+  },
+  {
+    link: 'https://x.com/mrblackstudio/status/1987257923291259224',
+    name: 'Lee Black',
+    company: '1042 Studio',
+    verified: true,
+    avatar: '/assets/landing/testamonials/lee.jpg',
+    text: (
+      <>
+        <p>I switched to @polar_sh a few weeks back. Best decision ever.</p>
+      </>
+    ),
+  },
+  {
+    link: 'https://x.com/alexhbass/status/1895688367066747251',
+    name: 'Alex Bass',
+    company: 'Efficient',
+    verified: true,
+    avatar: '/assets/landing/testamonials/alex.jpg',
     text: (
       <p>
-        I&apos;ve been waiting for this so hard. LFG, congratulations on the
-        launch guys!
+        We switched to @polar_sh because of their killer API, UX, and product.
+        Also love that it&apos;s Open-Source. Their team cares A LOT as well.
+        Worth the minor fee difference.
       </p>
     ),
   },
   {
-    name: 'kitze',
-    username: 'thekitze',
-    avatar: '/assets/landing/testamonials/kitze.jpg',
-    link: 'https://x.com/thekitze/status/1909217027660595496',
+    link: 'https://x.com/pontusab/status/1886140577634463870',
+    name: 'Pontus Abrahamssons',
+    company: 'Midday',
     verified: true,
-    text: <p>I just saw the plugin and oh my god</p>,
+    avatar: '/assets/landing/testamonials/pontus.jpg',
+    text: <p>You can tell @polar_sh is building DX first</p>,
   },
   {
-    name: 'Jim Raptis',
-    username: 'd__raptis',
-    avatar: '/assets/landing/testamonials/jim.jpg',
-    link: 'https://x.com/d__raptis/status/1896551633917477156',
+    link: 'https://x.com/zuess05/status/1988311142515831017',
+    name: 'Suhas',
+    company: 'Cubix',
     verified: true,
+    avatar: '/assets/landing/testamonials/suhas.jpg',
     text: (
       <>
         <p>
-          I&apos;ve migrated the http://gradients.fm pre-order checkout to
-          @polar_sh 💳
-        </p>
-        <p>Much quicker to load and has a more beautiful checkout page imo.</p>
-      </>
-    ),
-  },
-  {
-    name: 'Jonathan Bloomfield',
-    username: 'Champdebloom',
-    avatar: '/assets/landing/testamonials/bloomfield.jpg',
-    link: 'https://x.com/Champdebloom/status/1908571341915107698',
-    verified: true,
-    text: (
-      <>
-        <p>
-          I spent hours wrestling with Stripe last night and I know it&apos;s a
-          skill issue, but @polar_sh&apos;s DX is so peak this wouldn&apos;t
-          have been a problem.
+          man, @polar_sh has one of the BEST onboardings I&apos;ve seen for a
+          payment provider.
         </p>
         <p>
-          Just waiting on CAD support so I can migrate and it can&apos;t come
-          soon enough!
+          Took me less than 20 minutes while some others took literally weeks
         </p>
-      </>
-    ),
-  },
-  {
-    name: 'Dmitry Vlasov',
-    username: 'vlasov',
-    avatar: '/assets/landing/testamonials/dmitry.jpg',
-    link: 'https://x.com/vlasov/status/1908428846371864880',
-    verified: true,
-    text: (
-      <p>
-        Someone here recommended @polar_sh, and I can only say the experience
-        has been very smooth so far.
-      </p>
-    ),
-  },
-  {
-    name: 'Filip K',
-    username: 'itsfilipk',
-    link: 'https://x.com/itsfilipk/status/1910238399820165140',
-    verified: true,
-    avatar: '/assets/landing/testamonials/filip.jpg',
-    text: (
-      <>
-        <p>
-          In 8 years as a developer I can&apos;t recall having such a smooth
-          onboarding + integration experience as with @polar_sh . Everything
-          from the UI, docs and CLI tool is intuitive and &apos;just
-          works&apos;.
-        </p>
-        <p>
-          If you are looking to integrate international payments into your
-          business, I can&apos;t recommend them enough.
-        </p>
-      </>
-    ),
-  },
-  {
-    link: 'https://x.com/Mike_Andreuzza/status/1856338674406875385',
-    name: 'Mike Andreuzza',
-    username: 'Mike_Andreuzza',
-    verified: true,
-    avatar: '/assets/landing/testamonials/mike.jpg',
-    text: (
-      <>
-        <p>
-          Officially using @polar_sh for payments and lowered prices on
-          Lexington.
-        </p>
-        <p>
-          I also want to thank @birk and the people at Polar for helping me out
-          with the move and adapting the UI to my use case during the move. They
-          are worth their weight in gold.
-        </p>
-      </>
-    ),
-  },
-  {
-    link: 'https://x.com/jonathan_wilke/status/1896551633917477156',
-    name: 'Jonathan Wilke',
-    username: 'jonathan_wilke',
-    verified: true,
-    avatar: '/assets/landing/testamonials/jonathan.jpg',
-    text: (
-      <p>
-        Wow this is just amazing. With @polar_sh I can directly give the
-        customer access to the supastarter repository and invite them to the
-        discord server 🔥🚀
-      </p>
-    ),
-  },
-  {
-    link: 'https://x.com/b_shulha/status/1894387529299739123',
-    name: 'Bohdan Shulha',
-    username: 'b_shulha',
-    verified: true,
-    avatar: '/assets/landing/testamonials/bohdan.jpg',
-    text: (
-      <>
-        <p>I feel like @polar_sh is @vercel of payments.</p>
-        <p>Keep pushing! 💘</p>
-      </>
-    ),
-  },
-  {
-    link: 'https://x.com/dparksdev/status/1902848435318935690',
-    name: 'David Parks',
-    username: 'dparksdev',
-    verified: true,
-    avatar: '/assets/landing/testamonials/david.jpg',
-    text: (
-      <>
-        <p>The @polar_sh plugin for @better_auth is magic.</p>
-        <ul className="list-disc pl-4">
-          <li>Automatically creates customers on signup</li>
-          <li>Maps your databases id to an external id for reference</li>
-          <li>Creates checkout, portal and webhook routes for you</li>
-        </ul>
       </>
     ),
   },
@@ -266,7 +142,7 @@ export const testimonials = [
 
 interface TestamonialProps {
   name: string
-  username: string
+  company: string
   avatar: string
   text: React.ReactNode
   link: string
@@ -275,52 +151,47 @@ interface TestamonialProps {
 
 export const Testamonial = ({
   name,
-  username,
+  company,
   avatar,
   text,
   link,
-  verified,
 }: TestamonialProps) => {
   return (
     <Link
       href={link}
       target="_blank"
-      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-row gap-x-4 rounded-xl border border-transparent bg-white p-6 transition-colors hover:bg-white"
+      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-col justify-between gap-x-4 gap-y-12 rounded-2xl border border-transparent bg-white p-8 transition-colors hover:bg-white"
     >
-      <div className="flex flex-col gap-y-4 pt-1.5">
-        <div className="flex flex-row items-center gap-x-3">
+      <div className="flex flex-col gap-y-8">
+        <div className="flex flex-row items-center justify-between gap-x-2">
           <Avatar
             name={name}
             avatar_url={avatar}
-            className="h-10 w-10"
-            width={48}
-            height={48}
+            className="h-12 w-12"
+            width={64}
+            height={64}
             loading="lazy"
             CustomImageComponent={Image}
           />
-          <div className="flex flex-col text-sm">
-            <div className="flex flex-row items-center gap-x-2">
-              <span>{name}</span>
-            </div>
-            <span className="dark:text-polar-500 text-gray-500">
-              @{username}
-            </span>
-          </div>
         </div>
         <div className="flex flex-col gap-y-6">
-          <div className="dark:text-polar-100 flex flex-col gap-y-4 text-gray-950">
+          <p className="dark:text-polar-50 flex flex-col gap-y-4 text-lg text-gray-950">
             {text}
-          </div>
+          </p>
         </div>
+      </div>
+      <div className="flex flex-col">
+        <p className="dark:text-polar-600 mb-4 text-gray-400">—</p>
+        <div className="flex flex-row items-center gap-x-2">
+          <span>{name}</span>
+        </div>
+        <span className="dark:text-polar-500 text-gray-500">{company}</span>
       </div>
     </Link>
   )
 }
 
 export const Testimonials = () => {
-  const halfLength = Math.ceil(testimonials.length / 2)
-  const firstRow = testimonials.slice(0, halfLength)
-
   return (
     <div className="flex flex-col items-center gap-y-12 md:gap-y-24 md:py-12">
       <div className="flex flex-col items-center gap-y-8">
@@ -331,47 +202,10 @@ export const Testimonials = () => {
           Why people love Polar
         </h1>
       </div>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {firstRow.map((testimonial, index) => (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {testimonials.map((testimonial, index) => (
           <Testamonial key={`testimonial-${index}`} {...testimonial} />
         ))}
-      </div>
-    </div>
-  )
-}
-
-const VerifiedBadge = () => {
-  return (
-    <div className="relative flex">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="fill-[#1D9BF0] text-[#1D9BF0]"
-      >
-        <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path>
-      </svg>
-      <div className="absolute inset-0 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="8"
-          height="8"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-white"
-        >
-          <path d="M20 6 9 17l-5-5"></path>
-        </svg>
       </div>
     </div>
   )

@@ -57,7 +57,7 @@ export const useEvents = (
           params: {
             query: {
               organization_id: organizationId,
-              aggregate_costs: true,
+              aggregate_fields: ['_cost.amount'],
               ...(parameters || {}),
             },
           },

@@ -15116,67 +15116,6 @@ export interface components {
        */
       external_customer_id: string
     }
-    /**
-     * EventHierarchyStats
-     * @description Aggregate statistics for events grouped by root event name.
-     */
-    EventHierarchyStats: {
-      /**
-       * Name
-       * @description The name of the root event.
-       */
-      name: string
-      /**
-       * Occurrences
-       * @description Number of root events with this name (i.e., number of traces).
-       */
-      occurrences: number
-      /**
-       * Totals
-       * @description Sum of each field across all events in all hierarchies.
-       */
-      totals?: {
-        [key: string]: string
-      }
-      /**
-       * Averages
-       * @description Average value of each field across all events in all hierarchies.
-       */
-      averages?: {
-        [key: string]: string
-      }
-      /**
-       * P95
-       * @description 95th percentile of each field across all events in all hierarchies.
-       */
-      p95?: {
-        [key: string]: string
-      }
-      /**
-       * P99
-       * @description 99th percentile of each field across all events in all hierarchies.
-       */
-      p99?: {
-        [key: string]: string
-      }
-    }
-    /**
-     * EventHierarchyStatsSortProperty
-     * @enum {string}
-     */
-    EventHierarchyStatsSortProperty:
-      | 'name'
-      | '-name'
-      | 'occurrences'
-      | '-occurrences'
-      | 'total'
-      | '-total'
-      | 'average'
-      | '-average'
-      | 'p95'
-      | '-p95'
-      | 'p99'
-      | '-p99'
     /** EventMetadataInput */
     EventMetadataInput: {
       _cost?: components['schemas']['CostMetadata-Input']
@@ -20295,6 +20234,67 @@ export interface components {
     }
     /** RevokeTokenResponse */
     RevokeTokenResponse: Record<string, never>
+    /**
+     * RootEventStatistics
+     * @description Aggregate statistics for events grouped by root event name.
+     */
+    RootEventStatistics: {
+      /**
+       * Name
+       * @description The name of the root event.
+       */
+      name: string
+      /**
+       * Occurrences
+       * @description Number of root events with this name (i.e., number of traces).
+       */
+      occurrences: number
+      /**
+       * Totals
+       * @description Sum of each field across all events in all hierarchies.
+       */
+      totals?: {
+        [key: string]: string
+      }
+      /**
+       * Averages
+       * @description Average value of each field across all events in all hierarchies.
+       */
+      averages?: {
+        [key: string]: string
+      }
+      /**
+       * P95
+       * @description 95th percentile of each field across all events in all hierarchies.
+       */
+      p95?: {
+        [key: string]: string
+      }
+      /**
+       * P99
+       * @description 99th percentile of each field across all events in all hierarchies.
+       */
+      p99?: {
+        [key: string]: string
+      }
+    }
+    /**
+     * RootEventStatisticsSortProperty
+     * @enum {string}
+     */
+    RootEventStatisticsSortProperty:
+      | 'name'
+      | '-name'
+      | 'occurrences'
+      | '-occurrences'
+      | 'total'
+      | '-total'
+      | 'average'
+      | '-average'
+      | 'p95'
+      | '-p95'
+      | 'p99'
+      | '-p99'
     /** S3DownloadURL */
     S3DownloadURL: {
       /** Url */
@@ -27296,6 +27296,7 @@ export interface operations {
           | 'America/Coral_Harbour'
           | 'America/Cordoba'
           | 'America/Costa_Rica'
+          | 'America/Coyhaique'
           | 'America/Creston'
           | 'America/Cuiaba'
           | 'America/Curacao'
@@ -31745,8 +31746,6 @@ export interface operations {
         parent_id?: string | null
         /** @description When true, filters by parent_id (root events if not specified). When false, returns all events regardless of hierarchy. */
         hierarchical?: boolean
-        /** @description When true, aggregates descendant costs into parent events and uses descendant count for child_count. When false, uses direct child count only. */
-        aggregate_costs?: boolean
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -31812,7 +31811,7 @@ export interface operations {
         aggregate_fields?: string[]
         /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
         sorting?:
-          | components['schemas']['EventHierarchyStatsSortProperty'][]
+          | components['schemas']['RootEventStatisticsSortProperty'][]
           | null
         /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
         metadata?: components['schemas']['MetadataQuery']
@@ -31829,7 +31828,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['EventHierarchyStats'][]
+          'application/json': components['schemas']['RootEventStatistics'][]
         }
       }
       /** @description Validation Error */
@@ -33979,6 +33978,7 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'America/Coral_Harbour',
   'America/Cordoba',
   'America/Costa_Rica',
+  'America/Coyhaique',
   'America/Creston',
   'America/Cuiaba',
   'America/Curacao',
@@ -35883,22 +35883,6 @@ export const downloadableFileCreateServiceValues: ReadonlyArray<
 export const downloadableFileReadServiceValues: ReadonlyArray<
   components['schemas']['DownloadableFileRead']['service']
 > = ['downloadable']
-export const eventHierarchyStatsSortPropertyValues: ReadonlyArray<
-  components['schemas']['EventHierarchyStatsSortProperty']
-> = [
-  'name',
-  '-name',
-  'occurrences',
-  '-occurrences',
-  'total',
-  '-total',
-  'average',
-  '-average',
-  'p95',
-  '-p95',
-  'p99',
-  '-p99',
-]
 export const eventNamesSortPropertyValues: ReadonlyArray<
   components['schemas']['EventNamesSortProperty']
 > = [
@@ -36237,6 +36221,22 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   components['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
+export const rootEventStatisticsSortPropertyValues: ReadonlyArray<
+  components['schemas']['RootEventStatisticsSortProperty']
+> = [
+  'name',
+  '-name',
+  'occurrences',
+  '-occurrences',
+  'total',
+  '-total',
+  'average',
+  '-average',
+  'p95',
+  '-p95',
+  'p99',
+  '-p99',
+]
 export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'openid',
   'profile',

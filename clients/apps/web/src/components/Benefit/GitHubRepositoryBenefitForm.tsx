@@ -1,5 +1,4 @@
 import { useAuth } from '@/hooks'
-import { usePostHog } from '@/hooks/posthog'
 import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from '@/hooks/queries'
 import { useUserSSE } from '@/hooks/sse'
 import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
@@ -33,7 +32,6 @@ interface GitHubRepositoryBenefitFormProps {
 export const GitHubRepositoryBenefitForm = ({
   update = false,
 }: GitHubRepositoryBenefitFormProps) => {
-  const posthog = usePostHog()
   const {
     control,
     watch,
@@ -42,11 +40,6 @@ export const GitHubRepositoryBenefitForm = ({
     setError,
     clearErrors,
   } = useFormContext<schemas['BenefitGitHubRepositoryCreate']>()
-
-  const canConfigurePersonalOrg = useMemo(
-    () => posthog.isFeatureEnabled('github-benefit-personal-org'),
-    [posthog],
-  )
 
   const pathname = usePathname()
 
@@ -85,7 +78,9 @@ export const GitHubRepositoryBenefitForm = ({
     )
 
     const closeWindowListener = () => {
-      installationWindow && installationWindow.close()
+      if (installationWindow) {
+        installationWindow.close()
+      }
       refetchRepositories()
     }
 
@@ -139,7 +134,7 @@ export const GitHubRepositoryBenefitForm = ({
       (o) => o.name === formRepoOwner,
     )
 
-    if (org?.is_personal && !canConfigurePersonalOrg) {
+    if (org?.is_personal) {
       setError('properties.repository_owner', {
         message:
           'For security reasons, we do not support configuring a repository on a personal organization.',
@@ -147,13 +142,7 @@ export const GitHubRepositoryBenefitForm = ({
     } else {
       clearErrors('properties.repository_owner')
     }
-  }, [
-    formRepoOwner,
-    repositories,
-    canConfigurePersonalOrg,
-    clearErrors,
-    setError,
-  ])
+  }, [formRepoOwner, repositories, clearErrors, setError])
 
   // Set selected on load
   const didSetOnLoad = useRef(false)
@@ -162,10 +151,14 @@ export const GitHubRepositoryBenefitForm = ({
       return
     }
 
-    const props = defaultValues?.properties
+    const defaultProperties = defaultValues?.properties
 
-    if (props && props.repository_owner && props.repository_name) {
-      const key = `${props.repository_owner}/${props.repository_name}`
+    if (
+      defaultProperties &&
+      defaultProperties.repository_owner &&
+      defaultProperties.repository_name
+    ) {
+      const key = `${defaultProperties.repository_owner}/${defaultProperties.repository_name}`
       const repo = repos.find((r) => r.key == key)
       if (repo) {
         didSetOnLoad.current = true

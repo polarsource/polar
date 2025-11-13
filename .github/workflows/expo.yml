@@ -28,7 +28,6 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           package_json_file: clients/package.json
-          version: 10.5.2
 
       - name: Setup Node
         uses: actions/setup-node@v4

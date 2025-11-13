@@ -120,6 +120,9 @@ class WebhookEvent(IDSchema, TimestampedSchema):
             " `null` if no delivery has been attempted."
         ),
     )
+    skipped: bool = Field(
+        description="Whether this event was skipped because the webhook endpoint was disabled."
+    )
     payload: str | None = Field(description="The payload of the webhook event.")
     type: WebhookEventType = Field(description="The type of the webhook event.")
     is_archived: bool = Field(

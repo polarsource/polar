@@ -1,8 +1,17 @@
-import { FormInput } from "@/components/Form/FormInput";
-import { Button } from "@/components/Shared/Button";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { OrganizationCreate } from "@polar-sh/sdk/models/components/organizationcreate.js";
-import { useForm } from "react-hook-form";
+import { FormInput } from '@/components/Form/FormInput'
+import { Button } from '@/components/Shared/Button'
+import { Checkbox } from '@/components/Shared/Checkbox'
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { useCreateOrganization } from '@/hooks/polar/organizations'
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { themes } from '@/utils/theme'
+import { OrganizationCreate } from '@polar-sh/sdk/models/components/organizationcreate.js'
+import { SDKError } from '@polar-sh/sdk/models/errors/sdkerror.js'
+import { SDKValidationError } from '@polar-sh/sdk/models/errors/sdkvalidationerror.js'
+import { Stack, useRouter } from 'expo-router'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import {
   Linking,
   SafeAreaView,
@@ -10,31 +19,21 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
-} from "react-native";
-import { Stack, useRouter } from "expo-router";
-import { ThemedText } from "@/components/Shared/ThemedText";
-import { MotiView } from "moti";
-import { useTheme } from "@/hooks/theme";
-import { useCreateOrganization } from "@/hooks/polar/organizations";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import { Checkbox } from "@/components/Shared/Checkbox";
-import { themes } from "@/utils/theme";
-import slugify from "slugify";
-import { SDKError } from "@polar-sh/sdk/models/errors/sdkerror.js";
-import { SDKValidationError } from "@polar-sh/sdk/models/errors/sdkvalidationerror.js";
+} from 'react-native'
+import slugify from 'slugify'
 
 export default function Onboarding() {
-  const { colors } = useTheme();
-  const router = useRouter();
-  const { organizations, setOrganization } = useContext(OrganizationContext);
+  const { colors } = useTheme()
+  const router = useRouter()
+  const { organizations, setOrganization } = useContext(OrganizationContext)
 
   const form = useForm<OrganizationCreate & { terms: boolean }>({
     defaultValues: {
-      name: "",
-      slug: "",
+      name: '',
+      slug: '',
       terms: false,
     },
-  });
+  })
 
   const {
     control,
@@ -44,50 +43,50 @@ export default function Onboarding() {
     clearErrors,
     setValue,
     formState: { errors },
-  } = form;
+  } = form
 
-  const createOrganization = useCreateOrganization();
-  const [editedSlug, setEditedSlug] = useState(false);
+  const createOrganization = useCreateOrganization()
+  const [editedSlug, setEditedSlug] = useState(false)
 
-  const name = watch("name");
-  const slug = watch("slug");
-  const terms = watch("terms");
+  const name = watch('name')
+  const slug = watch('slug')
+  const terms = watch('terms')
 
   const isValid = useMemo(() => {
-    return name.length > 2 && slug.length > 2 && terms;
-  }, [name, slug, terms]);
+    return name.length > 2 && slug.length > 2 && terms
+  }, [name, slug, terms])
 
   useEffect(() => {
     if (!editedSlug && name) {
-      setValue("slug", slugify(name, { lower: true, strict: true }));
+      setValue('slug', slugify(name, { lower: true, strict: true }))
     } else if (slug) {
       setValue(
-        "slug",
-        slugify(slug, { lower: true, trim: false, strict: true })
-      );
+        'slug',
+        slugify(slug, { lower: true, trim: false, strict: true }),
+      )
     }
-  }, [name, editedSlug, slug, setValue]);
+  }, [name, editedSlug, slug, setValue])
 
   const onSubmit = useCallback(
     async (data: OrganizationCreate) => {
       const organization = await createOrganization.mutateAsync(data, {
         onError: (error) => {
           if (error instanceof SDKError) {
-            setError("root", { message: error.message });
+            setError('root', { message: error.message })
           } else if (error instanceof SDKValidationError) {
-            setError("root", { message: error.message });
+            setError('root', { message: error.message })
           } else {
-            setError("root", { message: error.message });
+            setError('root', { message: error.message })
           }
         },
-      });
+      })
 
-      setOrganization(organization);
+      setOrganization(organization)
 
-      router.replace("/");
+      router.replace('/')
     },
-    [createOrganization, setOrganization, router]
-  );
+    [createOrganization, setOrganization, router],
+  )
 
   return (
     <ScrollView
@@ -100,11 +99,11 @@ export default function Onboarding() {
         }}
       />
       <SafeAreaView style={styles.container}>
-        <MotiView
+        <View
           style={styles.form}
           from={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ type: "timing", duration: 500 }}
+          transition={{ type: 'timing', duration: 500 }}
         >
           <ThemedText style={styles.title}>Create your organization</ThemedText>
           {errors.root && <ThemedText error>{errors.root.message}</ThemedText>}
@@ -123,21 +122,21 @@ export default function Onboarding() {
           />
           <Checkbox
             label="I agree to the terms below"
-            checked={watch("terms")}
-            onChange={(checked) => setValue("terms", checked)}
+            checked={watch('terms')}
+            onChange={(checked) => setValue('terms', checked)}
           />
-          <MotiView
+          <View
             from={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ type: "timing", duration: 500 }}
+            transition={{ type: 'timing', duration: 500 }}
           >
             <View style={{ marginLeft: 4, gap: 8 }}>
-              <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                 <View>
                   <TouchableOpacity
                     onPress={() =>
                       Linking.openURL(
-                        "https://docs.polar.sh/merchant-of-record/acceptable-use"
+                        'https://docs.polar.sh/merchant-of-record/acceptable-use',
                       )
                     }
                   >
@@ -155,7 +154,7 @@ export default function Onboarding() {
                 <TouchableOpacity
                   onPress={() =>
                     Linking.openURL(
-                      "https://docs.polar.sh/merchant-of-record/account-reviews"
+                      'https://docs.polar.sh/merchant-of-record/account-reviews',
                     )
                   }
                 >
@@ -169,7 +168,7 @@ export default function Onboarding() {
               <View>
                 <TouchableOpacity
                   onPress={() =>
-                    Linking.openURL("https://polar.sh/legal/terms")
+                    Linking.openURL('https://polar.sh/legal/terms')
                   }
                 >
                   <ThemedText style={styles.link}>Terms of Service</ThemedText>
@@ -179,41 +178,41 @@ export default function Onboarding() {
               <View>
                 <TouchableOpacity
                   onPress={() =>
-                    Linking.openURL("https://polar.sh/legal/privacy")
+                    Linking.openURL('https://polar.sh/legal/privacy')
                   }
                 >
                   <ThemedText style={styles.link}>Privacy Policy</ThemedText>
                 </TouchableOpacity>
               </View>
             </View>
-          </MotiView>
-        </MotiView>
+          </View>
+        </View>
 
         <View style={{ gap: 8 }}>
-          <MotiView
+          <View
             from={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ type: "timing", delay: 250, duration: 500 }}
+            transition={{ type: 'timing', delay: 250, duration: 500 }}
           >
             <Button onPress={handleSubmit(onSubmit)} disabled={!isValid}>
               Create Organization
             </Button>
-          </MotiView>
+          </View>
           {organizations.length > 0 && (
-            <MotiView
+            <View
               from={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ type: "timing", delay: 250, duration: 500 }}
+              transition={{ type: 'timing', delay: 250, duration: 500 }}
             >
-              <Button onPress={() => router.replace("/")} variant="secondary">
+              <Button onPress={() => router.replace('/')} variant="secondary">
                 Back to Dashboard
               </Button>
-            </MotiView>
+            </View>
           )}
         </View>
       </SafeAreaView>
     </ScrollView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -225,7 +224,7 @@ const styles = StyleSheet.create({
     fontSize: 56,
     lineHeight: 56,
     paddingVertical: 32,
-    fontFamily: "InstrumentSerif_400Regular",
+    fontFamily: 'InstrumentSerif_400Regular',
   },
   form: {
     gap: 16,
@@ -233,4 +232,4 @@ const styles = StyleSheet.create({
   link: {
     color: themes.dark.primary,
   },
-});
+})

@@ -1,18 +1,16 @@
-import React from "react";
-import NetInfo from "@react-native-community/netinfo";
-import { onlineManager } from "@tanstack/react-query";
-import { Slot, useNavigationContainerRef } from "expo-router";
-import { SessionProvider } from "@/providers/SessionProvider";
-import { View } from "react-native";
-import * as SplashScreen from "expo-splash-screen";
-import { useFonts } from "@expo-google-fonts/instrument-serif/useFonts";
-import { InstrumentSerif_400Regular } from "@expo-google-fonts/instrument-serif/400Regular";
-import { InstrumentSerif_400Regular_Italic } from "@expo-google-fonts/instrument-serif/400Regular_Italic";
-import { useCallback } from "react";
-import { themes } from "@/utils/theme";
-import { MotiView } from "moti";
-import { useReactNavigationDevTools } from "@dev-plugins/react-navigation";
-import * as Sentry from '@sentry/react-native';
+import { SessionProvider } from '@/providers/SessionProvider'
+import { themes } from '@/utils/theme'
+import { useReactNavigationDevTools } from '@dev-plugins/react-navigation'
+import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif/400Regular'
+import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument-serif/400Regular_Italic'
+import { useFonts } from '@expo-google-fonts/instrument-serif/useFonts'
+import NetInfo from '@react-native-community/netinfo'
+import * as Sentry from '@sentry/react-native'
+import { onlineManager } from '@tanstack/react-query'
+import { Slot, useNavigationContainerRef } from 'expo-router'
+import * as SplashScreen from 'expo-splash-screen'
+import React, { useCallback } from 'react'
+import { View } from 'react-native'
 
 Sentry.init({
   dsn: 'https://3119a20edbb1d03021076301c21ea658@o4505046560538624.ingest.us.sentry.io/4510311296073728',
@@ -31,33 +29,33 @@ Sentry.init({
 
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: __DEV__,
-});
+})
 
 // Set the animation options. This is optional.
 SplashScreen.setOptions({
   duration: 1000,
   fade: true,
-});
+})
 
 // Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync()
 
 onlineManager.setEventListener((setOnline) => {
   return NetInfo.addEventListener((state) => {
-    setOnline(!!state.isConnected);
-  });
-});
+    setOnline(!!state.isConnected)
+  })
+})
 
 export default Sentry.wrap(function RootLayout() {
-  const navigationRef = useNavigationContainerRef();
+  const navigationRef = useNavigationContainerRef()
 
   // @ts-ignore - Known type mismatch with dev tools
-  useReactNavigationDevTools(navigationRef);
+  useReactNavigationDevTools(navigationRef)
 
   const [fontsLoaded] = useFonts({
     InstrumentSerif_400Regular,
     InstrumentSerif_400Regular_Italic,
-  });
+  })
 
   const onLayoutRootView = useCallback(() => {
     if (fontsLoaded) {
@@ -66,25 +64,22 @@ export default Sentry.wrap(function RootLayout() {
       // loading its initial state and rendering its first pixels. So instead,
       // we hide the splash screen once we know the root view has already
       // performed layout.
-      SplashScreen.hide();
+      SplashScreen.hide()
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded])
 
   if (!fontsLoaded) {
-    return null;
+    return null
   }
 
   return (
     <SessionProvider>
-      <MotiView
+      <View
         style={{ flex: 1, backgroundColor: themes.dark.background }}
-        from={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ type: "timing" }}
         onLayout={onLayoutRootView}
       >
         <Slot />
-      </MotiView>
+      </View>
     </SessionProvider>
-  );
-});
+  )
+})

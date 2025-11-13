@@ -1,12 +1,11 @@
-import { useTheme } from "@/hooks/theme";
-import { Text, TextProps, StyleSheet } from "react-native";
-import { MotiText } from "moti";
-import { ComponentProps } from "react";
+import { useTheme } from '@/hooks/theme'
+import { ComponentProps } from 'react'
+import { StyleSheet, Text } from 'react-native'
 
-type ThemedTextProps = ComponentProps<typeof MotiText> & {
-  secondary?: boolean;
-  error?: boolean;
-};
+type ThemedTextProps = ComponentProps<typeof Text> & {
+  secondary?: boolean
+  error?: boolean
+}
 
 export const ThemedText = ({
   secondary,
@@ -14,29 +13,29 @@ export const ThemedText = ({
   style,
   ...props
 }: ThemedTextProps) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
   const lineHeight = (fontSize: number) => {
-    const multiplier = fontSize > 20 ? 1.5 : 1.4;
-    return fontSize * multiplier;
-  };
+    const multiplier = fontSize > 20 ? 1.5 : 1.4
+    return fontSize * multiplier
+  }
 
-  const styles = StyleSheet.flatten(style);
+  const styles = StyleSheet.flatten(style)
 
   return (
-    <MotiText
+    <Text
       {...props}
       style={[
         {
           color: error
             ? colors.error
             : secondary
-            ? colors.subtext
-            : colors.text,
+              ? colors.subtext
+              : colors.text,
           lineHeight: lineHeight(styles?.fontSize ?? 14),
         },
         styles,
       ]}
     />
-  );
-};
+  )
+}

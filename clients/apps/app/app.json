@@ -9,6 +9,7 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "owner": "polar-sh",
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.polarsource.Polar",
@@ -64,7 +65,8 @@
     },
     "extra": {
       "router": {
-        "origin": false
+        "origin": false,
+        "root": "./app"
       },
       "eas": {
         "projectId": "0c79977b-c070-4416-8878-d8b8febe2e25"

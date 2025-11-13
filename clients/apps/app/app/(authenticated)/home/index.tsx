@@ -1,48 +1,46 @@
-import { OrderRow } from "@/components/Orders/OrderRow";
-import { useOrders } from "@/hooks/polar/orders";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Link, Stack } from "expo-router";
-import { useCallback, useContext, useEffect, useMemo } from "react";
+import { CustomerCard } from '@/components/Customers/CustomerCard'
+import { CatalogueTile } from '@/components/Home/CatalogueTile'
+import { FinanceTile } from '@/components/Home/FinanceTile'
+import { OrganizationTile } from '@/components/Home/OrganizationTile'
+import { RevenueTile } from '@/components/Home/RevenueTile'
+import { NotificationBadge } from '@/components/Notifications/NotificationBadge'
+import { OrderRow } from '@/components/Orders/OrderRow'
+import { Banner } from '@/components/Shared/Banner'
+import { EmptyState } from '@/components/Shared/EmptyState'
+import { MiniButton } from '@/components/Shared/MiniButton'
+import PolarLogo from '@/components/Shared/PolarLogo'
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
+import { isDemoSession } from '@/hooks/auth'
+import { useCustomers } from '@/hooks/polar/customers'
+import { useCreateNotificationRecipient } from '@/hooks/polar/notifications'
+import { useOrders } from '@/hooks/polar/orders'
+import { useSubscriptions } from '@/hooks/polar/subscriptions'
+import { useTheme } from '@/hooks/theme'
+import { useNotifications } from '@/providers/NotificationsProvider'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import { Link, Stack } from 'expo-router'
+import {
+  checkForUpdateAsync,
+  fetchUpdateAsync,
+  reloadAsync,
+  useUpdates,
+} from 'expo-updates'
+import React, { useCallback, useContext, useEffect, useMemo } from 'react'
 import {
   RefreshControl,
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
   View,
-} from "react-native";
-import { RevenueTile } from "@/components/Home/RevenueTile";
-import { OrganizationTile } from "@/components/Home/OrganizationTile";
-import { useTheme } from "@/hooks/theme";
-import PolarLogo from "@/components/Shared/PolarLogo";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import { useCreateNotificationRecipient } from "@/hooks/polar/notifications";
-import { useNotifications } from "@/providers/NotificationsProvider";
-import { useCustomers } from "@/hooks/polar/customers";
-import { CustomerCard } from "@/components/Customers/CustomerCard";
-import React from "react";
-import { NotificationBadge } from "@/components/Notifications/NotificationBadge";
-import { isDemoSession, useLogout } from "@/hooks/auth";
-import { EmptyState } from "@/components/Shared/EmptyState";
-import {
-  checkForUpdateAsync,
-  fetchUpdateAsync,
-  reloadAsync,
-  useUpdates,
-} from "expo-updates";
-import { Banner } from "@/components/Shared/Banner";
-import { useSubscriptions } from "@/hooks/polar/subscriptions";
-import { SubscriptionRow } from "@/components/Subscriptions/SubscriptionRow";
-import { ThemedText } from "@/components/Shared/ThemedText";
-import { MiniButton } from "@/components/Shared/MiniButton";
-import { CatalogueTile } from "@/components/Home/CatalogueTile";
-import { FinanceTile } from "@/components/Home/FinanceTile";
-import { MotiView } from "moti";
+} from 'react-native'
 
 export default function Index() {
-  const { organization } = useContext(OrganizationContext);
-  const { colors } = useTheme();
+  const { organization } = useContext(OrganizationContext)
+  const { colors } = useTheme()
 
-  const { isDownloading, isRestarting, isUpdateAvailable } = useUpdates();
+  const { isDownloading, isRestarting, isUpdateAvailable } = useUpdates()
 
   const {
     data: orders,
@@ -50,7 +48,7 @@ export default function Index() {
     isRefetching: isRefetchingOrders,
   } = useOrders(organization?.id, {
     limit: 3,
-  });
+  })
 
   const {
     data: subscriptions,
@@ -59,8 +57,8 @@ export default function Index() {
   } = useSubscriptions(organization?.id, {
     limit: 3,
     active: true,
-    sorting: ["-started_at"],
-  });
+    sorting: ['-started_at'],
+  })
 
   const {
     data: customers,
@@ -68,25 +66,25 @@ export default function Index() {
     isRefetching: isRefetchingCustomers,
   } = useCustomers(organization?.id, {
     limit: 5,
-  });
+  })
 
   const flatOrders = useMemo(() => {
-    return orders?.pages.flatMap((page) => page.result.items) ?? [];
-  }, [orders]);
+    return orders?.pages.flatMap((page) => page.result.items) ?? []
+  }, [orders])
 
   const flatSubscriptions = useMemo(() => {
-    return subscriptions?.pages.flatMap((page) => page.result.items) ?? [];
-  }, [subscriptions]);
+    return subscriptions?.pages.flatMap((page) => page.result.items) ?? []
+  }, [subscriptions])
 
   const flatCustomers = useMemo(() => {
-    return customers?.pages.flatMap((page) => page.result.items) ?? [];
-  }, [customers]);
+    return customers?.pages.flatMap((page) => page.result.items) ?? []
+  }, [customers])
 
   const isRefetching = useMemo(() => {
     return (
       isRefetchingOrders || isRefetchingSubscriptions || isRefetchingCustomers
-    );
-  }, [isRefetchingOrders, isRefetchingSubscriptions, isRefetchingCustomers]);
+    )
+  }, [isRefetchingOrders, isRefetchingSubscriptions, isRefetchingCustomers])
 
   const refresh = useCallback(() => {
     Promise.all([
@@ -94,30 +92,30 @@ export default function Index() {
       refetchCustomers(),
       refetchSubscriptions(),
       checkForUpdateAsync(),
-    ]);
-  }, [refetchOrders, refetchCustomers, refetchSubscriptions]);
+    ])
+  }, [refetchOrders, refetchCustomers, refetchSubscriptions])
 
-  const { expoPushToken } = useNotifications();
+  const { expoPushToken } = useNotifications()
   const { mutate: createNotificationRecipient } =
-    useCreateNotificationRecipient();
+    useCreateNotificationRecipient()
 
-  const isDemo = isDemoSession();
+  const isDemo = isDemoSession()
 
   useEffect(() => {
     if (expoPushToken && !isDemo) {
-      createNotificationRecipient(expoPushToken);
+      createNotificationRecipient(expoPushToken)
     }
-  }, [expoPushToken, createNotificationRecipient, isDemo]);
+  }, [expoPushToken, createNotificationRecipient, isDemo])
 
   async function onFetchUpdateAsync() {
     try {
       if (isUpdateAvailable) {
-        await fetchUpdateAsync();
-        await reloadAsync();
+        await fetchUpdateAsync()
+        await reloadAsync()
       }
     } catch (error) {
       // You can also add an alert() to see the error message in case of an error when fetching updates.
-      alert(`Error fetching latest update: ${error}`);
+      alert(`Error fetching latest update: ${error}`)
     }
   }
 
@@ -128,9 +126,9 @@ export default function Index() {
       },
       from: { opacity: 0 },
       animate: { opacity: 1 },
-      transition: { type: "timing", duration: 500, delay },
-    } as const;
-  }, []);
+      transition: { type: 'timing', duration: 500, delay },
+    } as const
+  }, [])
 
   return (
     <ScrollView
@@ -145,16 +143,16 @@ export default function Index() {
           header: () => (
             <SafeAreaView
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
                 backgroundColor: colors.background,
                 height: 100,
                 marginHorizontal: 32,
               }}
             >
               <PolarLogo size={36} />
-              <View style={{ flexDirection: "row", gap: 20 }}>
+              <View style={{ flexDirection: 'row', gap: 20 }}>
                 {!isDemo && <NotificationBadge />}
                 <Link href="/settings" asChild>
                   <TouchableOpacity activeOpacity={0.6}>
@@ -164,7 +162,7 @@ export default function Index() {
               </View>
             </SafeAreaView>
           ),
-          headerTitle: "Home",
+          headerTitle: 'Home',
         }}
       />
       <View
@@ -172,7 +170,7 @@ export default function Index() {
           padding: 16,
           gap: 32,
           flex: 1,
-          flexDirection: "column",
+          flexDirection: 'column',
         }}
       >
         {isUpdateAvailable && (
@@ -181,36 +179,36 @@ export default function Index() {
             description="Update to the latest version to get the latest features and bug fixes"
             button={{
               onPress: onFetchUpdateAsync,
-              children: "Update",
+              children: 'Update',
               loading: isDownloading || isRestarting,
             }}
           />
         )}
         <View style={{ gap: 16 }}>
-          <View style={{ flexDirection: "row", gap: 16 }}>
-            <MotiView {...tileAnimationProps(0)}>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            <View {...tileAnimationProps(0)}>
               <OrganizationTile />
-            </MotiView>
-            <MotiView {...tileAnimationProps(100)}>
+            </View>
+            <View {...tileAnimationProps(100)}>
               <RevenueTile />
-            </MotiView>
+            </View>
           </View>
-          <View style={{ flexDirection: "row", gap: 16 }}>
-            <MotiView {...tileAnimationProps(200)}>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
+            <View {...tileAnimationProps(200)}>
               <CatalogueTile />
-            </MotiView>
-            <MotiView {...tileAnimationProps(300)}>
+            </View>
+            <View {...tileAnimationProps(300)}>
               <FinanceTile />
-            </MotiView>
+            </View>
           </View>
         </View>
 
-        <View style={{ gap: 24, flexDirection: "column", flex: 1 }}>
+        <View style={{ gap: 24, flexDirection: 'column', flex: 1 }}>
           <View
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
             <ThemedText style={{ fontSize: 20 }}>
@@ -238,12 +236,12 @@ export default function Index() {
           )}
         </View>
 
-        <View style={{ gap: 24, flexDirection: "column", flex: 1 }}>
+        <View style={{ gap: 24, flexDirection: 'column', flex: 1 }}>
           <View
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
             <ThemedText style={{ fontSize: 20 }}>Recent Orders</ThemedText>
@@ -269,15 +267,15 @@ export default function Index() {
       <View
         style={{
           gap: 24,
-          flexDirection: "column",
+          flexDirection: 'column',
           flex: 1,
         }}
       >
         <View
           style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             paddingHorizontal: 16,
           }}
         >
@@ -291,7 +289,7 @@ export default function Index() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ flexDirection: "row", gap: 16 }}
+            contentContainerStyle={{ flexDirection: 'row', gap: 16 }}
             contentInset={{ left: 16, right: 16 }}
             contentOffset={{ x: -16, y: 0 }}
           >
@@ -309,5 +307,5 @@ export default function Index() {
         )}
       </View>
     </ScrollView>
-  );
+  )
 }

@@ -20,6 +20,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.customer.repository import CustomerRepository
+from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
@@ -310,6 +311,9 @@ class EventService:
             session, auth_subject
         )
 
+        event_type_repository = EventTypeRepository.from_session(session)
+        event_types_cache: dict[tuple[str, uuid.UUID], uuid.UUID] = {}
+
         events: list[dict[str, Any]] = []
         errors: list[ValidationError] = []
         for index, event_create in enumerate(ingest.events):
@@ -325,6 +329,14 @@ class EventService:
                     parent_event = await self._resolve_parent(
                         session, index, event_create.parent_id, organization_id
                     )
+
+                event_label_cache_key = (event_create.name, organization_id)
+                if event_label_cache_key not in event_types_cache:
+                    event_type = await event_type_repository.get_or_create(
+                        event_create.name, organization_id
+                    )
+                    event_types_cache[event_label_cache_key] = event_type.id
+                event_type_id = event_types_cache[event_label_cache_key]
             except EventIngestValidationError as e:
                 errors.extend(e.errors)
                 continue
@@ -334,6 +346,7 @@ class EventService:
                 )
                 event_dict["source"] = EventSource.user
                 event_dict["organization_id"] = organization_id
+                event_dict["event_type_id"] = event_type_id
                 if parent_event is not None:
                     event_dict["parent_id"] = parent_event.id
                     event_dict["root_id"] = parent_event.root_id or parent_event.id

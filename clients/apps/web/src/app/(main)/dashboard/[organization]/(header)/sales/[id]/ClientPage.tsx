@@ -173,55 +173,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
               valueClassName="capitalize"
             />
 
-            <Separator className="dark:bg-polar-700 my-4 h-px bg-gray-300" />
-
-            <div className="flex flex-col gap-y-6 pb-4">
-              {order.items.map((item) => (
-                <DetailRow
-                  key={item.id}
-                  label={item.label}
-                  value={formatCurrencyAndAmount(item.amount)}
-                />
-              ))}
-            </div>
-
-            <DetailRow
-              label="Subtotal"
-              value={formatCurrencyAndAmount(order.subtotal_amount)}
-            />
-            <DetailRow
-              label="Discount"
-              value={
-                order.discount_amount
-                  ? formatCurrencyAndAmount(-order.discount_amount)
-                  : '—'
-              }
-            />
-            <DetailRow
-              label="Net amount"
-              value={formatCurrencyAndAmount(order.net_amount)}
-            />
-            <DetailRow
-              label="Tax"
-              value={formatCurrencyAndAmount(order.tax_amount)}
-            />
-            <DetailRow
-              label="Total"
-              value={formatCurrencyAndAmount(order.total_amount)}
-            />
-            {order.applied_balance_amount !== 0 && (
-              <>
-                <DetailRow
-                  label="Applied balance"
-                  value={formatCurrencyAndAmount(order.applied_balance_amount)}
-                />
-                <DetailRow
-                  label="To be paid"
-                  value={formatCurrencyAndAmount(order.due_amount)}
-                />
-              </>
-            )}
-
             {order.billing_address ? (
               <>
                 <Separator className="dark:bg-polar-700 my-4 h-px bg-gray-300" />
@@ -246,6 +197,88 @@ const ClientPage: React.FC<ClientPageProps> = ({
               </>
             ) : (
               <></>
+            )}
+          </div>
+        </div>
+
+        {/* Invoice-style table for line items and financial details */}
+        <div className="flex flex-col gap-6 p-4 md:p-8">
+          <h3 className="text-lg font-medium">Invoice Summary</h3>
+          <div className="flex flex-col gap-y-2">
+            {/* Line items */}
+            {order.items.map((item) => (
+              <div
+                key={item.id}
+                className="flex flex-row items-baseline justify-between gap-4 text-sm"
+              >
+                <span className="dark:text-polar-500 text-gray-500">
+                  {item.label}
+                </span>
+                <span className="font-medium">
+                  {formatCurrencyAndAmount(item.amount)}
+                </span>
+              </div>
+            ))}
+
+            <Separator className="dark:bg-polar-700 my-2 h-px bg-gray-300" />
+
+            {/* Financial summary */}
+            <div className="flex flex-row items-baseline justify-between gap-4 text-sm">
+              <span className="dark:text-polar-500 text-gray-500">
+                Subtotal
+              </span>
+              <span className="font-medium">
+                {formatCurrencyAndAmount(order.subtotal_amount)}
+              </span>
+            </div>
+            <div className="flex flex-row items-baseline justify-between gap-4 text-sm">
+              <span className="dark:text-polar-500 text-gray-500">
+                Discount
+              </span>
+              <span className="font-medium">
+                {order.discount_amount
+                  ? formatCurrencyAndAmount(-order.discount_amount)
+                  : '—'}
+              </span>
+            </div>
+            <div className="flex flex-row items-baseline justify-between gap-4 text-sm">
+              <span className="dark:text-polar-500 text-gray-500">
+                Net amount
+              </span>
+              <span className="font-medium">
+                {formatCurrencyAndAmount(order.net_amount)}
+              </span>
+            </div>
+            <div className="flex flex-row items-baseline justify-between gap-4 text-sm">
+              <span className="dark:text-polar-500 text-gray-500">Tax</span>
+              <span className="font-medium">
+                {formatCurrencyAndAmount(order.tax_amount)}
+              </span>
+            </div>
+
+            <Separator className="dark:bg-polar-700 my-2 h-px bg-gray-300" />
+
+            {/* Total */}
+            <div className="flex flex-row items-baseline justify-between gap-4 text-base font-semibold">
+              <span>Total</span>
+              <span>{formatCurrencyAndAmount(order.total_amount)}</span>
+            </div>
+
+            {order.applied_balance_amount !== 0 && (
+              <>
+                <div className="flex flex-row items-baseline justify-between gap-4 text-sm">
+                  <span className="dark:text-polar-500 text-gray-500">
+                    Applied balance
+                  </span>
+                  <span className="font-medium">
+                    {formatCurrencyAndAmount(order.applied_balance_amount)}
+                  </span>
+                </div>
+                <div className="flex flex-row items-baseline justify-between gap-4 text-base font-semibold">
+                  <span>To be paid</span>
+                  <span>{formatCurrencyAndAmount(order.due_amount)}</span>
+                </div>
+              </>
             )}
           </div>
         </div>

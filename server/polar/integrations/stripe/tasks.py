@@ -168,6 +168,10 @@ async def setup_intent_succeeded(event_id: uuid.UUID) -> None:
                 # Raise the exception to be notified about it
                 else:
                     raise
+            except payment.OutdatedCheckoutIntent:
+                # Ignore outdated setup intents
+                # Expected flow after a a trial already redeemed error
+                pass
 
 
 @actor(

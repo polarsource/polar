@@ -32,6 +32,22 @@ class OrderDoesNotExist(PolarError):
         super().__init__(message)
 
 
+class OutdatedCheckoutIntent(PolarError):
+    """
+    Raised when a received succeeded setup intent is different from the current one
+    associated with the checkout.
+
+    Usually happens after a TrialAlreadyRedeemed error, where we convert the checkout
+    to a paid one and create a new intent.
+    """
+
+    def __init__(self, checkout_id: uuid.UUID, intent_id: str) -> None:
+        self.checkout_id = checkout_id
+        self.intent_id = intent_id
+        message = f"Intent with id {intent_id} for checkout {checkout_id} is outdated."
+        super().__init__(message)
+
+
 async def resolve_checkout(
     session: AsyncSession,
     object: stripe_lib.Charge | stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
@@ -130,6 +146,16 @@ async def handle_success(
         await payment_transaction_service.create_payment(session, charge=object)
 
     if checkout is not None:
+        checkout_intent_client_secret = checkout.payment_processor_metadata.get(
+            "intent_client_secret"
+        )
+        if (
+            object.OBJECT_NAME == "setup_intent"
+            and checkout_intent_client_secret is not None
+        ):
+            if object.client_secret != checkout_intent_client_secret:
+                raise OutdatedCheckoutIntent(checkout.id, object.id)
+
         payment_method: PaymentMethod | None = None
         if checkout.should_save_payment_method:
             payment_method = await payment_method_service.upsert_from_stripe_intent(

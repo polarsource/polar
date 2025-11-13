@@ -11,15 +11,20 @@ import stdnum.exceptions
 import stdnum.in_.gstin
 import stdnum.tr.vkn
 import stripe as stripe_lib
+import structlog
 from pydantic import Field
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
 from stdnum import get_cc_module
 
+from polar.config import settings
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.address import Address
+from polar.logging import Logger
+
+log: Logger = structlog.get_logger()
 
 
 class TaxIDFormat(StrEnum):
@@ -532,6 +537,21 @@ async def calculate_tax(
             },
             idempotency_key=idempotency_key,
         )
+    except stripe_lib.RateLimitError as e:
+        if settings.is_sandbox():
+            log.warning(
+                "Stripe Tax API rate limit exceeded in sandbox mode, returning zero tax",
+                identifier=str(identifier),
+                currency=currency,
+                amount=amount,
+            )
+            return {
+                "processor_id": f"taxcalc_sandbox_{uuid.uuid4().hex}",
+                "amount": 0,
+                "taxability_reason": None,
+                "tax_rate": None,
+            }
+        raise
     except stripe_lib.InvalidRequestError as e:
         if (
             e.error is not None

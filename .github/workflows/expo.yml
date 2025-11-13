@@ -8,6 +8,9 @@ jobs:
   update:
     name: EAS Update
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/clients
     permissions:
       contents: read
       pull-requests: write
@@ -35,7 +38,7 @@ jobs:
       - name: Setup EAS
         uses: expo/expo-github-action@v8
         with:
-          working-directory: ./clients/apps/app
+          working-directory: ${{ github.workspace }}/clients/apps/app
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
@@ -45,5 +48,5 @@ jobs:
       - name: Create preview
         uses: expo/expo-github-action/preview@v8
         with:
-          working-directory: ./clients/apps/app
+          working-directory: ${{ github.workspace }}/clients/apps/app
           command: eas update --auto

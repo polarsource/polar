@@ -53,8 +53,22 @@ def _format_price_display(price: ProductPrice) -> str:
         tiers = price.seat_tiers.get("tiers", [])
         if tiers:
             first_tier = tiers[0]
-            if "flat_fee" in first_tier:
-                price_display = formatters.currency(
+            has_flat_fee = "flat_fee" in first_tier
+            has_per_seat = "price_per_seat" in first_tier
+            prefix = "From " if len(tiers) > 1 else ""
+
+            if has_flat_fee and has_per_seat:
+                # Combined pricing
+                flat_display = formatters.currency(
+                    first_tier["flat_fee"], price.price_currency
+                )
+                per_seat_display = formatters.currency(
+                    first_tier["price_per_seat"], price.price_currency
+                )
+                return f"{prefix}{flat_display} + {per_seat_display} / seat"
+            elif has_flat_fee:
+                # Flat fee only
+                flat_display = formatters.currency(
                     first_tier["flat_fee"], price.price_currency
                 )
                 min_seats = first_tier["min_seats"]
@@ -64,16 +78,13 @@ def _format_price_display(price: ProductPrice) -> str:
                     if max_seats
                     else f"{min_seats}+ seats"
                 )
-                if len(tiers) > 1:
-                    return f"From {price_display} for {seat_range}"
-                return f"{price_display} for {seat_range}"
+                return f"{prefix}{flat_display} for {seat_range}"
             else:
-                price_display = formatters.currency(
+                # Per-seat only
+                per_seat_display = formatters.currency(
                     first_tier["price_per_seat"], price.price_currency
                 )
-                if len(tiers) > 1:
-                    return f"From {price_display} / seat"
-                return f"{price_display} / seat"
+                return f"{prefix}{per_seat_display} / seat"
     elif is_metered_price(price):
         return f"{price.meter.name}: {formatters.currency(price.unit_amount, price.price_currency, decimal_quantization=False)} / unit"
     return "N/A"

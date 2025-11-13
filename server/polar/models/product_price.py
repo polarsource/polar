@@ -411,10 +411,13 @@ class ProductPriceSeatUnit(NewProductPrice, HasPriceCurrency, ProductPrice):
 
     def calculate_amount(self, seats: int) -> int:
         tier = self.get_tier_for_seats(seats)
-        # If flat_fee is set, use it; otherwise use per-seat pricing
-        if "flat_fee" in tier:
-            return tier["flat_fee"]
-        return tier.get("price_per_seat", 0) * seats
+        # Support three pricing models:
+        # 1. flat_fee only: returns flat_fee
+        # 2. price_per_seat only: returns price_per_seat * seats
+        # 3. Combined: returns flat_fee + (price_per_seat * seats)
+        flat_fee = tier.get("flat_fee", 0)
+        price_per_seat = tier.get("price_per_seat", 0)
+        return flat_fee + (price_per_seat * seats)
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,

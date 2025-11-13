@@ -152,3 +152,55 @@ class TestProductPriceSeatUnit:
 
         # For flat fee tiers, price_per_seat should return 0
         assert price.get_price_per_seat(10) == 0
+
+    def test_calculate_amount_combined_pricing(self) -> None:
+        """Test combined pricing (flat_fee + price_per_seat)."""
+        price = ProductPriceSeatUnit(
+            price_currency="usd",
+            seat_tiers={
+                "tiers": [
+                    {
+                        "min_seats": 1,
+                        "max_seats": None,
+                        "flat_fee": 20000,  # $200 base
+                        "price_per_seat": 1000,  # + $10/seat
+                    }
+                ]
+            },
+        )
+
+        # Combined: $200 + ($10 * seats)
+        assert price.calculate_amount(1) == 21000  # $200 + $10
+        assert price.calculate_amount(5) == 25000  # $200 + $50
+        assert price.calculate_amount(10) == 30000  # $200 + $100
+
+    def test_calculate_amount_combined_pricing_multiple_tiers(self) -> None:
+        """Test combined pricing with multiple tiers."""
+        price = ProductPriceSeatUnit(
+            price_currency="usd",
+            seat_tiers={
+                "tiers": [
+                    {
+                        "min_seats": 1,
+                        "max_seats": 10,
+                        "flat_fee": 10000,  # $100 base
+                        "price_per_seat": 1000,  # + $10/seat
+                    },
+                    {
+                        "min_seats": 11,
+                        "max_seats": None,
+                        "flat_fee": 20000,  # $200 base
+                        "price_per_seat": 800,  # + $8/seat
+                    },
+                ]
+            },
+        )
+
+        # Tier 1: $100 + ($10 * seats)
+        assert price.calculate_amount(1) == 11000  # $100 + $10
+        assert price.calculate_amount(5) == 15000  # $100 + $50
+        assert price.calculate_amount(10) == 20000  # $100 + $100
+
+        # Tier 2: $200 + ($8 * seats)
+        assert price.calculate_amount(11) == 20880  # $200 + $88
+        assert price.calculate_amount(20) == 21600  # $200 + $160

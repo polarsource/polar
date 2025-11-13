@@ -166,9 +166,12 @@ class ProductPriceSeatTier(Schema):
     """
     A pricing tier for seat-based pricing.
 
-    Either price_per_seat or flat_fee must be provided:
-    - price_per_seat: Price per seat in cents (total = price_per_seat * seats)
-    - flat_fee: Fixed price in cents for the entire tier range
+    Supports three pricing models:
+    - price_per_seat only: Total = price_per_seat * seats
+    - flat_fee only: Total = flat_fee (fixed price regardless of seat count)
+    - Combined: Total = flat_fee + (price_per_seat * seats)
+
+    At least one pricing field must be provided.
     """
 
     min_seats: int = Field(ge=1, description="Minimum number of seats (inclusive)")
@@ -182,22 +185,17 @@ class ProductPriceSeatTier(Schema):
     )
     flat_fee: SeatPriceAmount | None = Field(
         default=None,
-        description="Fixed price in cents for the entire tier range",
+        description="Fixed base price in cents for this tier",
     )
 
     @model_validator(mode="after")
     def validate_pricing_fields(self) -> "ProductPriceSeatTier":
-        """Ensure exactly one of price_per_seat or flat_fee is provided."""
+        """Ensure at least one pricing field is provided."""
         has_per_seat = self.price_per_seat is not None
         has_flat_fee = self.flat_fee is not None
 
         if not has_per_seat and not has_flat_fee:
-            raise ValueError("Either price_per_seat or flat_fee must be provided")
-
-        if has_per_seat and has_flat_fee:
-            raise ValueError(
-                "Only one of price_per_seat or flat_fee can be provided, not both"
-            )
+            raise ValueError("At least one of price_per_seat or flat_fee must be provided")
 
         return self
 

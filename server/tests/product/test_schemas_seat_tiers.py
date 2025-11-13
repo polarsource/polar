@@ -27,24 +27,24 @@ class TestProductPriceSeatTier:
         assert tier.flat_fee == 20000
         assert tier.price_per_seat is None
 
-    def test_invalid_both_pricing_fields(self) -> None:
-        """Test that providing both price_per_seat and flat_fee is invalid."""
-        with pytest.raises(
-            ValidationError,
-            match="Only one of price_per_seat or flat_fee can be provided",
-        ):
-            ProductPriceSeatTier(
-                min_seats=1,
-                max_seats=10,
-                price_per_seat=1000,
-                flat_fee=20000,
-            )
+    def test_valid_combined_pricing(self) -> None:
+        """Test valid combined pricing (flat_fee + price_per_seat)."""
+        tier = ProductPriceSeatTier(
+            min_seats=1,
+            max_seats=10,
+            price_per_seat=1000,
+            flat_fee=20000,
+        )
+        assert tier.min_seats == 1
+        assert tier.max_seats == 10
+        assert tier.price_per_seat == 1000
+        assert tier.flat_fee == 20000
 
     def test_invalid_neither_pricing_field(self) -> None:
         """Test that providing neither price_per_seat nor flat_fee is invalid."""
         with pytest.raises(
             ValidationError,
-            match="Either price_per_seat or flat_fee must be provided",
+            match="At least one of price_per_seat or flat_fee must be provided",
         ):
             ProductPriceSeatTier(min_seats=1, max_seats=10)
 
@@ -170,3 +170,27 @@ class TestProductPriceSeatTiers:
         # Tiers should be sorted after validation
         assert tiers.tiers[0].min_seats == 1
         assert tiers.tiers[1].min_seats == 11
+
+    def test_valid_combined_pricing_tiers(self) -> None:
+        """Test combined pricing (flat_fee + price_per_seat) across multiple tiers."""
+        tiers = ProductPriceSeatTiers(
+            tiers=[
+                ProductPriceSeatTier(
+                    min_seats=1,
+                    max_seats=10,
+                    flat_fee=10000,
+                    price_per_seat=1000,
+                ),
+                ProductPriceSeatTier(
+                    min_seats=11,
+                    max_seats=None,
+                    flat_fee=20000,
+                    price_per_seat=800,
+                ),
+            ]
+        )
+        assert len(tiers.tiers) == 2
+        assert tiers.tiers[0].flat_fee == 10000
+        assert tiers.tiers[0].price_per_seat == 1000
+        assert tiers.tiers[1].flat_fee == 20000
+        assert tiers.tiers[1].price_per_seat == 800

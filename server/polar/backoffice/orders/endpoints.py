@@ -308,30 +308,6 @@ async def get(
                         ).render(request, order):
                             pass
 
-                # Financial Details
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Financial Details")
-                        with description_list.DescriptionList[Order](
-                            description_list.DescriptionListCurrencyItem(
-                                "subtotal_amount", "Subtotal"
-                            ),
-                            description_list.DescriptionListCurrencyItem(
-                                "discount_amount", "Discount"
-                            ),
-                            description_list.DescriptionListCurrencyItem(
-                                "tax_amount", "Tax"
-                            ),
-                            description_list.DescriptionListCurrencyItem(
-                                "total_amount", "Total"
-                            ),
-                            description_list.DescriptionListCurrencyItem(
-                                "refunded_amount", "Refunded Amount"
-                            ),
-                        ).render(request, order):
-                            pass
-
                 # Customer Details
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
@@ -377,13 +353,14 @@ async def get(
 
             # Additional sections below the main grid
             with tag.div(classes="flex flex-col gap-4 mt-6"):
+                # Invoice-style table with line items and financial summary
                 if order.items:
                     with tag.div(classes="card card-border w-full shadow-sm"):
                         with tag.div(classes="card-body"):
                             with tag.h2(classes="card-title"):
-                                text("Line Items")
+                                text("Invoice")
                             with tag.div(classes="overflow-x-auto"):
-                                with tag.table(classes="table table-zebra w-full"):
+                                with tag.table(classes="table w-full"):
                                     with tag.thead():
                                         with tag.tr():
                                             with tag.th():
@@ -412,6 +389,91 @@ async def get(
                                                         formatters.currency(
                                                             item.amount, order.currency
                                                         )
+                                                    )
+
+                                        # Financial summary rows
+                                        with tag.tr(classes="border-t-2"):
+                                            with tag.td(
+                                                colspan="3",
+                                                classes="text-right font-semibold",
+                                            ):
+                                                text("Subtotal")
+                                            with tag.td(
+                                                classes="text-right font-semibold"
+                                            ):
+                                                text(
+                                                    formatters.currency(
+                                                        order.subtotal_amount,
+                                                        order.currency,
+                                                    )
+                                                )
+
+                                        if order.discount_amount > 0:
+                                            with tag.tr():
+                                                with tag.td(
+                                                    colspan="3", classes="text-right"
+                                                ):
+                                                    text("Discount")
+                                                with tag.td(classes="text-right"):
+                                                    text(
+                                                        f"-{
+                                                            formatters.currency(
+                                                                order.discount_amount,
+                                                                order.currency,
+                                                            )
+                                                        }"
+                                                    )
+
+                                        if order.tax_amount > 0:
+                                            with tag.tr():
+                                                with tag.td(
+                                                    colspan="3", classes="text-right"
+                                                ):
+                                                    text("Tax")
+                                                with tag.td(classes="text-right"):
+                                                    text(
+                                                        formatters.currency(
+                                                            order.tax_amount,
+                                                            order.currency,
+                                                        )
+                                                    )
+
+                                        with tag.tr(classes="border-t-2"):
+                                            with tag.td(
+                                                colspan="3",
+                                                classes="text-right font-bold text-lg",
+                                            ):
+                                                text("Total")
+                                            with tag.td(
+                                                classes="text-right font-bold text-lg"
+                                            ):
+                                                text(
+                                                    formatters.currency(
+                                                        order.total_amount,
+                                                        order.currency,
+                                                    )
+                                                )
+
+                                        if (
+                                            order.refunded_amount
+                                            and order.refunded_amount > 0
+                                        ):
+                                            with tag.tr():
+                                                with tag.td(
+                                                    colspan="3",
+                                                    classes="text-right text-error",
+                                                ):
+                                                    text("Refunded Amount")
+                                                with tag.td(
+                                                    classes="text-right text-error"
+                                                ):
+                                                    text(
+                                                        f"-{
+                                                            formatters.currency(
+                                                                order.refunded_amount,
+                                                                order.currency,
+                                                            )
+                                                        }"
                                                     )
 
                 # Billing Information

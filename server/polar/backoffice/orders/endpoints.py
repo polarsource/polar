@@ -1,4 +1,3 @@
-import builtins
 import contextlib
 import uuid
 from collections.abc import Generator
@@ -308,30 +307,6 @@ async def get(
                         ).render(request, order):
                             pass
 
-                # Financial Details
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Financial Details")
-                        with description_list.DescriptionList[Order](
-                            description_list.DescriptionListCurrencyItem(
-                                "subtotal_amount", "Subtotal"
-                            ),
-                            description_list.DescriptionListCurrencyItem(
-                                "discount_amount", "Discount"
-                            ),
-                            description_list.DescriptionListCurrencyItem(
-                                "tax_amount", "Tax"
-                            ),
-                            description_list.DescriptionListCurrencyItem(
-                                "total_amount", "Total"
-                            ),
-                            description_list.DescriptionListCurrencyItem(
-                                "refunded_amount", "Refunded Amount"
-                            ),
-                        ).render(request, order):
-                            pass
-
                 # Customer Details
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
@@ -377,13 +352,48 @@ async def get(
 
             # Additional sections below the main grid
             with tag.div(classes="flex flex-col gap-4 mt-6"):
+                # Invoice section
                 if order.items:
                     with tag.div(classes="card card-border w-full shadow-sm"):
                         with tag.div(classes="card-body"):
                             with tag.h2(classes="card-title"):
-                                text("Line Items")
+                                text("Invoice")
+
+                            # Billing Information (above table, left-aligned)
+                            if order.billing_name or order.billing_address:
+                                with tag.div(classes="text-sm mb-4 mt-4"):
+                                    if order.billing_name:
+                                        with tag.div():
+                                            text(order.billing_name)
+                                    if order.billing_address:
+                                        if order.billing_address.line1:
+                                            with tag.div():
+                                                text(order.billing_address.line1)
+                                        if order.billing_address.line2:
+                                            with tag.div():
+                                                text(order.billing_address.line2)
+                                        with tag.div():
+                                            address_parts = []
+                                            if order.billing_address.city:
+                                                address_parts.append(
+                                                    order.billing_address.city
+                                                )
+                                            if order.billing_address.state:
+                                                address_parts.append(
+                                                    order.billing_address.state
+                                                )
+                                            if order.billing_address.postal_code:
+                                                address_parts.append(
+                                                    order.billing_address.postal_code
+                                                )
+                                            if address_parts:
+                                                text(", ".join(address_parts))
+                                        if order.billing_address.country:
+                                            with tag.div():
+                                                text(order.billing_address.country)
+
                             with tag.div(classes="overflow-x-auto"):
-                                with tag.table(classes="table table-zebra w-full"):
+                                with tag.table(classes="table w-full"):
                                     with tag.thead():
                                         with tag.tr():
                                             with tag.th():
@@ -414,77 +424,126 @@ async def get(
                                                         )
                                                     )
 
-                # Billing Information
-                if order.billing_name or order.billing_address:
-                    with tag.div(classes="card card-border w-full shadow-sm"):
-                        with tag.div(classes="card-body"):
-                            with tag.h2(classes="card-title"):
-                                text("Billing Information")
-                            billing_items: builtins.list[
-                                description_list.DescriptionListItem[Order]
-                            ] = []
-                            if order.billing_name:
-                                billing_items.append(
-                                    description_list.DescriptionListAttrItem(
-                                        "billing_name", "Name"
-                                    )
-                                )
-                            if order.billing_address:
-                                billing_items.extend(
-                                    [
-                                        description_list.DescriptionListAttrItem(
-                                            "billing_address.line1", "Address Line 1"
-                                        ),
-                                        description_list.DescriptionListAttrItem(
-                                            "billing_address.line2", "Address Line 2"
-                                        ),
-                                        description_list.DescriptionListAttrItem(
-                                            "billing_address.city", "City"
-                                        ),
-                                        description_list.DescriptionListAttrItem(
-                                            "billing_address.state", "State"
-                                        ),
-                                        description_list.DescriptionListAttrItem(
-                                            "billing_address.postal_code", "Postal Code"
-                                        ),
-                                        description_list.DescriptionListAttrItem(
-                                            "billing_address.country", "Country"
-                                        ),
-                                    ]
-                                )
+                                        # Financial summary rows
+                                        with tag.tr(classes="border-t-2"):
+                                            with tag.td(
+                                                colspan="3",
+                                                classes="text-right font-semibold",
+                                            ):
+                                                text("Subtotal")
+                                            with tag.td(
+                                                classes="text-right font-semibold"
+                                            ):
+                                                text(
+                                                    formatters.currency(
+                                                        order.subtotal_amount,
+                                                        order.currency,
+                                                    )
+                                                )
 
-                            with description_list.DescriptionList(
-                                *billing_items
-                            ).render(request, order):
-                                pass
+                                        if order.discount_amount > 0:
+                                            with tag.tr():
+                                                with tag.td(
+                                                    colspan="3", classes="text-right"
+                                                ):
+                                                    text("Discount")
+                                                with tag.td(classes="text-right"):
+                                                    text(
+                                                        f"-{
+                                                            formatters.currency(
+                                                                order.discount_amount,
+                                                                order.currency,
+                                                            )
+                                                        }"
+                                                    )
 
-                # Tax Information
-                if order.tax_id or order.tax_rate or order.taxability_reason:
-                    with tag.div(classes="card card-border w-full shadow-sm"):
-                        with tag.div(classes="card-body"):
-                            with tag.h2(classes="card-title"):
-                                text("Tax Information")
-                            tax_items: builtins.list[
-                                description_list.DescriptionListItem[Order]
-                            ] = []
-                            if order.taxability_reason:
-                                tax_items.append(
-                                    description_list.DescriptionListAttrItem(
-                                        "taxability_reason", "Taxability Reason"
-                                    )
-                                )
-                            if order.tax_id:
-                                tax_items.append(TaxIDItem("tax_id", "Tax ID"))
-                            if order.tax_rate and order.tax_rate.get("basis_points"):
-                                basis_points = order.tax_rate["basis_points"]
-                                if basis_points is not None:
-                                    rate_percentage = basis_points / 100
-                                    tax_items.append(TaxRateItem(rate_percentage))
+                                        if order.tax_amount > 0:
+                                            with tag.tr():
+                                                with tag.td(
+                                                    colspan="3", classes="text-right"
+                                                ):
+                                                    # Build tax label with additional information
+                                                    tax_label_parts = ["Tax"]
 
-                            with description_list.DescriptionList(*tax_items).render(
-                                request, order
-                            ):
-                                pass
+                                                    # Add tax rate if available
+                                                    if (
+                                                        order.tax_rate
+                                                        and order.tax_rate.get(
+                                                            "basis_points"
+                                                        )
+                                                    ):
+                                                        basis_points = order.tax_rate[
+                                                            "basis_points"
+                                                        ]
+                                                        if basis_points is not None:
+                                                            rate_percentage = (
+                                                                basis_points / 100
+                                                            )
+                                                            tax_label_parts.append(
+                                                                f"({rate_percentage:.2f}%)"
+                                                            )
+
+                                                    # Add tax ID if available
+                                                    if order.tax_id:
+                                                        formatted_tax_id = (
+                                                            formatters.tax_id(
+                                                                order.tax_id
+                                                            )
+                                                        )
+                                                        tax_label_parts.append(
+                                                            f"• {formatted_tax_id}"
+                                                        )
+
+                                                    # Add taxability reason if available
+                                                    if order.taxability_reason:
+                                                        tax_label_parts.append(
+                                                            f"• {order.taxability_reason}"
+                                                        )
+
+                                                    text(" ".join(tax_label_parts))
+                                                with tag.td(classes="text-right"):
+                                                    text(
+                                                        formatters.currency(
+                                                            order.tax_amount,
+                                                            order.currency,
+                                                        )
+                                                    )
+
+                                        with tag.tr(classes="border-t-2"):
+                                            with tag.td(
+                                                colspan="3",
+                                                classes="text-right font-bold",
+                                            ):
+                                                text("Total")
+                                            with tag.td(classes="text-right font-bold"):
+                                                text(
+                                                    formatters.currency(
+                                                        order.total_amount,
+                                                        order.currency,
+                                                    )
+                                                )
+
+                                        if (
+                                            order.refunded_amount
+                                            and order.refunded_amount > 0
+                                        ):
+                                            with tag.tr():
+                                                with tag.td(
+                                                    colspan="3",
+                                                    classes="text-right text-error",
+                                                ):
+                                                    text("Refunded Amount")
+                                                with tag.td(
+                                                    classes="text-right text-error"
+                                                ):
+                                                    text(
+                                                        f"-{
+                                                            formatters.currency(
+                                                                order.refunded_amount,
+                                                                order.currency,
+                                                            )
+                                                        }"
+                                                    )
 
 
 @router.api_route("/{id}/refund", name="orders:refund", methods=["GET", "POST"])

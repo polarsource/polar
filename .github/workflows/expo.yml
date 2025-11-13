@@ -15,6 +15,9 @@ jobs:
       contents: read
       pull-requests: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Check for EXPO_TOKEN
         run: |
           if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
@@ -22,11 +25,9 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
         with:
+          package_json_file: clients/package.json
           version: 10.5.2
 
       - name: Setup Node

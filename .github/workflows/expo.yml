@@ -4,6 +4,10 @@ on:
     paths:
       - clients/apps/app/**
 
+defaults:
+  run:
+    working-directory: ./clients
+
 jobs:
   update:
     name: EAS Update
@@ -34,6 +38,7 @@ jobs:
 
       - name: Setup EAS
         uses: expo/expo-github-action@v8
+        working-directory: ./clients/apps/app
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
@@ -43,5 +48,6 @@ jobs:
 
       - name: Create preview
         uses: expo/expo-github-action/preview@v8
+        working-directory: ./clients/apps/app
         with:
           command: eas update --auto

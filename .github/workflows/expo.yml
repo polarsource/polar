@@ -38,8 +38,8 @@ jobs:
 
       - name: Setup EAS
         uses: expo/expo-github-action@v8
-        working-directory: ./clients/apps/app
         with:
+          working-directory: ./clients/apps/app
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
@@ -48,6 +48,6 @@ jobs:
 
       - name: Create preview
         uses: expo/expo-github-action/preview@v8
-        working-directory: ./clients/apps/app
         with:
+          working-directory: ./clients/apps/app
           command: eas update --auto

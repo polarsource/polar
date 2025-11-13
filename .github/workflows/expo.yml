@@ -4,10 +4,6 @@ on:
     paths:
       - clients/apps/app/**
 
-defaults:
-  run:
-    working-directory: ./clients
-
 jobs:
   update:
     name: EAS Update

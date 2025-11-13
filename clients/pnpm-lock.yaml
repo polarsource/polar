@@ -44,6 +44,9 @@ importers:
       '@expo-google-fonts/instrument-serif':
         specifier: ^0.4.0
         version: 0.4.1
+      '@expo/config-plugins':
+        specifier: ^54.0.2
+        version: 54.0.2
       '@expo/metro-runtime':
         specifier: ~6.1.2
         version: 6.1.2(expo@54.0.23)(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)

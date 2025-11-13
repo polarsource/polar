@@ -273,9 +273,9 @@ export const ProductPriceSeatBasedItem: React.FC<
               )}
             </div>
 
-            <div className="flex flex-col gap-3 px-4 pb-4">
-              {/* Seat Range */}
-              <div className="grid grid-cols-2 gap-3">
+            <div className="px-4 pb-4">
+              {/* All 4 fields in responsive grid: stacked on mobile, 2x2 on tablet, 1x4 on large screens */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <FormField
                   control={control}
                   name={
@@ -374,10 +374,7 @@ export const ProductPriceSeatBasedItem: React.FC<
                     </FormItem>
                   )}
                 />
-              </div>
 
-              {/* Pricing Fields */}
-              <div className="grid grid-cols-2 gap-3">
                 <FormField
                   control={control}
                   name={

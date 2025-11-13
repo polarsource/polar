@@ -2,7 +2,7 @@ import builtins
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Discriminator, Field, Tag, computed_field, field_validator
+from pydantic import UUID4, Discriminator, Field, Tag, computed_field, field_validator, model_validator
 from pydantic.aliases import AliasChoices
 from pydantic.json_schema import SkipJsonSchema
 

@@ -21,6 +21,7 @@ from .discount_redemption import DiscountRedemption
 from .downloadable import Downloadable
 from .email_verification import EmailVerification
 from .event import Event, EventClosure
+from .event_type import EventType
 from .external_event import ExternalEvent
 from .file import File
 from .held_balance import HeldBalance
@@ -103,6 +104,7 @@ __all__ = [
     "EmailVerification",
     "Event",
     "EventClosure",
+    "EventType",
     "ExternalEvent",
     "File",
     "HeldBalance",

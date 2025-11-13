@@ -30,10 +30,11 @@ jobs:
           package_json_file: clients/package.json
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 18.x
-          cache: pnpm
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
 
       - name: Setup EAS
         uses: expo/expo-github-action@v8

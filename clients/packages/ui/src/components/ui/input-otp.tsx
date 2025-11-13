@@ -1,6 +1,6 @@
 'use client'
 
-import { OTPInput, OTPInputContext } from 'input-otp'
+import { OTPInput, OTPInputContext, RenderProps } from 'input-otp'
 import { Dot } from 'lucide-react'
 import * as React from 'react'
 
@@ -42,7 +42,7 @@ const InputOTPSlot = ({
   index: number
   className?: string
 } & React.ComponentProps<'div'>) => {
-  const inputOTPContext = React.useContext(OTPInputContext)
+  const inputOTPContext = React.useContext<RenderProps>(OTPInputContext)
   const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index]
 
   return (

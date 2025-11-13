@@ -194,30 +194,53 @@ def get_cumulative_orders_cte(
         customer_id=customer_id,
     )
 
+    day_column = interval.sql_date_trunc(Order.created_at)
+
+    daily_metrics = cte(
+        select(
+            day_column.label("day"),
+            *[
+                func.coalesce(
+                    metric.get_sql_expression(day_column, interval, now), 0
+                ).label(metric.slug)
+                for metric in metrics
+                if metric.query == MetricQuery.cumulative_orders
+            ],
+        )
+        .select_from(Order)
+        .join(
+            Subscription,
+            isouter=True,
+            onclause=Order.subscription_id == Subscription.id,
+        )
+        .where(
+            Order.paid.is_(True),
+            Order.id.in_(readable_orders_statement),
+        )
+        .group_by(day_column)
+    )
+
     return cte(
         select(
             timestamp_column.label("timestamp"),
-            *_get_metrics_columns(
-                MetricQuery.cumulative_orders, timestamp_column, interval, metrics, now
-            ),
+            *[
+                func.coalesce(
+                    func.sum(getattr(daily_metrics.c, metric.slug)).over(
+                        order_by=timestamp_column
+                    ),
+                    0,
+                ).label(metric.slug)
+                for metric in metrics
+                if metric.query == MetricQuery.cumulative_orders
+            ],
         )
         .select_from(
             timestamp_series.join(
-                Order,
+                daily_metrics,
+                onclause=daily_metrics.c.day == timestamp_column,
                 isouter=True,
-                onclause=and_(
-                    interval.sql_date_trunc(Order.created_at)
-                    <= interval.sql_date_trunc(timestamp_column),
-                    Order.paid.is_(True),
-                    Order.id.in_(readable_orders_statement),
-                ),
-            ).join(
-                Subscription,
-                isouter=True,
-                onclause=Order.subscription_id == Subscription.id,
             )
         )
-        .group_by(timestamp_column)
         .order_by(timestamp_column.asc())
     )
 
@@ -563,25 +586,45 @@ def get_cumulative_cost_events_cte(
         customer_id=customer_id,
     )
 
+    day_column = interval.sql_date_trunc(Event.timestamp)
+
+    daily_metrics = cte(
+        select(
+            day_column.label("day"),
+            *[
+                func.coalesce(
+                    metric.get_sql_expression(day_column, interval, now), 0
+                ).label(metric.slug)
+                for metric in metrics
+                if metric.query == MetricQuery.cumulative_costs
+            ],
+        )
+        .select_from(Event)
+        .where(Event.id.in_(readable_cost_events_statement))
+        .group_by(day_column)
+    )
+
     return cte(
         select(
             timestamp_column.label("timestamp"),
-            *_get_metrics_columns(
-                MetricQuery.cumulative_costs, timestamp_column, interval, metrics, now
-            ),
+            *[
+                func.coalesce(
+                    func.sum(getattr(daily_metrics.c, metric.slug)).over(
+                        order_by=timestamp_column
+                    ),
+                    0,
+                ).label(metric.slug)
+                for metric in metrics
+                if metric.query == MetricQuery.cumulative_costs
+            ],
         )
         .select_from(
             timestamp_series.join(
-                Event,
+                daily_metrics,
+                onclause=daily_metrics.c.day == timestamp_column,
                 isouter=True,
-                onclause=and_(
-                    interval.sql_date_trunc(Event.timestamp)
-                    <= interval.sql_date_trunc(timestamp_column),
-                    Event.id.in_(readable_cost_events_statement),
-                ),
             )
         )
-        .group_by(timestamp_column)
         .order_by(timestamp_column.asc())
     )
 
@@ -688,25 +731,45 @@ def get_cumulative_events_cte(
         customer_id=customer_id,
     )
 
+    day_column = interval.sql_date_trunc(Event.timestamp)
+
+    daily_metrics = cte(
+        select(
+            day_column.label("day"),
+            *[
+                func.coalesce(
+                    metric.get_sql_expression(day_column, interval, now), 0
+                ).label(metric.slug)
+                for metric in metrics
+                if metric.query == MetricQuery.cumulative_events
+            ],
+        )
+        .select_from(Event)
+        .where(Event.id.in_(readable_events_statement))
+        .group_by(day_column)
+    )
+
     return cte(
         select(
             timestamp_column.label("timestamp"),
-            *_get_metrics_columns(
-                MetricQuery.cumulative_events, timestamp_column, interval, metrics, now
-            ),
+            *[
+                func.coalesce(
+                    func.sum(getattr(daily_metrics.c, metric.slug)).over(
+                        order_by=timestamp_column
+                    ),
+                    0,
+                ).label(metric.slug)
+                for metric in metrics
+                if metric.query == MetricQuery.cumulative_events
+            ],
         )
         .select_from(
             timestamp_series.join(
-                Event,
+                daily_metrics,
+                onclause=daily_metrics.c.day == timestamp_column,
                 isouter=True,
-                onclause=and_(
-                    interval.sql_date_trunc(Event.timestamp)
-                    <= interval.sql_date_trunc(timestamp_column),
-                    Event.id.in_(readable_events_statement),
-                ),
             )
         )
-        .group_by(timestamp_column)
         .order_by(timestamp_column.asc())
     )
 

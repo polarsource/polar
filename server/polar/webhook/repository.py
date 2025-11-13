@@ -32,6 +32,7 @@ class WebhookEventRepository(
             .where(
                 WebhookDelivery.id.is_(None),
                 WebhookEvent.payload.is_not(None),
+                WebhookEvent.skipped.is_(False),
             )
         )
         if older_than is not None:

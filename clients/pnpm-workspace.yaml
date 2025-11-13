@@ -11,7 +11,3 @@ onlyBuiltDependencies:
   - esbuild
   - sharp
   - unrs-resolver
-
-hoistPattern:
-  - '!@types/react'
-  - '!react'

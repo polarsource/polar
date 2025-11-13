@@ -66,25 +66,6 @@ export default function FeatureSettings({
       >
         <SettingsGroup>
           <SettingsGroupItem
-            title="Seat-based Billing Beta"
-            description="Create seat-based products & allow customers to manage the seats."
-          >
-            <FormField
-              control={control}
-              name="seat_based_pricing_enabled"
-              render={({ field }) => {
-                return (
-                  <>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={(enabled) => field.onChange(enabled)}
-                    />
-                  </>
-                )
-              }}
-            />
-          </SettingsGroupItem>
-          <SettingsGroupItem
             title="Cost Insights"
             description="Experimental feature to track costs and profits."
           >

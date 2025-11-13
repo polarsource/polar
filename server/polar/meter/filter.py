@@ -6,6 +6,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict
 from sqlalchemy import (
     ColumnExpressionArgument,
     Dialect,
+    String,
     TypeDecorator,
     and_,
     case,
@@ -54,6 +55,11 @@ class FilterClause(BaseModel):
             allowed_type, attr = model._filterable_fields[self.property]
             if not isinstance(self.value, allowed_type):
                 return false()
+            # The operator is LIKE OR NOT LIKE, treat the attribute as a string
+            if self.operator in (FilterOperator.like, FilterOperator.not_like):
+                if allowed_type is not str:
+                    attr = func.cast(attr, String)
+                return self._get_comparison_clause(attr, self._get_str_value())
             return self._get_comparison_clause(attr, self.value)
 
         attr = model.user_metadata[self.property]

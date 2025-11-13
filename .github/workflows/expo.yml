@@ -1,6 +1,7 @@
 name: preview
-on: pull_request
-  paths:
+on:
+  pull_request:
+    paths:
       - clients/apps/app/**
 
 jobs:

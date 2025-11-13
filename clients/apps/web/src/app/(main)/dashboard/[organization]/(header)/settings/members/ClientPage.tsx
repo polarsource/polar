@@ -116,7 +116,8 @@ function InviteMemberModal({
   const [email, setEmail] = useState('')
   const inviteMember = useInviteOrganizationMember(organizationId)
 
-  const handleInvite = async () => {
+  const handleInvite = async (e?: React.FormEvent) => {
+    e?.preventDefault()
     if (!email) return
 
     try {
@@ -147,7 +148,7 @@ function InviteMemberModal({
   }
 
   return (
-    <div className="flex w-full flex-col gap-y-6 p-8">
+    <form onSubmit={handleInvite} className="flex w-full flex-col gap-y-6 p-8">
       <h3 className="text-lg font-medium">Invite User</h3>
       <Input
         type="email"
@@ -158,16 +159,16 @@ function InviteMemberModal({
       />
       <div className="flex gap-2">
         <Button
-          onClick={handleInvite}
+          type="submit"
           disabled={!email || inviteMember.isPending}
           loading={inviteMember.isPending}
         >
           Send Invite
         </Button>
-        <Button variant="ghost" onClick={onClose}>
+        <Button type="button" variant="ghost" onClick={onClose}>
           Cancel
         </Button>
       </div>
-    </div>
+    </form>
   )
 }

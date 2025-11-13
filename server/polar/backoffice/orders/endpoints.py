@@ -377,6 +377,43 @@ async def get(
 
             # Additional sections below the main grid
             with tag.div(classes="flex flex-col gap-4 mt-6"):
+                if order.items:
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with tag.div(classes="card-body"):
+                            with tag.h2(classes="card-title"):
+                                text("Line Items")
+                            with tag.div(classes="overflow-x-auto"):
+                                with tag.table(classes="table table-zebra w-full"):
+                                    with tag.thead():
+                                        with tag.tr():
+                                            with tag.th():
+                                                text("Description")
+                                            with tag.th(classes="text-right"):
+                                                text("Quantity")
+                                            with tag.th(classes="text-right"):
+                                                text("Unit Price")
+                                            with tag.th(classes="text-right"):
+                                                text("Amount")
+                                    with tag.tbody():
+                                        for item in order.items:
+                                            with tag.tr():
+                                                with tag.td():
+                                                    text(item.label)
+                                                with tag.td(classes="text-right"):
+                                                    text("1")
+                                                with tag.td(classes="text-right"):
+                                                    text(
+                                                        formatters.currency(
+                                                            item.amount, order.currency
+                                                        )
+                                                    )
+                                                with tag.td(classes="text-right"):
+                                                    text(
+                                                        formatters.currency(
+                                                            item.amount, order.currency
+                                                        )
+                                                    )
+
                 # Billing Information
                 if order.billing_name or order.billing_address:
                     with tag.div(classes="card card-border w-full shadow-sm"):

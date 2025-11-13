@@ -20,6 +20,7 @@
     "@dev-plugins/react-navigation": "^0.3.1",
     "@dev-plugins/react-query": "^0.1.0",
     "@expo-google-fonts/instrument-serif": "^0.4.0",
+    "@expo/config-plugins": "^54.0.2",
     "@expo/metro-runtime": "~6.1.2",
     "@expo/ui": "0.2.0-beta.7",
     "@expo/vector-icons": "^15.0.2",

@@ -122,7 +122,7 @@ class CumulativeRevenueMetric(SQLMetric):
     slug = "cumulative_revenue"
     display_name = "Cumulative Revenue"
     type = MetricType.currency
-    query = MetricQuery.cumulative_orders
+    query = MetricQuery.orders
 
     @classmethod
     def get_sql_expression(
@@ -139,7 +139,7 @@ class NetCumulativeRevenueMetric(SQLMetric):
     slug = "net_cumulative_revenue"
     display_name = "Net Cumulative Revenue"
     type = MetricType.currency
-    query = MetricQuery.cumulative_orders
+    query = MetricQuery.orders
 
     @classmethod
     def get_sql_expression(
@@ -734,13 +734,15 @@ class CostsMetric(SQLMetric):
     slug = "costs"
     display_name = "Costs"
     type = MetricType.currency_sub_cent
-    query = MetricQuery.costs
+    query = MetricQuery.events
 
     @classmethod
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        return func.sum(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12))
+        return func.sum(
+            Event.user_metadata["_cost"]["amount"].as_numeric(17, 12)
+        ).filter(Event.user_metadata["_cost"].is_not(None))
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -751,13 +753,15 @@ class CumulativeCostsMetric(SQLMetric):
     slug = "cumulative_costs"
     display_name = "Cumulative Costs"
     type = MetricType.currency_sub_cent
-    query = MetricQuery.cumulative_costs
+    query = MetricQuery.events
 
     @classmethod
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        return func.sum(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12))
+        return func.sum(
+            Event.user_metadata["_cost"]["amount"].as_numeric(17, 12)
+        ).filter(Event.user_metadata["_cost"].is_not(None))
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:

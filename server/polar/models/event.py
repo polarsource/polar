@@ -50,6 +50,7 @@ from polar.kit.utils import generate_uuid, utc_now
 from .customer import Customer
 
 if TYPE_CHECKING:
+    from .event_type import EventType
     from .organization import Organization
 
 
@@ -211,6 +212,14 @@ class Event(Model, MetadataMixin):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    event_type_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("event_types.id"), nullable=True, index=True
+    )
+
+    @declared_attr
+    def event_types(cls) -> Mapped["EventType | None"]:
+        return relationship("EventType", lazy="raise")
 
     @hybrid_property
     def is_meter_credit(self) -> bool:

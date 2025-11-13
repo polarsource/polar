@@ -16,6 +16,7 @@ from polar.event.schemas import (
 )
 from polar.event.service import event as event_service
 from polar.event.sorting import EventNamesSortProperty
+from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
@@ -513,6 +514,60 @@ class TestIngest:
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(auth_subject.subject.id)
         assert len(events) == 1
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_event_type_lookup(
+        self,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        event_type_repository = EventTypeRepository.from_session(session)
+        event_repository = EventRepository.from_session(session)
+
+        ingest_first = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name="api.request",
+                    external_customer_id="test",
+                )
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest_first)
+
+        event_type = await event_type_repository.get_by_name_and_organization(
+            "api.request", auth_subject.subject.id
+        )
+        assert event_type is not None
+        assert event_type.name == "api.request"
+        assert event_type.label == "api.request"
+
+        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        assert len(events) == 1
+        assert events[0].event_type_id == event_type.id
+
+        ingest_second = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name="api.request",
+                    external_customer_id="test2",
+                )
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest_second)
+
+        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        assert len(events) == 2
+        assert events[0].event_type_id == event_type.id
+        assert events[1].event_type_id == event_type.id
+
+        event_type_after = await event_type_repository.get_by_name_and_organization(
+            "api.request", auth_subject.subject.id
+        )
+        assert event_type_after is not None
+        assert event_type_after.id == event_type.id
 
 
 @pytest.mark.asyncio

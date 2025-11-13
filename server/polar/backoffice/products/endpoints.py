@@ -53,12 +53,27 @@ def _format_price_display(price: ProductPrice) -> str:
         tiers = price.seat_tiers.get("tiers", [])
         if tiers:
             first_tier = tiers[0]
-            price_display = formatters.currency(
-                first_tier["price_per_seat"], price.price_currency
-            )
-            if len(tiers) > 1:
-                return f"From {price_display} / seat"
-            return f"{price_display} / seat"
+            if "flat_fee" in first_tier:
+                price_display = formatters.currency(
+                    first_tier["flat_fee"], price.price_currency
+                )
+                min_seats = first_tier["min_seats"]
+                max_seats = first_tier.get("max_seats")
+                seat_range = (
+                    f"{min_seats}-{max_seats}"
+                    if max_seats
+                    else f"{min_seats}+ seats"
+                )
+                if len(tiers) > 1:
+                    return f"From {price_display} for {seat_range}"
+                return f"{price_display} for {seat_range}"
+            else:
+                price_display = formatters.currency(
+                    first_tier["price_per_seat"], price.price_currency
+                )
+                if len(tiers) > 1:
+                    return f"From {price_display} / seat"
+                return f"{price_display} / seat"
     elif is_metered_price(price):
         return f"{price.meter.name}: {formatters.currency(price.unit_amount, price.price_currency, decimal_quantization=False)} / unit"
     return "N/A"

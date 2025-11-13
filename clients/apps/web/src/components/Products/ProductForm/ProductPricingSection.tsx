@@ -196,10 +196,12 @@ export const ProductPriceSeatBasedItem: React.FC<
 
     // Add the new tier with max_seats: null (unlimited)
     // The LAST tier should ALWAYS have null max_seats
+    // Default to per-seat pricing for new tiers
     append({
       min_seats: minSeats,
       max_seats: null,
       price_per_seat: 0,
+      flat_fee: undefined,
     })
     setValue(`prices.${index}.id`, '')
   }, [tiers, append, setValue, index])
@@ -271,138 +273,245 @@ export const ProductPriceSeatBasedItem: React.FC<
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-3 px-4 pb-4">
-              <FormField
-                control={control}
-                name={
-                  `prices.${index}.seat_tiers.tiers.${tierIndex}.min_seats` as const
-                }
-                rules={{
-                  required: 'Required',
-                  min: { value: 1, message: 'Must be at least 1' },
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
-                      From
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        min={1}
-                        disabled={!isFirst}
-                        onChange={(e) => {
-                          field.onChange(parseInt(e.target.value) || 1)
-                          setValue(`prices.${index}.id`, '')
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={control}
-                name={
-                  `prices.${index}.seat_tiers.tiers.${tierIndex}.max_seats` as const
-                }
-                rules={{
-                  validate: (value) => {
-                    if (isLast) return true // Last tier is always unlimited (null)
-
-                    const minSeats = tiers?.[tierIndex]?.min_seats
-
-                    // max_seats must exist for non-last tiers
-                    if (value === null || value === undefined) {
-                      return 'Max seats is required'
-                    }
-
-                    // max_seats must be >= min_seats
-                    if (minSeats && value < minSeats) {
-                      return `Max seats must be at least ${minSeats}`
-                    }
-
-                    return true
-                  },
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
-                      To
-                    </FormLabel>
-                    <FormControl>
-                      {isLast ? (
-                        <div className="dark:bg-polar-800 dark:text-polar-500 dark:border-polar-800 flex h-9 w-full items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm font-medium text-gray-500">
-                          ∞
-                        </div>
-                      ) : (
+            <div className="flex flex-col gap-3 px-4 pb-4">
+              <div className="grid grid-cols-3 gap-3">
+                <FormField
+                  control={control}
+                  name={
+                    `prices.${index}.seat_tiers.tiers.${tierIndex}.min_seats` as const
+                  }
+                  rules={{
+                    required: 'Required',
+                    min: { value: 1, message: 'Must be at least 1' },
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
+                        From
+                      </FormLabel>
+                      <FormControl>
                         <Input
                           {...field}
-                          value={field.value ?? ''}
                           type="number"
-                          min={tiers?.[tierIndex]?.min_seats ?? 1}
+                          min={1}
+                          disabled={!isFirst}
                           onChange={(e) => {
-                            const value = e.target.value
-                              ? parseInt(e.target.value)
-                              : null
-                            field.onChange(value)
+                            field.onChange(parseInt(e.target.value) || 1)
                             setValue(`prices.${index}.id`, '')
-
-                            // Update next tier's min_seats immediately
-                            if (
-                              value &&
-                              tiers &&
-                              tierIndex < tiers.length - 1
-                            ) {
-                              setValue(
-                                `prices.${index}.seat_tiers.tiers.${tierIndex + 1}.min_seats`,
-                                value + 1,
-                                { shouldValidate: true },
-                              )
-                            }
                           }}
                         />
-                      )}
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={control}
-                name={
-                  `prices.${index}.seat_tiers.tiers.${tierIndex}.price_per_seat` as const
-                }
-                rules={{
-                  required: 'This field is required',
-                  min: {
-                    value: 0,
-                    message: 'Price must be greater than or equal to 0',
-                  },
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
-                      Price per seat
-                    </FormLabel>
-                    <FormControl>
-                      <MoneyInput
-                        name={field.name}
-                        value={field.value}
-                        onChange={(v) => {
-                          field.onChange(v)
-                          setValue(`prices.${index}.id`, '')
-                        }}
-                        placeholder={1000}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                <FormField
+                  control={control}
+                  name={
+                    `prices.${index}.seat_tiers.tiers.${tierIndex}.max_seats` as const
+                  }
+                  rules={{
+                    validate: (value) => {
+                      if (isLast) return true // Last tier is always unlimited (null)
+
+                      const minSeats = tiers?.[tierIndex]?.min_seats
+
+                      // max_seats must exist for non-last tiers
+                      if (value === null || value === undefined) {
+                        return 'Max seats is required'
+                      }
+
+                      // max_seats must be >= min_seats
+                      if (minSeats && value < minSeats) {
+                        return `Max seats must be at least ${minSeats}`
+                      }
+
+                      return true
+                    },
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
+                        To
+                      </FormLabel>
+                      <FormControl>
+                        {isLast ? (
+                          <div className="dark:bg-polar-800 dark:text-polar-500 dark:border-polar-800 flex h-9 w-full items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm font-medium text-gray-500">
+                            ∞
+                          </div>
+                        ) : (
+                          <Input
+                            {...field}
+                            value={field.value ?? ''}
+                            type="number"
+                            min={tiers?.[tierIndex]?.min_seats ?? 1}
+                            onChange={(e) => {
+                              const value = e.target.value
+                                ? parseInt(e.target.value)
+                                : null
+                              field.onChange(value)
+                              setValue(`prices.${index}.id`, '')
+
+                              // Update next tier's min_seats immediately
+                              if (
+                                value &&
+                                tiers &&
+                                tierIndex < tiers.length - 1
+                              ) {
+                                setValue(
+                                  `prices.${index}.seat_tiers.tiers.${tierIndex + 1}.min_seats`,
+                                  value + 1,
+                                  { shouldValidate: true },
+                                )
+                              }
+                            }}
+                          />
+                        )}
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={control}
+                  name={
+                    `prices.${index}.seat_tiers.tiers.${tierIndex}` as const
+                  }
+                  render={() => {
+                    const hasFlatFee = currentTier?.flat_fee !== undefined && currentTier?.flat_fee !== null
+                    const hasPricePerSeat = currentTier?.price_per_seat !== undefined && currentTier?.price_per_seat !== null
+                    const pricingType = hasFlatFee ? 'flat_fee' : 'per_seat'
+
+                    return (
+                      <FormItem>
+                        <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
+                          Pricing Type
+                        </FormLabel>
+                        <FormControl>
+                          <Select
+                            value={pricingType}
+                            onValueChange={(value) => {
+                              if (value === 'flat_fee') {
+                                // Switch to flat fee: set flat_fee, clear price_per_seat
+                                setValue(
+                                  `prices.${index}.seat_tiers.tiers.${tierIndex}.flat_fee`,
+                                  0,
+                                  { shouldValidate: true }
+                                )
+                                setValue(
+                                  `prices.${index}.seat_tiers.tiers.${tierIndex}.price_per_seat`,
+                                  undefined as any,
+                                  { shouldValidate: true }
+                                )
+                              } else {
+                                // Switch to per-seat: set price_per_seat, clear flat_fee
+                                setValue(
+                                  `prices.${index}.seat_tiers.tiers.${tierIndex}.price_per_seat`,
+                                  0,
+                                  { shouldValidate: true }
+                                )
+                                setValue(
+                                  `prices.${index}.seat_tiers.tiers.${tierIndex}.flat_fee`,
+                                  undefined as any,
+                                  { shouldValidate: true }
+                                )
+                              }
+                              setValue(`prices.${index}.id`, '')
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="per_seat">Per Seat</SelectItem>
+                              <SelectItem value="flat_fee">Flat Fee</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                      </FormItem>
+                    )
+                  }}
+                />
+              </div>
+
+              {/* Pricing Amount Field */}
+              <div>
+                {currentTier?.flat_fee !== undefined && currentTier?.flat_fee !== null ? (
+                  <FormField
+                    control={control}
+                    name={
+                      `prices.${index}.seat_tiers.tiers.${tierIndex}.flat_fee` as const
+                    }
+                    rules={{
+                      required: 'This field is required',
+                      min: {
+                        value: 0,
+                        message: 'Price must be greater than or equal to 0',
+                      },
+                    }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
+                          Flat Fee
+                        </FormLabel>
+                        <FormControl>
+                          <MoneyInput
+                            name={field.name}
+                            value={field.value}
+                            onChange={(v) => {
+                              field.onChange(v)
+                              setValue(`prices.${index}.id`, '')
+                            }}
+                            placeholder={20000}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          Fixed price for the entire tier range
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <FormField
+                    control={control}
+                    name={
+                      `prices.${index}.seat_tiers.tiers.${tierIndex}.price_per_seat` as const
+                    }
+                    rules={{
+                      required: 'This field is required',
+                      min: {
+                        value: 0,
+                        message: 'Price must be greater than or equal to 0',
+                      },
+                    }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="dark:text-polar-500 text-xs text-gray-600">
+                          Price per seat
+                        </FormLabel>
+                        <FormControl>
+                          <MoneyInput
+                            name={field.name}
+                            value={field.value}
+                            onChange={(v) => {
+                              field.onChange(v)
+                              setValue(`prices.${index}.id`, '')
+                            }}
+                            placeholder={1000}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          Price multiplied by number of seats
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
-              />
+              </div>
             </div>
           </div>
         )

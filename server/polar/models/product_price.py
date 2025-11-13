@@ -1,6 +1,6 @@
 from decimal import Decimal
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -54,11 +54,17 @@ class ProductPriceAmountType(StrEnum):
 
 
 class SeatTier(TypedDict):
-    """A single pricing tier for seat-based pricing."""
+    """A single pricing tier for seat-based pricing.
+
+    Either price_per_seat or flat_fee must be provided:
+    - price_per_seat: Price per seat in cents (total = price_per_seat * seats)
+    - flat_fee: Fixed price in cents for the entire tier range
+    """
 
     min_seats: int
     max_seats: int | None
-    price_per_seat: int
+    price_per_seat: NotRequired[int]
+    flat_fee: NotRequired[int]
 
 
 class SeatTiersData(TypedDict):
@@ -401,10 +407,14 @@ class ProductPriceSeatUnit(NewProductPrice, HasPriceCurrency, ProductPrice):
 
     def get_price_per_seat(self, seats: int) -> int:
         tier = self.get_tier_for_seats(seats)
-        return tier["price_per_seat"]
+        return tier.get("price_per_seat", 0)
 
     def calculate_amount(self, seats: int) -> int:
-        return self.get_price_per_seat(seats) * seats
+        tier = self.get_tier_for_seats(seats)
+        # If flat_fee is set, use it; otherwise use per-seat pricing
+        if "flat_fee" in tier:
+            return tier["flat_fee"]
+        return tier.get("price_per_seat", 0) * seats
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,

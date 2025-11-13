@@ -45,23 +45,49 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
     if (tiers.length > 0) {
       const firstTier = tiers[0]
       const hasMultipleTiers = tiers.length > 1
+      const hasFlatFee = 'flat_fee' in firstTier && firstTier.flat_fee !== undefined
 
-      return (
-        <div className="flex items-baseline gap-1.5">
-          {hasMultipleTiers && (
+      if (hasFlatFee) {
+        // Flat fee pricing
+        const minSeats = firstTier.min_seats
+        const maxSeats = firstTier.max_seats
+        const seatRange = maxSeats ? `${minSeats}-${maxSeats}` : `${minSeats}+`
+
+        return (
+          <div className="flex items-baseline gap-1.5">
+            {hasMultipleTiers && (
+              <span className="dark:text-polar-500 text-xs text-gray-500">
+                From
+              </span>
+            )}
+            <AmountLabel
+              amount={firstTier.flat_fee}
+              interval={product.recurring_interval || undefined}
+            />
             <span className="dark:text-polar-500 text-xs text-gray-500">
-              From
+              for {seatRange} seats
             </span>
-          )}
-          <AmountLabel
-            amount={firstTier.price_per_seat}
-            interval={product.recurring_interval || undefined}
-          />
-          <span className="dark:text-polar-500 text-xs text-gray-500">
-            / seat
-          </span>
-        </div>
-      )
+          </div>
+        )
+      } else {
+        // Per-seat pricing
+        return (
+          <div className="flex items-baseline gap-1.5">
+            {hasMultipleTiers && (
+              <span className="dark:text-polar-500 text-xs text-gray-500">
+                From
+              </span>
+            )}
+            <AmountLabel
+              amount={firstTier.price_per_seat || 0}
+              interval={product.recurring_interval || undefined}
+            />
+            <span className="dark:text-polar-500 text-xs text-gray-500">
+              / seat
+            </span>
+          </div>
+        )
+      }
     }
     return null
   } else if (staticPrice.amount_type === 'custom') {

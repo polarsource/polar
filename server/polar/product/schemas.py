@@ -165,6 +165,10 @@ class ProductPriceFreeCreate(ProductPriceCreateBase):
 class ProductPriceSeatTier(Schema):
     """
     A pricing tier for seat-based pricing.
+
+    Either price_per_seat or flat_fee must be provided:
+    - price_per_seat: Price per seat in cents (total = price_per_seat * seats)
+    - flat_fee: Fixed price in cents for the entire tier range
     """
 
     min_seats: int = Field(ge=1, description="Minimum number of seats (inclusive)")
@@ -173,9 +177,29 @@ class ProductPriceSeatTier(Schema):
         ge=1,
         description="Maximum number of seats (inclusive). None for unlimited.",
     )
-    price_per_seat: SeatPriceAmount = Field(
-        description="Price per seat in cents for this tier"
+    price_per_seat: SeatPriceAmount | None = Field(
+        default=None, description="Price per seat in cents for this tier"
     )
+    flat_fee: SeatPriceAmount | None = Field(
+        default=None,
+        description="Fixed price in cents for the entire tier range",
+    )
+
+    @model_validator(mode="after")
+    def validate_pricing_fields(self) -> "ProductPriceSeatTier":
+        """Ensure exactly one of price_per_seat or flat_fee is provided."""
+        has_per_seat = self.price_per_seat is not None
+        has_flat_fee = self.flat_fee is not None
+
+        if not has_per_seat and not has_flat_fee:
+            raise ValueError("Either price_per_seat or flat_fee must be provided")
+
+        if has_per_seat and has_flat_fee:
+            raise ValueError(
+                "Only one of price_per_seat or flat_fee can be provided, not both"
+            )
+
+        return self
 
 
 class ProductPriceSeatTiers(Schema):

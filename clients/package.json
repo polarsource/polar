@@ -9,7 +9,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "generate": "pnpm -C packages/client generate",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\" \"!./apps/app/**\"",
     "preinstall": "npx only-allow pnpm",
     "release-packages": "turbo run build lint test --filter='./packages/*' && changeset publish"
   },

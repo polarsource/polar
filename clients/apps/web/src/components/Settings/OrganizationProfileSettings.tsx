@@ -117,7 +117,11 @@ const OrganizationSocialLinks = () => {
 
   const handleChange = (index: number, value: string) => {
     const currentFieldValue = socials[index]?.url
-    if (currentFieldValue === '') {
+    if (
+      currentFieldValue === '' &&
+      !value.startsWith('https://') &&
+      !value.startsWith('http://')
+    ) {
       value = 'https://' + value
     }
 
@@ -596,27 +600,48 @@ const OrganizationProfileSettings: React.FC<
   const updateOrganization = useUpdateOrganization()
 
   const onSave = async (body: schemas['OrganizationUpdate']) => {
+    const emptySocials =
+      body.socials?.filter(
+        (social) => !social.url || social.url.trim() === '',
+      ) || []
+    const cleanedBody = {
+      ...body,
+      socials: body.socials?.filter(
+        (social) => social.url && social.url.trim() !== '',
+      ),
+    }
+
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
-      body,
+      body: cleanedBody,
     })
 
     if (error) {
+      const errorMessage = Array.isArray(error.detail)
+        ? error.detail[0]?.msg ||
+          'An error occurred while updating the organization'
+        : typeof error.detail === 'string'
+          ? error.detail
+          : 'An error occurred while updating the organization'
+
       if (isValidationError(error.detail)) {
         setValidationErrors(error.detail, setError)
       } else {
-        setError('root', { message: error.detail })
+        setError('root', { message: errorMessage })
       }
 
       toast({
         title: 'Organization Update Failed',
-        description: `Error updating organization: ${error.detail}`,
+        description: errorMessage,
       })
 
       return
     }
 
-    reset(data)
+    reset({
+      ...data,
+      socials: [...(data.socials || []), ...emptySocials],
+    })
 
     if (onSubmitted) {
       onSubmitted()

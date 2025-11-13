@@ -48,6 +48,8 @@ async def _webhook_event_send(
 
     if not event.webhook_endpoint.enabled:
         bound_log.info("Webhook endpoint is disabled, skipping")
+        event.skipped = True
+        session.add(event)
         return
 
     if event.payload is None:
@@ -66,6 +68,10 @@ async def _webhook_event_send(
             webhook_endpoint_id=event.webhook_endpoint_id,
         )
         raise Retry()
+
+    if event.skipped:
+        event.skipped = False
+        session.add(event)
 
     ts = utc_now()
 

@@ -37,6 +37,9 @@ class WebhookEvent(RecordModel):
 
     last_http_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
     succeeded: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    skipped: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     type: Mapped[WebhookEventType] = mapped_column(
         StringEnum(WebhookEventType), nullable=False, index=True
     )

@@ -2,7 +2,6 @@ import uuid
 
 import pytest
 import pytest_asyncio
-from pydantic import HttpUrl
 
 from polar.auth.models import AuthSubject
 from polar.checkout_link.schemas import (
@@ -159,9 +158,7 @@ class TestCreate:
             CheckoutLinkCreateProducts(
                 payment_processor=PaymentProcessor.stripe,
                 products=[product_one_time.id],
-                success_url=HttpUrl(
-                    "https://example.com/success?checkout_id={CHECKOUT_ID}"
-                ),
+                success_url="https://example.com/success?checkout_id={CHECKOUT_ID}",
                 metadata={"key": "value"},
             ),
             auth_subject,
@@ -192,9 +189,7 @@ class TestCreate:
                 payment_processor=PaymentProcessor.stripe,
                 products=[product_one_time.id],
                 discount_id=discount_fixed_once.id,
-                success_url=HttpUrl(
-                    "https://example.com/success?checkout_id={CHECKOUT_ID}"
-                ),
+                success_url="https://example.com/success?checkout_id={CHECKOUT_ID}",
                 metadata={"key": "value"},
             ),
             auth_subject,

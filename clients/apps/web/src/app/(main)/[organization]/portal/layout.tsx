@@ -2,7 +2,7 @@ import { Toaster } from '@/components/Toast/Toaster'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset, ThemePreset } from '@polar-sh/ui/hooks/theming'
 import { twMerge } from 'tailwind-merge'
 import { Navigation } from './Navigation'
 
@@ -10,9 +10,11 @@ export const dynamic = 'force-dynamic'
 
 export default async function Layout(props: {
   params: Promise<{ organization: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
   children: React.ReactNode
 }) {
   const params = await props.params
+  const searchParams = await props.searchParams
 
   const { children } = props
 
@@ -22,7 +24,11 @@ export default async function Layout(props: {
     params.organization,
   )
 
-  const themePreset = getThemePreset(organization.slug)
+  // Get theme from query parameter, fallback to organization slug-based theme
+  const themeParam = searchParams.theme
+  const themePresetName: ThemePreset | (string & {}) =
+    typeof themeParam === 'string' ? themeParam : organization.slug
+  const themePreset = getThemePreset(themePresetName)
 
   return (
     <div

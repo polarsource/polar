@@ -94,7 +94,7 @@ export default function Index() {
   useEffect(() => {
     if (organization) {
       resetField('proration_behavior', {
-        defaultValue: organization.subscriptionSettings.prorationBehavior,
+        defaultValue: organization.subscription_settings.proration_behavior,
       })
     }
   }, [organization, resetField])

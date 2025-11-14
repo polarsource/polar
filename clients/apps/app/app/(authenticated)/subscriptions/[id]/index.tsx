@@ -149,7 +149,7 @@ export default function Index() {
                       dateStyle: 'medium',
                     })
                   : new Date(subscription.canceled_at ?? '').toLocaleDateString(
-                      'en-US',
+                      'en',
                       {
                         dateStyle: 'medium',
                       },
@@ -165,7 +165,7 @@ export default function Index() {
           <DetailRow
             label="Start Date"
             value={new Date(subscription.started_at ?? '').toLocaleDateString(
-              'en-US',
+              'en',
               {
                 dateStyle: 'medium',
               },
@@ -183,7 +183,7 @@ export default function Index() {
             <DetailRow
               label="End Date"
               value={new Date(subscription.ends_at ?? '').toLocaleDateString(
-                'en-US',
+                'en',
                 {
                   dateStyle: 'medium',
                 },

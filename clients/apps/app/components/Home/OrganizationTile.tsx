@@ -25,8 +25,8 @@ export const OrganizationTile = () => {
       >
         <Avatar
           name={organization.name}
-          image={organization.avatarUrl}
-          backgroundColor={organization.avatarUrl ? undefined : colors.primary}
+          image={organization.avatar_url}
+          backgroundColor={organization.avatar_url ? undefined : colors.primary}
         />
         <View style={{ flexDirection: 'column', gap: 4 }}>
           <ThemedText

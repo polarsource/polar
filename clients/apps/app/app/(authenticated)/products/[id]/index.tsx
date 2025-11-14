@@ -47,7 +47,7 @@ export default function Index() {
 
   const { data: metrics } = useMetrics(
     organization?.id,
-    organization?.createdAt ?? new Date(),
+    new Date(organization?.created_at ?? ''),
     now,
     {
       product_id: id as string,

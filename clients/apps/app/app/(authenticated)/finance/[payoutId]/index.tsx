@@ -1,24 +1,24 @@
-import { SafeAreaView, StyleSheet } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
-import { usePayout } from "@/hooks/polar/finance";
-import { DetailRow, Details } from "@/components/Shared/Details";
-import { formatCurrencyAndAmount } from "@/utils/money";
-import React from "react";
+import { DetailRow, Details } from '@/components/Shared/Details'
+import { usePayout } from '@/hooks/polar/finance'
+import { formatCurrencyAndAmount } from '@/utils/money'
+import { Stack, useLocalSearchParams } from 'expo-router'
+import React from 'react'
+import { SafeAreaView, StyleSheet } from 'react-native'
 
 export default function Index() {
-  const { payoutId } = useLocalSearchParams<{ payoutId: string }>();
+  const { payoutId } = useLocalSearchParams<{ payoutId: string }>()
 
-  const { data: payout } = usePayout(payoutId);
+  const { data: payout } = usePayout(payoutId)
 
   return (
     <>
-      <Stack.Screen options={{ title: "Payout" }} />
+      <Stack.Screen options={{ title: 'Payout' }} />
       <SafeAreaView
         style={{
           flex: 1,
-          flexDirection: "column",
+          flexDirection: 'column',
           gap: 16,
-          justifyContent: "space-between",
+          justifyContent: 'space-between',
           margin: 16,
         }}
       >
@@ -27,10 +27,10 @@ export default function Index() {
             label="Created"
             value={
               payout?.created_at
-                ? new Date(payout?.created_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
+                ? new Date(payout?.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
                   })
                 : undefined
             }
@@ -38,7 +38,7 @@ export default function Index() {
           />
           <DetailRow
             label="Status"
-            value={payout?.status.split("_").join(" ")}
+            value={payout?.status.split('_').join(' ')}
             valueStyle={PayoutStyles.valueStyle}
           />
           <DetailRow
@@ -50,26 +50,26 @@ export default function Index() {
             label="Gross"
             value={formatCurrencyAndAmount(
               payout?.gross_amount ?? 0,
-              payout?.currency
+              payout?.currency,
             )}
           />
           <DetailRow
             label="Fees"
             value={formatCurrencyAndAmount(
               payout?.fees_amount ?? 0,
-              payout?.currency
+              payout?.currency,
             )}
           />
         </Details>
       </SafeAreaView>
     </>
-  );
+  )
 }
 
 const PayoutStyles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: "column",
+    flexDirection: 'column',
     padding: 16,
     gap: 16,
   },
@@ -77,6 +77,6 @@ const PayoutStyles = StyleSheet.create({
     fontSize: 24,
   },
   valueStyle: {
-    textTransform: "capitalize",
+    textTransform: 'capitalize',
   },
-});
+})

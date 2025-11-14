@@ -34,8 +34,14 @@ export const FinanceTile = () => {
           <ThemedText style={[styles.subtitle]} secondary>
             Account Balance
           </ThemedText>
-          <ThemedText style={[styles.title]}>
-            {formatCurrencyAndAmount(summary?.balance.amount ?? 0, 'USD')}
+          <ThemedText style={[styles.title]} numberOfLines={1}>
+            {formatCurrencyAndAmount(
+              summary?.balance.amount ?? 0,
+              'USD',
+              0,
+              undefined,
+              0,
+            )}
           </ThemedText>
         </View>
         <View style={{ flexDirection: 'column', gap: 4 }}>
@@ -55,7 +61,7 @@ export const FinanceTile = () => {
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 18,
+    fontSize: 22,
   },
   subtitle: {
     fontSize: 16,

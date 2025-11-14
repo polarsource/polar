@@ -29,4 +29,7 @@ NAVIGATION = [
     navigation.NavigationItem(
         "Pledges", "pledges:list", active_route_name_prefix="pledges:"
     ),
+    navigation.NavigationItem(
+        "Webhooks", "webhooks:list", active_route_name_prefix="webhooks:"
+    ),
 ]

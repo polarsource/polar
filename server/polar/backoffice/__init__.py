@@ -21,6 +21,7 @@ from .subscriptions.endpoints import router as subscriptions_router
 from .tasks.endpoints import router as tasks_router
 from .users.endpoints import router as users_router
 from .versioned_static import VersionedStaticFiles
+from .webhooks.endpoints import router as webhooks_router
 
 app = FastAPI(
     default_response_class=TagResponse,
@@ -51,6 +52,7 @@ app.include_router(pledges_router, prefix="/pledges")
 app.include_router(subscriptions_router, prefix="/subscriptions")
 app.include_router(orders_router, prefix="/orders")
 app.include_router(impersonation_router, prefix="/impersonation")
+app.include_router(webhooks_router, prefix="/webhooks")
 
 
 @app.get("/", name="index")

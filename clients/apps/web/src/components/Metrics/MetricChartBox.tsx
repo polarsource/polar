@@ -7,6 +7,7 @@ import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import {
   Select,
   SelectContent,
@@ -179,17 +180,11 @@ const MetricChartBox = ({
                 ) : (
                   <span className="dark:text-polar-500 text-gray-500">
                     {startDate && endDate && (
-                      <>
-                        <FormattedDateTime
-                          datetime={startDate}
-                          dateStyle="medium"
-                        />{' '}
-                        —{' '}
-                        <FormattedDateTime
-                          datetime={endDate}
-                          dateStyle="medium"
-                        />
-                      </>
+                      <FormattedInterval
+                        startDatetime={startDate}
+                        endDatetime={endDate}
+                        hideCurrentYear={false}
+                      />
                     )}
                   </span>
                 )}
@@ -205,17 +200,11 @@ const MetricChartBox = ({
                   ) : (
                     <span className="dark:text-polar-500 text-gray-500">
                       {previousStartDate && previousEndDate && (
-                        <>
-                          <FormattedDateTime
-                            datetime={previousStartDate}
-                            dateStyle="medium"
-                          />{' '}
-                          —{' '}
-                          <FormattedDateTime
-                            datetime={previousEndDate}
-                            dateStyle="medium"
-                          />
-                        </>
+                        <FormattedInterval
+                          startDatetime={previousStartDate}
+                          endDatetime={previousEndDate}
+                          hideCurrentYear={false}
+                        />
                       )}
                     </span>
                   )}
@@ -278,7 +267,7 @@ const MetricChartBox = ({
             interval={interval}
             metric={selectedMetric}
             onDataIndexHover={(period) => {
-              setHoveredPeriodIndex(period as number)
+              setHoveredPeriodIndex(period)
             }}
             simple={simple}
             chartType={chartType}

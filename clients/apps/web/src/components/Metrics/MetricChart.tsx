@@ -17,6 +17,7 @@ import {
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
 import { useCallback, useMemo } from 'react'
+import type { ExternalMouseEvents } from 'recharts/types/chart/types'
 import { twMerge } from 'tailwind-merge'
 
 interface MetricChartProps {
@@ -28,7 +29,7 @@ interface MetricChartProps {
   height?: number
   width?: number
   grid?: boolean
-  onDataIndexHover?: (index: number | undefined) => void
+  onDataIndexHover?: (index: number | null) => void
   simple?: boolean
   showYAxis?: boolean
   chartType?: 'line' | 'bar'
@@ -158,17 +159,27 @@ const MetricChart = ({
         right: 24,
         top: 24,
       },
-      onMouseMove: (state: any) => {
+      onMouseMove: ((state) => {
         if (onDataIndexHover) {
           const index = state.activeTooltipIndex
-          onDataIndexHover(typeof index === 'number' ? index : undefined)
+
+          // We accidentally get stringified numbers here, for some reason
+          // Instead of investigating, let's just parse to numbers
+          const parsedIndex =
+            typeof index === 'number'
+              ? index
+              : typeof index === 'string'
+                ? parseInt(index, 10)
+                : null
+
+          onDataIndexHover(Number.isNaN(parsedIndex) ? null : parsedIndex)
         }
-      },
-      onMouseLeave: () => {
+      }) satisfies ExternalMouseEvents['onMouseMove'],
+      onMouseLeave: (() => {
         if (onDataIndexHover) {
-          onDataIndexHover(undefined)
+          onDataIndexHover(null)
         }
-      },
+      }) satisfies ExternalMouseEvents['onMouseLeave'],
     }
 
     const grid = simple ? undefined : (

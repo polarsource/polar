@@ -1,143 +1,138 @@
-import { useTheme } from "@/hooks/theme";
-import {
-  Text,
-  View,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Button } from '@/components/Shared/Button'
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import {
   useSubscription,
   useUpdateSubscription,
-} from "@/hooks/polar/subscriptions";
-import { useCallback } from "react";
-import React from "react";
-import { SubscriptionCancel } from "@polar-sh/sdk/models/components/subscriptioncancel.js";
-import { Button } from "@/components/Shared/Button";
-import { useForm } from "react-hook-form";
-import { SubscriptionRevoke } from "@polar-sh/sdk/models/components/subscriptionrevoke.js";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { SubscriptionRow } from "@/components/Subscriptions/SubscriptionRow";
-import { useQueryClient } from "@tanstack/react-query";
-import { Subscription } from "@polar-sh/sdk/models/components/subscription.js";
-import { ThemedText } from "@/components/Shared/ThemedText";
+} from '@/hooks/polar/subscriptions'
+import { useTheme } from '@/hooks/theme'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import { schemas } from '@polar-sh/client'
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import React, { useCallback } from 'react'
+import { useForm } from 'react-hook-form'
+import {
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 
 const CANCELLATION_REASONS = {
-  unused: "Unused",
-  too_expensive: "Too Expensive",
-  missing_features: "Missing Features",
-  switched_service: "Switched Service",
-  customer_service: "Customer Service",
-  low_quality: "Low Quality",
-  too_complex: "Too Complicated",
-  other: "Other",
-} as const;
+  unused: 'Unused',
+  too_expensive: 'Too Expensive',
+  missing_features: 'Missing Features',
+  switched_service: 'Switched Service',
+  customer_service: 'Customer Service',
+  low_quality: 'Low Quality',
+  too_complex: 'Too Complicated',
+  other: 'Other',
+} as const
 
 const getHumanCancellationReason = (key: keyof typeof CANCELLATION_REASONS) => {
   if (key && key in CANCELLATION_REASONS) {
-    return CANCELLATION_REASONS[key];
+    return CANCELLATION_REASONS[key]
   }
-  return null;
-};
+  return null
+}
 
-type CancellationAction = "revoke" | "cancel_at_period_end";
+type CancellationAction = 'revoke' | 'cancel_at_period_end'
 
-type SubscriptionCancelForm = SubscriptionCancel & {
-  cancellation_action: CancellationAction;
-};
+type SubscriptionCancelForm = schemas['SubscriptionCancel'] & {
+  cancellation_action: CancellationAction
+}
 
 export default function Index() {
-  const { id } = useLocalSearchParams();
-  const { colors } = useTheme();
-  const router = useRouter();
+  const { id } = useLocalSearchParams()
+  const { colors } = useTheme()
+  const router = useRouter()
 
   const {
     data: subscription,
     refetch,
     isRefetching,
-  } = useSubscription(id as string);
+  } = useSubscription(id as string)
 
-  const cancelSubscription = useUpdateSubscription(id as string);
+  const cancelSubscription = useUpdateSubscription(id as string)
   const form = useForm<SubscriptionCancelForm>({
     defaultValues: {
-      cancellation_action: "cancel_at_period_end",
-      customerCancellationReason: undefined,
+      cancellation_action: 'cancel_at_period_end',
+      customer_cancellation_reason: undefined,
     },
-  });
+  })
 
-  const { handleSubmit, setValue, watch } = form;
+  const { handleSubmit, setValue, watch } = form
 
-  const cancellationAction = watch("cancellation_action");
-  const cancellationReason = watch("customerCancellationReason");
+  const cancellationAction = watch('cancellation_action')
+  const cancellationReason = watch('customer_cancellation_reason')
 
   const onSubmit = useCallback(
     async (cancellation: SubscriptionCancelForm) => {
       const base = {
-        customerCancellationReason: cancellation.customerCancellationReason,
-      };
-      let body: SubscriptionRevoke | SubscriptionCancel;
-      if (cancellation.cancellation_action === "revoke") {
+        customer_cancellation_reason: cancellation.customer_cancellation_reason,
+      }
+      let body: schemas['SubscriptionRevoke'] | schemas['SubscriptionCancel']
+      if (cancellation.cancellation_action === 'revoke') {
         body = {
           ...base,
           revoke: true,
-        };
+        }
       } else {
         body = {
           ...base,
-          cancelAtPeriodEnd: true,
-        };
+          cancel_at_period_end: true,
+        }
       }
 
       await cancelSubscription.mutateAsync(body).then(({ error }) => {
         if (error) {
           if (error.detail) {
             Alert.alert(
-              "Customer Update Failed",
-              `Error cancelling subscription ${subscription?.product.name}: ${error.detail}`
-            );
+              'Customer Update Failed',
+              `Error cancelling subscription ${subscription?.product.name}: ${error.detail}`,
+            )
           }
-          return;
+          return
         }
 
-        router.back();
-      });
+        router.back()
+      })
     },
-    [subscription, cancelSubscription]
-  );
+    [subscription, cancelSubscription],
+  )
 
   const reasons = Object.keys(CANCELLATION_REASONS) as Array<
     keyof typeof CANCELLATION_REASONS
-  >;
+  >
 
-  let periodEndOutput: string | undefined = undefined;
+  let periodEndOutput: string | undefined = undefined
 
-  if (subscription?.currentPeriodEnd) {
+  if (subscription?.current_period_end) {
     periodEndOutput = new Date(
-      subscription.currentPeriodEnd
-    ).toLocaleDateString("en-US", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+      subscription.current_period_end,
+    ).toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
   }
 
   if (!subscription) {
     return (
       <Stack.Screen
         options={{
-          title: "Cancel Subscription",
+          title: 'Cancel Subscription',
         }}
       />
-    );
+    )
   }
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ flexDirection: "column", gap: 16 }}
+      contentContainerStyle={{ flexDirection: 'column', gap: 16 }}
       refreshControl={
         <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
       }
@@ -145,7 +140,7 @@ export default function Index() {
     >
       <Stack.Screen
         options={{
-          title: "Cancel Subscription",
+          title: 'Cancel Subscription',
         }}
       />
       <View style={{ gap: 24 }}>
@@ -158,36 +153,36 @@ export default function Index() {
         />
         <View
           style={{
-            flexDirection: "row",
+            flexDirection: 'row',
             gap: 8,
             backgroundColor: colors.card,
             padding: 4,
             borderRadius: 12,
           }}
         >
-          {["Immediately", "End of Period"].map((option, index) => (
+          {['Immediately', 'End of Period'].map((option, index) => (
             <TouchableOpacity
               key={option}
               activeOpacity={0.6}
               style={[
                 {
-                  justifyContent: "center",
-                  alignItems: "center",
+                  justifyContent: 'center',
+                  alignItems: 'center',
                   paddingVertical: 10,
                   paddingHorizontal: 8,
                   borderRadius: 8,
                   flex: 1,
                 },
                 cancellationAction ===
-                  (index === 0 ? "revoke" : "cancel_at_period_end") && {
+                  (index === 0 ? 'revoke' : 'cancel_at_period_end') && {
                   backgroundColor: colors.background,
                 },
               ]}
               onPress={() => {
                 setValue(
-                  "cancellation_action",
-                  index === 0 ? "revoke" : "cancel_at_period_end"
-                );
+                  'cancellation_action',
+                  index === 0 ? 'revoke' : 'cancel_at_period_end',
+                )
               }}
             >
               <ThemedText>{option}</ThemedText>
@@ -204,9 +199,9 @@ export default function Index() {
               <TouchableOpacity
                 key={reason}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                   gap: 8,
                   backgroundColor: colors.card,
                   height: 48,
@@ -214,7 +209,7 @@ export default function Index() {
                   borderRadius: 8,
                 }}
                 onPress={() => {
-                  setValue("customerCancellationReason", reason);
+                  setValue('customer_cancellation_reason', reason)
                 }}
               >
                 <ThemedText>{getHumanCancellationReason(reason)}</ThemedText>
@@ -236,7 +231,7 @@ export default function Index() {
         Cancel Subscription
       </Button>
     </ScrollView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -244,4 +239,4 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-});
+})

@@ -6,9 +6,7 @@ import { useCreateOrganization } from '@/hooks/polar/organizations'
 import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { themes } from '@/utils/theme'
-import { OrganizationCreate } from '@polar-sh/sdk/models/components/organizationcreate.js'
-import { SDKError } from '@polar-sh/sdk/models/errors/sdkerror.js'
-import { SDKValidationError } from '@polar-sh/sdk/models/errors/sdkvalidationerror.js'
+import { schemas } from '@polar-sh/client'
 import { Stack, useRouter } from 'expo-router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -27,7 +25,7 @@ export default function Onboarding() {
   const router = useRouter()
   const { organizations, setOrganization } = useContext(OrganizationContext)
 
-  const form = useForm<OrganizationCreate & { terms: boolean }>({
+  const form = useForm<schemas['OrganizationCreate'] & { terms: boolean }>({
     defaultValues: {
       name: '',
       slug: '',
@@ -68,14 +66,10 @@ export default function Onboarding() {
   }, [name, editedSlug, slug, setValue])
 
   const onSubmit = useCallback(
-    async (data: OrganizationCreate) => {
+    async (data: schemas['OrganizationCreate']) => {
       const organization = await createOrganization.mutateAsync(data, {
         onError: (error) => {
-          if (error instanceof SDKError) {
-            setError('root', { message: error.message })
-          } else if (error instanceof SDKValidationError) {
-            setError('root', { message: error.message })
-          } else {
+          if (error) {
             setError('root', { message: error.message })
           }
         },
@@ -99,12 +93,7 @@ export default function Onboarding() {
         }}
       />
       <SafeAreaView style={styles.container}>
-        <View
-          style={styles.form}
-          from={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ type: 'timing', duration: 500 }}
-        >
+        <View style={styles.form}>
           <ThemedText style={styles.title}>Create your organization</ThemedText>
           {errors.root && <ThemedText error>{errors.root.message}</ThemedText>}
           <FormInput
@@ -125,11 +114,7 @@ export default function Onboarding() {
             checked={watch('terms')}
             onChange={(checked) => setValue('terms', checked)}
           />
-          <View
-            from={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ type: 'timing', duration: 500 }}
-          >
+          <View>
             <View style={{ marginLeft: 4, gap: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                 <View>
@@ -189,21 +174,13 @@ export default function Onboarding() {
         </View>
 
         <View style={{ gap: 8 }}>
-          <View
-            from={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ type: 'timing', delay: 250, duration: 500 }}
-          >
+          <View>
             <Button onPress={handleSubmit(onSubmit)} disabled={!isValid}>
               Create Organization
             </Button>
           </View>
           {organizations.length > 0 && (
-            <View
-              from={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ type: 'timing', delay: 250, duration: 500 }}
-            >
+            <View>
               <Button onPress={() => router.replace('/')} variant="secondary">
                 Back to Dashboard
               </Button>

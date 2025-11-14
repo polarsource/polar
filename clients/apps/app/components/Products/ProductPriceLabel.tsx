@@ -1,41 +1,39 @@
-import { useTheme } from "@/hooks/theme";
-import { isLegacyRecurringPrice } from "@/utils/price";
-import { CheckoutProduct } from "@polar-sh/sdk/models/components/checkoutproduct.js";
-import { Product } from "@polar-sh/sdk/models/components/product.js";
-import AmountLabel from "./AmountLabel";
-import { Text } from "react-native";
-import { ThemedText } from "../Shared/ThemedText";
+import { useTheme } from '@/hooks/theme'
+import { isLegacyRecurringPrice } from '@/utils/price'
+import { schemas } from '@polar-sh/client'
+import { ThemedText } from '../Shared/ThemedText'
+import AmountLabel from './AmountLabel'
 
 interface ProductPriceLabelProps {
-  product: Product | CheckoutProduct;
+  product: schemas['Product'] | schemas['CheckoutProduct']
 }
 
 export const ProductPriceLabel = ({ product }: ProductPriceLabelProps) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
-  const staticPrice = product.prices.find(({ amountType }) =>
-    ["fixed", "custom", "free"].includes(amountType)
-  );
+  const staticPrice = product.prices.find(({ amount_type }) =>
+    ['fixed', 'custom', 'free'].includes(amount_type),
+  )
 
   if (!staticPrice) {
-    return null;
+    return null
   }
 
-  if (staticPrice.amountType === "fixed") {
+  if (staticPrice.amount_type === 'fixed') {
     return (
       <AmountLabel
-        amount={staticPrice.priceAmount}
-        currency={staticPrice.priceCurrency}
+        amount={staticPrice.price_amount}
+        currency={staticPrice.price_currency}
         interval={
           isLegacyRecurringPrice(staticPrice)
-            ? staticPrice.recurringInterval
-            : product.recurringInterval || undefined
+            ? staticPrice.recurring_interval
+            : product.recurring_interval || undefined
         }
       />
-    );
-  } else if (staticPrice.amountType === "custom") {
-    return <ThemedText>Pay what you want</ThemedText>;
+    )
+  } else if (staticPrice.amount_type === 'custom') {
+    return <ThemedText>Pay what you want</ThemedText>
   } else {
-    return <ThemedText>Free</ThemedText>;
+    return <ThemedText>Free</ThemedText>
   }
-};
+}

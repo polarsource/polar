@@ -69,15 +69,15 @@ export default function Index() {
   })
 
   const flatOrders = useMemo(() => {
-    return orders?.pages.flatMap((page) => page.result.items) ?? []
+    return orders?.pages.flatMap((page) => page.items) ?? []
   }, [orders])
 
   const flatSubscriptions = useMemo(() => {
-    return subscriptions?.pages.flatMap((page) => page.result.items) ?? []
+    return subscriptions?.pages.flatMap((page) => page.items) ?? []
   }, [subscriptions])
 
   const flatCustomers = useMemo(() => {
-    return customers?.pages.flatMap((page) => page.result.items) ?? []
+    return customers?.pages.flatMap((page) => page.items) ?? []
   }, [customers])
 
   const isRefetching = useMemo(() => {

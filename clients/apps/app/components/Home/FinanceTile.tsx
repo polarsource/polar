@@ -1,47 +1,47 @@
-import { View, StyleSheet } from "react-native";
-import { Tile } from "./Tile";
-import { useContext } from "react";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import { ThemedText } from "../Shared/ThemedText";
-import { MiniButton } from "../Shared/MiniButton";
 import {
   useOrganizationAccount,
   useTransactionsSummary,
-} from "@/hooks/polar/finance";
-import { formatCurrencyAndAmount } from "@/utils/money";
-import { Link } from "expo-router";
+} from '@/hooks/polar/finance'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { formatCurrencyAndAmount } from '@/utils/money'
+import { Link } from 'expo-router'
+import { useContext } from 'react'
+import { StyleSheet, View } from 'react-native'
+import { MiniButton } from '../Shared/MiniButton'
+import { ThemedText } from '../Shared/ThemedText'
+import { Tile } from './Tile'
 
 export const FinanceTile = () => {
-  const { organization } = useContext(OrganizationContext);
-  const { data: account } = useOrganizationAccount(organization?.id);
-  const { data: summary } = useTransactionsSummary(account?.id);
+  const { organization } = useContext(OrganizationContext)
+  const { data: account } = useOrganizationAccount(organization?.id)
+  const { data: summary } = useTransactionsSummary(account?.id)
 
   const canWithdraw =
-    account?.status === "active" &&
+    account?.status === 'active' &&
     summary?.balance?.amount &&
-    summary.balance.amount >= 1000;
+    summary.balance.amount >= 1000
 
   return (
     <Tile href="/finance">
       <View
         style={{
           flex: 1,
-          flexDirection: "column",
-          justifyContent: "space-between",
+          flexDirection: 'column',
+          justifyContent: 'space-between',
         }}
       >
-        <View style={{ flexDirection: "column", gap: 4 }}>
+        <View style={{ flexDirection: 'column', gap: 4 }}>
           <ThemedText style={[styles.subtitle]} secondary>
             Account Balance
           </ThemedText>
           <ThemedText style={[styles.title]}>
-            {formatCurrencyAndAmount(summary?.balance.amount ?? 0, "USD")}
+            {formatCurrencyAndAmount(summary?.balance.amount ?? 0, 'USD')}
           </ThemedText>
         </View>
-        <View style={{ flexDirection: "column", gap: 4 }}>
+        <View style={{ flexDirection: 'column', gap: 4 }}>
           <Link href="/finance/withdraw" asChild>
             <MiniButton
-              style={{ alignSelf: "flex-start" }}
+              style={{ alignSelf: 'flex-start' }}
               disabled={!canWithdraw}
             >
               Withdraw
@@ -50,8 +50,8 @@ export const FinanceTile = () => {
         </View>
       </View>
     </Tile>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   title: {
@@ -63,4 +63,4 @@ const styles = StyleSheet.create({
   revenueValue: {
     fontSize: 26,
   },
-});
+})

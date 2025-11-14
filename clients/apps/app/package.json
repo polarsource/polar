@@ -23,7 +23,7 @@
     "@expo/metro-runtime": "~6.1.2",
     "@expo/ui": "0.2.0-beta.7",
     "@expo/vector-icons": "^15.0.3",
-    "@polar-sh/sdk": "^0.41.1",
+    "@polar-sh/client": "workspace:*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/cli": "latest",
     "@react-native-community/netinfo": "^11.4.1",

@@ -1,135 +1,122 @@
-import { useTheme } from "@/hooks/theme";
-import {
-  Text,
-  View,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { ProductPriceLabel } from '@/components/Products/ProductPriceLabel'
+import { Button } from '@/components/Shared/Button'
+import { EmptyState } from '@/components/Shared/EmptyState'
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
+import { useProducts } from '@/hooks/polar/products'
 import {
   useSubscription,
   useUpdateSubscription,
-} from "@/hooks/polar/subscriptions";
-import { useCallback, useContext, useEffect, useMemo } from "react";
-import React from "react";
-import { SubscriptionCancel } from "@polar-sh/sdk/models/components/subscriptioncancel.js";
-import { Button } from "@/components/Shared/Button";
+} from '@/hooks/polar/subscriptions'
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { hasLegacyRecurringPrices } from '@/utils/price'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import { schemas } from '@polar-sh/client'
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import React, { useCallback, useContext, useEffect, useMemo } from 'react'
+import { useForm, UseFormReturn } from 'react-hook-form'
 import {
-  useForm,
-  useFormContext,
-  UseFormReturn,
-  useFormState,
-} from "react-hook-form";
-import { SubscriptionRevoke } from "@polar-sh/sdk/models/components/subscriptionrevoke.js";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { SubscriptionRow } from "@/components/Subscriptions/SubscriptionRow";
-import { useQueryClient } from "@tanstack/react-query";
-import { Subscription } from "@polar-sh/sdk/models/components/subscription.js";
-import { useOrganization } from "@/hooks/polar/organizations";
-import { SubscriptionUpdateProduct } from "@polar-sh/sdk/models/components/subscriptionupdateproduct.js";
-import { hasLegacyRecurringPrices } from "@/utils/price";
-import { useProducts } from "@/hooks/polar/products";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import { SubscriptionProrationBehavior } from "@polar-sh/sdk/models/components/subscriptionprorationbehavior.js";
-import { ProductPriceLabel } from "@/components/Products/ProductPriceLabel";
-import { EmptyState } from "@/components/Shared/EmptyState";
-import { ThemedText } from "@/components/Shared/ThemedText";
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 
 export default function Index() {
-  const { organization } = useContext(OrganizationContext);
-  const { id } = useLocalSearchParams();
-  const { colors } = useTheme();
-  const router = useRouter();
+  const { organization } = useContext(OrganizationContext)
+  const { id } = useLocalSearchParams()
+  const { colors } = useTheme()
+  const router = useRouter()
 
   const {
     data: subscription,
     refetch,
     isRefetching,
-  } = useSubscription(id as string);
+  } = useSubscription(id as string)
 
-  const updateSubscription = useUpdateSubscription(id as string);
+  const updateSubscription = useUpdateSubscription(id as string)
 
-  const form = useForm<SubscriptionUpdateProduct>({
+  const form = useForm<schemas['SubscriptionUpdateProduct']>({
     defaultValues: {
-      prorationBehavior: "prorate",
+      proration_behavior: 'prorate',
     },
-  });
+  })
 
-  const { handleSubmit, watch, resetField, setValue } = form;
+  const { handleSubmit, watch, resetField, setValue } = form
 
-  const { data: allProducts } = useProducts(organization?.id ?? "", {
+  const { data: allProducts } = useProducts(organization?.id ?? '', {
     isRecurring: true,
     limit: 100,
-    sorting: ["price_amount"],
+    sorting: ['price_amount'],
     isArchived: false,
-  });
+  })
 
   const products = useMemo(
     () =>
       allProducts
-        ? allProducts.result.items.filter(
-            (product) => !hasLegacyRecurringPrices(product)
+        ? allProducts.items.filter(
+            (product) => !hasLegacyRecurringPrices(product),
           )
         : [],
-    [allProducts]
-  );
+    [allProducts],
+  )
 
-  const selectedProductId = watch("productId");
+  const selectedProductId = watch('product_id')
   const selectedProduct = useMemo(
     () => products.find((product) => product.id === selectedProductId),
-    [products, selectedProductId]
-  );
+    [products, selectedProductId],
+  )
 
   const onSubmit = useCallback(
-    async (body: SubscriptionUpdateProduct) => {
+    async (body: schemas['SubscriptionUpdateProduct']) => {
       await updateSubscription.mutateAsync(body).then(({ error }) => {
-        console.log({ error });
+        console.log({ error })
         if (error) {
           Alert.alert(
-            "Subscription update failed",
+            'Subscription update failed',
             `Error while updating subscription ${
               subscription?.product.name
-            }: ${JSON.stringify({ error })}`
-          );
-          return;
+            }: ${JSON.stringify({ error })}`,
+          )
+          return
         }
 
-        router.back();
-      });
+        router.back()
+      })
     },
-    [updateSubscription, subscription]
-  );
+    [updateSubscription, subscription],
+  )
 
   // Set default proration behavior from organization settings
   useEffect(() => {
     if (organization) {
-      resetField("prorationBehavior", {
+      resetField('proration_behavior', {
         defaultValue: organization.subscriptionSettings.prorationBehavior,
-      });
+      })
     }
-  }, [organization, resetField]);
+  }, [organization, resetField])
 
   const productCandidates = useMemo(() => {
-    return products.filter((product) => product.id !== subscription?.productId);
-  }, [products, subscription]);
+    return products.filter((product) => product.id !== subscription?.product_id)
+  }, [products, subscription])
 
   if (!subscription) {
     return (
       <Stack.Screen
         options={{
-          title: "Update Subscription",
+          title: 'Update Subscription',
         }}
       />
-    );
+    )
   }
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ flexDirection: "column", gap: 16 }}
+      contentContainerStyle={{ flexDirection: 'column', gap: 16 }}
       refreshControl={
         <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
       }
@@ -137,7 +124,7 @@ export default function Index() {
     >
       <Stack.Screen
         options={{
-          title: "Update Subscription",
+          title: 'Update Subscription',
         }}
       />
       <View style={{ gap: 24 }}>
@@ -157,9 +144,9 @@ export default function Index() {
               <TouchableOpacity
                 key={product.id}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                   gap: 8,
                   backgroundColor: colors.card,
                   height: 48,
@@ -167,14 +154,14 @@ export default function Index() {
                   borderRadius: 8,
                 }}
                 onPress={() => {
-                  setValue("productId", product.id, { shouldDirty: true });
+                  setValue('product_id', product.id, { shouldDirty: true })
                 }}
               >
                 <ThemedText>{product.name}</ThemedText>
                 <View
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
+                    flexDirection: 'row',
+                    alignItems: 'center',
                     gap: 12,
                   }}
                 >
@@ -220,7 +207,7 @@ export default function Index() {
         Update Subscription
       </Button>
     </ScrollView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -228,29 +215,31 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-});
+})
 
-const PRORATION_BEHAVIOR_LABELS: Record<SubscriptionProrationBehavior, string> =
-  {
-    invoice: "Invoice Immediately",
-    prorate: "Prorate next Invoice",
-  };
+const PRORATION_BEHAVIOR_LABELS: Record<
+  schemas['SubscriptionProrationBehavior'],
+  string
+> = {
+  invoice: 'Invoice Immediately',
+  prorate: 'Prorate next Invoice',
+}
 
 const ProrationBehaviorSelector = ({
   form,
 }: {
-  form: UseFormReturn<SubscriptionUpdateProduct>;
+  form: UseFormReturn<schemas['SubscriptionUpdateProduct']>
 }) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
-  const { watch, setValue } = form;
+  const { watch, setValue } = form
 
-  const prorationBehavior = watch("prorationBehavior");
+  const prorationBehavior = watch('proration_behavior')
 
   return (
     <View
       style={{
-        flexDirection: "row",
+        flexDirection: 'row',
         gap: 8,
         backgroundColor: colors.card,
         padding: 4,
@@ -263,8 +252,8 @@ const ProrationBehaviorSelector = ({
           activeOpacity={0.6}
           style={[
             {
-              justifyContent: "center",
-              alignItems: "center",
+              justifyContent: 'center',
+              alignItems: 'center',
               paddingVertical: 10,
               paddingHorizontal: 8,
               borderRadius: 8,
@@ -276,23 +265,23 @@ const ProrationBehaviorSelector = ({
           ]}
           onPress={() => {
             setValue(
-              "prorationBehavior",
-              key as SubscriptionProrationBehavior,
+              'proration_behavior',
+              key as schemas['SubscriptionProrationBehavior'],
               {
                 shouldDirty: true,
-              }
-            );
+              },
+            )
           }}
         >
           <ThemedText
             numberOfLines={1}
             ellipsizeMode="tail"
-            style={{ width: "100%", textAlign: "center" }}
+            style={{ width: '100%', textAlign: 'center' }}
           >
             {label}
           </ThemedText>
         </TouchableOpacity>
       ))}
     </View>
-  );
-};
+  )
+}

@@ -1,7 +1,6 @@
-export { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { SDKError } from "@polar-sh/sdk/models/errors/sdkerror.js";
-import { SDKValidationError } from "@polar-sh/sdk/models/errors/sdkvalidationerror.js";
-import { QueryClient } from "@tanstack/react-query";
+export { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ClientResponseError, isValidationError } from '@polar-sh/client'
+import { QueryClient } from '@tanstack/react-query'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,23 +14,23 @@ export const queryClient = new QueryClient({
       throwOnError: true,
       retry: (failureCount, error) => {
         if (
-          error instanceof SDKError &&
-          error.statusCode > 400 &&
-          error.statusCode < 500
+          error instanceof ClientResponseError &&
+          error.response.status > 400 &&
+          error.response.status < 500
         ) {
-          return false;
+          return false
         }
 
-        if (error instanceof SDKValidationError) {
-          return false;
+        if (isValidationError(error)) {
+          return false
         }
 
         if (failureCount >= 3) {
-          return false;
+          return false
         }
 
-        return true;
+        return true
       },
     },
   },
-});
+})

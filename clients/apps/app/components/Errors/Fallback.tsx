@@ -1,67 +1,65 @@
-import React, { useMemo } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import React, { useMemo } from 'react'
+import { TouchableOpacity, View } from 'react-native'
 
-import { SDKError } from "@polar-sh/sdk/models/errors/sdkerror.js";
-import PolarLogo from "@/components/Shared/PolarLogo";
-import { useLogout } from "@/hooks/auth";
-import { useTheme } from "@/hooks/theme";
-import { useOAuth } from "@/hooks/oauth";
-import { ThemedText } from "../Shared/ThemedText";
-import { SDKValidationError } from "@polar-sh/sdk/models/errors/sdkvalidationerror.js";
-
+import PolarLogo from '@/components/Shared/PolarLogo'
+import { useLogout } from '@/hooks/auth'
+import { useOAuth } from '@/hooks/oauth'
+import { useTheme } from '@/hooks/theme'
+import { isValidationError, UnauthorizedResponseError } from '@polar-sh/client'
+import { ThemedText } from '../Shared/ThemedText'
 export interface ErrorFallbackProps {
-  error: Error;
-  resetErrorBoundary: () => void;
+  error: Error
+  resetErrorBoundary: () => void
 }
 
 export const ErrorFallback = ({
   error,
   resetErrorBoundary,
 }: ErrorFallbackProps) => {
-  const { colors } = useTheme();
-  const logout = useLogout();
-  const { authenticate } = useOAuth();
+  const { colors } = useTheme()
+  const logout = useLogout()
+  const { authenticate } = useOAuth()
   const permissionError =
-    (error instanceof SDKError && error.statusCode === 403) ||
-    (error instanceof SDKValidationError &&
-      error.message.includes("insufficient_scope")) ||
-    (error instanceof Error && error.message.includes("privileges"));
+    error instanceof UnauthorizedResponseError ||
+    (isValidationError(error) &&
+      error.message.includes('insufficient_scope')) ||
+    (error instanceof Error && error.message.includes('privileges'))
 
-  console.log(error);
+  console.log(error)
 
   const title = useMemo(() => {
     switch (true) {
       case permissionError:
-        return "Insufficient Permissions";
+        return 'Insufficient Permissions'
       default:
-        return "Something Went Wrong";
+        return 'Something Went Wrong'
     }
-  }, [permissionError]);
+  }, [permissionError])
 
   const message = useMemo(() => {
     switch (true) {
       case permissionError:
-        return "You have insufficient permissions to access the resource. Authenticate to gain the necessary permissions.";
+        return 'You have insufficient permissions to access the resource. Authenticate to gain the necessary permissions.'
       default:
-        return "Logout & re-authenticate to try again";
+        return 'Logout & re-authenticate to try again'
     }
-  }, [permissionError]);
+  }, [permissionError])
 
   const [actionText, action] = useMemo(() => {
     switch (true) {
       case permissionError:
-        return ["Authenticate", authenticate];
+        return ['Authenticate', authenticate]
       default:
-        return ["Logout", logout];
+        return ['Logout', logout]
     }
-  }, [permissionError, logout, authenticate]);
+  }, [permissionError, logout, authenticate])
 
   return (
     <View
       style={{
         flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
+        justifyContent: 'center',
+        alignItems: 'center',
         backgroundColor: colors.background,
         gap: 32,
         paddingHorizontal: 24,
@@ -72,7 +70,7 @@ export const ErrorFallback = ({
         <ThemedText
           style={{
             fontSize: 24,
-            textAlign: "center",
+            textAlign: 'center',
           }}
         >
           {title}
@@ -81,7 +79,7 @@ export const ErrorFallback = ({
           style={{
             fontSize: 16,
             lineHeight: 24,
-            textAlign: "center",
+            textAlign: 'center',
           }}
           secondary
         >
@@ -92,22 +90,22 @@ export const ErrorFallback = ({
         activeOpacity={0.6}
         style={[
           {
-            backgroundColor: "#fff",
+            backgroundColor: '#fff',
             borderRadius: 100,
-            width: "auto",
+            width: 'auto',
             paddingVertical: 12,
             paddingHorizontal: 24,
           },
         ]}
         onPress={async () => {
-          await action();
-          resetErrorBoundary();
+          await action()
+          resetErrorBoundary()
         }}
       >
-        <ThemedText style={{ color: "#000", fontSize: 16, fontWeight: "500" }}>
+        <ThemedText style={{ color: '#000', fontSize: 16, fontWeight: '500' }}>
           {actionText}
         </ThemedText>
       </TouchableOpacity>
     </View>
-  );
-};
+  )
+}

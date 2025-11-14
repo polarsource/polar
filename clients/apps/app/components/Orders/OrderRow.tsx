@@ -1,31 +1,30 @@
-import { useProduct } from "@/hooks/polar/products";
-import { useTheme } from "@/hooks/theme";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Order } from "@polar-sh/sdk/models/components/order.js";
-import { Link } from "expo-router";
-import React, { useContext } from "react";
+import { useProduct } from '@/hooks/polar/products'
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import { schemas } from '@polar-sh/client'
+import { Link } from 'expo-router'
+import React, { useContext } from 'react'
 import {
-  View,
-  Text,
-  StyleSheet,
   Image,
   StyleProp,
+  StyleSheet,
   TextStyle,
   TouchableOpacity,
-} from "react-native";
-import { ThemedText } from "../Shared/ThemedText";
+  View,
+} from 'react-native'
+import { ThemedText } from '../Shared/ThemedText'
 
 export interface OrderRowProps {
-  order: Order;
-  showTimestamp?: boolean;
-  style?: StyleProp<TextStyle>;
+  order: schemas['Order']
+  showTimestamp?: boolean
+  style?: StyleProp<TextStyle>
 }
 
 export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
-  const { colors } = useTheme();
-  const { organization } = useContext(OrganizationContext);
-  const { data: product } = useProduct(organization?.id, order.product.id);
+  const { colors } = useTheme()
+  const { organization } = useContext(OrganizationContext)
+  const { data: product } = useProduct(organization?.id, order.product?.id)
 
   return (
     <Link
@@ -35,9 +34,9 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
     >
       <TouchableOpacity activeOpacity={0.6}>
         <View style={[styles.imageContainer]}>
-          {product?.medias?.[0]?.publicUrl ? (
+          {product?.medias?.[0]?.public_url ? (
             <Image
-              source={{ uri: product?.medias?.[0]?.publicUrl }}
+              source={{ uri: product?.medias?.[0]?.public_url }}
               style={styles.image}
               resizeMode="cover"
             />
@@ -58,14 +57,14 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
         </View>
         <View style={styles.contentContainer}>
           <ThemedText style={styles.productName}>
-            {order.product.name}
+            {order.product?.name}
           </ThemedText>
           <View style={styles.metadataContainer}>
             {showTimestamp && (
               <>
                 <ThemedText style={[styles.amount]} secondary>
-                  {order.createdAt.toLocaleDateString("en-US", {
-                    dateStyle: "medium",
+                  {new Date(order.created_at).toLocaleDateString('en-US', {
+                    dateStyle: 'medium',
                   })}
                 </ThemedText>
                 <ThemedText secondary>•</ThemedText>
@@ -73,7 +72,7 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
             )}
             <ThemedText
               numberOfLines={1}
-              style={[styles.email, { flexWrap: "wrap" }]}
+              style={[styles.email, { flexWrap: 'wrap' }]}
               secondary
             >
               {order.customer.email}
@@ -82,14 +81,14 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
         </View>
       </TouchableOpacity>
     </Link>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: 12,
     gap: 12,
   },
@@ -97,26 +96,26 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 8,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   image: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
   },
   imageFallback: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   contentContainer: {
     flex: 1,
-    flexDirection: "column",
+    flexDirection: 'column',
     gap: 4,
   },
   productName: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   amount: {
     fontSize: 16,
@@ -127,7 +126,7 @@ const styles = StyleSheet.create({
   },
   metadataContainer: {
     flex: 1,
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 6,
   },
-});
+})

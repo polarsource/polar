@@ -1,50 +1,47 @@
-import { useOrder } from "@/hooks/polar/orders";
-import { useProduct } from "@/hooks/polar/products";
-import { formatCurrencyAndAmount } from "@/utils/money";
-import { useTheme } from "@/hooks/theme";
+import { CustomerRow } from '@/components/Customers/CustomerRow'
+import { DetailRow, Details } from '@/components/Shared/Details'
+import { Pill } from '@/components/Shared/Pill'
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { useOrder } from '@/hooks/polar/orders'
+import { useTheme } from '@/hooks/theme'
+import { formatCurrencyAndAmount } from '@/utils/money'
+import * as Clipboard from 'expo-clipboard'
+import { Stack, useLocalSearchParams } from 'expo-router'
 import {
-  Text,
-  View,
-  StyleSheet,
-  ScrollView,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
   TouchableOpacity,
-} from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
-import { CustomerRow } from "@/components/Customers/CustomerRow";
-import * as Clipboard from "expo-clipboard";
-import { DetailRow } from "@/components/Shared/Details";
-import { Details } from "@/components/Shared/Details";
-import { ThemedText } from "@/components/Shared/ThemedText";
-import { Pill } from "@/components/Shared/Pill";
+  View,
+} from 'react-native'
 
 const statusColors = {
-  pending: "yellow",
-  paid: "green",
-  refunded: "blue",
-  partially_refunded: "blue",
-} as const;
+  pending: 'yellow',
+  paid: 'green',
+  refunded: 'blue',
+  partially_refunded: 'blue',
+} as const
 
 export default function Index() {
-  const { id } = useLocalSearchParams();
-  const { colors } = useTheme();
+  const { id } = useLocalSearchParams()
+  const { colors } = useTheme()
 
-  const { data: order, refetch, isRefetching } = useOrder(id as string);
+  const { data: order, refetch, isRefetching } = useOrder(id as string)
 
   if (!order) {
     return (
       <Stack.Screen
         options={{
-          title: "Order",
+          title: 'Order',
         }}
       />
-    );
+    )
   }
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ flexDirection: "column", gap: 16 }}
+      contentContainerStyle={{ flexDirection: 'column', gap: 16 }}
       refreshControl={
         <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
       }
@@ -52,18 +49,18 @@ export default function Index() {
     >
       <Stack.Screen
         options={{
-          title: "Order",
+          title: 'Order',
         }}
       />
 
-      <View style={[styles.section, { gap: 12, flexDirection: "row" }]}>
+      <View style={[styles.section, { gap: 12, flexDirection: 'row' }]}>
         <TouchableOpacity
           style={[
             styles.box,
-            { backgroundColor: colors.card, flex: 1, gap: 4, width: "50%" },
+            { backgroundColor: colors.card, flex: 1, gap: 4, width: '50%' },
           ]}
           onPress={() => {
-            Clipboard.setStringAsync(order.id);
+            Clipboard.setStringAsync(order.id)
           }}
           activeOpacity={0.6}
         >
@@ -71,24 +68,24 @@ export default function Index() {
             #
           </ThemedText>
           <ThemedText
-            style={[styles.value, { textTransform: "uppercase", fontSize: 18 }]}
+            style={[styles.value, { textTransform: 'uppercase', fontSize: 18 }]}
             numberOfLines={1}
           >
-            {order.id.split("-").pop()?.slice(-6, -1)}
+            {order.id.split('-').pop()?.slice(-6, -1)}
           </ThemedText>
         </TouchableOpacity>
         <View
           style={[
             styles.box,
-            { backgroundColor: colors.card, flex: 1, gap: 4, width: "50%" },
+            { backgroundColor: colors.card, flex: 1, gap: 4, width: '50%' },
           ]}
         >
           <ThemedText style={[styles.label]} secondary>
             Date
           </ThemedText>
           <ThemedText style={[styles.value]}>
-            {order.createdAt.toLocaleDateString("en-US", {
-              dateStyle: "medium",
+            {new Date(order.created_at).toLocaleDateString('en-US', {
+              dateStyle: 'medium',
             })}
           </ThemedText>
         </View>
@@ -133,36 +130,36 @@ export default function Index() {
                 color={statusColors[order.status]}
                 textStyle={{ fontSize: 14 }}
               >
-                {order.status.split("_").join(" ")}
+                {order.status.split('_').join(' ')}
               </Pill>
             }
-            valueStyle={{ textTransform: "capitalize" }}
+            valueStyle={{ textTransform: 'capitalize' }}
           />
           <DetailRow
             label="Billing Reason"
-            value={order.billingReason.split("_").join(" ")}
-            valueStyle={{ textTransform: "capitalize" }}
+            value={order.billing_reason.split('_').join(' ')}
+            valueStyle={{ textTransform: 'capitalize' }}
           />
           <DetailRow
             label="Subtotal"
-            value={formatCurrencyAndAmount(order.subtotalAmount)}
+            value={formatCurrencyAndAmount(order.subtotal_amount)}
           />
           <DetailRow
             label="Discount"
-            value={`-${formatCurrencyAndAmount(order.discountAmount)}`}
+            value={`-${formatCurrencyAndAmount(order.discount_amount)}`}
           />
           <DetailRow
             label="Net"
-            value={formatCurrencyAndAmount(order.netAmount)}
+            value={formatCurrencyAndAmount(order.net_amount)}
           />
           <DetailRow
             label="Tax"
-            value={formatCurrencyAndAmount(order.taxAmount)}
+            value={formatCurrencyAndAmount(order.tax_amount)}
           />
           <DetailRow
             labelStyle={{ color: colors.text }}
             label="Total"
-            value={formatCurrencyAndAmount(order.totalAmount)}
+            value={formatCurrencyAndAmount(order.total_amount)}
           />
         </Details>
       </View>
@@ -170,21 +167,24 @@ export default function Index() {
       <Details style={{ backgroundColor: colors.card }}>
         <DetailRow
           label="Address"
-          value={order.customer.billingAddress?.line1}
+          value={order.customer.billing_address?.line1}
         />
         <DetailRow
           label="Address 2"
-          value={order.customer.billingAddress?.line2}
+          value={order.customer.billing_address?.line2}
         />
-        <DetailRow label="City" value={order.customer.billingAddress?.city} />
-        <DetailRow label="State" value={order.customer.billingAddress?.state} />
+        <DetailRow label="City" value={order.customer.billing_address?.city} />
+        <DetailRow
+          label="State"
+          value={order.customer.billing_address?.state}
+        />
         <DetailRow
           label="Postal Code"
-          value={order.customer.billingAddress?.postalCode}
+          value={order.customer.billing_address?.postal_code}
         />
         <DetailRow
           label="Country"
-          value={order.customer.billingAddress?.country}
+          value={order.customer.billing_address?.country}
         />
       </Details>
 
@@ -198,7 +198,7 @@ export default function Index() {
         </View>
       )}
     </ScrollView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     gap: 12,
-    flexDirection: "column",
+    flexDirection: 'column',
   },
   image: {
     width: 40,
@@ -217,25 +217,25 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   fallbackText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   productName: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   section: {},
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: '600',
     marginBottom: 8,
   },
   box: {
-    flexDirection: "column",
+    flexDirection: 'column',
     gap: 4,
     borderRadius: 12,
     padding: 12,
@@ -246,8 +246,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 6,
   },
   label: {
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   avatarContainer: {
     width: 40,
@@ -267,4 +267,4 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 8,
   },
-});
+})

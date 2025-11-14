@@ -1,5 +1,15 @@
-import { Suspense, useContext, useMemo, useState } from "react";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
+import { Chart } from '@/components/Metrics/Chart'
+import {
+  dateRangeToInterval,
+  getPreviousParams,
+  timeRange,
+} from '@/components/Metrics/utils'
+import { Tabs, TabsList, TabsTrigger } from '@/components/Shared/Tabs'
+import { useMetrics } from '@/hooks/polar/metrics'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { schemas } from '@polar-sh/client'
+import { Stack } from 'expo-router'
+import React, { useContext, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -7,52 +17,40 @@ import {
   SafeAreaView,
   StyleSheet,
   View,
-} from "react-native";
-import { useMetrics } from "@/hooks/polar/metrics";
-import { Stack } from "expo-router";
-import { Chart } from "@/components/Metrics/Chart";
-import { Tabs, TabsList, TabsTrigger } from "@/components/Shared/Tabs";
-import {
-  dateRangeToInterval,
-  getPreviousParams,
-  timeRange,
-} from "@/components/Metrics/utils";
-import React from "react";
-import { MetricsTotals } from "@polar-sh/sdk/models/components/metricstotals.js";
-import { Metric } from "@polar-sh/sdk/models/components/metric.js";
+} from 'react-native'
 
 export default function Index() {
-  const { organization } = useContext(OrganizationContext);
+  const { organization } = useContext(OrganizationContext)
   const [selectedTimeInterval, setSelectedTimeInterval] =
-    useState<keyof ReturnType<typeof timeRange>>("30d");
+    useState<keyof ReturnType<typeof timeRange>>('30d')
 
   if (!organization) {
-    return null;
+    return null
   }
 
   const { startDate, endDate } = useMemo(() => {
     return {
       startDate: timeRange(organization)[selectedTimeInterval].startDate,
       endDate: timeRange(organization)[selectedTimeInterval].endDate,
-    };
-  }, [selectedTimeInterval]);
+    }
+  }, [selectedTimeInterval])
 
   const previousPeriod = useMemo(() => {
-    const previousParams = getPreviousParams(startDate);
+    const previousParams = getPreviousParams(startDate)
 
-    if (selectedTimeInterval === "all_time") {
-      return null;
+    if (selectedTimeInterval === 'all_time') {
+      return null
     }
 
     return {
       startDate: previousParams[selectedTimeInterval].startDate,
       endDate: previousParams[selectedTimeInterval].endDate,
-    };
-  }, [selectedTimeInterval, startDate, endDate]);
+    }
+  }, [selectedTimeInterval, startDate, endDate])
 
   const metrics = useMetrics(organization?.id, startDate, endDate, {
     interval: dateRangeToInterval(startDate, endDate),
-  });
+  })
 
   const previousMetrics = useMetrics(
     organization?.id,
@@ -61,17 +59,17 @@ export default function Index() {
     {
       interval: dateRangeToInterval(
         previousPeriod?.startDate ?? startDate,
-        previousPeriod?.endDate ?? endDate
+        previousPeriod?.endDate ?? endDate,
       ),
     },
-    !!previousPeriod
-  );
+    !!previousPeriod,
+  )
 
   return (
     <>
       <Stack.Screen
         options={{
-          title: "Metrics",
+          title: 'Metrics',
         }}
       />
       <SafeAreaView style={MetricsStyles.tabsStyle}>
@@ -87,7 +85,7 @@ export default function Index() {
                 <TabsTrigger key={key} value={key}>
                   {value.title}
                 </TabsTrigger>
-              );
+              )
             })}
           </TabsList>
         </Tabs>
@@ -106,10 +104,10 @@ export default function Index() {
               ([metric, value]) => ({
                 metric,
                 value,
-              })
+              }),
             ) as Array<{
-              metric: keyof MetricsTotals;
-              value: Metric;
+              metric: keyof schemas['MetricsTotals']
+              value: schemas['Metric']
             }>
           }
           renderItem={({ item }) => {
@@ -118,7 +116,7 @@ export default function Index() {
                 key={item.metric}
                 currentPeriodData={metrics.data}
                 previousPeriodData={previousMetrics.data}
-                title={item.value.displayName}
+                title={item.value.display_name}
                 metric={{
                   key: item.metric,
                   ...item.value,
@@ -127,9 +125,9 @@ export default function Index() {
                   startDate,
                   endDate,
                 }}
-                showPreviousPeriodTotal={selectedTimeInterval !== "all_time"}
+                showPreviousPeriodTotal={selectedTimeInterval !== 'all_time'}
               />
-            );
+            )
           }}
           keyExtractor={(item) => item.metric}
           refreshControl={
@@ -141,7 +139,7 @@ export default function Index() {
         />
       )}
     </>
-  );
+  )
 }
 
 const MetricsStyles = StyleSheet.create({
@@ -152,13 +150,13 @@ const MetricsStyles = StyleSheet.create({
     margin: 16,
   },
   contentContainer: {
-    flexDirection: "column",
+    flexDirection: 'column',
     padding: 16,
     gap: 16,
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-});
+})

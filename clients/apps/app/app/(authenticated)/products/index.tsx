@@ -1,33 +1,34 @@
-import { ProductRow } from "@/components/Products/ProductRow";
-import { ThemedText } from "@/components/Shared/ThemedText";
-import { useInfiniteProducts } from "@/hooks/polar/products";
-import { useTheme } from "@/hooks/theme";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import { Product } from "@polar-sh/sdk/models/components/product";
-import { Stack } from "expo-router";
-import React, { useContext, useMemo } from "react";
-import { FlatList, RefreshControl, Text, View } from "react-native";
+import { ProductRow } from '@/components/Products/ProductRow'
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { useInfiniteProducts } from '@/hooks/polar/products'
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { schemas } from '@polar-sh/client'
+import { Stack } from 'expo-router'
+import React, { useContext, useMemo } from 'react'
+import { FlatList, RefreshControl, View } from 'react-native'
 
 export default function Index() {
-  const { organization } = useContext(OrganizationContext);
-  const { colors } = useTheme();
+  const { organization } = useContext(OrganizationContext)
+  const { colors } = useTheme()
   const { data, refetch, isRefetching, fetchNextPage, hasNextPage, isLoading } =
-    useInfiniteProducts(organization?.id);
+    useInfiniteProducts(organization?.id)
 
   const flatData = useMemo(() => {
     return (
       data?.pages
-        .flatMap((page) => page.result.items)
-        .sort((a, b) => (a.isArchived ? 1 : -1) - (b.isArchived ? 1 : -1)) ?? []
-    );
-  }, [data]);
+        .flatMap((page) => page.items)
+        .sort((a, b) => (a.is_archived ? 1 : -1) - (b.is_archived ? 1 : -1)) ??
+      []
+    )
+  }, [data])
 
   return (
     <>
-      <Stack.Screen options={{ title: "Products" }} />
+      <Stack.Screen options={{ title: 'Products' }} />
       <FlatList
         data={flatData}
-        renderItem={({ item }: { item: Product }) => (
+        renderItem={({ item }: { item: schemas['Product'] }) => (
           <ProductRow product={item} />
         )}
         contentContainerStyle={{
@@ -41,8 +42,8 @@ export default function Index() {
             <View
               style={{
                 flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
               <ThemedText style={{ fontSize: 16 }} secondary>
@@ -58,12 +59,12 @@ export default function Index() {
         }
         onEndReached={() => {
           if (hasNextPage) {
-            fetchNextPage();
+            fetchNextPage()
           }
         }}
         contentInset={{ bottom: 32 }}
         onEndReachedThreshold={0.8}
       />
     </>
-  );
+  )
 }

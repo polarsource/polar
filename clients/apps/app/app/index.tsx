@@ -32,18 +32,10 @@ export default function App() {
         source={require('@/assets/images/login-background.jpg')}
         style={LoginStyle.background}
       />
-      <View
-        from={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ type: 'timing', duration: 1000 }}
-      >
+      <View>
         <LogoIcon size={80} />
       </View>
-      <View
-        from={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ type: 'timing', delay: 250, duration: 1000 }}
-      >
+      <View>
         <ThemedText
           style={[
             LoginStyle.title,
@@ -55,11 +47,7 @@ export default function App() {
           Monetize your software
         </ThemedText>
       </View>
-      <View
-        from={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ type: 'timing', delay: 500, duration: 1000 }}
-      >
+      <View>
         <TouchableOpacity
           activeOpacity={0.6}
           disabled={!authRequest}

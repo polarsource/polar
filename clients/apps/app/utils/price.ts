@@ -1,47 +1,47 @@
-import { CheckoutProduct } from "@polar-sh/sdk/models/components/checkoutproduct.js";
-import { LegacyRecurringProductPrice } from "@polar-sh/sdk/models/components/legacyrecurringproductprice.js";
-import { Product } from "@polar-sh/sdk/models/components/product.js";
-import { ProductPriceCustom } from "@polar-sh/sdk/models/components/productpricecustom.js";
-import { ProductPriceFixed } from "@polar-sh/sdk/models/components/productpricefixed.js";
-import { ProductPriceFree } from "@polar-sh/sdk/models/components/productpricefree.js";
-import { ProductPriceMeteredUnit } from "@polar-sh/sdk/models/components/productpricemeteredunit.js";
+import { schemas } from '@polar-sh/client'
 
 export const hasIntervals = (
-  product: CheckoutProduct
+  product: schemas['Product'],
 ): [boolean, boolean, boolean] => {
   const hasMonthInterval = product.prices.some(
-    (price) => price.type === "recurring" && price.recurringInterval === "month"
-  );
+    (price) =>
+      price.type === 'recurring' && price.recurring_interval === 'month',
+  )
   const hasYearInterval = product.prices.some(
-    (price) => price.type === "recurring" && price.recurringInterval === "year"
-  );
-  const hasBothIntervals = hasMonthInterval && hasYearInterval;
+    (price) =>
+      price.type === 'recurring' && price.recurring_interval === 'year',
+  )
+  const hasBothIntervals = hasMonthInterval && hasYearInterval
 
-  return [hasMonthInterval, hasYearInterval, hasBothIntervals];
-};
+  return [hasMonthInterval, hasYearInterval, hasBothIntervals]
+}
 
 type ProductPrice =
-  | ProductPriceFixed
-  | ProductPriceCustom
-  | ProductPriceFree
-  | ProductPriceMeteredUnit;
+  | schemas['ProductPriceFixed']
+  | schemas['ProductPriceCustom']
+  | schemas['ProductPriceFree']
+  | schemas['ProductPriceMeteredUnit']
 
 export const isLegacyRecurringPrice = (
-  price: ProductPrice | LegacyRecurringProductPrice
-): price is LegacyRecurringProductPrice => "legacy" in price;
+  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
+): price is schemas['LegacyRecurringProductPrice'] => 'legacy' in price
 
 export const hasLegacyRecurringPrices = (
-  product: Product
-): product is Product & {
-  prices: LegacyRecurringProductPrice[];
-} => product.prices.some(isLegacyRecurringPrice);
+  product: schemas['Product'],
+): product is schemas['Product'] & {
+  prices: schemas['LegacyRecurringProductPrice'][]
+} => product.prices.some(isLegacyRecurringPrice)
 
 export const isStaticPrice = (
-  price: ProductPrice
-): price is ProductPriceFixed | ProductPriceCustom | ProductPriceFree =>
-  price.amountType !== undefined &&
-  ["fixed", "custom", "free"].includes(price.amountType);
+  price: ProductPrice,
+): price is
+  | schemas['ProductPriceFixed']
+  | schemas['ProductPriceCustom']
+  | schemas['ProductPriceFree'] =>
+  price.amount_type !== undefined &&
+  ['fixed', 'custom', 'free'].includes(price.amount_type)
 
 export const isMeteredPrice = (
-  price: ProductPrice
-): price is ProductPriceMeteredUnit => price.amountType === "metered_unit";
+  price: ProductPrice,
+): price is schemas['ProductPriceMeteredUnit'] =>
+  price.amount_type === 'metered_unit'

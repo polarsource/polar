@@ -1,23 +1,16 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  TouchableOpacity,
-} from "react-native";
-import React from "react";
-import { Customer } from "@polar-sh/sdk/models/components/customer";
-import { Avatar } from "../Shared/Avatar";
-import { Link } from "expo-router";
-import { useTheme } from "@/hooks/theme";
-import { ThemedText } from "../Shared/ThemedText";
-
+import { useTheme } from '@/hooks/theme'
+import { schemas } from '@polar-sh/client'
+import { Link } from 'expo-router'
+import React from 'react'
+import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { Avatar } from '../Shared/Avatar'
+import { ThemedText } from '../Shared/ThemedText'
 export interface CustomerCardProps {
-  customer: Customer;
+  customer: schemas['Customer']
 }
 
 export const CustomerCard = ({ customer }: CustomerCardProps) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
   return (
     <Link
@@ -29,10 +22,10 @@ export const CustomerCard = ({ customer }: CustomerCardProps) => {
         <Avatar
           size={64}
           name={customer.name ?? customer.email}
-          image={customer.avatarUrl ?? undefined}
+          image={customer.avatar_url ?? undefined}
         />
         <View style={styles.content}>
-          <ThemedText style={[styles.name]}>{customer.name ?? "—"}</ThemedText>
+          <ThemedText style={[styles.name]}>{customer.name ?? '—'}</ThemedText>
           <ThemedText
             style={[styles.email]}
             numberOfLines={1}
@@ -44,31 +37,31 @@ export const CustomerCard = ({ customer }: CustomerCardProps) => {
         </View>
       </TouchableOpacity>
     </Link>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 32,
     paddingHorizontal: 16,
-    flexDirection: "column",
-    alignItems: "center",
+    flexDirection: 'column',
+    alignItems: 'center',
     gap: 32,
     borderRadius: 16,
-    width: Dimensions.get("screen").width * 0.66,
+    width: Dimensions.get('screen').width * 0.66,
   },
   content: {
-    flexDirection: "column",
-    alignItems: "center",
+    flexDirection: 'column',
+    alignItems: 'center',
     gap: 8,
   },
   name: {
     fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   email: {
     fontSize: 14,
-    textAlign: "center",
+    textAlign: 'center',
   },
-});
+})

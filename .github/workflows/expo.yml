@@ -46,6 +46,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Build
+        run: pnpm build
+
       - name: Create preview
         uses: expo/expo-github-action/preview@v8
         with:

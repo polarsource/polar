@@ -249,7 +249,15 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         """
         descendant_event = aliased(Event, name="descendant_event")
 
-        # Build columns for aggregations CTE
+        # Step 1: Get paginated event IDs with total count
+        offset = (page - 1) * limit
+
+        paginated_events_subquery = (
+            statement.add_columns(over(func.count()).label("total_count"))
+            .limit(limit)
+            .offset(offset)
+        ).subquery("paginated_events")
+
         aggregation_columns: list[Any] = [
             EventClosure.ancestor_id,
             (func.count() - 1).label("descendant_count"),
@@ -272,19 +280,25 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             aggregation_columns.append(func.sum(numeric_expr).label(label))
             field_aggregations[field_path] = label
 
-        aggregations_cte = (
+        paginated_event_id = paginated_events_subquery.c.id
+
+        aggregations_lateral = (
             select(*aggregation_columns)
             .select_from(EventClosure)
             .join(descendant_event, EventClosure.descendant_id == descendant_event.id)
+            .where(EventClosure.ancestor_id == paginated_event_id)
             .group_by(EventClosure.ancestor_id)
-        ).cte("aggregations")
+        ).lateral("aggregations")
 
-        metadata_expr: Any = Event.user_metadata
+        # Reference user_metadata from the paginated subquery
+        paginated_user_metadata = paginated_events_subquery.c.user_metadata
+
+        metadata_expr: Any = paginated_user_metadata
         if aggregate_fields:
             for field_path, label in field_aggregations.items():
                 parts = field_path.split(".")
                 pg_path = "{" + ",".join(parts) + "}"
-                agg_column = getattr(aggregations_cte.c, label)
+                agg_column = getattr(aggregations_lateral.c, label)
 
                 # For nested paths, jsonb_set with create_if_missing doesn't work reliably
                 # Use deep merge approach: extract parent, merge, set back
@@ -319,18 +333,19 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                         text("true"),
                     )
 
+        # Step 2: Join back to Event table to get full ORM objects with relationships
         final_query = (
-            statement.add_columns(
-                func.coalesce(aggregations_cte.c.descendant_count, 0).label(
+            select(Event, paginated_events_subquery.c.total_count)
+            .select_from(paginated_events_subquery)
+            .join(Event, Event.id == paginated_events_subquery.c.id)
+            .add_columns(
+                func.coalesce(aggregations_lateral.c.descendant_count, 0).label(
                     "child_count"
                 ),
                 metadata_expr.label("aggregated_metadata"),
-                over(func.count()).label("total_count"),
             )
-            .outerjoin(aggregations_cte, Event.id == aggregations_cte.c.ancestor_id)
+            .outerjoin(aggregations_lateral, literal_column("true"))
             .options(*self.get_eager_options())
-            .limit(limit)
-            .offset((page - 1) * limit)
         )
 
         result = await self.session.execute(final_query)
@@ -341,9 +356,9 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         for row in rows:
             event = row[0]
             event.child_count = row.child_count
+
             if aggregate_fields:
                 aggregated = row.aggregated_metadata
-
                 # If _cost exists but has None/missing fields, clean it up
                 if "_cost" in aggregated:
                     cost_obj = aggregated.get("_cost")
@@ -355,6 +370,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                         cost_obj["currency"] = "usd"  # FIXME: Main Polar currency
 
                 event.user_metadata = aggregated
+
             events.append(event)
             total_count = row.total_count
 

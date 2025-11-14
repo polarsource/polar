@@ -129,3 +129,72 @@ class TestCreate:
         )
         # Ensure it's not incorrectly using the unencoded + sign
         assert "contact+test@example.com" not in portal_url
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_theme_polar(
+        self,
+        client: AsyncClient,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={"customer_id": str(customer.id), "theme": "polar"},
+        )
+        assert response.status_code == 201
+
+        json = response.json()
+
+        assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
+        assert json["customer_id"] == str(customer.id)
+        assert json["theme"] == "polar"
+        assert "theme=polar" in json["customer_portal_url"]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_theme_midday(
+        self,
+        client: AsyncClient,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={"customer_id": str(customer.id), "theme": "midday"},
+        )
+        assert response.status_code == 201
+
+        json = response.json()
+
+        assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
+        assert json["customer_id"] == str(customer.id)
+        assert json["theme"] == "midday"
+        assert "theme=midday" in json["customer_portal_url"]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_theme_none(
+        self,
+        client: AsyncClient,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={"customer_id": str(customer.id)},
+        )
+        assert response.status_code == 201
+
+        json = response.json()
+
+        assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
+        assert json["customer_id"] == str(customer.id)
+        assert json["theme"] is None
+        assert "theme=" not in json["customer_portal_url"]

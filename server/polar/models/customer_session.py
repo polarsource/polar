@@ -24,6 +24,7 @@ class CustomerSession(RecordModel):
         TIMESTAMP(timezone=True), nullable=False, index=True, default=get_expires_at
     )
     return_url: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    theme: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
 
     customer_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False, index=True
@@ -43,9 +44,13 @@ class CustomerSession(RecordModel):
 
     @property
     def customer_portal_url(self) -> str:
-        query_string = urlencode(
-            {"customer_session_token": self.raw_token, "email": self.customer.email}
-        )
+        query_params = {
+            "customer_session_token": self.raw_token,
+            "email": self.customer.email,
+        }
+        if self.theme:
+            query_params["theme"] = self.theme
+        query_string = urlencode(query_params)
         return settings.generate_frontend_url(
             f"/{self.customer.organization.slug}/portal?{query_string}"
         )

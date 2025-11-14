@@ -1,30 +1,30 @@
-import { CustomerRow } from "@/components/Customers/CustomerRow";
-import { Input } from "@/components/Shared/Input";
-import { useCustomers } from "@/hooks/polar/customers";
-import { useTheme } from "@/hooks/theme";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import { Customer } from "@polar-sh/sdk/models/components/customer.js";
-import { Stack } from "expo-router";
-import React, { useContext, useMemo, useState } from "react";
-import { FlatList, RefreshControl, TextInput, View } from "react-native";
+import { CustomerRow } from '@/components/Customers/CustomerRow'
+import { Input } from '@/components/Shared/Input'
+import { useCustomers } from '@/hooks/polar/customers'
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { schemas } from '@polar-sh/client'
+import { Stack } from 'expo-router'
+import React, { useContext, useMemo, useState } from 'react'
+import { FlatList, RefreshControl, View } from 'react-native'
 
 export default function Index() {
-  const { organization } = useContext(OrganizationContext);
-  const { colors } = useTheme();
-  const [search, setSearch] = useState("");
+  const { organization } = useContext(OrganizationContext)
+  const { colors } = useTheme()
+  const [search, setSearch] = useState('')
 
   const { data, refetch, isRefetching, fetchNextPage, hasNextPage } =
-    useCustomers(organization?.id, { query: search });
+    useCustomers(organization?.id, { query: search })
 
   const customersData = useMemo(() => {
-    return data?.pages.flatMap((page) => page.result.items) ?? [];
-  }, [data]);
+    return data?.pages.flatMap((page) => page.items) ?? []
+  }, [data])
 
   return (
     <>
       <Stack.Screen
         options={{
-          title: "Customers",
+          title: 'Customers',
         }}
       />
       <View style={{ padding: 16, backgroundColor: colors.background }}>
@@ -36,8 +36,8 @@ export default function Index() {
       </View>
       <FlatList
         data={customersData}
-        renderItem={({ item }: { item: Customer }) => {
-          return <CustomerRow customer={item} />;
+        renderItem={({ item }: { item: schemas['Customer'] }) => {
+          return <CustomerRow customer={item} />
         }}
         contentContainerStyle={{
           padding: 16,
@@ -50,11 +50,11 @@ export default function Index() {
         }
         onEndReached={() => {
           if (hasNextPage) {
-            fetchNextPage();
+            fetchNextPage()
           }
         }}
         onEndReachedThreshold={0.8}
       />
     </>
-  );
+  )
 }

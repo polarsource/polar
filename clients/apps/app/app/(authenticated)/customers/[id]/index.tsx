@@ -1,49 +1,47 @@
-import { Avatar } from "@/components/Shared/Avatar";
-import { DetailRow } from "@/components/Shared/Details";
-import { Details } from "@/components/Shared/Details";
-import { EmptyState } from "@/components/Shared/EmptyState";
-import { OrderRow } from "@/components/Orders/OrderRow";
-import { SubscriptionRow } from "@/components/Subscriptions/SubscriptionRow";
-import { useCustomer } from "@/hooks/polar/customers";
-import { useMetrics } from "@/hooks/polar/metrics";
-import { useOrders } from "@/hooks/polar/orders";
-import { useSubscriptions } from "@/hooks/polar/subscriptions";
-import { useTheme } from "@/hooks/theme";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import { formatCurrencyAndAmount } from "@/utils/money";
-import { TimeInterval } from "@polar-sh/sdk/models/components/timeinterval.js";
-import { Stack, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useContext, useMemo } from "react";
-import { RefreshControl, ScrollView, View, StyleSheet } from "react-native";
-import { ThemedText } from "@/components/Shared/ThemedText";
+import { OrderRow } from '@/components/Orders/OrderRow'
+import { Avatar } from '@/components/Shared/Avatar'
+import { DetailRow, Details } from '@/components/Shared/Details'
+import { EmptyState } from '@/components/Shared/EmptyState'
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
+import { useCustomer } from '@/hooks/polar/customers'
+import { useMetrics } from '@/hooks/polar/metrics'
+import { useOrders } from '@/hooks/polar/orders'
+import { useSubscriptions } from '@/hooks/polar/subscriptions'
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { formatCurrencyAndAmount } from '@/utils/money'
+import { Stack, useLocalSearchParams } from 'expo-router'
+import React, { useCallback, useContext, useMemo } from 'react'
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native'
 
 export default function Index() {
-  const { organization } = useContext(OrganizationContext);
-  const { colors } = useTheme();
-  const { id } = useLocalSearchParams();
+  const { organization } = useContext(OrganizationContext)
+  const { colors } = useTheme()
+  const { id } = useLocalSearchParams()
 
   const {
     data: customer,
     refetch: refetchCustomer,
     isRefetching: isCustomerRefetching,
-  } = useCustomer(organization?.id, id as string);
+  } = useCustomer(organization?.id, id as string)
 
   const startDate = useMemo(() => {
-    return new Date(customer?.createdAt ?? new Date());
-  }, [customer]);
+    return new Date(customer?.created_at ?? new Date())
+  }, [customer])
 
   const endDate = useMemo(() => {
-    return new Date();
-  }, []);
+    return new Date()
+  }, [])
 
   const {
     data: metrics,
     refetch: refetchMetrics,
     isRefetching: isMetricsRefetching,
   } = useMetrics(organization?.id, startDate, endDate, {
-    interval: TimeInterval.Month,
-    customerId: id as string,
-  });
+    interval: 'month',
+    customer_id: [id as string],
+  })
 
   const {
     data: orders,
@@ -51,11 +49,11 @@ export default function Index() {
     isRefetching: isOrdersRefetching,
   } = useOrders(organization?.id, {
     customerId: id as string,
-  });
+  })
 
   const flatOrders = useMemo(() => {
-    return orders?.pages.flatMap((page) => page.result.items) ?? [];
-  }, [orders]);
+    return orders?.pages.flatMap((page) => page.items) ?? []
+  }, [orders])
 
   const {
     data: subscriptions,
@@ -64,17 +62,17 @@ export default function Index() {
   } = useSubscriptions(organization?.id, {
     customerId: id as string,
     active: null,
-  });
+  })
 
   const flatSubscriptions = useMemo(() => {
-    return subscriptions?.pages.flatMap((page) => page.result.items) ?? [];
-  }, [subscriptions]);
+    return subscriptions?.pages.flatMap((page) => page.items) ?? []
+  }, [subscriptions])
 
   const isRefetching =
     isCustomerRefetching ||
     isSubscriptionsRefetching ||
     isOrdersRefetching ||
-    isMetricsRefetching;
+    isMetricsRefetching
 
   const refetch = useCallback(() => {
     return Promise.allSettled([
@@ -82,14 +80,14 @@ export default function Index() {
       refetchOrders(),
       refetchMetrics(),
       refetchSubscriptions(),
-    ]);
-  }, [refetchCustomer, refetchOrders, refetchMetrics, refetchSubscriptions]);
+    ])
+  }, [refetchCustomer, refetchOrders, refetchMetrics, refetchSubscriptions])
 
   return (
     <>
       <Stack.Screen
         options={{
-          title: customer?.name ?? "Customer",
+          title: customer?.name ?? 'Customer',
         }}
       />
       <ScrollView
@@ -98,20 +96,20 @@ export default function Index() {
           <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
         }
         contentContainerStyle={{
-          flexDirection: "column",
+          flexDirection: 'column',
           gap: 24,
         }}
         contentInset={{ bottom: 48 }}
       >
         <View style={styles.hero}>
           <Avatar
-            image={customer?.avatarUrl}
-            name={customer?.name ?? customer?.email ?? ""}
+            image={customer?.avatar_url}
+            name={customer?.name ?? customer?.email ?? ''}
             size={120}
           />
           <View style={styles.heroInfo}>
             <ThemedText style={styles.customerName}>
-              {customer?.name ?? "—"}
+              {customer?.name ?? '—'}
             </ThemedText>
             <ThemedText style={styles.customerEmail} secondary>
               {customer?.email}
@@ -119,7 +117,7 @@ export default function Index() {
           </View>
         </View>
 
-        <View style={{ flexDirection: "row", gap: 12 }}>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
           <View
             style={{
               backgroundColor: colors.card,
@@ -135,7 +133,7 @@ export default function Index() {
             <ThemedText style={styles.value}>
               {formatCurrencyAndAmount(
                 metrics?.periods[metrics?.periods.length - 1]
-                  .cumulativeRevenue ?? 0
+                  .cumulative_revenue ?? 0,
               )}
             </ThemedText>
           </View>
@@ -152,11 +150,14 @@ export default function Index() {
               First Seen
             </ThemedText>
             <ThemedText style={styles.value}>
-              {new Date(customer?.createdAt ?? "").toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
+              {new Date(customer?.created_at ?? '').toLocaleDateString(
+                'en-US',
+                {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                },
+              )}
             </ThemedText>
           </View>
         </View>
@@ -165,21 +166,21 @@ export default function Index() {
           <Details>
             <DetailRow
               label="Address"
-              value={customer?.billingAddress?.line1}
+              value={customer?.billing_address?.line1}
             />
             <DetailRow
               label="Address 2"
-              value={customer?.billingAddress?.line2}
+              value={customer?.billing_address?.line2}
             />
-            <DetailRow label="City" value={customer?.billingAddress?.city} />
-            <DetailRow label="State" value={customer?.billingAddress?.state} />
+            <DetailRow label="City" value={customer?.billing_address?.city} />
+            <DetailRow label="State" value={customer?.billing_address?.state} />
             <DetailRow
               label="Postal Code"
-              value={customer?.billingAddress?.postalCode}
+              value={customer?.billing_address?.postal_code}
             />
             <DetailRow
               label="Country"
-              value={customer?.billingAddress?.country}
+              value={customer?.billing_address?.country}
             />
           </Details>
         </View>
@@ -194,12 +195,12 @@ export default function Index() {
           </View>
         )}
 
-        <View style={{ gap: 16, flexDirection: "column", flex: 1 }}>
+        <View style={{ gap: 16, flexDirection: 'column', flex: 1 }}>
           <View
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
             <ThemedText style={{ fontSize: 24 }}>Subscriptions</ThemedText>
@@ -221,12 +222,12 @@ export default function Index() {
           )}
         </View>
 
-        <View style={{ gap: 16, flexDirection: "column", flex: 1 }}>
+        <View style={{ gap: 16, flexDirection: 'column', flex: 1 }}>
           <View
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
             <ThemedText style={{ fontSize: 24 }}>Orders</ThemedText>
@@ -246,7 +247,7 @@ export default function Index() {
         </View>
       </ScrollView>
     </>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -254,28 +255,28 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     gap: 12,
-    flexDirection: "column",
+    flexDirection: 'column',
   },
   hero: {
-    flexDirection: "column",
-    alignItems: "center",
+    flexDirection: 'column',
+    alignItems: 'center',
     gap: 24,
   },
   heroInfo: {
-    alignItems: "center",
-    flexDirection: "column",
+    alignItems: 'center',
+    flexDirection: 'column',
     gap: 6,
   },
   customerName: {
     fontSize: 24,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   customerEmail: {
     fontSize: 16,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   image: {
@@ -287,22 +288,22 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 12,
   },
   fallbackText: {
     fontSize: 36,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   productName: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   section: {},
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: '600',
     marginBottom: 8,
   },
   card: {
@@ -311,8 +312,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   label: {
     fontSize: 16,
@@ -321,8 +322,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   customerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   avatarContainer: {
@@ -339,15 +340,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   avatarFallbackText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   customerInfo: {
-    flexDirection: "column",
+    flexDirection: 'column',
     gap: 4,
   },
-});
+})

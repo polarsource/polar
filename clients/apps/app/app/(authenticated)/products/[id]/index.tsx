@@ -1,70 +1,68 @@
-import { useProduct, useProductUpdate } from "@/hooks/polar/products";
-import { useTheme } from "@/hooks/theme";
-import { StyleSheet, ScrollView, RefreshControl, View } from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useContext, useMemo, useState } from "react";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import { FormInput } from "@/components/Form/FormInput";
-import { useForm } from "react-hook-form";
-import { ProductUpdate } from "@polar-sh/sdk/models/components/productupdate.js";
-import { ProductMediaFileRead } from "@polar-sh/sdk/models/components/productmediafileread.js";
-import { Button } from "@/components/Shared/Button";
+import { FormInput } from '@/components/Form/FormInput'
+import { Box } from '@/components/Metrics/Box'
+import { OrderRow } from '@/components/Orders/OrderRow'
+import { Banner } from '@/components/Shared/Banner'
+import { Button } from '@/components/Shared/Button'
+import { EmptyState } from '@/components/Shared/EmptyState'
 import {
+  Tabs,
   TabsContent,
   TabsList,
-  Tabs,
   TabsTrigger,
-} from "@/components/Shared/Tabs";
-import { ThemedText } from "@/components/Shared/ThemedText";
-import { useMetrics } from "@/hooks/polar/metrics";
-import { Box } from "@/components/Metrics/Box";
-import { formatCurrencyAndAmount } from "@/utils/money";
-import { useOrders } from "@/hooks/polar/orders";
-import { OrderRow } from "@/components/Orders/OrderRow";
-import { EmptyState } from "@/components/Shared/EmptyState";
-import { SDKError } from "@polar-sh/sdk/models/errors/sdkerror.js";
-import { Banner } from "@/components/Shared/Banner";
+} from '@/components/Shared/Tabs'
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { useMetrics } from '@/hooks/polar/metrics'
+import { useOrders } from '@/hooks/polar/orders'
+import { useProduct, useProductUpdate } from '@/hooks/polar/products'
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { formatCurrencyAndAmount } from '@/utils/money'
+import { schemas } from '@polar-sh/client'
+import { Stack, useLocalSearchParams } from 'expo-router'
+import { useCallback, useContext, useMemo } from 'react'
+import { useForm } from 'react-hook-form'
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native'
 
 export interface ProductFullMediasMixin {
-  full_medias: ProductMediaFileRead[];
+  full_medias: schemas['ProductMediaFileRead'][]
 }
 
-type ProductUpdateForm = Omit<ProductUpdate, "metadata"> &
+type ProductUpdateForm = Omit<schemas['ProductUpdate'], 'metadata'> &
   ProductFullMediasMixin & {
-    metadata: { key: string; value: string | number | boolean }[];
-  };
+    metadata: { key: string; value: string | number | boolean }[]
+  }
 
 export default function Index() {
-  const { id } = useLocalSearchParams();
-  const { colors } = useTheme();
-  const { organization } = useContext(OrganizationContext);
+  const { id } = useLocalSearchParams()
+  const { colors } = useTheme()
+  const { organization } = useContext(OrganizationContext)
 
   const {
     data: product,
     refetch,
     isRefetching,
-  } = useProduct(organization?.id, id as string);
+  } = useProduct(organization?.id, id as string)
 
-  const now = useMemo(() => new Date(), []);
+  const now = useMemo(() => new Date(), [])
 
   const { data: metrics } = useMetrics(
     organization?.id,
     organization?.createdAt ?? new Date(),
     now,
     {
-      productId: id as string,
-      interval: "month",
-    }
-  );
+      product_id: id as string,
+      interval: 'month',
+    },
+  )
 
   const { data: latestProductOrders } = useOrders(organization?.id, {
     productId: id as string,
     limit: 3,
-  });
+  })
 
   const flatLatestProductOrders = latestProductOrders?.pages.flatMap(
-    (page) => page.result.items
-  );
+    (page) => page.items,
+  )
 
   const form = useForm<ProductUpdateForm>({
     defaultValues: {
@@ -76,16 +74,16 @@ export default function Index() {
         value,
       })),
     },
-  });
+  })
 
-  const { control, handleSubmit, formState, reset } = form;
+  const { control, handleSubmit, formState, reset } = form
 
-  const updateProduct = useProductUpdate(organization?.id, id as string);
+  const updateProduct = useProductUpdate(organization?.id, id as string)
 
-  const { error: mutationError } = updateProduct;
+  const { error: mutationError } = updateProduct
 
   if (mutationError) {
-    throw mutationError;
+    throw mutationError
   }
 
   const saveProduct = useCallback(
@@ -93,9 +91,9 @@ export default function Index() {
       const result = await updateProduct.mutateAsync({
         ...data,
         metadata: Object.fromEntries(
-          data.metadata.map(({ key, value }) => [key, value])
+          data.metadata.map(({ key, value }) => [key, value]),
         ),
-      });
+      })
 
       reset({
         ...result,
@@ -105,25 +103,25 @@ export default function Index() {
           key,
           value,
         })),
-      });
+      })
     },
-    [updateProduct]
-  );
+    [updateProduct],
+  )
 
   if (!product) {
     return (
       <Stack.Screen
         options={{
-          title: "Product",
+          title: 'Product',
         }}
       />
-    );
+    )
   }
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ flexDirection: "column", gap: 32 }}
+      contentContainerStyle={{ flexDirection: 'column', gap: 32 }}
       refreshControl={
         <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
       }
@@ -136,7 +134,7 @@ export default function Index() {
       />
 
       <Tabs defaultValue="overview">
-        {product.isArchived ? (
+        {product.is_archived ? (
           <Banner
             title="This product is archived"
             description="Archived products cannot be edited, nor can they be unarchived."
@@ -149,15 +147,15 @@ export default function Index() {
         )}
         <TabsContent
           value="overview"
-          style={{ flexDirection: "column", gap: 32 }}
+          style={{ flexDirection: 'column', gap: 32 }}
         >
-          <View style={{ flexDirection: "row", gap: 16 }}>
+          <View style={{ flexDirection: 'row', gap: 16 }}>
             <Box
               label="Orders"
               value={(
                 metrics?.periods.reduce(
                   (acc, period) => acc + (period.orders ?? 0),
-                  0
+                  0,
                 ) ?? 0
               ).toString()}
             />
@@ -165,14 +163,14 @@ export default function Index() {
               label="Revenue"
               value={formatCurrencyAndAmount(
                 metrics?.periods[metrics?.periods.length - 1]
-                  .cumulativeRevenue ?? 0
+                  .cumulative_revenue ?? 0,
               )}
             />
           </View>
 
-          <View style={{ flexDirection: "column", gap: 16 }}>
+          <View style={{ flexDirection: 'column', gap: 16 }}>
             <ThemedText style={{ fontSize: 20 }}>Latest orders</ThemedText>
-            <View style={{ flexDirection: "column", gap: 8 }}>
+            <View style={{ flexDirection: 'column', gap: 8 }}>
               {(flatLatestProductOrders?.length ?? 0) > 0 ? (
                 flatLatestProductOrders?.map((order) => (
                   <OrderRow key={order.id} order={order} />
@@ -186,8 +184,8 @@ export default function Index() {
             </View>
           </View>
         </TabsContent>
-        <TabsContent value="edit" style={{ flexDirection: "column", gap: 32 }}>
-          <View style={{ flexDirection: "column", gap: 16 }}>
+        <TabsContent value="edit" style={{ flexDirection: 'column', gap: 32 }}>
+          <View style={{ flexDirection: 'column', gap: 16 }}>
             <FormInput control={control} name="name" label="Name" />
             <FormInput
               multiline
@@ -208,7 +206,7 @@ export default function Index() {
         </TabsContent>
       </Tabs>
     </ScrollView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -216,6 +214,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     gap: 12,
-    flexDirection: "column",
+    flexDirection: 'column',
   },
-});
+})

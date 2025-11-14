@@ -1,32 +1,30 @@
-import { View, StyleSheet } from "react-native";
-import { useState, useMemo } from "react";
-import { Path } from "react-native-svg";
-import Svg from "react-native-svg";
-import { useTheme } from "@/hooks/theme";
-import { ThemedText } from "@/components/Shared/ThemedText";
-import { Metric } from "@polar-sh/sdk/models/components/metric.js";
-import { getFormattedMetricValue } from "./utils";
-import { toValueDataPoints, useMetrics } from "@/hooks/polar/metrics";
-import { MetricsTotals } from "@polar-sh/sdk/models/components/metricstotals.js";
-import { ChartPath } from "./ChartPath";
-import { format } from "date-fns";
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { toValueDataPoints, useMetrics } from '@/hooks/polar/metrics'
+import { useTheme } from '@/hooks/theme'
+import { schemas } from '@polar-sh/client'
+import { format } from 'date-fns'
+import { useMemo, useState } from 'react'
+import { StyleSheet, View } from 'react-native'
+import Svg from 'react-native-svg'
+import { ChartPath } from './ChartPath'
+import { getFormattedMetricValue } from './utils'
 
 interface ChartProps {
-  currentPeriodData: ReturnType<typeof useMetrics>["data"];
-  previousPeriodData: ReturnType<typeof useMetrics>["data"];
-  title?: string;
-  trend?: number;
-  height?: number;
-  showTotal?: boolean;
-  strokeWidth?: number;
-  showPreviousPeriodTotal?: boolean;
-  metric: Metric & {
-    key: keyof MetricsTotals;
-  };
+  currentPeriodData: ReturnType<typeof useMetrics>['data']
+  previousPeriodData: ReturnType<typeof useMetrics>['data']
+  title?: string
+  trend?: number
+  height?: number
+  showTotal?: boolean
+  strokeWidth?: number
+  showPreviousPeriodTotal?: boolean
+  metric: schemas['Metric'] & {
+    key: keyof schemas['MetricsTotals']
+  }
   currentPeriod: {
-    startDate: Date;
-    endDate: Date;
-  };
+    startDate: Date
+    endDate: Date
+  }
 }
 
 export const Chart = ({
@@ -39,44 +37,44 @@ export const Chart = ({
   metric,
   currentPeriod,
 }: ChartProps) => {
-  const { colors } = useTheme();
-  const [width, setWidth] = useState(0);
-  const [chartHeight, setChartHeight] = useState(0);
+  const { colors } = useTheme()
+  const [width, setWidth] = useState(0)
+  const [chartHeight, setChartHeight] = useState(0)
 
   const totalValue = useMemo(() => {
-    return currentPeriodData?.totals[metric.key] ?? 0;
-  }, [currentPeriodData]);
+    return currentPeriodData?.totals[metric.key] ?? 0
+  }, [currentPeriodData])
 
   const formattedTotal = useMemo(() => {
-    return getFormattedMetricValue(metric, totalValue);
-  }, [totalValue, metric]);
+    return getFormattedMetricValue(metric, totalValue)
+  }, [totalValue, metric])
 
   const previousPeriodTotalValue = useMemo(() => {
-    return previousPeriodData?.totals[metric.key];
-  }, [previousPeriodData]);
+    return previousPeriodData?.totals[metric.key]
+  }, [previousPeriodData])
 
   const previousPeriodFormattedTotal = useMemo(() => {
     return previousPeriodTotalValue !== undefined
       ? getFormattedMetricValue(metric, previousPeriodTotalValue)
-      : null;
-  }, [previousPeriodTotalValue, metric]);
+      : null
+  }, [previousPeriodTotalValue, metric])
 
   const currentPeriodDataPoints = toValueDataPoints(
     currentPeriodData,
-    metric.key
-  );
+    metric.key,
+  )
   const previousPeriodDataPoints = toValueDataPoints(
     previousPeriodData,
-    metric.key
-  );
+    metric.key,
+  )
 
   const values = [
     ...currentPeriodDataPoints.map((d) => d.value),
     ...previousPeriodDataPoints.map((d) => d.value),
-  ];
+  ]
 
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
+  const minValue = Math.min(...values)
+  const maxValue = Math.max(...values)
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card }]}>
@@ -87,7 +85,7 @@ export const Chart = ({
       <View style={styles.totalValueContainer}>
         <ThemedText style={styles.totalValue}>{formattedTotal}</ThemedText>
         {showPreviousPeriodTotal &&
-        typeof previousPeriodFormattedTotal !== "undefined" ? (
+        typeof previousPeriodFormattedTotal !== 'undefined' ? (
           <ThemedText style={styles.previousPeriodTotalValue} secondary>
             {`vs. ${previousPeriodFormattedTotal}`}
           </ThemedText>
@@ -97,8 +95,8 @@ export const Chart = ({
       <View
         style={[styles.chartView, { height }]}
         onLayout={(event) => {
-          setChartHeight(event.nativeEvent.layout.height);
-          setWidth(event.nativeEvent.layout.width);
+          setChartHeight(event.nativeEvent.layout.height)
+          setWidth(event.nativeEvent.layout.width)
         }}
       >
         <Svg height={chartHeight} width={width} preserveAspectRatio="none">
@@ -124,18 +122,18 @@ export const Chart = ({
       </View>
       <View style={styles.chartTimeline}>
         <ThemedText style={styles.chartTimelineText} secondary>
-          {format(currentPeriod.startDate, "MMM d")}
+          {format(currentPeriod.startDate, 'MMM d')}
         </ThemedText>
         <ThemedText
-          style={[styles.chartTimelineText, { textAlign: "right" }]}
+          style={[styles.chartTimelineText, { textAlign: 'right' }]}
           secondary
         >
-          {format(currentPeriod.endDate, "MMM d")}
+          {format(currentPeriod.endDate, 'MMM d')}
         </ThemedText>
       </View>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -144,8 +142,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   title: {
     fontSize: 18,
@@ -157,21 +155,21 @@ const styles = StyleSheet.create({
     fontSize: 36,
   },
   totalValueContainer: {
-    flexDirection: "row",
-    alignItems: "baseline",
+    flexDirection: 'row',
+    alignItems: 'baseline',
     gap: 8,
   },
   previousPeriodTotalValue: {
     fontSize: 16,
   },
   chartView: {
-    width: "100%",
+    width: '100%',
   },
   chartTimeline: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   chartTimelineText: {
     fontSize: 12,
   },
-});
+})

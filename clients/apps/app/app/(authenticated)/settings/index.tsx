@@ -1,32 +1,32 @@
-import { Stack, useRouter } from "expo-router";
+import { Avatar } from '@/components/Shared/Avatar'
+import { Button } from '@/components/Shared/Button'
+import { MiniButton } from '@/components/Shared/MiniButton'
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { useLogout } from '@/hooks/auth'
+import { useOrganizations } from '@/hooks/polar/organizations'
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import { Stack, useRouter } from 'expo-router'
+import React, { useContext } from 'react'
 import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
   RefreshControl,
   SafeAreaView,
-} from "react-native";
-import React, { useContext } from "react";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useTheme } from "@/hooks/theme";
-import { useOrganizations } from "@/hooks/polar/organizations";
-import { Avatar } from "@/components/Shared/Avatar";
-import { Button } from "@/components/Shared/Button";
-import { useLogout } from "@/hooks/auth";
-import { ThemedText } from "@/components/Shared/ThemedText";
-import { MiniButton } from "@/components/Shared/MiniButton";
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 
 export default function Index() {
   const { setOrganization, organization: selectedOrganization } =
-    useContext(OrganizationContext);
-  const router = useRouter();
+    useContext(OrganizationContext)
+  const router = useRouter()
 
-  const { colors } = useTheme();
-  const { data: organizationData, refetch, isRefetching } = useOrganizations();
+  const { colors } = useTheme()
+  const { data: organizationData, refetch, isRefetching } = useOrganizations()
 
-  const logout = useLogout();
+  const logout = useLogout()
 
   return (
     <ScrollView
@@ -36,15 +36,15 @@ export default function Index() {
       contentInset={{ bottom: 16 }}
       contentContainerStyle={{ flex: 1 }}
     >
-      <Stack.Screen options={{ title: "Settings" }} />
+      <Stack.Screen options={{ title: 'Settings' }} />
       <SafeAreaView style={SettingsStyle.container}>
         <View style={{ flex: 1, gap: 16 }}>
           <View
-            style={{ flexDirection: "row", justifyContent: "space-between" }}
+            style={{ flexDirection: 'row', justifyContent: 'space-between' }}
           >
             <ThemedText style={[SettingsStyle.title]}>Organizations</ThemedText>
             <MiniButton
-              onPress={() => router.push("/onboarding")}
+              onPress={() => router.push('/onboarding')}
               icon={
                 <MaterialIcons
                   name="add"
@@ -57,7 +57,7 @@ export default function Index() {
             </MiniButton>
           </View>
           <View style={SettingsStyle.organizationsContainer}>
-            {organizationData?.result.items.map((organization) => (
+            {organizationData?.items.map((organization) => (
               <TouchableOpacity
                 key={organization?.id}
                 style={[
@@ -67,15 +67,15 @@ export default function Index() {
                   },
                 ]}
                 onPress={() => {
-                  setOrganization(organization);
-                  router.back();
+                  setOrganization(organization)
+                  router.back()
                 }}
                 activeOpacity={0.6}
               >
                 <View style={SettingsStyle.organizationContent}>
                   <Avatar
                     size={32}
-                    image={organization?.avatarUrl}
+                    image={organization?.avatar_url}
                     name={organization?.name}
                   />
                   <ThemedText style={[SettingsStyle.organizationName]}>
@@ -88,7 +88,7 @@ export default function Index() {
                   color={
                     selectedOrganization?.id === organization?.id
                       ? colors.monochromeInverted
-                      : "transparent"
+                      : 'transparent'
                   }
                 />
               </TouchableOpacity>
@@ -99,7 +99,7 @@ export default function Index() {
         <Button onPress={logout}>Logout</Button>
       </SafeAreaView>
     </ScrollView>
-  );
+  )
 }
 
 const SettingsStyle = StyleSheet.create({
@@ -107,10 +107,10 @@ const SettingsStyle = StyleSheet.create({
     flex: 1,
     margin: 16,
     gap: 24,
-    justifyContent: "space-between",
+    justifyContent: 'space-between',
   },
   organizationsContainer: {
-    flexDirection: "column",
+    flexDirection: 'column',
     gap: 4,
     flex: 1,
   },
@@ -123,14 +123,14 @@ const SettingsStyle = StyleSheet.create({
     paddingLeft: 16,
     paddingRight: 24,
     borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
-    justifyContent: "space-between",
+    justifyContent: 'space-between',
   },
   organizationContent: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   organizationName: {
@@ -139,4 +139,4 @@ const SettingsStyle = StyleSheet.create({
   logoutButtonText: {
     fontSize: 16,
   },
-});
+})

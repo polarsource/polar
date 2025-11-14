@@ -1,76 +1,76 @@
-import { useOrganizations } from "@/hooks/polar/organizations";
-import { createContext, PropsWithChildren, useEffect, useMemo } from "react";
-import { Organization } from "@polar-sh/sdk/models/components/organization.js";
-import { useStorageState } from "@/hooks/storage";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useSession } from "./SessionProvider";
-import { Redirect, usePathname } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
+import { useOrganizations } from '@/hooks/polar/organizations'
+import { useStorageState } from '@/hooks/storage'
+import { schemas } from '@polar-sh/client'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Redirect, usePathname } from 'expo-router'
+import { createContext, PropsWithChildren, useEffect, useMemo } from 'react'
+import { ActivityIndicator, View } from 'react-native'
+import { useSession } from './SessionProvider'
 
 export interface OrganizationContextValue {
-  isLoading: boolean;
-  organization: Organization | undefined;
-  organizations: Organization[];
-  setOrganization: (organization: Organization) => void;
+  isLoading: boolean
+  organization: schemas['Organization'] | undefined
+  organizations: schemas['Organization'][]
+  setOrganization: (organization: schemas['Organization']) => void
 }
 
 const stub = (): never => {
   throw new Error(
-    "You forgot to wrap your component in <PolarOrganizationProvider>."
-  );
-};
+    'You forgot to wrap your component in <PolarOrganizationProvider>.',
+  )
+}
 
 export const OrganizationContext =
   // @ts-ignore
-  createContext<OrganizationContextValue>(stub);
+  createContext<OrganizationContextValue>(stub)
 
 export function PolarOrganizationProvider({ children }: PropsWithChildren) {
   const [[isStorageLoading, organizationId], setOrganizationId] =
-    useStorageState("organizationId");
+    useStorageState('organizationId')
 
-  const { session } = useSession();
+  const { session } = useSession()
 
-  const pathname = usePathname();
+  const pathname = usePathname()
 
   const { data: organizationData, isFetching: isFetchingOrganizations } =
     useOrganizations({
       enabled: !!session,
-    });
+    })
 
   useEffect(() => {
-    AsyncStorage.getItem("organizationId").then((organizationId) => {
-      setOrganizationId(organizationId ?? null);
-    });
-  }, []);
+    AsyncStorage.getItem('organizationId').then((organizationId) => {
+      setOrganizationId(organizationId ?? null)
+    })
+  }, [])
 
   useEffect(() => {
     if (!organizationId) {
-      if (organizationData && organizationData.result.items.length > 0) {
-        setOrganizationId(organizationData.result.items[0].id ?? null);
+      if (organizationData && organizationData.items.length > 0) {
+        setOrganizationId(organizationData.items[0].id ?? null)
       }
     }
-  }, [organizationData, organizationId, setOrganizationId]);
+  }, [organizationData, organizationId, setOrganizationId])
 
   const organization = useMemo(() => {
-    return organizationData?.result.items.find(
-      (organization) => organization.id === organizationId
-    );
-  }, [organizationData, organizationId]);
+    return organizationData?.items.find(
+      (organization) => organization.id === organizationId,
+    )
+  }, [organizationData, organizationId])
 
-  const isLoading = isStorageLoading || isFetchingOrganizations;
+  const isLoading = isStorageLoading || isFetchingOrganizations
 
-  const organizations = organizationData?.result.items ?? [];
+  const organizations = organizationData?.items ?? []
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />
       </View>
-    );
+    )
   }
 
-  if (organizations.length === 0 && pathname !== "/onboarding") {
-    return <Redirect href="/onboarding" />;
+  if (organizations.length === 0 && pathname !== '/onboarding') {
+    return <Redirect href="/onboarding" />
   }
 
   return (
@@ -79,14 +79,14 @@ export function PolarOrganizationProvider({ children }: PropsWithChildren) {
         isLoading,
         organization,
         organizations,
-        setOrganization: (organization: Organization) => {
-          setOrganizationId(organization.id);
+        setOrganization: (organization: schemas['Organization']) => {
+          setOrganizationId(organization.id)
 
-          AsyncStorage.setItem("organizationId", organization.id);
+          AsyncStorage.setItem('organizationId', organization.id)
         },
       }}
     >
       {children}
     </OrganizationContext.Provider>
-  );
+  )
 }

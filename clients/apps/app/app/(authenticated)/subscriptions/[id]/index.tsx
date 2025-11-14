@@ -1,75 +1,70 @@
-import { useOrder, useOrders } from "@/hooks/polar/orders";
-import { useProduct } from "@/hooks/polar/products";
-import { formatCurrencyAndAmount } from "@/utils/money";
-import { useTheme } from "@/hooks/theme";
+import { CustomerRow } from '@/components/Customers/CustomerRow'
+import { OrderRow } from '@/components/Orders/OrderRow'
+import { ProductRow } from '@/components/Products/ProductRow'
+import { Button } from '@/components/Shared/Button'
+import { DetailRow, Details } from '@/components/Shared/Details'
+import { EmptyState } from '@/components/Shared/EmptyState'
+import { Pill } from '@/components/Shared/Pill'
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { useOrders } from '@/hooks/polar/orders'
+import { useSubscription } from '@/hooks/polar/subscriptions'
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import * as Clipboard from 'expo-clipboard'
+import { Link, Stack, useLocalSearchParams } from 'expo-router'
+import React, { useContext, useMemo } from 'react'
 import {
-  Text,
-  View,
-  StyleSheet,
-  ScrollView,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
   TouchableOpacity,
-} from "react-native";
-import { Link, Stack, useLocalSearchParams } from "expo-router";
-import { CustomerRow } from "@/components/Customers/CustomerRow";
-import * as Clipboard from "expo-clipboard";
-import { DetailRow } from "@/components/Shared/Details";
-import { Details } from "@/components/Shared/Details";
-import { useSubscription } from "@/hooks/polar/subscriptions";
-import { OrderRow } from "@/components/Orders/OrderRow";
-import { useContext, useMemo } from "react";
-import React from "react";
-import { EmptyState } from "@/components/Shared/EmptyState";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import { Button } from "@/components/Shared/Button";
-import { ProductRow } from "@/components/Products/ProductRow";
-import { ThemedText } from "@/components/Shared/ThemedText";
-import { Pill } from "@/components/Shared/Pill";
+  View,
+} from 'react-native'
 
 const statusColors = {
-  active: "green",
-  canceled: "red",
-  incomplete: "yellow",
-  incomplete_expired: "red",
-  past_due: "red",
-  trialing: "blue",
-  unpaid: "yellow",
-} as const;
+  active: 'green',
+  canceled: 'red',
+  incomplete: 'yellow',
+  incomplete_expired: 'red',
+  past_due: 'red',
+  trialing: 'blue',
+  unpaid: 'yellow',
+} as const
 
 export default function Index() {
-  const { organization } = useContext(OrganizationContext);
-  const { id } = useLocalSearchParams();
-  const { colors } = useTheme();
+  const { organization } = useContext(OrganizationContext)
+  const { id } = useLocalSearchParams()
+  const { colors } = useTheme()
 
   const {
     data: subscription,
     refetch,
     isRefetching,
-  } = useSubscription(id as string);
+  } = useSubscription(id as string)
 
   const { data: subscriptionOrders } = useOrders(organization?.id, {
     customerId: subscription?.customer.id,
     productId: subscription?.product.id,
-  });
+  })
 
   const flatSubscriptionOrders = useMemo(() => {
-    return subscriptionOrders?.pages.flatMap((page) => page.result.items) ?? [];
-  }, [subscriptionOrders]);
+    return subscriptionOrders?.pages.flatMap((page) => page.items) ?? []
+  }, [subscriptionOrders])
 
   if (!subscription) {
     return (
       <Stack.Screen
         options={{
-          title: "Subscription",
+          title: 'Subscription',
         }}
       />
-    );
+    )
   }
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ flexDirection: "column", gap: 16 }}
+      contentContainerStyle={{ flexDirection: 'column', gap: 16 }}
       refreshControl={
         <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
       }
@@ -77,18 +72,18 @@ export default function Index() {
     >
       <Stack.Screen
         options={{
-          title: "Subscription",
+          title: 'Subscription',
         }}
       />
 
-      <View style={[styles.section, { gap: 12, flexDirection: "row" }]}>
+      <View style={[styles.section, { gap: 12, flexDirection: 'row' }]}>
         <TouchableOpacity
           style={[
             styles.box,
-            { backgroundColor: colors.card, flex: 1, gap: 4, width: "50%" },
+            { backgroundColor: colors.card, flex: 1, gap: 4, width: '50%' },
           ]}
           onPress={() => {
-            Clipboard.setStringAsync(subscription.id);
+            Clipboard.setStringAsync(subscription.id)
           }}
           activeOpacity={0.6}
         >
@@ -96,24 +91,24 @@ export default function Index() {
             #
           </ThemedText>
           <ThemedText
-            style={[styles.value, { textTransform: "uppercase", fontSize: 16 }]}
+            style={[styles.value, { textTransform: 'uppercase', fontSize: 16 }]}
             numberOfLines={1}
           >
-            {subscription.id.split("-").pop()?.slice(-6, -1)}
+            {subscription.id.split('-').pop()?.slice(-6, -1)}
           </ThemedText>
         </TouchableOpacity>
         <View
           style={[
             styles.box,
-            { backgroundColor: colors.card, flex: 1, gap: 4, width: "50%" },
+            { backgroundColor: colors.card, flex: 1, gap: 4, width: '50%' },
           ]}
         >
           <ThemedText style={[styles.label, { fontSize: 16 }]} secondary>
             Date
           </ThemedText>
           <ThemedText style={[styles.value, { fontSize: 16 }]}>
-            {subscription.createdAt.toLocaleDateString("en-US", {
-              dateStyle: "medium",
+            {new Date(subscription.created_at).toLocaleDateString('en-US', {
+              dateStyle: 'medium',
             })}
           </ThemedText>
         </View>
@@ -132,54 +127,67 @@ export default function Index() {
                 color={statusColors[subscription.status]}
                 textStyle={{ fontSize: 14 }}
               >
-                {subscription.status.split("_").join(" ")}
+                {subscription.status.split('_').join(' ')}
               </Pill>
             }
-            valueStyle={{ textTransform: "capitalize" }}
+            valueStyle={{ textTransform: 'capitalize' }}
           />
-          {subscription.status === "canceled" && (
+          {subscription.status === 'canceled' && (
             <DetailRow
               label="Cancellation Reason"
-              value={subscription.customerCancellationReason}
+              value={subscription.customer_cancellation_reason}
             />
           )}
-          {subscription.status === "canceled" && (
+          {subscription.status === 'canceled' && (
             <DetailRow
               label="Cancels At"
               value={
-                subscription.cancelAtPeriodEnd
-                  ? subscription.currentPeriodEnd?.toLocaleDateString("en-US", {
-                      dateStyle: "medium",
+                subscription.cancel_at_period_end
+                  ? new Date(
+                      subscription.current_period_end ?? '',
+                    ).toLocaleDateString('en-US', {
+                      dateStyle: 'medium',
                     })
-                  : subscription.canceledAt?.toLocaleDateString("en-US", {
-                      dateStyle: "medium",
-                    })
+                  : new Date(subscription.canceled_at ?? '').toLocaleDateString(
+                      'en-US',
+                      {
+                        dateStyle: 'medium',
+                      },
+                    )
               }
             />
           )}
           <DetailRow
             label="Recurring Interval"
-            value={subscription.recurringInterval.split("_").join(" ")}
-            valueStyle={{ textTransform: "capitalize" }}
+            value={subscription.recurring_interval.split('_').join(' ')}
+            valueStyle={{ textTransform: 'capitalize' }}
           />
           <DetailRow
             label="Start Date"
-            value={subscription.startedAt?.toLocaleDateString("en-US", {
-              dateStyle: "medium",
-            })}
+            value={new Date(subscription.started_at ?? '').toLocaleDateString(
+              'en-US',
+              {
+                dateStyle: 'medium',
+              },
+            )}
           />
           <DetailRow
             label="Renewal Date"
-            value={subscription.currentPeriodEnd?.toLocaleDateString("en-US", {
-              dateStyle: "medium",
+            value={new Date(
+              subscription.current_period_end ?? '',
+            ).toLocaleDateString('en-US', {
+              dateStyle: 'medium',
             })}
           />
-          {subscription.endsAt && (
+          {subscription.ends_at && (
             <DetailRow
               label="End Date"
-              value={subscription.endsAt?.toLocaleDateString("en-US", {
-                dateStyle: "medium",
-              })}
+              value={new Date(subscription.ends_at ?? '').toLocaleDateString(
+                'en-US',
+                {
+                  dateStyle: 'medium',
+                },
+              )}
             />
           )}
         </Details>
@@ -196,12 +204,12 @@ export default function Index() {
           </View>
         )}
 
-      {subscription.status === "active" && (
-        <View style={{ flexDirection: "column", gap: 8 }}>
-          <Link key={"update"} href={`/subscriptions/${id}/update`} asChild>
+      {subscription.status === 'active' && (
+        <View style={{ flexDirection: 'column', gap: 8 }}>
+          <Link key={'update'} href={`/subscriptions/${id}/update`} asChild>
             <Button>Update Subscription</Button>
           </Link>
-          <Link key={"cancel"} href={`/subscriptions/${id}/cancel`} asChild>
+          <Link key={'cancel'} href={`/subscriptions/${id}/cancel`} asChild>
             <Button variant="secondary">Cancel Subscription</Button>
           </Link>
         </View>
@@ -210,10 +218,10 @@ export default function Index() {
       <View style={[styles.section, { gap: 16, paddingVertical: 12 }]}>
         <View
           style={{
-            flexDirection: "row",
-            alignItems: "center",
+            flexDirection: 'row',
+            alignItems: 'center',
             gap: 8,
-            justifyContent: "space-between",
+            justifyContent: 'space-between',
           }}
         >
           <ThemedText style={[styles.label, { fontSize: 20 }]}>
@@ -238,7 +246,7 @@ export default function Index() {
         )}
       </View>
     </ScrollView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -246,11 +254,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     gap: 12,
-    flexDirection: "column",
+    flexDirection: 'column',
   },
   section: {},
   box: {
-    flexDirection: "column",
+    flexDirection: 'column',
     gap: 4,
     borderRadius: 12,
     padding: 12,
@@ -261,8 +269,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 6,
   },
   label: {
@@ -270,6 +278,6 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: '500',
   },
-});
+})

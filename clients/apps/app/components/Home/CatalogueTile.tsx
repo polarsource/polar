@@ -1,58 +1,56 @@
-import { View, StyleSheet } from "react-native";
-import { Tile } from "./Tile";
-import { useContext, useMemo } from "react";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import { ThemedText } from "../Shared/ThemedText";
-import { useProducts } from "@/hooks/polar/products";
-import { endOfWeek, startOfWeek, subDays } from "date-fns";
-import { useTheme } from "@/hooks/theme";
-import { useMetrics } from "@/hooks/polar/metrics";
+import { useMetrics } from '@/hooks/polar/metrics'
+import { useProducts } from '@/hooks/polar/products'
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { subDays } from 'date-fns'
+import { useContext, useMemo } from 'react'
+import { StyleSheet, View } from 'react-native'
+import { ThemedText } from '../Shared/ThemedText'
+import { Tile } from './Tile'
 
 export const CatalogueTile = () => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
-  const { organization } = useContext(OrganizationContext);
+  const { organization } = useContext(OrganizationContext)
   const { data: products } = useProducts(organization?.id, {
     limit: 100,
-  });
+  })
 
   const startDate = useMemo(() => {
-    return subDays(new Date(), 6);
-  }, []);
+    return subDays(new Date(), 6)
+  }, [])
 
   const endDate = useMemo(() => {
-    return new Date();
-  }, []);
+    return new Date()
+  }, [])
 
   const metrics = useMetrics(organization?.id, startDate, endDate, {
-    interval: "day",
-  });
+    interval: 'day',
+  })
 
   return (
     <Tile href="/products">
       <View
         style={{
           flex: 1,
-          flexDirection: "column",
-          justifyContent: "space-between",
+          flexDirection: 'column',
+          justifyContent: 'space-between',
         }}
       >
-        <View style={{ flexDirection: "column", gap: 4 }}>
+        <View style={{ flexDirection: 'column', gap: 4 }}>
           <ThemedText style={[styles.subtitle]} secondary>
             Catalogue
           </ThemedText>
           <ThemedText style={[styles.title]}>
-            {products?.result?.items.length}{" "}
-            {`${
-              (products?.result?.items.length ?? 0) > 1 ? "Products" : "Product"
-            }`}
+            {products?.items.length}{' '}
+            {`${(products?.items.length ?? 0) > 1 ? 'Products' : 'Product'}`}
           </ThemedText>
         </View>
-        <View style={{ flexDirection: "column", gap: 8 }}>
+        <View style={{ flexDirection: 'column', gap: 8 }}>
           <View
             style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
+              flexDirection: 'row',
+              justifyContent: 'space-between',
               gap: 4,
             }}
           >
@@ -62,8 +60,8 @@ export const CatalogueTile = () => {
           </View>
           <View
             style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
+              flexDirection: 'row',
+              justifyContent: 'space-between',
               gap: 4,
             }}
           >
@@ -83,8 +81,8 @@ export const CatalogueTile = () => {
         </View>
       </View>
     </Tile>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   title: {
@@ -96,4 +94,4 @@ const styles = StyleSheet.create({
   revenueValue: {
     fontSize: 26,
   },
-});
+})

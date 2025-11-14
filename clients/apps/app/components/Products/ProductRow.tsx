@@ -1,33 +1,29 @@
-import { useProduct } from "@/hooks/polar/products";
-import { useTheme } from "@/hooks/theme";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Order } from "@polar-sh/sdk/models/components/order.js";
-import { Product } from "@polar-sh/sdk/models/components/product.js";
-import { Link } from "expo-router";
-import React, { useContext } from "react";
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import { schemas } from '@polar-sh/client'
+import { Link } from 'expo-router'
+import React, { useContext } from 'react'
 import {
-  View,
-  Text,
-  StyleSheet,
   Image,
   StyleProp,
+  StyleSheet,
   TextStyle,
   TouchableOpacity,
-} from "react-native";
-import AmountLabel from "./AmountLabel";
-import { ProductPriceLabel } from "./ProductPriceLabel";
-import { ThemedText } from "../Shared/ThemedText";
-import { Pill } from "../Shared/Pill";
+  View,
+} from 'react-native'
+import { Pill } from '../Shared/Pill'
+import { ThemedText } from '../Shared/ThemedText'
+import { ProductPriceLabel } from './ProductPriceLabel'
 
 export interface ProductRowProps {
-  product: Product;
-  style?: StyleProp<TextStyle>;
+  product: schemas['Product']
+  style?: StyleProp<TextStyle>
 }
 
 export const ProductRow = ({ product, style }: ProductRowProps) => {
-  const { colors } = useTheme();
-  const { organization } = useContext(OrganizationContext);
+  const { colors } = useTheme()
+  const { organization } = useContext(OrganizationContext)
 
   return (
     <Link
@@ -37,9 +33,9 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
     >
       <TouchableOpacity activeOpacity={0.6}>
         <View style={[styles.imageContainer]}>
-          {product?.medias?.[0]?.publicUrl ? (
+          {product?.medias?.[0]?.public_url ? (
             <Image
-              source={{ uri: product?.medias?.[0]?.publicUrl }}
+              source={{ uri: product?.medias?.[0]?.public_url }}
               style={styles.image}
               resizeMode="cover"
             />
@@ -61,9 +57,9 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
         <View style={styles.contentContainer}>
           <View
             style={{
-              flexDirection: "row",
+              flexDirection: 'row',
               gap: 4,
-              justifyContent: "space-between",
+              justifyContent: 'space-between',
             }}
           >
             <ThemedText
@@ -73,20 +69,20 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
             >
               {product.name}
             </ThemedText>
-            {product.isArchived && <Pill color="red">Archived</Pill>}
+            {product.is_archived && <Pill color="red">Archived</Pill>}
           </View>
           <ProductPriceLabel product={product} />
         </View>
       </TouchableOpacity>
     </Link>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: 12,
     gap: 12,
   },
@@ -94,30 +90,30 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 8,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   image: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
   },
   imageFallback: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   fallbackText: {
     fontSize: 20,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   contentContainer: {
     flex: 1,
-    flexDirection: "column",
+    flexDirection: 'column',
     gap: 4,
   },
   productName: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: '500',
     flexShrink: 1,
   },
   amount: {
@@ -129,7 +125,7 @@ const styles = StyleSheet.create({
   },
   metadataContainer: {
     flex: 1,
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 6,
   },
-});
+})

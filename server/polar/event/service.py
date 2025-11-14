@@ -214,16 +214,11 @@ class EventService:
             else:
                 statement = statement.where(Event.parent_id.is_(None))
 
-        if aggregate_fields:
-            return await repository.list_with_closure_table(
-                statement,
-                limit=pagination.limit,
-                page=pagination.page,
-                aggregate_fields=aggregate_fields,
-            )
-
-        return await repository.paginate(
-            statement, limit=pagination.limit, page=pagination.page
+        return await repository.list_with_closure_table(
+            statement,
+            limit=pagination.limit,
+            page=pagination.page,
+            aggregate_fields=aggregate_fields,
         )
 
     async def get(

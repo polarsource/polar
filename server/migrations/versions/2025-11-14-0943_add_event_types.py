@@ -88,7 +88,6 @@ def downgrade() -> None:
     op.drop_column("events", "event_type_id")
     op.drop_index(op.f("ix_event_types_organization_id"), table_name="event_types")
     op.drop_index(op.f("ix_event_types_name"), table_name="event_types")
-    op.drop_index(op.f("ix_event_types_modified_at"), table_name="event_types")
     op.drop_index(op.f("ix_event_types_deleted_at"), table_name="event_types")
     op.drop_index(op.f("ix_event_types_created_at"), table_name="event_types")
     op.drop_table("event_types")

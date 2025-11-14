@@ -293,7 +293,6 @@ const MetricChartBox = ({
               previousData={previousData}
               interval={interval}
               metric={selectedMetric?.slug as keyof schemas['Metrics']}
-              hide={hideModal}
             />
           }
         />

@@ -1,5 +1,4 @@
 import { ParsedMetricsResponse } from '@/hooks/queries/metrics'
-import Close from '@mui/icons-material/Close'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -19,7 +18,6 @@ interface ShareChartModalProps {
   interval: schemas['TimeInterval']
   data: ParsedMetricsResponse
   previousData?: ParsedMetricsResponse
-  hide: () => void
 }
 
 export const ShareChartModal = ({
@@ -27,7 +25,6 @@ export const ShareChartModal = ({
   interval,
   data,
   previousData,
-  hide,
 }: ShareChartModalProps) => {
   const chartRef = useRef<HTMLDivElement>(null)
   const [theme, setTheme] = useState<MetricTheme>('mono')
@@ -54,7 +51,7 @@ export const ShareChartModal = ({
     }
 
     return params
-  }, [theme])
+  }, [])
 
   const downloadImage = useCallback(() => {
     const params = getParams()
@@ -99,14 +96,6 @@ export const ShareChartModal = ({
 
   return (
     <div className="relative flex w-full max-w-4xl flex-col items-center justify-center overflow-y-auto p-16">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={hide}
-        className="absolute top-6 right-6"
-      >
-        <Close />
-      </Button>
       <div className="flex flex-col items-start gap-8">
         <div
           ref={chartRef}

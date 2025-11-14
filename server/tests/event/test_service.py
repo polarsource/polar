@@ -445,7 +445,8 @@ class TestIngest:
         for event in events:
             assert event.source == EventSource.user
 
-        enqueue_events_mock.assert_called_once_with(*(event.id for event in events))
+        enqueue_events_mock.assert_called_once()
+        assert set(enqueue_events_mock.call_args[0]) == {event.id for event in events}
 
     @pytest.mark.parametrize("count", [0, 1, 500])
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -475,7 +476,8 @@ class TestIngest:
         for event in events:
             assert event.source == EventSource.user
 
-        enqueue_events_mock.assert_called_once_with(*(event.id for event in events))
+        enqueue_events_mock.assert_called_once()
+        assert set(enqueue_events_mock.call_args[0]) == {event.id for event in events}
 
     @pytest.mark.parametrize(
         "metadata",

@@ -33,6 +33,7 @@ const CheckoutSeatSelector = ({
   const netAmount = checkout.netAmount || 0
   const currency = productPrice.priceCurrency || 'usd'
   const pricePerSeat = checkout.pricePerSeat || 0
+  const flatFee = checkout.flatFee || 0
 
   const handleUpdateSeats = async (newSeats: number) => {
     if (newSeats < 1 || newSeats > 1000 || isUpdating) return
@@ -90,9 +91,14 @@ const CheckoutSeatSelector = ({
         <h1 className="text-3xl font-light text-gray-900 dark:text-white">
           {formatCurrencyAndAmount(netAmount, currency, 0)}
         </h1>
-        <p className="dark:text-polar-400 text-sm text-gray-500">
-          {formatCurrencyAndAmount(pricePerSeat, currency, 0)} per seat
-        </p>
+        <div className="dark:text-polar-400 flex flex-col gap-1 text-sm text-gray-500">
+          {flatFee > 0 && (
+            <p>{formatCurrencyAndAmount(flatFee, currency, 0)} base fee</p>
+          )}
+          {pricePerSeat > 0 && (
+            <p>{formatCurrencyAndAmount(pricePerSeat, currency, 0)} per seat</p>
+          )}
+        </div>
       </div>
 
       {/* Seat Selector */}

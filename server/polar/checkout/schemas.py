@@ -449,6 +449,13 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
             "based on the applicable tier. Only relevant for seat-based pricing."
         ),
     )
+    flat_fee: int | None = Field(
+        default=None,
+        description=(
+            "Flat fee in cents for the current seat count, "
+            "based on the applicable tier. Only relevant for seat-based pricing."
+        ),
+    )
     discount_amount: int = Field(description="Discount amount in cents.")
     net_amount: int = Field(
         description="Amount in cents, after discounts but before taxes."

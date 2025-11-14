@@ -7844,6 +7844,11 @@ export interface components {
        */
       price_per_seat?: number | null
       /**
+       * Flat Fee
+       * @description Flat fee in cents for the current seat count, based on the applicable tier. Only relevant for seat-based pricing.
+       */
+      flat_fee?: number | null
+      /**
        * Discount Amount
        * @description Discount amount in cents.
        */
@@ -9345,6 +9350,11 @@ export interface components {
        */
       price_per_seat?: number | null
       /**
+       * Flat Fee
+       * @description Flat fee in cents for the current seat count, based on the applicable tier. Only relevant for seat-based pricing.
+       */
+      flat_fee?: number | null
+      /**
        * Discount Amount
        * @description Discount amount in cents.
        */
@@ -9589,6 +9599,11 @@ export interface components {
        * @description Price per seat in cents for the current seat count, based on the applicable tier. Only relevant for seat-based pricing.
        */
       price_per_seat?: number | null
+      /**
+       * Flat Fee
+       * @description Flat fee in cents for the current seat count, based on the applicable tier. Only relevant for seat-based pricing.
+       */
+      flat_fee?: number | null
       /**
        * Discount Amount
        * @description Discount amount in cents.
@@ -19890,6 +19905,13 @@ export interface components {
     /**
      * ProductPriceSeatTier
      * @description A pricing tier for seat-based pricing.
+     *
+     *     Supports three pricing models:
+     *     - price_per_seat only: Total = price_per_seat * seats
+     *     - flat_fee only: Total = flat_fee (fixed price regardless of seat count)
+     *     - Combined: Total = flat_fee + (price_per_seat * seats)
+     *
+     *     At least one pricing field must be provided.
      */
     ProductPriceSeatTier: {
       /**
@@ -19906,7 +19928,12 @@ export interface components {
        * Price Per Seat
        * @description Price per seat in cents for this tier
        */
-      price_per_seat: number
+      price_per_seat?: number | null
+      /**
+       * Flat Fee
+       * @description Fixed base price in cents for this tier
+       */
+      flat_fee?: number | null
     }
     /**
      * ProductPriceSeatTiers

@@ -403,6 +403,17 @@ class Checkout(
         return self.product_price.get_price_per_seat(self.seats)
 
     @property
+    def flat_fee(self) -> int | None:
+        if not isinstance(self.product_price, ProductPriceSeatUnit):
+            return None
+
+        if self.seats is None:
+            return None
+
+        tier = self.product_price.get_tier_for_seats(self.seats)
+        return tier.get("flat_fee")
+
+    @property
     def description(self) -> str:
         if self.product is not None:
             return f"{self.organization.name} — {self.product.name}"

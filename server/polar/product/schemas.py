@@ -2,7 +2,7 @@ import builtins
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Discriminator, Field, Tag, computed_field, field_validator
+from pydantic import UUID4, Discriminator, Field, Tag, computed_field, field_validator, model_validator
 from pydantic.aliases import AliasChoices
 from pydantic.json_schema import SkipJsonSchema
 
@@ -165,6 +165,13 @@ class ProductPriceFreeCreate(ProductPriceCreateBase):
 class ProductPriceSeatTier(Schema):
     """
     A pricing tier for seat-based pricing.
+
+    Supports three pricing models:
+    - price_per_seat only: Total = price_per_seat * seats
+    - flat_fee only: Total = flat_fee (fixed price regardless of seat count)
+    - Combined: Total = flat_fee + (price_per_seat * seats)
+
+    At least one pricing field must be provided.
     """
 
     min_seats: int = Field(ge=1, description="Minimum number of seats (inclusive)")
@@ -173,9 +180,24 @@ class ProductPriceSeatTier(Schema):
         ge=1,
         description="Maximum number of seats (inclusive). None for unlimited.",
     )
-    price_per_seat: SeatPriceAmount = Field(
-        description="Price per seat in cents for this tier"
+    price_per_seat: SeatPriceAmount | None = Field(
+        default=None, description="Price per seat in cents for this tier"
     )
+    flat_fee: SeatPriceAmount | None = Field(
+        default=None,
+        description="Fixed base price in cents for this tier",
+    )
+
+    @model_validator(mode="after")
+    def validate_pricing_fields(self) -> "ProductPriceSeatTier":
+        """Ensure at least one pricing field is provided."""
+        has_per_seat = self.price_per_seat is not None
+        has_flat_fee = self.flat_fee is not None
+
+        if not has_per_seat and not has_flat_fee:
+            raise ValueError("At least one of price_per_seat or flat_fee must be provided")
+
+        return self
 
 
 class ProductPriceSeatTiers(Schema):

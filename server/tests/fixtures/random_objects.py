@@ -831,6 +831,7 @@ async def create_order(
                 amount=subtotal_amount,
                 tax_amount=tax_amount,
                 proration=False,
+                quantity=1,
             )
         ]
 
@@ -1081,6 +1082,7 @@ async def create_active_subscription(
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
     user_metadata: dict[str, Any] | None = None,
     scheduler_locked_at: datetime | None = None,
+    seats: int | None = None,
 ) -> Subscription:
     return await create_subscription(
         save_fixture,
@@ -1098,6 +1100,7 @@ async def create_active_subscription(
         stripe_subscription_id=stripe_subscription_id,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
+        seats=seats,
     )
 
 

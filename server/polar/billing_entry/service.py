@@ -16,6 +16,7 @@ from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, Event, OrderItem, Subscription
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
+from polar.models.product_price import ProductPriceSeatUnit
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
@@ -88,12 +89,22 @@ class BillingEntryService:
                     },
                 )
 
+            # Determine quantity based on line item type
+            quantity = 1
+            if isinstance(line_item, MeteredLineItem):
+                quantity = int(line_item.consumed_units)
+            elif isinstance(line_item, StaticLineItem) and isinstance(
+                line_item.price, ProductPriceSeatUnit
+            ):
+                quantity = subscription.seats or 1
+
             order_item = OrderItem(
                 id=order_item_id,
                 label=line_item.label,
                 amount=line_item.amount,
                 tax_amount=0,
                 proration=line_item.proration,
+                quantity=quantity,
                 product_price=line_item.price,
             )
             items.append(order_item)

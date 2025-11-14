@@ -4,16 +4,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
-from tagflow import tag, text
+from tagflow import attr, tag, text
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, WebhookEndpoint
-from polar.postgres import AsyncSession, get_db_read_session
+from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.webhook.repository import WebhookEndpointRepository
+from polar.webhook.schemas import WebhookEndpointUpdate
+from polar.webhook.service import webhook as webhook_service
 from polar.webhook.sorting import WebhookSortProperty
 
-from ..components import button, datatable, description_list, input
+from ..components import button, confirmation_dialog, datatable, description_list, input
 from ..layout import layout
+from ..toast import add_toast
 
 router = APIRouter()
 
@@ -131,25 +134,47 @@ async def get(
                     with tag.div(classes="card-body"):
                         with tag.h2(classes="card-title"):
                             text("Webhook Details")
-                        with description_list.DescriptionList[WebhookEndpoint](
-                            description_list.DescriptionListAttrItem(
-                                "id", "ID", clipboard=True
-                            ),
-                            description_list.DescriptionListAttrItem("url", "URL"),
-                            description_list.DescriptionListAttrItem(
-                                "format", "Format"
-                            ),
-                            description_list.DescriptionListAttrItem(
-                                "enabled", "Enabled"
-                            ),
-                            description_list.DescriptionListDateTimeItem(
-                                "created_at", "Created At"
-                            ),
-                            description_list.DescriptionListDateTimeItem(
-                                "modified_at", "Modified At"
-                            ),
-                        ).render(request, webhook):
+                        with tag.div(id="webhook-details-list"):
+                            with description_list.DescriptionList[WebhookEndpoint](
+                                description_list.DescriptionListAttrItem(
+                                    "id", "ID", clipboard=True
+                                ),
+                                description_list.DescriptionListAttrItem("url", "URL"),
+                                description_list.DescriptionListAttrItem(
+                                    "format", "Format"
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "enabled", "Enabled"
+                                ),
+                                description_list.DescriptionListDateTimeItem(
+                                    "created_at", "Created At"
+                                ),
+                                description_list.DescriptionListDateTimeItem(
+                                    "modified_at", "Modified At"
+                                ),
+                            ).render(request, webhook):
+                                pass
+
+                        with tag.div(classes="divider"):
                             pass
+
+                        with tag.div(
+                            id="webhook-enabled-status",
+                            classes="flex items-center justify-between",
+                        ):
+                            with tag.span(classes="label-text font-medium"):
+                                text("Enabled")
+                            with button(
+                                variant="success" if webhook.enabled else "neutral",
+                                size="sm",
+                                hx_get=str(
+                                    request.url_for(
+                                        "webhooks:confirm_toggle_enabled", id=webhook.id
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Enabled" if webhook.enabled else "Disabled")
 
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
@@ -190,3 +215,92 @@ async def get(
                                     with tag.tr():
                                         with tag.td():
                                             text(event)
+
+
+@router.get("/{id}/confirm-toggle-enabled", name="webhooks:confirm_toggle_enabled")
+async def confirm_toggle_enabled(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_read_session),
+) -> None:
+    repository = WebhookEndpointRepository.from_session(session)
+    webhook = await repository.get_by_id(id)
+
+    if webhook is None:
+        raise HTTPException(status_code=404)
+
+    action = "disable" if webhook.enabled else "enable"
+    with confirmation_dialog(
+        title=f"{action.capitalize()} Webhook",
+        message=f"Are you sure you want to {action} this webhook endpoint? "
+        + (
+            "It will stop receiving events."
+            if webhook.enabled
+            else "It will start receiving events again."
+        ),
+        variant="warning",
+        confirm_text=action.capitalize(),
+        open=True,
+    ):
+        attr(
+            "hx-post",
+            str(request.url_for("webhooks:toggle_enabled", id=webhook.id)),
+        )
+        attr("hx-target", "#modal")
+
+
+@router.post("/{id}/toggle-enabled", name="webhooks:toggle_enabled")
+async def toggle_enabled(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    repository = WebhookEndpointRepository.from_session(session)
+    webhook = await repository.get_by_id(id)
+
+    if webhook is None:
+        raise HTTPException(status_code=404)
+
+    update_schema = WebhookEndpointUpdate(enabled=not webhook.enabled)
+    webhook = await webhook_service.update_endpoint(
+        session, endpoint=webhook, update_schema=update_schema
+    )
+    await session.flush()
+
+    await add_toast(
+        request,
+        f"Webhook {'enabled' if webhook.enabled else 'disabled'} successfully",
+        "success",
+    )
+
+    with tag.div(id="modal"):
+        pass
+
+    with tag.div(id="webhook-details-list"):
+        attr("hx-swap-oob", "true")
+        with description_list.DescriptionList[WebhookEndpoint](
+            description_list.DescriptionListAttrItem("id", "ID", clipboard=True),
+            description_list.DescriptionListAttrItem("url", "URL"),
+            description_list.DescriptionListAttrItem("format", "Format"),
+            description_list.DescriptionListAttrItem("enabled", "Enabled"),
+            description_list.DescriptionListDateTimeItem("created_at", "Created At"),
+            description_list.DescriptionListDateTimeItem("modified_at", "Modified At"),
+        ).render(request, webhook):
+            pass
+
+    with tag.div(
+        id="webhook-enabled-status",
+        classes="flex items-center justify-between",
+    ):
+        attr("hx-swap-oob", "true")
+        with tag.span(classes="label-text font-medium"):
+            text("Enabled")
+        with button(
+            variant="success" if webhook.enabled else "neutral",
+            size="sm",
+            hx_get=str(
+                request.url_for("webhooks:confirm_toggle_enabled", id=webhook.id)
+            ),
+            hx_target="#modal",
+        ):
+            text("Enabled" if webhook.enabled else "Disabled")

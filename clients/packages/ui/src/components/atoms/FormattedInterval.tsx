@@ -38,13 +38,14 @@ const FormattedInterval: React.FC<FormattedIntervalProps> = ({
     }
 
     if (startYear === endYear && startMonth === endMonth) {
-      const monthYear = endDate.toLocaleDateString(locale, {
+      const startFormatted = startDate.toLocaleDateString(locale, {
         month: 'short',
-        ...(shouldHideYear ? {} : { year: 'numeric' }),
+        day: 'numeric',
       })
-      const startDay = startDate.getDate()
-      const endDay = endDate.getDate()
-      return `${monthYear} ${startDay} ${separator} ${endDay}`
+      const endFormatted = `${endDate.toLocaleDateString(locale, {
+        day: 'numeric',
+      })}${shouldHideYear ? '' : `, ${endYear}`}`
+      return `${startFormatted} ${separator} ${endFormatted}`
     }
 
     if (startYear === endYear) {

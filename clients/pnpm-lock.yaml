@@ -434,6 +434,9 @@ importers:
       react-use:
         specifier: ^17.6.0
         version: 17.6.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      recharts:
+        specifier: ^3.4.1
+        version: 3.4.1(@types/react@19.2.3)(react-dom@19.2.0(react@19.2.0))(react-is@19.2.0)(react@19.2.0)(redux@5.0.1)
       rehype-mdx-import-media:
         specifier: ^1.2.0
         version: 1.2.0

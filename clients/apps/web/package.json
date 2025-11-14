@@ -86,6 +86,7 @@
     "react-hook-form": "^7.66.0",
     "react-timeago": "^8.3.0",
     "react-use": "^17.6.0",
+    "recharts": "^3.4.1",
     "rehype-mdx-import-media": "^1.2.0",
     "rehype-slug": "^6.0.0",
     "remark-frontmatter": "^5.0.0",

@@ -25,8 +25,6 @@ export const ErrorFallback = ({
       error.message.includes('insufficient_scope')) ||
     (error instanceof Error && error.message.includes('privileges'))
 
-  console.log(error)
-
   const title = useMemo(() => {
     switch (true) {
       case permissionError:

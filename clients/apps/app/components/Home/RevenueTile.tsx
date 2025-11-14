@@ -82,7 +82,7 @@ export const RevenueTile = () => {
         </View>
         {cumulativeRevenueData && (
           <View
-            style={{ height: 40, width: '100%' }}
+            style={{ flex: 1, flexGrow: 1, width: '100%' }}
             onLayout={(event) => {
               setHeight(event.nativeEvent.layout.height)
               setWidth(event.nativeEvent.layout.width)
@@ -119,8 +119,14 @@ export const RevenueTile = () => {
             </Svg>
           </View>
         )}
-        <ThemedText style={[styles.revenueValue]}>
-          {formatCurrencyAndAmount(cumulativeRevenue, 'usd', 0, 'compact')}
+        <ThemedText style={[styles.revenueValue]} numberOfLines={1}>
+          {formatCurrencyAndAmount(
+            metrics.data?.totals.revenue ?? 0,
+            'usd',
+            0,
+            undefined,
+            0,
+          )}
         </ThemedText>
       </View>
     </Tile>
@@ -132,6 +138,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'space-between',
+    gap: 4,
   },
   title: {
     fontSize: 16,
@@ -140,6 +147,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   revenueValue: {
-    fontSize: 26,
+    fontSize: 22,
   },
 })

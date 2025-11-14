@@ -186,18 +186,18 @@ export default function Index() {
         )}
         <View style={{ gap: 16 }}>
           <View style={{ flexDirection: 'row', gap: 16 }}>
-            <View {...tileAnimationProps(0)}>
+            <View style={{ flex: 1 }}>
               <OrganizationTile />
             </View>
-            <View {...tileAnimationProps(100)}>
+            <View style={{ flex: 1 }}>
               <RevenueTile />
             </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 16 }}>
-            <View {...tileAnimationProps(200)}>
+            <View style={{ flex: 1 }}>
               <CatalogueTile />
             </View>
-            <View {...tileAnimationProps(300)}>
+            <View style={{ flex: 1 }}>
               <FinanceTile />
             </View>
           </View>

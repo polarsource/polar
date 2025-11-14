@@ -1,27 +1,24 @@
 'use client'
 
 import { Toaster } from '@/components/Toast/Toaster'
+import { useThemePresetContext } from '@/providers/ThemePresetProvider'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import { getThemePreset, ThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useSearchParams } from 'next/navigation'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 import { twMerge } from 'tailwind-merge'
 import { Navigation } from './Navigation'
 
-export const PortalContent = ({
+export const PortalWrapper = ({
   organization,
   children,
 }: {
   organization: schemas['CustomerOrganization']
   children: React.ReactNode
 }) => {
-  const searchParams = useSearchParams()
-
-  // Get theme from query parameter, fallback to organization slug-based theme
-  const themeParam = searchParams.get('theme')
-  const themePresetName: ThemePreset | (string & {}) =
-    themeParam || organization.slug
-  const themePreset = getThemePreset(themePresetName)
+  const { themePreset: themePresetName } = useThemePresetContext()
+  const { resolvedTheme } = useTheme()
+  const themePreset = getThemePreset(themePresetName, resolvedTheme as 'light' | 'dark')
 
   return (
     <div

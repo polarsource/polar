@@ -1,6 +1,7 @@
+import { ThemePresetProvider } from '@/providers/ThemePresetProvider'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
-import { PortalContent } from './PortalContent'
+import { PortalWrapper } from './PortalWrapper'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,5 +19,9 @@ export default async function Layout(props: {
     params.organization,
   )
 
-  return <PortalContent organization={organization}>{children}</PortalContent>
+  return (
+    <ThemePresetProvider organizationSlug={organization.slug}>
+      <PortalWrapper organization={organization}>{children}</PortalWrapper>
+    </ThemePresetProvider>
+  )
 }

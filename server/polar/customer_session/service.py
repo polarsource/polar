@@ -65,7 +65,7 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
             )
 
         token, customer_session = await self.create_customer_session(
-            session, customer, customer_create.return_url, customer_create.theme
+            session, customer, customer_create.return_url
         )
         customer_session.raw_token = token
         return customer_session
@@ -75,7 +75,6 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         session: AsyncSession,
         customer: Customer,
         return_url: HttpUrl | None = None,
-        theme: str | None = None,
     ) -> tuple[str, CustomerSession]:
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=CUSTOMER_SESSION_TOKEN_PREFIX
@@ -84,7 +83,6 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
             token=token_hash,
             customer=customer,
             return_url=str(return_url) if return_url else None,
-            theme=theme,
         )
         session.add(customer_session)
         await session.flush()

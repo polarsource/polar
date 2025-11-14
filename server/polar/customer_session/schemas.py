@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import UUID4, Field, HttpUrl
 from pydantic.aliases import AliasChoices
@@ -17,13 +17,6 @@ class CustomerSessionCreateBase(Schema):
                 "to return to this URL."
             ),
             examples=["https://example.com/account"],
-        ),
-    ] = None
-    theme: Annotated[
-        Literal["polar", "midday"] | None,
-        Field(
-            description="Theme to apply to the customer portal.",
-            examples=["polar", "midday"],
         ),
     ] = None
 
@@ -62,7 +55,6 @@ class CustomerSession(IDSchema, TimestampedSchema):
     token: str = Field(validation_alias="raw_token")
     expires_at: datetime
     return_url: str | None
-    theme: str | None
     customer_portal_url: str
     customer_id: UUID4
     customer: Customer

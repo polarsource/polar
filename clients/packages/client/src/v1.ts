@@ -12844,8 +12844,6 @@ export interface components {
       expires_at: string
       /** Return Url */
       return_url: string | null
-      /** Theme */
-      theme: string | null
       /** Customer Portal Url */
       customer_portal_url: string
       /**
@@ -12901,13 +12899,6 @@ export interface components {
        */
       return_url?: string | null
       /**
-       * Theme
-       * @description Theme to apply to the customer portal.
-       * @example polar
-       * @example midday
-       */
-      theme?: ('polar' | 'midday') | null
-      /**
        * External Customer Id
        * @description External ID of the customer to create a session for.
        */
@@ -12924,13 +12915,6 @@ export interface components {
        * @example https://example.com/account
        */
       return_url?: string | null
-      /**
-       * Theme
-       * @description Theme to apply to the customer portal.
-       * @example polar
-       * @example midday
-       */
-      theme?: ('polar' | 'midday') | null
       /**
        * Customer Id
        * Format: uuid4
@@ -22852,11 +22836,6 @@ export interface components {
        */
       succeeded?: boolean | null
       /**
-       * Skipped
-       * @description Whether this event was skipped because the webhook endpoint was disabled.
-       */
-      skipped: boolean
-      /**
        * Payload
        * @description The payload of the webhook event.
        */
@@ -27876,7 +27855,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -34498,7 +34476,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   components['schemas']['AccountType']
@@ -35855,12 +35832,6 @@ export const customerPaymentMethodCreateRequiresActionResponseStatusValues: Read
 export const customerPaymentMethodCreateSucceededResponseStatusValues: ReadonlyArray<
   components['schemas']['CustomerPaymentMethodCreateSucceededResponse']['status']
 > = ['succeeded']
-export const customerSessionCustomerExternalIDCreateThemeValues: ReadonlyArray<
-  components['schemas']['CustomerSessionCustomerExternalIDCreate']['theme']
-> = ['polar', 'midday']
-export const customerSessionCustomerIDCreateThemeValues: ReadonlyArray<
-  components['schemas']['CustomerSessionCustomerIDCreate']['theme']
-> = ['polar', 'midday']
 export const customerSortPropertyValues: ReadonlyArray<
   components['schemas']['CustomerSortProperty']
 > = ['created_at', '-created_at', 'email', '-email', 'name', '-name']

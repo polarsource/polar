@@ -7,8 +7,9 @@ from uuid import UUID
 import structlog
 import typer
 from rich.progress import Progress
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import aliased
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
@@ -76,24 +77,43 @@ async def run_backfill(
 
             typer.echo("Step 1: Processing root events (no parent)...")
             root_count_result = await session.execute(
-                select(func.count()).select_from(Event).where(Event.parent_id.is_(None))
+                select(func.count())
+                .select_from(Event)
+                .outerjoin(EventClosure, EventClosure.descendant_id == Event.id)
+                .where(
+                    Event.parent_id.is_(None),
+                    or_(Event.root_id.is_(None), EventClosure.ancestor_id.is_(None)),
+                )
             )
             total_roots = root_count_result.scalar_one()
-            typer.echo(f"Found {total_roots} root events")
+            typer.echo(f"Found {total_roots} root events to backfill")
 
             if total_roots > 0:
-                offset = 0
-                while offset < total_roots:
-                    root_events_result = await session.execute(
-                        select(Event.id)
-                        .where(Event.parent_id.is_(None))
+                last_ingested_at = None
+                while True:
+                    query = (
+                        select(Event.id, Event.ingested_at)
+                        .outerjoin(EventClosure, EventClosure.descendant_id == Event.id)
+                        .where(
+                            Event.parent_id.is_(None),
+                            or_(
+                                Event.root_id.is_(None),
+                                EventClosure.ancestor_id.is_(None),
+                            ),
+                        )
+                        .order_by(Event.ingested_at)
                         .limit(batch_size)
-                        .offset(offset)
                     )
-                    root_ids = [row[0] for row in root_events_result]
+                    if last_ingested_at is not None:
+                        query = query.where(Event.ingested_at > last_ingested_at)
 
-                    if not root_ids:
+                    root_events_result = await session.execute(query)
+                    rows = [(row[0], row[1]) for row in root_events_result]
+
+                    if not rows:
                         break
+
+                    root_ids = [row[0] for row in rows]
 
                     await session.execute(
                         update(Event)
@@ -120,22 +140,23 @@ async def run_backfill(
 
                     processed += len(root_ids)
                     progress.update(task, advance=len(root_ids))
-                    offset += batch_size
+                    last_ingested_at = rows[-1][1]
 
             typer.echo("Step 2: Processing child events level by level...")
             level = 1
             while processed < total_events:
-                parent_table = Event.__table__.alias("parent")
+                ParentEvent = aliased(Event)
+                ParentClosure = aliased(EventClosure)
                 events_result = await session.execute(
                     select(Event.id, Event.parent_id)
-                    .join(
-                        parent_table,
-                        Event.parent_id == parent_table.c.id,
-                    )
+                    .outerjoin(EventClosure, EventClosure.descendant_id == Event.id)
+                    .join(ParentEvent, Event.parent_id == ParentEvent.id)
+                    .join(ParentClosure, ParentClosure.descendant_id == ParentEvent.id)
                     .where(
                         Event.parent_id.is_not(None),
-                        Event.root_id.is_(None),
-                        parent_table.c.root_id.is_not(None),
+                        or_(
+                            Event.root_id.is_(None), EventClosure.ancestor_id.is_(None)
+                        ),
                     )
                     .limit(batch_size)
                 )

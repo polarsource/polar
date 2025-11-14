@@ -117,11 +117,12 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     <Tabs defaultValue="overview" className="h-full">
       <DashboardBody
         title={
-          <div className="flex flex-row items-center gap-6">
-            <div className="flex flex-row items-center gap-4">
+          <div className="flex min-w-0 flex-row items-center gap-4">
+            <div className="flex min-w-0 flex-row items-center gap-4">
               <ProductThumbnail product={product} />
-              <h1 className="text-2xl">{product.name}</h1>
+              <h1 className="truncate text-2xl">{product.name}</h1>
             </div>
+
             <div className="flex flex-row items-center gap-4">
               <Status
                 status={

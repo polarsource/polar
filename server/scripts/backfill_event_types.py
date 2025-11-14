@@ -33,10 +33,9 @@ async def run_backfill(
     """
     Backfill event_type_id for existing events.
 
-    This script:
-    1. Finds all unique event names per organization
-    2. Creates EventType records for each unique (name, organization_id) pair
-    3. Updates all events with their corresponding event_type_id
+    Processes events in batches, looking up or creating EventType records
+    as needed (cached per batch), then updates events with their corresponding
+    event_type_id. Safe to rerun as it only processes events without an event_type_id.
     """
     engine = None
     own_session = False
@@ -71,101 +70,103 @@ async def run_backfill(
 
         typer.echo(f"Found {total_events} events to backfill")
 
+        event_type_cache: dict[tuple[str, UUID], UUID] = {}
+        processed = 0
+
         with Progress() as progress:
-            task = progress.add_task(
-                "[cyan]Backfilling event groups...", total=total_events
-            )
+            task = progress.add_task("[cyan]Processing events...", total=total_events)
 
-            typer.echo(
-                "Step 1: Creating event groups for unique (name, organization_id) pairs..."
-            )
-            unique_names_result = await session.execute(
-                select(Event.name, Event.organization_id)
-                .where(Event.event_type_id.is_(None))
-                .distinct()
-            )
-            unique_pairs = [(row[0], row[1]) for row in unique_names_result]
-            typer.echo(
-                f"Found {len(unique_pairs)} unique event name/organization pairs"
-            )
-
-            event_type_map: dict[tuple[str, UUID], UUID] = {}
-
-            for name, organization_id in unique_pairs:
-                existing_group_result = await session.execute(
-                    select(EventType.id).where(
-                        EventType.name == name,
-                        EventType.organization_id == organization_id,
-                        EventType.deleted_at.is_(None),
-                    )
+            while True:
+                events_result = await session.execute(
+                    select(Event.id, Event.name, Event.organization_id)
+                    .where(Event.event_type_id.is_(None))
+                    .limit(batch_size)
                 )
-                existing_group = existing_group_result.scalar_one_or_none()
+                events = list(events_result)
 
-                if existing_group:
-                    event_type_map[(name, organization_id)] = existing_group
-                else:
-                    insert_result = await session.execute(
-                        insert(EventType)
-                        .values(
-                            name=name,
-                            label=name,
-                            organization_id=organization_id,
-                        )
-                        .on_conflict_do_nothing(
-                            constraint="event_types_name_organization_id_key"
-                        )
-                        .returning(EventType.id)
-                    )
-                    inserted_id = insert_result.scalar_one_or_none()
+                if not events:
+                    break
 
-                    if inserted_id:
-                        event_type_map[(name, organization_id)] = inserted_id
-                    else:
-                        retry_result = await session.execute(
-                            select(EventType.id).where(
-                                EventType.name == name,
-                                EventType.organization_id == organization_id,
-                                EventType.deleted_at.is_(None),
+                unique_pairs_in_batch = list(
+                    {(name, org_id) for _, name, org_id in events}
+                )
+                pairs_to_lookup = [
+                    pair
+                    for pair in unique_pairs_in_batch
+                    if pair not in event_type_cache
+                ]
+
+                if pairs_to_lookup:
+                    existing_result = await session.execute(
+                        select(EventType.name, EventType.organization_id, EventType.id)
+                        .where(EventType.deleted_at.is_(None))
+                        .where(
+                            func.row(EventType.name, EventType.organization_id).in_(
+                                [
+                                    func.row(name, org_id)
+                                    for name, org_id in pairs_to_lookup
+                                ]
                             )
                         )
-                        event_type_map[(name, organization_id)] = (
-                            retry_result.scalar_one()
-                        )
-
-            await session.commit()
-            typer.echo(f"Created/found {len(event_type_map)} event groups")
-
-            typer.echo("Step 2: Updating events with event_type_id...")
-            processed = 0
-
-            for (name, organization_id), event_type_id in event_type_map.items():
-                offset = 0
-                while True:
-                    event_ids_result = await session.execute(
-                        select(Event.id)
-                        .where(
-                            Event.name == name,
-                            Event.organization_id == organization_id,
-                            Event.event_type_id.is_(None),
-                        )
-                        .limit(batch_size)
-                        .offset(offset)
                     )
-                    event_ids = [row[0] for row in event_ids_result]
+                    for name, org_id, event_type_id in existing_result:
+                        event_type_cache[(name, org_id)] = event_type_id
 
-                    if not event_ids:
-                        break
+                    pairs_to_create = [
+                        pair for pair in pairs_to_lookup if pair not in event_type_cache
+                    ]
 
+                    if pairs_to_create:
+                        values = [
+                            {
+                                "name": name,
+                                "label": name,
+                                "organization_id": org_id,
+                            }
+                            for name, org_id in pairs_to_create
+                        ]
+                        await session.execute(
+                            insert(EventType)
+                            .values(values)
+                            .on_conflict_do_nothing(
+                                constraint="event_types_name_organization_id_key"
+                            )
+                        )
+                        await session.flush()
+
+                        created_result = await session.execute(
+                            select(
+                                EventType.name, EventType.organization_id, EventType.id
+                            )
+                            .where(EventType.deleted_at.is_(None))
+                            .where(
+                                func.row(EventType.name, EventType.organization_id).in_(
+                                    [
+                                        func.row(name, org_id)
+                                        for name, org_id in pairs_to_create
+                                    ]
+                                )
+                            )
+                        )
+                        for name, org_id, event_type_id in created_result:
+                            event_type_cache[(name, org_id)] = event_type_id
+
+                event_updates = [
+                    {"id": event_id, "event_type_id": event_type_cache[(name, org_id)]}
+                    for event_id, name, org_id in events
+                ]
+
+                for event_update in event_updates:
                     await session.execute(
                         update(Event)
-                        .where(Event.id.in_(event_ids))
-                        .values(event_type_id=event_type_id)
+                        .where(Event.id == event_update["id"])
+                        .values(event_type_id=event_update["event_type_id"])
                     )
-                    await session.commit()
 
-                    processed += len(event_ids)
-                    progress.update(task, advance=len(event_ids))
-                    offset += batch_size
+                await session.commit()
+
+                processed += len(events)
+                progress.update(task, advance=len(events))
 
         remaining_events = (
             await session.execute(

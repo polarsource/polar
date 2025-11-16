@@ -2,7 +2,7 @@
 name: Bug Report
 about: Something not working as expected? Let us look into it.
 labels: "bug"
-type: "Backlog"
+type: "Task"
 ---
 
 ### Description

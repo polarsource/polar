@@ -264,9 +264,7 @@ export const BenefitGrant = ({ api, benefitGrant }: BenefitGrantProps) => {
           </span>
         </div>
         <div className="flex flex-col">
-          <h3 className="text-sm font-medium capitalize">
-            {benefit.description}
-          </h3>
+          <h3 className="text-sm font-medium">{benefit.description}</h3>
           <p className="dark:text-polar-500 flex flex-row gap-x-1 truncate text-sm text-gray-500">
             {benefitsDisplayNames[benefit.type]}
           </p>

@@ -797,6 +797,20 @@ export const ProductPricingSection = ({
   const pricesFieldArray = useFieldArray({
     control,
     name: 'prices',
+    rules: {
+      validate: (prices) => {
+        if (
+          !prices ||
+          prices.length === 0 ||
+          !(prices as schemas['ProductPrice'][])?.[0]?.amount_type
+        ) {
+          console.log('Return error')
+          return 'At least one price is required'
+        }
+
+        return true
+      },
+    },
   })
 
   const { fields: prices, append, remove } = pricesFieldArray
@@ -908,8 +922,8 @@ export const ProductPricingSection = ({
                       : 'Recurring subscription'}
                   </div>
                   {option === 'recurring' && productType === 'recurring' && (
-                    <div className="mt-4 flex items-center gap-3 text-sm">
-                      <span>Every</span>
+                    <div className="mt-4 flex items-start gap-3 text-sm">
+                      <span className="flex h-10 items-center">Every</span>
                       <FormField
                         control={control}
                         name="recurring_interval_count"
@@ -940,6 +954,7 @@ export const ProductPricingSection = ({
                                 )
                               }}
                               disabled={update}
+                              className="min-w-12"
                             />
                           )
                         }}
@@ -1043,11 +1058,13 @@ export const ProductPricingSection = ({
         <ErrorMessage
           errors={errors}
           name="prices"
-          render={({ message }) => {
-            // Don't render if message is undefined or invalid
-            if (!message || message === 'undefined' || message === 'null') {
+          render={() => {
+            const message = errors.prices?.root?.message as string | undefined
+
+            if (!message) {
               return null
             }
+
             return (
               <p className="text-destructive text-sm font-medium">{message}</p>
             )
@@ -1055,52 +1072,5 @@ export const ProductPricingSection = ({
         />
       </div>
     </Section>
-  )
-}
-
-function NewPricingComponent({ organization }: ProductPricingSectionProps) {
-  return (
-    <div className="flex w-full flex-col gap-6">
-      {prices.map((price, index) => (
-        <ProductPriceItem
-          key={price.id}
-          organization={organization}
-          index={index}
-          remove={remove}
-        />
-      ))}
-
-      {recurringInterval !== null && (
-        <Button
-          className="self-start"
-          variant="secondary"
-          onClick={() =>
-            append({
-              amount_type: 'metered_unit',
-              price_currency: 'usd',
-              meter_id: '',
-              unit_amount: 0,
-            })
-          }
-        >
-          Add Additional Price
-        </Button>
-      )}
-
-      <ErrorMessage
-        errors={errors}
-        name="prices"
-        render={({ message }) => {
-          // Don't render if message is undefined or invalid
-          if (!message || message === 'undefined' || message === 'null') {
-            return null
-          }
-
-          return (
-            <p className="text-destructive text-sm font-medium">{message}</p>
-          )
-        }}
-      />
-    </div>
   )
 }

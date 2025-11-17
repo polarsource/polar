@@ -1,11 +1,11 @@
 import {
-  View,
-  Text,
-  StyleSheet,
-  ViewStyle,
   StyleProp,
+  StyleSheet,
+  Text,
   TextStyle,
-} from "react-native";
+  View,
+  ViewStyle,
+} from 'react-native'
 
 export const Pill = ({
   color,
@@ -13,17 +13,17 @@ export const Pill = ({
   style,
   textStyle,
 }: {
-  color: "green" | "yellow" | "red" | "blue";
-  children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
-  textStyle?: StyleProp<TextStyle>;
+  color: 'green' | 'yellow' | 'red' | 'blue'
+  children: React.ReactNode
+  style?: StyleProp<ViewStyle>
+  textStyle?: StyleProp<TextStyle>
 }) => {
   return (
     <View style={[styles.pill, styles[color], style]}>
       <Text style={[styles.text, styles[color], textStyle]}>{children}</Text>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   pill: {
@@ -32,23 +32,23 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   text: {
-    textTransform: "capitalize",
+    textTransform: 'capitalize',
     fontSize: 12,
   },
   green: {
-    color: "#10b981",
-    backgroundColor: "#022c22",
+    color: '#10b981',
+    backgroundColor: '#022c22',
   },
   yellow: {
-    color: "#eab308",
-    backgroundColor: "#422006",
+    color: '#eab308',
+    backgroundColor: '#422006',
   },
   red: {
-    color: "#ef4444",
-    backgroundColor: "#450a0a",
+    color: '#ef4444',
+    backgroundColor: '#450a0a',
   },
   blue: {
-    color: "#6366f1",
-    backgroundColor: "#1e1b4b",
+    color: '#6366f1',
+    backgroundColor: '#1e1b4b',
   },
-});
+})

@@ -1,16 +1,16 @@
-import { View, Text, StyleSheet } from "react-native";
-import { Button, ButtonProps } from "./Button";
-import { useTheme } from "@/hooks/theme";
-import { ThemedText } from "./ThemedText";
+import { useTheme } from '@/hooks/theme'
+import { StyleSheet, View } from 'react-native'
+import { Button, ButtonProps } from './Button'
+import { ThemedText } from './ThemedText'
 
 export interface BannerProps {
-  title: string;
-  description: string;
-  button?: ButtonProps;
+  title: string
+  description: string
+  button?: ButtonProps
 }
 
 export const Banner = ({ title, description, button }: BannerProps) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card }]}>
@@ -28,12 +28,12 @@ export const Banner = ({ title, description, button }: BannerProps) => {
         />
       )}
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "column",
+    flexDirection: 'column',
     padding: 16,
     borderRadius: 16,
     gap: 16,
@@ -53,10 +53,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 100,
     height: 32,
-    alignSelf: "flex-start",
+    alignSelf: 'flex-start',
   },
   buttonText: {
     fontSize: 12,
-    fontWeight: "normal",
+    fontWeight: 'normal',
   },
-});
+})

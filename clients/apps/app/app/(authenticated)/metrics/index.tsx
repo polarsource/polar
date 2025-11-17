@@ -24,16 +24,19 @@ export default function Index() {
   const [selectedTimeInterval, setSelectedTimeInterval] =
     useState<keyof ReturnType<typeof timeRange>>('30d')
 
-  if (!organization) {
-    return null
-  }
-
   const { startDate, endDate } = useMemo(() => {
+    if (!organization) {
+      return {
+        startDate: new Date(),
+        endDate: new Date(),
+      }
+    }
+
     return {
       startDate: timeRange(organization)[selectedTimeInterval].startDate,
       endDate: timeRange(organization)[selectedTimeInterval].endDate,
     }
-  }, [selectedTimeInterval])
+  }, [selectedTimeInterval, organization])
 
   const previousPeriod = useMemo(() => {
     const previousParams = getPreviousParams(startDate)
@@ -46,7 +49,7 @@ export default function Index() {
       startDate: previousParams[selectedTimeInterval].startDate,
       endDate: previousParams[selectedTimeInterval].endDate,
     }
-  }, [selectedTimeInterval, startDate, endDate])
+  }, [selectedTimeInterval, startDate])
 
   const metrics = useMetrics(organization?.id, startDate, endDate, {
     interval: dateRangeToInterval(startDate, endDate),
@@ -79,15 +82,17 @@ export default function Index() {
             setSelectedTimeInterval(value as keyof ReturnType<typeof timeRange>)
           }
         >
-          <TabsList>
-            {Object.entries(timeRange(organization)).map(([key, value]) => {
-              return (
-                <TabsTrigger key={key} value={key}>
-                  {value.title}
-                </TabsTrigger>
-              )
-            })}
-          </TabsList>
+          {organization && (
+            <TabsList>
+              {Object.entries(timeRange(organization)).map(([key, value]) => {
+                return (
+                  <TabsTrigger key={key} value={key}>
+                    {value.title}
+                  </TabsTrigger>
+                )
+              })}
+            </TabsList>
+          )}
         </Tabs>
       </SafeAreaView>
       {metrics.isLoading ? (
@@ -105,10 +110,10 @@ export default function Index() {
                 metric,
                 value,
               }),
-            ) as Array<{
+            ) as {
               metric: keyof schemas['MetricsTotals']
               value: schemas['Metric']
-            }>
+            }[]
           }
           renderItem={({ item }) => {
             return (

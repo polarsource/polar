@@ -1,4 +1,4 @@
-import { Path, Svg } from "react-native-svg";
+import { Path, Svg } from 'react-native-svg'
 
 const LogoIcon = ({ size = 24 }: { size?: number }) => {
   return (
@@ -22,7 +22,7 @@ const LogoIcon = ({ size = 24 }: { size?: number }) => {
         fill="#fff"
       />
     </Svg>
-  );
-};
+  )
+}
 
-export default LogoIcon;
+export default LogoIcon

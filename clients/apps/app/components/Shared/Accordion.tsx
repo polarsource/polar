@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
-import { ThemedText } from "./ThemedText";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useTheme } from "@/hooks/theme";
+import { useTheme } from '@/hooks/theme'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import { useState } from 'react'
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
+import { ThemedText } from './ThemedText'
 
 export interface AccordionProps {
-  title: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
+  title: string
+  defaultOpen?: boolean
+  children: React.ReactNode
 }
 
 export const Accordion = ({
@@ -15,8 +15,8 @@ export const Accordion = ({
   children,
   defaultOpen = false,
 }: AccordionProps) => {
-  const [open, setOpen] = useState(defaultOpen);
-  const { colors } = useTheme();
+  const [open, setOpen] = useState(defaultOpen)
+  const { colors } = useTheme()
 
   return (
     <View style={styles.container}>
@@ -27,35 +27,35 @@ export const Accordion = ({
       >
         <ThemedText style={styles.title}>{title}</ThemedText>
         <MaterialIcons
-          name={open ? "expand-less" : "expand-more"}
+          name={open ? 'expand-less' : 'expand-more'}
           size={24}
           color={colors.monochromeInverted}
         />
       </TouchableOpacity>
       {open && children}
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: "column",
+    flexDirection: 'column',
     gap: 12,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
-    justifyContent: "space-between",
+    justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
   },
   title: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     fontSize: 16,
   },
-});
+})

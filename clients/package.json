@@ -5,11 +5,11 @@
     "build": "turbo run build --filter='!./examples/*'",
     "dev": "turbo watch dev",
     "dev-web": "turbo run dev --filter=web",
-    "lint": "turbo run lint --filter='!./apps/app'",
+    "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "generate": "pnpm -C packages/client generate",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\" \"!./apps/app/**\"",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "preinstall": "npx only-allow pnpm",
     "release-packages": "turbo run build lint test --filter='./packages/*' && changeset publish"
   },

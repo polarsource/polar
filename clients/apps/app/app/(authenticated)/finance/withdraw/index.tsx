@@ -1,48 +1,37 @@
-import { useCallback, useContext, useRef } from "react";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import {
-  RefreshControl,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { DetailRow, Details } from '@/components/Shared/Details'
+import { SlideToAction } from '@/components/Shared/SlideToAction'
 import {
   useCreatePayout,
   useOrganizationAccount,
   usePayoutEstimate,
   useTransactionsSummary,
-} from "@/hooks/polar/finance";
-import { DetailRow, Details } from "@/components/Shared/Details";
-import { Button } from "@/components/Shared/Button";
-import { formatCurrencyAndAmount } from "@/utils/money";
-import { SlideToAction } from "@/components/Shared/SlideToAction";
-import { isEnabled } from "react-native/Libraries/Performance/Systrace";
-import React from "react";
+} from '@/hooks/polar/finance'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { formatCurrencyAndAmount } from '@/utils/money'
+import { Stack, useRouter } from 'expo-router'
+import React, { useContext, useRef } from 'react'
+import { SafeAreaView, ScrollView, StyleSheet } from 'react-native'
 
 export default function Index() {
-  const scrollRef = useRef<ScrollView>(null);
-  const { organization } = useContext(OrganizationContext);
-  const { data: account } = useOrganizationAccount(organization?.id);
-  const { data: estimate } = usePayoutEstimate(account?.id);
-  const { data: summary } = useTransactionsSummary(account?.id);
+  const scrollRef = useRef<ScrollView>(null)
+  const { organization } = useContext(OrganizationContext)
+  const { data: account } = useOrganizationAccount(organization?.id)
+  const { data: estimate } = usePayoutEstimate(account?.id)
+  const { data: summary } = useTransactionsSummary(account?.id)
 
-  const router = useRouter();
+  const router = useRouter()
 
-  const { mutateAsync: withdrawFunds, isPending } = useCreatePayout(
-    account?.id
-  );
+  const { mutateAsync: withdrawFunds, isPending } = useCreatePayout(account?.id)
 
   return (
     <>
-      <Stack.Screen options={{ title: "Withdraw Funds" }} />
+      <Stack.Screen options={{ title: 'Withdraw Funds' }} />
       <SafeAreaView
         style={{
           flex: 1,
-          flexDirection: "column",
+          flexDirection: 'column',
           gap: 16,
-          justifyContent: "space-between",
+          justifyContent: 'space-between',
           margin: 16,
         }}
       >
@@ -51,21 +40,21 @@ export default function Index() {
             label="Amount"
             value={formatCurrencyAndAmount(
               estimate?.gross_amount ?? 0,
-              summary?.balance.currency
+              summary?.balance.currency,
             )}
           />
           <DetailRow
             label="Fees"
             value={formatCurrencyAndAmount(
               estimate?.fees_amount ?? 0,
-              summary?.balance.currency
+              summary?.balance.currency,
             )}
           />
           <DetailRow
             label="Net"
             value={formatCurrencyAndAmount(
               estimate?.net_amount ?? 0,
-              summary?.balance.currency
+              summary?.balance.currency,
             )}
           />
         </Details>
@@ -73,30 +62,30 @@ export default function Index() {
           isLoading={isPending}
           text="Slide To Withdraw"
           onSlideStart={() => {
-            scrollRef.current?.setNativeProps({ isEnabled: false });
+            scrollRef.current?.setNativeProps({ isEnabled: false })
           }}
           onSlideEnd={() => {
-            scrollRef.current?.setNativeProps({ isEnabled: true });
+            scrollRef.current?.setNativeProps({ isEnabled: true })
           }}
           onSlideComplete={async () => {
-            await withdrawFunds({ accountId: account?.id });
+            await withdrawFunds({ accountId: account?.id })
 
-            router.replace(`/finance`);
+            router.replace(`/finance`)
           }}
         />
       </SafeAreaView>
     </>
-  );
+  )
 }
 
 const PayoutStyles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: "column",
+    flexDirection: 'column',
     padding: 16,
     gap: 16,
   },
   title: {
     fontSize: 24,
   },
-});
+})

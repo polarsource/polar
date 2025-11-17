@@ -1,15 +1,14 @@
-import { useTheme } from "@/hooks/theme";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Text, View, StyleSheet } from "react-native";
-import { ThemedText } from "./ThemedText";
+import { useTheme } from '@/hooks/theme'
+import { StyleSheet, View } from 'react-native'
+import { ThemedText } from './ThemedText'
 
 export interface EmptyStateProps {
-  title: string;
-  description: string;
+  title: string
+  description: string
 }
 
 export const EmptyState = ({ title, description }: EmptyStateProps) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
   return (
     <View style={[styles.container, { borderColor: colors.border }]}>
@@ -18,14 +17,14 @@ export const EmptyState = ({ title, description }: EmptyStateProps) => {
         {description}
       </ThemedText>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 48,
     borderWidth: 1,
@@ -34,10 +33,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    textAlign: "center",
+    textAlign: 'center',
   },
   description: {
     fontSize: 16,
-    textAlign: "center",
+    textAlign: 'center',
   },
-});
+})

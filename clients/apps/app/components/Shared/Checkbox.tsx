@@ -1,15 +1,15 @@
-import { TouchableOpacity, View, StyleSheet } from "react-native";
-import { ThemedText } from "./ThemedText";
-import { useTheme } from "@/hooks/theme";
+import { useTheme } from '@/hooks/theme'
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
+import { ThemedText } from './ThemedText'
 
 export interface CheckboxProps {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
+  label: string
+  checked: boolean
+  onChange: (checked: boolean) => void
 }
 
 export const Checkbox = ({ label, checked, onChange }: CheckboxProps) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
   return (
     <TouchableOpacity
@@ -40,13 +40,13 @@ export const Checkbox = ({ label, checked, onChange }: CheckboxProps) => {
         {label}
       </ThemedText>
     </TouchableOpacity>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   checkbox: {
@@ -54,8 +54,8 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 999,
     borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   checkboxChecked: {
     width: 12,
@@ -65,4 +65,4 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
   },
-});
+})

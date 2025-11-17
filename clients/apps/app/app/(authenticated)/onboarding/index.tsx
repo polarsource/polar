@@ -130,8 +130,8 @@ export default function Onboarding() {
                     </ThemedText>
                   </TouchableOpacity>
                   <ThemedText secondary>
-                    I'll only sell digital products and SaaS that complies with
-                    it or risk suspension.
+                    I&apos;ll only sell digital products and SaaS that complies
+                    with it or risk suspension.
                   </ThemedText>
                 </View>
               </View>
@@ -146,7 +146,7 @@ export default function Onboarding() {
                   <ThemedText style={styles.link}>Account Reviews</ThemedText>
                 </TouchableOpacity>
                 <ThemedText secondary>
-                  I'll comply with all reviews and requests for compliance
+                  I&apos;ll comply with all reviews and requests for compliance
                   materials (KYC/AML).
                 </ThemedText>
               </View>

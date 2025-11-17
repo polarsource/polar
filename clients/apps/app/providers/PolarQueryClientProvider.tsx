@@ -1,15 +1,14 @@
-import { QueryClientProvider } from "@/utils/query";
-import { queryClient } from "@/utils/query";
-import { useReactQueryDevTools } from "@dev-plugins/react-query";
+import { queryClient, QueryClientProvider } from '@/utils/query'
+import { useReactQueryDevTools } from '@dev-plugins/react-query'
 
 export function PolarQueryClientProvider({
   children,
 }: {
-  children: React.ReactElement;
+  children: React.ReactElement
 }) {
-  useReactQueryDevTools(queryClient);
+  useReactQueryDevTools(queryClient)
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
+  )
 }

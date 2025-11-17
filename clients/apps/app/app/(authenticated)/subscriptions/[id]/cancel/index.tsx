@@ -103,9 +103,9 @@ export default function Index() {
     [subscription, cancelSubscription],
   )
 
-  const reasons = Object.keys(CANCELLATION_REASONS) as Array<
-    keyof typeof CANCELLATION_REASONS
-  >
+  const reasons = Object.keys(
+    CANCELLATION_REASONS,
+  ) as (keyof typeof CANCELLATION_REASONS)[]
 
   let periodEndOutput: string | undefined = undefined
 

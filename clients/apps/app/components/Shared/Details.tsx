@@ -1,4 +1,4 @@
-import { useTheme } from "@/hooks/theme";
+import { useTheme } from '@/hooks/theme'
 import {
   StyleProp,
   StyleSheet,
@@ -6,24 +6,24 @@ import {
   TextStyle,
   View,
   ViewStyle,
-} from "react-native";
-import { ThemedText } from "./ThemedText";
+} from 'react-native'
+import { ThemedText } from './ThemedText'
 
 export const Details = ({
   children,
   style,
 }: {
-  children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
+  children: React.ReactNode
+  style?: StyleProp<ViewStyle>
 }) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card }, style]}>
       {children}
     </View>
-  );
-};
+  )
+}
 
 export const DetailRow = ({
   label,
@@ -31,12 +31,12 @@ export const DetailRow = ({
   value,
   valueStyle,
 }: {
-  label: string;
-  labelStyle?: StyleProp<TextStyle>;
-  value?: React.ReactNode;
-  valueStyle?: StyleProp<TextStyle>;
+  label: string
+  labelStyle?: StyleProp<TextStyle>
+  value?: React.ReactNode
+  valueStyle?: StyleProp<TextStyle>
 }) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
   return (
     <View style={styles.row}>
@@ -52,11 +52,11 @@ export const DetailRow = ({
           valueStyle,
         ]}
       >
-        {value ? value : "—"}
+        {value ? value : '—'}
       </Text>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   card: {
@@ -65,8 +65,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 8,
   },
   label: {
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 16,
-    width: "auto",
-    textAlign: "right",
+    width: 'auto',
+    textAlign: 'right',
   },
-});
+})

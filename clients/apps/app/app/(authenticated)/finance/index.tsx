@@ -1,55 +1,54 @@
-import { PayoutRow } from "@/components/Payouts/PayoutRow";
-import { Banner } from "@/components/Shared/Banner";
-import { Button } from "@/components/Shared/Button";
-import { DetailRow, Details } from "@/components/Shared/Details";
-import { ThemedText } from "@/components/Shared/ThemedText";
+import { PayoutRow } from '@/components/Payouts/PayoutRow'
+import { Banner } from '@/components/Shared/Banner'
+import { Button } from '@/components/Shared/Button'
+import { ThemedText } from '@/components/Shared/ThemedText'
 import {
   useOrganizationAccount,
   usePayouts,
   useTransactionsSummary,
-} from "@/hooks/polar/finance";
-import { useTheme } from "@/hooks/theme";
-import { OrganizationContext } from "@/providers/OrganizationProvider";
-import { formatCurrencyAndAmount } from "@/utils/money";
-import { Link, Stack } from "expo-router";
-import { useCallback, useContext } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+} from '@/hooks/polar/finance'
+import { useTheme } from '@/hooks/theme'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { formatCurrencyAndAmount } from '@/utils/money'
+import { Link, Stack } from 'expo-router'
+import { useCallback, useContext } from 'react'
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native'
 
 export default function Finance() {
-  const { colors } = useTheme();
-  const { organization } = useContext(OrganizationContext);
+  const { colors } = useTheme()
+  const { organization } = useContext(OrganizationContext)
   const {
     data: account,
     refetch: refetchAccount,
     isRefetching: isRefetchingAccount,
-  } = useOrganizationAccount(organization?.id);
+  } = useOrganizationAccount(organization?.id)
 
   const {
     data: summary,
     refetch: refetchSummary,
     isRefetching: isRefetchingSummary,
-  } = useTransactionsSummary(account?.id);
+  } = useTransactionsSummary(account?.id)
 
   const {
     data: payouts,
     isRefetching: isRefetchingPayouts,
     refetch: refetchPayouts,
-  } = usePayouts();
+  } = usePayouts()
 
   const refresh = useCallback(() => {
-    Promise.all([refetchAccount(), refetchSummary(), refetchPayouts()]);
-  }, [refetchAccount, refetchSummary, refetchPayouts]);
+    Promise.all([refetchAccount(), refetchSummary(), refetchPayouts()])
+  }, [refetchAccount, refetchSummary, refetchPayouts])
 
   const isRefetching =
-    isRefetchingAccount || isRefetchingSummary || isRefetchingPayouts;
+    isRefetchingAccount || isRefetchingSummary || isRefetchingPayouts
 
   const canWithdraw =
-    account?.status === "active" &&
+    account?.status === 'active' &&
     summary?.balance?.amount &&
-    summary.balance.amount >= 1000;
+    summary.balance.amount >= 1000
 
   if (!account || !summary) {
-    return <Stack.Screen options={{ title: "Finance" }} />;
+    return <Stack.Screen options={{ title: 'Finance' }} />
   }
 
   return (
@@ -63,7 +62,7 @@ export default function Finance() {
       }
       contentInset={{ bottom: 48 }}
     >
-      <Stack.Screen options={{ title: "Finance" }} />
+      <Stack.Screen options={{ title: 'Finance' }} />
       {!account?.is_payouts_enabled && (
         <Banner
           title="No Payout Account"
@@ -75,12 +74,12 @@ export default function Finance() {
           Account Balance
         </ThemedText>
         <ThemedText style={styles.balance}>
-          {formatCurrencyAndAmount(summary?.balance.amount ?? 0, "USD")}
+          {formatCurrencyAndAmount(summary?.balance.amount ?? 0, 'USD')}
         </ThemedText>
       </View>
-      <View style={{ flexDirection: "column", alignItems: "center", gap: 16 }}>
+      <View style={{ flexDirection: 'column', alignItems: 'center', gap: 16 }}>
         <Link
-          style={{ width: "100%" }}
+          style={{ width: '100%' }}
           href="/finance/withdraw"
           disabled={!canWithdraw}
           asChild
@@ -92,16 +91,16 @@ export default function Finance() {
         </ThemedText>
       </View>
 
-      <View style={{ flexDirection: "column", gap: 16 }}>
+      <View style={{ flexDirection: 'column', gap: 16 }}>
         <ThemedText style={{ fontSize: 20 }}>Payouts</ThemedText>
-        <View style={{ flexDirection: "column", gap: 4 }}>
+        <View style={{ flexDirection: 'column', gap: 4 }}>
           {payouts?.items?.map((payout) => (
             <PayoutRow key={payout.id} payout={payout} />
           ))}
         </View>
       </View>
     </ScrollView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -110,7 +109,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   balanceContainer: {
-    flexDirection: "column",
+    flexDirection: 'column',
     gap: 8,
     borderRadius: 16,
     padding: 16,
@@ -121,4 +120,4 @@ const styles = StyleSheet.create({
   balance: {
     fontSize: 32,
   },
-});
+})

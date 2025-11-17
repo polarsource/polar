@@ -53,7 +53,6 @@ const CustomerPortalOrder = ({
       ? { subscription_id: order.subscription_id }
       : { order_id: order.id }),
     limit: 100,
-    sorting: ['type'],
   })
 
   const isPartiallyOrFullyRefunded = useMemo(() => {

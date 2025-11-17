@@ -3387,6 +3387,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/events/hierarchy-stats': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Hierarchy Statistics
+     * @description Get aggregate statistics grouped by root event name.
+     *
+     *     Returns sum, average, p95, and p99 for specified fields across all events
+     *     in hierarchies with the same root event name.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['events:get_hierarchy_stats_endpoint']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/events/names': {
     parameters: {
       query?: never
@@ -11652,6 +11677,8 @@ export interface components {
       | '-type'
       | 'organization'
       | '-organization'
+      | 'list_order'
+      | '-list_order'
     CustomerBenefitGrantUpdate:
       | components['schemas']['CustomerBenefitGrantDiscordUpdate']
       | components['schemas']['CustomerBenefitGrantGitHubRepositoryUpdate']
@@ -20260,6 +20287,67 @@ export interface components {
     }
     /** RevokeTokenResponse */
     RevokeTokenResponse: Record<string, never>
+    /**
+     * RootEventStatistics
+     * @description Aggregate statistics for events grouped by root event name.
+     */
+    RootEventStatistics: {
+      /**
+       * Name
+       * @description The name of the root event.
+       */
+      name: string
+      /**
+       * Occurrences
+       * @description Number of root events with this name (i.e., number of traces).
+       */
+      occurrences: number
+      /**
+       * Totals
+       * @description Sum of each field across all events in all hierarchies.
+       */
+      totals?: {
+        [key: string]: string
+      }
+      /**
+       * Averages
+       * @description Average value of each field across all events in all hierarchies.
+       */
+      averages?: {
+        [key: string]: string
+      }
+      /**
+       * P95
+       * @description 95th percentile of each field across all events in all hierarchies.
+       */
+      p95?: {
+        [key: string]: string
+      }
+      /**
+       * P99
+       * @description 99th percentile of each field across all events in all hierarchies.
+       */
+      p99?: {
+        [key: string]: string
+      }
+    }
+    /**
+     * RootEventStatisticsSortProperty
+     * @enum {string}
+     */
+    RootEventStatisticsSortProperty:
+      | 'name'
+      | '-name'
+      | 'occurrences'
+      | '-occurrences'
+      | 'total'
+      | '-total'
+      | 'average'
+      | '-average'
+      | 'p95'
+      | '-p95'
+      | 'p99'
+      | '-p99'
     /** S3DownloadURL */
     S3DownloadURL: {
       /** Url */
@@ -22835,6 +22923,11 @@ export interface components {
        * @description Whether this event was successfully delivered. `null` if no delivery has been attempted.
        */
       succeeded?: boolean | null
+      /**
+       * Skipped
+       * @description Whether this event was skipped because the webhook endpoint was disabled.
+       */
+      skipped: boolean
       /**
        * Payload
        * @description The payload of the webhook event.
@@ -31841,6 +31934,67 @@ export interface operations {
       }
     }
   }
+  'events:get_hierarchy_stats_endpoint': {
+    parameters: {
+      query?: {
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        filter?: string | null
+        /** @description Filter events after this timestamp. */
+        start_timestamp?: string | null
+        /** @description Filter events before this timestamp. */
+        end_timestamp?: string | null
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Filter by a meter filter clause. */
+        meter_id?: string | null
+        /** @description Filter by event name. */
+        name?: string | string[] | null
+        /** @description Filter by event source. */
+        source?:
+          | components['schemas']['EventSource']
+          | components['schemas']['EventSource'][]
+          | null
+        /** @description Query to filter events. */
+        query?: string | null
+        /** @description Metadata field paths to aggregate (e.g., 'cost.amount', 'duration_ns'). Use dot notation for nested fields. */
+        aggregate_fields?: string[]
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?:
+          | components['schemas']['RootEventStatisticsSortProperty'][]
+          | null
+        /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+        metadata?: components['schemas']['MetadataQuery']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RootEventStatistics'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'events:list_names': {
     parameters: {
       query?: {
@@ -35750,6 +35904,8 @@ export const customerBenefitGrantSortPropertyValues: ReadonlyArray<
   '-type',
   'organization',
   '-organization',
+  'list_order',
+  '-list_order',
 ]
 export const customerCancellationReasonValues: ReadonlyArray<
   components['schemas']['CustomerCancellationReason']
@@ -36220,6 +36376,22 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   components['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
+export const rootEventStatisticsSortPropertyValues: ReadonlyArray<
+  components['schemas']['RootEventStatisticsSortProperty']
+> = [
+  'name',
+  '-name',
+  'occurrences',
+  '-occurrences',
+  'total',
+  '-total',
+  'average',
+  '-average',
+  'p95',
+  '-p95',
+  'p99',
+  '-p99',
+]
 export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'openid',
   'profile',

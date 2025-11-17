@@ -29,8 +29,8 @@ export const ResourceLayout = ({
           <div className="dark:md:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-8 rounded-lg border-gray-200 shadow-xs md:gap-y-12 md:border md:bg-white md:p-24 md:px-16">
             {/* Top Section */}
             <div className="flex flex-col">
-              <div className={twMerge('flex flex-col gap-y-8')}>
-                <h1 className="text-5xl leading-tight! text-balance md:text-6xl lg:w-2/3">
+              <div className={twMerge('flex flex-col gap-y-8 lg:items-center')}>
+                <h1 className="text-5xl leading-tight! text-balance md:text-6xl lg:w-2/3 lg:text-center">
                   {title}
                 </h1>
               </div>

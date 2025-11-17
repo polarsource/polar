@@ -1,11 +1,60 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import AddOutlined from '@mui/icons-material/AddOutlined'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import RemoveOutlined from '@mui/icons-material/RemoveOutlined'
 import Link from 'next/link'
+import { useState } from 'react'
 import { Midday, StillaAI, Tailwind } from '../Logos'
 import { ResourceLayout, ResourceSection } from './ResourceLayout'
+
+const FAQItem = ({
+  question,
+  answer,
+  number,
+}: {
+  question: string
+  answer: string
+  number: string
+}) => {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <div className="dark:border-polar-700 hover:dark:bg-polar-800 border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="group flex w-full cursor-pointer items-center gap-6 p-4 text-left transition-opacity"
+      >
+        <div className="dark:border-polar-700 dark:text-polar-400 hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gray-200 font-mono text-sm text-gray-600 transition-colors lg:flex">
+          {number}
+        </div>
+        <div className="flex-1">
+          <h3 className="text-lg lg:text-xl dark:text-white">{question}</h3>
+        </div>
+        <div className="shrink-0">
+          {isOpen ? (
+            <RemoveOutlined className="dark:text-white" />
+          ) : (
+            <AddOutlined className="dark:text-white" />
+          )}
+        </div>
+      </button>
+      <div
+        className={`overflow-hidden transition-all duration-150 ease-in-out ${
+          isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="pr-12 pb-8 pl-4 lg:pl-[84px]">
+          <p className="dark:text-polar-400 leading-relaxed text-gray-700">
+            {answer}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const logos = [
   {
@@ -56,6 +105,32 @@ export const WhyPolarPage = () => {
             — Guillermo Rauch, CEO & Founder of Vercel
           </span>
         </blockquote>
+        <div className="flex flex-col gap-2">
+          <Link
+            href="/resources/comparison/stripe"
+            target="_blank"
+            className="w-fit border-b border-black pb-0.5 dark:border-white"
+          >
+            Compare Polar vs. Stripe
+            <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
+          </Link>
+          <Link
+            href="/resources/comparison/paddle"
+            target="_blank"
+            className="w-fit border-b border-black pb-0.5 dark:border-white"
+          >
+            Compare Polar vs. Paddle
+            <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
+          </Link>
+          <Link
+            href="/resources/comparison/lemon-squeezy"
+            target="_blank"
+            className="w-fit border-b border-black pb-0.5 dark:border-white"
+          >
+            Compare Polar vs. Lemon Squeezy
+            <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
+          </Link>
+        </div>
       </ResourceSection>
 
       <ResourceSection id="mor" title="Merchant of Record">
@@ -199,6 +274,40 @@ export const WhyPolarPage = () => {
           </div>
         </div>
       </ResourceSection>
+
+      <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
+        <FAQItem
+          number="01"
+          question="Do I still pay Stripe fees if I use Polar?"
+          answer="Polar covers Stripe's 2.9% + 30¢ from our 4% + 40¢. Stripe's additional fees, like +1.5% for international cards, are passed through at cost."
+        />
+        <FAQItem
+          number="02"
+          question="Is Polar built on Stripe? Why not just use Stripe directly?"
+          answer="We use Stripe rails for processing reliability and coverage. Processing ≠ the business layer. Polar is the MoR + billing + entitlements + unit-economics layer you'd otherwise build or buy on top of Stripe."
+        />
+        <FAQItem
+          number="03"
+          question="How are payouts handled internationally?"
+          answer="All payments are made to Polar as the Merchant of Record. We use Stripe Connect Express to make payouts across more countries than Stripe Payments supports directly."
+        />
+        <FAQItem
+          number="04"
+          question="Do you handle EU VAT reverse charge for B2B?"
+          answer="Yes, EU B2B reverse charge is handled correctly under our MoR model, ensuring compliance with EU tax regulations."
+        />
+        <FAQItem
+          number="05"
+          question="What about lock-in? Can I leave later?"
+          answer="We deliberately architect for continuity (Stripe on the inside) and provide import/export plus migration tooling, so you always retain a pragmatic exit path."
+        />
+
+        <FAQItem
+          number="06"
+          question="What happens during account reviews or disputes?"
+          answer="We run standard MoR/KYC reviews (typically within a week) and follow card-network norms: disputes cost $15 and gateway fees aren't refunded on refunds."
+        />
+      </div>
 
       {/* Call to Action */}
       <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">

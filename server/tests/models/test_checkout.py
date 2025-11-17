@@ -2,8 +2,9 @@ from datetime import UTC, datetime
 
 import pytest
 
+from polar.kit.address import Address, CountryAlpha2
 from polar.models import Product
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import BillingAddressFieldMode, CheckoutStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout
@@ -44,3 +45,33 @@ async def test_checkout_expired_status_update(
     await session.flush()
 
     assert checkout.status == expected_status
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "country,require_billing_address,expected_state_mode",
+    [
+        ("FR", False, BillingAddressFieldMode.disabled),
+        ("FR", True, BillingAddressFieldMode.optional),
+        ("US", True, BillingAddressFieldMode.required),
+        ("CA", True, BillingAddressFieldMode.required),
+    ],
+)
+async def test_billing_address_fields(
+    country: CountryAlpha2,
+    require_billing_address: bool,
+    expected_state_mode: BillingAddressFieldMode,
+    save_fixture: SaveFixture,
+    product_one_time: Product,
+) -> None:
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product_one_time],
+        require_billing_address=require_billing_address,
+        customer_billing_address=Address(country=country),
+    )
+
+    assert (
+        checkout.billing_address_fields["country"] == BillingAddressFieldMode.required
+    )
+    assert checkout.billing_address_fields["state"] == expected_state_mode

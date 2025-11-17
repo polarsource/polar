@@ -1,0 +1,394 @@
+# ============================================================================
+# Docker Compose Production Configuration for AgentPay
+# ============================================================================
+# This is a production-ready Docker Compose configuration for self-hosting
+# AgentPay on your own infrastructure (VPS, cloud VM, etc.)
+# ============================================================================
+# Prerequisites:
+# - Docker 20.10+ and Docker Compose 2.0+
+# - .env.production file with all required environment variables
+# - SSL certificate (or use Caddy/Traefik for auto-SSL)
+# ============================================================================
+
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # PostgreSQL Database with pgvector extension
+  # ==========================================================================
+  postgres:
+    image: ankane/pgvector:v0.5.1  # PostgreSQL 15 with pgvector pre-installed
+    container_name: agentpay-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: agentpay_production
+      POSTGRES_USER: agentpay
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # Set in .env.production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/scripts/init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql:ro
+    ports:
+      - "5432:5432"  # Expose only if needed for external access
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentpay"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentpay-network
+
+  # ==========================================================================
+  # Redis (Caching + Job Queue)
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: agentpay-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"  # Expose only if needed
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentpay-network
+
+  # ==========================================================================
+  # Minio (S3-compatible object storage) - Optional
+  # ==========================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: agentpay-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"  # S3 API
+      - "9001:9001"  # Console
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - agentpay-network
+
+  # ==========================================================================
+  # API Server (FastAPI)
+  # ==========================================================================
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.prod
+      args:
+        - PYTHON_VERSION=3.12
+    container_name: agentpay-api
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      # Override with container names
+      POLAR_POSTGRES_HOST: postgres
+      POLAR_POSTGRES_PORT: 5432
+      POLAR_POSTGRES_DATABASE: agentpay_production
+      POLAR_POSTGRES_USER: agentpay
+      POLAR_POSTGRES_PWD: ${POSTGRES_PASSWORD}
+      POLAR_REDIS_HOST: redis
+      POLAR_REDIS_PORT: 6379
+      POLAR_REDIS_DB: 0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server:/app:ro  # Read-only for security
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - agentpay-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ==========================================================================
+  # Background Worker (Dramatiq)
+  # ==========================================================================
+  worker:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.prod
+      args:
+        - PYTHON_VERSION=3.12
+    container_name: agentpay-worker
+    restart: unless-stopped
+    command: uv run task worker
+    env_file:
+      - .env.production
+    environment:
+      # Override with container names
+      POLAR_POSTGRES_HOST: postgres
+      POLAR_POSTGRES_PORT: 5432
+      POLAR_POSTGRES_DATABASE: agentpay_production
+      POLAR_POSTGRES_USER: agentpay
+      POLAR_POSTGRES_PWD: ${POSTGRES_PASSWORD}
+      POLAR_REDIS_HOST: redis
+      POLAR_REDIS_PORT: 6379
+      POLAR_REDIS_DB: 0
+      WORKER_THREADS: 4
+      WORKER_CONCURRENCY: 10
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./server:/app:ro
+    networks:
+      - agentpay-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # ==========================================================================
+  # Nginx Reverse Proxy (Optional - for SSL termination)
+  # ==========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: agentpay-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro  # SSL certificates
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - api
+    networks:
+      - agentpay-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # ==========================================================================
+  # Prometheus (Monitoring) - Optional
+  # ==========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: agentpay-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - agentpay-network
+    profiles:
+      - monitoring
+
+  # ==========================================================================
+  # Grafana (Dashboards) - Optional
+  # ==========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: agentpay-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_SERVER_ROOT_URL: https://grafana.yourdomain.com
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - agentpay-network
+    profiles:
+      - monitoring
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  nginx_cache:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  agentpay-network:
+    driver: bridge
+
+# ============================================================================
+# DEPLOYMENT INSTRUCTIONS
+# ============================================================================
+#
+# 1. Prerequisites:
+#    - Install Docker: https://docs.docker.com/get-docker/
+#    - Install Docker Compose: https://docs.docker.com/compose/install/
+#    - Create .env.production from .env.production.example
+#
+# 2. Create Required Files:
+#    cp .env.production.example .env.production
+#    # Edit .env.production and fill in all required values
+#
+# 3. Build and Start Services:
+#    docker-compose -f docker-compose.prod.yml up -d
+#
+# 4. Run Database Migrations:
+#    docker-compose -f docker-compose.prod.yml exec api uv run alembic upgrade head
+#
+# 5. Create First Organization and Agent:
+#    docker-compose -f docker-compose.prod.yml exec api uv run python -m polar.scripts.create_organization
+#
+# 6. Index Products for RAG:
+#    docker-compose -f docker-compose.prod.yml exec worker uv run python -m polar.scripts.index_products
+#
+# 7. Monitor Logs:
+#    docker-compose -f docker-compose.prod.yml logs -f api worker
+#
+# 8. Check Health:
+#    curl http://localhost:8000/healthz
+#
+# 9. Access Services:
+#    - API: http://localhost:8000
+#    - Minio Console: http://localhost:9001
+#    - Prometheus: http://localhost:9090 (if monitoring profile enabled)
+#    - Grafana: http://localhost:3001 (if monitoring profile enabled)
+#
+# 10. Stop Services:
+#     docker-compose -f docker-compose.prod.yml down
+#
+# 11. Stop and Remove All Data:
+#     docker-compose -f docker-compose.prod.yml down -v
+#
+# ============================================================================
+# MAINTENANCE COMMANDS
+# ============================================================================
+#
+# Update to latest version:
+#   git pull
+#   docker-compose -f docker-compose.prod.yml build --no-cache
+#   docker-compose -f docker-compose.prod.yml up -d
+#   docker-compose -f docker-compose.prod.yml exec api uv run alembic upgrade head
+#
+# Backup database:
+#   docker-compose -f docker-compose.prod.yml exec postgres pg_dump -U agentpay agentpay_production > backup.sql
+#
+# Restore database:
+#   cat backup.sql | docker-compose -f docker-compose.prod.yml exec -T postgres psql -U agentpay agentpay_production
+#
+# Scale workers:
+#   docker-compose -f docker-compose.prod.yml up -d --scale worker=3
+#
+# View resource usage:
+#   docker stats
+#
+# Clean up old images:
+#   docker image prune -a
+#
+# ============================================================================
+# SSL/TLS SETUP (Production)
+# ============================================================================
+#
+# Option 1: Use Let's Encrypt with Certbot
+#   certbot certonly --standalone -d api.yourdomain.com
+#   # Certificates will be in /etc/letsencrypt/live/api.yourdomain.com/
+#   # Copy to ./nginx/ssl/ directory
+#
+# Option 2: Use Caddy (automatic SSL)
+#   Replace nginx service with Caddy
+#   Caddy auto-provisions SSL certificates from Let's Encrypt
+#
+# Option 3: Use Traefik (automatic SSL)
+#   Add Traefik as reverse proxy
+#   Configure labels for automatic SSL
+#
+# ============================================================================
+# SECURITY CHECKLIST
+# ============================================================================
+#
+# [ ] Change all default passwords in .env.production
+# [ ] Use strong POLAR_SECRET (min 32 characters)
+# [ ] Enable firewall (ufw, iptables, cloud firewall)
+# [ ] Only expose necessary ports (80, 443)
+# [ ] Use SSL/TLS certificates (Let's Encrypt)
+# [ ] Enable Docker security scanning
+# [ ] Regularly update Docker images
+# [ ] Set up automatic backups
+# [ ] Monitor logs for suspicious activity
+# [ ] Use Docker secrets for sensitive data (instead of .env)
+# [ ] Enable rate limiting in Nginx
+# [ ] Configure CORS properly
+# [ ] Use read-only volumes where possible
+# [ ] Set resource limits for containers
+# [ ] Enable Docker content trust
+#
+# ============================================================================
+# PERFORMANCE TUNING
+# ============================================================================
+#
+# Database:
+#   - Increase shared_buffers in PostgreSQL config
+#   - Tune work_mem and maintenance_work_mem
+#   - Enable query logging for slow queries
+#   - Create indexes on frequently queried columns
+#
+# Redis:
+#   - Increase maxmemory based on usage
+#   - Monitor cache hit rate
+#   - Adjust eviction policy if needed
+#
+# API:
+#   - Scale horizontally (run multiple API containers)
+#   - Use connection pooling
+#   - Enable response caching
+#   - Monitor response times
+#
+# Worker:
+#   - Scale based on queue length
+#   - Increase WORKER_CONCURRENCY for CPU-bound tasks
+#   - Monitor job processing time
+#
+# ============================================================================

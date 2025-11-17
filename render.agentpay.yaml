@@ -1,0 +1,308 @@
+# ============================================================================
+# Render.com Blueprint for AgentPay Production Deployment
+# ============================================================================
+# Deploy to Render: https://render.com/
+# Documentation: https://render.com/docs/blueprint-spec
+# ============================================================================
+# This is a separate deployment configuration for AgentPay
+# The main render.yaml is for Polar production
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # API Server (FastAPI)
+  # ==========================================================================
+  - type: web
+    name: agentpay-api
+    runtime: python
+    plan: starter  # $7/month - upgrade to standard ($25) for production
+    region: oregon  # Choose: oregon, frankfurt, singapore
+    rootDir: server
+    buildCommand: |
+      pip install uv
+      uv sync
+      uv run task emails
+    startCommand: |
+      uv run alembic upgrade head
+      uv run uvicorn polar.app:app --host 0.0.0.0 --port $PORT --workers 4
+    healthCheckPath: /healthz
+    envVars:
+      # Application
+      - key: POLAR_ENV
+        value: production
+      - key: POLAR_BASE_URL
+        sync: false  # Set manually in Render dashboard
+      - key: POLAR_SECRET
+        generateValue: true  # Auto-generate secret
+      - key: POLAR_CORS_ORIGINS
+        sync: false
+
+      # Database (auto-linked to PostgreSQL service below)
+      - key: POLAR_POSTGRES_DSN
+        fromDatabase:
+          name: agentpay-db
+          property: connectionString
+
+      # Redis (auto-linked to Redis service below)
+      - key: POLAR_REDIS_URL
+        fromService:
+          name: agentpay-redis
+          type: redis
+          property: connectionString
+
+      # LLM - Anthropic (set in Render dashboard)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-3-5-sonnet-20241022
+      - key: ANTHROPIC_INTENT_MODEL
+        value: claude-3-haiku-20240307
+      - key: ANTHROPIC_ENABLE_CACHING
+        value: true
+
+      # LLM - OpenAI (set in Render dashboard)
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-small
+
+      # Stripe (set in Render dashboard)
+      - key: POLAR_STRIPE_SECRET_KEY
+        sync: false
+      - key: POLAR_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: POLAR_STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: POLAR_STRIPE_CONNECT_WEBHOOK_SECRET
+        sync: false
+
+      # S3 Storage (set in Render dashboard)
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_BUCKET_NAME
+        value: agentpay-production
+      - key: S3_REGION
+        value: us-east-1
+
+      # Monitoring (optional)
+      - key: SENTRY_DSN
+        sync: false
+      - key: LOG_LEVEL
+        value: INFO
+
+      # AgentPay Settings
+      - key: AGENTPAY_ENABLE_STREAMING
+        value: true
+      - key: AGENTPAY_ENABLE_TYPING_INDICATORS
+        value: true
+      - key: AGENTPAY_MAX_HISTORY_LENGTH
+        value: 20
+      - key: AGENTPAY_RAG_SIMILARITY_THRESHOLD
+        value: 0.75
+      - key: AGENTPAY_RAG_MAX_RESULTS
+        value: 5
+
+      # Performance
+      - key: WORKER_THREADS
+        value: 4
+      - key: DB_QUERY_TIMEOUT
+        value: 30
+      - key: LLM_REQUEST_TIMEOUT
+        value: 60
+
+    autoDeploy: true  # Auto-deploy on git push
+
+    # Scaling (upgrade plan for more)
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 80
+      targetCPUPercent: 80
+
+  # ==========================================================================
+  # Background Worker (Dramatiq)
+  # ==========================================================================
+  - type: worker
+    name: agentpay-worker
+    runtime: python
+    plan: starter  # $7/month
+    region: oregon
+    rootDir: server
+    buildCommand: |
+      pip install uv
+      uv sync
+    startCommand: |
+      uv run task worker
+    envVars:
+      # Application
+      - key: POLAR_ENV
+        value: production
+      - key: POLAR_SECRET
+        fromService:
+          name: agentpay-api
+          type: web
+          envVarKey: POLAR_SECRET
+
+      # Database
+      - key: POLAR_POSTGRES_DSN
+        fromDatabase:
+          name: agentpay-db
+          property: connectionString
+
+      # Redis
+      - key: POLAR_REDIS_URL
+        fromService:
+          name: agentpay-redis
+          type: redis
+          property: connectionString
+
+      # LLM - Anthropic
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-3-5-sonnet-20241022
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-small
+
+      # S3 Storage
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_BUCKET_NAME
+        value: agentpay-production
+
+      # Worker Settings
+      - key: WORKER_THREADS
+        value: 4
+      - key: WORKER_CONCURRENCY
+        value: 10
+      - key: LOG_LEVEL
+        value: INFO
+
+    autoDeploy: true
+
+    # Scaling
+    scaling:
+      minInstances: 1
+      maxInstances: 2
+
+databases:
+  # ==========================================================================
+  # PostgreSQL Database (with pgvector extension)
+  # ==========================================================================
+  - name: agentpay-db
+    databaseName: agentpay_production
+    plan: starter  # $7/month (256MB RAM) - upgrade to standard ($20) for production
+    region: oregon
+    postgresMajorVersion: 15  # pgvector supported on 15+
+    # Note: Enable pgvector extension manually after creation:
+    # 1. Connect to database
+    # 2. Run: CREATE EXTENSION IF NOT EXISTS vector;
+    ipAllowList: []  # Empty = allow from Render services only
+
+  # ==========================================================================
+  # Redis Instance (for caching and job queue)
+  # ==========================================================================
+  - name: agentpay-redis
+    plan: starter  # $7/month (256MB RAM)
+    region: oregon
+    maxmemoryPolicy: allkeys-lru  # Evict least recently used keys
+    ipAllowList: []  # Empty = allow from Render services only
+
+# ============================================================================
+# DEPLOYMENT INSTRUCTIONS
+# ============================================================================
+#
+# 1. Prerequisites:
+#    - Render account: https://render.com/
+#    - Git repository connected to Render
+#    - API keys ready: Anthropic, OpenAI, Stripe
+#
+# 2. Deploy via Render Dashboard:
+#    a. Go to: https://dashboard.render.com/
+#    b. Click "New" → "Blueprint"
+#    c. Connect your Git repository
+#    d. Select branch (e.g., main or production)
+#    e. Specify blueprint path: render.agentpay.yaml
+#    f. Click "Apply"
+#
+# 3. Set Environment Variables:
+#    After deployment, set these in Render dashboard:
+#    - ANTHROPIC_API_KEY
+#    - OPENAI_API_KEY
+#    - POLAR_STRIPE_SECRET_KEY
+#    - POLAR_STRIPE_PUBLISHABLE_KEY
+#    - POLAR_STRIPE_WEBHOOK_SECRET
+#    - POLAR_STRIPE_CONNECT_WEBHOOK_SECRET
+#    - S3_ENDPOINT_URL
+#    - S3_ACCESS_KEY_ID
+#    - S3_SECRET_ACCESS_KEY
+#    - POLAR_BASE_URL (e.g., https://agentpay-api.onrender.com)
+#    - POLAR_CORS_ORIGINS (e.g., https://shop1.com,https://shop2.com)
+#
+# 4. Enable pgvector Extension:
+#    a. Go to database shell in Render dashboard
+#    b. Run: CREATE EXTENSION IF NOT EXISTS vector;
+#    c. Verify: \dx (should show vector extension)
+#
+# 5. Run Database Migrations:
+#    Migrations run automatically on API server startup via:
+#    uv run alembic upgrade head
+#
+# 6. Configure Stripe Webhooks:
+#    a. Get webhook URL: https://YOUR-APP.onrender.com/api/v1/integrations/stripe/webhook
+#    b. Add in Stripe dashboard: https://dashboard.stripe.com/webhooks
+#    c. Select events: payment_intent.*, customer.*, subscription.*
+#    d. Copy webhook secret → POLAR_STRIPE_WEBHOOK_SECRET
+#
+# 7. Index Products (First Time):
+#    a. Connect to API server shell
+#    b. Run indexing script (or via API endpoint)
+#
+# 8. Monitor Deployment:
+#    - Logs: https://dashboard.render.com/
+#    - Health check: https://YOUR-APP.onrender.com/healthz
+#    - Metrics: Render dashboard provides CPU, memory, response time
+#
+# 9. Custom Domain (Optional):
+#    a. Go to web service settings
+#    b. Add custom domain (e.g., api.agentpay.com)
+#    c. Configure DNS CNAME record
+#    d. SSL auto-provisioned by Render
+#
+# 10. Scaling:
+#     - Upgrade plans for more resources
+#     - Enable autoscaling in service settings
+#     - Monitor usage and adjust min/max instances
+#
+# ============================================================================
+# COST BREAKDOWN (Render Starter Plans)
+# ============================================================================
+#
+# Service          Plan      Cost/Month
+# ------------------------------------------
+# API Server       Starter   $7
+# Worker           Starter   $7
+# PostgreSQL       Starter   $7
+# Redis            Starter   $7
+# ------------------------------------------
+# Total                      $28/month
+#
+# Production (Standard Plans):
+# API Server       Standard  $25
+# Worker           Standard  $25
+# PostgreSQL       Standard  $20
+# Redis            Standard  $15
+# ------------------------------------------
+# Total                      $85/month
+#
+# ============================================================================

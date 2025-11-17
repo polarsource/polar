@@ -563,7 +563,7 @@ class SubscriptionService:
         if customer is None:
             raise MissingCheckoutCustomer(checkout)
 
-        prices = product.prices
+        prices = checkout.prices[product.id]
         recurring_interval: SubscriptionRecurringInterval
         recurring_interval_count: int
         if product.is_legacy_recurring_price:
@@ -709,7 +709,7 @@ class SubscriptionService:
         stripe_price_ids: list[str] = []
         subscription_product_prices: list[SubscriptionProductPrice] = []
 
-        prices = product.prices
+        prices = checkout.prices[product.id]
         if product.is_legacy_recurring_price:
             prices = [checkout.product_price]
 

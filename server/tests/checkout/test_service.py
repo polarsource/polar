@@ -67,6 +67,7 @@ from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.organization import OrganizationStatus
 from polar.models.product_price import (
+    ProductPriceAmountType,
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceFree,
@@ -77,6 +78,7 @@ from polar.models.user import IdentityVerificationStatus
 from polar.order.service import OrderService
 from polar.postgres import AsyncSession
 from polar.product.guard import is_fixed_price, is_metered_price, is_seat_price
+from polar.product.schemas import ProductPriceFixedCreate
 from polar.subscription.service import SubscriptionService
 from polar.trial_redemption.repository import TrialRedemptionRepository
 from tests.fixtures.auth import AuthSubjectFixture
@@ -1650,6 +1652,79 @@ class TestCreate:
 
         assert checkout.seats == seats
         assert checkout.amount == price.calculate_amount(seats)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_ad_hoc_prices(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product: Product,
+        product_one_time: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductsCreate(
+                    products=[product.id],
+                    prices={
+                        product_one_time.id: [
+                            ProductPriceFixedCreate(
+                                amount_type=ProductPriceAmountType.fixed,
+                                price_amount=100_00,
+                                price_currency="usd",
+                            ),
+                        ]
+                    },
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_ad_hoc_prices(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product.id],
+                prices={
+                    product.id: [
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=100_00,
+                            price_currency="usd",
+                        ),
+                    ]
+                },
+            ),
+            auth_subject,
+        )
+
+        checkout_products = checkout.checkout_products
+        assert len(checkout_products) == 1
+        checkout_product = checkout_products[0]
+        assert checkout_product.product == product
+        assert len(checkout_product.ad_hoc_prices) == 1
+        ad_hoc_price = checkout_product.ad_hoc_prices[0]
+        assert isinstance(ad_hoc_price, ProductPriceFixed)
+        assert ad_hoc_price.price_amount == 100_00
+        assert ad_hoc_price.price_currency == "usd"
+
+        assert checkout.product == product
+        assert checkout.products == [product]
+        assert checkout.product_price == ad_hoc_price
+        assert checkout.currency == ad_hoc_price.price_currency
 
 
 @pytest.mark.asyncio

@@ -35,7 +35,7 @@ from polar.models import (
     User,
 )
 from polar.models.product_custom_field import ProductCustomField
-from polar.models.product_price import HasStripePriceId
+from polar.models.product_price import HasStripePriceId, ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
@@ -168,7 +168,7 @@ class ProductService:
         )
 
         errors: list[ValidationError] = []
-        prices, _, _, prices_errors = await self._get_validated_prices(
+        prices, _, _, prices_errors = await self.get_validated_prices(
             session,
             create_schema.prices,
             create_schema.recurring_interval,
@@ -287,7 +287,7 @@ class ProductService:
                 existing_prices,
                 added_prices,
                 prices_errors,
-            ) = await self._get_validated_prices(
+            ) = await self.get_validated_prices(
                 session,
                 update_schema.prices,
                 product.recurring_interval,
@@ -539,13 +539,15 @@ class ProductService:
 
         return product, added_benefits, deleted_benefits
 
-    async def _get_validated_prices(
+    async def get_validated_prices(
         self,
         session: AsyncSession,
         prices_schema: Sequence[ExistingProductPrice | ProductPriceCreate],
         recurring_interval: SubscriptionRecurringInterval | None,
         product: Product | None,
         auth_subject: AuthSubject[User | Organization],
+        source: ProductPriceSource = ProductPriceSource.catalog,
+        error_prefix: tuple[str, ...] = ("body", "prices"),
     ) -> tuple[
         builtins.list[ProductPrice],
         builtins.set[ProductPrice],
@@ -566,7 +568,7 @@ class ProductService:
                     errors.append(
                         {
                             "type": "value_error",
-                            "loc": ("body", "prices", index),
+                            "loc": (*error_prefix, index),
                             "msg": "Price does not exist.",
                             "input": price_schema.id,
                         }
@@ -575,7 +577,9 @@ class ProductService:
                 existing_prices.add(price)
             else:
                 model_class = price_schema.get_model_class()
-                price = model_class(product=product, **price_schema.model_dump())
+                price = model_class(
+                    product=product, source=source, **price_schema.model_dump()
+                )
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):
@@ -583,7 +587,7 @@ class ProductService:
                         errors.append(
                             {
                                 "type": "value_error",
-                                "loc": ("body", "prices", index),
+                                "loc": (*error_prefix, index),
                                 "msg": "Metered pricing is not supported on one-time products.",
                                 "input": price_schema,
                             }
@@ -594,7 +598,7 @@ class ProductService:
                         errors.append(
                             {
                                 "type": "value_error",
-                                "loc": ("body", "prices", index, "meter_id"),
+                                "loc": (*error_prefix, index, "meter_id"),
                                 "msg": "Meter is already used for another price.",
                                 "input": price_schema.meter_id,
                             }
@@ -608,7 +612,7 @@ class ProductService:
                         errors.append(
                             {
                                 "type": "value_error",
-                                "loc": ("body", "prices", index, "meter_id"),
+                                "loc": (*error_prefix, index, "meter_id"),
                                 "msg": "Meter does not exist.",
                                 "input": price_schema.meter_id,
                             }
@@ -622,7 +626,7 @@ class ProductService:
             errors.append(
                 {
                     "type": "too_short",
-                    "loc": ("body", "prices"),
+                    "loc": error_prefix,
                     "msg": "At least one price is required.",
                     "input": prices_schema,
                 }
@@ -635,7 +639,7 @@ class ProductService:
                 errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "prices"),
+                        "loc": error_prefix,
                         "msg": "Only one static price is allowed.",
                         "input": prices_schema,
                     }

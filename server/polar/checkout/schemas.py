@@ -60,6 +60,7 @@ from polar.product.schemas import (
     ProductBase,
     ProductMediaList,
     ProductPrice,
+    ProductPriceCreateList,
     ProductPriceList,
 )
 
@@ -271,6 +272,13 @@ class CheckoutProductsCreate(CheckoutCreateBase):
             "The first one will be selected by default."
         ),
         min_length=1,
+    )
+    prices: dict[UUID4, ProductPriceCreateList] | None = Field(
+        default=None,
+        description=(
+            "Optional mapping of product IDs to a list of ad-hoc prices to create for that product. "
+            "If not set, catalog prices of the product will be used."
+        ),
     )
 
 
@@ -486,7 +494,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     )
     product_id: UUID4 | None = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 | None = Field(
-        description="ID of the product price to checkout."
+        description="ID of the product price to checkout.", deprecated=True
     )
     discount_id: UUID4 | None = Field(
         description="ID of the discount applied to the checkout."
@@ -643,7 +651,10 @@ class Checkout(MetadataOutputMixin, TrialConfigurationOutputMixin, CheckoutBase)
     )
     product: CheckoutProduct | None = Field(description="Product selected to checkout.")
     product_price: ProductPrice | None = Field(
-        description="Price of the selected product."
+        description="Price of the selected product.", deprecated=True
+    )
+    prices: dict[UUID4, ProductPriceList] | None = Field(
+        description=("Mapping of product IDs to their list of prices.")
     )
     discount: CheckoutDiscount | None
     subscription_id: UUID4 | None
@@ -659,7 +670,10 @@ class CheckoutPublic(CheckoutBase):
     )
     product: CheckoutProduct | None = Field(description="Product selected to checkout.")
     product_price: ProductPrice | None = Field(
-        description="Price of the selected product."
+        description="Price of the selected product.", deprecated=True
+    )
+    prices: dict[UUID4, ProductPriceList] | None = Field(
+        description=("Mapping of product IDs to their list of prices.")
     )
     discount: CheckoutDiscount | None
     organization: CheckoutOrganization

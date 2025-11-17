@@ -30,7 +30,7 @@ from sqlalchemy.orm import (
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy.types import StrEnumType
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.math import polar_round
 
 if TYPE_CHECKING:
@@ -51,6 +51,11 @@ class ProductPriceAmountType(StrEnum):
     free = "free"
     metered_unit = "metered_unit"
     seat_based = "seat_based"
+
+
+class ProductPriceSource(StrEnum):
+    catalog = "catalog"
+    ad_hoc = "ad_hoc"
 
 
 class SeatTier(TypedDict):
@@ -93,12 +98,18 @@ class ProductPrice(RecordModel):
     # Legacy: recurring is now set on product
     type: Mapped[Any] = mapped_column(String, nullable=True, index=True, default=None)
     recurring_interval: Mapped[Any] = mapped_column(
-        StrEnumType(SubscriptionRecurringInterval),
+        StringEnum(SubscriptionRecurringInterval),
         nullable=True,
         index=True,
         default=None,
     )
 
+    source = mapped_column(
+        StringEnum(ProductPriceSource),
+        nullable=False,
+        index=True,
+        default=ProductPriceSource.catalog,
+    )
     amount_type: Mapped[ProductPriceAmountType] = mapped_column(
         String, nullable=False, index=True
     )
@@ -108,9 +119,28 @@ class ProductPrice(RecordModel):
         Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False, index=True
     )
 
+    checkout_product_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("checkout_products.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+        default=None,
+    )
+    """
+    Foreign key to the CheckoutProduct this price is associated with, if any.
+
+    Used for ad-hoc prices created on-demand for checkout sessions.
+    """
+
     @declared_attr
     def product(cls) -> Mapped["Product"]:
         return relationship("Product", lazy="raise_on_sql", back_populates="all_prices")
+
+    @declared_attr
+    def checkout_product(cls) -> Mapped["Product | None"]:
+        return relationship(
+            "CheckoutProduct", lazy="raise_on_sql", back_populates="ad_hoc_prices"
+        )
 
     @hybrid_property
     def is_recurring(self) -> bool:

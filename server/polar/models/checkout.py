@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -411,6 +412,16 @@ class Checkout(
         if self.product is not None:
             return f"{self.organization.name} — {self.product.name}"
         raise NotImplementedError()
+
+    @property
+    def prices(self) -> dict[uuid.UUID, list[ProductPrice]]:
+        prices: dict[uuid.UUID, list[ProductPrice]] = {}
+        for checkout_product in self.checkout_products:
+            if checkout_product.ad_hoc_prices:
+                prices[checkout_product.product_id] = checkout_product.ad_hoc_prices
+            else:
+                prices[checkout_product.product_id] = checkout_product.product.prices
+        return prices
 
 
 @event.listens_for(Checkout, "before_update")

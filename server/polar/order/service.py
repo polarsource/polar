@@ -490,8 +490,9 @@ class OrderService:
 
         # For seat-based orders, benefits are granted when seats are claimed
         # For non-seat orders, grant benefits immediately
-        price = checkout.product_price
-        if not is_seat_price(price):
+        prices = checkout.prices[product.id]
+        has_seat_price = any(is_seat_price(price) for price in prices)
+        if not has_seat_price:
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
                 task="grant",
@@ -546,7 +547,8 @@ class OrderService:
 
         items: list[OrderItem] = []
         if has_product_checkout(checkout):
-            for price in checkout.product.prices:
+            prices = checkout.prices[checkout.product_id]
+            for price in prices:
                 # Don't create an item for metered prices
                 if not is_static_price(price):
                     continue

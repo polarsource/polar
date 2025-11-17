@@ -246,3 +246,54 @@ async def websocket_endpoint(
     from polar.agent.websocket import websocket_handler
 
     await websocket_handler.handle_connection(websocket, id)
+
+
+# ==============================================================================
+# STREAMING ENDPOINT (Server-Sent Events)
+# ==============================================================================
+
+
+@router.post("/conversations/{id}/messages/stream")
+async def send_message_stream(
+    id: Annotated[UUID, Path()],
+    message: MessageCreate,
+    session: AsyncSession = Depends(get_db_session),
+):
+    """
+    Send a message and stream agent response (Server-Sent Events).
+
+    Use this for streaming responses in web clients.
+
+    Response format (SSE):
+    data: {"type": "thinking", "content": "Understanding..."}
+
+    data: {"type": "intent", "content": "product_query"}
+
+    data: {"type": "content", "chunk": "I'd be happy..."}
+
+    data: {"type": "done", "message_id": "..."}
+
+    """
+    from fastapi.responses import StreamingResponse
+    from polar.agent.streaming import streaming_handler
+
+    # Get conversation
+    conversation = await conversation_service.get(session, id)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Create user message
+    user_message = await message_service.create_user_message(
+        session, conversation, message
+    )
+
+    # Stream response
+    return StreamingResponse(
+        streaming_handler.stream_to_sse(session, conversation, user_message),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )

@@ -1,0 +1,142 @@
+---
+/**
+ * AgentPay Chat Widget - Astro Component
+ *
+ * Usage in Astro:
+ *   ---
+ *   import AgentPayChat from '@agentpay/chat/astro';
+ *   ---
+ *
+ *   <AgentPayChat
+ *     organizationId="your-org-id"
+ *     agentType="sales"
+ *     primaryColor="#3b82f6"
+ *   />
+ */
+
+export interface Props {
+  /**
+   * Organization ID (required)
+   */
+  organizationId: string;
+
+  /**
+   * Agent type
+   * @default "sales"
+   */
+  agentType?: 'sales' | 'support' | 'payment';
+
+  /**
+   * API endpoint
+   * @default "http://localhost:8000/v1/agent"
+   */
+  apiEndpoint?: string;
+
+  /**
+   * Position of chat button
+   * @default "bottom-right"
+   */
+  position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+
+  /**
+   * Primary color for branding
+   * @default "#3b82f6"
+   */
+  primaryColor?: string;
+
+  /**
+   * Initial welcome message
+   */
+  welcomeMessage?: string;
+
+  /**
+   * Enable streaming responses
+   * @default true
+   */
+  enableStreaming?: boolean;
+
+  /**
+   * Enable typing indicators
+   * @default true
+   */
+  enableTypingIndicator?: boolean;
+}
+
+const {
+  organizationId,
+  agentType = 'sales',
+  apiEndpoint = 'http://localhost:8000/v1/agent',
+  position = 'bottom-right',
+  primaryColor = '#3b82f6',
+  welcomeMessage,
+  enableStreaming = true,
+  enableTypingIndicator = true,
+} = Astro.props;
+
+const widgetId = `agentpay-chat-${Math.random().toString(36).substr(2, 9)}`;
+---
+
+<!-- Container for React component -->
+<div id={widgetId}></div>
+
+<!-- Load React and ReactDOM from CDN -->
+<script is:inline src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script is:inline src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+<!-- Load AgentPay Chat Widget -->
+<script define:vars={{
+  widgetId,
+  organizationId,
+  agentType,
+  apiEndpoint,
+  position,
+  primaryColor,
+  welcomeMessage,
+  enableStreaming,
+  enableTypingIndicator
+}}>
+  // Wait for React to load
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!window.React || !window.ReactDOM) {
+      console.error('React not loaded. Please ensure React CDN is accessible.');
+      return;
+    }
+
+    // Import AgentPay Chat component
+    import('@agentpay/chat').then(({ AgentPayChat }) => {
+      const container = document.getElementById(widgetId);
+      if (!container) return;
+
+      const root = ReactDOM.createRoot(container);
+      root.render(
+        React.createElement(AgentPayChat, {
+          organizationId,
+          agentType,
+          apiEndpoint,
+          position,
+          primaryColor,
+          welcomeMessage,
+          enableStreaming,
+          enableTypingIndicator,
+          onCheckout: (url) => {
+            // Redirect to checkout
+            window.location.href = url;
+          },
+          onConversationStart: (conversationId) => {
+            console.log('Conversation started:', conversationId);
+          },
+        })
+      );
+    }).catch((error) => {
+      console.error('Error loading AgentPay Chat:', error);
+    });
+  });
+</script>
+
+<!-- Optional: Include Tailwind CSS for styling -->
+<style is:global>
+  /* AgentPay Chat Widget Styles */
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+</style>

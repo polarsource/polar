@@ -12,6 +12,7 @@ from sqlalchemy import (
     and_,
     cte,
     func,
+    literal,
     or_,
     select,
 )
@@ -142,6 +143,37 @@ def get_orders_metrics_cte(
 
     day_column = interval.sql_date_trunc(Order.created_at)
 
+    cumulative_metrics = ["cumulative_revenue", "net_cumulative_revenue"]
+    cumulative_metrics_to_compute = [
+        m
+        for m in metrics
+        if m.query == MetricQuery.orders and m.slug in cumulative_metrics
+    ]
+
+    min_timestamp_subquery = select(
+        func.min(timestamp_series.c.timestamp)
+    ).scalar_subquery()
+
+    # Only create historical baseline CTE if we have cumulative metrics
+    historical_baseline = None
+    if any(m.slug in cumulative_metrics for m in metrics):
+        historical_baseline = cte(
+            select(
+                func.coalesce(func.sum(Order.net_amount), 0).label(
+                    "hist_cumulative_revenue"
+                ),
+                func.coalesce(func.sum(Order.payout_amount), 0).label(
+                    "hist_net_cumulative_revenue"
+                ),
+            )
+            .select_from(Order)
+            .where(
+                Order.paid.is_(True),
+                Order.id.in_(readable_orders_statement),
+                interval.sql_date_trunc(Order.created_at) < min_timestamp_subquery,
+            )
+        )
+
     daily_metrics = cte(
         select(
             day_column.label("day"),
@@ -166,7 +198,20 @@ def get_orders_metrics_cte(
         .group_by(day_column)
     )
 
-    cumulative_metrics = ["cumulative_revenue", "net_cumulative_revenue"]
+    # Build from clause with conditional cross join
+    from_clause = timestamp_series.join(
+        daily_metrics,
+        onclause=daily_metrics.c.day == timestamp_column,
+        isouter=True,
+    )
+
+    if historical_baseline is not None:
+        # Cross join: every row gets the historical baseline values
+        from_clause = from_clause.join(
+            historical_baseline,
+            isouter=False,
+            onclause=literal(True),  # This creates a cross join (cartesian product)
+        )
 
     return cte(
         select(
@@ -176,6 +221,11 @@ def get_orders_metrics_cte(
                     func.sum(getattr(daily_metrics.c, metric.slug)).over(
                         order_by=timestamp_column
                     )
+                    + (
+                        getattr(historical_baseline.c, f"hist_{metric.slug}")
+                        if historical_baseline is not None
+                        else 0
+                    )
                     if metric.slug in cumulative_metrics
                     else getattr(daily_metrics.c, metric.slug),
                     0,
@@ -184,13 +234,7 @@ def get_orders_metrics_cte(
                 if metric.query == MetricQuery.orders
             ],
         )
-        .select_from(
-            timestamp_series.join(
-                daily_metrics,
-                onclause=daily_metrics.c.day == timestamp_column,
-                isouter=True,
-            )
-        )
+        .select_from(from_clause)
         .order_by(timestamp_column.asc())
     )
 

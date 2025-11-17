@@ -179,7 +179,7 @@ export const PolarVsStripePage = () => {
               <li className="flex items-start gap-2 py-2">
                 <CloseOutlined className="text-red-600" fontSize="small" />
                 <span className="dark:text-polar-300 text-sm text-gray-600">
-                  Available at 0.7% additional fee
+                  Subscriptions at 0.7% added fee
                 </span>
               </li>
               <li className="flex items-start gap-2 py-2">

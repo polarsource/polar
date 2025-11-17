@@ -20,9 +20,16 @@ AgentPay is an AI-native payment orchestration platform built on the Polar infra
 │   ├── conversational-payments.md     # Payment flows in conversations
 │   ├── trust-layer.md                 # Explainability & compliance
 │   └── api-integration.md             # External API integrations
-└── prompts/                           # Context and guidelines
-    ├── agentpay-context.md            # Project context and vision
-    └── development-guidelines.md      # Coding standards and best practices
+├── prompts/                           # Context and guidelines
+│   ├── agentpay-context.md            # Project context and vision
+│   └── development-guidelines.md      # Coding standards and best practices
+├── commands/                          # Custom slash commands (NEW!)
+│   ├── README.md                      # Commands documentation
+│   ├── add-to-agentpay-todos.md       # Enhanced todo management
+│   ├── agentpay-prompt.md             # Meta-prompting with context
+│   ├── run-agentpay-prompt.md         # Execute prompts + tracking
+│   └── agentpay-handoff.md            # Work continuity handoffs
+└── TACHES_ANALYSIS.md                 # Analysis of TÂCHES system value
 ```
 
 ## How to Use These Skills
@@ -305,6 +312,63 @@ mkdir -p server/polar/payment_orchestration/rails/{rail_name}
 # - E2E tests
 # - Load testing
 ```
+
+## Custom Commands (NEW!)
+
+AgentPay includes powerful slash commands built on the TÂCHES prompting patterns with project-specific enhancements.
+
+### Available Commands
+
+**`/add-to-agentpay-todos`** - Enhanced todo management
+- Captures technical debt with full context
+- Priority levels (P0-P3), phase tags, effort estimates
+- File paths, line numbers, solution hints
+- Duplicate detection and auto-extraction
+
+**`/agentpay-prompt`** - Meta-prompting with context
+- Auto-loads AgentPay context, skills, and standards
+- Generates optimized XML prompts
+- Links to implementation plan milestones
+- Supports single/parallel/sequential strategies
+
+**`/run-agentpay-prompt`** - Execute prompts + tracking
+- Runs prompts via sub-agents
+- Tracks milestone progress
+- Validates success criteria
+- Archives completed prompts
+- Suggests git commits
+
+**`/agentpay-handoff`** - Work continuity handoffs
+- Generates comprehensive WHATS-NEXT.md
+- Documents completed work and decisions
+- Lists remaining tasks and blockers
+- Perfect for long sessions or shift handoffs
+
+### Quick Workflow Example
+
+```
+# Start new feature
+/agentpay-prompt "Implement PIX payment rail"
+→ Creates optimized prompt in .prompts/
+
+# Execute it
+/run-agentpay-prompt latest
+→ Runs via sub-agent, tracks progress
+
+# Discover technical debt
+/add-to-agentpay-todos "Optimize PIX QR code caching"
+→ Captures for later, returns to current work
+
+# End of day
+/agentpay-handoff
+→ Creates handoff doc for tomorrow
+```
+
+**Full Documentation**: `.claude/commands/README.md`
+
+**Value**: Estimated 20-30% productivity gain through reduced context switching and better task decomposition. See `.claude/TACHES_ANALYSIS.md` for detailed analysis.
+
+---
 
 ## Support
 

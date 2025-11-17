@@ -23,10 +23,9 @@ export const PolarVsPaddlePage = () => {
         </p>
         <p className="dark:text-polar-300 text-gray-500">
           Both Polar and Paddle act as Merchant of Record (MoR), handling tax
-          compliance and payments for you. However, Polar is built by
-          developers for developers with modern tooling, transparent pricing,
-          and an open-source approach that gives you full control and
-          visibility.
+          compliance and payments for you. However, Polar is built by developers
+          for developers with modern tooling, transparent pricing, and an
+          open-source approach that gives you full control and visibility.
         </p>
       </ResourceSection>
 

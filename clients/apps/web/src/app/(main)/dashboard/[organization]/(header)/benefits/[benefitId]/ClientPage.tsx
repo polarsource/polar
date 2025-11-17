@@ -13,6 +13,7 @@ import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
 import { useDeleteBenefit } from '@/hooks/queries'
+import { usePushRouteWithoutCache } from '@/utils/router'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -22,7 +23,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
 interface ClientPageProps {
@@ -34,7 +34,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   organization,
   benefit,
 }: ClientPageProps) => {
-  const router = useRouter()
+  const pushRouteWithoutCache = usePushRouteWithoutCache()
   const { toast } = useToast()
 
   const {
@@ -64,9 +64,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
         title: 'Benefit Deleted',
         description: `Benefit ${benefit.description} successfully deleted`,
       })
-      router.push(`/dashboard/${organization.slug}/benefits`)
+      pushRouteWithoutCache(`/dashboard/${organization.slug}/benefits`)
     })
-  }, [deleteBenefit, benefit, toast, organization, router])
+  }, [deleteBenefit, benefit, toast, organization, pushRouteWithoutCache])
 
   const copyBenefitId = async () => {
     try {

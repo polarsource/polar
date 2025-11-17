@@ -1,12 +1,50 @@
 # AgentPay Implementation Plan
 
+## 🎯 Implementation Strategy: MVP-First Approach
+
+**IMPORTANT**: Before embarking on this full 6-month build, we **strongly recommend** starting with the **Web Chat MVP** (4 weeks).
+
+### Why MVP First?
+
+✅ **Validate Core Hypothesis**: Prove users will buy in conversational interface
+✅ **Real User Data**: Get actual conversion metrics in 4 weeks vs 6 months
+✅ **Lower Risk**: $70-340/month vs full infrastructure costs
+✅ **Fast Pivot**: Can adjust approach based on real feedback
+✅ **Foundation**: MVP code extends to full build if successful
+
+### Two-Track Approach
+
+**Track 1: Web Chat MVP** (Start Here) → See `AGENTPAY_MVP_PLAN.md`
+- 4 weeks to launch
+- Web chat widget on your e-commerce site
+- Single payment rail (Stripe OR PIX)
+- Validates conversion improvement hypothesis
+
+**Track 2: Full AgentPay Platform** (This Document)
+- 6 months to full v1.0
+- Multi-platform (WhatsApp, Slack, Telegram, Web)
+- Multi-rail orchestration
+- Enterprise-ready platform
+
+### Decision Point
+
+**After MVP (Week 4)**:
+- **If conversion ≥ 15% better**: Proceed with full build (this plan)
+- **If conversion < 5% better**: Pivot or iterate on MVP
+- **If 5-14% better**: Optimize MVP, delay full build decision
+
+---
+
 ## Executive Summary
 
-This document outlines the phased implementation plan for building AgentPay - an AI-native payment orchestration platform built on the Polar infrastructure.
+This document outlines the phased implementation plan for building **Full AgentPay** - an AI-native payment orchestration platform built on the Polar infrastructure.
 
-**Timeline**: 6 months to MVP, 12 months to full v1.0
+**Prerequisites**: Successful Web Chat MVP (see `AGENTPAY_MVP_PLAN.md`)
+**Timeline**: 6 months to full v1.0 (after MVP validation)
 **Team Size**: 3-5 engineers
 **Tech Stack**: Polar (Python/FastAPI), PostgreSQL, Redis, React/Next.js
+
+**Note**: Phases below assume you've completed and validated the Web Chat MVP. Some components from MVP will be reused and extended.
 
 ## Implementation Phases
 

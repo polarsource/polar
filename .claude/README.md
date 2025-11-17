@@ -216,16 +216,42 @@ As the project evolves, update skills to reflect:
 - New integrations
 - Changed requirements
 
-## Implementation Plan
+## Implementation Plans
 
-For the overall roadmap, see: `/home/user/flowpay/AGENTPAY_IMPLEMENTATION_PLAN.md`
+AgentPay has two implementation tracks:
 
-The implementation plan provides:
-- Phased approach (6 months to MVP)
+### 🚀 Web Chat MVP (RECOMMENDED START)
+
+**File**: `AGENTPAY_MVP_PLAN.md`
+
+**Timeline**: 4 weeks
+**Scope**: Web chat widget on your e-commerce site
+**Goal**: Validate conversational checkout improves conversion
+
+**Why Start Here**:
+- Validates hypothesis with real users in 4 weeks
+- Low investment (160-240 hours, <$500/month)
+- Controlled environment (your website only)
+- Foundation for full build if successful
+
+**See Also**: `.claude/skills/web-chat-mvp.md` for technical guidance
+
+### 📚 Full AgentPay Platform
+
+**File**: `AGENTPAY_IMPLEMENTATION_PLAN.md`
+
+**Prerequisites**: Successful MVP validation
+**Timeline**: 6 months to full v1.0
+**Scope**: Multi-platform (WhatsApp, Slack, Telegram), multi-rail orchestration
+
+The full implementation plan provides:
+- Phased approach (Phases 0-6)
 - Detailed milestones and tasks
 - Success criteria and metrics
 - Resource requirements
 - Risk mitigation strategies
+
+**Strategy**: Build MVP first, then decide based on data whether to invest in full platform
 
 ## Quick Start
 

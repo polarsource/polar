@@ -61,16 +61,11 @@ class OpenAIEmbeddingService(EmbeddingService):
                 dimensions=self.dimensions,
             )
 
-        # TODO: Generate embedding with OpenAI (Week 2-3)
-        # response = await self.client.embeddings.create(
-        #     model=self.model,
-        #     input=text,
-        #     dimensions=self.dimensions,
-        # )
-        # embedding = response.data[0].embedding
+        # Generate embedding with OpenAI
+        from polar.agent_llm.openai_client import OpenAIClient
 
-        # For now, return placeholder
-        embedding = [0.0] * self.dimensions
+        openai_client = OpenAIClient()
+        embedding = await openai_client.embed(text, model=self.model)
 
         # Cache result
         await self._set_cached(cache_key, embedding)
@@ -116,16 +111,11 @@ class OpenAIEmbeddingService(EmbeddingService):
 
         # Generate embeddings for uncached texts
         if uncached_texts:
-            # TODO: Batch embed with OpenAI (Week 2-3)
-            # response = await self.client.embeddings.create(
-            #     model=self.model,
-            #     input=uncached_texts,
-            #     dimensions=self.dimensions,
-            # )
-            # embeddings = [data.embedding for data in response.data]
+            # Batch embed with OpenAI
+            from polar.agent_llm.openai_client import OpenAIClient
 
-            # Placeholder
-            embeddings = [[0.0] * self.dimensions] * len(uncached_texts)
+            openai_client = OpenAIClient()
+            embeddings = await openai_client.embed_batch(uncached_texts, model=self.model)
 
             # Cache and populate results
             for i, embedding in zip(uncached_indices, embeddings):

@@ -258,14 +258,11 @@ class WebSocketHandler:
                 conversation_id,
             )
 
-            # TODO: Process with Agent Core (Week 2-3)
-            # For now, send acknowledgment
-            agent_message = await message_service.create_agent_message(
-                session,
-                conversation,
-                content="Thank you for your message. I'm being trained to help you!",
-                action="acknowledge",
-                llm_provider="template",
+            # Process with Agent Core (6-layer orchestration)
+            from polar.agent_core import agent_orchestrator
+
+            agent_message = await agent_orchestrator.process_message(
+                session, conversation, user_message
             )
 
             # Broadcast agent response

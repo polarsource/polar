@@ -170,16 +170,34 @@ class IntentClassifier:
         """
         LLM-based classification (fallback for complex cases).
 
-        TODO: Implement in Week 2-3 with Anthropic Claude integration.
+        Uses Anthropic Claude Haiku for fast, cheap classification.
         """
-        # Placeholder for LLM classification
-        # Will use Anthropic Claude to classify complex intents
+        from polar.agent_llm.anthropic_client import AnthropicClient
+        from polar.agent_llm.base import LLMMessage
+
+        # Initialize Claude client
+        claude = AnthropicClient()
+
+        # Convert conversation history
+        llm_history = [
+            LLMMessage(role=msg.get("role", "user"), content=msg.get("content", ""))
+            for msg in conversation_history[-5:]  # Last 5 messages for context
+        ]
+
+        # Classify with LLM
+        result = await claude.classify_intent(message, llm_history, context)
+
+        # Convert to IntentResult
+        try:
+            intent = Intent(result["intent"])
+        except ValueError:
+            intent = Intent.UNKNOWN
 
         return IntentResult(
-            intent=Intent.UNKNOWN,
-            confidence=0.5,
-            entities={},
-            reasoning="LLM classification not yet implemented",
+            intent=intent,
+            confidence=result.get("confidence", 0.5),
+            entities=result.get("entities", {}),
+            reasoning="LLM classification",
         )
 
 

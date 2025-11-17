@@ -1,5 +1,5 @@
 {
-  "name": "polar",
+  "name": "@polar-sh/app",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
@@ -9,9 +9,11 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
-    "lint": "expo lint",
     "build:production": "eas build --platform ios --profile production",
-    "build:simulator": "eas build --platform ios --profile ios-simulator"
+    "build:simulator": "eas build --platform ios --profile ios-simulator",
+    "format": "prettier --write .",
+    "format:check": "prettier -c .",
+    "lint": "pnpm format:check && expo lint"
   },
   "jest": {
     "preset": "jest-expo"
@@ -79,6 +81,8 @@
     "@types/jest": "^29.5.12",
     "@types/react": "~19.1.17",
     "@types/react-test-renderer": "^18.3.0",
+    "eslint": "^9.39.1",
+    "eslint-config-expo": "~10.0.0",
     "jest": "^29.2.1",
     "jest-expo": "~54.0.13",
     "react-test-renderer": "18.3.1",

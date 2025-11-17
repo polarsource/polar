@@ -1,15 +1,15 @@
-import { useTheme } from "@/hooks/theme";
+import { useTheme } from '@/hooks/theme'
 import {
   StyleSheet,
   TouchableOpacity,
   TouchableOpacityProps,
   View,
-} from "react-native";
-import { ThemedText } from "./ThemedText";
+} from 'react-native'
+import { ThemedText } from './ThemedText'
 
 interface MiniButtonProps extends TouchableOpacityProps {
-  icon?: React.ReactNode;
-  secondary?: boolean;
+  icon?: React.ReactNode
+  secondary?: boolean
 }
 
 export const MiniButton = ({
@@ -21,7 +21,7 @@ export const MiniButton = ({
   disabled,
   ...props
 }: MiniButtonProps) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
   return (
     <TouchableOpacity
@@ -32,8 +32,8 @@ export const MiniButton = ({
           backgroundColor: disabled
             ? colors.secondary
             : secondary
-            ? colors.secondary
-            : colors.primary,
+              ? colors.secondary
+              : colors.primary,
         },
         style,
       ]}
@@ -43,23 +43,23 @@ export const MiniButton = ({
     >
       {icon && <View style={{ marginRight: 4 }}>{icon}</View>}
       <ThemedText
-        style={{ fontSize: 14, fontWeight: "500" }}
+        style={{ fontSize: 14, fontWeight: '500' }}
         secondary={disabled}
       >
         {children}
       </ThemedText>
     </TouchableOpacity>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   button: {
-    width: "auto",
+    width: 'auto',
     borderRadius: 100,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-});
+})

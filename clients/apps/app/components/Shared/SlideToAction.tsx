@@ -1,61 +1,61 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTheme } from '@/hooks/theme'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  ActivityIndicator,
   Animated,
   PanResponder,
   StyleProp,
-  ViewStyle,
   StyleSheet,
-  ActivityIndicator,
-} from "react-native";
-import { useTheme } from "@/hooks/theme";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+  ViewStyle,
+} from 'react-native'
 
 interface SlideToActionProps {
-  onSlideComplete: () => void;
-  text?: string;
-  releaseText?: string;
-  style?: StyleProp<ViewStyle>;
-  isLoading?: boolean;
-  disabled?: boolean;
-  onSlideStart?: () => void;
-  onSlideEnd?: () => void;
+  onSlideComplete: () => void
+  text?: string
+  releaseText?: string
+  style?: StyleProp<ViewStyle>
+  isLoading?: boolean
+  disabled?: boolean
+  onSlideStart?: () => void
+  onSlideEnd?: () => void
 }
 
 export const SlideToAction = ({
   onSlideComplete,
-  text = "Slide to confirm",
-  releaseText = "Release To Confirm",
+  text = 'Slide to confirm',
+  releaseText = 'Release To Confirm',
   style,
   disabled = false,
   isLoading = false,
   onSlideStart,
   onSlideEnd,
 }: SlideToActionProps) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
-  const [label, setLabel] = useState(text);
-  const [sliderWidth, setSliderWidth] = useState(0);
-  const [thumbWidth, setThumbWidth] = useState(0);
-  const slideAnimation = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const [label, setLabel] = useState(text)
+  const [sliderWidth, setSliderWidth] = useState(0)
+  const [thumbWidth, setThumbWidth] = useState(0)
+  const slideAnimation = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current
 
   const maxSlide = useMemo(() => {
-    return Math.max(0, sliderWidth - thumbWidth - 16);
-  }, [sliderWidth, thumbWidth]);
+    return Math.max(0, sliderWidth - thumbWidth - 16)
+  }, [sliderWidth, thumbWidth])
 
   const handleLayoutSlider = useCallback((event: any) => {
-    setSliderWidth(event.nativeEvent.layout.width);
-  }, []);
+    setSliderWidth(event.nativeEvent.layout.width)
+  }, [])
 
   const handleLayoutThumb = useCallback((event: any) => {
-    setThumbWidth(event.nativeEvent.layout.width);
-  }, []);
+    setThumbWidth(event.nativeEvent.layout.width)
+  }, [])
 
   const resetPosition = useCallback(() => {
     Animated.spring(slideAnimation, {
       toValue: 0,
       useNativeDriver: true,
-    }).start();
-  }, [slideAnimation]);
+    }).start()
+  }, [slideAnimation])
 
   const panResponder = useMemo(
     () =>
@@ -63,14 +63,14 @@ export const SlideToAction = ({
         onStartShouldSetPanResponder: () => !disabled,
         onMoveShouldSetPanResponder: () => !disabled,
         onPanResponderMove: (event, gestureState) => {
-          const newPosition = Math.max(0, Math.min(gestureState.dx, maxSlide));
-          slideAnimation.setValue({ x: newPosition, y: 0 });
+          const newPosition = Math.max(0, Math.min(gestureState.dx, maxSlide))
+          slideAnimation.setValue({ x: newPosition, y: 0 })
         },
         onPanResponderStart: (e) => {
-          onSlideStart?.();
+          onSlideStart?.()
         },
         onPanResponderEnd: (e) => {
-          onSlideEnd?.();
+          onSlideEnd?.()
         },
         onPanResponderTerminationRequest: () => false,
         onPanResponderRelease: (_, gestureState) => {
@@ -79,46 +79,46 @@ export const SlideToAction = ({
               toValue: maxSlide,
               useNativeDriver: true,
             }).start(() => {
-              onSlideComplete();
-              resetPosition();
-            });
+              onSlideComplete()
+              resetPosition()
+            })
           } else {
-            resetPosition();
+            resetPosition()
           }
         },
       }),
-    [disabled, maxSlide, resetPosition, onSlideComplete]
-  );
+    [disabled, maxSlide, resetPosition, onSlideComplete],
+  )
 
   const interpolatedBackgroundColor = slideAnimation.x.interpolate({
     inputRange: [0, maxSlide],
     outputRange: [colors.card, colors.monochromeInverted],
-    extrapolate: "clamp",
-  });
+    extrapolate: 'clamp',
+  })
 
   const interpolatedThumbBackgroundColor = slideAnimation.x.interpolate({
     inputRange: [0, maxSlide],
     outputRange: [colors.secondary, colors.primary],
-    extrapolate: "clamp",
-  });
+    extrapolate: 'clamp',
+  })
 
   const interpolatedTextColor = slideAnimation.x.interpolate({
     inputRange: [0, maxSlide],
     outputRange: [colors.monochromeInverted, colors.monochrome],
-    extrapolate: "clamp",
-  });
+    extrapolate: 'clamp',
+  })
 
   useEffect(() => {
     const listener = slideAnimation.addListener(({ x }) => {
       if (x >= maxSlide) {
-        setLabel(releaseText);
+        setLabel(releaseText)
       } else {
-        setLabel(text);
+        setLabel(text)
       }
-    });
+    })
 
-    return () => slideAnimation.removeListener(listener);
-  }, [slideAnimation, maxSlide, text, releaseText]);
+    return () => slideAnimation.removeListener(listener)
+  }, [slideAnimation, maxSlide, text, releaseText])
 
   return (
     <Animated.View
@@ -161,30 +161,30 @@ export const SlideToAction = ({
         />
       </Animated.View>
     </Animated.View>
-  );
-};
+  )
+}
 
 const SlideToActionStyles = StyleSheet.create({
   container: {
     height: 80,
-    width: "100%",
+    width: '100%',
     borderRadius: 9999,
-    overflow: "hidden",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   thumb: {
-    position: "absolute",
+    position: 'absolute',
     height: 64,
     width: 64,
     left: 8,
     top: 8,
     borderRadius: 9999,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   label: {
     fontSize: 16,
   },
-});
+})

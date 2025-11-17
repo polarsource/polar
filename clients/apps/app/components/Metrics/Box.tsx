@@ -1,15 +1,14 @@
-import { View, StyleSheet } from "react-native";
-import { ThemedText } from "../Shared/ThemedText";
-import { formatCurrencyAndAmount } from "@/utils/money";
-import { useTheme } from "@/hooks/theme";
+import { useTheme } from '@/hooks/theme'
+import { StyleSheet, View } from 'react-native'
+import { ThemedText } from '../Shared/ThemedText'
 
 export interface BoxProps {
-  label: string;
-  value: string;
+  label: string
+  value: string
 }
 
 export const Box = ({ label, value }: BoxProps) => {
-  const { colors } = useTheme();
+  const { colors } = useTheme()
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card }]}>
@@ -18,8 +17,8 @@ export const Box = ({ label, value }: BoxProps) => {
       </ThemedText>
       <ThemedText style={styles.value}>{value}</ThemedText>
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -34,4 +33,4 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 16,
   },
-});
+})

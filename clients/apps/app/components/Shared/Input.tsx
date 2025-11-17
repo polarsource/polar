@@ -1,14 +1,14 @@
-import { useTheme } from "@/hooks/theme";
-import { TextInput, StyleSheet, TextInputProps } from "react-native";
+import { useTheme } from '@/hooks/theme'
+import { StyleSheet, TextInput, TextInputProps } from 'react-native'
 
 export const Input = (props: TextInputProps) => {
-  const { colors, theme } = useTheme();
+  const { colors, theme } = useTheme()
 
   return (
     <TextInput
       {...props}
       placeholderTextColor={colors.subtext}
-      keyboardAppearance={theme === "dark" ? "dark" : "light"}
+      keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}
       style={[
         styles.input,
         {
@@ -19,8 +19,8 @@ export const Input = (props: TextInputProps) => {
         props.style,
       ]}
     />
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   input: {
@@ -29,4 +29,4 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
   },
-});
+})

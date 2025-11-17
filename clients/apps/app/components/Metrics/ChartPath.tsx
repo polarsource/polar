@@ -1,16 +1,16 @@
-import { Path } from "react-native-svg";
+import { Path } from 'react-native-svg'
 
 export interface ChartPathProps {
   dataPoints: {
-    value: number;
-    date: Date;
-  }[];
-  width: number;
-  chartHeight: number;
-  strokeWidth: number;
-  strokeColor: string;
-  minValue: number;
-  maxValue: number;
+    value: number
+    date: Date
+  }[]
+  width: number
+  chartHeight: number
+  strokeWidth: number
+  strokeColor: string
+  minValue: number
+  maxValue: number
 }
 
 export const ChartPath = ({
@@ -25,18 +25,18 @@ export const ChartPath = ({
   const pathString = dataPoints
     .map((point, index) => {
       const x =
-        index === 0 ? 1 : (index / (dataPoints.length - 1)) * (width - 2);
+        index === 0 ? 1 : (index / (dataPoints.length - 1)) * (width - 2)
 
-      const valueRange = Math.abs(maxValue - minValue) || 1;
+      const valueRange = Math.abs(maxValue - minValue) || 1
 
       const y =
         chartHeight -
         2 -
-        ((point.value - minValue) / valueRange) * (chartHeight - 4);
+        ((point.value - minValue) / valueRange) * (chartHeight - 4)
 
-      return `${index === 0 ? "M" : "L"} ${x} ${y}`;
+      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
     })
-    .join(" ");
+    .join(' ')
 
   return (
     <Path
@@ -45,5 +45,5 @@ export const ChartPath = ({
       strokeWidth={strokeWidth}
       fill="none"
     />
-  );
-};
+  )
+}

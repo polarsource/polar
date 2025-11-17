@@ -13,7 +13,8 @@
     "build:simulator": "eas build --platform ios --profile ios-simulator",
     "format": "prettier --write .",
     "format:check": "prettier -c .",
-    "lint": "pnpm format:check && expo lint"
+    "lint": "pnpm format:check && expo lint",
+    "typecheck": "tsc --noEmit"
   },
   "jest": {
     "preset": "jest-expo"

@@ -453,6 +453,40 @@ class TestCreateCheckout:
         json = response.json()
         assert any(error["loc"] == ["body", "seats"] for error in json["detail"])
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_valid_ad_hoc_prices(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "products": [str(product.id)],
+                "prices": {
+                    str(product.id): [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 100_00,
+                            "currency": "usd",
+                        }
+                    ]
+                },
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert len(json["products"]) == 1
+        assert len(json["prices"][str(product.id)]) == 1
+
+        ad_hoc_price = json["prices"][str(product.id)][0]
+        assert ad_hoc_price["id"] != str(product.prices[0].id)
+
 
 @pytest.mark.asyncio
 class TestUpdateCheckout:

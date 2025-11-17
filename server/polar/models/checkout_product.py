@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models import Checkout, Product
+    from polar.models import Checkout, Product, ProductPrice
 
 
 class CheckoutProduct(RecordModel):
@@ -33,3 +33,9 @@ class CheckoutProduct(RecordModel):
     def product(cls) -> Mapped["Product"]:
         # This is an association table, so eager loading makes sense
         return relationship("Product", lazy="joined")
+
+    @declared_attr
+    def ad_hoc_prices(cls) -> Mapped[list["ProductPrice"]]:
+        return relationship(
+            "ProductPrice", lazy="selectin", back_populates="checkout_product"
+        )

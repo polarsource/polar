@@ -30,6 +30,7 @@ from polar.kit.schemas import (
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
 from polar.models.product_price import (
     ProductPriceAmountType,
+    ProductPriceSource,
     ProductPriceType,
 )
 from polar.models.product_price import (
@@ -450,6 +451,13 @@ class ProductBenefitsUpdate(Schema):
 
 class ProductPriceBase(TimestampedSchema):
     id: UUID4 = Field(description="The ID of the price.")
+    source: ProductPriceSource = Field(
+        description=(
+            "The source of the price . "
+            "`catalog` is a predefined price, "
+            "while `ad_hoc` is a price created dynamically on a Checkout session."
+        )
+    )
     amount_type: ProductPriceAmountType = Field(
         description="The type of amount, either fixed or custom."
     )

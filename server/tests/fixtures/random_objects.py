@@ -1372,7 +1372,8 @@ async def create_checkout(
         product_price=price,
         product=product,
         checkout_products=[
-            CheckoutProduct(product=p, order=i) for i, p in enumerate(products)
+            CheckoutProduct(product=p, order=i, ad_hoc_prices=[])
+            for i, p in enumerate(products)
         ],
         customer=customer,
         subscription=subscription,

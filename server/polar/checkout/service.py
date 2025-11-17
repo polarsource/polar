@@ -77,7 +77,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.discount import DiscountDuration
 from polar.models.order import OrderBillingReasonInternal
-from polar.models.product_price import ProductPriceAmountType
+from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
 from polar.organization.service import organization as organization_service
@@ -90,6 +90,7 @@ from polar.product.guard import (
     is_seat_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
+from polar.product.schemas import ProductPriceCreateList
 from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
@@ -99,6 +100,7 @@ from polar.worker import enqueue_job
 
 from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
+from .price import get_default_price
 from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
 
@@ -283,6 +285,7 @@ class CheckoutService:
         auth_subject: AuthSubject[User | Organization],
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
+        ad_hoc_prices: dict[Product, Sequence[ProductPrice]] = {}
         if isinstance(checkout_create, CheckoutPriceCreate):
             products, product, price = await self._get_validated_price(
                 session, auth_subject, checkout_create.product_price_id
@@ -295,9 +298,16 @@ class CheckoutService:
             products = await self._get_validated_products(
                 session, auth_subject, checkout_create.products
             )
+            if checkout_create.prices:
+                ad_hoc_prices = await self._get_validated_prices(
+                    session, auth_subject, products, checkout_create.prices
+                )
+
             product = products[0]
-            # Select the static price in priority, as it determines the amount and specific behavior, like PWYW
-            price = product.get_static_price() or product.prices[0]
+            try:
+                price = get_default_price(ad_hoc_prices[product])
+            except KeyError:
+                price = get_default_price(product.prices)
 
         if product.organization.is_blocked():
             raise NotPermitted()
@@ -430,7 +440,7 @@ class CheckoutService:
         )
 
         checkout_products = [
-            CheckoutProduct(product=product, order=i)
+            CheckoutProduct(product=product, order=i, ad_hoc_prices=[])
             for i, product in enumerate(products)
         ]
 
@@ -466,6 +476,7 @@ class CheckoutService:
                     "product_price_id",
                     "product_id",
                     "products",
+                    "prices",
                     "amount",
                     "require_billing_address",
                     "customer_billing_address",
@@ -521,6 +532,14 @@ class CheckoutService:
             pass
 
         await session.flush()
+
+        if ad_hoc_prices:
+            for checkout_product in checkout.checkout_products:
+                checkout_product.ad_hoc_prices = ad_hoc_prices.get(
+                    checkout_product.product, []
+                )
+                session.add(checkout_product)
+
         await self._after_checkout_created(session, checkout)
 
         return checkout
@@ -630,7 +649,9 @@ class CheckoutService:
             seats=checkout_create.seats,
             allow_trial=True,
             organization=product.organization,
-            checkout_products=[CheckoutProduct(product=product, order=0)],
+            checkout_products=[
+                CheckoutProduct(product=product, order=0, ad_hoc_prices=[])
+            ],
             product=product,
             product_price=price,
             discount=None,
@@ -774,7 +795,8 @@ class CheckoutService:
             require_billing_address=checkout_link.require_billing_address,
             organization=checkout_link.organization,
             checkout_products=[
-                CheckoutProduct(product=p, order=i) for i, p in enumerate(products)
+                CheckoutProduct(product=p, order=i, ad_hoc_prices=[])
+                for i, p in enumerate(products)
             ],
             product=product,
             product_price=price,
@@ -1408,6 +1430,55 @@ class CheckoutService:
 
         return products
 
+    async def _get_validated_prices(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        products: Sequence[Product],
+        prices: dict[uuid.UUID, ProductPriceCreateList],
+    ) -> dict[Product, Sequence[ProductPrice]]:
+        validated_prices: dict[Product, Sequence[ProductPrice]] = {}
+        errors: list[ValidationError] = []
+        for product_id, product_prices in prices.items():
+            try:
+                product = next(p for p in products if p.id == product_id)
+            except StopIteration:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "prices", str(product_id)),
+                        "msg": "Product is not set on that checkout.",
+                        "input": product_id,
+                    }
+                )
+                continue
+
+            (
+                validated_product_prices,
+                _,
+                _,
+                price_errors,
+            ) = await product_service.get_validated_prices(
+                session,
+                product_prices,
+                product.recurring_interval,
+                product,
+                auth_subject,
+                source=ProductPriceSource.ad_hoc,
+                error_prefix=(
+                    "body",
+                    "prices",
+                    str(product_id),
+                ),
+            )
+            errors = [*errors, *price_errors]
+            validated_prices[product] = validated_product_prices
+
+        if len(errors) > 0:
+            raise PolarRequestValidationError(errors)
+
+        return validated_prices
+
     @typing.overload
     async def _get_validated_discount(
         self,
@@ -1613,8 +1684,13 @@ class CheckoutService:
             checkout.product = product
 
             if checkout_update.product_price_id is not None:
-                price = product.get_price(checkout_update.product_price_id)
-                if price is None:
+                try:
+                    price = next(
+                        p
+                        for p in checkout.prices[product.id]
+                        if p.id == checkout_update.product_price_id
+                    )
+                except StopIteration as e:
                     raise PolarRequestValidationError(
                         [
                             {
@@ -1624,9 +1700,9 @@ class CheckoutService:
                                 "input": checkout_update.product_price_id,
                             }
                         ]
-                    )
+                    ) from e
             else:
-                price = product.get_static_price() or product.prices[0]
+                price = get_default_price(checkout.prices[product.id])
 
             checkout.product_price = price
             checkout.amount = 0

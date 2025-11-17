@@ -1,6 +1,5 @@
 name: Feature request
 description: 'Suggest a feature for Polar'
-labels: ['community-request']
 type: 'Discussion'
 body:
     - type: textarea

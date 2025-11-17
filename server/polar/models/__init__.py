@@ -1,6 +1,7 @@
 from polar.kit.db.models import Model, TimestampedModel
 
 from .account import Account
+from .agent import Agent
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .billing_entry import BillingEntry
@@ -9,6 +10,7 @@ from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .checkout_link_product import CheckoutLinkProduct
 from .checkout_product import CheckoutProduct
+from .conversation import Conversation
 from .custom_field import CustomField
 from .customer import Customer
 from .customer_meter import CustomerMeter
@@ -29,6 +31,7 @@ from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
 from .login_code import LoginCode
+from .message import Message
 from .meter import Meter
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
@@ -83,6 +86,7 @@ __all__ = [
     "Model",
     "TimestampedModel",
     "Account",
+    "Agent",
     "Benefit",
     "Campaign",
     "BenefitGrant",
@@ -91,6 +95,7 @@ __all__ = [
     "CheckoutLink",
     "CheckoutLinkProduct",
     "CheckoutProduct",
+    "Conversation",
     "Customer",
     "CustomerMeter",
     "CustomerSeat",
@@ -112,6 +117,7 @@ __all__ = [
     "LicenseKey",
     "LicenseKeyActivation",
     "LoginCode",
+    "Message",
     "Meter",
     "Notification",
     "NotificationRecipient",

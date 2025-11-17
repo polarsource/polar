@@ -10,7 +10,6 @@ import {
   isMeteredPrice,
   isStaticPrice,
 } from '@/utils/product'
-import { ErrorMessage } from '@hookform/error-message'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -697,60 +696,69 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       <FormField
         control={control}
         name={`prices.${index}.amount_type`}
+        rules={{
+          required: 'Please select a price type',
+        }}
         render={({ field }) => {
           return (
             <FormItem>
-              <div className="flex flex-row items-center gap-2 py-1 pr-1 pl-1.5">
-                <FormControl>
-                  <Select
-                    value={field.value}
-                    onValueChange={(v) => {
-                      field.onChange(v)
-                      onAmountTypeChange(v as NonNullable<typeof amountType>)
-                      setValue(`prices.${index}.id`, '')
-                    }}
-                    disabled={
-                      staticPriceIndex > -1 && staticPriceIndex !== index
-                    }
-                  >
-                    <SelectTrigger
-                      className={twMerge(
-                        field.value ? '' : 'dark:text-polar-500 text-gray-400',
-                        'border-none bg-transparent shadow-none focus:border-none focus:ring-0 focus:ring-offset-0',
-                      )}
+              <div className="py-1 pr-1 pl-1.5">
+                <div className="flex flex-row items-center gap-2">
+                  <FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={(v) => {
+                        field.onChange(v)
+                        onAmountTypeChange(v as NonNullable<typeof amountType>)
+                        setValue(`prices.${index}.id`, '')
+                      }}
+                      disabled={
+                        staticPriceIndex > -1 && staticPriceIndex !== index
+                      }
                     >
-                      <SelectValue placeholder="Select a price type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fixed">Fixed price</SelectItem>
-                      <SelectItem value="custom">Pay what you want</SelectItem>
-                      <SelectItem value="free">Free</SelectItem>
-                      {organization.feature_settings
-                        ?.seat_based_pricing_enabled && (
-                        <SelectItem value="seat_based">Seats</SelectItem>
-                      )}
-                      {recurringInterval !== null && (
-                        <SelectItem value="metered_unit">
-                          Metered price
+                      <SelectTrigger
+                        className={twMerge(
+                          field.value
+                            ? ''
+                            : 'dark:text-polar-500 text-gray-400',
+                          'border-none bg-transparent shadow-none focus:border-none focus:ring-0 focus:ring-offset-0',
+                        )}
+                      >
+                        <SelectValue placeholder="Select a price type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">Fixed price</SelectItem>
+                        <SelectItem value="custom">
+                          Pay what you want
                         </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                {index > 0 && (
-                  <Button
-                    size="icon"
-                    className="aspect-square h-10 w-10"
-                    variant="secondary"
-                    onClick={() => {
-                      remove(index)
-                    }}
-                  >
-                    <CloseOutlined className="h-4 w-4" />
-                  </Button>
-                )}
+                        <SelectItem value="free">Free</SelectItem>
+                        {organization.feature_settings
+                          ?.seat_based_pricing_enabled && (
+                          <SelectItem value="seat_based">Seats</SelectItem>
+                        )}
+                        {recurringInterval !== null && (
+                          <SelectItem value="metered_unit">
+                            Metered price
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  {index > 0 && (
+                    <Button
+                      size="icon"
+                      className="aspect-square h-10 w-10"
+                      variant="secondary"
+                      onClick={() => {
+                        remove(index)
+                      }}
+                    >
+                      <CloseOutlined className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <FormMessage className="px-3 py-2" />
               </div>
-              <FormMessage />
             </FormItem>
           )
         }}
@@ -797,20 +805,6 @@ export const ProductPricingSection = ({
   const pricesFieldArray = useFieldArray({
     control,
     name: 'prices',
-    rules: {
-      validate: (prices) => {
-        if (
-          !prices ||
-          prices.length === 0 ||
-          !(prices as schemas['ProductPrice'][])?.[0]?.amount_type
-        ) {
-          console.log('Return error')
-          return 'At least one price is required'
-        }
-
-        return true
-      },
-    },
   })
 
   const { fields: prices, append, remove } = pricesFieldArray
@@ -1055,21 +1049,6 @@ export const ProductPricingSection = ({
             Add Additional Price
           </Button>
         )}
-        <ErrorMessage
-          errors={errors}
-          name="prices"
-          render={() => {
-            const message = errors.prices?.root?.message as string | undefined
-
-            if (!message) {
-              return null
-            }
-
-            return (
-              <p className="text-destructive text-sm font-medium">{message}</p>
-            )
-          }}
-        />
       </div>
     </Section>
   )

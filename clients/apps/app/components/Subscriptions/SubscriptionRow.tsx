@@ -15,6 +15,19 @@ import { ProductPriceLabel } from '../Products/ProductPriceLabel'
 import { Pill } from '../Shared/Pill'
 import { ThemedText } from '../Shared/ThemedText'
 
+const subscriptionStatusColors: Record<
+  schemas['SubscriptionStatus'],
+  'green' | 'red' | 'blue' | 'yellow'
+> = {
+  active: 'green',
+  canceled: 'red',
+  trialing: 'blue',
+  past_due: 'red',
+  incomplete: 'yellow',
+  incomplete_expired: 'red',
+  unpaid: 'yellow',
+}
+
 export interface SubscriptionRowProps {
   subscription: schemas['Subscription']
   showCustomer?: boolean
@@ -73,7 +86,7 @@ export const SubscriptionRow = ({
             >
               {subscription.product.name}
             </ThemedText>
-            <Pill color={subscription.status === 'active' ? 'green' : 'red'}>
+            <Pill color={subscriptionStatusColors[subscription.status]}>
               {subscription.status.split('_').join(' ')}
             </Pill>
           </View>

@@ -798,10 +798,19 @@ class TestGetHierarchyStats:
             aggregate_fields=("_cost.amount",),
         )
 
+        event1 = [root1, child1, child2]
+        event2 = [root2, child3]
+        event1_cost = sum([event.user_metadata["_cost"]["amount"] for event in event1])
+        event2_cost = sum([event.user_metadata["_cost"]["amount"] for event in event2])
+        total_cost = event1_cost + event2_cost
+
         assert len(stats) == 1
         assert stats[0]["name"] == "request"
         assert stats[0]["occurrences"] == 2
-        assert stats[0]["totals"]["_cost_amount"] == 10 + 5 + 3 + 20 + 7
+        assert stats[0]["totals"]["_cost_amount"] == total_cost
+        assert stats[0]["averages"]["_cost_amount"] == total_cost / 2
+        assert stats[0]["p95"]["_cost_amount"] == event2_cost
+        assert stats[0]["p99"]["_cost_amount"] == event2_cost
 
 
 @pytest.mark.asyncio

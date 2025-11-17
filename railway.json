@@ -1,0 +1,90 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "cd server && pip install uv && uv sync && uv run task emails",
+    "watchPatterns": [
+      "server/**"
+    ]
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "startCommand": "cd server && uv run alembic upgrade head && uv run uvicorn polar.app:app --host 0.0.0.0 --port $PORT --workers 4",
+    "healthcheckPath": "/healthz",
+    "healthcheckTimeout": 100,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "services": [
+    {
+      "name": "agentpay-api",
+      "plan": "hobby",
+      "source": {
+        "type": "github",
+        "repo": "muriloscigliano/flowpay",
+        "branch": "main"
+      },
+      "variables": {
+        "POLAR_ENV": "production",
+        "POLAR_BASE_URL": "${{RAILWAY_PUBLIC_DOMAIN}}",
+        "ANTHROPIC_MODEL": "claude-3-5-sonnet-20241022",
+        "ANTHROPIC_INTENT_MODEL": "claude-3-haiku-20240307",
+        "ANTHROPIC_ENABLE_CACHING": "true",
+        "OPENAI_EMBEDDING_MODEL": "text-embedding-3-small",
+        "AGENTPAY_ENABLE_STREAMING": "true",
+        "AGENTPAY_ENABLE_TYPING_INDICATORS": "true",
+        "AGENTPAY_MAX_HISTORY_LENGTH": "20",
+        "AGENTPAY_RAG_SIMILARITY_THRESHOLD": "0.75",
+        "AGENTPAY_RAG_MAX_RESULTS": "5",
+        "LOG_LEVEL": "INFO"
+      },
+      "domains": [
+        {
+          "domain": "api.yourdomain.com"
+        }
+      ]
+    },
+    {
+      "name": "agentpay-worker",
+      "plan": "hobby",
+      "source": {
+        "type": "github",
+        "repo": "muriloscigliano/flowpay",
+        "branch": "main"
+      },
+      "build": {
+        "buildCommand": "cd server && pip install uv && uv sync"
+      },
+      "deploy": {
+        "startCommand": "cd server && uv run task worker"
+      },
+      "variables": {
+        "POLAR_ENV": "production",
+        "WORKER_THREADS": "4",
+        "WORKER_CONCURRENCY": "10",
+        "LOG_LEVEL": "INFO"
+      }
+    }
+  ],
+  "plugins": [
+    {
+      "type": "postgresql",
+      "name": "agentpay-db",
+      "plan": "hobby",
+      "variables": {
+        "POSTGRES_VERSION": "15"
+      },
+      "initCommands": [
+        "CREATE EXTENSION IF NOT EXISTS vector;"
+      ]
+    },
+    {
+      "type": "redis",
+      "name": "agentpay-redis",
+      "plan": "hobby",
+      "variables": {
+        "REDIS_MAXMEMORY_POLICY": "allkeys-lru"
+      }
+    }
+  ]
+}

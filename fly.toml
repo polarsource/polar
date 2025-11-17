@@ -1,0 +1,218 @@
+# ============================================================================
+# Fly.io Configuration for AgentPay (Global Edge Deployment)
+# ============================================================================
+# Deploy to: https://fly.io/
+# Documentation: https://fly.io/docs/
+# ============================================================================
+
+app = "agentpay"
+primary_region = "iad"  # US-East (Ashburn, VA)
+kill_signal = "SIGINT"
+kill_timeout = "5s"
+
+# ============================================================================
+# Build Configuration
+# ============================================================================
+[build]
+  dockerfile = "server/Dockerfile.prod"
+
+# ============================================================================
+# Environment Variables
+# ============================================================================
+[env]
+  POLAR_ENV = "production"
+  POLAR_BASE_URL = "https://agentpay.fly.dev"
+
+  # LLM Configuration
+  ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
+  ANTHROPIC_INTENT_MODEL = "claude-3-haiku-20240307"
+  ANTHROPIC_ENABLE_CACHING = "true"
+  OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
+
+  # AgentPay Settings
+  AGENTPAY_ENABLE_STREAMING = "true"
+  AGENTPAY_ENABLE_TYPING_INDICATORS = "true"
+  AGENTPAY_MAX_HISTORY_LENGTH = "20"
+  AGENTPAY_RAG_SIMILARITY_THRESHOLD = "0.75"
+  AGENTPAY_RAG_MAX_RESULTS = "5"
+
+  # Performance
+  WORKER_THREADS = "4"
+  DB_QUERY_TIMEOUT = "30"
+  LLM_REQUEST_TIMEOUT = "60"
+  LOG_LEVEL = "INFO"
+
+# ============================================================================
+# HTTP Service Configuration
+# ============================================================================
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = true   # Scale to zero when idle
+  auto_start_machines = true  # Auto-start on request
+  min_machines_running = 1    # Keep at least 1 running
+
+  # Concurrency limits
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+# ============================================================================
+# HTTP Checks (Health)
+# ============================================================================
+[[http_service.checks]]
+  interval = "10s"
+  timeout = "2s"
+  grace_period = "5s"
+  method = "GET"
+  path = "/healthz"
+  protocol = "http"
+
+  [http_service.checks.headers]
+    User-Agent = "Fly-Health-Check"
+
+# ============================================================================
+# VM Configuration
+# ============================================================================
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 1024  # 1GB RAM
+
+# ============================================================================
+# Regions (Global Deployment)
+# ============================================================================
+# Deploy to multiple regions for low latency worldwide
+# Uncomment regions as needed:
+
+# [deploy]
+#   strategy = "rolling"  # Rolling deployment
+
+# Auto-replicate to these regions:
+# [[deploy.regions]]
+#   name = "iad"  # US-East (primary)
+#
+# [[deploy.regions]]
+#   name = "lhr"  # London (Europe)
+#
+# [[deploy.regions]]
+#   name = "nrt"  # Tokyo (Asia)
+
+# ============================================================================
+# Metrics
+# ============================================================================
+[[metrics]]
+  port = 9091
+  path = "/metrics"
+
+# ============================================================================
+# Mounts (Persistent Storage)
+# ============================================================================
+# [[mounts]]
+#   source = "agentpay_data"
+#   destination = "/data"
+#   initial_size = "1GB"
+
+# ============================================================================
+# Secrets (Set via flyctl)
+# ============================================================================
+# Run these commands to set secrets:
+#
+# flyctl secrets set POLAR_SECRET=$(openssl rand -hex 32)
+# flyctl secrets set ANTHROPIC_API_KEY=sk-ant-...
+# flyctl secrets set OPENAI_API_KEY=sk-proj-...
+# flyctl secrets set POLAR_STRIPE_SECRET_KEY=sk_live_...
+# flyctl secrets set POLAR_STRIPE_WEBHOOK_SECRET=whsec_...
+# flyctl secrets set POLAR_STRIPE_CONNECT_WEBHOOK_SECRET=whsec_...
+# flyctl secrets set DATABASE_URL=postgresql://...
+# flyctl secrets set REDIS_URL=redis://...
+# flyctl secrets set SENTRY_DSN=https://...
+
+# ============================================================================
+# PostgreSQL (Fly Postgres)
+# ============================================================================
+# Create Fly Postgres cluster:
+#
+# flyctl postgres create --name agentpay-db --region iad --initial-cluster-size 1
+# flyctl postgres attach agentpay-db
+#
+# Enable pgvector:
+# flyctl postgres connect -a agentpay-db
+# CREATE EXTENSION IF NOT EXISTS vector;
+
+# ============================================================================
+# Redis (Upstash or Fly Redis)
+# ============================================================================
+# Option 1: Upstash Redis (recommended, global)
+# https://upstash.com/ → Create database → Copy REDIS_URL
+#
+# Option 2: Fly Redis (beta)
+# flyctl redis create --name agentpay-redis --region iad
+
+# ============================================================================
+# Deployment Commands
+# ============================================================================
+#
+# 1. Install flyctl:
+#    curl -L https://fly.io/install.sh | sh
+#
+# 2. Login:
+#    flyctl auth login
+#
+# 3. Initialize app:
+#    flyctl launch
+#
+# 4. Set secrets (see above)
+#
+# 5. Create databases:
+#    flyctl postgres create --name agentpay-db
+#    flyctl postgres attach agentpay-db
+#
+# 6. Deploy:
+#    flyctl deploy
+#
+# 7. Scale globally:
+#    flyctl scale count 3 --region iad,lhr,nrt
+#
+# 8. Monitor:
+#    flyctl logs
+#    flyctl status
+#
+# 9. SSH into machine:
+#    flyctl ssh console
+#
+# ============================================================================
+# Cost Estimation (Fly.io)
+# ============================================================================
+#
+# Single region (US-East):
+# - 1 instance (1GB RAM):      ~$6/month
+# - PostgreSQL (shared-1x):    ~$20/month
+# - Redis (Upstash free tier): $0/month
+# Total:                       ~$26/month
+#
+# Global (3 regions):
+# - 3 instances (3x 1GB):      ~$18/month
+# - PostgreSQL (multi-region): ~$60/month
+# - Redis (Upstash paid):      ~$10/month
+# Total:                       ~$88/month
+#
+# ============================================================================
+# Advanced: Multi-Region Deployment
+# ============================================================================
+#
+# For global low latency:
+#
+# 1. Create read replicas:
+#    flyctl postgres create --name agentpay-db-eu --region lhr --replica-of agentpay-db
+#    flyctl postgres create --name agentpay-db-asia --region nrt --replica-of agentpay-db
+#
+# 2. Scale API to multiple regions:
+#    flyctl scale count 3
+#    flyctl regions add lhr nrt
+#
+# 3. Configure read replica routing:
+#    # In your app code, route reads to nearest region
+#
+# ============================================================================

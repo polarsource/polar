@@ -1329,6 +1329,8 @@ async def create_checkout(
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
     seats: int | None = None,
+    require_billing_address: bool = False,
+    customer_billing_address: Address | None = None,
 ) -> Checkout:
     product = product or products[0]
     price = price or product.prices[0]
@@ -1379,6 +1381,8 @@ async def create_checkout(
         trial_interval_count=trial_interval_count,
         trial_end=trial_end,
         seats=seats,
+        require_billing_address=require_billing_address,
+        customer_billing_address=customer_billing_address,
     )
     await save_fixture(checkout)
     return checkout

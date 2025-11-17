@@ -342,7 +342,7 @@ class Checkout(
         )
         return {
             "country": True,
-            "state": require_billing_address or country in {"US", "CA"},
+            "state": country in {"US", "CA"},
             "line1": require_billing_address,
             "line2": False,
             "city": require_billing_address,
@@ -360,8 +360,12 @@ class Checkout(
         return {
             "country": BillingAddressFieldMode.required,
             "state": BillingAddressFieldMode.required
-            if require_billing_address or country in {"US", "CA"}
-            else BillingAddressFieldMode.disabled,
+            if country in {"US", "CA"}
+            else (
+                BillingAddressFieldMode.optional
+                if require_billing_address
+                else BillingAddressFieldMode.disabled
+            ),
             "line1": BillingAddressFieldMode.required
             if require_billing_address
             else BillingAddressFieldMode.disabled,

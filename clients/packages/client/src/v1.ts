@@ -11677,8 +11677,8 @@ export interface components {
       | '-type'
       | 'organization'
       | '-organization'
-      | 'list_order'
-      | '-list_order'
+      | 'product_benefit'
+      | '-product_benefit'
     CustomerBenefitGrantUpdate:
       | components['schemas']['CustomerBenefitGrantDiscordUpdate']
       | components['schemas']['CustomerBenefitGrantGitHubRepositoryUpdate']
@@ -35904,8 +35904,8 @@ export const customerBenefitGrantSortPropertyValues: ReadonlyArray<
   '-type',
   'organization',
   '-organization',
-  'list_order',
-  '-list_order',
+  'product_benefit',
+  '-product_benefit',
 ]
 export const customerCancellationReasonValues: ReadonlyArray<
   components['schemas']['CustomerCancellationReason']

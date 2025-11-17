@@ -37,7 +37,7 @@ class CustomerBenefitGrantSortProperty(StrEnum):
     granted_at = "granted_at"
     type = "type"
     organization = "organization"
-    list_order = "list_order"
+    product_benefit = "product_benefit"
 
 
 class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
@@ -53,7 +53,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         subscription_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CustomerBenefitGrantSortProperty]] = [
-            (CustomerBenefitGrantSortProperty.list_order, False),
+            (CustomerBenefitGrantSortProperty.product_benefit, False),
             (CustomerBenefitGrantSortProperty.granted_at, True),
         ],
     ) -> tuple[Sequence[BenefitGrant], int]:
@@ -121,7 +121,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 order_by_clauses.append(clause_function(Benefit.type))
             elif criterion == CustomerBenefitGrantSortProperty.organization:
                 order_by_clauses.append(clause_function(Organization.slug))
-            elif criterion == CustomerBenefitGrantSortProperty.list_order:
+            elif criterion == CustomerBenefitGrantSortProperty.product_benefit:
                 order_by_clauses.append(clause_function(ProductBenefit.order))
         statement = statement.order_by(*order_by_clauses)
 

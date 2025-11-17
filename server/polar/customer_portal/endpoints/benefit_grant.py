@@ -40,7 +40,7 @@ BenefitGrantNotFound = {
 
 ListSorting = Annotated[
     list[Sorting[CustomerBenefitGrantSortProperty]],
-    Depends(SortingGetter(CustomerBenefitGrantSortProperty, ["list_order", "-granted_at"])),
+    Depends(SortingGetter(CustomerBenefitGrantSortProperty, ["product_benefit", "-granted_at"])),
 ]
 
 

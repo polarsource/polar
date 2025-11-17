@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from polar.account.endpoints import router as accounts_router
+from polar.agent.endpoints import router as agent_router
 from polar.auth.endpoints import router as auth_router
 from polar.benefit.endpoints import router as benefits_router
 from polar.benefit.grant.endpoints import router as benefit_grants_router
@@ -68,6 +69,8 @@ router.include_router(notifications_router)
 router.include_router(pat_router)
 # /accounts
 router.include_router(accounts_router)
+# /agent
+router.include_router(agent_router)
 # /stream
 router.include_router(stream_router)
 # /organizations

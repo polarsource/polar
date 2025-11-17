@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.agent import auth
@@ -212,3 +212,37 @@ async def get_conversation_messages(
         session, id, limit=limit
     )
     return [MessagePublic.model_validate(m) for m in messages]
+
+
+# ==============================================================================
+# WEBSOCKET ENDPOINT (Real-time chat)
+# ==============================================================================
+
+
+@router.websocket("/conversations/{id}/ws")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    id: Annotated[UUID, Path()],
+) -> None:
+    """
+    WebSocket endpoint for real-time chat.
+
+    Connect using:
+    ws://localhost:8000/v1/agent/conversations/{id}/ws
+
+    Message format:
+    {
+        "type": "message",
+        "content": "Hello",
+        "context": {}
+    }
+
+    Response format:
+    {
+        "type": "agent_message",
+        "message": {...}
+    }
+    """
+    from polar.agent.websocket import websocket_handler
+
+    await websocket_handler.handle_connection(websocket, id)

@@ -974,7 +974,7 @@ METRICS_SQL: list[type[SQLMetric]] = [
 ]
 
 METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
-    ChurnRateMetric,
+    # ChurnRateMetric,
     GrossMarginMetric,
     GrossMarginPercentageMetric,
     CashflowMetric,

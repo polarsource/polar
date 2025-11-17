@@ -109,6 +109,7 @@ async def orders_import(
                         "[green]Importing orders...", total=total_rows
                     )
 
+                    not_found_products: set[str] = set()
                     for row in reader:
                         # Customer
                         email = row.get("email", row["user_email"])
@@ -140,7 +141,9 @@ async def orders_import(
                         customer_map[email] = customer
 
                         # Product
-                        product_name = row["product_name_on_polar"]
+                        product_name = row.get(
+                            "product_name_on_polar", row["product_name"]
+                        )
                         product = product_map.get(
                             product_name,
                             await get_product_by_name(
@@ -148,8 +151,10 @@ async def orders_import(
                             ),
                         )
                         if product is None:
-                            print(f"Product not found: {product_name!r}")
+                            not_found_products.add(product_name)
+                            progress.advance(task)
                             continue
+
                         product_map[product_name] = product
 
                         # Create Order
@@ -222,7 +227,13 @@ async def orders_import(
 
                         progress.advance(task)
 
-            await session.commit()
+            if not_found_products:
+                print("The following products were not found:")
+                for product_name in not_found_products:
+                    print(f"- {product_name}")
+                raise typer.Exit(code=1)
+            else:
+                await session.commit()
 
 
 if __name__ == "__main__":

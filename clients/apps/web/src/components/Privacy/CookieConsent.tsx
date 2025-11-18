@@ -63,14 +63,14 @@ export function CookieConsent() {
         </p>
         <div className="flex flex-row items-center gap-x-4">
           <button
-            className="cursor-pointer text-blue-500 dark:text-white"
+            className="cursor-pointer text-blue-500 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-gray-200"
             onClick={handleAcceptCookies}
             type="button"
           >
             Accept
           </button>
           <button
-            className="cursor-pointer"
+            className="cursor-pointer text-gray-500 transition-colors hover:text-gray-600 dark:hover:text-gray-600"
             onClick={handleDeclineCookies}
             type="button"
           >

@@ -29,6 +29,7 @@ from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
 from .login_code import LoginCode
+from .member import Member, MemberRole
 from .meter import Meter
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
@@ -112,6 +113,8 @@ __all__ = [
     "LicenseKey",
     "LicenseKeyActivation",
     "LoginCode",
+    "Member",
+    "MemberRole",
     "Meter",
     "Notification",
     "NotificationRecipient",

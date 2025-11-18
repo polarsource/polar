@@ -28,25 +28,25 @@ body:
     id: description
     attributes:
       label: Describe the issue briefly
-      value: ''
+      value: '# Description (tl;dr) \n\n'
 
   - type: textarea
     id: expectation
     attributes:
       label: What is the expected behaviour?
-      value: ''
+      value: '### What is the expected behaviour?\n\n'
 
   - type: textarea
     id: problem
     attributes:
       label: What errors or issues are you experiencing?
-      value: ''
+      value: '### What problems are you running into? Which errors do you get?\n\n'
 
   - type: textarea
     id: environment
     attributes:
       label: What environment are you running it in?
-      value: 'E.g Vercel, Cloudflare Workers, Supabase etc'
+      value: '### What environment is the adapter running in?\n\nE.g Vercel, Cloudflare Workers, Supabase etc'
   
   - type: markdown
     attributes:

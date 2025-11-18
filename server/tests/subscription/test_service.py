@@ -2179,6 +2179,109 @@ class TestUpdateProduct:
 
 
 @pytest.mark.asyncio
+class TestSendSubscriptionUpdatedEmail:
+    async def test_metered_only_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        meter: Meter,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that has_static_prices is False for metered-only subscriptions."""
+        # Create a product that only has metered prices (no static/fixed prices)
+        metered_only_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None)],
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=metered_only_product, customer=customer
+        )
+
+        await subscription_service.send_subscription_updated_email(
+            session,
+            subscription,
+            metered_only_product,
+            SubscriptionProrationBehavior.prorate,
+        )
+
+        enqueue_email_mock.assert_called_once()
+        call_kwargs = enqueue_email_mock.call_args.kwargs
+        assert "html_content" in call_kwargs
+        html_content = call_kwargs["html_content"]
+        # Verify that has_static_prices=false is rendered in the email
+        # The email should not contain the proration message
+        assert "pro-rated amount will be reflected" not in html_content
+
+    async def test_fixed_price_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        product: Product,  # This is a product with fixed pricing
+        customer: Customer,
+    ) -> None:
+        """Test that has_static_prices is True for subscriptions with fixed prices."""
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await subscription_service.send_subscription_updated_email(
+            session,
+            subscription,
+            product,
+            SubscriptionProrationBehavior.prorate,
+        )
+
+        enqueue_email_mock.assert_called_once()
+        call_kwargs = enqueue_email_mock.call_args.kwargs
+        assert "html_content" in call_kwargs
+        html_content = call_kwargs["html_content"]
+        # Verify that the proration message is included for fixed price subscriptions
+        assert "pro-rated amount will be reflected" in html_content
+
+    async def test_mixed_pricing_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        meter: Meter,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that has_static_prices is True for subscriptions with both fixed and metered prices."""
+        # Create a product with both fixed and metered prices
+        mixed_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000,), (meter, Decimal(50), None)],
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=mixed_product, customer=customer
+        )
+
+        await subscription_service.send_subscription_updated_email(
+            session,
+            subscription,
+            mixed_product,
+            SubscriptionProrationBehavior.prorate,
+        )
+
+        enqueue_email_mock.assert_called_once()
+        call_kwargs = enqueue_email_mock.call_args.kwargs
+        assert "html_content" in call_kwargs
+        html_content = call_kwargs["html_content"]
+        # Verify that the proration message is included for mixed pricing
+        assert "pro-rated amount will be reflected" in html_content
+
+
+@pytest.mark.asyncio
 class TestUpdateDiscount:
     async def test_not_existing_discount(
         self,

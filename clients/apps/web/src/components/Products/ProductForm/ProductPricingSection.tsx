@@ -418,6 +418,7 @@ export const ProductPriceSeatBasedItem: React.FC<
       <Button
         type="button"
         variant="secondary"
+        size="sm"
         onClick={addTier}
         className="self-start"
       >
@@ -702,7 +703,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         render={({ field }) => {
           return (
             <FormItem>
-              <div className="py-1 pr-1 pl-1.5">
+              <div className="p-3">
                 <div className="flex flex-row items-center gap-2">
                   <FormControl>
                     <Select
@@ -764,7 +765,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         }}
       />
       {amountType && amountType !== 'free' && (
-        <div className="flex flex-col gap-3 p-4">
+        <div className="flex flex-col gap-3 p-3">
           {amountType === 'fixed' && <ProductPriceFixedItem index={index} />}
           {amountType === 'custom' && <ProductPriceCustomItem index={index} />}
           {amountType === 'seat_based' && (
@@ -899,8 +900,8 @@ export const ProductPricingSection = ({
                 htmlFor={`price-type-${option}`}
                 className={`flex flex-col gap-3 rounded-2xl border p-4 font-normal transition-colors not-aria-disabled:cursor-pointer ${
                   productType === option
-                    ? 'dark:bg-polar-700 dark:border-polar-600/50 border-gray-200 bg-gray-50'
-                    : 'dark:border-polar-700 dark:not-aria-disabled:hover:border-polar-700 dark:not-aria-disabled:hover:bg-polar-700 dark:bg-polar-800 border-gray-100 not-aria-disabled:hover:border-gray-200'
+                    ? 'dark:bg-polar-800 bg-gray-50'
+                    : 'dark:border-polar-700 dark:not-aria-disabled:hover:border-polar-700 dark:text-polar-500 dark:not-aria-disabled:hover:bg-polar-700 dark:bg-polar-900 border-gray-100 text-gray-500 not-aria-disabled:hover:border-gray-200'
                 }`}
                 aria-disabled={update}
               >

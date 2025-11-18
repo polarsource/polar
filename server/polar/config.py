@@ -176,6 +176,12 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
+    # Apple
+    APPLE_CLIENT_ID: str = ""
+    APPLE_TEAM_ID: str = ""
+    APPLE_KEY_ID: str = ""
+    APPLE_KEY_VALUE: str = ""
+
     # OpenAI
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "o4-mini-2025-04-16"

@@ -20,7 +20,21 @@ export function CookieConsent() {
   const [consentGiven, setConsentGiven] = useState<string | null>('')
   const { setPersistence } = usePostHog()
   const searchParams = useSearchParams()
-  const doNotTrackParameter = searchParams.get('do_not_track')
+
+  let doNotTrackParameter = searchParams.get('do_not_track')
+
+  // The do_not_track parameter can be passed in the query params or in the return_to parameter
+  if (!doNotTrackParameter) {
+    const returnTo = searchParams.get('return_to')
+    if (returnTo) {
+      try {
+        const returnToUrl = new URL(returnTo, window.location.origin)
+        doNotTrackParameter = returnToUrl.searchParams.get('do_not_track')
+      } catch {
+        // No parameter found, nothing to do
+      }
+    }
+  }
 
   const declineCookies = useCallback(() => {
     localStorage.setItem('cookie_consent', 'no')

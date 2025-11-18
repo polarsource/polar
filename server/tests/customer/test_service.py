@@ -9,7 +9,9 @@ from polar.customer.schemas.customer import CustomerCreate, CustomerUpdate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
+from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
+from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -163,6 +165,74 @@ class TestCreate:
 
         assert customer.external_id == "123"
         assert customer.email == "customer.new@example.com"
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_creates_owner_member_when_flag_enabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        payload: dict[str, Any] = {
+            "email": "customer.with.member@example.com",
+            "name": "Test Customer",
+            "external_id": "member_test_123",
+        }
+        if is_user(auth_subject):
+            payload["organization_id"] = str(organization.id)
+
+        customer = await customer_service.create(
+            session, CustomerCreate.model_validate(payload), auth_subject
+        )
+        await session.flush()
+
+        assert customer.email == "customer.with.member@example.com"
+        assert customer.name == "Test Customer"
+
+        member_repository = MemberRepository.from_session(session)
+        member = await member_repository.get_by_customer_and_email(session, customer)
+        assert member is not None
+        assert member.customer_id == customer.id
+        assert member.email == customer.email
+        assert member.name == customer.name
+        assert member.external_id == customer.external_id
+        assert member.role == MemberRole.owner
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_no_member_when_flag_disabled(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": False}
+
+        payload: dict[str, Any] = {
+            "email": "customer.without.member@example.com",
+        }
+        if is_user(auth_subject):
+            payload["organization_id"] = str(organization.id)
+
+        customer = await customer_service.create(
+            session, CustomerCreate.model_validate(payload), auth_subject
+        )
+        await session.flush()
+
+        assert customer.email == "customer.without.member@example.com"
+
+        member_repository = MemberRepository.from_session(session)
+        member = await member_repository.get_by_customer_and_email(session, customer)
+        assert member is None
 
 
 @pytest.mark.asyncio

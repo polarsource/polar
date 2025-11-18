@@ -36,6 +36,10 @@ jobs:
 
   build:
     name: "Build Docker Image 🐳"
+    concurrency:
+      group: build-deploy
+      cancel-in-progress: true
+
     needs: changes
     if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 15
@@ -92,6 +96,9 @@ jobs:
 
   deploy-sandbox:
     name: "Deploy to Sandbox 🧪"
+    concurrency:
+      group: deploy-sandbox
+      cancel-in-progress: false
     needs: [changes, build]
     if: always() && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy-environment.yml
@@ -111,6 +118,9 @@ jobs:
 
   deploy-production:
     name: "Deploy to Production 🚀"
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
     needs: [changes, build, deploy-sandbox]
     if: always() && !failure() && !cancelled() && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy-environment.yml

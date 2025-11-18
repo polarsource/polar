@@ -1224,6 +1224,25 @@ export interface components {
       /** Url */
       url: string
     }
+    /** OrganizationAccountUnlinkEmail */
+    OrganizationAccountUnlinkEmail: {
+      /**
+       * Template
+       * @default organization_account_unlink
+       * @constant
+       */
+      template: 'organization_account_unlink'
+      props: components['schemas']['OrganizationAccountUnlinkProps']
+    }
+    /** OrganizationAccountUnlinkProps */
+    OrganizationAccountUnlinkProps: {
+      /** Email */
+      email: string
+      /** Organization Kept Name */
+      organization_kept_name: string
+      /** Organizations Unlinked */
+      organizations_unlinked: string[]
+    }
     /** OrganizationCustomerEmailSettings */
     OrganizationCustomerEmailSettings: {
       /** Order Confirmation */
@@ -1269,6 +1288,12 @@ export interface components {
        * @default false
        */
       wallets_enabled: boolean
+      /**
+       * Member Model Enabled
+       * @description If this organization has the Member model enabled
+       * @default false
+       */
+      member_model_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {
@@ -1358,6 +1383,8 @@ export interface components {
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
+      /** Prevent Trial Abuse */
+      prevent_trial_abuse: boolean
     }
     /** OrganizationUnderReviewEmail */
     OrganizationUnderReviewEmail: {
@@ -1777,6 +1804,8 @@ export interface components {
       /** Url */
       url: string
       order: components['schemas']['OrderEmail'] | null
+      /** Has Static Prices */
+      has_static_prices: boolean
     }
     /**
      * TrialInterval

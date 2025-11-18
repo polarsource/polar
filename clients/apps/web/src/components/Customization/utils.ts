@@ -47,6 +47,7 @@ const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
   prices: [
     {
       id: '123',
+      source: 'catalog',
       amount_type: 'fixed',
       price_amount: 10000,
       price_currency: 'usd',

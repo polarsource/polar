@@ -371,6 +371,10 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
                 event.user_metadata = aggregated
 
+            # Expunge the event from the session to prevent modifications from being persisted
+            # We're only modifying transient display fields (child_count, aggregated metadata)
+            self.session.expunge(event)
+
             events.append(event)
             total_count = row.total_count
 

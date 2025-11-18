@@ -748,6 +748,66 @@ class TestGetHierarchyStats:
 
 
 @pytest.mark.asyncio
+class TestAggregateFieldsDoNotPersist:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_aggregate_fields_do_not_modify_database(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        root = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="request",
+            metadata={"_cost": {"amount": 10, "currency": "usd"}},
+        )
+        child = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="child",
+            parent_id=root.id,
+            metadata={"_cost": {"amount": 5, "currency": "usd"}},
+        )
+
+        # Store original values and IDs
+        root_id = root.id
+        child_id = child.id
+        original_root_cost = root.user_metadata["_cost"]["amount"]
+        original_child_cost = child.user_metadata["_cost"]["amount"]
+
+        # Query with aggregate_fields multiple times
+        for _ in range(3):
+            events, _ = await event_service.list(
+                session,
+                auth_subject,
+                pagination=PaginationParams(1, 10),
+                aggregate_fields=["_cost.amount"],
+            )
+            await session.commit()
+
+        # Fetch fresh from database to get latest values
+
+        repo = EventRepository.from_session(session)
+        root_after = await repo.get_by_id(root_id)
+        child_after = await repo.get_by_id(child_id)
+
+        # Verify database values haven't changed
+        assert root_after is not None
+        assert child_after is not None
+        assert root_after.user_metadata["_cost"]["amount"] == original_root_cost
+        assert child_after.user_metadata["_cost"]["amount"] == original_child_cost
+
+
+@pytest.mark.asyncio
 class TestIngested:
     async def test_basic(
         self,

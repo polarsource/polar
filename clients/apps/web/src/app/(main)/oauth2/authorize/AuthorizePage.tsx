@@ -16,6 +16,17 @@ const isSubTypeUser = (
   _sub: schemas['AuthorizeUser'] | schemas['AuthorizeOrganization'],
 ): _sub is schemas['AuthorizeUser'] => sub_type === 'user'
 
+const groupScopes = (scopes: schemas['Scope'][]) => {
+  return scopes.reduce<Record<string, schemas['Scope'][]>>((acc, scope) => {
+    const key = scope.split(':')[0]
+    if (!acc[key]) {
+      acc[key] = []
+    }
+    acc[key].push(scope)
+    return acc
+  }, {})
+}
+
 const AuthorizePage = ({
   authorizeResponse: { client, scopes, sub_type, sub },
   scopeDisplayNames,
@@ -85,9 +96,25 @@ const AuthorizePage = ({
           </div>
           <div className="w-full">
             <List size="small">
-              {scopes.sort().map((scope) => (
-                <ListItem key={scope} className="text-sm" size="small">
-                  <span>{scopeDisplayNames[scope]}</span>
+              {Object.entries(groupScopes(scopes)).map(([key, scopes]) => (
+                <ListItem
+                  key={key}
+                  className="flex flex-col items-start gap-y-1 py-3 text-sm"
+                  size="small"
+                >
+                  <h3 className="font-medium capitalize">
+                    {key.replace('_', ' ')}
+                  </h3>
+                  <ul>
+                    {scopes.map((scope) => (
+                      <li
+                        key={scope}
+                        className="dark:text-polar-500 text-sm text-gray-500"
+                      >
+                        {scopeDisplayNames[scope]}
+                      </li>
+                    ))}
+                  </ul>
                 </ListItem>
               ))}
             </List>

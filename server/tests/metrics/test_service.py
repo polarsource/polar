@@ -1382,7 +1382,7 @@ class TestGetMetrics:
         assert jan.cost_per_user == 0
 
     @pytest.mark.auth
-    @pytest.skip("churn rate is still in development")
+    @pytest.mark.skip("churn rate is still in development")
     async def test_churn_rate(
         self,
         save_fixture: SaveFixture,

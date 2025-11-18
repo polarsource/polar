@@ -283,21 +283,21 @@ class Checkout(
 
     @property
     def is_discount_applicable(self) -> bool:
-        if self.product is None:
+        if self.product_prices is None:
             return False
-        return any(is_discount_applicable(price) for price in self.product.prices)
+        return any(is_discount_applicable(price) for price in self.product_prices)
 
     @property
     def is_free_product_price(self) -> bool:
-        if self.product is None:
+        if self.product_prices is None:
             return False
-        return all(is_free_price(price) for price in self.product.prices)
+        return all(is_free_price(price) for price in self.product_prices)
 
     @property
     def has_metered_prices(self) -> bool:
-        if self.product is None:
+        if self.product_prices is None:
             return False
-        return any(is_metered_price(price) for price in self.product.prices)
+        return any(is_metered_price(price) for price in self.product_prices)
 
     @property
     def is_payment_required(self) -> bool:
@@ -422,6 +422,12 @@ class Checkout(
             else:
                 prices[checkout_product.product_id] = checkout_product.product.prices
         return prices
+
+    @property
+    def product_prices(self) -> list[ProductPrice] | None:
+        if self.product_id is None:
+            return None
+        return self.prices[self.product_id]
 
 
 @event.listens_for(Checkout, "before_update")

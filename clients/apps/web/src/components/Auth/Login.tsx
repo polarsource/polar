@@ -7,6 +7,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import LoginCodeForm from '../Auth/LoginCodeForm'
+import AppleLoginButton from './AppleLoginButton'
 import GoogleLoginButton from './GoogleLoginButton'
 
 const Login = ({
@@ -91,6 +92,7 @@ const Login = ({
           {...loginProps}
         />
         <GoogleLoginButton {...loginProps} />
+        <AppleLoginButton {...loginProps} />
         <LabeledSeparator label="Or" />
         <LoginCodeForm {...loginProps} />
       </div>

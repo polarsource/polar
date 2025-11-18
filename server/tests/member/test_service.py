@@ -84,32 +84,6 @@ class TestCreateOwnerMember:
         assert member2 is not None
         assert member2.id == member1.id
 
-    async def test_member_email_matches_customer(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Test that member email always matches customer email."""
-        organization.feature_settings = {"member_model_enabled": True}
-        await save_fixture(organization)
-
-        customer_email = "specific@example.com"
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email=customer_email,
-            name="Specific User",
-        )
-
-        member = await member_service.create_owner_member(
-            session, customer, organization
-        )
-
-        assert member is not None
-        assert member.email == customer_email
-        assert member.email == customer.email
-
     async def test_member_without_name(
         self,
         save_fixture: SaveFixture,

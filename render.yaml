@@ -97,6 +97,7 @@ services:
       - fromGroup: stripe-production
       - fromGroup: logfire-server
       - fromGroup: openai-production
+      - fromGroup: apple-production
 
   # Worker
   - type: web # Use a web service to allow health checks
@@ -345,6 +346,7 @@ services:
       - fromGroup: backend-sandbox
       - fromGroup: stripe-sandbox
       - fromGroup: openai-sandbox
+      - fromGroup: apple-sandbox
 
   # Worker
   - type: web # Use a web service to allow health checks
@@ -676,4 +678,26 @@ envVarGroups:
   - name: logfire-worker
     envVars:
       - key: POLAR_LOGFIRE_TOKEN
+        sync: false
+
+  - name: apple-production
+    envVars:
+      - key: POLAR_APPLE_CLIENT_ID
+        sync: false
+      - key: POLAR_APPLE_TEAM_ID
+        sync: false
+      - key: POLAR_APPLE_KEY_ID
+        sync: false
+      - key: POLAR_APPLE_KEY_VALUE
+        sync: false
+
+  - name: apple-sandbox
+    envVars:
+      - key: POLAR_APPLE_CLIENT_ID
+        sync: false
+      - key: POLAR_APPLE_TEAM_ID
+        sync: false
+      - key: POLAR_APPLE_KEY_ID
+        sync: false
+      - key: POLAR_APPLE_KEY_VALUE
         sync: false

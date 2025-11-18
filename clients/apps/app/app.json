@@ -11,7 +11,7 @@
     "owner": "polar-sh",
 
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.polarsource.Polar",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false

@@ -10,7 +10,6 @@ import {
   isMeteredPrice,
   isStaticPrice,
 } from '@/utils/product'
-import { ErrorMessage } from '@hookform/error-message'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -32,6 +31,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { Label } from '@polar-sh/ui/components/ui/label'
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from '@polar-sh/ui/components/ui/radio-group'
 import { PlusIcon } from 'lucide-react'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
@@ -39,6 +43,7 @@ import {
   UseFieldArrayRemove,
   useFormContext,
 } from 'react-hook-form'
+import { twMerge } from 'tailwind-merge'
 import { Section } from '../../Layout/Section'
 import { ProductFormType } from './ProductForm'
 import UnitAmountInput from './UnitAmountInput'
@@ -155,14 +160,6 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
       />
     </div>
   )
-}
-
-export interface ProductPriceFreeItemProps {
-  index: number
-}
-
-export const ProductPriceFreeItem: React.FC<ProductPriceFreeItemProps> = () => {
-  return <></>
 }
 
 export interface ProductPriceSeatBasedItemProps {
@@ -522,24 +519,32 @@ export const ProductPriceMeteredUnitItem: React.FC<
                     </button>
                   </div>
                   <FormControl>
-                    <Select
-                      {...field}
-                      onValueChange={(v) => {
-                        field.onChange(v)
-                        setValue(`prices.${index}.id`, '')
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a meter" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {meters.items.map((meter) => (
-                          <SelectItem key={meter.id} value={meter.id}>
-                            {meter.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div>
+                      <Select
+                        {...field}
+                        onValueChange={(v) => {
+                          field.onChange(v)
+                          setValue(`prices.${index}.id`, '')
+                        }}
+                      >
+                        <SelectTrigger
+                          className={
+                            field.value
+                              ? ''
+                              : 'dark:text-polar-500 text-gray-400'
+                          }
+                        >
+                          <SelectValue placeholder="Select a meter" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {meters.items.map((meter) => (
+                            <SelectItem key={meter.id} value={meter.id}>
+                              {meter.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -618,23 +623,6 @@ export const ProductPriceMeteredUnitItem: React.FC<
   )
 }
 
-const ProductPriceItemWrapper = ({
-  prices,
-  children,
-}: {
-  prices: schemas['ProductPrice'][]
-  children: React.ReactNode
-}) => {
-  if (!prices || prices.length < 2) {
-    return children
-  }
-  return (
-    <div className="dark:border-polar-700 rounded-2xl border p-4">
-      {children}
-    </div>
-  )
-}
-
 interface ProductPriceItemProps {
   organization: schemas['Organization']
   index: number
@@ -703,75 +691,92 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   )
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 rounded-2xl border border-gray-100">
       <input type="hidden" {...register(`prices.${index}.id`)} />
       <FormField
         control={control}
         name={`prices.${index}.amount_type`}
+        rules={{
+          required: 'Please select a price type',
+        }}
         render={({ field }) => {
           return (
             <FormItem>
-              <div className="flex flex-row items-center gap-2">
-                <FormControl>
-                  <Select
-                    value={field.value}
-                    onValueChange={(v) => {
-                      field.onChange(v)
-                      onAmountTypeChange(v as any)
-                      setValue(`prices.${index}.id`, '')
-                    }}
-                    disabled={
-                      staticPriceIndex > -1 && staticPriceIndex !== index
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a price type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fixed">Fixed price</SelectItem>
-                      <SelectItem value="custom">Pay what you want</SelectItem>
-                      <SelectItem value="free">Free</SelectItem>
-                      {organization.feature_settings
-                        ?.seat_based_pricing_enabled && (
-                        <SelectItem value="seat_based">Seats</SelectItem>
-                      )}
-                      {recurringInterval !== null && (
-                        <SelectItem value="metered_unit">
-                          Metered price
+              <div className="py-1 pr-1 pl-1.5">
+                <div className="flex flex-row items-center gap-2">
+                  <FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={(v) => {
+                        field.onChange(v)
+                        onAmountTypeChange(v as NonNullable<typeof amountType>)
+                        setValue(`prices.${index}.id`, '')
+                      }}
+                      disabled={
+                        staticPriceIndex > -1 && staticPriceIndex !== index
+                      }
+                    >
+                      <SelectTrigger
+                        className={twMerge(
+                          field.value
+                            ? ''
+                            : 'dark:text-polar-500 text-gray-400',
+                          'border-none bg-transparent shadow-none focus:border-none focus:ring-0 focus:ring-offset-0',
+                        )}
+                      >
+                        <SelectValue placeholder="Select a price type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">Fixed price</SelectItem>
+                        <SelectItem value="custom">
+                          Pay what you want
                         </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                {index > 0 && (
-                  <Button
-                    size="icon"
-                    className="aspect-square h-10 w-10"
-                    variant="secondary"
-                    onClick={() => {
-                      remove(index)
-                    }}
-                  >
-                    <CloseOutlined className="h-4 w-4" />
-                  </Button>
-                )}
+                        <SelectItem value="free">Free</SelectItem>
+                        {organization.feature_settings
+                          ?.seat_based_pricing_enabled && (
+                          <SelectItem value="seat_based">Seats</SelectItem>
+                        )}
+                        {recurringInterval !== null && (
+                          <SelectItem value="metered_unit">
+                            Metered price
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  {index > 0 && (
+                    <Button
+                      size="icon"
+                      className="aspect-square h-10 w-10"
+                      variant="secondary"
+                      onClick={() => {
+                        remove(index)
+                      }}
+                    >
+                      <CloseOutlined className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <FormMessage className="px-3 py-2" />
               </div>
-              <FormMessage />
             </FormItem>
           )
         }}
       />
-      {amountType === 'fixed' && <ProductPriceFixedItem index={index} />}
-      {amountType === 'custom' && <ProductPriceCustomItem index={index} />}
-      {amountType === 'free' && <ProductPriceFreeItem index={index} />}
-      {amountType === 'seat_based' && (
-        <ProductPriceSeatBasedItem index={index} />
-      )}
-      {amountType === 'metered_unit' && (
-        <ProductPriceMeteredUnitItem
-          organization={organization}
-          index={index}
-        />
+      {amountType && amountType !== 'free' && (
+        <div className="flex flex-col gap-3 p-4">
+          {amountType === 'fixed' && <ProductPriceFixedItem index={index} />}
+          {amountType === 'custom' && <ProductPriceCustomItem index={index} />}
+          {amountType === 'seat_based' && (
+            <ProductPriceSeatBasedItem index={index} />
+          )}
+          {amountType === 'metered_unit' && (
+            <ProductPriceMeteredUnitItem
+              organization={organization}
+              index={index}
+            />
+          )}
+        </div>
       )}
     </div>
   )
@@ -801,30 +806,16 @@ export const ProductPricingSection = ({
     control,
     name: 'prices',
   })
-  const { fields: prices, replace, append, remove } = pricesFieldArray
 
-  const recurringInterval = watch('recurring_interval')
-  const recurringIntervalCount = watch('recurring_interval_count')
+  const { fields: prices, append, remove } = pricesFieldArray
 
   const isLegacyRecurringProduct = useMemo(
     () => (prices as schemas['ProductPrice'][]).some(isLegacyRecurringPrice),
     [prices],
   )
-  const [legacyMigration, setLegacyMigration] = useState(false)
 
-  const switchToNewPricingModel = useCallback(() => {
-    setLegacyMigration(true)
-    const price = prices[0] as schemas['LegacyRecurringProductPrice']
-    setValue('recurring_interval', 'month')
-    replace([
-      {
-        ...price,
-        id: null,
-        type: null,
-        recurring_interval: null,
-      } as any,
-    ])
-  }, [prices, replace, setValue])
+  const recurringInterval = watch('recurring_interval')
+  const recurringIntervalCount = watch('recurring_interval_count')
 
   useEffect(() => {
     if (recurringInterval !== null) {
@@ -840,23 +831,34 @@ export const ProductPricingSection = ({
         remove(index)
       }
     })
-  }, [
-    recurringInterval,
-    recurringIntervalCount,
-    prices,
-    remove,
-    setValue,
-    watch,
-  ])
+  }, [recurringInterval, recurringIntervalCount, prices, remove, setValue])
 
-  return (
-    <Section
-      title="Pricing"
-      description="Set your billing cycle and pricing model"
-      className={className}
-      compact={compact}
-    >
-      {isLegacyRecurringProduct && !legacyMigration ? (
+  const [productType, setProductType] = useState<'one_time' | 'recurring'>(
+    recurringInterval === null ? 'one_time' : 'recurring',
+  )
+
+  useEffect(() => {
+    if (productType === 'one_time') {
+      setValue('recurring_interval', null)
+    } else {
+      if (recurringInterval === null) {
+        setValue('recurring_interval', 'month')
+      }
+
+      if (!recurringIntervalCount) {
+        setValue('recurring_interval_count', 1)
+      }
+    }
+  }, [productType, recurringInterval, recurringIntervalCount, setValue])
+
+  if (isLegacyRecurringProduct) {
+    return (
+      <Section
+        title="Pricing"
+        description="Set your billing cycle and pricing model"
+        className={className}
+        compact={compact}
+      >
         <div className="prose dark:bg-polar-700 dark:text-polar-500 rounded-2xl bg-gray-100 p-6 text-sm text-gray-500">
           <p>
             This product uses a deprecated pricing model with both a monthly and
@@ -867,150 +869,187 @@ export const ProductPricingSection = ({
             at the product level, meaning you need to create a separate product
             for each billing cycle.
           </p>
-          <Button type="button" size="sm" onClick={switchToNewPricingModel}>
-            Switch to new pricing model
+          <p>
+            If you want to make any changes to the pricing model, you need to
+            create a new product. Feel free to reach out to our support team if
+            you need assistance.
+          </p>
+        </div>
+      </Section>
+    )
+  }
+
+  return (
+    <Section
+      title="Pricing"
+      description="Set your billing cycle and pricing model"
+      className={className}
+      compact={compact}
+    >
+      <div className="flex w-full flex-col gap-6">
+        <div className="@container">
+          <RadioGroup
+            value={productType}
+            onValueChange={(v) => setProductType(v as 'one_time' | 'recurring')}
+            className="grid-cols-1 gap-3 @md:grid-cols-2"
+          >
+            {['one_time', 'recurring'].map((option) => (
+              <Label
+                key={option}
+                htmlFor={`price-type-${option}`}
+                className={`flex flex-col gap-3 rounded-2xl border p-4 font-normal transition-colors not-aria-disabled:cursor-pointer ${
+                  productType === option
+                    ? 'dark:bg-polar-700 dark:border-polar-600/50 border-gray-200 bg-gray-50'
+                    : 'dark:border-polar-700 dark:not-aria-disabled:hover:border-polar-700 dark:not-aria-disabled:hover:bg-polar-700 dark:bg-polar-800 border-gray-100 not-aria-disabled:hover:border-gray-200'
+                }`}
+                aria-disabled={update}
+              >
+                <div>
+                  <div className="flex items-center gap-2.5 font-medium">
+                    <RadioGroupItem
+                      value={option}
+                      id={`price-type-${option}`}
+                      disabled={update}
+                    />
+                    {option === 'one_time'
+                      ? 'One-time purchase'
+                      : 'Recurring subscription'}
+                  </div>
+                  {option === 'recurring' && productType === 'recurring' && (
+                    <div className="mt-4 flex items-start gap-3 text-sm">
+                      <span className="flex h-10 items-center">Every</span>
+                      <FormField
+                        control={control}
+                        name="recurring_interval_count"
+                        rules={{
+                          required:
+                            'This field is required when billing cycle is set',
+                          min: {
+                            value: 1,
+                            message: 'Interval count must be at least 1',
+                          },
+                          max: {
+                            value: 999,
+                            message: 'Interval count cannot exceed 999',
+                          },
+                        }}
+                        render={({ field }) => {
+                          return (
+                            <Input
+                              type="text"
+                              min="1"
+                              max="999"
+                              pattern="\d*"
+                              defaultValue={field.value || 1}
+                              onChange={(e) => {
+                                const parsedValue = parseInt(e.target.value)
+                                field.onChange(
+                                  isNaN(parsedValue) ? '' : parsedValue,
+                                )
+                              }}
+                              disabled={update}
+                              className="min-w-12"
+                            />
+                          )
+                        }}
+                      />
+                      <FormField
+                        control={control}
+                        name="recurring_interval"
+                        render={({ field }) => {
+                          return (
+                            <FormItem>
+                              <FormControl>
+                                <div>
+                                  <Select
+                                    onValueChange={(value) =>
+                                      field.onChange(value)
+                                    }
+                                    defaultValue={field.value ?? 'month'}
+                                    disabled={update}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select a billing cycle" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="day">
+                                        day
+                                        {recurringIntervalCount !== 1
+                                          ? 's'
+                                          : ''}
+                                      </SelectItem>
+                                      <SelectItem value="week">
+                                        week
+                                        {recurringIntervalCount !== 1
+                                          ? 's'
+                                          : ''}
+                                      </SelectItem>
+                                      <SelectItem value="month">
+                                        month
+                                        {recurringIntervalCount !== 1
+                                          ? 's'
+                                          : ''}
+                                      </SelectItem>
+                                      <SelectItem value="year">
+                                        year
+                                        {recurringIntervalCount !== 1
+                                          ? 's'
+                                          : ''}
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </Label>
+            ))}
+          </RadioGroup>
+        </div>
+
+        {prices.map((price, index) => (
+          <ProductPriceItem
+            organization={organization}
+            index={index}
+            remove={remove}
+            key={price.id}
+          />
+        ))}
+
+        {update && recurringInterval && (
+          <ShadowBox className="dark:bg-polar-800 flex flex-col gap-2 rounded-2xl! border-none! p-4">
+            <h3 className="text-sm font-medium">Updating pricing model</h3>
+            <p className="dark:text-polar-500 text-gray-5 00 text-sm">
+              Changing pricing model on subscription products will only affect
+              new customers. Current customers will keep their original pricing
+              model.
+            </p>
+          </ShadowBox>
+        )}
+
+        {recurringInterval !== null && (
+          <Button
+            className="self-start"
+            variant="secondary"
+            onClick={() =>
+              append({
+                amount_type: 'metered_unit',
+                price_currency: 'usd',
+                meter_id: '',
+                unit_amount: 0,
+              })
+            }
+          >
+            Add Additional Price
           </Button>
-        </div>
-      ) : (
-        <div className="flex w-full flex-col gap-6">
-          <FormField
-            control={control}
-            name="recurring_interval"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormControl>
-                    <Select
-                      onValueChange={(value) =>
-                        field.onChange(value === 'one_time' ? null : value)
-                      }
-                      defaultValue={
-                        field.value === null ? 'one_time' : field.value
-                      }
-                      disabled={update && !legacyMigration}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a billing cycle" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {!legacyMigration && (
-                          <SelectItem value="one_time">
-                            One-time purchase
-                          </SelectItem>
-                        )}
-                        <SelectItem value="day">Daily</SelectItem>
-                        <SelectItem value="week">Weekly</SelectItem>
-                        <SelectItem value="month">Monthly</SelectItem>
-                        <SelectItem value="year">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
-          {recurringInterval !== null && (
-            <FormField
-              control={control}
-              name="recurring_interval_count"
-              rules={{
-                required: 'This field is required when billing cycle is set',
-                min: { value: 1, message: 'Interval count must be at least 1' },
-                max: {
-                  value: 999,
-                  message: 'Interval count cannot exceed 999',
-                },
-              }}
-              render={({ field }) => {
-                return (
-                  <FormItem className="flex flex-col gap-1">
-                    <FormLabel>Billing Frequency</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center gap-4">
-                        <span className="text-gray-600">Every</span>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="999"
-                          value={field.value || 1}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value) || 1
-                            field.onChange(value)
-                          }}
-                          disabled={update && !legacyMigration}
-                        />
-                        <span className="text-gray-600">
-                          {field.value === 1 || !field.value
-                            ? recurringInterval
-                            : `${recurringInterval}s`}
-                        </span>
-                      </div>
-                    </FormControl>
-
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
-            />
-          )}
-
-          {prices.map((price, index) => (
-            <ProductPriceItemWrapper
-              prices={prices as schemas['ProductPrice'][]}
-              key={price.id}
-            >
-              <ProductPriceItem
-                organization={organization}
-                index={index}
-                remove={remove}
-              />
-            </ProductPriceItemWrapper>
-          ))}
-
-          {update && recurringInterval && (
-            <ShadowBox className="dark:bg-polar-800 flex flex-col gap-2 rounded-2xl! border-none! p-4">
-              <h3 className="text-sm font-medium">Updating pricing model</h3>
-              <p className="dark:text-polar-500 text-gray-5 00 text-sm">
-                Changing pricing model on subscription products will only affect
-                new customers. Current customers will keep their original
-                pricing model.
-              </p>
-            </ShadowBox>
-          )}
-          {recurringInterval !== null && (
-            <Button
-              className="self-start"
-              variant="secondary"
-              onClick={() =>
-                append({
-                  amount_type: 'metered_unit',
-                  price_currency: 'usd',
-                  meter_id: '',
-                  unit_amount: 0,
-                })
-              }
-            >
-              Add Additional Price
-            </Button>
-          )}
-          <ErrorMessage
-            errors={errors}
-            name="prices"
-            render={({ message }) => {
-              // Don't render if message is undefined or invalid
-              if (!message || message === 'undefined' || message === 'null') {
-                return null
-              }
-              return (
-                <p className="text-destructive text-sm font-medium">
-                  {message}
-                </p>
-              )
-            }}
-          />
-        </div>
-      )}
+        )}
+      </div>
     </Section>
   )
 }

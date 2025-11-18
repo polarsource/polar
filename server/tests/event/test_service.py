@@ -569,6 +569,63 @@ class TestIngest:
         assert event_type_after is not None
         assert event_type_after.id == event_type.id
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_parent_child_same_batch(
+        self,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        event_repository = EventRepository.from_session(session)
+
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name="support_request",
+                    external_customer_id="test-customer-123",
+                    external_id="parent-event-123",
+                ),
+                EventCreateExternalCustomer(
+                    name="email_sent",
+                    external_customer_id="test-customer-123",
+                    parent_id="parent-event-123",
+                ),
+                EventCreateExternalCustomer(
+                    name="support_request_completed",
+                    external_customer_id="test-customer-123",
+                    parent_id="parent-event-123",
+                ),
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest)
+
+        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        assert len(events) == 3
+
+        parent = next(e for e in events if e.name == "support_request")
+        email_child = next(e for e in events if e.name == "email_sent")
+        completed_child = next(
+            e for e in events if e.name == "support_request_completed"
+        )
+
+        assert parent.parent_id is None
+        assert parent.root_id == parent.id
+        assert parent.external_id == "parent-event-123"
+
+        assert email_child.parent_id == parent.id
+        assert email_child.root_id == parent.id
+
+        assert completed_child.parent_id == parent.id
+        assert completed_child.root_id == parent.id
+
+        enqueue_events_mock.assert_called_once()
+        assert set(enqueue_events_mock.call_args[0]) == {
+            parent.id,
+            email_child.id,
+            completed_child.id,
+        }
+
 
 @pytest.mark.asyncio
 class TestListWithAggregateCosts:

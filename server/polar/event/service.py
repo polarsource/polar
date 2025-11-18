@@ -1,4 +1,5 @@
 import uuid
+from collections import defaultdict
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from typing import Any
@@ -59,6 +60,55 @@ class EventIngestValidationError(EventError):
     def __init__(self, errors: list[ValidationError]) -> None:
         self.errors = errors
         super().__init__("Event ingest validation failed.")
+
+
+def _topological_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Sort events by dependency order so parents come before children.
+    Events without parents come first, followed by their children in order.
+
+    Handles parent_id references that can be either Polar IDs or external_id strings.
+    Uses Kahn's algorithm for topological sorting.
+    """
+    if not events:
+        return []
+
+    id_to_index: dict[uuid.UUID | str, int] = {}
+    for idx, event in enumerate(events):
+        if "id" in event:
+            id_to_index[event["id"]] = idx
+        if "external_id" in event and event["external_id"] is not None:
+            id_to_index[event["external_id"]] = idx
+
+    graph: dict[int, list[int]] = defaultdict(list)
+    in_degree: dict[int, int] = {}
+
+    for idx in range(len(events)):
+        in_degree[idx] = 0
+
+    for idx, event in enumerate(events):
+        parent_id = event.get("parent_id")
+        if parent_id and parent_id in id_to_index:
+            parent_idx = id_to_index[parent_id]
+            graph[parent_idx].append(idx)
+            in_degree[idx] += 1
+
+    queue = [idx for idx in range(len(events)) if in_degree[idx] == 0]
+    sorted_indices = []
+
+    while queue:
+        current_idx = queue.pop(0)
+        sorted_indices.append(current_idx)
+
+        for child_idx in graph[current_idx]:
+            in_degree[child_idx] -= 1
+            if in_degree[child_idx] == 0:
+                queue.append(child_idx)
+
+    if len(sorted_indices) != len(events):
+        raise EventError("Circular dependency detected in event parent relationships")
+
+    return [events[idx] for idx in sorted_indices]
 
 
 class EventService:
@@ -363,9 +413,34 @@ class EventService:
         event_type_repository = EventTypeRepository.from_session(session)
         event_types_cache: dict[tuple[str, uuid.UUID], uuid.UUID] = {}
 
+        batch_external_id_map: dict[str, uuid.UUID] = {}
+        for event_create in ingest.events:
+            if event_create.external_id is not None:
+                batch_external_id_map[event_create.external_id] = uuid.uuid4()
+
+        # Build lightweight event metadata for sorting
+        event_metadata: list[dict[str, Any]] = []
+        for index, event_create in enumerate(ingest.events):
+            metadata: dict[str, Any] = {
+                "index": index,
+                "external_id": event_create.external_id,
+                "parent_id": event_create.parent_id,
+            }
+            if event_create.external_id:
+                metadata["id"] = batch_external_id_map[event_create.external_id]
+            event_metadata.append(metadata)
+
+        sorted_metadata = _topological_sort_events(event_metadata)
+
+        # Process events in sorted order
         events: list[dict[str, Any]] = []
         errors: list[ValidationError] = []
-        for index, event_create in enumerate(ingest.events):
+        processed_events: dict[uuid.UUID, dict[str, Any]] = {}
+
+        for metadata in sorted_metadata:
+            index = metadata["index"]
+            event_create = ingest.events[index]
+
             try:
                 organization_id = validate_organization_id(
                     index, event_create.organization_id
@@ -374,9 +449,14 @@ class EventService:
                     validate_customer_id(index, event_create.customer_id)
 
                 parent_event: Event | None = None
+                parent_id_in_batch: uuid.UUID | None = None
                 if event_create.parent_id is not None:
-                    parent_event = await self._resolve_parent(
-                        session, index, event_create.parent_id, organization_id
+                    parent_event, parent_id_in_batch = await self._resolve_parent(
+                        session,
+                        index,
+                        event_create.parent_id,
+                        organization_id,
+                        batch_external_id_map,
                     )
 
                 event_label_cache_key = (event_create.name, organization_id)
@@ -396,11 +476,25 @@ class EventService:
                 event_dict["source"] = EventSource.user
                 event_dict["organization_id"] = organization_id
                 event_dict["event_type_id"] = event_type_id
+
+                if event_create.external_id is not None:
+                    event_dict["id"] = batch_external_id_map[event_create.external_id]
+
                 if parent_event is not None:
                     event_dict["parent_id"] = parent_event.id
                     event_dict["root_id"] = parent_event.root_id or parent_event.id
+                elif parent_id_in_batch is not None:
+                    event_dict["parent_id"] = parent_id_in_batch
+                    # Parent was already processed, look it up
+                    parent_dict = processed_events.get(parent_id_in_batch)
+                    if parent_dict:
+                        event_dict["root_id"] = parent_dict.get(
+                            "root_id", parent_id_in_batch
+                        )
 
                 events.append(event_dict)
+                if event_dict.get("id"):
+                    processed_events[event_dict["id"]] = event_dict
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
@@ -439,9 +533,23 @@ class EventService:
         )
         events_data = result.all()
 
-        closure_entries = []
-        for event_id, parent_id in events_data:
-            closure_entries.append(
+        events_list = [
+            {"id": event_id, "parent_id": parent_id}
+            for event_id, parent_id in events_data
+        ]
+        sorted_events = _topological_sort_events(events_list)
+
+        all_closure_entries = []
+        # Map event_id -> list of its ancestor closures (including self)
+        event_closures: dict[uuid.UUID, list[tuple[uuid.UUID, int]]] = {}
+
+        for event in sorted_events:
+            event_id = event["id"]
+            parent_id = event.get("parent_id")
+
+            # Self-reference
+            event_closures[event_id] = [(event_id, 0)]
+            all_closure_entries.append(
                 {
                     "ancestor_id": event_id,
                     "descendant_id": event_id,
@@ -450,26 +558,42 @@ class EventService:
             )
 
             if parent_id is not None:
-                parent_closures_result = await session.execute(
-                    select(
-                        EventClosure.ancestor_id,
-                        EventClosure.depth,
-                    ).where(EventClosure.descendant_id == parent_id)
-                )
-
-                for ancestor_id, depth in parent_closures_result:
-                    closure_entries.append(
-                        {
-                            "ancestor_id": ancestor_id,
-                            "descendant_id": event_id,
-                            "depth": depth + 1,
-                        }
+                # Check if parent is in current batch
+                if parent_id in event_closures:
+                    # Parent is in current batch, use in-memory closures
+                    for ancestor_id, depth in event_closures[parent_id]:
+                        event_closures[event_id].append((ancestor_id, depth + 1))
+                        all_closure_entries.append(
+                            {
+                                "ancestor_id": ancestor_id,
+                                "descendant_id": event_id,
+                                "depth": depth + 1,
+                            }
+                        )
+                else:
+                    # Parent is from previous batch, query database
+                    parent_closures_result = await session.execute(
+                        select(
+                            EventClosure.ancestor_id,
+                            EventClosure.depth,
+                        ).where(EventClosure.descendant_id == parent_id)
                     )
 
-        if closure_entries:
+                    for ancestor_id, depth in parent_closures_result:
+                        event_closures[event_id].append((ancestor_id, depth + 1))
+                        all_closure_entries.append(
+                            {
+                                "ancestor_id": ancestor_id,
+                                "descendant_id": event_id,
+                                "depth": depth + 1,
+                            }
+                        )
+
+        # Single bulk insert
+        if all_closure_entries:
             await session.execute(
                 insert(EventClosure)
-                .values(closure_entries)
+                .values(all_closure_entries)
                 .on_conflict_do_nothing(index_elements=["ancestor_id", "descendant_id"])
             )
 
@@ -602,33 +726,40 @@ class EventService:
         index: int,
         parent_id: str,
         organization_id: uuid.UUID,
-    ) -> Event:
+        batch_external_id_map: dict[str, uuid.UUID],
+    ) -> tuple[Event | None, uuid.UUID | None]:
         """
         Resolve and return the parent event.
+        Returns a tuple of (parent_event_from_db, parent_id_from_batch).
+        Only one of these will be set - if the parent is in the current batch,
+        parent_id_from_batch will be set. Otherwise, parent_event_from_db will be set.
         """
+        # Check if parent is in current batch
+        if parent_id in batch_external_id_map:
+            return None, batch_external_id_map[parent_id]
+
+        # Look up parent in database by ID or external_id
         try:
             parent_uuid = uuid.UUID(parent_id)
-            statement = select(Event).where(
-                Event.id == parent_uuid, Event.organization_id == organization_id
-            )
-            result = await session.execute(statement)
-            parent_event = result.scalar_one_or_none()
-
-            if parent_event is not None:
-                return parent_event
-
         except ValueError:
-            pass
+            parent_uuid = None
 
-        statement = select(Event).where(
-            Event.external_id == parent_id,
-            Event.organization_id == organization_id,
-        )
+        if parent_uuid:
+            statement = select(Event).where(
+                Event.organization_id == organization_id,
+                or_(Event.id == parent_uuid, Event.external_id == parent_id),
+            )
+        else:
+            statement = select(Event).where(
+                Event.organization_id == organization_id,
+                Event.external_id == parent_id,
+            )
+
         result = await session.execute(statement)
         parent_event = result.scalar_one_or_none()
 
         if parent_event is not None:
-            return parent_event
+            return parent_event, None
 
         raise EventIngestValidationError(
             [

@@ -66,7 +66,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             if event.get("root_id") is not None:
                 continue
             elif event.get("parent_id") is None:
-                event["id"] = generate_uuid()
+                if event.get("id") is None:
+                    event["id"] = generate_uuid()
                 event["root_id"] = event["id"]
             else:
                 # Child event without root_id - needs to be looked up from parent

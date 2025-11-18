@@ -73,6 +73,9 @@ class OrganizationFeatureSettings(Schema):
     wallets_enabled: bool = Field(
         False, description="If this organization has Wallets enabled"
     )
+    member_model_enabled: bool = Field(
+        False, description="If this organization has the Member model enabled"
+    )
 
 
 class OrganizationSubscribePromoteSettings(Schema):

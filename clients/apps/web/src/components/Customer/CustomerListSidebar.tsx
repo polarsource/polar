@@ -93,6 +93,25 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
     return null
   }, [pathname])
 
+  const withQuerystring = useCallback(
+    (href: string) => {
+      const queryString = new URLSearchParams()
+
+      for (const [key, value] of searchParams.entries()) {
+        if (['query', 'sorting'].includes(key)) {
+          queryString.append(key, value)
+        }
+      }
+
+      if (queryString.toString().length === 0) {
+        return href
+      }
+
+      return `${href}?${queryString.toString()}`
+    },
+    [searchParams],
+  )
+
   return (
     <>
       <div className="dark:divide-polar-800 flex h-full flex-col divide-y divide-gray-200">
@@ -156,13 +175,12 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
         </div>
         <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
           {customers.map((customer) => {
-            const queryString = searchParams.toString()
-            const customerHref = `/dashboard/${organization.slug}/customers/${customer.id}${queryString ? `?${queryString}` : ''}`
-
             return (
               <Link
                 key={customer.id}
-                href={customerHref}
+                href={withQuerystring(
+                  `/dashboard/${organization.slug}/customers/${customer.id}`,
+                )}
                 className={twMerge(
                   'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
                   selectedCustomerId === customer.id &&

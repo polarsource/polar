@@ -208,7 +208,11 @@ interface ClientPageProps {
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
-  const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
+  const { startDate, endDate, setStartDate, setEndDate } = useDateRange({
+    defaultStartDate: startOfDay(new Date(customer.created_at)),
+    defaultEndDate: endOfToday(),
+  })
+
   const [interval, setInterval] = useQueryState(
     'interval',
     parseAsStringLiteral([
@@ -217,15 +221,21 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
       'week',
       'month',
       'year',
-    ] as schemas['TimeInterval'][]).withDefault('day'),
+    ] as schemas['TimeInterval'][]).withDefault(
+      getNextValidInterval('day', startDate, endDate),
+    ),
   )
 
   useEffect(() => {
     if (customer) {
-      setStartDate(startOfDay(new Date(customer.created_at)))
-      setEndDate(endOfToday())
+      const customerCreatedAt = startOfDay(new Date(customer.created_at))
+      const now = endOfToday()
+
+      setStartDate(customerCreatedAt)
+      setEndDate(now)
+      setInterval(getNextValidInterval(interval, customerCreatedAt, now))
     }
-  }, [customer, setStartDate, setEndDate])
+  }, [customer, setStartDate, setEndDate, interval, setInterval])
 
   return (
     <MasterDetailLayoutContent

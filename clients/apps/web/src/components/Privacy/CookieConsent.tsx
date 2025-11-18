@@ -1,6 +1,7 @@
 // app/banner.js
 'use client'
 import { usePostHog } from '@/hooks/posthog'
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 export function cookieConsentGiven() {
@@ -18,6 +19,8 @@ export function cookieConsentGiven() {
 export function CookieConsent() {
   const [consentGiven, setConsentGiven] = useState<string | null>('')
   const { setPersistence } = usePostHog()
+  const searchParams = useSearchParams()
+  const hideCookieConsent = searchParams.get('hideCookieConsent')
 
   useEffect(() => {
     // We want this to only run once the client loads
@@ -39,6 +42,10 @@ export function CookieConsent() {
   const handleDeclineCookies = () => {
     localStorage.setItem('cookie_consent', 'no')
     setConsentGiven('no')
+  }
+
+  if (hideCookieConsent) {
+    return null
   }
 
   return (

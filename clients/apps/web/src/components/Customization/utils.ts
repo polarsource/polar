@@ -154,6 +154,9 @@ export const createCheckoutPreview = (
     product_id: productWithPrices.id,
     product_price: price,
     product_price_id: price.id,
+    prices: {
+      [productWithPrices.id]: prices,
+    },
     amount,
     tax_amount: null,
     discount_amount: 0,

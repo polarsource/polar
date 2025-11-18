@@ -2,11 +2,10 @@
 
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { useMemo } from 'react'
 import { ProductCheckoutPublic } from '../guards'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
-import { hasRecurringIntervals, isLegacyRecurringPrice } from '../utils/product'
+import { isLegacyRecurringPrice } from '../utils/product'
 import AmountLabel from './AmountLabel'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 import ProductPriceLabel from './ProductPriceLabel'
@@ -61,10 +60,6 @@ const CheckoutPricing = ({
   disabled,
 }: CheckoutPricingProps) => {
   const { product, productPrice, amount } = checkout
-  const [, , hasBothIntervals] = useMemo(
-    () => hasRecurringIntervals(product),
-    [product],
-  )
 
   return (
     <div className="flex flex-col gap-6">

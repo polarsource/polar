@@ -31,11 +31,14 @@ interface MeteredPricesDisplayProps {
 }
 
 const MeteredPricesDisplay = ({ checkout }: MeteredPricesDisplayProps) => {
-  const { product, productPrice } = checkout
+  const { product, prices, productPrice } = checkout
 
   // Get the metered prices, minus the currently selected one, in case there are only metered prices
   const meteredPrices = useMemo(
-    () => getMeteredPrices(product).filter((p) => p.id !== productPrice.id),
+    () =>
+      getMeteredPrices(prices[product.id]).filter(
+        (p) => p.id !== productPrice.id,
+      ),
     [product, productPrice],
   )
 

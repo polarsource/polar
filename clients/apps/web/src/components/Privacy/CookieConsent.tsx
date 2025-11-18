@@ -1,7 +1,8 @@
 // app/banner.js
 'use client'
 import { usePostHog } from '@/hooks/posthog'
-import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
 
 export function cookieConsentGiven() {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
@@ -18,12 +19,25 @@ export function cookieConsentGiven() {
 export function CookieConsent() {
   const [consentGiven, setConsentGiven] = useState<string | null>('')
   const { setPersistence } = usePostHog()
+  const searchParams = useSearchParams()
+  const doNotTrackParameter = searchParams.get('do_not_track')
+
+  const declineCookies = useCallback(() => {
+    localStorage.setItem('cookie_consent', 'no')
+    setConsentGiven('no')
+  }, [setConsentGiven])
 
   useEffect(() => {
     // We want this to only run once the client loads
     // or else it causes a hydration error
-    setConsentGiven(cookieConsentGiven())
-  }, [])
+    const currentConsent = cookieConsentGiven()
+
+    if (doNotTrackParameter && currentConsent === 'undecided') {
+      declineCookies()
+    } else {
+      setConsentGiven(currentConsent)
+    }
+  }, [declineCookies, doNotTrackParameter])
 
   useEffect(() => {
     if (consentGiven !== '') {
@@ -37,8 +51,7 @@ export function CookieConsent() {
   }
 
   const handleDeclineCookies = () => {
-    localStorage.setItem('cookie_consent', 'no')
-    setConsentGiven('no')
+    declineCookies()
   }
 
   return (
@@ -50,13 +63,17 @@ export function CookieConsent() {
         </p>
         <div className="flex flex-row items-center gap-x-4">
           <button
-            className="text-blue-500 dark:text-white"
+            className="cursor-pointer text-blue-500 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-gray-200"
             onClick={handleAcceptCookies}
             type="button"
           >
             Accept
           </button>
-          <button onClick={handleDeclineCookies} type="button">
+          <button
+            className="cursor-pointer text-gray-500 transition-colors hover:text-gray-600 dark:hover:text-gray-600"
+            onClick={handleDeclineCookies}
+            type="button"
+          >
             Decline
           </button>
         </div>

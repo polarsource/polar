@@ -138,7 +138,11 @@ export async function proxy(request: NextRequest) {
     return getLoginResponse(request)
   }
 
-  const headers = user ? { 'x-polar-user': JSON.stringify(user) } : undefined
+  const continent = request.headers.get('x-vercel-ip-continent')
+  const headers = {
+    ...(user ? { 'x-polar-user': JSON.stringify(user) } : {}),
+    'x-polar-user-continent': continent || 'unknown',
+  }
   return NextResponse.next({ headers })
 }
 

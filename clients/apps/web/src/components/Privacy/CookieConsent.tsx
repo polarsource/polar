@@ -3,6 +3,10 @@
 import { usePostHog } from '@/hooks/posthog'
 import { useEffect, useState } from 'react'
 
+interface Props {
+  continent: string | null
+}
+
 export function cookieConsentGiven() {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
     return 'undecided'
@@ -15,7 +19,7 @@ export function cookieConsentGiven() {
   return localStorage.getItem('cookie_consent')
 }
 
-export function CookieConsent() {
+export function CookieConsent({ continent }: Props) {
   const [consentGiven, setConsentGiven] = useState<string | null>('')
   const { setPersistence } = usePostHog()
 
@@ -39,6 +43,11 @@ export function CookieConsent() {
   const handleDeclineCookies = () => {
     localStorage.setItem('cookie_consent', 'no')
     setConsentGiven('no')
+  }
+
+  // TODO this should probably check for countries part of the European Union, not Europe
+  if (continent === 'EU') {
+    return null
   }
 
   return (

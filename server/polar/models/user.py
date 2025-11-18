@@ -37,6 +37,7 @@ class OAuthPlatform(StrEnum):
     github = "github"
     github_repository_benefit = "github_repository_benefit"
     google = "google"
+    apple = "apple"
 
 
 class IdentityVerificationStatus(StrEnum):

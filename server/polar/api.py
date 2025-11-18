@@ -17,6 +17,7 @@ from polar.email_update.endpoints import router as email_update_router
 from polar.event.endpoints import router as event_router
 from polar.eventstream.endpoints import router as stream_router
 from polar.file.endpoints import router as files_router
+from polar.integrations.apple.endpoints import router as apple_router
 from polar.integrations.discord.endpoints import router as discord_router
 from polar.integrations.github.endpoints import router as github_router
 from polar.integrations.github_repository_benefit.endpoints import (
@@ -60,6 +61,8 @@ router.include_router(github_repository_benefit_router)
 router.include_router(stripe_router)
 # /integrations/discord
 router.include_router(discord_router)
+# /integrations/apple
+router.include_router(apple_router)
 # /login-code
 router.include_router(login_code_router)
 # /notifications

@@ -7,6 +7,7 @@ interface ProductCheckoutMixin {
   product: CheckoutProduct
   productPriceId: string
   productPrice: ProductPrice
+  prices: { [k: string]: ProductPrice[] }
 }
 
 export type ProductCheckoutPublic = CheckoutPublic & ProductCheckoutMixin
@@ -14,5 +15,5 @@ export type ProductCheckoutPublic = CheckoutPublic & ProductCheckoutMixin
 export const hasProductCheckout = (
   checkout: CheckoutPublic,
 ): checkout is ProductCheckoutPublic => {
-  return checkout.product !== null && checkout.productPrice !== null
+  return checkout.product !== null && checkout.prices !== null
 }

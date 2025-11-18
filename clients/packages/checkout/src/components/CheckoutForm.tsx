@@ -109,7 +109,7 @@ const BaseCheckoutForm = ({
   themePreset: themePresetProps,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
-    ? hasLegacyRecurringPrices(checkout.product)
+    ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
       ? checkout.productPrice.recurringInterval
       : checkout.product.recurringInterval
     : null
@@ -129,9 +129,9 @@ const BaseCheckoutForm = ({
   const discount = checkout.discount
   const isDiscountWithoutCode = discount && discount.code === null
 
-  const { product, isBusinessCustomer } = checkout
+  const { product, prices, isBusinessCustomer } = checkout
   const meteredPrices = useMemo(
-    () => (product ? getMeteredPrices(product) : []),
+    () => (product && prices ? getMeteredPrices(prices[product.id]) : []),
     [product],
   )
 

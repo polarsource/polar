@@ -253,6 +253,40 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/integrations/apple/authorize': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Integrations.Apple.Authorize */
+    get: operations['integrations_apple:integrations.apple.authorize']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/apple/callback': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Integrations.Apple.Callback */
+    post: operations['integrations_apple:integrations.apple.callback']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/login-code/request': {
     parameters: {
       query?: never
@@ -7656,6 +7690,17 @@ export interface components {
     'Body_email-update_verify_email_update': {
       /** Token */
       token: string
+    }
+    /** Body_integrations_apple:integrations.apple.callback */
+    'Body_integrations_apple_integrations.apple.callback': {
+      /** Code */
+      code?: string | null
+      /** Code Verifier */
+      code_verifier?: string | null
+      /** State */
+      state?: string | null
+      /** Error */
+      error?: string | null
     }
     /** Body_login_code:authenticate_login_code */
     Body_login_code_authenticate_login_code: {
@@ -17496,7 +17541,7 @@ export interface components {
      * OAuthPlatform
      * @enum {string}
      */
-    OAuthPlatform: 'github' | 'github_repository_benefit' | 'google'
+    OAuthPlatform: 'github' | 'github_repository_benefit' | 'google' | 'apple'
     /** Order */
     Order: {
       /**
@@ -23851,6 +23896,71 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['DiscordGuild']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_apple:integrations.apple.authorize': {
+    parameters: {
+      query?: {
+        return_to?: string | null
+        attribution?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_apple:integrations.apple.callback': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/x-www-form-urlencoded': components['schemas']['Body_integrations_apple_integrations.apple.callback']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -36191,7 +36301,7 @@ export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<
 > = ['authorization_code', 'refresh_token']
 export const oAuthPlatformValues: ReadonlyArray<
   components['schemas']['OAuthPlatform']
-> = ['github', 'github_repository_benefit', 'google']
+> = ['github', 'github_repository_benefit', 'google', 'apple']
 export const orderBillingReasonValues: ReadonlyArray<
   components['schemas']['OrderBillingReason']
 > = [

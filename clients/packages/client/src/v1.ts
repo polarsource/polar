@@ -16894,8 +16894,6 @@ export interface components {
       canceled_subscriptions_unused: number
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other: number
-      /** Churn Rate */
-      churn_rate: number
       /** Gross Margin */
       gross_margin: number
       /** Gross Margin Percentage */
@@ -16946,7 +16944,6 @@ export interface components {
       canceled_subscriptions_too_expensive: components['schemas']['Metric']
       canceled_subscriptions_unused: components['schemas']['Metric']
       canceled_subscriptions_other: components['schemas']['Metric']
-      churn_rate: components['schemas']['Metric']
       gross_margin: components['schemas']['Metric']
       gross_margin_percentage: components['schemas']['Metric']
       cashflow: components['schemas']['Metric']
@@ -17081,8 +17078,6 @@ export interface components {
       canceled_subscriptions_unused: number
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other: number
-      /** Churn Rate */
-      churn_rate: number
       /** Gross Margin */
       gross_margin: number
       /** Gross Margin Percentage */

@@ -32,6 +32,7 @@ import {
   FormField,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useForm, useFormContext } from 'react-hook-form'
@@ -591,6 +592,7 @@ interface OrganizationProfileSettingsProps {
 const OrganizationProfileSettings: React.FC<
   OrganizationProfileSettingsProps
 > = ({ organization, kyc, onSubmitted }) => {
+  const router = useRouter()
   const form = useForm<schemas['OrganizationUpdate']>({
     defaultValues: organization,
   })
@@ -642,6 +644,9 @@ const OrganizationProfileSettings: React.FC<
       ...data,
       socials: [...(data.socials || []), ...emptySocials],
     })
+
+    // Refresh the router to get the updated organization data from the server
+    router.refresh()
 
     if (onSubmitted) {
       onSubmitted()

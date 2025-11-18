@@ -11,6 +11,7 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<
       id: '123',
       created_at: new Date().toDateString(),
       modified_at: null,
+      source: 'catalog',
       amount_type: 'fixed',
       price_amount: 900,
       price_currency: 'usd',

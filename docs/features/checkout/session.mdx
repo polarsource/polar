@@ -25,6 +25,87 @@ You can create a checkout session with multiple products. This is useful if you 
   src="/assets/features/checkout/session/checkout_multiple_products.dark.png"
 />
 
+## Ad-hoc prices
+
+For advanced use cases where you need complete control over pricing, you can create ad-hoc prices directly when creating a checkout session. Ad-hoc prices are temporary prices that exist only for that specific checkout session and don't appear in your product's catalog.
+
+This is useful when you need to:
+- Apply dynamic pricing based on user-specific factors
+- Create custom pricing tiers for specific customers
+- Implement usage-based or calculated pricing that varies per checkout
+- Test pricing variations without modifying your product catalog
+
+When creating a checkout session, you can pass a `prices` parameter that maps product IDs to an array of price definitions. These prices will be created on-the-fly and associated with the checkout session.
+
+<Note>
+Ad-hoc prices are marked with `source: "ad_hoc"` in the API response, while catalog prices have `source: "catalog"`. Ad-hoc prices are temporary and specific to the checkout session.
+</Note>
+
+### Example
+
+<CodeGroup>
+```ts TypeScript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+});
+
+async function run() {
+  const checkout = await polar.checkouts.create({
+    products: ["productId"],
+    prices: {
+      "productId": [
+        {
+          amountType: "fixed",
+          priceAmount: 10000, // $100.00
+          priceCurrency: "usd",
+        }
+      ]
+    }
+  });
+
+  console.log(checkout.url);
+}
+
+run();
+```
+
+```py Python
+from polar_sdk import Polar
+
+with Polar(
+    access_token="<YOUR_BEARER_TOKEN_HERE>",
+) as polar:
+    checkout = polar.checkouts.create(request={
+        "products": ["<product_id>"],
+        "prices": {
+            "<product_id>": [
+                {
+                    "amount_type": "fixed",
+                    "price_amount": 10000,  # $100.00
+                    "price_currency": "usd",
+                }
+            ]
+        }
+    })
+
+    print(checkout.url)
+```
+</CodeGroup>
+
+### Price types
+
+Ad-hoc prices support all the same price types as catalog prices:
+
+- **Fixed**: A fixed amount price
+- **Custom**: Pay-what-you-want pricing
+- **Free**: No charge
+- **Seat-based**: Pricing based on number of seats
+- **Metered**: Usage-based pricing tied to a meter
+
+For the complete schema of each price type, refer to the [Checkout API reference](/api-reference/checkouts/create-session).
+
 ## External Customer ID
 
 Quite often, you'll have your own users management system in your application, where your customer already have an ID. To ease reconciliation between Polar and your system, you can inform us about your customer ID when creating a checkout session through the [`external_customer_id`](/api-reference/checkouts/create-session/) field.

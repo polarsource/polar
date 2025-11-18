@@ -478,7 +478,20 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               <DetailRow label="Name" value={customer.name} />
               <DetailRow
                 label="Tax ID"
-                value={customer.tax_id ? customer.tax_id[0] : null}
+                value={
+                  customer.tax_id ? (
+                    <span className="flex flex-row items-center gap-1.5">
+                      <span>{customer.tax_id[0]}</span>
+                      <span className="font-mono text-xs opacity-70">
+                        {customer.tax_id[1]
+                          .toLocaleUpperCase()
+                          .replace('_', ' ')}
+                      </span>
+                    </span>
+                  ) : (
+                    '—'
+                  )
+                }
               />
               <DetailRow
                 label="Created At"

@@ -481,6 +481,7 @@ class CheckoutService:
             prefill_attributes = (
                 "email",
                 "name",
+                "billing_name",
                 "billing_address",
                 "tax_id",
             )
@@ -492,6 +493,11 @@ class CheckoutService:
                         checkout_attribute,
                         getattr(checkout.customer, attribute),
                     )
+
+            # Auto-select business customer if they have both a billing name & billing address
+            # since that means they've previously checked the is_business_customer checkbox
+            if checkout.customer.billing_name is not None:
+                checkout.is_business_customer = True
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             checkout.payment_processor_metadata = {

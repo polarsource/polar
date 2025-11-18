@@ -806,16 +806,26 @@ const BaseCheckoutForm = ({
                         intervalCount={intervalCount}
                       />
                     </DetailRow>
+
                     {checkout.discount && (
-                      <DetailRow
-                        title={`${checkout.discount.name} (${getDiscountDisplay(checkout.discount)})`}
-                      >
-                        {formatCurrencyNumber(
-                          -checkout.discountAmount,
-                          checkout.currency,
-                          checkout.discountAmount % 100 === 0 ? 0 : 2,
-                        )}
-                      </DetailRow>
+                      <>
+                        <DetailRow
+                          title={`${checkout.discount.name} (${getDiscountDisplay(checkout.discount)})`}
+                        >
+                          {formatCurrencyNumber(
+                            -checkout.discountAmount,
+                            checkout.currency,
+                            checkout.discountAmount % 100 === 0 ? 0 : 2,
+                          )}
+                        </DetailRow>
+                        <DetailRow title="Taxable amount">
+                          {formatCurrencyNumber(
+                            checkout.netAmount,
+                            checkout.currency,
+                            checkout.netAmount % 100 === 0 ? 0 : 2,
+                          )}
+                        </DetailRow>
+                      </>
                     )}
 
                     <DetailRow title="Taxes">

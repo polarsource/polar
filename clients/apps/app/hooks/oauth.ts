@@ -23,7 +23,7 @@ export const useOAuthConfig = () => {
   }
 
   const development = {
-    CLIENT_ID: 'polar_ci_VoDM10HGgcetzWmJnQ9QDDdQHX1kXoX96L7aD4eMVmK',
+    CLIENT_ID: 'polar_ci_hbFdMZZRghgdm2F4LMceQSrcQNunmjlh6ukGJ1dG0Vg',
     discovery: {
       authorizationEndpoint: `http://127.0.0.1:3000/oauth2/authorize`,
       tokenEndpoint: `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/oauth2/token`,

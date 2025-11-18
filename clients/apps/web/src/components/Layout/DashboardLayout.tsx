@@ -63,7 +63,7 @@ const DashboardLayout = (
           )}
         >
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
-          <main className="relative flex min-h-0 grow flex-col">
+          <main className="relative flex min-h-0 min-w-0 grow flex-col">
             {props.children}
           </main>
         </div>
@@ -193,7 +193,7 @@ export const DashboardBody = ({
       animate="animate"
       exit="exit"
     >
-      <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex flex-2 flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-xs">
+      <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex min-w-0 flex-2 flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-xs">
         <div
           className={twMerge(
             'flex h-full w-full flex-col',

@@ -25,10 +25,12 @@ export default async function Page(props: {
   )
 
   // Fetch the newest checkout link
+  const productId = searchParams.productId
   const { data } = await api.GET('/v1/checkout-links/', {
     params: {
       query: {
         organization_id: organization.id,
+        ...(productId && { product_id: productId }),
         limit: 1,
         sorting: ['-created_at'],
       },

@@ -16,6 +16,7 @@ import { useDeleteCustomer } from '@/hooks/queries'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 import { useDateRange } from '@/utils/date'
+import { usePushRouteWithoutCache } from '@/utils/router'
 
 import MoreVert from '@mui/icons-material/MoreVert'
 import { schemas } from '@polar-sh/client'
@@ -29,7 +30,6 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { endOfToday, startOfDay } from 'date-fns'
-import { useRouter } from 'next/navigation'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useCallback, useEffect } from 'react'
 
@@ -49,7 +49,7 @@ const CustomerHeader = ({
     setInterval: (interval: schemas['TimeInterval']) => void
   }
 }) => {
-  const router = useRouter()
+  const pushRouteWithoutCache = usePushRouteWithoutCache()
 
   const {
     show: showEditCustomerModal,
@@ -104,9 +104,10 @@ const CustomerHeader = ({
         title: 'Customer Deleted',
         description: `Customer ${customer.email} deleted successfully`,
       })
-      router.push(`/dashboard/${organization.slug}/customers`)
+
+      pushRouteWithoutCache(`/dashboard/${organization.slug}/customers`)
     })
-  }, [deleteCustomer, customer, organization, router])
+  }, [deleteCustomer, customer.email, pushRouteWithoutCache, organization.slug])
 
   const onDateChange = useCallback(
     (date: { from: Date; to: Date }) => {

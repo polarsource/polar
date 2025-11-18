@@ -6,6 +6,7 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useDeleteCheckoutLink } from '@/hooks/queries'
+import { usePushRouteWithoutCache } from '@/utils/router'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
@@ -16,7 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { useRouter } from 'next/navigation'
 import React from 'react'
 
 interface ClientPageProps {
@@ -28,7 +28,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   organization,
   checkoutLink,
 }) => {
-  const router = useRouter()
+  const pushRouteWithoutCache = usePushRouteWithoutCache()
 
   const { mutateAsync: deleteCheckoutLink, isPending: isDeletePending } =
     useDeleteCheckoutLink()
@@ -56,7 +56,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
         } Checkout Link was deleted successfully`,
       })
 
-      router.push(`/dashboard/${organization.slug}/products/checkout-links`)
+      pushRouteWithoutCache(
+        `/dashboard/${organization.slug}/products/checkout-links`,
+      )
     })
   }
 

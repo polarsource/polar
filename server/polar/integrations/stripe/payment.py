@@ -14,6 +14,7 @@ from polar.models import (
     Wallet,
     WalletTransaction,
 )
+from polar.models.checkout import CheckoutStatus
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.payment.service import payment as payment_service
@@ -153,7 +154,10 @@ async def handle_success(
             object.OBJECT_NAME == "setup_intent"
             and checkout_intent_client_secret is not None
         ):
-            if object.client_secret != checkout_intent_client_secret:
+            if (
+                object.client_secret != checkout_intent_client_secret
+                or checkout.status == CheckoutStatus.expired
+            ):
                 raise OutdatedCheckoutIntent(checkout.id, object.id)
 
         payment_method: PaymentMethod | None = None

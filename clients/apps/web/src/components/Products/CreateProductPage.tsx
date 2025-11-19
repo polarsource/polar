@@ -4,6 +4,7 @@ import {
   useUpdateProductBenefits,
 } from '@/hooks/queries'
 import { setProductValidationErrors } from '@/utils/api/errors'
+import { ProductCreateForm, productToCreateForm } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -13,19 +14,17 @@ import { useForm } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
 import ProductBenefitsForm from './ProductBenefitsForm'
-import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
-
-type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
-  ProductFullMediasMixin & {
-    metadata: { key: string; value: string | number | boolean }[]
-  }
+import ProductForm from './ProductForm/ProductForm'
 
 export interface CreateProductPageProps {
   organization: schemas['Organization']
-  productPriceType?: schemas['ProductPriceType']
+  sourceProduct?: schemas['Product']
 }
 
-export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
+export const CreateProductPage = ({
+  organization,
+  sourceProduct,
+}: CreateProductPageProps) => {
   const router = useRouter()
   const benefits = useBenefits(organization.id, {
     limit: 200,
@@ -35,12 +34,19 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     [benefits],
   )
 
-  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    schemas['Benefit']['id'][]
-  >([])
+  const initialState = sourceProduct
+    ? sourceProduct.benefits.map((b) => b.id)
+    : []
 
-  const form = useForm<ProductCreateForm>({
-    defaultValues: {
+  const [enabledBenefitIds, setEnabledBenefitIds] =
+    useState<schemas['Benefit']['id'][]>(initialState)
+
+  const getDefaultValues = () => {
+    if (sourceProduct) {
+      return productToCreateForm(sourceProduct)
+    }
+
+    return {
       recurring_interval: null,
       ...{
         prices: [
@@ -56,7 +62,11 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
       },
       organization_id: organization.id,
       metadata: [],
-    },
+    }
+  }
+
+  const form = useForm<ProductCreateForm>({
+    defaultValues: getDefaultValues(),
   })
   const { handleSubmit, setError } = form
 
@@ -143,7 +153,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
 
   return (
     <DashboardBody
-      title="Create Product"
+      title={sourceProduct ? 'Duplicate Product' : 'Create Product'}
       wrapperClassName="max-w-(--breakpoint-md)!"
       className="gap-y-16"
     >

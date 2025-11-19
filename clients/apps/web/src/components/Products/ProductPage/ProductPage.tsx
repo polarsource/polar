@@ -180,6 +180,15 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                   <DropdownMenuItem onClick={showArchiveModal}>
                     Archive Product
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      router.push(
+                        `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
+                      )
+                    }}
+                  >
+                    Duplicate Product
+                  </DropdownMenuItem>
                 </>
               )}
               {product.is_archived && (

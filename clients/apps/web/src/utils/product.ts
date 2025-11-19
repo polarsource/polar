@@ -1,3 +1,4 @@
+import { ProductFullMediasMixin } from '@/components/Products/ProductForm/ProductForm'
 import { Client, schemas, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
@@ -81,3 +82,59 @@ const _getProductById = async (
 
 // Tell React to memoize it for the duration of the request
 export const getProductById = cache(_getProductById)
+
+export type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
+  ProductFullMediasMixin & {
+    metadata: { key: string; value: string | number | boolean }[]
+  }
+
+export const productToCreateForm = (
+  product: schemas['Product'],
+): ProductCreateForm => {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  // We want to omit a few fields from the product to create a new product form.
+  // This approach somewhat wonky, the alternative is omitting them which forces us
+  // to type cast which is not preferable.
+  const {
+    id,
+    created_at,
+    modified_at,
+    is_archived,
+    is_recurring,
+    benefits,
+    medias,
+    prices,
+    attached_custom_fields,
+    metadata,
+    ...productBase
+  } = product
+  /* eslint-enable @typescript-eslint/no-unused-vars */
+
+  return {
+    ...productBase,
+    name: `Copy of ${product.name}`,
+    full_medias: product.medias,
+    prices: product.prices.map((price) => {
+      /* eslint-disable @typescript-eslint/no-unused-vars */
+      const {
+        id,
+        created_at,
+        modified_at,
+        product_id,
+        is_archived,
+        source,
+        ...priceRest
+      } = price
+      return priceRest
+      /* eslint-enable @typescript-eslint/no-unused-vars */
+    }),
+    attached_custom_fields: product.attached_custom_fields.map((field) => ({
+      custom_field_id: field.custom_field_id,
+      required: field.required,
+    })),
+    metadata: Object.entries(product.metadata).map(([key, value]) => ({
+      key,
+      value,
+    })),
+  }
+}

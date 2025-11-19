@@ -99,6 +99,9 @@ export const useOAuth = () => {
       }),
       prompt: Prompt.Consent,
       usePKCE: true,
+      extraParams: {
+        do_not_track: 'true',
+      },
     },
     discovery,
   )

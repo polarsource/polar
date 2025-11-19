@@ -7,7 +7,6 @@ import {
   useQuery,
   UseQueryResult,
 } from '@tanstack/react-query'
-import { isDemoSession } from '../auth'
 
 export enum AccountStatus {
   CREATED = 'created',
@@ -61,7 +60,6 @@ export const useOrganizationAccount = (
   organizationId?: string,
 ): UseQueryResult<OrganizationAccount> => {
   const { session } = useSession()
-  const isDemo = isDemoSession()
   return useQuery({
     queryKey: ['finance', 'account', organizationId],
     queryFn: () =>
@@ -82,7 +80,7 @@ export const useOrganizationAccount = (
 
           return data
         }),
-    enabled: !!organizationId && !isDemo,
+    enabled: !!organizationId,
   })
 }
 
@@ -152,7 +150,6 @@ export const useTransactionsSummary = (
   accountId?: string,
 ): UseQueryResult<TransactionsSummary> => {
   const { session } = useSession()
-  const isDemo = isDemoSession()
 
   return useQuery({
     queryKey: ['finance', accountId, 'transactions', 'summary'],
@@ -174,7 +171,7 @@ export const useTransactionsSummary = (
 
           return data
         }),
-    enabled: !!accountId && !isDemo,
+    enabled: !!accountId,
   })
 }
 
@@ -241,7 +238,6 @@ export const usePayoutEstimate = (
   accountId?: string,
 ): UseQueryResult<PayoutEstimate> => {
   const { session } = useSession()
-  const isDemo = isDemoSession()
 
   return useQuery({
     queryKey: ['finance', accountId, 'payouts', 'estimate'],
@@ -263,7 +259,7 @@ export const usePayoutEstimate = (
 
           return data
         }),
-    enabled: !!accountId && !isDemo,
+    enabled: !!accountId,
   })
 }
 
@@ -301,8 +297,6 @@ export const useCreatePayout = (
 export const usePayout = (
   payoutId?: string,
 ): UseQueryResult<Payout | undefined> => {
-  const isDemo = isDemoSession()
-
   return useQuery({
     queryKey: ['finance', 'payouts', payoutId],
     queryFn: () =>
@@ -312,7 +306,7 @@ export const usePayout = (
           pagination: schemas['Pagination']
         }>(['finance', 'payouts'])
         ?.items.find((payout) => payout.id === payoutId),
-    enabled: !!payoutId && !isDemo,
+    enabled: !!payoutId,
   })
 }
 
@@ -321,7 +315,6 @@ export const usePayouts = (): UseQueryResult<{
   pagination: schemas['Pagination']
 }> => {
   const { session } = useSession()
-  const isDemo = isDemoSession()
 
   return useQuery({
     queryKey: ['finance', 'payouts'],
@@ -340,6 +333,5 @@ export const usePayouts = (): UseQueryResult<{
 
           return data
         }),
-    enabled: !isDemo,
   })
 }

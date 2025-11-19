@@ -1,4 +1,3 @@
-import { isDemoSession } from '@/hooks/auth'
 import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import * as Notifications from 'expo-notifications'
@@ -88,10 +87,9 @@ export default function NotificationsProvider({
   const responseListener = useRef<Notifications.EventSubscription>(null)
 
   const { session } = useSession()
-  const isDemo = isDemoSession()
 
   useEffect(() => {
-    if (!session || isDemo) {
+    if (!session) {
       return
     }
 
@@ -113,7 +111,7 @@ export default function NotificationsProvider({
       notificationListener.current && notificationListener.current.remove()
       responseListener.current && responseListener.current.remove()
     }
-  }, [isDemo, session])
+  }, [session])
 
   return (
     <NotificationsContext.Provider value={{ expoPushToken, notification }}>

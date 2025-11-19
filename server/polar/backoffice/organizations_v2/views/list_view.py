@@ -4,11 +4,12 @@ import contextlib
 from collections.abc import Generator
 from datetime import UTC, datetime
 
+import pycountry
 from fastapi import Request
 from sqlalchemy import func, select
 from tagflow import tag, text
 
-from polar.models import Organization
+from polar.models import Account, Organization
 from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 
@@ -36,6 +37,18 @@ class OrganizationListView:
         ).group_by(Organization.status)
         result = await self.session.execute(stmt)
         return {row.status: row.count for row in result}  # type: ignore[misc]
+
+    async def get_distinct_countries(self) -> list[str]:
+        """Get list of distinct countries from organizations with accounts."""
+        stmt = (
+            select(Account.country)
+            .join(Organization, Organization.account_id == Account.id)
+            .where(Account.country.is_not(None))
+            .distinct()
+            .order_by(Account.country)
+        )
+        result = await self.session.execute(stmt)
+        return [row[0] for row in result.all()]
 
     def calculate_days_in_status(self, org: Organization) -> int:
         """Calculate how many days organization has been in current status."""
@@ -270,6 +283,8 @@ class OrganizationListView:
         has_more: bool,
         current_sort: str = "priority",
         current_direction: str = "asc",
+        countries: list[str] | None = None,
+        selected_country: str | None = None,
     ) -> Generator[None]:
         """Render the complete list view."""
 
@@ -402,22 +417,21 @@ class OrganizationListView:
                                 ):
                                     with tag.option(value=""):
                                         text("All Countries")
-                                    for country in [
-                                        "US",
-                                        "GB",
-                                        "CA",
-                                        "DE",
-                                        "FR",
-                                        "ES",
-                                        "IT",
-                                        "NL",
-                                        "SE",
-                                        "NO",
-                                        "DK",
-                                        "FI",
-                                    ]:
-                                        with tag.option(value=country):
-                                            text(country)
+                                    if countries:
+                                        for country_code in countries:
+                                            country = pycountry.countries.get(
+                                                alpha_2=country_code
+                                            )
+                                            display_name = (
+                                                country.name
+                                                if country
+                                                else country_code
+                                            )
+                                            option_attrs = {"value": country_code}
+                                            if selected_country == country_code:
+                                                option_attrs["selected"] = ""
+                                            with tag.option(**option_attrs):
+                                                text(f"{country_code} - {display_name}")
 
                             # Risk filter
                             with tag.div():

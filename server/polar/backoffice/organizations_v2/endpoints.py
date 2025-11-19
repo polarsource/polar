@@ -238,6 +238,9 @@ async def list_organizations(
     # Get status counts for tabs
     status_counts = await list_view.get_status_counts()
 
+    # Get distinct countries for filter dropdown
+    countries = await list_view.get_distinct_countries()
+
     # Check if this is an HTMX request targeting just the table
     is_htmx_table_request = request.headers.get("HX-Target") == "org-list"
 
@@ -270,6 +273,8 @@ async def list_organizations(
                 has_more,
                 sort,
                 direction,
+                countries,
+                country,
             ):
                 pass
 

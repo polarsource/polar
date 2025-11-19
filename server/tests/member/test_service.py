@@ -1,11 +1,162 @@
 import pytest
 
+from polar.auth.models import AuthSubject
+from polar.kit.pagination import PaginationParams
 from polar.member.service import member_service
-from polar.models import Customer, Organization
+from polar.models import Customer, Member, Organization, User, UserOrganization
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
+
+
+@pytest.mark.asyncio
+class TestList:
+    @pytest.mark.auth
+    async def test_not_accessible_organization(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Test that user cannot access members from organizations they don't belong to."""
+        from tests.fixtures.random_objects import create_organization
+
+        other_org = await create_organization(save_fixture)
+        customer = await create_customer(
+            save_fixture,
+            organization=other_org,
+            email="customer@example.com",
+        )
+
+        # Create a member
+        member = Member(
+            customer_id=customer.id,
+            email="member@example.com",
+            name="Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        members, total = await member_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+        assert len(members) == 0
+        assert total == 0
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_filter_by_customer_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test filtering members by customer_id."""
+        customer1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+        )
+        customer2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer2@example.com",
+        )
+
+        # Create members for customer1
+        member1 = Member(
+            customer_id=customer1.id,
+            email="member1@example.com",
+            name="Member 1",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member1)
+
+        # Create members for customer2
+        member2 = Member(
+            customer_id=customer2.id,
+            email="member2@example.com",
+            name="Member 2",
+            role=MemberRole.member,
+        )
+        await save_fixture(member2)
+
+        # Filter by customer1 ID
+        members, total = await member_service.list(
+            session,
+            auth_subject,
+            customer_id=customer1.id,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert len(members) == 1
+        assert total == 1
+        assert member1 in members
+
+        # Filter by customer2 ID
+        members, total = await member_service.list(
+            session,
+            auth_subject,
+            customer_id=customer2.id,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert len(members) == 1
+        assert total == 1
+        assert member2 in members
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_pagination(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test pagination of members."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        # Create 5 members
+        for i in range(5):
+            member = Member(
+                customer_id=customer.id,
+                email=f"member{i}@example.com",
+                name=f"Member {i}",
+                role=MemberRole.member,
+            )
+            await save_fixture(member)
+
+        # Get first page
+        members, total = await member_service.list(
+            session,
+            auth_subject,
+            pagination=PaginationParams(1, 2),
+        )
+
+        assert len(members) == 2
+        assert total == 5
+
+        # Get second page
+        members, total = await member_service.list(
+            session,
+            auth_subject,
+            pagination=PaginationParams(2, 2),
+        )
+
+        assert len(members) == 2
+        assert total == 5
 
 
 @pytest.mark.asyncio

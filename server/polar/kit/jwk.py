@@ -1,4 +1,5 @@
 import argparse
+import os
 import pathlib
 import sys
 from typing import Annotated, Any
@@ -22,15 +23,27 @@ TIP_MESSAGE = (
 
 
 def _validate_jwks(value: Any) -> KeySet:
+    # 1) Prefer JWKS JSON from environment if provided (e.g. on Vercel).
+    env_jwks_json = os.getenv("POLAR_JWKS_JSON")
+    if env_jwks_json:
+        try:
+            return JsonWebKey.import_key_set(env_jwks_json)
+        except ValueError as e:
+            raise ValueError(
+                "The POLAR_JWKS_JSON environment variable does not contain a valid "
+                f"JWKS JSON document.\n{TIP_MESSAGE}"
+            ) from e
+
+    # 2) Otherwise, fall back to loading from the configured file path.
     path = pathlib.Path(str(value))
-    if not path.exists() and not path.is_file():
+    if not path.exists() or not path.is_file():
         raise ValueError(
             f"The provided JWKS path {value} is not a valid file path "
             f"or does not exist.\n{TIP_MESSAGE}"
         )
 
     try:
-        with open(value) as f:
+        with open(path) as f:
             content = f.read().strip()
             return JsonWebKey.import_key_set(content)
     except ValueError as e:

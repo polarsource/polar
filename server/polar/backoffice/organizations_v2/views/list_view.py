@@ -37,6 +37,20 @@ class OrganizationListView:
         result = await self.session.execute(stmt)
         return {row.status: row.count for row in result}  # type: ignore[misc]
 
+    async def get_distinct_countries(self) -> list[str]:
+        """Get list of distinct countries from organizations with accounts."""
+        from polar.models import Account
+
+        stmt = (
+            select(Account.country)
+            .join(Organization, Organization.account_id == Account.id)
+            .where(Account.country.is_not(None))
+            .distinct()
+            .order_by(Account.country)
+        )
+        result = await self.session.execute(stmt)
+        return [row[0] for row in result.all()]
+
     def calculate_days_in_status(self, org: Organization) -> int:
         """Calculate how many days organization has been in current status."""
         if not org.status_updated_at:
@@ -270,6 +284,7 @@ class OrganizationListView:
         has_more: bool,
         current_sort: str = "priority",
         current_direction: str = "asc",
+        countries: list[str] | None = None,
     ) -> Generator[None]:
         """Render the complete list view."""
 
@@ -402,22 +417,20 @@ class OrganizationListView:
                                 ):
                                     with tag.option(value=""):
                                         text("All Countries")
-                                    for country in [
-                                        "US",
-                                        "GB",
-                                        "CA",
-                                        "DE",
-                                        "FR",
-                                        "ES",
-                                        "IT",
-                                        "NL",
-                                        "SE",
-                                        "NO",
-                                        "DK",
-                                        "FI",
-                                    ]:
-                                        with tag.option(value=country):
-                                            text(country)
+                                    if countries:
+                                        import pycountry
+
+                                        for country_code in countries:
+                                            country = pycountry.countries.get(
+                                                alpha_2=country_code
+                                            )
+                                            display_name = (
+                                                country.name
+                                                if country
+                                                else country_code
+                                            )
+                                            with tag.option(value=country_code):
+                                                text(f"{country_code} - {display_name}")
 
                             # Risk filter
                             with tag.div():

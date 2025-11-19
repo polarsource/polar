@@ -194,7 +194,9 @@ class TestListCustomers:
         assert len(json["items"]) > 0
 
         # Find our customer in the response
-        customer_data = next((item for item in json["items"] if item["id"] == str(customer.id)), None)
+        customer_data = next(
+            (item for item in json["items"] if item["id"] == str(customer.id)), None
+        )
         assert customer_data is not None
         assert "members" in customer_data
         assert len(customer_data["members"]) == 2

@@ -21,8 +21,8 @@ jobs:
           BRANCH_NAME="${{ github.head_ref }}"
           echo "Branch name: $BRANCH_NAME"
 
-          # Extract TICKET_PREFIX-XXX pattern from the start of branch name
-          TICKET_NUMBER=$(echo $BRANCH_NAME | grep -oE "^${TICKET_PREFIX}[0-9]+" || echo "")
+          # Extract ticket number (digits only) from TICKET_PREFIX-XXX pattern at the start of branch name
+          TICKET_NUMBER=$(echo $BRANCH_NAME | sed -nE "s/^${TICKET_PREFIX}([0-9]+).*/\1/p")
           echo "ticket_number=$TICKET_NUMBER" >> $GITHUB_OUTPUT
 
           if [ -z "$TICKET_NUMBER" ]; then

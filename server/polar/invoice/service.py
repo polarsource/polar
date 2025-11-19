@@ -10,13 +10,6 @@ from polar.models.transaction import PlatformFeeType
 from polar.postgres import AsyncSession
 from polar.transaction.repository import TransactionRepository
 
-from .generator import (
-    Invoice,
-    InvoiceGenerator,
-    InvoiceHeadingItem,
-    InvoiceItem,
-)
-
 
 class InvoiceError(PolarError): ...
 
@@ -32,6 +25,11 @@ class MissingAccountBillingDetails(InvoiceError):
 
 class InvoiceService:
     async def create_order_invoice(self, order: Order) -> str:
+        # Local import to avoid importing heavy PDF dependencies (fpdf2, pillow, etc.)
+        # when this module is imported by the main API. Only workers that actually
+        # generate invoices need these packages installed.
+        from .generator import Invoice, InvoiceGenerator
+
         invoice = Invoice.from_order(order)
         generator = InvoiceGenerator(invoice)
         generator.generate()
@@ -53,6 +51,14 @@ class InvoiceService:
         )
 
     async def create_payout_invoice(self, session: AsyncSession, payout: Payout) -> str:
+        # Local import to keep heavy PDF dependencies out of the main API runtime.
+        from .generator import (
+            Invoice,
+            InvoiceGenerator,
+            InvoiceHeadingItem,
+            InvoiceItem,
+        )
+
         account = payout.account
         if account.billing_name is None or account.billing_address is None:
             raise MissingAccountBillingDetails(account)

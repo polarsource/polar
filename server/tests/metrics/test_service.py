@@ -370,6 +370,78 @@ class TestGetMetrics:
         assert dec_31.active_subscriptions == 3
         assert dec_31.monthly_recurring_revenue == 283_33
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_values_month_interval_mid_month_start(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        """
+        Test that cumulative revenue works correctly when the start date is not
+        on the first of the month (e.g., March 11 instead of March 1).
+        This reproduces the bug where cumulative revenue shows as 0.
+        """
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 11),
+            end_date=date(2024, 6, 15),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+        )
+
+        assert len(metrics.periods) == 6
+
+        jan = metrics.periods[0]
+        assert jan.orders == 3
+        assert jan.revenue == 1200_00
+        assert jan.cumulative_revenue == 1300_00  # Includes $100 order from earlier
+
+        feb = metrics.periods[1]
+        assert feb.orders == 1
+        assert feb.revenue == 100_00
+        assert feb.cumulative_revenue == 1400_00
+
+        jun = metrics.periods[5]
+        assert jun.orders == 1
+        assert jun.revenue == 100_00
+        assert jun.cumulative_revenue == 1500_00
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_values_year_interval_mid_year_start(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2023, 6, 15),
+            end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.year,
+        )
+
+        assert len(metrics.periods) == 2
+
+        year_2023 = metrics.periods[0]
+        assert year_2023.orders == 1  # order from 2023-06-01
+        assert year_2023.revenue == 100_00
+        assert year_2023.cumulative_revenue == 100_00
+
+        year_2024 = metrics.periods[1]
+        assert year_2024.orders == 5
+        assert year_2024.revenue == 1400_00
+        assert year_2024.cumulative_revenue == 1500_00
+
     @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_not_authorized(
         self,
@@ -419,33 +491,33 @@ class TestGetMetrics:
             product_id=[fixtures[0]["one_time_product"].id],
         )
 
-        jan_1 = metrics.periods[0]
-        assert jan_1.orders == 1
-        assert jan_1.revenue == 100_00
-        assert jan_1.cumulative_revenue == 200_00  # Includes $100 order from earlier
-        assert jan_1.average_order_value == 100_00
-        assert jan_1.one_time_products == 1
-        assert jan_1.one_time_products_revenue == 100_00
-        assert jan_1.new_subscriptions == 0
-        assert jan_1.new_subscriptions_revenue == 0
-        assert jan_1.renewed_subscriptions == 0
-        assert jan_1.renewed_subscriptions_revenue == 0
-        assert jan_1.active_subscriptions == 0
-        assert jan_1.monthly_recurring_revenue == 0
+        jan = metrics.periods[0]
+        assert jan.orders == 1
+        assert jan.revenue == 100_00
+        assert jan.cumulative_revenue == 200_00  # Includes $100 order from earlier
+        assert jan.average_order_value == 100_00
+        assert jan.one_time_products == 1
+        assert jan.one_time_products_revenue == 100_00
+        assert jan.new_subscriptions == 0
+        assert jan.new_subscriptions_revenue == 0
+        assert jan.renewed_subscriptions == 0
+        assert jan.renewed_subscriptions_revenue == 0
+        assert jan.active_subscriptions == 0
+        assert jan.monthly_recurring_revenue == 0
 
-        feb_1 = metrics.periods[31]
-        assert feb_1.orders == 0
-        assert feb_1.revenue == 0
-        assert feb_1.cumulative_revenue == 200_00
-        assert feb_1.average_order_value == 0
-        assert feb_1.one_time_products == 0
-        assert feb_1.one_time_products_revenue == 0
-        assert feb_1.new_subscriptions == 0
-        assert feb_1.new_subscriptions_revenue == 0
-        assert feb_1.renewed_subscriptions == 0
-        assert feb_1.renewed_subscriptions_revenue == 0
-        assert feb_1.active_subscriptions == 0
-        assert feb_1.monthly_recurring_revenue == 0
+        feb = metrics.periods[31]
+        assert feb.orders == 0
+        assert feb.revenue == 0
+        assert feb.cumulative_revenue == 200_00
+        assert feb.average_order_value == 0
+        assert feb.one_time_products == 0
+        assert feb.one_time_products_revenue == 0
+        assert feb.new_subscriptions == 0
+        assert feb.new_subscriptions_revenue == 0
+        assert feb.renewed_subscriptions == 0
+        assert feb.renewed_subscriptions_revenue == 0
+        assert feb.active_subscriptions == 0
+        assert feb.monthly_recurring_revenue == 0
 
         jun_1 = metrics.periods[152]
         assert jun_1.orders == 0

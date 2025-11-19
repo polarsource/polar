@@ -147,16 +147,13 @@ async def handle_success(
         await payment_transaction_service.create_payment(session, charge=object)
 
     if checkout is not None:
-        checkout_intent_client_secret = checkout.payment_processor_metadata.get(
-            "intent_client_secret"
-        )
-        if (
-            object.OBJECT_NAME == "setup_intent"
-            and checkout_intent_client_secret is not None
-        ):
-            if (
-                object.client_secret != checkout_intent_client_secret
-                or checkout.status == CheckoutStatus.expired
+        if object.OBJECT_NAME == "setup_intent":
+            checkout_intent_client_secret = checkout.payment_processor_metadata.get(
+                "intent_client_secret"
+            )
+            if checkout.status == CheckoutStatus.expired or (
+                checkout_intent_client_secret is not None
+                and object.client_secret != checkout_intent_client_secret
             ):
                 raise OutdatedCheckoutIntent(checkout.id, object.id)
 

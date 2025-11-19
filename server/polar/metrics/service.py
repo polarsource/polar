@@ -42,6 +42,13 @@ class MetricsService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
+        # Truncate start_timestamp to the beginning of the interval period
+        # This ensures the timestamp series aligns with how daily metrics are grouped
+        if interval == TimeInterval.month:
+            start_timestamp = start_timestamp.replace(day=1)
+        elif interval == TimeInterval.year:
+            start_timestamp = start_timestamp.replace(month=1, day=1)
+
         timestamp_series = get_timestamp_series_cte(
             start_timestamp, end_timestamp, interval
         )

@@ -13,6 +13,7 @@ from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.member import member_service
 from polar.models import BenefitGrant, Customer, Organization, User
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.organization.resolver import get_payload_organization
@@ -152,6 +153,7 @@ class CustomerService:
                 ),
             )
         ) as customer:
+            await member_service.create_owner_member(session, customer, organization)
             return customer
 
     async def update(

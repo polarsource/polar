@@ -57,6 +57,7 @@ from polar.kit.tax import (
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
+from polar.member import member_service
 from polar.models import (
     Account,
     Checkout,
@@ -2162,6 +2163,9 @@ class CheckoutService:
 
         if created:
             async with repository.create_context(customer, flush=False) as customer:
+                await member_service.create_owner_member(
+                    session, customer, checkout.organization
+                )
                 yield customer
         else:
             yield await repository.update(customer, flush=True)

@@ -4,6 +4,7 @@ import contextlib
 from collections.abc import Generator
 from datetime import UTC, datetime
 
+import pycountry
 from fastapi import Request
 from sqlalchemy import func, select
 from tagflow import tag, text
@@ -419,8 +420,6 @@ class OrganizationListView:
                                     with tag.option(value=""):
                                         text("All Countries")
                                     if countries:
-                                        import pycountry
-
                                         for country_code in countries:
                                             country = pycountry.countries.get(
                                                 alpha_2=country_code

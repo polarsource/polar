@@ -26,6 +26,7 @@ DIRECT_IMPLEMENTED_WEBHOOKS = {
     "charge.pending",
     "charge.failed",
     "charge.succeeded",
+    "charge.updated",
     "charge.dispute.closed",
     "refund.created",
     "refund.updated",

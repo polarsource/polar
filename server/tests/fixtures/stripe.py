@@ -238,10 +238,19 @@ def construct_stripe_invoice(
 
 def build_stripe_balance_transaction(
     *,
+    amount: int = 1000,
+    currency: str = "usd",
     fee: int | None = 100,
     reporting_category: str | None = None,
+    exchange_rate: float | None = None,
 ) -> stripe_lib.BalanceTransaction:
-    obj: dict[str, Any] = {"id": "STRIPE_BALANCE_TRANSACTION_ID", "fee": fee}
+    obj: dict[str, Any] = {
+        "id": "STRIPE_BALANCE_TRANSACTION_ID",
+        "amount": amount,
+        "currency": currency,
+        "fee": fee,
+        "exchange_rate": exchange_rate,
+    }
     if reporting_category:
         obj["reporting_category"] = reporting_category
 
@@ -282,6 +291,7 @@ def build_stripe_charge(
     *,
     status: str = "succeeded",
     amount: int = 1000,
+    currency: str = "usd",
     customer: str | None = None,
     invoice: str | None = None,
     payment_intent: str | None = None,
@@ -298,7 +308,7 @@ def build_stripe_charge(
         "id": "STRIPE_CHARGE_ID",
         "status": status,
         "customer": customer,
-        "currency": "usd",
+        "currency": currency,
         "amount": amount,
         "invoice": invoice,
         "payment_intent": payment_intent,

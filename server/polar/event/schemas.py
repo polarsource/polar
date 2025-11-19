@@ -462,6 +462,7 @@ class RootEventStatistics(Schema):
     """Aggregate statistics for events grouped by root event name."""
 
     name: str = Field(description="The name of the root event.")
+    label: str = Field(description="The label of the event type.")
     occurrences: int = Field(
         description="Number of root events with this name (i.e., number of traces)."
     )
@@ -470,15 +471,19 @@ class RootEventStatistics(Schema):
         default_factory=dict,
     )
     averages: dict[str, Decimal] = Field(
-        description="Average value of each field across all events in all hierarchies.",
+        description="Average of per-hierarchy totals (i.e., average cost per trace).",
+        default_factory=dict,
+    )
+    p50: dict[str, Decimal] = Field(
+        description="Median (50th percentile) of per-hierarchy totals.",
         default_factory=dict,
     )
     p95: dict[str, Decimal] = Field(
-        description="95th percentile of each field across all events in all hierarchies.",
+        description="95th percentile of per-hierarchy totals.",
         default_factory=dict,
     )
     p99: dict[str, Decimal] = Field(
-        description="99th percentile of each field across all events in all hierarchies.",
+        description="99th percentile of per-hierarchy totals.",
         default_factory=dict,
     )
 

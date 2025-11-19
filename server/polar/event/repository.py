@@ -31,6 +31,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Event,
+    EventType,
     Meter,
     UserOrganization,
 )
@@ -390,68 +391,100 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         """
         Get aggregate statistics grouped by root event name across all hierarchies.
 
+        Uses root_id for efficient rollup and joins with event_types for labels:
+        1. Filter root events based on statement
+        2. Roll up costs from all events in each hierarchy (via root_id)
+        3. Calculate avg, p95, p99 on those rolled-up totals across root events with same name
+        4. Join with event_types to include labels
+
         Args:
             statement: Base query for root events to include
             aggregate_fields: List of user_metadata field paths to aggregate
             sorting: List of (property, is_desc) tuples for sorting
 
         Returns:
-            List of dicts containing name, occurrences, and statistics for each field
+            List of dicts containing name, label, occurrences, and statistics for each field
         """
-        root_events_subquery = statement.where(Event.parent_id.is_(None)).subquery()
+        root_events_subquery = statement.where(
+            and_(Event.parent_id.is_(None), Event.source == EventSource.user)
+        ).subquery()
 
-        descendant_event = aliased(Event, name="descendant_event")
+        all_events = aliased(Event, name="all_events")
 
-        aggregation_exprs = []
-        having_clauses = []
+        per_root_select_exprs: list[ColumnElement[Any]] = [
+            literal_column("root_event.id").label("root_id")
+        ]
+
         for field_path in aggregate_fields:
             field_parts = field_path.split(".")
             pg_path = "{" + ",".join(field_parts) + "}"
             safe_field_name = field_path.replace(".", "_")
 
             field_expr = cast(
-                descendant_event.user_metadata.op("#>>")(
-                    literal_column(f"'{pg_path}'")
-                ),
+                all_events.user_metadata.op("#>>")(literal_column(f"'{pg_path}'")),
                 Numeric,
             )
 
-            sum_expr = func.sum(field_expr)
+            sum_expr = func.sum(field_expr).label(f"{safe_field_name}_total")
+            per_root_select_exprs.append(sum_expr)
+
+        per_root_query = (
+            select(*per_root_select_exprs)
+            .select_from(root_events_subquery.alias("root_event"))
+            .join(all_events, all_events.root_id == literal_column("root_event.id"))
+            .group_by(literal_column("root_event.id"))
+        )
+
+        per_root_subquery = per_root_query.subquery("per_root_totals")
+
+        root_event = aliased(Event, name="root_event_final")
+        event_type = aliased(EventType, name="event_type")
+
+        aggregation_exprs = []
+        for field_path in aggregate_fields:
+            safe_field_name = field_path.replace(".", "_")
+            total_col: ColumnElement[Any] = literal_column(f"{safe_field_name}_total")
 
             aggregation_exprs.extend(
                 [
-                    sum_expr.label(f"{safe_field_name}_sum"),
-                    func.avg(field_expr).label(f"{safe_field_name}_avg"),
+                    func.sum(total_col).label(f"{safe_field_name}_sum"),
+                    func.avg(func.coalesce(total_col, 0)).label(
+                        f"{safe_field_name}_avg"
+                    ),
+                    func.percentile_cont(0.5)
+                    .within_group(func.coalesce(total_col, 0))
+                    .label(f"{safe_field_name}_p50"),
                     func.percentile_cont(0.95)
-                    .within_group(field_expr)
+                    .within_group(func.coalesce(total_col, 0))
                     .label(f"{safe_field_name}_p95"),
                     func.percentile_cont(0.99)
-                    .within_group(field_expr)
+                    .within_group(func.coalesce(total_col, 0))
                     .label(f"{safe_field_name}_p99"),
                 ]
             )
 
-            having_clauses.append(sum_expr > 0)
-
         stats_query = (
             select(
-                literal_column("root_event.name").label("name"),
-                func.count(func.distinct(literal_column("root_event.id"))).label(
+                root_event.name.label("name"),
+                event_type.label.label("label"),
+                func.count(literal_column("per_root_totals.root_id")).label(
                     "occurrences"
                 ),
                 *aggregation_exprs,
             )
-            .select_from(root_events_subquery.alias("root_event"))
+            .select_from(per_root_subquery)
             .join(
-                EventClosure,
-                literal_column("root_event.id") == EventClosure.ancestor_id,
+                root_event, root_event.id == literal_column("per_root_totals.root_id")
             )
-            .join(descendant_event, EventClosure.descendant_id == descendant_event.id)
-            .group_by(literal_column("root_event.name"))
+            .join(
+                event_type,
+                and_(
+                    event_type.name == root_event.name,
+                    event_type.organization_id == root_event.organization_id,
+                ),
+            )
+            .group_by(root_event.name, event_type.label)
         )
-
-        if having_clauses:
-            stats_query = stats_query.having(or_(*having_clauses))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc_sort in sorting:
@@ -483,6 +516,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         return [
             {
                 "name": row.name,
+                "label": row.label,
                 "occurrences": row.occurrences,
                 "totals": {
                     field.replace(".", "_"): getattr(
@@ -494,6 +528,13 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 "averages": {
                     field.replace(".", "_"): getattr(
                         row, f"{field.replace('.', '_')}_avg"
+                    )
+                    or 0
+                    for field in aggregate_fields
+                },
+                "p50": {
+                    field.replace(".", "_"): getattr(
+                        row, f"{field.replace('.', '_')}_p50"
                     )
                     or 0
                     for field in aggregate_fields

@@ -1,5 +1,7 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
+import DuplicateProductModal from '@/components/Products/DuplicateProductModal'
 import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
@@ -36,15 +38,27 @@ interface ProductListItemProps {
   organization: schemas['Organization']
 }
 
+const isFullProduct = (
+  product: schemas['Product'] | schemas['CheckoutProduct'],
+): product is schemas['Product'] => {
+  return 'metadata' in product && 'attached_custom_fields' in product
+}
+
 export const ProductListItem = ({
   product,
   organization,
 }: ProductListItemProps) => {
   const router = useRouter()
   const {
-    show: showModal,
-    hide: hideModal,
-    isShown: isConfirmModalShown,
+    show: showArchiveModal,
+    hide: hideArchiveModal,
+    isShown: isArchiveModalShown,
+  } = useModal()
+
+  const {
+    show: showDuplicateModal,
+    hide: hideDuplicateModal,
+    isShown: isDuplicateModalShown,
   } = useModal()
 
   const handleContextMenuCallback = (
@@ -71,7 +85,7 @@ export const ProductListItem = ({
         title: 'Product archived',
         description: 'The product has been archived',
       })
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'An error occurred while archiving the product',
@@ -167,6 +181,13 @@ export const ProductListItem = ({
                 >
                   Copy Product ID
                 </DropdownMenuItem>
+                {isFullProduct(product) && (
+                  <DropdownMenuItem
+                    onClick={handleContextMenuCallback(showDuplicateModal)}
+                  >
+                    Duplicate Product
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={handleContextMenuCallback(() => {
                     router.push(
@@ -177,7 +198,7 @@ export const ProductListItem = ({
                   Integrate Checkout
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={handleContextMenuCallback(showModal)}
+                  onClick={handleContextMenuCallback(showArchiveModal)}
                 >
                   Archive Product
                 </DropdownMenuItem>
@@ -187,14 +208,27 @@ export const ProductListItem = ({
         )}
       </div>
       <ConfirmModal
-        isShown={isConfirmModalShown}
-        hide={hideModal}
+        isShown={isArchiveModalShown}
+        hide={hideArchiveModal}
         title={`Archive "${product.name}"`}
         description="Are you sure you want to archive this product? This action cannot be undone."
         onConfirm={onArchiveProduct}
         destructive
         destructiveText="Yes, archive"
       />
+      {isFullProduct(product) && (
+        <InlineModal
+          isShown={isDuplicateModalShown}
+          hide={hideDuplicateModal}
+          modalContent={
+            <DuplicateProductModal
+              product={product}
+              organization={organization}
+              hide={hideDuplicateModal}
+            />
+          }
+        />
+      )}
     </ListItem>
   )
 }

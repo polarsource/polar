@@ -21,7 +21,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
-from polar.models import Customer, Organization, User, UserOrganization
+from polar.models import Customer, EventType, Organization, User, UserOrganization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -749,6 +749,13 @@ class TestGetHierarchyStats:
         user_organization: UserOrganization,
         customer: Customer,
     ) -> None:
+        request_event_type = EventType(
+            name="request",
+            label="API Request",
+            organization=organization,
+        )
+        await save_fixture(request_event_type)
+
         root1 = await create_event(
             save_fixture,
             organization=organization,
@@ -806,11 +813,20 @@ class TestGetHierarchyStats:
 
         assert len(stats) == 1
         assert stats[0]["name"] == "request"
+        assert stats[0]["label"] == "API Request"
         assert stats[0]["occurrences"] == 2
         assert stats[0]["totals"]["_cost_amount"] == total_cost
         assert stats[0]["averages"]["_cost_amount"] == total_cost / 2
-        assert stats[0]["p95"]["_cost_amount"] == event2_cost
-        assert stats[0]["p99"]["_cost_amount"] == event2_cost
+        # percentile_cont interpolates between values
+        assert float(stats[0]["p50"]["_cost_amount"]) == pytest.approx(
+            event1_cost + 0.5 * (event2_cost - event1_cost)
+        )
+        assert float(stats[0]["p95"]["_cost_amount"]) == pytest.approx(
+            event1_cost + 0.95 * (event2_cost - event1_cost)
+        )
+        assert float(stats[0]["p99"]["_cost_amount"]) == pytest.approx(
+            event1_cost + 0.99 * (event2_cost - event1_cost)
+        )
 
 
 @pytest.mark.asyncio

@@ -33,7 +33,11 @@ async def list_members(
     customer_id: str | None = Query(None, description="Filter by customer ID."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[Member]:
-    """List members."""
+    """
+    List members.
+
+    Members can be filtered by customer ID and support pagination and sorting.
+    """
     from uuid import UUID
 
     # Parse customer_id if provided

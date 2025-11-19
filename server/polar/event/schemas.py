@@ -463,6 +463,7 @@ class EventStatistics(Schema):
 
     name: str = Field(description="The name of the root event.")
     label: str = Field(description="The label of the event type.")
+    event_type_id: UUID4 = Field(description="The ID of the event type")
     occurrences: int = Field(
         description="Number of root events with this name (i.e., number of traces)."
     )

@@ -181,7 +181,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
                       inactiveClassName="text-gray-500 dark:text-polar-500"
                       onSelect={() => {
                         const params = new URLSearchParams()
-                        params.set('eventName', stat.name)
                         if (startDate) {
                           params.set('startDate', startDate.toISOString())
                         }
@@ -190,7 +189,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                         }
                         params.set('interval', interval)
                         router.push(
-                          `/dashboard/${organization.slug}/usage-billing/spans/foo?${params}`,
+                          `/dashboard/${organization.slug}/usage-billing/spans/${stat.event_type_id}?${params}`,
                         )
                       }}
                     >
@@ -233,7 +232,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
           }}
           onRowClick={(row) => {
             const params = new URLSearchParams()
-            params.set('eventName', row.original.name)
             if (startDate) {
               params.set('startDate', startDate.toISOString())
             }
@@ -242,7 +240,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
             }
             params.set('interval', interval)
             router.push(
-              `/dashboard/${organization.slug}/usage-billing/spans/foo?${params}`,
+              `/dashboard/${organization.slug}/usage-billing/spans/${row.original.event_type_id}?${params}`,
             )
           }}
           columns={

@@ -59,10 +59,17 @@ def configure_cors(app: FastAPI) -> None:
     configs: list[CORSConfig] = []
 
     # Polar frontend CORS configuration
-    if settings.CORS_ORIGINS:
+    if settings.CORS_ORIGINS or settings.CORS_ORIGIN_REGEX:
 
         def polar_frontend_matcher(origin: str, scope: Scope) -> bool:
-            return origin in settings.CORS_ORIGINS
+            # Check explicit origins list
+            if settings.CORS_ORIGINS and origin in settings.CORS_ORIGINS:
+                return True
+            # Regex matching is handled by CORSMiddleware itself
+            # We just need to return True for any origin when regex is set
+            if settings.CORS_ORIGIN_REGEX:
+                return True
+            return False
 
         polar_frontend_config = CORSConfig(
             polar_frontend_matcher,
@@ -70,6 +77,7 @@ def configure_cors(app: FastAPI) -> None:
             allow_credentials=True,  # Cookies are allowed, but only there!
             allow_methods=["*"],
             allow_headers=["*"],
+            allow_origin_regex=settings.CORS_ORIGIN_REGEX,
         )
         configs.append(polar_frontend_config)
 

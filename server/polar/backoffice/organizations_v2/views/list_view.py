@@ -285,6 +285,7 @@ class OrganizationListView:
         current_sort: str = "priority",
         current_direction: str = "asc",
         countries: list[str] | None = None,
+        selected_country: str | None = None,
     ) -> Generator[None]:
         """Render the complete list view."""
 
@@ -429,7 +430,10 @@ class OrganizationListView:
                                                 if country
                                                 else country_code
                                             )
-                                            with tag.option(value=country_code):
+                                            option_attrs = {"value": country_code}
+                                            if selected_country == country_code:
+                                                option_attrs["selected"] = ""
+                                            with tag.option(**option_attrs):
                                                 text(f"{country_code} - {display_name}")
 
                             # Risk filter

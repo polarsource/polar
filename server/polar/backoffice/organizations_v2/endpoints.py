@@ -274,6 +274,7 @@ async def list_organizations(
                 sort,
                 direction,
                 countries,
+                country,
             ):
                 pass
 

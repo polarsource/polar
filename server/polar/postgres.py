@@ -21,24 +21,30 @@ ProcessName: TypeAlias = Literal["app", "worker", "scheduler", "script"]
 
 
 def create_async_engine(process_name: ProcessName) -> AsyncEngine:
+    dsn = str(settings.get_postgres_dsn("asyncpg"))
     return _create_async_engine(
-        dsn=str(settings.get_postgres_dsn("asyncpg")),
+        dsn=dsn,
         application_name=f"{settings.ENV.value}.{process_name}",
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
+        ssl=settings.asyncpg_ssl,
     )
 
 
 def create_async_read_engine(process_name: ProcessName) -> AsyncEngine:
+    dsn = settings.get_postgres_read_dsn("asyncpg")
+    if dsn is None:
+        raise RuntimeError("Read replica DSN requested but not configured.")
     return _create_async_engine(
-        dsn=str(settings.get_postgres_read_dsn("asyncpg")),
+        dsn=str(dsn),
         application_name=f"{settings.ENV.value}.{process_name}",
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
+        ssl=settings.asyncpg_read_ssl,
     )
 
 

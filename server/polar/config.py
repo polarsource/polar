@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 from urllib.parse import ParseResult, parse_qsl, urlencode, urlparse, urlunparse
 
 from annotated_types import Ge
-from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
+from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn, PrivateAttr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from polar.kit.address import Address, CountryAlpha2
@@ -54,6 +54,9 @@ file_extension = ".exe" if os.name == "nt" else ""
 
 
 class Settings(BaseSettings):
+    _asyncpg_ssl: bool | None = PrivateAttr(default=None)
+    _asyncpg_read_ssl: bool | None = PrivateAttr(default=None)
+
     ENV: Environment = Environment.development
     SQLALCHEMY_DEBUG: bool = False
     POSTHOG_DEBUG: bool = False
@@ -388,10 +391,12 @@ class Settings(BaseSettings):
                 if not scheme.startswith("postgresql+"):
                     return override
 
-            parsed = self._apply_driver_specific_query_params(parsed, driver)
+            parsed, asyncpg_ssl = self._apply_driver_specific_query_params(parsed, driver)
+            if driver == "asyncpg":
+                self._asyncpg_ssl = asyncpg_ssl
             return urlunparse(parsed)
 
-        return str(
+        dsn = str(
             PostgresDsn.build(
                 scheme=f"postgresql+{driver}",
                 username=self.POSTGRES_USER,
@@ -401,6 +406,9 @@ class Settings(BaseSettings):
                 path=self.POSTGRES_DATABASE,
             )
         )
+        if driver == "asyncpg":
+            self._asyncpg_ssl = None
+        return dsn
 
     def is_read_replica_configured(self) -> bool:
         return all(
@@ -419,7 +427,7 @@ class Settings(BaseSettings):
         if not self.is_read_replica_configured():
             return None
 
-        return str(
+        dsn = str(
             PostgresDsn.build(
                 scheme=f"postgresql+{driver}",
                 username=self.POSTGRES_READ_USER,
@@ -429,6 +437,9 @@ class Settings(BaseSettings):
                 path=self.POSTGRES_READ_DATABASE,
             )
         )
+        if driver == "asyncpg":
+            self._asyncpg_read_ssl = None
+        return dsn
 
     def is_environment(self, environments: set[Environment]) -> bool:
         return self.ENV in environments
@@ -465,43 +476,44 @@ class Settings(BaseSettings):
             currency.lower(), self._DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE
         )
 
+    @property
+    def asyncpg_ssl(self) -> bool | None:
+        return self._asyncpg_ssl
+
+    @property
+    def asyncpg_read_ssl(self) -> bool | None:
+        return self._asyncpg_read_ssl
+
     def _apply_driver_specific_query_params(
         self, parsed: ParseResult, driver: Literal["asyncpg", "psycopg"]
-    ) -> ParseResult:
+    ) -> tuple[ParseResult, bool | None]:
         if not parsed.query:
-            return parsed
+            return parsed, None
 
         query_params = parse_qsl(parsed.query, keep_blank_values=True)
+        asyncpg_ssl: bool | None = None
 
         if driver == "asyncpg":
-            sslmode_value: str | None = None
             filtered_params: list[tuple[str, str]] = []
-
             for key, value in query_params:
                 if key.lower() == "sslmode":
-                    sslmode_value = value
+                    asyncpg_ssl = self._convert_sslmode_to_asyncpg_ssl(value)
                     continue
                 filtered_params.append((key, value))
-
-            if sslmode_value is not None:
-                ssl_value = self._convert_sslmode_to_asyncpg_ssl(sslmode_value)
-                if ssl_value is not None:
-                    filtered_params.append(("ssl", ssl_value))
-
             query_params = filtered_params
 
-        return parsed._replace(query=urlencode(query_params, doseq=True))
+        return parsed._replace(query=urlencode(query_params, doseq=True)), asyncpg_ssl
 
     @staticmethod
-    def _convert_sslmode_to_asyncpg_ssl(value: str) -> str | None:
+    def _convert_sslmode_to_asyncpg_ssl(value: str) -> bool | None:
         normalized = value.lower()
         if normalized == "disable":
-            return "false"
+            return False
         if normalized in {"allow", "prefer"}:
             # asyncpg doesn't support degraded SSL negotiation;
             # best-effort: fall back to default behaviour by dropping the option.
             return None
-        return "true"
+        return True
 
 
 settings = Settings()

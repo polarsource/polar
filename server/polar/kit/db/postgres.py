@@ -1,6 +1,7 @@
 import json
 from decimal import Decimal
 from typing import Any, NewType, TypeAlias
+from ssl import SSLContext
 
 from sqlalchemy import Engine
 from sqlalchemy import create_engine as _create_engine
@@ -52,12 +53,15 @@ def create_async_engine(
     pool_recycle: int | None = None,
     command_timeout: float | None = None,
     debug: bool = False,
+    ssl: bool | SSLContext | None = None,
 ) -> AsyncEngine:
     connect_args: dict[str, Any] = {}
     if application_name is not None:
         connect_args["server_settings"] = {"application_name": application_name}
     if command_timeout is not None:
         connect_args["command_timeout"] = command_timeout
+    if ssl is not None:
+        connect_args["ssl"] = ssl
 
     return _create_async_engine(
         dsn,

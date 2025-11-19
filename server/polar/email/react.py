@@ -1,3 +1,4 @@
+import os
 import subprocess
 from typing import TYPE_CHECKING
 
@@ -8,6 +9,12 @@ if TYPE_CHECKING:
 
 
 def render_email_template(email: "Email") -> str:
+    # Lightweight deployments (e.g. Vercel) can disable HTML email rendering
+    # entirely by setting POLAR_DISABLE_EMAIL_RENDERING. In that case we just
+    # return a simple placeholder HTML instead of calling the Node binary.
+    if os.getenv("POLAR_DISABLE_EMAIL_RENDERING", "").lower() in ("1", "true", "yes"):
+        return f"<html><body><pre>Email rendering is disabled.\nTemplate: {email.template}\nProps: {email.props.model_dump()}</pre></body></html>"
+
     process = subprocess.Popen(
         [
             settings.EMAIL_RENDERER_BINARY_PATH,

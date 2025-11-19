@@ -11,7 +11,6 @@ import { MiniButton } from '@/components/Shared/MiniButton'
 import PolarLogo from '@/components/Shared/PolarLogo'
 import { ThemedText } from '@/components/Shared/ThemedText'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
-import { isDemoSession } from '@/hooks/auth'
 import { useCustomers } from '@/hooks/polar/customers'
 import { useCreateNotificationRecipient } from '@/hooks/polar/notifications'
 import { useOrders } from '@/hooks/polar/orders'
@@ -99,13 +98,11 @@ export default function Index() {
   const { mutate: createNotificationRecipient } =
     useCreateNotificationRecipient()
 
-  const isDemo = isDemoSession()
-
   useEffect(() => {
-    if (expoPushToken && !isDemo) {
+    if (expoPushToken) {
       createNotificationRecipient(expoPushToken)
     }
-  }, [expoPushToken, createNotificationRecipient, isDemo])
+  }, [expoPushToken, createNotificationRecipient])
 
   async function onFetchUpdateAsync() {
     try {
@@ -118,17 +115,6 @@ export default function Index() {
       alert(`Error fetching latest update: ${error}`)
     }
   }
-
-  const tileAnimationProps = useCallback((delay: number) => {
-    return {
-      style: {
-        flex: 1,
-      },
-      from: { opacity: 0 },
-      animate: { opacity: 1 },
-      transition: { type: 'timing', duration: 500, delay },
-    } as const
-  }, [])
 
   return (
     <ScrollView
@@ -153,7 +139,7 @@ export default function Index() {
             >
               <PolarLogo size={36} />
               <View style={{ flexDirection: 'row', gap: 20 }}>
-                {!isDemo && <NotificationBadge />}
+                <NotificationBadge />
                 <Link href="/settings" asChild>
                   <TouchableOpacity activeOpacity={0.6}>
                     <MaterialIcons name="tune" size={24} color={colors.text} />

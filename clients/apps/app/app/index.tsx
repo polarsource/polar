@@ -15,7 +15,7 @@ import {
 } from 'react-native'
 
 export default function App() {
-  const { session, setSession } = useSession()
+  const { session } = useSession()
   const { colors } = useTheme()
   const { authRequest, authenticate } = useOAuth()
 
@@ -56,9 +56,6 @@ export default function App() {
             { backgroundColor: '#fff', borderRadius: 100 },
           ]}
           onPress={authenticate}
-          onLongPress={() => {
-            setSession(process.env.EXPO_PUBLIC_POLAR_DEMO_TOKEN ?? null)
-          }}
         >
           <Text style={[LoginStyle.buttonText, { color: colors.monochrome }]}>
             Get Started

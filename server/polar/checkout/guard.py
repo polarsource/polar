@@ -1,5 +1,7 @@
-from typing import TYPE_CHECKING, TypeIs
+from typing import TYPE_CHECKING
 from uuid import UUID
+
+from typing_extensions import TypeIs
 
 from polar.models import Checkout, Product, ProductPrice
 

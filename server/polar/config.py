@@ -3,6 +3,7 @@ from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Literal
+from urllib.parse import urlparse, urlunparse
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
@@ -358,9 +359,37 @@ class Settings(BaseSettings):
 
     @property
     def redis_url(self) -> str:
+        # Allow overriding via REDIS_URL for platforms that expose a single
+        # connection string (e.g. Vercel, Redis Cloud). This also enables
+        # password-authenticated Redis instances.
+        url = os.getenv("REDIS_URL")
+        if url:
+            return url
+
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg"]) -> str:
+        # Allow overriding via DATABASE_URL for platforms that
+        # expose a single connection string (e.g. Vercel).
+        override = os.getenv("DATABASE_URL")
+        if override:
+            parsed = urlparse(override)
+            scheme = parsed.scheme
+
+            # If the scheme already specifies a driver (e.g. postgresql+asyncpg),
+            # just use it as-is.
+            if "+" in scheme:
+                return override
+
+            # Normalize common postgres schemes to include the requested driver
+            if scheme in ("postgres", "postgresql", ""):
+                new_scheme = f"postgresql+{driver}"
+                parsed = parsed._replace(scheme=new_scheme)
+                return urlunparse(parsed)
+
+            # Fallback: return the raw override
+            return override
+
         return str(
             PostgresDsn.build(
                 scheme=f"postgresql+{driver}",

@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, cast
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, or_, select
+from sqlalchemy import Select, UnaryExpression, and_, asc, desc, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject
@@ -19,6 +19,8 @@ from polar.models import (
     Customer,
     Order,
     Organization,
+    Product,
+    ProductBenefit,
     Subscription,
 )
 from polar.models.benefit import BenefitType
@@ -35,6 +37,7 @@ class CustomerBenefitGrantSortProperty(StrEnum):
     granted_at = "granted_at"
     type = "type"
     organization = "organization"
+    product_benefit = "product_benefit"
 
 
 class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
@@ -50,7 +53,8 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         subscription_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CustomerBenefitGrantSortProperty]] = [
-            (CustomerBenefitGrantSortProperty.granted_at, True)
+            (CustomerBenefitGrantSortProperty.product_benefit, False),
+            (CustomerBenefitGrantSortProperty.granted_at, True),
         ],
     ) -> tuple[Sequence[BenefitGrant], int]:
         statement = self._get_readable_benefit_grant_statement(auth_subject).options(
@@ -63,23 +67,40 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         if benefit_id is not None:
             statement = statement.where(BenefitGrant.benefit_id.in_(benefit_id))
 
+        statement = (
+            statement.join(
+                Subscription,
+                onclause=Subscription.id == BenefitGrant.subscription_id,
+                isouter=True,
+            )
+            .join(
+                Order,
+                onclause=Order.id == BenefitGrant.order_id,
+                isouter=True,
+            )
+            .join(
+                Product,
+                onclause=or_(
+                    Product.id == Subscription.product_id,
+                    Product.id == Order.product_id,
+                ),
+                isouter=True,
+            )
+            .join(
+                ProductBenefit,
+                onclause=and_(
+                    ProductBenefit.product_id == Product.id,
+                    ProductBenefit.benefit_id == BenefitGrant.benefit_id,
+                ),
+                isouter=True,
+            )
+        )
+
         if checkout_id is not None:
-            statement = (
-                statement.join(
-                    Subscription,
-                    onclause=Subscription.id == BenefitGrant.subscription_id,
-                    isouter=True,
-                )
-                .join(
-                    Order,
-                    onclause=Order.id == BenefitGrant.order_id,
-                    isouter=True,
-                )
-                .where(
-                    or_(
-                        Subscription.checkout_id.in_(checkout_id),
-                        Order.checkout_id.in_(checkout_id),
-                    )
+            statement = statement.where(
+                or_(
+                    Subscription.checkout_id.in_(checkout_id),
+                    Order.checkout_id.in_(checkout_id),
                 )
             )
 
@@ -100,6 +121,8 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 order_by_clauses.append(clause_function(Benefit.type))
             elif criterion == CustomerBenefitGrantSortProperty.organization:
                 order_by_clauses.append(clause_function(Organization.slug))
+            elif criterion == CustomerBenefitGrantSortProperty.product_benefit:
+                order_by_clauses.append(clause_function(ProductBenefit.order))
         statement = statement.order_by(*order_by_clauses)
 
         return await paginate(session, statement, pagination=pagination)

@@ -83,6 +83,7 @@ export const useEventHierarchyStats = (
   >['interval'],
   aggregateFields: string[] = ['cost.amount'],
   sorting?: operations['events:list_statistics_timeseries']['parameters']['query']['sorting'],
+  eventTypeId?: string,
   enabled: boolean = true,
 ) => {
   return useQuery({
@@ -95,6 +96,7 @@ export const useEventHierarchyStats = (
         startTimestamp,
         endTimestamp,
         interval,
+        event_type_id: eventTypeId,
       },
     ],
     queryFn: () =>
@@ -108,6 +110,7 @@ export const useEventHierarchyStats = (
               end_timestamp: endTimestamp.toISOString(),
               interval,
               ...(sorting ? { sorting } : {}),
+              ...(eventTypeId ? { event_type_id: eventTypeId } : {}),
             },
           },
         }),

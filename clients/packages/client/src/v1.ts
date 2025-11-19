@@ -15421,6 +15421,12 @@ export interface components {
        */
       label: string
       /**
+       * Event Type Id
+       * Format: uuid4
+       * @description The ID of the event type
+       */
+      event_type_id: string
+      /**
        * Occurrences
        * @description Number of root events with this name (i.e., number of traces).
        */
@@ -32366,6 +32372,8 @@ export interface operations {
           | components['schemas']['EventSource']
           | components['schemas']['EventSource'][]
           | null
+        /** @description Filter by event type ID. */
+        event_type_id?: string | null
         /** @description Query to filter events. */
         query?: string | null
         /** @description Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields. */

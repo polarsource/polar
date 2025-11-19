@@ -131,6 +131,7 @@ class EventService:
         meter_id: uuid.UUID | None = None,
         name: Sequence[str] | None = None,
         source: Sequence[EventSource] | None = None,
+        event_type_id: uuid.UUID | None = None,
         metadata: MetadataQuery | None = None,
         sorting: Sequence[Sorting[EventSortProperty]] = (
             (EventSortProperty.timestamp, True),
@@ -185,6 +186,9 @@ class EventService:
         if source is not None:
             statement = statement.where(Event.source.in_(source))
 
+        if event_type_id is not None:
+            statement = statement.where(Event.event_type_id == event_type_id)
+
         if query is not None:
             statement = statement.where(
                 or_(
@@ -233,6 +237,7 @@ class EventService:
         meter_id: uuid.UUID | None = None,
         name: Sequence[str] | None = None,
         source: Sequence[EventSource] | None = None,
+        event_type_id: uuid.UUID | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[EventSortProperty]] = (
@@ -257,6 +262,7 @@ class EventService:
             meter_id=meter_id,
             name=name,
             source=source,
+            event_type_id=event_type_id,
             metadata=metadata,
             sorting=sorting,
             query=query,
@@ -304,6 +310,7 @@ class EventService:
         meter_id: uuid.UUID | None = None,
         name: Sequence[str] | None = None,
         source: Sequence[EventSource] | None = None,
+        event_type_id: uuid.UUID | None = None,
         metadata: MetadataQuery | None = None,
         sorting: Sequence[Sorting[EventSortProperty]] = (
             (EventSortProperty.timestamp, True),
@@ -330,6 +337,7 @@ class EventService:
             meter_id=meter_id,
             name=name,
             source=source,
+            event_type_id=event_type_id,
             metadata=metadata,
             sorting=sorting,
             query=query,

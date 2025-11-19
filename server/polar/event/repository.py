@@ -526,6 +526,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 select(
                     bucketed_subquery.c.bucket.label("timestamp"),
                     bucketed_subquery.c.root_name.label("name"),
+                    event_type.id.label("event_type_id"),
                     event_type.label.label("label"),
                     func.count(
                         getattr(
@@ -579,6 +580,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             stats_query = (
                 select(
                     per_root_subquery.c.root_name.label("name"),
+                    event_type.id.label("event_type_id"),
                     event_type.label.label("label"),
                     func.count(per_root_subquery.c.root_id).label("occurrences"),
                     *aggregation_exprs,
@@ -632,6 +634,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             row_dict = {
                 "name": row.name,
                 "label": row.label,
+                "event_type_id": row.event_type_id,
                 "occurrences": row.occurrences,
                 "totals": {
                     field.replace(".", "_"): getattr(

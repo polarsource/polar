@@ -2,7 +2,7 @@ from collections.abc import Sequence
 
 from fastapi import Depends, Query
 from fastapi.exceptions import RequestValidationError
-from pydantic import AwareDatetime, ValidationError
+from pydantic import UUID4, AwareDatetime, ValidationError
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
@@ -81,6 +81,12 @@ async def list(
     source: MultipleQueryFilter[EventSource] | None = Query(
         None, title="Source Filter", description="Filter by event source."
     ),
+    event_type_id: UUID4 | None = Query(
+        None,
+        title="Event Type ID Filter",
+        description="Filter by event type ID.",
+        include_in_schema=False,
+    ),
     query: str | None = Query(
         None, title="Query", description="Query to filter events."
     ),
@@ -132,6 +138,7 @@ async def list(
         meter_id=meter_id,
         name=name,
         source=source,
+        event_type_id=event_type_id,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,
@@ -191,6 +198,11 @@ async def list_statistics_timeseries(
     ),
     source: MultipleQueryFilter[EventSource] | None = Query(
         None, title="Source Filter", description="Filter by event source."
+    ),
+    event_type_id: UUID4 | None = Query(
+        None,
+        title="Event Type ID Filter",
+        description="Filter by event type ID.",
     ),
     query: str | None = Query(
         None, title="Query", description="Query to filter events."
@@ -255,6 +267,7 @@ async def list_statistics_timeseries(
         meter_id=meter_id,
         name=name,
         source=source,
+        event_type_id=event_type_id,
         metadata=metadata,
         query=query,
         aggregate_fields=tuple(aggregate_fields),

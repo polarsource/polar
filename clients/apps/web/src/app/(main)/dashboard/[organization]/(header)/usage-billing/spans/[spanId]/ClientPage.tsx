@@ -17,12 +17,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { endOfToday, format, subMonths } from 'date-fns'
 import { useRouter } from 'next/navigation'
-import {
-  parseAsIsoDateTime,
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryState,
-} from 'nuqs'
+import { parseAsIsoDateTime, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -38,7 +33,6 @@ export default function SpanDetailPage({
   spanId,
 }: SpanDetailPageProps) {
   const router = useRouter()
-  const [eventName] = useQueryState('eventName', parseAsString)
 
   const [startDate, setStartDate] = useQueryState(
     'startDate',
@@ -64,17 +58,14 @@ export default function SpanDetailPage({
     isFetching,
     fetchNextPage,
     hasNextPage,
-  } = useInfiniteEvents(
-    organization.id,
-    {
-      name: eventName ? [eventName] : null,
-      limit: PAGE_SIZE,
-      sorting: ['-timestamp'],
-      start_timestamp: startDate.toISOString(),
-      end_timestamp: endDate.toISOString(),
-    },
-    !!eventName,
-  )
+  } = useInfiniteEvents(organization.id, {
+    // @ts-expect-error - event_type_id is intentionally excluded from public schema
+    event_type_id: spanId,
+    limit: PAGE_SIZE,
+    sorting: ['-timestamp'],
+    start_timestamp: startDate.toISOString(),
+    end_timestamp: endDate.toISOString(),
+  })
 
   const { data: hierarchyStats } = useEventHierarchyStats(
     organization.id,
@@ -83,7 +74,8 @@ export default function SpanDetailPage({
     interval,
     ['_cost.amount'],
     ['-occurrences'],
-    !!eventName,
+    spanId,
+    true,
   )
 
   const events = useMemo(() => {
@@ -91,10 +83,11 @@ export default function SpanDetailPage({
     return eventsData.pages.flatMap((page) => page.items)
   }, [eventsData])
 
-  const eventDisplayName = useEventDisplayName(eventName ?? '')
+  const firstStat = hierarchyStats?.totals?.[0]
+  const eventDisplayName = useEventDisplayName(firstStat?.name ?? '')
 
   const costMetrics = useMemo(() => {
-    if (!hierarchyStats?.totals || !eventName) {
+    if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
       return {
         totalOccurrences: 0,
         totalCost: 0,
@@ -102,15 +95,7 @@ export default function SpanDetailPage({
       }
     }
 
-    const stat = hierarchyStats.totals.find((s) => s.name === eventName)
-    if (!stat) {
-      return {
-        totalOccurrences: 0,
-        totalCost: 0,
-        averageCost: 0,
-      }
-    }
-
+    const stat = hierarchyStats.totals[0]
     const totalOccurrences = stat.occurrences || 0
     const totalCost = parseFloat(stat.totals?.['_cost_amount'] || '0')
     const averageCost = parseFloat(stat.averages?.['_cost_amount'] || '0')
@@ -120,14 +105,15 @@ export default function SpanDetailPage({
       totalCost,
       averageCost,
     }
-  }, [hierarchyStats, eventName])
+  }, [hierarchyStats])
 
   const chartData = useMemo(() => {
-    if (!hierarchyStats?.periods || !eventName) return []
+    if (!hierarchyStats?.periods || hierarchyStats.periods.length === 0)
+      return []
 
     return hierarchyStats.periods
       .map((period) => {
-        const stat = period.stats.find((s) => s.name === eventName)
+        const stat = period.stats[0]
         if (!stat) return null
 
         const average = parseFloat(stat.averages?.['_cost_amount'] || '0')
@@ -145,7 +131,7 @@ export default function SpanDetailPage({
         }
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)
-  }, [hierarchyStats, eventName])
+  }, [hierarchyStats])
 
   const dateRange = useMemo(
     () => ({ from: startDate, to: endDate }),
@@ -180,12 +166,12 @@ export default function SpanDetailPage({
     [hasScrolled],
   )
 
-  if (!eventName) {
+  if (!spanId) {
     return (
       <DashboardBody title="Span">
         <div className="flex flex-col gap-y-4">
           <p className="dark:text-polar-500 text-gray-500">
-            No event name provided
+            No span ID provided
           </p>
         </div>
       </DashboardBody>
@@ -238,10 +224,9 @@ export default function SpanDetailPage({
                       size="small"
                       className="justify-between px-3"
                       inactiveClassName="text-gray-500 dark:text-polar-500"
-                      selected={eventName === stat.name}
+                      selected={spanId === stat.event_type_id}
                       onSelect={() => {
                         const params = new URLSearchParams()
-                        params.set('eventName', stat.name)
                         if (startDate) {
                           params.set('startDate', startDate.toISOString())
                         }
@@ -249,9 +234,16 @@ export default function SpanDetailPage({
                           params.set('endDate', endDate.toISOString())
                         }
                         params.set('interval', interval)
-                        router.push(
-                          `/dashboard/${organization.slug}/usage-billing/spans/${spanId}?${params}`,
-                        )
+
+                        if (spanId === stat.event_type_id) {
+                          router.push(
+                            `/dashboard/${organization.slug}/usage-billing/spans?${params}`,
+                          )
+                        } else {
+                          router.push(
+                            `/dashboard/${organization.slug}/usage-billing/spans/${spanId}?${params}`,
+                          )
+                        }
                       }}
                     >
                       <span className="truncate">{stat.name}</span>

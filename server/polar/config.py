@@ -25,7 +25,15 @@ class EmailSender(StrEnum):
 
 
 def _validate_email_renderer_binary_path(value: Path) -> Path:
-    if not value.exists() and not value.is_file():
+    # Allow disabling email rendering entirely via environment variable.
+    # This is useful for lightweight deployments (e.g. Vercel) where we
+    # don't want to ship the react-email binary. In that case we keep the
+    # path value but skip existence checks; the renderer code will handle
+    # the disabled mode explicitly.
+    if os.getenv("POLAR_DISABLE_EMAIL_RENDERING", "").lower() in ("1", "true", "yes"):
+        return value
+
+    if not value.exists() or not value.is_file():
         raise ValueError(
             f"""
         The provided email renderer binary path {value} is not a valid file path

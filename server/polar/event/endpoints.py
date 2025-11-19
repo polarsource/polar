@@ -5,10 +5,11 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import AwareDatetime, ValidationError
 
 from polar.customer.schemas.customer import CustomerID
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.time_queries import TimeInterval, is_under_limits
 from polar.meter.filter import Filter
 from polar.meter.schemas import MeterID
 from polar.models import Event
@@ -26,7 +27,7 @@ from .schemas import (
     EventsIngest,
     EventsIngestResponse,
     EventTypeAdapter,
-    RootEventStatistics,
+    ListStatisticsTimeseries,
 )
 from .service import event as event_service
 
@@ -148,27 +149,28 @@ async def list(
 
 
 @router.get(
-    "/hierarchy-stats",
-    summary="Get Hierarchy Statistics",
+    "/statistics/timeseries",
+    summary="List statistics timeseries",
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
     tags=[APITag.private],
+    response_model=ListStatisticsTimeseries,
 )
-async def get_hierarchy_stats_endpoint(
+async def list_statistics_timeseries(
     auth_subject: auth.EventRead,
     metadata: MetadataQuery,
-    hierarchy_sorting: sorting.RootEventStatisticsSorting,
+    hierarchy_sorting: sorting.EventStatisticsSorting,
+    start_timestamp: AwareDatetime = Query(
+        ...,
+        description="Start timestamp.",
+    ),
+    end_timestamp: AwareDatetime = Query(..., description="End timestamp."),
+    interval: TimeInterval = Query(..., description="Interval between two timestamps."),
     filter: str | None = Query(
         None,
         description=(
             "Filter events following filter clauses. "
             "JSON string following the same schema a meter filter clause. "
         ),
-    ),
-    start_timestamp: AwareDatetime | None = Query(
-        None, description="Filter events after this timestamp."
-    ),
-    end_timestamp: AwareDatetime | None = Query(
-        None, description="Filter events before this timestamp."
     ),
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
@@ -194,18 +196,35 @@ async def get_hierarchy_stats_endpoint(
         None, title="Query", description="Query to filter events."
     ),
     aggregate_fields: Sequence[str] = Query(
-        default=["cost.amount"],
-        description="Metadata field paths to aggregate (e.g., 'cost.amount', 'duration_ns'). Use dot notation for nested fields.",
+        default=["_cost.amount"],
+        description="Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
     ),
     session: AsyncSession = Depends(get_db_session),
-) -> Sequence[RootEventStatistics]:
+) -> ListStatisticsTimeseries:
     """
-    Get aggregate statistics grouped by root event name.
+    Get aggregate statistics grouped by root event name over time.
 
-    Returns sum, average, p95, and p99 for specified fields across all events
-    in hierarchies with the same root event name.
+    Returns time series data with periods and totals, similar to the metrics endpoint.
+    Each period contains stats grouped by event name, and totals show overall stats
+    across all periods.
     """
+    # Validate interval limits
+    if not is_under_limits(start_timestamp, end_timestamp, interval):
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("query",),
+                    "msg": (
+                        "The interval is too big. "
+                        "Try to change the interval or reduce the date range."
+                    ),
+                    "type": "value_error",
+                    "input": (start_timestamp, end_timestamp, interval),
+                }
+            ]
+        )
 
+    # Parse filter if provided
     parsed_filter: Filter | None = None
     if filter is not None:
         try:
@@ -223,12 +242,13 @@ async def get_hierarchy_stats_endpoint(
             ]
         )
 
-    results = await event_service.get_hierarchy_stats(
+    return await event_service.list_statistics_timeseries(
         session,
         auth_subject,
-        filter=parsed_filter,
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
+        interval=interval,
+        filter=parsed_filter,
         organization_id=organization_id,
         customer_id=customer_id,
         external_customer_id=external_customer_id,
@@ -240,8 +260,6 @@ async def get_hierarchy_stats_endpoint(
         aggregate_fields=tuple(aggregate_fields),
         hierarchy_stats_sorting=hierarchy_sorting,
     )
-
-    return [RootEventStatistics(**result) for result in results]
 
 
 @router.get(

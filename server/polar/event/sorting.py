@@ -34,7 +34,7 @@ EventNamesSorting = Annotated[
 ]
 
 
-class RootEventStatisticsSortProperty(StrEnum):
+class EventStatisticsSortProperty(StrEnum):
     event_name = "name"  # `name` is a reserved word, so we use `event_name`
     occurrences = "occurrences"
     total = "total"
@@ -43,11 +43,11 @@ class RootEventStatisticsSortProperty(StrEnum):
     p99 = "p99"
 
 
-RootEventStatisticsSorting = Annotated[
-    list[Sorting[RootEventStatisticsSortProperty]],
+EventStatisticsSorting = Annotated[
+    list[Sorting[EventStatisticsSortProperty]],
     Depends(
         SortingGetter(
-            RootEventStatisticsSortProperty,
+            EventStatisticsSortProperty,
             ["-total"],
         )
     ),

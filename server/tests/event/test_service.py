@@ -19,6 +19,7 @@ from polar.event.sorting import EventNamesSortProperty
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
+from polar.kit.time_queries import TimeInterval
 from polar.kit.utils import utc_now
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Customer, EventType, Organization, User, UserOrganization
@@ -735,12 +736,12 @@ class TestListWithAggregateCosts:
 
 
 @pytest.mark.asyncio
-class TestGetHierarchyStats:
+class TestListStatisticsTimeseries:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_hierarchy_stats(
+    async def test_hierarchy_stats_timeseries(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -756,76 +757,153 @@ class TestGetHierarchyStats:
         )
         await save_fixture(request_event_type)
 
-        root1 = await create_event(
+        now = utc_now()
+        one_hour_ago = now - timedelta(hours=1)
+        two_hours_ago = now - timedelta(hours=2)
+
+        root1_p0 = await create_event(
             save_fixture,
             organization=organization,
             customer=customer,
             name="request",
+            timestamp=two_hours_ago,
             metadata={"_cost": {"amount": 10, "currency": "usd"}},
         )
-
-        child1 = await create_event(
+        child1_p0 = await create_event(
             save_fixture,
             organization=organization,
             customer=customer,
             name="child",
-            parent_id=root1.id,
+            parent_id=root1_p0.id,
+            timestamp=two_hours_ago,
             metadata={"_cost": {"amount": 5, "currency": "usd"}},
         )
 
-        child2 = await create_event(
-            save_fixture,
-            organization=organization,
-            customer=customer,
-            name="child",
-            parent_id=root1.id,
-            metadata={"_cost": {"amount": 3, "currency": "usd"}},
-        )
-
-        root2 = await create_event(
+        root2_p0 = await create_event(
             save_fixture,
             organization=organization,
             customer=customer,
             name="request",
+            timestamp=two_hours_ago,
             metadata={"_cost": {"amount": 20, "currency": "usd"}},
         )
-
-        child3 = await create_event(
+        child2_p0 = await create_event(
             save_fixture,
             organization=organization,
             customer=customer,
             name="child",
-            parent_id=root2.id,
-            metadata={"_cost": {"amount": 7, "currency": "usd"}},
+            parent_id=root2_p0.id,
+            timestamp=two_hours_ago,
+            metadata={"_cost": {"amount": 10, "currency": "usd"}},
         )
 
-        stats = await event_service.get_hierarchy_stats(
+        root1_p1 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="request",
+            timestamp=one_hour_ago,
+            metadata={"_cost": {"amount": 30, "currency": "usd"}},
+        )
+        child1_p1 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="child",
+            parent_id=root1_p1.id,
+            timestamp=one_hour_ago,
+            metadata={"_cost": {"amount": 15, "currency": "usd"}},
+        )
+
+        root2_p1 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="request",
+            timestamp=one_hour_ago,
+            metadata={"_cost": {"amount": 40, "currency": "usd"}},
+        )
+        child2_p1 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            name="child",
+            parent_id=root2_p1.id,
+            timestamp=one_hour_ago,
+            metadata={"_cost": {"amount": 20, "currency": "usd"}},
+        )
+
+        result = await event_service.list_statistics_timeseries(
             session,
             auth_subject,
+            start_timestamp=two_hours_ago - timedelta(minutes=30),
+            end_timestamp=now,
+            interval=TimeInterval.hour,
             aggregate_fields=("_cost.amount",),
         )
 
-        event1 = [root1, child1, child2]
-        event2 = [root2, child3]
-        event1_cost = sum([event.user_metadata["_cost"]["amount"] for event in event1])
-        event2_cost = sum([event.user_metadata["_cost"]["amount"] for event in event2])
-        total_cost = event1_cost + event2_cost
+        p0_event1 = [root1_p0, child1_p0]
+        p0_event2 = [root2_p0, child2_p0]
+        p0_event1_cost = sum([e.user_metadata["_cost"]["amount"] for e in p0_event1])
+        p0_event2_cost = sum([e.user_metadata["_cost"]["amount"] for e in p0_event2])
+        p0_total_cost = p0_event1_cost + p0_event2_cost
 
-        assert len(stats) == 1
-        assert stats[0]["name"] == "request"
-        assert stats[0]["label"] == "API Request"
-        assert stats[0]["occurrences"] == 2
-        assert stats[0]["totals"]["_cost_amount"] == total_cost
-        assert stats[0]["averages"]["_cost_amount"] == total_cost / 2
-        # percentile_cont interpolates between values
-        assert float(stats[0]["p50"]["_cost_amount"]) == pytest.approx(
-            event1_cost + 0.5 * (event2_cost - event1_cost)
+        p1_event1 = [root1_p1, child1_p1]
+        p1_event2 = [root2_p1, child2_p1]
+        p1_event1_cost = sum([e.user_metadata["_cost"]["amount"] for e in p1_event1])
+        p1_event2_cost = sum([e.user_metadata["_cost"]["amount"] for e in p1_event2])
+        p1_total_cost = p1_event1_cost + p1_event2_cost
+
+        all_costs = [p0_event1_cost, p0_event2_cost, p1_event1_cost, p1_event2_cost]
+        total_cost = sum(all_costs)
+
+        assert len(result.periods) == 3
+
+        period_0_stats = result.periods[0].stats
+        assert len(period_0_stats) == 1
+        assert period_0_stats[0].name == "request"
+        assert period_0_stats[0].occurrences == 2
+        assert period_0_stats[0].totals["_cost_amount"] == p0_total_cost
+        assert period_0_stats[0].averages["_cost_amount"] == p0_total_cost / 2
+        assert float(period_0_stats[0].p50["_cost_amount"]) == pytest.approx(
+            p0_event1_cost + 0.5 * (p0_event2_cost - p0_event1_cost)
         )
-        assert float(stats[0]["p95"]["_cost_amount"]) == pytest.approx(
-            event1_cost + 0.95 * (event2_cost - event1_cost)
+        assert float(period_0_stats[0].p95["_cost_amount"]) == pytest.approx(
+            p0_event1_cost + 0.95 * (p0_event2_cost - p0_event1_cost)
         )
-        assert float(stats[0]["p99"]["_cost_amount"]) == pytest.approx(
-            event1_cost + 0.99 * (event2_cost - event1_cost)
+        assert float(period_0_stats[0].p99["_cost_amount"]) == pytest.approx(
+            p0_event1_cost + 0.99 * (p0_event2_cost - p0_event1_cost)
+        )
+
+        period_1_stats = result.periods[1].stats
+        assert len(period_1_stats) == 1
+        assert period_1_stats[0].name == "request"
+        assert period_1_stats[0].occurrences == 2
+        assert period_1_stats[0].totals["_cost_amount"] == p1_total_cost
+        assert period_1_stats[0].averages["_cost_amount"] == p1_total_cost / 2
+        assert float(period_1_stats[0].p50["_cost_amount"]) == pytest.approx(
+            p1_event1_cost + 0.5 * (p1_event2_cost - p1_event1_cost)
+        )
+        assert float(period_1_stats[0].p95["_cost_amount"]) == pytest.approx(
+            p1_event1_cost + 0.95 * (p1_event2_cost - p1_event1_cost)
+        )
+        assert float(period_1_stats[0].p99["_cost_amount"]) == pytest.approx(
+            p1_event1_cost + 0.99 * (p1_event2_cost - p1_event1_cost)
+        )
+
+        assert len(result.totals) == 1
+        assert result.totals[0].occurrences == 4
+        assert result.totals[0].totals["_cost_amount"] == total_cost
+        assert result.totals[0].averages["_cost_amount"] == total_cost / 4
+        sorted_costs = sorted(all_costs)
+        assert float(result.totals[0].p50["_cost_amount"]) == pytest.approx(
+            sorted_costs[1] + 0.5 * (sorted_costs[2] - sorted_costs[1])
+        )
+        assert float(result.totals[0].p95["_cost_amount"]) == pytest.approx(
+            sorted_costs[0] + 0.95 * (sorted_costs[3] - sorted_costs[0])
+        )
+        assert float(result.totals[0].p99["_cost_amount"]) == pytest.approx(
+            sorted_costs[0] + 0.99 * (sorted_costs[3] - sorted_costs[0])
         )
 
 

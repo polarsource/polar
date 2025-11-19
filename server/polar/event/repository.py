@@ -387,6 +387,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         statement: Select[tuple[Event]],
         aggregate_fields: Sequence[str] = ("cost.amount",),
         sorting: Sequence[tuple[str, bool]] = (("total", True),),
+        timestamp_series: Any = None,
     ) -> Sequence[dict[str, Any]]:
         """
         Get aggregate statistics grouped by root event name across all hierarchies.
@@ -401,9 +402,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             statement: Base query for root events to include
             aggregate_fields: List of user_metadata field paths to aggregate
             sorting: List of (property, is_desc) tuples for sorting
+            timestamp_series: Optional CTE for time bucketing. If provided, stats are grouped by timestamp.
 
         Returns:
-            List of dicts containing name, label, occurrences, and statistics for each field
+            List of dicts containing name, label, occurrences, and statistics for each field.
+            If timestamp_series is provided, also includes timestamp for each row.
         """
         root_events_subquery = statement.where(
             and_(Event.parent_id.is_(None), Event.source == EventSource.user)
@@ -412,8 +415,15 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         all_events = aliased(Event, name="all_events")
 
         per_root_select_exprs: list[ColumnElement[Any]] = [
-            literal_column("root_event.id").label("root_id")
+            literal_column("root_event.id").label("root_id"),
+            literal_column("root_event.name").label("root_name"),
+            literal_column("root_event.organization_id").label("root_org_id"),
         ]
+
+        if timestamp_series is not None:
+            per_root_select_exprs.append(
+                literal_column("root_event.timestamp").label("root_timestamp")
+            )
 
         for field_path in aggregate_fields:
             field_parts = field_path.split(".")
@@ -428,65 +438,169 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             sum_expr = func.sum(field_expr).label(f"{safe_field_name}_total")
             per_root_select_exprs.append(sum_expr)
 
+        group_by_exprs: list[ColumnElement[Any]] = [
+            literal_column("root_event.id"),
+            literal_column("root_event.name"),
+            literal_column("root_event.organization_id"),
+        ]
+        if timestamp_series is not None:
+            group_by_exprs.append(literal_column("root_event.timestamp"))
+
         per_root_query = (
             select(*per_root_select_exprs)
             .select_from(root_events_subquery.alias("root_event"))
             .join(all_events, all_events.root_id == literal_column("root_event.id"))
-            .group_by(literal_column("root_event.id"))
+            .group_by(*group_by_exprs)
         )
 
         per_root_subquery = per_root_query.subquery("per_root_totals")
 
-        root_event = aliased(Event, name="root_event_final")
         event_type = aliased(EventType, name="event_type")
 
-        aggregation_exprs = []
-        for field_path in aggregate_fields:
-            safe_field_name = field_path.replace(".", "_")
-            total_col: ColumnElement[Any] = literal_column(f"{safe_field_name}_total")
+        if timestamp_series is not None:
+            timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-            aggregation_exprs.extend(
-                [
-                    func.sum(total_col).label(f"{safe_field_name}_sum"),
-                    func.avg(func.coalesce(total_col, 0)).label(
-                        f"{safe_field_name}_avg"
+            timestamp_with_next = (
+                select(
+                    timestamp_column.label("bucket_start"),
+                    func.lead(timestamp_column)
+                    .over(order_by=timestamp_column)
+                    .label("bucket_end"),
+                ).select_from(timestamp_series)
+            ).subquery("timestamp_with_next")
+
+            bucketed_columns = [
+                timestamp_with_next.c.bucket_start.label("bucket"),
+                per_root_subquery.c.root_name,
+                per_root_subquery.c.root_org_id,
+            ]
+            for field_path in aggregate_fields:
+                safe_field_name = field_path.replace(".", "_")
+                bucketed_columns.append(
+                    getattr(per_root_subquery.c, f"{safe_field_name}_total")
+                )
+
+            bucketed_subquery = (
+                select(*bucketed_columns)
+                .select_from(timestamp_with_next)
+                .outerjoin(
+                    per_root_subquery,
+                    and_(
+                        per_root_subquery.c.root_timestamp
+                        >= timestamp_with_next.c.bucket_start,
+                        or_(
+                            timestamp_with_next.c.bucket_end.is_(None),
+                            per_root_subquery.c.root_timestamp
+                            < timestamp_with_next.c.bucket_end,
+                        ),
                     ),
-                    func.percentile_cont(0.5)
-                    .within_group(func.coalesce(total_col, 0))
-                    .label(f"{safe_field_name}_p50"),
-                    func.percentile_cont(0.95)
-                    .within_group(func.coalesce(total_col, 0))
-                    .label(f"{safe_field_name}_p95"),
-                    func.percentile_cont(0.99)
-                    .within_group(func.coalesce(total_col, 0))
-                    .label(f"{safe_field_name}_p99"),
-                ]
-            )
+                )
+            ).subquery("bucketed")
 
-        stats_query = (
-            select(
-                root_event.name.label("name"),
-                event_type.label.label("label"),
-                func.count(literal_column("per_root_totals.root_id")).label(
-                    "occurrences"
-                ),
-                *aggregation_exprs,
+            aggregation_exprs = []
+            for field_path in aggregate_fields:
+                safe_field_name = field_path.replace(".", "_")
+                total_col: ColumnElement[Any] = getattr(
+                    bucketed_subquery.c, f"{safe_field_name}_total"
+                )
+
+                aggregation_exprs.extend(
+                    [
+                        func.sum(total_col).label(f"{safe_field_name}_sum"),
+                        func.avg(func.coalesce(total_col, 0)).label(
+                            f"{safe_field_name}_avg"
+                        ),
+                        func.percentile_cont(0.5)
+                        .within_group(func.coalesce(total_col, 0))
+                        .label(f"{safe_field_name}_p50"),
+                        func.percentile_cont(0.95)
+                        .within_group(func.coalesce(total_col, 0))
+                        .label(f"{safe_field_name}_p95"),
+                        func.percentile_cont(0.99)
+                        .within_group(func.coalesce(total_col, 0))
+                        .label(f"{safe_field_name}_p99"),
+                    ]
+                )
+
+            stats_query = (
+                select(
+                    bucketed_subquery.c.bucket.label("timestamp"),
+                    bucketed_subquery.c.root_name.label("name"),
+                    event_type.label.label("label"),
+                    func.count(
+                        getattr(
+                            bucketed_subquery.c,
+                            f"{aggregate_fields[0].replace('.', '_')}_total",
+                        )
+                    ).label("occurrences"),
+                    *aggregation_exprs,
+                )
+                .select_from(bucketed_subquery)
+                .outerjoin(
+                    event_type,
+                    and_(
+                        event_type.name == bucketed_subquery.c.root_name,
+                        event_type.organization_id == bucketed_subquery.c.root_org_id,
+                    ),
+                )
+                .group_by(
+                    bucketed_subquery.c.bucket,
+                    bucketed_subquery.c.root_name,
+                    event_type.id,
+                    event_type.label,
+                )
             )
-            .select_from(per_root_subquery)
-            .join(
-                root_event, root_event.id == literal_column("per_root_totals.root_id")
+        else:
+            aggregation_exprs = []
+            for field_path in aggregate_fields:
+                safe_field_name = field_path.replace(".", "_")
+                total_col_ref: ColumnElement[Any] = literal_column(
+                    f"{safe_field_name}_total"
+                )
+
+                aggregation_exprs.extend(
+                    [
+                        func.sum(total_col_ref).label(f"{safe_field_name}_sum"),
+                        func.avg(func.coalesce(total_col_ref, 0)).label(
+                            f"{safe_field_name}_avg"
+                        ),
+                        func.percentile_cont(0.5)
+                        .within_group(func.coalesce(total_col_ref, 0))
+                        .label(f"{safe_field_name}_p50"),
+                        func.percentile_cont(0.95)
+                        .within_group(func.coalesce(total_col_ref, 0))
+                        .label(f"{safe_field_name}_p95"),
+                        func.percentile_cont(0.99)
+                        .within_group(func.coalesce(total_col_ref, 0))
+                        .label(f"{safe_field_name}_p99"),
+                    ]
+                )
+
+            stats_query = (
+                select(
+                    per_root_subquery.c.root_name.label("name"),
+                    event_type.label.label("label"),
+                    func.count(per_root_subquery.c.root_id).label("occurrences"),
+                    *aggregation_exprs,
+                )
+                .select_from(per_root_subquery)
+                .outerjoin(
+                    event_type,
+                    and_(
+                        event_type.name == per_root_subquery.c.root_name,
+                        event_type.organization_id == per_root_subquery.c.root_org_id,
+                    ),
+                )
+                .group_by(
+                    per_root_subquery.c.root_name, event_type.id, event_type.label
+                )
             )
-            .join(
-                event_type,
-                and_(
-                    event_type.name == root_event.name,
-                    event_type.organization_id == root_event.organization_id,
-                ),
-            )
-            .group_by(root_event.name, event_type.label)
-        )
 
         order_by_clauses: list[UnaryExpression[Any]] = []
+
+        if timestamp_series is not None:
+            order_by_clauses.append(asc(text("timestamp")))
+
         for criterion, is_desc_sort in sorting:
             clause_function = desc if is_desc_sort else asc
             if criterion == "name":
@@ -513,8 +627,9 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(stats_query)
         rows = result.all()
 
-        return [
-            {
+        result_list = []
+        for row in rows:
+            row_dict = {
                 "name": row.name,
                 "label": row.label,
                 "occurrences": row.occurrences,
@@ -554,5 +669,10 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                     for field in aggregate_fields
                 },
             }
-            for row in rows
-        ]
+
+            if timestamp_series is not None:
+                row_dict["timestamp"] = row.timestamp
+
+            result_list.append(row_dict)
+
+        return result_list

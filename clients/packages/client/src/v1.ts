@@ -3421,7 +3421,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/events/hierarchy-stats': {
+  '/v1/events/statistics/timeseries': {
     parameters: {
       query?: never
       header?: never
@@ -3429,15 +3429,16 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get Hierarchy Statistics
-     * @description Get aggregate statistics grouped by root event name.
+     * List statistics timeseries
+     * @description Get aggregate statistics grouped by root event name over time.
      *
-     *     Returns sum, average, p95, and p99 for specified fields across all events
-     *     in hierarchies with the same root event name.
+     *     Returns time series data with periods and totals, similar to the metrics endpoint.
+     *     Each period contains stats grouped by event name, and totals show overall stats
+     *     across all periods.
      *
      *     **Scopes**: `events:read` `events:write`
      */
-    get: operations['events:get_hierarchy_stats_endpoint']
+    get: operations['events:list_statistics_timeseries']
     put?: never
     post?: never
     delete?: never
@@ -15404,6 +15405,79 @@ export interface components {
      * @enum {string}
      */
     EventSource: 'system' | 'user'
+    /**
+     * EventStatistics
+     * @description Aggregate statistics for events grouped by root event name.
+     */
+    EventStatistics: {
+      /**
+       * Name
+       * @description The name of the root event.
+       */
+      name: string
+      /**
+       * Label
+       * @description The label of the event type.
+       */
+      label: string
+      /**
+       * Occurrences
+       * @description Number of root events with this name (i.e., number of traces).
+       */
+      occurrences: number
+      /**
+       * Totals
+       * @description Sum of each field across all events in all hierarchies.
+       */
+      totals?: {
+        [key: string]: string
+      }
+      /**
+       * Averages
+       * @description Average of per-hierarchy totals (i.e., average cost per trace).
+       */
+      averages?: {
+        [key: string]: string
+      }
+      /**
+       * P50
+       * @description Median (50th percentile) of per-hierarchy totals.
+       */
+      p50?: {
+        [key: string]: string
+      }
+      /**
+       * P95
+       * @description 95th percentile of per-hierarchy totals.
+       */
+      p95?: {
+        [key: string]: string
+      }
+      /**
+       * P99
+       * @description 99th percentile of per-hierarchy totals.
+       */
+      p99?: {
+        [key: string]: string
+      }
+    }
+    /**
+     * EventStatisticsSortProperty
+     * @enum {string}
+     */
+    EventStatisticsSortProperty:
+      | 'name'
+      | '-name'
+      | 'occurrences'
+      | '-occurrences'
+      | 'total'
+      | '-total'
+      | 'average'
+      | '-average'
+      | 'p95'
+      | '-p95'
+      | 'p99'
+      | '-p99'
     /** EventsIngest */
     EventsIngest: {
       /**
@@ -16600,6 +16674,22 @@ export interface components {
       /** Items */
       items: components['schemas']['Payment'][]
       pagination: components['schemas']['Pagination']
+    }
+    /**
+     * ListStatisticsTimeseries
+     * @description Event statistics timeseries.
+     */
+    ListStatisticsTimeseries: {
+      /**
+       * Periods
+       * @description Stats for each time period.
+       */
+      periods: components['schemas']['StatisticsPeriod'][]
+      /**
+       * Totals
+       * @description Overall stats across all periods.
+       */
+      totals: components['schemas']['EventStatistics'][]
     }
     /** LoginCodeRequest */
     LoginCodeRequest: {
@@ -20553,67 +20643,6 @@ export interface components {
     }
     /** RevokeTokenResponse */
     RevokeTokenResponse: Record<string, never>
-    /**
-     * RootEventStatistics
-     * @description Aggregate statistics for events grouped by root event name.
-     */
-    RootEventStatistics: {
-      /**
-       * Name
-       * @description The name of the root event.
-       */
-      name: string
-      /**
-       * Occurrences
-       * @description Number of root events with this name (i.e., number of traces).
-       */
-      occurrences: number
-      /**
-       * Totals
-       * @description Sum of each field across all events in all hierarchies.
-       */
-      totals?: {
-        [key: string]: string
-      }
-      /**
-       * Averages
-       * @description Average value of each field across all events in all hierarchies.
-       */
-      averages?: {
-        [key: string]: string
-      }
-      /**
-       * P95
-       * @description 95th percentile of each field across all events in all hierarchies.
-       */
-      p95?: {
-        [key: string]: string
-      }
-      /**
-       * P99
-       * @description 99th percentile of each field across all events in all hierarchies.
-       */
-      p99?: {
-        [key: string]: string
-      }
-    }
-    /**
-     * RootEventStatisticsSortProperty
-     * @enum {string}
-     */
-    RootEventStatisticsSortProperty:
-      | 'name'
-      | '-name'
-      | 'occurrences'
-      | '-occurrences'
-      | 'total'
-      | '-total'
-      | 'average'
-      | '-average'
-      | 'p95'
-      | '-p95'
-      | 'p99'
-      | '-p99'
     /** S3DownloadURL */
     S3DownloadURL: {
       /** Url */
@@ -20870,6 +20899,35 @@ export interface components {
        * @description Total number of seats for the subscription
        */
       total_seats: number
+    }
+    /**
+     * StatisticsPeriod
+     * @description Event statistics for a single time period.
+     */
+    StatisticsPeriod: {
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description Period timestamp
+       */
+      timestamp: string
+      /**
+       * Period Start
+       * Format: date-time
+       * @description Period start (inclusive)
+       */
+      period_start: string
+      /**
+       * Period End
+       * Format: date-time
+       * @description Period end (exclusive)
+       */
+      period_end: string
+      /**
+       * Stats
+       * @description Stats grouped by event name for this period
+       */
+      stats: components['schemas']['EventStatistics'][]
     }
     /**
      * Status
@@ -32282,15 +32340,17 @@ export interface operations {
       }
     }
   }
-  'events:get_hierarchy_stats_endpoint': {
+  'events:list_statistics_timeseries': {
     parameters: {
-      query?: {
+      query: {
+        /** @description Start timestamp. */
+        start_timestamp: string
+        /** @description End timestamp. */
+        end_timestamp: string
+        /** @description Interval between two timestamps. */
+        interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
         filter?: string | null
-        /** @description Filter events after this timestamp. */
-        start_timestamp?: string | null
-        /** @description Filter events before this timestamp. */
-        end_timestamp?: string | null
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
@@ -32308,12 +32368,10 @@ export interface operations {
           | null
         /** @description Query to filter events. */
         query?: string | null
-        /** @description Metadata field paths to aggregate (e.g., 'cost.amount', 'duration_ns'). Use dot notation for nested fields. */
+        /** @description Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields. */
         aggregate_fields?: string[]
         /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
-        sorting?:
-          | components['schemas']['RootEventStatisticsSortProperty'][]
-          | null
+        sorting?: components['schemas']['EventStatisticsSortProperty'][] | null
         /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
         metadata?: components['schemas']['MetadataQuery']
       }
@@ -32329,7 +32387,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['RootEventStatistics'][]
+          'application/json': components['schemas']['ListStatisticsTimeseries']
         }
       }
       /** @description Validation Error */
@@ -36404,6 +36462,22 @@ export const eventSortPropertyValues: ReadonlyArray<
 export const eventSourceValues: ReadonlyArray<
   components['schemas']['EventSource']
 > = ['system', 'user']
+export const eventStatisticsSortPropertyValues: ReadonlyArray<
+  components['schemas']['EventStatisticsSortProperty']
+> = [
+  'name',
+  '-name',
+  'occurrences',
+  '-occurrences',
+  'total',
+  '-total',
+  'average',
+  '-average',
+  'p95',
+  '-p95',
+  'p99',
+  '-p99',
+]
 export const fileServiceTypesValues: ReadonlyArray<
   components['schemas']['FileServiceTypes']
 > = ['downloadable', 'product_media', 'organization_avatar']
@@ -36730,22 +36804,6 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   components['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
-export const rootEventStatisticsSortPropertyValues: ReadonlyArray<
-  components['schemas']['RootEventStatisticsSortProperty']
-> = [
-  'name',
-  '-name',
-  'occurrences',
-  '-occurrences',
-  'total',
-  '-total',
-  'average',
-  '-average',
-  'p95',
-  '-p95',
-  'p99',
-  '-p99',
-]
 export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'openid',
   'profile',

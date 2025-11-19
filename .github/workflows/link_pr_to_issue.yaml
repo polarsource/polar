@@ -1,4 +1,4 @@
-name: Link PR to GitHub Issue via Linear
+name: Link PR to GitHub Issue
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  TICKET_PREFIX: "pub-"
+  TICKET_PREFIX: "pol-"
 
 jobs:
   link-pr-to-issue:
@@ -32,62 +32,10 @@ jobs:
 
           echo "Found ticket number: $TICKET_NUMBER"
 
-      - name: Query Linear for GitHub issue
-        id: query-linear
+      - name: Update PR description
         if: steps.extract-ticket.outputs.ticket_number
         run: |
-          TICKET_NUMBER="${{ steps.extract-ticket.outputs.ticket_number }}"
-
-          # GraphQL query to get issue and its GitHub integration via attachments
-          QUERY='query GetIssue($id: String!) {
-            issue(id: $id) {
-              id
-              title
-              url
-              attachments {
-                nodes {
-                  id
-                  title
-                  url
-                  subtitle
-                }
-              }
-            }
-          }'
-
-          # Make GraphQL request to Linear
-          RESPONSE=$(curl -s -X POST \
-            -H "Content-Type: application/json" \
-            -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
-            -d "{\"query\":\"$(echo $QUERY | tr '\n' ' ' | sed 's/"/\\"/g')\",\"variables\":{\"id\":\"$TICKET_NUMBER\"}}" \
-            https://api.linear.app/graphql)
-
-          # Check if the issue exists
-          ISSUE_EXISTS=$(echo "$RESPONSE" | jq -r '.data.issue != null')
-          if [ "$ISSUE_EXISTS" != "true" ]; then
-            echo "Issue $TICKET_NUMBER not found in Linear"
-            exit 0
-          fi
-
-          # Extract GitHub issue number from attachments
-          GITHUB_ISSUE_NUMBER=$(echo "$RESPONSE" | jq -r '
-            .data.issue.attachments.nodes[] |
-            select(.url | contains("github.com/") and contains("/issues/")) |
-            .url | split("/issues/")[1] | split("/")[0]
-          ')
-
-          if [ -n "$GITHUB_ISSUE_NUMBER" ] && [ "$GITHUB_ISSUE_NUMBER" != "null" ]; then
-            echo "github_issue_number=$GITHUB_ISSUE_NUMBER" >> $GITHUB_OUTPUT
-            echo "Found GitHub issue number: $GITHUB_ISSUE_NUMBER"
-          else
-            echo "No GitHub issue found for Linear ticket $TICKET_NUMBER"
-            exit 0
-          fi
-
-      - name: Update PR description
-        if: steps.query-linear.outputs.github_issue_number
-        run: |
-          GITHUB_ISSUE_NUMBER="${{ steps.query-linear.outputs.github_issue_number }}"
+          GITHUB_ISSUE_NUMBER="${{ steps.extract-ticket.outputs.ticket_number }}"
           PR_NUMBER="${{ github.event.pull_request.number }}"
           CURRENT_BODY="${{ github.event.pull_request.body }}"
 

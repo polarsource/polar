@@ -34,6 +34,7 @@ from polar.kit.utils import utc_now
 if TYPE_CHECKING:
     from .benefit_grant import BenefitGrant
     from .customer_meter import CustomerMeter
+    from .member import Member
     from .organization import Organization
     from .payment_method import PaymentMethod
     from .subscription import Subscription
@@ -182,6 +183,15 @@ class Customer(MetadataMixin, RecordModel):
             back_populates="customer",
             cascade="all, delete-orphan",
             foreign_keys="[PaymentMethod.customer_id]",
+        )
+
+    @declared_attr
+    def members(cls) -> Mapped[Sequence["Member"]]:
+        return relationship(
+            "Member",
+            lazy="raise",
+            back_populates="customer",
+            cascade="all, delete-orphan",
         )
 
     default_payment_method_id: Mapped[UUID | None] = mapped_column(

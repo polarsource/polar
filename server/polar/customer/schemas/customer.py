@@ -21,6 +21,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.tax import TaxID
+from polar.member import Member, OwnerCreate
 from polar.organization.schemas import OrganizationID
 
 CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
@@ -64,6 +65,14 @@ class CustomerCreate(MetadataInputMixin, Schema):
         description=(
             "The ID of the organization owning the customer. "
             "**Required unless you use an organization token.**"
+        ),
+    )
+    owner: OwnerCreate | None = Field(
+        default=None,
+        description=(
+            "Optional owner member to create with the customer. "
+            "If not provided, an owner member will be automatically created "
+            "using the customer's email and name."
         ),
     )
 
@@ -136,3 +145,12 @@ class CustomerBalance(Schema):
 
 class Customer(CustomerBase):
     """A customer in an organization."""
+
+
+class CustomerWithMembers(Customer):
+    """A customer in an organization with their members loaded."""
+
+    members: list[Member] = Field(
+        default_factory=list,
+        description="List of members belonging to this customer.",
+    )

@@ -11833,6 +11833,8 @@ export interface components {
        * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
+      owner?: components['schemas']['OwnerCreate'] | null
     }
     /**
      * CustomerCreatedEvent
@@ -13992,6 +13994,83 @@ export interface components {
       | '-created_at'
       | 'balance'
       | '-balance'
+    /**
+     * CustomerWithMembers
+     * @description A customer in an organization with their members loaded.
+     */
+    CustomerWithMembers: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /** Metadata */
+      metadata: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email: string
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      billing_address: components['schemas']['Address'] | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /**
+       * Members
+       * @description List of members belonging to this customer.
+       */
+      members?: components['schemas']['Member'][]
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      readonly avatar_url: string
+    }
     /** DiscordGuild */
     DiscordGuild: {
       /** Name */
@@ -16372,10 +16451,10 @@ export interface components {
       items: components['schemas']['CustomerWallet'][]
       pagination: components['schemas']['Pagination']
     }
-    /** ListResource[Customer] */
-    ListResource_Customer_: {
+    /** ListResource[CustomerWithMembers] */
+    ListResource_CustomerWithMembers_: {
       /** Items */
-      items: components['schemas']['Customer'][]
+      items: components['schemas']['CustomerWithMembers'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Discount] */
@@ -16623,6 +16702,57 @@ export interface components {
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
     }
+    /**
+     * Member
+     * @description A member of a customer.
+     */
+    Member: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the member.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Email
+       * @description The email address of the member.
+       * @example member@example.com
+       */
+      email: string
+      /**
+       * Name
+       * @description The name of the member.
+       * @example Jane Doe
+       */
+      name: string | null
+      /**
+       * External Id
+       * @description The ID of the member in your system. This must be unique within the customer.
+       * @example usr_1337
+       */
+      external_id: string | null
+      /**
+       * @description The role of the member within the customer.
+       * @example owner
+       */
+      role: components['schemas']['MemberRole']
+    }
+    /**
+     * MemberRole
+     * @enum {string}
+     */
+    MemberRole: 'owner' | 'billing_manager' | 'member'
     /** Meter */
     Meter: {
       /** Metadata */
@@ -18652,6 +18782,12 @@ export interface components {
        * @default false
        */
       wallets_enabled: boolean
+      /**
+       * Member Model Enabled
+       * @description If this organization has the Member model enabled
+       * @default false
+       */
+      member_model_enabled: boolean
     }
     /** OrganizationMember */
     OrganizationMember: {
@@ -18923,6 +19059,26 @@ export interface components {
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
         | null
+    }
+    /**
+     * OwnerCreate
+     * @description Schema for creating an owner member during customer creation.
+     */
+    OwnerCreate: {
+      /**
+       * Email
+       * @description The email address of the member.
+       * @example member@example.com
+       */
+      email?: string | null
+      /** Name */
+      name?: string | null
+      /**
+       * External Id
+       * @description The ID of the member in your system. This must be unique within the customer.
+       * @example usr_1337
+       */
+      external_id?: string | null
     }
     /** Pagination */
     Pagination: {
@@ -29316,6 +29472,8 @@ export interface operations {
         email?: string | null
         /** @description Filter by name, email, or external ID. */
         query?: string | null
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -29337,7 +29495,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_Customer_']
+          'application/json': components['schemas']['ListResource_CustomerWithMembers_']
         }
       }
       /** @description Validation Error */
@@ -29353,7 +29511,10 @@ export interface operations {
   }
   'customers:create': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
+      }
       header?: never
       path?: never
       cookie?: never
@@ -29370,7 +29531,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerWithMembers']
         }
       }
       /** @description Validation Error */
@@ -29418,7 +29579,10 @@ export interface operations {
   }
   'customers:get': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
+      }
       header?: never
       path: {
         /** @description The customer ID. */
@@ -29434,7 +29598,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerWithMembers']
         }
       }
       /** @description Customer not found. */
@@ -29498,7 +29662,10 @@ export interface operations {
   }
   'customers:update': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
+      }
       header?: never
       path: {
         /** @description The customer ID. */
@@ -29518,7 +29685,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerWithMembers']
         }
       }
       /** @description Customer not found. */
@@ -29543,7 +29710,10 @@ export interface operations {
   }
   'customers:get_external': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
+      }
       header?: never
       path: {
         /** @description The customer external ID. */
@@ -29559,7 +29729,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerWithMembers']
         }
       }
       /** @description Customer not found. */
@@ -29623,7 +29793,10 @@ export interface operations {
   }
   'customers:update_external': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
+      }
       header?: never
       path: {
         /** @description The customer external ID. */
@@ -29643,7 +29816,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerWithMembers']
         }
       }
       /** @description Customer not found. */
@@ -36266,6 +36439,9 @@ export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<
 export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
   components['schemas']['MaintainerNewProductSaleNotification']['type']
 > = ['MaintainerNewProductSaleNotification']
+export const memberRoleValues: ReadonlyArray<
+  components['schemas']['MemberRole']
+> = ['owner', 'billing_manager', 'member']
 export const meterCreditEventNameValues: ReadonlyArray<
   components['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']

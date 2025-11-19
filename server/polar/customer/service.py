@@ -14,6 +14,7 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.member import member_service
+from polar.member.schemas import Member as MemberSchema
 from polar.models import BenefitGrant, Customer, Organization, User
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.organization.resolver import get_payload_organization
@@ -24,7 +25,11 @@ from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .repository import CustomerRepository
-from .schemas.customer import CustomerCreate, CustomerUpdate, CustomerUpdateExternalID
+from .schemas.customer import (
+    CustomerCreate,
+    CustomerUpdate,
+    CustomerUpdateExternalID,
+)
 from .schemas.state import CustomerState
 from .sorting import CustomerSortProperty
 
@@ -149,11 +154,24 @@ class CustomerService:
             Customer(
                 organization=organization,
                 **customer_create.model_dump(
-                    exclude={"organization_id"}, by_alias=True
+                    exclude={"organization_id", "owner"}, by_alias=True
                 ),
             )
         ) as customer:
-            await member_service.create_owner_member(session, customer, organization)
+            owner_email = customer_create.owner.email if customer_create.owner else None
+            owner_name = customer_create.owner.name if customer_create.owner else None
+            owner_external_id = (
+                customer_create.owner.external_id if customer_create.owner else None
+            )
+
+            await member_service.create_owner_member(
+                session,
+                customer,
+                organization,
+                owner_email=owner_email,
+                owner_name=owner_name,
+                owner_external_id=owner_external_id,
+            )
             return customer
 
     async def update(
@@ -250,7 +268,6 @@ class CustomerService:
             if raw_state is not None:
                 return CustomerState.model_validate_json(raw_state)
 
-        # If not cached, fetch from the database
         subscription_repository = SubscriptionRepository.from_session(session)
         customer.active_subscriptions = (
             await subscription_repository.list_active_by_customer(customer.id)
@@ -285,7 +302,6 @@ class CustomerService:
         event_type: CustomerWebhookEventType,
         customer: Customer,
     ) -> None:
-        data: CustomerState | Customer
         if event_type == WebhookEventType.customer_state_changed:
             data = await self.get_state(session, redis, customer, cache=False)
             await webhook_service.send(
@@ -295,7 +311,6 @@ class CustomerService:
                 data,
             )
         else:
-            data = customer
             await webhook_service.send(
                 session, customer.organization, event_type, customer
             )
@@ -309,6 +324,14 @@ class CustomerService:
             await self.webhook(
                 session, redis, WebhookEventType.customer_state_changed, customer
             )
+
+    async def load_members(
+        self,
+        session: AsyncReadSession,
+        customer_id: uuid.UUID,
+    ) -> Sequence[MemberSchema]:
+        members = await member_service.list_by_customer(session, customer_id)
+        return [MemberSchema.model_validate(member) for member in members]
 
 
 customer = CustomerService()

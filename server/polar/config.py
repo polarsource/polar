@@ -3,7 +3,7 @@ from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Literal
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import ParseResult, parse_qsl, urlencode, urlparse, urlunparse
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
@@ -378,19 +378,18 @@ class Settings(BaseSettings):
             parsed = urlparse(override)
             scheme = parsed.scheme
 
-            # If the scheme already specifies a driver (e.g. postgresql+asyncpg),
-            # just use it as-is.
-            if "+" in scheme:
-                return override
+            if "+" not in scheme:
+                if scheme in ("postgres", "postgresql", ""):
+                    parsed = parsed._replace(scheme=f"postgresql+{driver}")
+                else:
+                    return override
+            else:
+                # Ensure we're still dealing with a postgres driver scheme
+                if not scheme.startswith("postgresql+"):
+                    return override
 
-            # Normalize common postgres schemes to include the requested driver
-            if scheme in ("postgres", "postgresql", ""):
-                new_scheme = f"postgresql+{driver}"
-                parsed = parsed._replace(scheme=new_scheme)
-                return urlunparse(parsed)
-
-            # Fallback: return the raw override
-            return override
+            parsed = self._apply_driver_specific_query_params(parsed, driver)
+            return urlunparse(parsed)
 
         return str(
             PostgresDsn.build(
@@ -465,6 +464,44 @@ class Settings(BaseSettings):
         return self.ACCOUNT_PAYOUT_MINIMUM_BALANCE_PER_PAYOUT_CURRENCY.get(
             currency.lower(), self._DEFAULT_ACCOUNT_PAYOUT_MINIMUM_BALANCE
         )
+
+    def _apply_driver_specific_query_params(
+        self, parsed: ParseResult, driver: Literal["asyncpg", "psycopg"]
+    ) -> ParseResult:
+        if not parsed.query:
+            return parsed
+
+        query_params = parse_qsl(parsed.query, keep_blank_values=True)
+
+        if driver == "asyncpg":
+            sslmode_value: str | None = None
+            filtered_params: list[tuple[str, str]] = []
+
+            for key, value in query_params:
+                if key.lower() == "sslmode":
+                    sslmode_value = value
+                    continue
+                filtered_params.append((key, value))
+
+            if sslmode_value is not None:
+                ssl_value = self._convert_sslmode_to_asyncpg_ssl(sslmode_value)
+                if ssl_value is not None:
+                    filtered_params.append(("ssl", ssl_value))
+
+            query_params = filtered_params
+
+        return parsed._replace(query=urlencode(query_params, doseq=True))
+
+    @staticmethod
+    def _convert_sslmode_to_asyncpg_ssl(value: str) -> str | None:
+        normalized = value.lower()
+        if normalized == "disable":
+            return "false"
+        if normalized in {"allow", "prefer"}:
+            # asyncpg doesn't support degraded SSL negotiation;
+            # best-effort: fall back to default behaviour by dropping the option.
+            return None
+        return "true"
 
 
 settings = Settings()

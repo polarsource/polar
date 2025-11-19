@@ -458,7 +458,7 @@ class EventWithAggregations(Schema):
     )
 
 
-class RootEventStatistics(Schema):
+class EventStatistics(Schema):
     """Aggregate statistics for events grouped by root event name."""
 
     name: str = Field(description="The name of the root event.")
@@ -485,6 +485,26 @@ class RootEventStatistics(Schema):
     p99: dict[str, Decimal] = Field(
         description="99th percentile of per-hierarchy totals.",
         default_factory=dict,
+    )
+
+
+class StatisticsPeriod(Schema):
+    """Event statistics for a single time period."""
+
+    timestamp: AwareDatetime = Field(description="Period timestamp")
+    period_start: AwareDatetime = Field(description="Period start (inclusive)")
+    period_end: AwareDatetime = Field(description="Period end (exclusive)")
+    stats: list[EventStatistics] = Field(
+        description="Stats grouped by event name for this period"
+    )
+
+
+class ListStatisticsTimeseries(Schema):
+    """Event statistics timeseries."""
+
+    periods: list[StatisticsPeriod] = Field(description="Stats for each time period.")
+    totals: list[EventStatistics] = Field(
+        description="Overall stats across all periods."
     )
 
 

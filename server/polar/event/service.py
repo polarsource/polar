@@ -26,6 +26,7 @@ from polar.exceptions import PolarError, PolarRequestValidationError, Validation
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
+from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.logging import Logger
 from polar.meter.filter import Filter
 from polar.meter.repository import MeterRepository
@@ -47,6 +48,9 @@ from .schemas import (
     EventName,
     EventsIngest,
     EventsIngestResponse,
+    EventStatistics,
+    ListStatisticsTimeseries,
+    StatisticsPeriod,
 )
 from .sorting import EventNamesSortProperty, EventSortProperty
 
@@ -285,14 +289,15 @@ class EventService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def get_hierarchy_stats(
+    async def list_statistics_timeseries(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        interval: TimeInterval,
         filter: Filter | None = None,
-        start_timestamp: datetime | None = None,
-        end_timestamp: datetime | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
@@ -304,9 +309,13 @@ class EventService:
             (EventSortProperty.timestamp, True),
         ),
         query: str | None = None,
-        aggregate_fields: Sequence[str] = ("cost.amount",),
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
         hierarchy_stats_sorting: Sequence[tuple[str, bool]] = (("total", True),),
-    ) -> Sequence[dict[str, Any]]:
+    ) -> ListStatisticsTimeseries:
+        timestamp_series_cte = get_timestamp_series_cte(
+            start_timestamp, end_timestamp, interval
+        )
+
         repository = EventRepository.from_session(session)
         statement = await self._build_filtered_statement(
             session,
@@ -326,8 +335,49 @@ class EventService:
             query=query,
         )
 
-        return await repository.get_hierarchy_stats(
+        timeseries_stats = await repository.get_hierarchy_stats(
+            statement,
+            aggregate_fields,
+            hierarchy_stats_sorting,
+            timestamp_series=timestamp_series_cte,
+        )
+
+        result = await session.execute(select(timestamp_series_cte.c.timestamp))
+        timestamps = [row[0] for row in result.all()]
+
+        stats_by_timestamp: dict[datetime, list[dict[str, Any]]] = {}
+        for stat in timeseries_stats:
+            ts = stat.pop("timestamp")
+            if stat["name"] is None:
+                continue
+            if ts not in stats_by_timestamp:
+                stats_by_timestamp[ts] = []
+            stats_by_timestamp[ts].append(stat)
+
+        periods = []
+        for i, period_start in enumerate(timestamps):
+            if i + 1 < len(timestamps):
+                period_end = timestamps[i + 1]
+            else:
+                period_end = end_timestamp
+
+            period_stats = stats_by_timestamp.get(period_start, [])
+            periods.append(
+                StatisticsPeriod(
+                    timestamp=period_start,
+                    period_start=period_start,
+                    period_end=period_end,
+                    stats=[EventStatistics(**s) for s in period_stats],
+                )
+            )
+
+        totals = await repository.get_hierarchy_stats(
             statement, aggregate_fields, hierarchy_stats_sorting
+        )
+
+        return ListStatisticsTimeseries(
+            periods=periods,
+            totals=[EventStatistics(**s) for s in totals],
         )
 
     async def list_names(

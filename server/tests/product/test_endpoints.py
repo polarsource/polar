@@ -504,3 +504,134 @@ class TestUpdateProductBenefits:
 
         json = response.json()
         assert len(json["benefits"]) == 1
+
+
+@pytest.mark.asyncio
+class TestDuplicateProduct:
+    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
+        response = await client.post(
+            f"/v1/products/{product.id}/duplicate",
+            json={"name": "Duplicated Product"},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.post(
+            f"/v1/products/{uuid.uuid4()}/duplicate",
+            json={"name": "Duplicated Product"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid_one_time(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        # Create a product with metadata, benefits, etc.
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(1000,)],
+        )
+
+        # Add custom field
+        custom_field = await create_custom_field(
+            save_fixture,
+            organization=organization,
+            slug="test_field",
+            type=CustomFieldType.text,
+        )
+        product.attached_custom_fields = []
+        from polar.models.product_custom_field import ProductCustomField
+        product.attached_custom_fields.append(
+            ProductCustomField(
+                custom_field=custom_field,
+                order=0,
+                required=True,
+            )
+        )
+        await save_fixture(product)
+
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="NEW_PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
+
+        response = await client.post(
+            f"/v1/products/{product.id}/duplicate",
+            json={"name": "Duplicated Product"},
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["name"] == "Duplicated Product"
+        assert json["description"] == product.description
+        assert json["id"] != str(product.id)  # New product should have different ID
+        assert len(json["prices"]) == len(product.prices)
+        assert json["recurring_interval"] == product.recurring_interval
+        assert len(json["attached_custom_fields"]) == 1
+
+    @pytest.mark.auth
+    async def test_valid_recurring_with_benefits(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        benefits: list[Benefit],
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        # Create a recurring product with benefits
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval="month",
+            prices=[(2000,)],
+        )
+
+        product = await set_product_benefits(
+            save_fixture,
+            product=product,
+            benefits=benefits,
+        )
+
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="NEW_PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
+
+        response = await client.post(
+            f"/v1/products/{product.id}/duplicate",
+            json={"name": "Duplicated Subscription"},
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["name"] == "Duplicated Subscription"
+        assert json["id"] != str(product.id)
+        assert json["recurring_interval"] == "month"
+        assert len(json["benefits"]) == len(benefits)
+        assert len(json["prices"]) == 1
+
+        # Verify benefits are copied
+        benefit_ids = [b["id"] for b in json["benefits"]]
+        for benefit in benefits:
+            assert str(benefit.id) in benefit_ids

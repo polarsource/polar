@@ -21,7 +21,13 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Product as ProductSchema
-from .schemas import ProductBenefitsUpdate, ProductCreate, ProductID, ProductUpdate
+from .schemas import (
+    ProductBenefitsUpdate,
+    ProductCreate,
+    ProductDuplicate,
+    ProductID,
+    ProductUpdate,
+)
 from .service import product as product_service
 from .sorting import ProductSortProperty
 
@@ -191,3 +197,34 @@ async def update_benefits(
         session, product, benefits_update.benefits, auth_subject
     )
     return product
+
+
+@router.post(
+    "/{id}/duplicate",
+    response_model=ProductSchema,
+    status_code=201,
+    summary="Duplicate Product",
+    responses={
+        201: {"description": "Product duplicated."},
+        403: {
+            "description": "You don't have the permission to duplicate this product.",
+            "model": NotPermitted.schema(),
+        },
+        404: ProductNotFound,
+    },
+)
+async def duplicate(
+    id: ProductID,
+    duplicate_schema: ProductDuplicate,
+    auth_subject: auth.CreatorProductsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Product:
+    """Duplicate a product with all its settings, prices, benefits, and metadata."""
+    product = await product_service.get(session, auth_subject, id)
+
+    if product is None:
+        raise ResourceNotFound()
+
+    return await product_service.duplicate(
+        session, product, duplicate_schema.name, auth_subject
+    )

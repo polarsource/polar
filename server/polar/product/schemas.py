@@ -449,6 +449,16 @@ class ProductBenefitsUpdate(Schema):
     )
 
 
+class ProductDuplicate(Schema):
+    """
+    Schema to duplicate a product.
+    """
+
+    name: ProductName = Field(
+        description="The name for the duplicated product."
+    )
+
+
 class ProductPriceBase(TimestampedSchema):
     id: UUID4 = Field(description="The ID of the price.")
     source: ProductPriceSource = Field(
@@ -661,8 +671,8 @@ NewProductPrice = Annotated[
 def _get_discriminator_value(v: Any) -> Literal["legacy", "new"]:
     if isinstance(v, dict):
         return "legacy" if "legacy" in v else "new"
-    type = getattr(v, "type", None)
-    return "legacy" if type is not None else "new"
+    legacy = getattr(v, "legacy", None)
+    return "legacy" if legacy is True else "new"
 
 
 ProductPrice = Annotated[

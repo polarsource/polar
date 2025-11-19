@@ -35,7 +35,11 @@ from polar.models import (
     User,
 )
 from polar.models.product_custom_field import ProductCustomField
-from polar.models.product_price import HasStripePriceId, ProductPriceSource
+from polar.models.product_price import (
+    HasStripePriceId,
+    ProductPriceAmountType,
+    ProductPriceSource,
+)
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
@@ -647,6 +651,137 @@ class ProductService:
 
         return prices, existing_prices, added_prices, errors
 
+    async def duplicate(
+        self,
+        session: AsyncSession,
+        product: Product,
+        name: str,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> Product:
+        """Duplicate a product with all its settings, prices, benefits, and metadata."""
+        repository = ProductRepository.from_session(session)
+
+        # Create new product with copied attributes
+        new_product = await repository.create(
+            Product(
+                name=name,
+                description=product.description,
+                organization=product.organization,
+                recurring_interval=product.recurring_interval,
+                recurring_interval_count=product.recurring_interval_count,
+                trial_interval=product.trial_interval,
+                trial_interval_count=product.trial_interval_count,
+                user_metadata=dict(product.user_metadata) if product.user_metadata else {},
+                is_tax_applicable=product.is_tax_applicable,
+                tax_code=product.tax_code,
+                all_prices=[],
+                product_benefits=[],
+                product_medias=[],
+                attached_custom_fields=[],
+            ),
+            flush=True,
+        )
+        assert new_product.id is not None
+
+        # Duplicate prices by creating new instances
+        for old_price in product.prices:
+            if old_price.is_archived:
+                continue
+
+            # Create new price instance based on type
+            price_class = type(old_price)
+            price_dict = {
+                "product": new_product,
+                "amount_type": old_price.amount_type,
+                "source": old_price.source,
+            }
+
+            # Copy type-specific attributes
+            if hasattr(old_price, "price_currency"):
+                price_dict["price_currency"] = old_price.price_currency
+            if hasattr(old_price, "price_amount"):
+                price_dict["price_amount"] = old_price.price_amount
+            if hasattr(old_price, "minimum_amount"):
+                price_dict["minimum_amount"] = old_price.minimum_amount
+            if hasattr(old_price, "preset_amount"):
+                price_dict["preset_amount"] = old_price.preset_amount
+            if hasattr(old_price, "maximum_amount"):
+                price_dict["maximum_amount"] = old_price.maximum_amount
+            if hasattr(old_price, "seat_tiers"):
+                price_dict["seat_tiers"] = old_price.seat_tiers
+            if hasattr(old_price, "meter_id") and old_price.meter_id:
+                price_dict["meter_id"] = old_price.meter_id
+                price_dict["meter"] = old_price.meter
+            if hasattr(old_price, "unit_amount"):
+                price_dict["unit_amount"] = old_price.unit_amount
+
+            new_price = price_class(**price_dict)
+            new_product.all_prices.append(new_price)
+            session.add(new_price)
+
+        # Copy benefits
+        for old_benefit in product.product_benefits:
+            new_product.product_benefits.append(
+                ProductBenefit(
+                    benefit=old_benefit.benefit,
+                    order=old_benefit.order,
+                )
+            )
+
+        # Copy medias
+        for old_media in product.product_medias:
+            new_product.product_medias.append(
+                ProductMedia(
+                    file=old_media.file,
+                    order=old_media.order,
+                )
+            )
+
+        # Copy custom fields
+        for old_field in product.attached_custom_fields:
+            new_product.attached_custom_fields.append(
+                ProductCustomField(
+                    custom_field=old_field.custom_field,
+                    order=old_field.order,
+                    required=old_field.required,
+                )
+            )
+
+        await session.flush()
+
+        # Create Stripe product
+        stripe_metadata: dict[str, str] = {
+            "product_id": str(new_product.id),
+            "organization_id": str(new_product.organization_id),
+            "organization_name": new_product.organization.slug,
+        }
+
+        stripe_product = await stripe_service.create_product(
+            new_product.get_stripe_name(),
+            description=new_product.description,
+            metadata=stripe_metadata,
+        )
+        new_product.stripe_product_id = stripe_product.id
+
+        # Create Stripe prices
+        for price in new_product.all_prices:
+            if isinstance(price, HasStripePriceId):
+                stripe_price = await stripe_service.create_price_for_product(
+                    stripe_product.id,
+                    price.get_stripe_price_params(new_product.recurring_interval),
+                )
+                price.stripe_price_id = stripe_price.id
+
+        await session.flush()
+
+        # Reload the product with all relationships for webhook serialization
+        reloaded_product = await self.get(session, auth_subject, new_product.id)
+        assert reloaded_product is not None
+
+        await self._after_product_created(session, auth_subject, reloaded_product)
+
+        return reloaded_product
+
     async def _archive(self, session: AsyncSession, product: Product) -> Product:
         if product.stripe_product_id is not None:
             await stripe_service.archive_product(product.stripe_product_id)
@@ -697,3 +832,4 @@ class ProductService:
 
 
 product = ProductService()
+

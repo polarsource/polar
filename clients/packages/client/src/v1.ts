@@ -1415,6 +1415,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/products/{id}/duplicate': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Duplicate Product
+     * @description Duplicate a product with all its settings, prices, benefits, and metadata.
+     *
+     *     **Scopes**: `products:write`
+     */
+    post: operations['products:duplicate']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/orders/': {
     parameters: {
       query?: never
@@ -18607,6 +18629,12 @@ export interface components {
        * @default false
        */
       wallets_enabled: boolean
+      /**
+       * Member Model Enabled
+       * @description If this organization has the Member model enabled
+       * @default false
+       */
+      member_model_enabled: boolean
     }
     /** OrganizationMember */
     OrganizationMember: {
@@ -19453,6 +19481,17 @@ export interface components {
        * @default 1
        */
       recurring_interval_count: number
+    }
+    /**
+     * ProductDuplicate
+     * @description Schema to duplicate a product.
+     */
+    ProductDuplicate: {
+      /**
+       * Name
+       * @description The name for the duplicated product.
+       */
+      name: string
     }
     /**
      * ProductMediaFileCreate
@@ -26395,6 +26434,59 @@ export interface operations {
         }
       }
       /** @description You don't have the permission to update this product. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Product not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'products:duplicate': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProductDuplicate']
+      }
+    }
+    responses: {
+      /** @description Product duplicated. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Product']
+        }
+      }
+      /** @description You don't have the permission to duplicate this product. */
       403: {
         headers: {
           [name: string]: unknown

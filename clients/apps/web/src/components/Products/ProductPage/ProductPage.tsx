@@ -1,4 +1,5 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useMetrics, useUpdateProduct } from '@/hooks/queries'
@@ -24,6 +25,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { DashboardBody } from '../../Layout/DashboardLayout'
+import DuplicateProductModal from '../DuplicateProductModal'
 import { ProductThumbnail } from '../ProductThumbnail'
 import { ProductMetricsView } from './ProductMetricsView'
 import { ProductOverview } from './ProductOverview'
@@ -73,6 +75,12 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     isShown: isUnarchiveModalShown,
     hide: hideUnarchiveModal,
     show: showUnarchiveModal,
+  } = useModal()
+
+  const {
+    isShown: isDuplicateModalShown,
+    hide: hideDuplicateModal,
+    show: showDuplicateModal,
   } = useModal()
 
   const handleArchiveProduct = useCallback(async () => {
@@ -165,6 +173,9 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
               >
                 Copy Product ID
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={showDuplicateModal}>
+                Duplicate Product
+              </DropdownMenuItem>
               {!product.is_archived && (
                 <>
                   <DropdownMenuItem
@@ -240,6 +251,17 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
           isShown={isUnarchiveModalShown}
           hide={hideUnarchiveModal}
           destructiveText="Unarchive"
+        />
+        <InlineModal
+          isShown={isDuplicateModalShown}
+          hide={hideDuplicateModal}
+          modalContent={
+            <DuplicateProductModal
+              product={product}
+              organization={organization}
+              hide={hideDuplicateModal}
+            />
+          }
         />
       </DashboardBody>
     </Tabs>

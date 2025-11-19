@@ -178,3 +178,30 @@ export const useUpdateProductBenefits = (
       await revalidate(`storefront:${organization.slug}`)
     },
   })
+
+export const useDuplicateProduct = (organization: schemas['Organization']) =>
+  useMutation({
+    mutationFn: ({ id, body }: { id: string; body: { name: string } }) => {
+      return api.POST('/v1/products/{id}/duplicate', {
+        params: { path: { id } },
+        body,
+      }) as Promise<{ data?: schemas['Product']; error?: unknown }>
+    },
+    onSuccess: async (result) => {
+      if (result.error) {
+        return
+      }
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['products', { organizationId: organization.id }],
+      })
+
+      if (result.data) {
+        queryClient.invalidateQueries({
+          queryKey: ['products', { id: result.data.id }],
+        })
+      }
+
+      await revalidate(`storefront:${organization.slug}`)
+    },
+  })

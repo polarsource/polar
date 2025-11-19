@@ -16,7 +16,10 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "icon": "./assets/images/ios-dark.png"
+      "icon": "./assets/images/ios-dark.png",
+      "entitlements": {
+        "com.apple.developer.applesignin": ["Default"]
+      }
     },
     "android": {
       "adaptiveIcon": {

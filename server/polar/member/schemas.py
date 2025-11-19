@@ -47,6 +47,9 @@ class MemberBase(TimestampedSchema, IDSchema):
     """Base schema for member responses."""
 
     id: UUID4 = Field(description="The ID of the member.")
+    customer_id: UUID4 = Field(
+        description="The ID of the customer this member belongs to."
+    )
     email: str = Field(description=_email_description, examples=[_email_example])
     name: str | None = Field(description=_name_description, examples=[_name_example])
     external_id: str | None = Field(

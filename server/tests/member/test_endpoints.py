@@ -149,12 +149,13 @@ class TestListMembers:
             email="customer@example.com",
         )
 
-        # Create multiple members
+        # Create multiple members with unique external_ids to avoid constraint violation
         for i in range(5):
             member = Member(
                 customer_id=customer.id,
                 email=f"member{i}@example.com",
                 name=f"Member {i}",
+                external_id=f"ext_{i}",
                 role="member",
             )
             await save_fixture(member)

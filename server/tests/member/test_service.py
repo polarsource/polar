@@ -128,12 +128,13 @@ class TestList:
             email="customer@example.com",
         )
 
-        # Create 5 members
+        # Create 5 members with unique external_ids
         for i in range(5):
             member = Member(
                 customer_id=customer.id,
                 email=f"member{i}@example.com",
                 name=f"Member {i}",
+                external_id=f"ext_{i}",
                 role=MemberRole.member,
             )
             await save_fixture(member)

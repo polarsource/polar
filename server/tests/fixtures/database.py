@@ -32,7 +32,7 @@ def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session", autouse=True)
 async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
-    sync_database_url = get_database_url(worker_id, "psycopg2")
+    sync_database_url = get_database_url(worker_id, "psycopg")
 
     if database_exists(sync_database_url):
         drop_database(sync_database_url)

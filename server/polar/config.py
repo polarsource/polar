@@ -352,7 +352,7 @@ class Settings(BaseSettings):
     def redis_url(self) -> str:
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
-    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg2"]) -> str:
+    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg"]) -> str:
         return str(
             PostgresDsn.build(
                 scheme=f"postgresql+{driver}",
@@ -376,7 +376,7 @@ class Settings(BaseSettings):
         )
 
     def get_postgres_read_dsn(
-        self, driver: Literal["asyncpg", "psycopg2"]
+        self, driver: Literal["asyncpg", "psycopg"]
     ) -> str | None:
         if not self.is_read_replica_configured():
             return None

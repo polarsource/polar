@@ -41,7 +41,7 @@ def authlib_insecure_transport() -> None:
 @pytest.fixture(scope="package")
 def sync_engine(worker_id: str) -> Iterator[Engine]:
     engine = create_sync_engine(
-        dsn=get_database_url(worker_id, driver="psycopg2"),
+        dsn=get_database_url(worker_id, driver="psycopg"),
         application_name=f"test_sync_{worker_id}",
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,

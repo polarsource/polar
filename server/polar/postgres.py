@@ -44,7 +44,7 @@ def create_async_read_engine(process_name: ProcessName) -> AsyncEngine:
 
 def create_sync_engine(process_name: ProcessName) -> Engine:
     return _create_sync_engine(
-        dsn=str(settings.get_postgres_dsn("psycopg2")),
+        dsn=str(settings.get_postgres_dsn("psycopg")),
         application_name=f"{settings.ENV.value}.{process_name}",
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_SYNC_POOL_SIZE,

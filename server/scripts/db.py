@@ -14,7 +14,7 @@ cli = typer.Typer()
 
 def get_sync_postgres_dsn() -> str:
     # Escape %-encoding signs to avoid Alembic treating them as interpolation markers
-    return settings.get_postgres_dsn("psycopg2").replace("%", "%%")
+    return settings.get_postgres_dsn("psycopg").replace("%", "%%")
 
 
 def get_config() -> Config:

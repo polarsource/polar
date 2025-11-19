@@ -48,4 +48,4 @@ class Member(RecordModel):
 
     @declared_attr
     def customer(cls) -> Mapped["Customer"]:
-        return relationship("Customer", lazy="raise")
+        return relationship("Customer", lazy="raise", back_populates="members")

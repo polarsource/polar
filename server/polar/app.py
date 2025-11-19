@@ -6,7 +6,6 @@ import structlog
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
-from polar import worker  # noqa
 from polar.api import router
 from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.backoffice import app as backoffice_app

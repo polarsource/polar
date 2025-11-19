@@ -9,7 +9,7 @@ from fastapi import Request
 from sqlalchemy import func, select
 from tagflow import tag, text
 
-from polar.models import Organization
+from polar.models import Account, Organization
 from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 
@@ -40,8 +40,6 @@ class OrganizationListView:
 
     async def get_distinct_countries(self) -> list[str]:
         """Get list of distinct countries from organizations with accounts."""
-        from polar.models import Account
-
         stmt = (
             select(Account.country)
             .join(Organization, Organization.account_id == Account.id)

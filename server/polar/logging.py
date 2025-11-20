@@ -1,4 +1,5 @@
 import logging.config
+import sys
 import uuid
 from typing import Any
 
@@ -74,6 +75,7 @@ class Logging[RendererType]:
                         "level": level,
                         "class": "logging.StreamHandler",
                         "formatter": "polar",
+                        "stream": sys.stdout,
                     },
                 },
                 "loggers": {

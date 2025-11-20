@@ -506,9 +506,15 @@ class CheckoutService:
                         getattr(checkout.customer, attribute),
                     )
 
-            # Auto-select business customer if they have both a billing name & billing address
-            # since that means they've previously checked the is_business_customer checkbox
-            if checkout.customer.billing_name is not None:
+            # Auto-select business customer if they have both a billing name (without the fallback to customer.name)
+            # and a billing address since that means they've previously checked the is_business_customer checkbox
+            # Only auto-select if is_business_customer wasn't explicitly set in the request
+            if (
+                "is_business_customer" not in checkout_create.model_fields_set
+                and checkout.customer.actual_billing_name is not None
+                and checkout.customer.billing_address is not None
+                and checkout.customer.billing_address.has_address()
+            ):
                 checkout.is_business_customer = True
 
         if checkout.payment_processor == PaymentProcessor.stripe:

@@ -171,6 +171,41 @@ class TestCreate:
 
         payout_transaction_service_mock.create.assert_called_once()
 
+    async def test_valid_conflicting_invoice_numbers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        user: User,
+        payout_transaction_service_mock: MagicMock,
+    ) -> None:
+        account = await create_account(save_fixture, organization, user)
+
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            # Set an invoice number that would conflict with the next one
+            invoice_number=f"{settings.PAYOUT_INVOICES_PREFIX}0002",
+        )
+
+        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        balance_transaction_1 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_1
+        )
+
+        payment_transaction_2 = await create_payment_transaction(save_fixture)
+        balance_transaction_2 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_2
+        )
+
+        payout_transaction_service_mock.create.return_value = Transaction()
+
+        payout = await payout_service.create(session, locker, account=account)
+        await session.flush()
+
+        assert payout.invoice_number == f"{settings.PAYOUT_INVOICES_PREFIX}0003"
+
 
 @pytest.mark.asyncio
 class TestTriggerStripePayouts:

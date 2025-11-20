@@ -2,7 +2,6 @@
 
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { EventRow } from '@/components/Events/EventRow'
-import { useEventDisplayName } from '@/components/Events/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
@@ -41,8 +40,6 @@ export default function EventDetailPage({
     if (!childrenData) return []
     return childrenData.pages.flatMap((page) => page.items)
   }, [childrenData])
-
-  const eventDisplayName = useEventDisplayName(event?.name ?? '')
 
   if (!event) {
     return null
@@ -83,7 +80,7 @@ export default function EventDetailPage({
     >
       <div className="flex flex-col gap-y-4">
         <div className="flex flex-row items-center justify-between gap-x-4">
-          <h3 className="text-4xl">{eventDisplayName}</h3>
+          <h3 className="text-4xl">{event.label}</h3>
           {'_cost' in event.metadata && event.metadata._cost && (
             <h3 className="dark:text-polar-500 font-mono text-4xl text-gray-400">
               {formatSubCentCurrency(Number(event.metadata._cost?.amount ?? 0))}

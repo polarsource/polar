@@ -29,6 +29,25 @@ class SystemEvent(StrEnum):
     customer_deleted = "customer.deleted"
 
 
+SYSTEM_EVENT_LABELS: dict[str, str] = {
+    "benefit.granted": "Benefit Granted",
+    "benefit.cycled": "Benefit Cycled",
+    "benefit.updated": "Benefit Updated",
+    "benefit.revoked": "Benefit Revoked",
+    "subscription.cycled": "Subscription Cycled",
+    "subscription.revoked": "Subscription Revoked",
+    "subscription.product_updated": "Subscription Product Updated",
+    "order.paid": "Order Paid",
+    "order.refunded": "Order Refunded",
+    "subscription.seats_updated": "Subscription Seats Updated",
+    "customer.created": "Customer Created",
+    "customer.updated": "Customer Updated",
+    "customer.deleted": "Customer Deleted",
+    "meter.credited": "Meter Credited",
+    "meter.reset": "Meter Reset",
+}
+
+
 class MeterCreditedMetadata(TypedDict):
     meter_id: str
     units: int

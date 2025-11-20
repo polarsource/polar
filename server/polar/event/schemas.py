@@ -215,6 +215,7 @@ class BaseEvent(IDSchema):
         default=None,
         description="The ID of the parent event.",
     )
+    label: str = Field(description="Human readable label of the event type.")
 
 
 class SystemEventBase(BaseEvent):

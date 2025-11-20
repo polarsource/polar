@@ -207,6 +207,17 @@ class Event(Model, MetadataMixin):
     def event_types(cls) -> Mapped["EventType | None"]:
         return relationship("EventType", lazy="raise")
 
+    @property
+    def label(self) -> str:
+        if self.source == EventSource.system:
+            # Lazy import to avoid a circular dependency
+            from polar.event.system import SYSTEM_EVENT_LABELS
+
+            return SYSTEM_EVENT_LABELS.get(self.name, self.name)
+        if self.event_types is not None:
+            return self.event_types.label
+        return self.name
+
     @hybrid_property
     def is_meter_credit(self) -> bool:
         return (

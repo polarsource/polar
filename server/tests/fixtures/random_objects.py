@@ -1735,6 +1735,7 @@ async def create_event(
     external_id: str | None = None,
     parent_id: uuid.UUID | None = None,
     metadata: dict[str, str | int | bool | float | Any] | None = None,
+    event_type: EventType | None = None,
 ) -> Event:
     event = Event(
         timestamp=timestamp or utc_now(),
@@ -1746,6 +1747,7 @@ async def create_event(
         parent_id=parent_id,
         organization=organization,
         user_metadata=metadata or {},
+        event_type_id=event_type.id if event_type else None,
     )
     await save_fixture(event)
     return event

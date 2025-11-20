@@ -66,7 +66,14 @@ class TestList:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await create_event(save_fixture, organization=organization)
+        event_type_repository = EventTypeRepository.from_session(session)
+        event_type = await event_type_repository.get_or_create(
+            "TEST_EVENT", organization.id
+        )
+
+        await create_event(
+            save_fixture, organization=organization, event_type=event_type
+        )
 
         events, count = await event_service.list(
             session, auth_subject, pagination=PaginationParams(1, 10)
@@ -74,6 +81,7 @@ class TestList:
 
         assert len(events) == 1
         assert count == 1
+        assert events[0].label == event_type.label
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

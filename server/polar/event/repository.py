@@ -236,7 +236,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
 
     def get_eager_options(self) -> Options:
-        return (joinedload(Event.customer),)
+        return (joinedload(Event.customer), joinedload(Event.event_types))
 
     async def list_with_closure_table(
         self,

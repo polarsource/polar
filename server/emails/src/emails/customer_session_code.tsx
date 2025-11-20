@@ -16,21 +16,19 @@ export function CustomerSessionCode({
 }: schemas['CustomerSessionCodeProps']) {
   return (
     <Wrapper>
-      <Preview>
-        Here is your code to access your {organization.name} purchases
-      </Preview>
+      <Wrapper>
+      <Preview>Your code to access purchases for {organization.name}.</Preview>
       <OrganizationHeader organization={organization} />
       <IntroWithHi>
-        Here is your code to access your {organization.name}{' '}
+        Use the code below to access your purchases for {organization.name}.
+        <br />
         <span className="font-bold">
           This code is only valid for the next {code_lifetime_minutes} minutes.
         </span>
       </IntroWithHi>
       <OTPCode code={code} />
       <Section className="mt-6 border-t border-gray-200 pt-6">
-        <Text className="text-sm text-gray-600">
-          You should input this code at the following URL
-        </Text>
+        <Text className="text-sm text-gray-600">Enter this code at the following URL:</Text>
         <Text className="text-sm">
           <Link href={url} className="text-blue-600 underline">
             {url}

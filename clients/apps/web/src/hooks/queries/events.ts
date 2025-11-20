@@ -76,28 +76,19 @@ export const useEvent = (organizationId: string, eventId: string) => {
 
 export const useEventHierarchyStats = (
   organizationId: string,
-  startTimestamp: Date,
-  endTimestamp: Date,
-  interval: NonNullable<
-    operations['events:list_statistics_timeseries']['parameters']['query']
-  >['interval'],
-  aggregateFields: string[] = ['cost.amount'],
-  sorting?: operations['events:list_statistics_timeseries']['parameters']['query']['sorting'],
-  eventTypeId?: string,
+  parameters: Omit<
+    NonNullable<
+      operations['events:list_statistics_timeseries']['parameters']['query']
+    >,
+    'organization_id'
+  >,
   enabled: boolean = true,
 ) => {
   return useQuery({
     queryKey: [
       'eventHierarchyStats',
       organizationId,
-      {
-        aggregate_fields: aggregateFields,
-        sorting,
-        startTimestamp,
-        endTimestamp,
-        interval,
-        event_type_id: eventTypeId,
-      },
+      { ...(parameters || {}) },
     ],
     queryFn: () =>
       unwrap(
@@ -105,12 +96,7 @@ export const useEventHierarchyStats = (
           params: {
             query: {
               organization_id: organizationId,
-              aggregate_fields: aggregateFields,
-              start_timestamp: startTimestamp.toISOString(),
-              end_timestamp: endTimestamp.toISOString(),
-              interval,
-              ...(sorting ? { sorting } : {}),
-              ...(eventTypeId ? { event_type_id: eventTypeId } : {}),
+              ...(parameters || {}),
             },
           },
         }),

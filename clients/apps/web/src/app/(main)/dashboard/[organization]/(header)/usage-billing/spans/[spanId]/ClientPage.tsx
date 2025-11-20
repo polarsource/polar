@@ -65,6 +65,7 @@ export default function SpanDetailPage({
     sorting: ['-timestamp'],
     start_timestamp: startDate.toISOString(),
     end_timestamp: endDate.toISOString(),
+    aggregate_fields: ['_cost.amount'],
   })
 
   const { data: hierarchyStats } = useEventHierarchyStats(
@@ -75,7 +76,6 @@ export default function SpanDetailPage({
       end_timestamp: endDate.toISOString(),
       interval,
       aggregate_fields: ['_cost.amount'],
-      sorting: ['-occurrences'],
     },
     true,
   )

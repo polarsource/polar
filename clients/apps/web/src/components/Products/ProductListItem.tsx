@@ -1,7 +1,5 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import DuplicateProductModal from '@/components/Products/DuplicateProductModal'
 import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
@@ -53,12 +51,6 @@ export const ProductListItem = ({
     show: showArchiveModal,
     hide: hideArchiveModal,
     isShown: isArchiveModalShown,
-  } = useModal()
-
-  const {
-    show: showDuplicateModal,
-    hide: hideDuplicateModal,
-    isShown: isDuplicateModalShown,
   } = useModal()
 
   const handleContextMenuCallback = (
@@ -183,7 +175,11 @@ export const ProductListItem = ({
                 </DropdownMenuItem>
                 {isFullProduct(product) && (
                   <DropdownMenuItem
-                    onClick={handleContextMenuCallback(showDuplicateModal)}
+                    onClick={handleContextMenuCallback(() => {
+                      router.push(
+                        `/dashboard/${organization.slug}/products/new?from=${product.id}`,
+                      )
+                    })}
                   >
                     Duplicate Product
                   </DropdownMenuItem>
@@ -216,19 +212,6 @@ export const ProductListItem = ({
         destructive
         destructiveText="Yes, archive"
       />
-      {isFullProduct(product) && (
-        <InlineModal
-          isShown={isDuplicateModalShown}
-          hide={hideDuplicateModal}
-          modalContent={
-            <DuplicateProductModal
-              product={product}
-              organization={organization}
-              hide={hideDuplicateModal}
-            />
-          }
-        />
-      )}
     </ListItem>
   )
 }

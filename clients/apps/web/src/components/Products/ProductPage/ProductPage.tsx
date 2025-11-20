@@ -1,5 +1,4 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useMetrics, useUpdateProduct } from '@/hooks/queries'
@@ -22,10 +21,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { DashboardBody } from '../../Layout/DashboardLayout'
-import DuplicateProductModal from '../DuplicateProductModal'
 import { ProductThumbnail } from '../ProductThumbnail'
 import { ProductMetricsView } from './ProductMetricsView'
 import { ProductOverview } from './ProductOverview'
@@ -46,6 +46,11 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
   const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
     'all_time',
     product.created_at,
+  )
+  const theme = useTheme()
+  const themePreset = getThemePreset(
+    organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
   )
   const { data: metrics, isLoading: metricsLoading } = useMetrics({
     organization_id: organization.id,
@@ -75,12 +80,6 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     isShown: isUnarchiveModalShown,
     hide: hideUnarchiveModal,
     show: showUnarchiveModal,
-  } = useModal()
-
-  const {
-    isShown: isDuplicateModalShown,
-    hide: hideDuplicateModal,
-    show: showDuplicateModal,
   } = useModal()
 
   const handleArchiveProduct = useCallback(async () => {
@@ -152,57 +151,70 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
           </div>
         }
         header={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="secondary">
-                <MoreVert fontSize="small" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  if (typeof navigator !== 'undefined') {
-                    navigator.clipboard.writeText(product.id)
+          <div>
+            <div className="flex-column flex items-center gap-4">
+              <div className="flex-column flex items-center gap-4">
+                <Button variant="secondary">Edit product</Button>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="secondary">
+                    <MoreVert fontSize="small" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (typeof navigator !== 'undefined') {
+                        navigator.clipboard.writeText(product.id)
 
-                    toast({
-                      title: 'Product ID Copied',
-                      description: 'Product ID copied to clipboard',
-                    })
-                  }
-                }}
-              >
-                Copy Product ID
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={showDuplicateModal}>
-                Duplicate Product
-              </DropdownMenuItem>
-              {!product.is_archived && (
-                <>
+                        toast({
+                          title: 'Product ID Copied',
+                          description: 'Product ID copied to clipboard',
+                        })
+                      }
+                    }}
+                  >
+                    Copy Product ID
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
                       router.push(
-                        `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
+                        `/dashboard/${organization.slug}/products/new?from=${product.id}`,
                       )
                     }}
                   >
-                    Integrate Checkout
+                    Duplicate Product
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={showArchiveModal}>
-                    Archive Product
-                  </DropdownMenuItem>
-                </>
-              )}
-              {product.is_archived && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={showUnarchiveModal}>
-                    Unarchive Product
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  {!product.is_archived && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          router.push(
+                            `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
+                          )
+                        }}
+                      >
+                        Integrate Checkout
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={showArchiveModal}>
+                        Archive Product
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {product.is_archived && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={showUnarchiveModal}>
+                        Unarchive Product
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         }
         contextViewClassName="hidden md:block"
         contextView={
@@ -251,17 +263,6 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
           isShown={isUnarchiveModalShown}
           hide={hideUnarchiveModal}
           destructiveText="Unarchive"
-        />
-        <InlineModal
-          isShown={isDuplicateModalShown}
-          hide={hideDuplicateModal}
-          modalContent={
-            <DuplicateProductModal
-              product={product}
-              organization={organization}
-              hide={hideDuplicateModal}
-            />
-          }
         />
       </DashboardBody>
     </Tabs>

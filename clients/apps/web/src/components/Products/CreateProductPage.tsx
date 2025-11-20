@@ -20,12 +20,68 @@ type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
     metadata: { key: string; value: string | number | boolean }[]
   }
 
-export interface CreateProductPageProps {
-  organization: schemas['Organization']
-  productPriceType?: schemas['ProductPriceType']
+// Helper to convert a Product to ProductCreateForm
+const productToCreateForm = (
+  product: schemas['Product'],
+): ProductCreateForm => {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  // Spread the product, removing fields that don't exist on ProductCreate
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const {
+    id,
+    created_at,
+    modified_at,
+    is_archived,
+    is_recurring,
+    benefits,
+    medias,
+    prices,
+    attached_custom_fields,
+    metadata,
+    ...productRest
+  } = product as any
+
+  // Map prices to remove extra fields
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mappedPrices = product.prices.map((price: any) => {
+    const {
+      id,
+      created_at,
+      modified_at,
+      product_id,
+      is_archived,
+      source,
+      ...priceRest
+    } = price
+    return priceRest
+  })
+  /* eslint-enable @typescript-eslint/no-unused-vars */
+
+  return {
+    ...productRest,
+    name: `Copy of ${product.name}`,
+    full_medias: product.medias,
+    prices: mappedPrices,
+    attached_custom_fields: product.attached_custom_fields.map((field) => ({
+      custom_field_id: field.custom_field_id,
+      required: field.required,
+    })),
+    metadata: Object.entries(product.metadata).map(([key, value]) => ({
+      key,
+      value,
+    })),
+  }
 }
 
-export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
+export interface CreateProductPageProps {
+  organization: schemas['Organization']
+  sourceProduct?: schemas['Product']
+}
+
+export const CreateProductPage = ({
+  organization,
+  sourceProduct,
+}: CreateProductPageProps) => {
   const router = useRouter()
   const benefits = useBenefits(organization.id, {
     limit: 200,
@@ -35,28 +91,33 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     [benefits],
   )
 
-  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    schemas['Benefit']['id'][]
-  >([])
-
-  const form = useForm<ProductCreateForm>({
-    defaultValues: {
-      recurring_interval: null,
-      ...{
+  // Get initial form values
+  const getDefaultValues = (): ProductCreateForm => {
+    if (!sourceProduct) {
+      return {
+        recurring_interval: null,
         prices: [
           {
             price_amount: undefined,
             price_currency: 'usd',
           },
         ],
-      },
-      ...{
         medias: [],
         full_medias: [],
-      },
-      organization_id: organization.id,
-      metadata: [],
-    },
+        organization_id: organization.id,
+        metadata: [],
+      } as unknown as ProductCreateForm
+    }
+
+    return productToCreateForm(sourceProduct)
+  }
+
+  const [benefitIds, setBenefitIds] = useState<schemas['Benefit']['id'][]>(
+    sourceProduct ? sourceProduct.benefits.map((b) => b.id) : [],
+  )
+
+  const form = useForm<ProductCreateForm>({
+    defaultValues: getDefaultValues(),
   })
   const { handleSubmit, setError } = form
 
@@ -86,7 +147,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
       await updateBenefits.mutateAsync({
         id: product.id,
         body: {
-          benefits: enabledBenefitIds,
+          benefits: benefitIds,
         },
       })
 
@@ -98,52 +159,34 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
         ),
       )
     },
-    [
-      organization,
-      enabledBenefitIds,
-      createProduct,
-      updateBenefits,
-      setError,
-      router,
-    ],
+    [organization, benefitIds, createProduct, updateBenefits, setError, router],
   )
 
-  const onSelectBenefit = useCallback(
-    (benefit: schemas['Benefit']) => {
-      setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
-    },
-    [setEnabledBenefitIds],
-  )
+  const onSelectBenefit = useCallback((benefit: schemas['Benefit']) => {
+    setBenefitIds((ids) => [...ids, benefit.id])
+  }, [])
 
-  const onRemoveBenefit = useCallback(
-    (benefit: schemas['Benefit']) => {
-      setEnabledBenefitIds((benefitIds) =>
-        benefitIds.filter((b) => b !== benefit.id),
-      )
-    },
-    [setEnabledBenefitIds],
-  )
+  const onRemoveBenefit = useCallback((benefit: schemas['Benefit']) => {
+    setBenefitIds((ids) => ids.filter((b) => b !== benefit.id))
+  }, [])
 
-  const onReorderBenefits = useCallback(
-    (benefits: schemas['Benefit'][]) => {
-      setEnabledBenefitIds(benefits.map((b) => b.id))
-    },
-    [setEnabledBenefitIds],
-  )
+  const onReorderBenefits = useCallback((benefits: schemas['Benefit'][]) => {
+    setBenefitIds(benefits.map((b) => b.id))
+  }, [])
 
   const enabledBenefits = useMemo(
     () =>
-      enabledBenefitIds
+      benefitIds
         .map((id) => organizationBenefits.find((benefit) => benefit.id === id))
         .filter(
           (benefit): benefit is schemas['Benefit'] => benefit !== undefined,
         ),
-    [organizationBenefits, enabledBenefitIds],
+    [organizationBenefits, benefitIds],
   )
 
   return (
     <DashboardBody
-      title="Create Product"
+      title={sourceProduct ? 'Duplicate Product' : 'Create Product'}
       wrapperClassName="max-w-(--breakpoint-md)!"
       className="gap-y-16"
     >

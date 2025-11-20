@@ -155,6 +155,7 @@ export default function ClientPage({
     'active_subscriptions',
     'new_subscriptions',
     'renewed_subscriptions',
+    'average_revenue_per_user',
     'new_subscriptions_revenue',
     'renewed_subscriptions_revenue',
   ]
@@ -175,8 +176,6 @@ export default function ClientPage({
     'gross_margin', // MRR - COGS
     'gross_margin_percentage', // Gross margin / MRR
     'cashflow',
-    'monthly_recurring_revenue', // MRR
-    'average_revenue_per_user', // ARPU
   ]
 
   const netRevenueEvents = useMemo(() => {

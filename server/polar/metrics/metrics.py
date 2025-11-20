@@ -770,7 +770,7 @@ class CumulativeCostsMetric(SQLMetric):
 
 class AverageRevenuePerUserMetric(SQLMetric):
     slug = "average_revenue_per_user"
-    display_name = "Average Revenue Per User (ARPU)"
+    display_name = "Average Revenue Per User"
     type = MetricType.currency
     query = MetricQuery.active_subscriptions
 

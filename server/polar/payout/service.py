@@ -540,11 +540,21 @@ class PayoutService:
                 )
 
     async def _get_next_invoice_number(
-        self, session: AsyncSession, account: Account
+        self, session: AsyncSession, account: Account, increment: int = 1
     ) -> str:
         repository = PayoutRepository.from_session(session)
         payouts_count = await repository.count_by_account(account.id)
-        return f"{settings.PAYOUT_INVOICES_PREFIX}{payouts_count + 1:04d}"
+        invoice_number = (
+            f"{settings.PAYOUT_INVOICES_PREFIX}{payouts_count + increment:04d}"
+        )
+        existing_payout = await repository.get_by_account_and_invoice_number(
+            account.id, invoice_number
+        )
+        if existing_payout is not None:
+            return await self._get_next_invoice_number(
+                session, account, increment=increment + 1
+            )
+        return invoice_number
 
 
 payout = PayoutService()

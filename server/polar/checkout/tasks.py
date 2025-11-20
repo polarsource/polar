@@ -1,7 +1,7 @@
 import uuid
 
 from polar.exceptions import PolarTaskError
-from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import CheckoutRepository
 from .service import checkout as checkout_service
@@ -31,7 +31,6 @@ async def handle_free_success(checkout_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="checkout.expire_open_checkouts",
-    cron_trigger=CronTrigger.from_crontab("0,15,30,45 * * * *"),
     priority=TaskPriority.LOW,
 )
 async def expire_open_checkouts() -> None:

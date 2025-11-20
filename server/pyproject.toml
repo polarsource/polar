@@ -45,10 +45,11 @@ dependencies = [
   "plain-client>=0.0.3",
   "tagflow>=0.7.0",
   "exponent-server-sdk>=2.1.0",
-  "dramatiq[redis,watch]>=1.17.1",
   "pydantic-ai-slim[openai]>=0.7.1",
   "asgi-ratelimit>=0.10.0",
   "apscheduler>=3.10.4",
+  "vercel==0.3.5",
+  "vercel-workers==0.0.7",
 ]
 
 [dependency-groups]
@@ -90,7 +91,7 @@ app = "polar.app:app"
 emails = { cmd = "cd emails && pnpm i --frozen-lockfile && pnpm run build", help = "build emails" }
 backoffice = { cmd = "pnpm -C polar/backoffice install && pnpm -C polar/backoffice build", help = "build backoffice CSS and JS" }
 api = { cmd = "env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
-worker = { cmd = "dramatiq -p 1 -t 1 --queues high_priority default --watch polar -f polar.worker.scheduler:start polar.worker.run", help = "run worker" }
+worker = { cmd = "python -m polar.worker.scheduler", help = "run cron scheduler enqueuer" }
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
@@ -104,6 +105,74 @@ verify_github_app = { cmd = "python -m polar.verify_github_app", help = "verify 
 generate_dev_jwks = { cmd = "python -m polar.kit.jwk polar_dev > ./.jwks.json", help = "generate a development JWKS file" }
 seeds_load = { cmd = "python -m scripts.seeds_load", help = "load sample/test data into the database" }
 pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render" }
+
+[tool.vercel.experimental]
+
+[[tool.vercel.experimental.services]]
+type = "web"
+entry = "polar.app:app"
+
+[[tool.vercel.experimental.services]]
+type = "worker"
+entry = "polar/worker/workers.py"
+topic = "high_priority"
+consumer = "default"
+
+[[tool.vercel.experimental.services]]
+type = "worker"
+entry = "polar/worker/workers.py"
+topic = "default"
+consumer = "default"
+
+# [[tool.vercel.experimental.services]]
+# type = "cron"
+# entry = "polar/cron/order_process_dunning.py"
+# schedule = "0 * * * *"
+
+# [[tool.vercel.experimental.services]]
+# type = "cron"
+# entry = "polar/cron/webhook_event_archive.py"
+# schedule = "0 0 * * *"
+
+# [[tool.vercel.experimental.services]]
+# type = "cron"
+# entry = "polar/cron/processor_fee_sync_stripe_fees.py"
+# schedule = "0 0 * * *"
+
+# [[tool.vercel.experimental.services]]
+# type = "cron"
+# entry = "polar/cron/processor_transaction_sync_stripe.py"
+# schedule = "5 * * * *"
+
+# [[tool.vercel.experimental.services]]
+# type = "cron"
+# entry = "polar/cron/payout_trigger_stripe_payouts.py"
+# schedule = "15 * * * *"
+
+# [[tool.vercel.experimental.services]]
+# type = "cron"
+# entry = "polar/cron/meter_enqueue_billing.py"
+# schedule = "*/5 * * * *"
+
+# [[tool.vercel.experimental.services]]
+# type = "cron"
+# entry = "polar/cron/email_update_delete_expired_record.py"
+# schedule = "0 0 * * *"
+
+# [[tool.vercel.experimental.services]]
+# type = "cron"
+# entry = "polar/cron/customer_session_delete_expired.py"
+# schedule = "0 0 * * *"
+
+# [[tool.vercel.experimental.services]]
+# type = "cron"
+# entry = "polar/cron/checkout_expire_open_checkouts.py"
+# schedule = "0,15,30,45 * * * *"
+
+# [[tool.vercel.experimental.services]]
+# type = "cron"
+# entry = "polar/cron/auth_delete_expired.py"
+# schedule = "0 0 * * *"
 
 [tool.pytest.ini_options]
 markers = ["auth"]

@@ -1,13 +1,11 @@
 import functools
 import re
 
-import dramatiq
 import structlog
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from polar.logging import Logger, generate_correlation_id
-from polar.worker import JobQueueManager
 
 
 class LogCorrelationIdMiddleware:
@@ -34,12 +32,11 @@ class FlushEnqueuedWorkerJobsMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] not in ("http", "websocket"):
-            await self.app(scope, receive, send)
-            return
-
-        async with JobQueueManager.open(dramatiq.get_broker(), scope["state"]["redis"]):
-            await self.app(scope, receive, send)
+        # With the Vercel-based worker pipeline, jobs are enqueued directly to the
+        # queue client, so there is nothing left to flush at the end of a request.
+        # The middleware is left in place as a no-op to remain backwards compatible
+        # with the FastAPI setup in polar.app.
+        await self.app(scope, receive, send)
 
 
 class PathRewriteMiddleware:

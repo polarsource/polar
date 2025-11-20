@@ -1,6 +1,5 @@
 import uuid
 
-from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarTaskError
@@ -22,7 +21,6 @@ class MeterDoesNotExist(MeterTaskError):
 
 @actor(
     actor_name="meter.enqueue_billing",
-    cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
     priority=TaskPriority.LOW,
 )
 async def meter_enqueue_billing() -> None:

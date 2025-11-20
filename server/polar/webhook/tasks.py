@@ -5,8 +5,6 @@ from uuid import UUID
 
 import httpx
 import structlog
-from apscheduler.triggers.cron import CronTrigger
-from dramatiq import Retry
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.config import settings
@@ -14,7 +12,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, enqueue_job
+from polar.worker import AsyncSessionMaker, Retry, TaskPriority, actor, can_retry, enqueue_job
 
 from .service import webhook as webhook_service
 
@@ -149,11 +147,7 @@ async def webhook_event_failed(webhook_event_id: UUID) -> None:
         return await webhook_service.on_event_failed(session, webhook_event_id)
 
 
-@actor(
-    actor_name="webhook_event.archive",
-    cron_trigger=CronTrigger(hour=0, minute=0),
-    priority=TaskPriority.LOW,
-)
+@actor(actor_name="webhook_event.archive", priority=TaskPriority.LOW)
 async def webhook_event_archive() -> None:
     async with AsyncSessionMaker() as session:
         return await webhook_service.archive_events(

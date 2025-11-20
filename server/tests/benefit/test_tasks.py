@@ -1,7 +1,7 @@
 import uuid
 
 import pytest
-from dramatiq import Retry
+from polar.worker import Retry
 from pytest_mock import MockerFixture
 
 from polar.benefit.grant.service import BenefitGrantService

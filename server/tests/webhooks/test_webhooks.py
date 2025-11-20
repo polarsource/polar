@@ -1,11 +1,9 @@
 from typing import Any, cast
 from unittest.mock import MagicMock
 
-import dramatiq
 import httpx
 import pytest
 import respx
-from dramatiq import Retry
 from pytest_mock import MockerFixture
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
@@ -19,10 +17,12 @@ from polar.models.webhook_endpoint import (
     WebhookFormat,
 )
 from polar.models.webhook_event import WebhookEvent
+from polar.worker import Retry
 from polar.webhook.repository import WebhookDeliveryRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import _webhook_event_send, webhook_event_send
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.worker import WorkerMessage
 
 
 @pytest.fixture
@@ -139,7 +139,7 @@ async def test_webhook_delivery_500(
     save_fixture: SaveFixture,
     respx_mock: respx.MockRouter,
     organization: Organization,
-    current_message: dramatiq.Message[Any],
+    current_message: WorkerMessage,
 ) -> None:
     respx_mock.post("https://example.com/hook").mock(
         return_value=httpx.Response(500, text="Internal Error")
@@ -184,7 +184,7 @@ async def test_webhook_delivery_http_error(
     save_fixture: SaveFixture,
     respx_mock: respx.MockRouter,
     organization: Organization,
-    current_message: dramatiq.Message[Any],
+    current_message: WorkerMessage,
 ) -> None:
     respx_mock.post("https://example.com/hook").mock(
         side_effect=httpx.HTTPError("ERROR")

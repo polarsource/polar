@@ -4,7 +4,6 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Literal, NotRequired, TypedDict
 
-import dramatiq
 import typer
 
 import polar.tasks  # noqa: F401
@@ -13,7 +12,7 @@ from polar.benefit.service import benefit as benefit_service
 from polar.benefit.strategies.custom.schemas import BenefitCustomCreate
 from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesCreate
 
-# Import tasks to register all dramatiq actors
+# Import tasks to ensure actors are registered
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
 from polar.checkout_link.schemas import CheckoutLinkCreateProducts
 from polar.checkout_link.service import checkout_link as checkout_link_service
@@ -47,7 +46,6 @@ from polar.product.service import product as product_service
 from polar.redis import Redis, create_redis
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
-from polar.worker import JobQueueManager
 
 cli = typer.Typer()
 
@@ -744,11 +742,10 @@ def seeds_load() -> None:
 
     async def run() -> None:
         redis = create_redis("app")
-        async with JobQueueManager.open(dramatiq.get_broker(), redis):
-            engine = create_async_engine("script")
-            sessionmaker = create_async_sessionmaker(engine)
-            async with sessionmaker() as session:
-                await create_seed_data(session, redis)
+        engine = create_async_engine("script")
+        sessionmaker = create_async_sessionmaker(engine)
+        async with sessionmaker() as session:
+            await create_seed_data(session, redis)
 
     asyncio.run(run())
 

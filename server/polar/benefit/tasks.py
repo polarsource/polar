@@ -2,7 +2,6 @@ import uuid
 from typing import Literal, Unpack
 
 import structlog
-from dramatiq import Retry
 
 from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
@@ -13,6 +12,7 @@ from polar.product.repository import ProductRepository
 from polar.worker import (
     AsyncSessionMaker,
     RedisMiddleware,
+    Retry,
     TaskPriority,
     actor,
     get_retries,

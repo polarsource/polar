@@ -93,7 +93,6 @@ class Logging[RendererType]:
                         for logger in [
                             "uvicorn",
                             "sqlalchemy",
-                            "dramatiq",
                             "authlib",
                             "logfire",
                             "apscheduler",

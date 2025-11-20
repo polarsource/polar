@@ -1,178 +1,37 @@
-import contextlib
-import functools
-from collections.abc import Awaitable, Callable
-from enum import IntEnum
-from typing import Any, ParamSpec
+from __future__ import annotations
 
-import dramatiq
-import logfire
-import redis
-import structlog
-from apscheduler.triggers.cron import CronTrigger
-from dramatiq import actor as _actor
-from dramatiq import middleware
-from dramatiq.brokers.redis import RedisBroker
+import contextlib
+import json
+import uuid
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Mapping
+from contextvars import ContextVar
+from enum import IntEnum
+from typing import Any, ParamSpec, TypeAlias
+
+from vercel.workers.client import send as _queue_send  # type: ignore[reportMissingImports]
 
 from polar.config import settings
-from polar.logfire import instrument_httpx
+from polar.kit.db.postgres import (
+    AsyncSessionMaker as AsyncSessionMakerType,
+    create_async_sessionmaker,
+)
+from polar.postgres import AsyncEngine, AsyncSession, create_async_engine
+from polar.redis import Redis, create_redis
 
-from ._encoder import JSONEncoder
-from ._enqueue import JobQueueManager, enqueue_events, enqueue_job
-from ._health import HealthMiddleware
-from ._redis import RedisMiddleware
-from ._sqlalchemy import AsyncSessionMaker, SQLAlchemyMiddleware
+from .registry import ACTOR_QUEUES, register_actor
 
-
-class MaxRetriesMiddleware(dramatiq.Middleware):
-    """Middleware to set the max_retries option for a message."""
-
-    def before_process_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
-    ) -> None:
-        actor = broker.get_actor(message.actor_name)
-        max_retries = message.options.get(
-            "max_retries", actor.options.get("max_retries", settings.WORKER_MAX_RETRIES)
-        )
-        message.options["max_retries"] = max_retries
-
-
-def get_retries() -> int:
-    message = middleware.CurrentMessage.get_current_message()
-    assert message is not None
-    return message.options.get("retries", 0)
-
-
-def can_retry() -> bool:
-    message = middleware.CurrentMessage.get_current_message()
-    assert message is not None
-    return get_retries() < message.options["max_retries"]
-
-
-class SchedulerMiddleware(dramatiq.Middleware):
-    """Middleware to manage scheduled jobs using APScheduler."""
-
-    def __init__(self) -> None:
-        self.cron_triggers: list[tuple[Callable[..., Any], CronTrigger]] = []
-
-    @property
-    def actor_options(self) -> set[str]:
-        return {"cron_trigger"}
-
-    def after_declare_actor(
-        self, broker: dramatiq.Broker, actor: dramatiq.Actor[Any, Any]
-    ) -> None:
-        if cron_trigger := actor.options.get("cron_trigger"):
-            self.cron_triggers.append((actor.send, cron_trigger))
-
-
-scheduler_middleware = SchedulerMiddleware()
-
-
-class LogContextMiddleware(dramatiq.Middleware):
-    """Middleware to manage log context for each message."""
-
-    def before_process_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
-    ) -> None:
-        structlog.contextvars.bind_contextvars(
-            actor_name=message.actor_name, message_id=message.message_id
-        )
-
-    def after_process_message(
-        self,
-        broker: dramatiq.Broker,
-        message: dramatiq.Message[Any],
-        *,
-        result: Any | None = None,
-        exception: Exception | None = None,
-    ) -> None:
-        structlog.contextvars.unbind_contextvars("actor_name", "message_id")
-
-    def after_skip_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
-    ) -> None:
-        return self.after_process_message(broker, message)
-
-
-class LogfireMiddleware(dramatiq.Middleware):
-    """Middleware to manage a Logfire span when handling a message."""
-
-    def before_worker_boot(
-        self, broker: dramatiq.Broker, worker: dramatiq.Worker
-    ) -> None:
-        instrument_httpx()
-
-    def before_process_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
-    ) -> None:
-        logfire_stack = contextlib.ExitStack()
-        actor_name = message.actor_name
-        if actor_name in settings.LOGFIRE_IGNORED_ACTORS:
-            logfire_span = logfire_stack.enter_context(
-                logfire.suppress_instrumentation()
-            )
-        else:
-            logfire_span = logfire_stack.enter_context(
-                logfire.span("TASK {actor}", actor=actor_name, message=message.asdict())
-            )
-        message.options["logfire_stack"] = logfire_stack
-
-    def after_process_message(
-        self,
-        broker: dramatiq.Broker,
-        message: dramatiq.Message[Any],
-        *,
-        result: Any | None = None,
-        exception: Exception | None = None,
-    ) -> None:
-        logfire_stack: contextlib.ExitStack | None = message.options.pop(
-            "logfire_stack", None
-        )
-        if logfire_stack is not None:
-            logfire_stack.close()
-
-        # THEORY: force flush logfire events after each task to avoid memory bursts
-        logfire.force_flush()
-
-    def after_skip_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
-    ) -> None:
-        return self.after_process_message(broker, message)
-
-
-broker = RedisBroker(
-    connection_pool=redis.ConnectionPool.from_url(
-        settings.redis_url,
-        client_name=f"{settings.ENV.value}.worker.dramatiq",
-    ),
-    # Override default middlewares
-    middleware=[
-        m()
-        for m in (
-            middleware.AgeLimit,
-            middleware.TimeLimit,
-            middleware.ShutdownNotifications,
-        )
-    ],
+JSONSerializable: TypeAlias = (
+    Mapping[str, "JSONSerializable"]
+    | Iterable["JSONSerializable"]
+    | str
+    | int
+    | float
+    | bool
+    | uuid.UUID
+    | None
 )
 
-broker.add_middleware(
-    middleware.Retries(
-        max_retries=settings.WORKER_MAX_RETRIES,
-        min_backoff=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
-    )
-)
-broker.add_middleware(HealthMiddleware())
-broker.add_middleware(middleware.AsyncIO())
-broker.add_middleware(middleware.CurrentMessage())
-broker.add_middleware(MaxRetriesMiddleware())
-broker.add_middleware(SQLAlchemyMiddleware())
-broker.add_middleware(RedisMiddleware())
-broker.add_middleware(scheduler_middleware)
-broker.add_middleware(LogfireMiddleware())
-broker.add_middleware(LogContextMiddleware())
-dramatiq.set_broker(broker)
-dramatiq.set_encoder(JSONEncoder())
+P = ParamSpec("P")
 
 
 class TaskPriority(IntEnum):
@@ -186,17 +45,135 @@ class TaskQueue:
     DEFAULT = "default"
 
 
-P = ParamSpec("P")
+class Retry(Exception):
+    """Signal that a task should be retried by the queue."""
+
+    def __init__(self, *args: Any, delay: int | None = None, **kwargs: Any) -> None:
+        super().__init__(*args)
+        self.delay = delay
+
+
+_retry_attempt: ContextVar[int] = ContextVar("polar.worker.retry_attempt", default=0)
+_retry_max_retries: ContextVar[int] = ContextVar(
+    "polar.worker.retry_max_retries", default=settings.WORKER_MAX_RETRIES
+)
+
+
+def _set_retry_context_from_metadata(
+    delivery_count: int | None, max_retries: int | None = None
+) -> None:
+    """Set retry context based on queue delivery metadata."""
+    if delivery_count is None or delivery_count < 0:
+        delivery_count = 0
+    _retry_attempt.set(delivery_count)
+    if max_retries is None:
+        max_retries = settings.WORKER_MAX_RETRIES
+    _retry_max_retries.set(max_retries)
+
+
+def get_retries() -> int:
+    """Return the current retry attempt for the running task."""
+    return _retry_attempt.get()
+
+
+def can_retry() -> bool:
+    """Return True if the current task should be retried again."""
+    return get_retries() < _retry_max_retries.get()
+
+
+_engine: AsyncEngine | None = None
+_sessionmaker: AsyncSessionMakerType | None = None
+
+
+def _ensure_sessionmaker() -> None:
+    global _engine, _sessionmaker
+    if _engine is None:
+        _engine = create_async_engine("worker")
+        _sessionmaker = create_async_sessionmaker(_engine)
+
+
+@contextlib.asynccontextmanager
+async def AsyncSessionMaker() -> AsyncIterator[AsyncSession]:
+    """
+    Context manager to handle a database session for worker tasks.
+    """
+    _ensure_sessionmaker()
+    assert _sessionmaker is not None
+    async with _sessionmaker() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        else:
+            await session.commit()
+
+
+_redis: Redis | None = None
+
+
+class RedisMiddleware:
+    """
+    Backwards-compatible facade providing a shared Redis client for workers.
+    """
+
+    @classmethod
+    def get(cls) -> Redis:
+        global _redis
+        if _redis is None:
+            _redis = create_redis("worker")
+        return _redis
+
+
+def _json_default(obj: Any) -> Any:
+    if isinstance(obj, uuid.UUID):
+        return str(obj)
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+
+def _encode_envelope(payload: dict[str, Any]) -> bytes:
+    return json.dumps(payload, default=_json_default, separators=(",", ":")).encode(
+        "utf-8"
+    )
+
+
+def enqueue_job(
+    actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
+) -> None:
+    """Enqueue a job by actor name onto the Vercel queue."""
+    queue_name = ACTOR_QUEUES.get(actor) or TaskQueue.DEFAULT
+    envelope: dict[str, Any] = {
+        "actor": actor,
+        "args": list(args),
+        "kwargs": dict(kwargs),
+    }
+    body = _encode_envelope(envelope)
+    # Use a non-default content-type so the queue client does not re-encode JSON.
+    _queue_send(queue_name, body, content_type="application/json; charset=utf-8")
+
+
+def enqueue_events(*event_ids: uuid.UUID) -> None:
+    """Enqueue an event ingestion job."""
+    enqueue_job("event.ingested", list(event_ids))
 
 
 def actor[**P, R](
-    actor_class: Callable[..., dramatiq.Actor[Any, Any]] = dramatiq.Actor,
+    actor_class: Callable[..., Awaitable[R]] | None = None,
     actor_name: str | None = None,
     queue_name: str | None = None,
     priority: TaskPriority = TaskPriority.LOW,
-    broker: dramatiq.Broker | None = None,
+    cron_trigger: Any | None = None,
+    max_retries: int | None = None,
+    broker: Any | None = None,
     **options: Any,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
+    """
+    Decorator used to register a worker task.
+
+    The signature is kept compatible with the previous Dramatiq-based
+    decorator so that existing task definitions don't need to change,
+    but the implementation now only registers metadata for Vercel Workers.
+    """
     if queue_name is None:
         queue_name = (
             TaskQueue.HIGH_PRIORITY
@@ -204,42 +181,30 @@ def actor[**P, R](
             else TaskQueue.DEFAULT
         )
 
-    def decorator(
-        fn: Callable[P, Awaitable[R]],
-    ) -> Callable[P, Awaitable[R]]:
-        @functools.wraps(fn)
-        async def _wrapped_fn(*args: P.args, **kwargs: P.kwargs) -> R:
-            async with JobQueueManager.open(
-                dramatiq.get_broker(), RedisMiddleware.get()
-            ):
-                return await fn(*args, **kwargs)
-
-        _actor(
-            _wrapped_fn,  # type: ignore
-            actor_class=actor_class,
-            actor_name=actor_name,
-            queue_name=queue_name,
-            priority=priority,
-            broker=broker,
-            **options,
+    def decorator(fn: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
+        name = actor_name or fn.__name__
+        register_actor(
+            name,
+            queue_name or TaskQueue.DEFAULT,
+            fn,
+            cron_trigger=cron_trigger,
+            max_retries=max_retries,
         )
-
-        return _wrapped_fn
+        return fn
 
     return decorator
 
 
 __all__ = [
     "actor",
-    "CronTrigger",
     "AsyncSessionMaker",
     "RedisMiddleware",
-    "JobQueueManager",
-    "scheduler_middleware",
     "enqueue_job",
     "enqueue_events",
     "get_retries",
     "can_retry",
     "TaskPriority",
     "TaskQueue",
+    "Retry",
+    "_set_retry_context_from_metadata",
 ]

@@ -1,7 +1,7 @@
 import structlog
 
 from polar.logging import Logger
-from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .service import auth as auth_service
 
@@ -10,7 +10,6 @@ log: Logger = structlog.get_logger()
 
 @actor(
     actor_name="auth.delete_expired",
-    cron_trigger=CronTrigger(hour=0, minute=0),
     priority=TaskPriority.LOW,
 )
 async def auth_delete_expired() -> None:

@@ -5,7 +5,6 @@ from typing import ParamSpec, cast
 
 import stripe as stripe_lib
 import structlog
-from dramatiq import Retry
 
 from polar.account.service import account as account_service
 from polar.checkout.service import NotConfirmedCheckout
@@ -41,6 +40,7 @@ from polar.user.service import user as user_service
 from polar.worker import (
     AsyncSessionMaker,
     RedisMiddleware,
+    Retry,
     TaskPriority,
     actor,
     can_retry,

@@ -7,7 +7,7 @@ import structlog
 from polar.enums import AccountType
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
-from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import PayoutRepository
 from .service import PayoutAlreadyTriggered
@@ -42,7 +42,6 @@ async def payout_created(payout_id: uuid.UUID) -> None:
 
 @actor(
     actor_name="payout.trigger_stripe_payouts",
-    cron_trigger=CronTrigger(minute=15),
     priority=TaskPriority.LOW,
 )
 async def trigger_stripe_payouts() -> None:

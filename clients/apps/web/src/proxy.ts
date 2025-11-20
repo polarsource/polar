@@ -4,6 +4,9 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { createServerSideAPI } from './utils/client'
 
+const DISABLE_AUTH_MIDDLEWARE =
+  process.env.NEXT_PUBLIC_DISABLE_AUTH_MIDDLEWARE === '1'
+
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 
@@ -134,7 +137,7 @@ export async function proxy(request: NextRequest) {
     user = data
   }
 
-  if (requiresAuthentication(request) && !user) {
+  if (!DISABLE_AUTH_MIDDLEWARE && requiresAuthentication(request) && !user) {
     return getLoginResponse(request)
   }
 

@@ -1,9 +1,7 @@
 import uuid
 
-from dramatiq import Retry
-
 from polar.exceptions import PolarTaskError
-from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor, can_retry
+from polar.worker import AsyncSessionMaker, Retry, TaskPriority, actor, can_retry
 
 from .repository import PaymentTransactionRepository
 from .service.processor_fee import (
@@ -28,7 +26,6 @@ class PaymentTransactionDoesNotExist(TransactionTaskError):
 
 @actor(
     actor_name="processor_fee.sync_stripe_fees",
-    cron_trigger=CronTrigger(hour=0, minute=0),
     priority=TaskPriority.LOW,
 )
 async def sync_stripe_fees() -> None:

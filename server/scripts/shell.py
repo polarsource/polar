@@ -5,7 +5,6 @@ import os
 import sys
 from typing import Any
 
-import dramatiq
 import rich
 import structlog
 
@@ -13,7 +12,6 @@ from polar import tasks  # noqa: F401
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.postgres import create_async_engine
 from polar.redis import create_redis
-from polar.worker import JobQueueManager
 
 """
 This script allows interacting with the database and our services in a REPL.
@@ -103,14 +101,12 @@ def start_shell() -> None:
 [bold yellow]Important notes:[/bold yellow]
 
 - The session is [bold red]not[/bold red] automatically committed. You need to call [bold green]`await session.commit()`[/bold green] to persist changes.
-- The enqueued jobs are [bold red]not[/bold red] automatically flushed. You need to call [bold green]`await job_queue_manager.flush(broker, redis)`[/bold green] to flush the jobs to the queue.
 """)
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
     redis = create_redis("app")
-    job_queue_manager = JobQueueManager.set()
     engine = create_async_engine("script")
     async_sessionmaker = create_async_sessionmaker(engine)
     session = async_sessionmaker()
@@ -128,9 +124,7 @@ def start_shell() -> None:
     return shell_asyncio(
         loop=loop,
         session=session,
-        job_queue_manager=job_queue_manager,
         redis=redis,
-        broker=dramatiq.get_broker(),
     )
 
 

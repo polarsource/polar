@@ -1,41 +1,53 @@
 from collections.abc import Iterator
-from typing import Any
+from typing import Callable
 
-import dramatiq
 import pytest
-from dramatiq.middleware.current_message import CurrentMessage
 from pytest_mock import MockerFixture
 
 from polar.config import settings
-from polar.kit.db.postgres import AsyncSession
 from polar.redis import Redis
-from polar.worker import JobQueueManager, RedisMiddleware
-from polar.worker._enqueue import _job_queue_manager
-from polar.worker._sqlalchemy import SQLAlchemyMiddleware
+from polar.worker import RedisMiddleware, _set_retry_context_from_metadata
+
+
+class _RetryOptions(dict[str, int]):
+    def __init__(self, callback: Callable[[], None], **kwargs: int) -> None:
+        super().__init__(**kwargs)
+        self._callback = callback
+
+    def __setitem__(self, key: str, value: int) -> None:
+        super().__setitem__(key, value)
+        self._callback()
+
+
+class WorkerMessage:
+    def __init__(self) -> None:
+        self.options = _RetryOptions(
+            self.apply,
+            retries=0,
+            max_retries=settings.WORKER_MAX_RETRIES,
+        )
+        self.apply()
+
+    def apply(self) -> None:
+        _set_retry_context_from_metadata(
+            self.options.get("retries"), self.options.get("max_retries")
+        )
 
 
 @pytest.fixture(autouse=True)
-def set_job_queue_manager_context() -> None:
-    _job_queue_manager.set(JobQueueManager())
+def reset_retry_context() -> Iterator[None]:
+    _set_retry_context_from_metadata(0)
+    yield
+    _set_retry_context_from_metadata(0)
 
 
 @pytest.fixture(autouse=True)
-def patch_middlewares(
-    mocker: MockerFixture, session: AsyncSession, redis: Redis
-) -> None:
-    mocker.patch.object(SQLAlchemyMiddleware, "get_async_session", new=lambda: session)
+def patch_redis_middleware(mocker: MockerFixture, redis: Redis) -> None:
     mocker.patch.object(RedisMiddleware, "get", new=lambda: redis)
 
 
-@pytest.fixture(autouse=True)
-def current_message() -> Iterator[dramatiq.Message[Any]]:
-    message = dramatiq.Message[Any](
-        queue_name="default",
-        actor_name="actor",
-        args=(),
-        kwargs={},
-        options={"retries": 0, "max_retries": settings.WORKER_MAX_RETRIES},
-    )
-    CurrentMessage._MESSAGE.set(message)
+@pytest.fixture
+def current_message() -> Iterator[WorkerMessage]:
+    message = WorkerMessage()
     yield message
-    CurrentMessage._MESSAGE.set(None)
+    _set_retry_context_from_metadata(0)

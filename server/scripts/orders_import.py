@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 from functools import wraps
 from typing import Annotated, Any
 
-import dramatiq
 import structlog
 import typer
 from pydantic import UUID4
@@ -24,8 +23,7 @@ from polar.order.repository import OrderRepository
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import create_async_engine
 from polar.product.repository import ProductRepository
-from polar.redis import create_redis
-from polar.worker import JobQueueManager, enqueue_job
+from polar.worker import enqueue_job
 
 cli = typer.Typer()
 
@@ -81,9 +79,7 @@ async def orders_import(
 ) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
-    redis = create_redis("script")
-    async with JobQueueManager.open(dramatiq.get_broker(), redis) as manager:
-        async with sessionmaker() as session:
+    async with sessionmaker() as session:
             organization_repository = OrganizationRepository.from_session(session)
             organization = await organization_repository.get_by_id(organization_id)
             if organization is None:

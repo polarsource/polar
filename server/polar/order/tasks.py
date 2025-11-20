@@ -2,7 +2,6 @@ import uuid
 
 import stripe as stripe_lib
 import structlog
-from dramatiq import Retry
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarTaskError
@@ -13,14 +12,7 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
-from polar.worker import (
-    AsyncSessionMaker,
-    CronTrigger,
-    TaskPriority,
-    actor,
-    can_retry,
-    enqueue_job,
-)
+from polar.worker import AsyncSessionMaker, Retry, TaskPriority, actor, can_retry, enqueue_job
 
 from .repository import OrderRepository
 from .service import CardPaymentFailed, NoPendingBillingEntries
@@ -196,11 +188,7 @@ async def order_invoice(order_id: uuid.UUID) -> None:
         await order_service.generate_invoice(session, order)
 
 
-@actor(
-    actor_name="order.process_dunning",
-    cron_trigger=CronTrigger.from_crontab("0 * * * *"),
-    priority=TaskPriority.MEDIUM,
-)
+@actor(actor_name="order.process_dunning", priority=TaskPriority.MEDIUM)
 async def process_dunning() -> None:
     """Process all orders that are due for dunning (payment retry)."""
     async with AsyncSessionMaker() as session:

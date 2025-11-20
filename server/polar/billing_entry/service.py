@@ -23,7 +23,7 @@ from polar.product.guard import (
     is_metered_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
-from polar.worker._enqueue import enqueue_job
+from polar.worker import enqueue_job
 
 from .repository import BillingEntryRepository
 

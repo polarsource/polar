@@ -42,6 +42,7 @@ class MetricQuery(StrEnum):
     active_subscriptions = "active_subscriptions"
     checkouts = "checkouts"
     canceled_subscriptions = "canceled_subscriptions"
+    churned_subscriptions = "churned_subscriptions"
     events = "events"
 
 
@@ -478,6 +479,63 @@ def get_canceled_subscriptions_cte(
     )
 
 
+def get_churned_subscriptions_cte(
+    timestamp_series: CTE,
+    interval: TimeInterval,
+    auth_subject: AuthSubject[User | Organization],
+    metrics: list["type[SQLMetric]"],
+    now: datetime,
+    *,
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> CTE:
+    timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    readable_subscriptions_statement = _get_readable_subscriptions_statement(
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        billing_type=billing_type,
+        customer_id=customer_id,
+    )
+
+    return cte(
+        select(
+            timestamp_column.label("timestamp"),
+            *_get_metrics_columns(
+                MetricQuery.churned_subscriptions,
+                timestamp_column,
+                interval,
+                metrics,
+                now,
+            ),
+        )
+        .select_from(
+            timestamp_series.join(
+                Subscription,
+                isouter=True,
+                onclause=and_(
+                    func.coalesce(Subscription.ended_at, Subscription.ends_at).is_not(
+                        None
+                    ),
+                    interval.sql_date_trunc(
+                        cast(
+                            SQLColumnExpression[datetime],
+                            func.coalesce(Subscription.ended_at, Subscription.ends_at),
+                        )
+                    )
+                    == interval.sql_date_trunc(timestamp_column),
+                    Subscription.id.in_(readable_subscriptions_statement),
+                ),
+            )
+        )
+        .group_by(timestamp_column)
+        .order_by(timestamp_column.asc())
+    )
+
+
 def _get_readable_cost_events_statement(
     *,
     auth_subject: AuthSubject[User | Organization],
@@ -626,5 +684,6 @@ QUERIES: list[QueryCallable] = [
     get_active_subscriptions_cte,
     get_checkouts_cte,
     get_canceled_subscriptions_cte,
+    get_churned_subscriptions_cte,
     get_events_metrics_cte,
 ]

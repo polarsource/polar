@@ -1,7 +1,8 @@
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Uuid, func, select
+from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid, func, select
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import (
     Mapped,
@@ -12,15 +13,23 @@ from sqlalchemy.orm import (
 )
 
 from polar.kit.db.models.base import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
     from .customer import Customer
     from .organization import Organization
 
 
+class WalletType(StrEnum):
+    usage = "usage"
+    billing = "billing"
+
+
 class Wallet(RecordModel):
     __tablename__ = "wallets"
+    __table_args__ = (UniqueConstraint("type", "currency", "customer_id"),)
 
+    type: Mapped[WalletType] = mapped_column(StringEnum(WalletType), nullable=False)
     currency: Mapped[str] = mapped_column(String(3))
     customer_id: Mapped[UUID] = mapped_column(
         Uuid,

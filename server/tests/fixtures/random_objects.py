@@ -99,7 +99,7 @@ from polar.models.product_price import ProductPriceAmountType, ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.models.user import OAuthAccount, OAuthPlatform
-from polar.models.wallet_transaction import WalletTransactionType
+from polar.models.wallet import WalletType
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
 from tests.fixtures.database import SaveFixture
 
@@ -2067,9 +2067,14 @@ async def create_subscription_with_seats(
 
 
 async def create_wallet(
-    save_fixture: SaveFixture, *, customer: Customer, currency: str = "usd"
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    type: WalletType,
+    currency: str = "usd",
 ) -> Wallet:
     wallet = Wallet(
+        type=type,
         customer=customer,
         currency=currency,
     )
@@ -2081,14 +2086,12 @@ async def create_wallet_transaction(
     save_fixture: SaveFixture,
     *,
     wallet: Wallet,
-    type: WalletTransactionType,
     amount: int,
     tax_amount: int = 0,
     tax_calculation_processor_id: str | None = None,
 ) -> WalletTransaction:
     wallet_transaction = WalletTransaction(
         wallet=wallet,
-        type=type,
         amount=amount,
         currency=wallet.currency,
         tax_amount=tax_amount,
@@ -2096,6 +2099,29 @@ async def create_wallet_transaction(
     )
     await save_fixture(wallet_transaction)
     return wallet_transaction
+
+
+async def create_wallet_billing(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    currency: str = "usd",
+    initial_balance: int = 0,
+) -> Wallet:
+    wallet = await create_wallet(
+        save_fixture,
+        type=WalletType.billing,
+        currency=currency,
+        customer=customer,
+    )
+    if initial_balance != 0:
+        await create_wallet_transaction(
+            save_fixture,
+            wallet=wallet,
+            amount=initial_balance,
+        )
+
+    return wallet
 
 
 async def create_trial_redemption(

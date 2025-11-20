@@ -5,6 +5,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.models import Customer, Wallet
+from polar.models.wallet import WalletType
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_wallet
@@ -12,7 +13,7 @@ from tests.fixtures.random_objects import create_wallet
 
 @pytest_asyncio.fixture
 async def wallets(save_fixture: SaveFixture, customer: Customer) -> list[Wallet]:
-    return [await create_wallet(save_fixture, customer=customer)]
+    return [await create_wallet(save_fixture, type=WalletType.usage, customer=customer)]
 
 
 @pytest.mark.asyncio
@@ -47,7 +48,9 @@ class TestListWallets:
         save_fixture: SaveFixture,
         customer_second: Customer,
     ) -> None:
-        await create_wallet(save_fixture, customer=customer_second)
+        await create_wallet(
+            save_fixture, type=WalletType.usage, customer=customer_second
+        )
 
         response = await client.get("/v1/customer-portal/wallets/")
 
@@ -77,7 +80,9 @@ class TestGetWallet:
         save_fixture: SaveFixture,
         customer_second: Customer,
     ) -> None:
-        wallet = await create_wallet(save_fixture, customer=customer_second)
+        wallet = await create_wallet(
+            save_fixture, type=WalletType.usage, customer=customer_second
+        )
 
         response = await client.get(f"/v1/customer-portal/wallets/{wallet.id}")
 

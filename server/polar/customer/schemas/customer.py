@@ -131,18 +131,6 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
 
 
-class CustomerBalance(Schema):
-    """Customer balance information."""
-
-    balance: int = Field(
-        description="Customer balance in cents. Positive values represent credit (customer is owed money), negative values represent debit (customer owes money)."
-    )
-    currency: str = Field(
-        description="The currency code (ISO 4217) for the balance amount.",
-        examples=["usd"],
-    )
-
-
 class Customer(CustomerBase):
     """A customer in an organization."""
 

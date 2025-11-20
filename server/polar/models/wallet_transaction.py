@@ -1,5 +1,4 @@
 from datetime import datetime
-from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -8,7 +7,6 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BigInteger
 
 from polar.kit.db.models import IDModel
-from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
@@ -17,19 +15,9 @@ if TYPE_CHECKING:
     from .wallet import Wallet
 
 
-class WalletTransactionType(StrEnum):
-    credit = "credit"
-    debit = "debit"
-    refund = "refund"
-    dispute = "dispute"
-
-
 class WalletTransaction(IDModel):
     __tablename__ = "wallet_transactions"
 
-    type: Mapped[WalletTransactionType] = mapped_column(
-        StringEnum(WalletTransactionType)
-    )
     timestamp: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
     )

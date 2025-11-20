@@ -11,9 +11,18 @@ _MemberRead = Authenticator(
     required_scopes={
         Scope.web_read,
         Scope.web_write,
-        Scope.customers_read,
-        Scope.customers_write,
+        Scope.members_read,
+        Scope.members_write,
     },
     allowed_subjects={User, Organization},
 )
 MemberRead = Annotated[AuthSubject[User | Organization], Depends(_MemberRead)]
+
+_MemberWrite = Authenticator(
+    required_scopes={
+        Scope.web_write,
+        Scope.members_write,
+    },
+    allowed_subjects={User, Organization},
+)
+MemberWrite = Annotated[AuthSubject[User | Organization], Depends(_MemberWrite)]

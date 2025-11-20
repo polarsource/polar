@@ -38,6 +38,13 @@ class Member(RecordModel):
         index=True,
     )
 
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="restrict"),
+        nullable=False,
+        index=True,
+    )
+
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     external_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)

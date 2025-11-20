@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import Depends, Query
 
 from polar.exceptions import ResourceNotFound
@@ -33,14 +35,7 @@ async def list_members(
     customer_id: str | None = Query(None, description="Filter by customer ID."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[Member]:
-    """
-    List members.
-
-    Members can be filtered by customer ID and support pagination and sorting.
-    """
-    from uuid import UUID
-
-    # Parse customer_id if provided
+    """List members with optional customer ID filter."""
     parsed_customer_id = None
     if customer_id is not None:
         try:

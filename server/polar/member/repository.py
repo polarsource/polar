@@ -76,16 +76,13 @@ class MemberRepository(
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Member]]:
-        """
-        Get a statement filtered by the auth subject's access to customers.
-        """
+        """Get a statement filtered by the auth subject's access to organizations."""
         statement = self.get_base_statement()
 
         if is_user(auth_subject):
             user = auth_subject.subject
-            # User can access members of customers in their organizations
-            statement = statement.join(Customer).where(
-                Customer.organization_id.in_(
+            statement = statement.where(
+                Member.organization_id.in_(
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
                         UserOrganization.deleted_at.is_(None),
@@ -93,9 +90,8 @@ class MemberRepository(
                 )
             )
         elif is_organization(auth_subject):
-            # Organization can access members of their own customers
-            statement = statement.join(Customer).where(
-                Customer.organization_id == auth_subject.subject.id,
+            statement = statement.where(
+                Member.organization_id == auth_subject.subject.id,
             )
 
         return statement

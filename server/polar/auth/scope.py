@@ -56,6 +56,9 @@ class Scope(StrEnum):
     customers_read = "customers:read"
     customers_write = "customers:write"
 
+    members_read = "members:read"
+    members_write = "members:write"
+
     wallets_read = "wallets:read"
     wallets_write = "wallets:write"
 
@@ -147,6 +150,8 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     ),
     Scope.customers_read: "Read customers",
     Scope.customers_write: "Create or modify customers",
+    Scope.members_read: "Read members",
+    Scope.members_write: "Create or modify members",
     Scope.wallets_read: "Read wallets",
     Scope.wallets_write: "Create or modify wallets",
     Scope.customer_meters_read: "Read customer meters",

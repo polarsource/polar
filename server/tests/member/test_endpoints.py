@@ -51,6 +51,7 @@ class TestListMembers:
         # Create members for customer1
         member1 = Member(
             customer_id=customer1.id,
+            organization_id=organization.id,
             email="member1@example.com",
             name="Member 1",
             role="owner",
@@ -60,6 +61,7 @@ class TestListMembers:
         # Create members for customer2
         member2 = Member(
             customer_id=customer2.id,
+            organization_id=organization.id,
             email="member2@example.com",
             name="Member 2",
             role="member",
@@ -111,6 +113,7 @@ class TestListMembers:
         # Create members
         member1 = Member(
             customer_id=customer1.id,
+            organization_id=organization.id,
             email="member1@example.com",
             name="Member 1",
             role="owner",
@@ -119,6 +122,7 @@ class TestListMembers:
 
         member2 = Member(
             customer_id=customer2.id,
+            organization_id=organization.id,
             email="member2@example.com",
             name="Member 2",
             role="member",
@@ -153,6 +157,7 @@ class TestListMembers:
         for i in range(5):
             member = Member(
                 customer_id=customer.id,
+                organization_id=organization.id,
                 email=f"member{i}@example.com",
                 name=f"Member {i}",
                 external_id=f"ext_{i}",
@@ -196,6 +201,7 @@ class TestListMembers:
         # Create a member
         member = Member(
             customer_id=customer.id,
+            organization_id=other_org.id,
             email="member@example.com",
             name="Member",
             role="member",

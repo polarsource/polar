@@ -44,10 +44,6 @@ class MemberService:
             clause_function = desc if is_desc else asc
             if criterion == MemberSortProperty.created_at:
                 order_by_clauses.append(clause_function(Member.created_at))
-            elif criterion == MemberSortProperty.email:
-                order_by_clauses.append(clause_function(Member.email))
-            elif criterion == MemberSortProperty.member_name:
-                order_by_clauses.append(clause_function(Member.name))
         statement = statement.order_by(*order_by_clauses)
 
         return await repository.paginate(
@@ -107,6 +103,7 @@ class MemberService:
 
         member = Member(
             customer_id=customer.id,
+            organization_id=organization.id,
             email=email,
             name=name,
             external_id=external_id,

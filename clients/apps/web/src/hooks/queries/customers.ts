@@ -57,24 +57,6 @@ export const useCustomer = (id: string | null) =>
     enabled: !!id,
   })
 
-export const useCustomerBalance = (id: string | null) =>
-  useQuery({
-    queryKey: ['customers', 'balance', id],
-    queryFn: () => {
-      return unwrap(
-        api.GET('/v1/customers/{id}/balance', {
-          params: {
-            path: {
-              id: id ?? '',
-            },
-          },
-        }),
-      )
-    },
-    retry: defaultRetry,
-    enabled: !!id,
-  })
-
 export const useCreateCustomer = (organizationId: string) =>
   useMutation({
     mutationFn: (body: schemas['CustomerCreate']) =>

@@ -511,7 +511,7 @@ class CheckoutService:
             # Only auto-select if is_business_customer wasn't explicitly set in the request
             if (
                 "is_business_customer" not in checkout_create.model_fields_set
-                and checkout.customer._billing_name is not None
+                and checkout.customer.actual_billing_name is not None
                 and checkout.customer.billing_address is not None
                 and checkout.customer.billing_address.has_address()
             ):

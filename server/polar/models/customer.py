@@ -298,5 +298,9 @@ class Customer(MetadataMixin, RecordModel):
     def billing_name(self, value: str | None) -> None:
         self._billing_name = value
 
+    @property
+    def actual_billing_name(self) -> str | None:
+        return self._billing_name
+
     def touch_meters_dirtied_at(self) -> None:
         self.meters_dirtied_at = utc_now()

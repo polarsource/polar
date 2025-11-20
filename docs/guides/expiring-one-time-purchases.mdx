@@ -1,0 +1,164 @@
+---
+title: "Expiring One-Time Purchases with License Keys"
+description: "Guide to use license keys and webhooks to add an expiration to your one-time products, perfect for trials, demos, or limited-time access."
+---
+
+In some scenarios, you might sell a one-time product but want to limit its use to a specific period. For example, you could offer a 3-day trial, a project demo that's valid for a week, or time-bound access to a digital resource.
+
+This guide will walk you through setting up a one-time purchase product that automatically expires after a set duration using Polar's license key benefits and webhooks.
+
+### How It Works
+
+We'll create a **license key** benefit with a defined expiration period and attach it to a product. When a customer purchases the product, Polar generates a license key that is active for the specified duration.
+
+Using **webhooks**, your application can listen for when the license is granted (`benefit_grant.created`) and when it is revoked (`benefit_grant.revoked`). This allows you to sync the license state with your own database and manage access accordingly.
+
+<Steps>
+    <Step title="Create an Expiring License Key Benefit">
+        First, we need to create a benefit that issues a license key with a built-in expiration.
+
+        1. Navigate to the **Benefits** tab in your Polar dashboard.
+        2. Click **"Create Benefit"** .
+        3. Fill in the benefit details:
+
+            - **Description:** Give it a clear name, like "3-Day Trial License".
+
+            - **Properties:**
+
+                Set the **"Type"** field to `License Keys`.
+
+                Set the **"Key Prefix"** field to your preffered prefix.
+
+                Set the **"Expires "** field to `3` `Days`.
+
+        4. Click **"Create"** to save it.
+
+        <img
+            src="/assets/guides/expiring-purchases/create-benefit.png"
+            alt="Creating an expiring license key benefit"
+        />
+    </Step>
+
+    <Step title="Create a Product and Attach the Benefit">
+        Next, let's create the one-time product that customers will purchase.
+
+        1. Navigate to the **Products** tab and click **"New product"**.
+        2. Fill in the product details (name, price, etc.).
+        3. Set the **Pricing** field to `One-time purchase` and choose your preffered pricing model and price.
+        3. In the **Automated Benefits** section
+
+             Click **"License Keys"** and enable the `3-Day Trial License` you just created.
+        4. Click **"Create product"**.
+
+        <img
+            src="/assets/guides/expiring-purchases/create-product.png"
+            alt="Attaching the benefit to a new product"
+        />
+    </Step>
+
+    <Step title="Set Up Webhooks">
+        To automatically track when a license is granted or revoked, we need to set up a webhook endpoint.
+
+        1. Go to **Settings** > **Webhooks** and click **"Add Endpoint"**.
+        2. Enter the URL where your application will listen for events.
+        3. For the events, select **`benefit_grant.created`** and **`benefit_grant.revoked`**.
+        4. Click **"Create"**.
+
+        <img
+            src="/assets/guides/expiring-purchases/webhooks-setup.png"
+            alt="Setting up webhooks for benefit events"
+        />
+    </Step>
+
+    <Step title="Handle Webhook Events">
+        Now, let's write a simple server-side endpoint to handle the incoming webhooks. This example uses JavaScript and Express, assuming you'll store the license state in a Redis database (e.g., using [Upstash](https://upstash.com/)).
+
+        ```javascript
+        // Example using Express.js and the Polar SDK
+        app.post("/polar/webhooks", Webhooks({
+          webhookSecret: process.env.POLAR_WEBHOOK_SECRET,
+
+          onBenefitGrantCreated: async (payload) => {
+            const grant = payload.data;
+
+            // Only handle license key grants
+            if (grant.benefit.type !== "license_keys") {
+            return;
+            }
+            if (!hasLicenseKeyProperties(grant)) {
+            console.log("License key properties missing:", grant.properties);
+            return;
+            }
+            const { licenseKeyId, displayKey } = grant.properties;
+            await redis.set(`license:${licenseKeyId}`, "active");
+            console.log(`License granted: ${licenseKeyId} (${displayKey})`);
+        },
+
+        onBenefitGrantRevoked: async (payload) => {
+          const grant = payload.data;
+          if (grant.benefit.type !== "license_keys") {
+            console.log("Ignoring non-license revoke");
+            return;
+          }
+          if (!hasLicenseKeyProperties(grant)) {
+            console.log("License key properties missing:", grant.properties);
+            return;
+          }
+        const { licenseKeyId } = grant.properties;
+        await redis.del(`license:${licenseKeyId}`);
+    },
+}));
+
+app.listen(3000, () => console.log("Server running on port 3000"));
+        ```
+    </Step>
+
+    <Step title="Observe the Customer Experience">
+
+        **Customer Portal:**
+        The customer can view their active license and its expiration date directly in their portal.
+        <img
+            src="/assets/guides/expiring-purchases/customer-portal-1.png"
+            alt="Customer portal view of the license"
+        />
+        <img
+            src="/assets/guides/expiring-purchases/customer-portal-2.png"
+            alt="Customer portal Billing section"
+        />
+
+    </Step>
+
+    <Step title="Monitor Webhook Events">
+        When the purchase is completed, a `benefit_grant.created` event is sent to your webhook endpoint.
+
+        After 3 days, when the license expires, Polar automatically revokes it and sends a `benefit_grant.revoked` event:
+
+    <img
+        src="/assets/guides/expiring-purchases/webhooks-firing.png"
+        alt="Webhooks Status"
+    />
+    </Step>
+
+    <Step title="Verify Database State">
+        By checking your Redis database, you can see the state changes.
+
+        **After Grant (`benefit_grant.created`):**
+        The key for the license will exist and be marked as active.
+
+        <img
+            src="/assets/guides/expiring-purchases/redis-active-status.png"
+            alt="Redis database active status"
+        />
+
+        **After Revocation (`benefit_grant.revoked`):**
+        The key will be deleted from your database, effectively ending the customer's access.
+
+        <img
+            src="/assets/guides/expiring-purchases/redis-revoked-status.png"
+            alt="Redis database revoked status"
+        />
+
+    </Step>
+</Steps>
+
+By following these steps, you can successfully implement time-limited access for your one-time products.

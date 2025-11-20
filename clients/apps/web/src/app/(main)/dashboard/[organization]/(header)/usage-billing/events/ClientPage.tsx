@@ -4,7 +4,6 @@ import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import { EventCreationGuideModal } from '@/components/Events/EventCreationGuideModal'
 import { EventMetadataFilter } from '@/components/Events/EventMetadataFilter'
 import { Events } from '@/components/Events/Events'
-import { useEventDisplayName } from '@/components/Events/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import { Modal } from '@/components/Modal'
@@ -47,6 +46,46 @@ import { twMerge } from 'tailwind-merge'
 import z from 'zod'
 
 const PAGE_SIZE = 100
+
+// Replace this after migrating /v1/events/names to use labels.
+const useEventDisplayName = (eventName: schemas['Event']['name']) => {
+  return useMemo(() => {
+    switch (eventName) {
+      case 'benefit.granted':
+        return 'Benefit Granted'
+      case 'benefit.cycled':
+        return 'Benefit Cycled'
+      case 'benefit.updated':
+        return 'Benefit Updated'
+      case 'benefit.revoked':
+        return 'Benefit Revoked'
+      case 'subscription.cycled':
+        return 'Subscription Cycled'
+      case 'subscription.revoked':
+        return 'Subscription Revoked'
+      case 'subscription.product_updated':
+        return 'Subscription Product Updated'
+      case 'order.paid':
+        return 'Order Paid'
+      case 'order.refunded':
+        return 'Order Refunded'
+      case 'subscription.seats_updated':
+        return 'Subscription Seats Updated'
+      case 'customer.created':
+        return 'Customer Created'
+      case 'customer.updated':
+        return 'Customer Updated'
+      case 'customer.deleted':
+        return 'Customer Deleted'
+      case 'meter.credited':
+        return 'Meter Credited'
+      case 'meter.reset':
+        return 'Meter Reset'
+      default:
+        return eventName
+    }
+  }, [eventName])
+}
 
 const EventName = ({ eventName }: { eventName: schemas['EventName'] }) => {
   const displayName = useEventDisplayName(eventName.name)

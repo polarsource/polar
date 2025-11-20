@@ -5694,6 +5694,11 @@ export interface components {
        */
       parent_id?: string | null
       /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -7003,6 +7008,11 @@ export interface components {
        */
       parent_id?: string | null
       /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -7566,6 +7576,11 @@ export interface components {
        */
       parent_id?: string | null
       /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -7689,6 +7704,11 @@ export interface components {
        * @description The ID of the parent event.
        */
       parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -11907,6 +11927,11 @@ export interface components {
        */
       parent_id?: string | null
       /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -12084,6 +12109,11 @@ export interface components {
        * @description The ID of the parent event.
        */
       parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -13925,6 +13955,11 @@ export interface components {
        * @description The ID of the parent event.
        */
       parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -17053,6 +17088,11 @@ export interface components {
        */
       parent_id?: string | null
       /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -17147,6 +17187,11 @@ export interface components {
        * @description The ID of the parent event.
        */
       parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -18223,6 +18268,11 @@ export interface components {
        */
       parent_id?: string | null
       /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -18359,6 +18409,11 @@ export interface components {
        * @description The ID of the parent event.
        */
       parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -21598,6 +21653,11 @@ export interface components {
        */
       parent_id?: string | null
       /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -21724,6 +21784,11 @@ export interface components {
        */
       parent_id?: string | null
       /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -21847,6 +21912,11 @@ export interface components {
        */
       parent_id?: string | null
       /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -21911,6 +21981,11 @@ export interface components {
        * @description The ID of the parent event.
        */
       parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -22577,6 +22652,11 @@ export interface components {
        * @description The ID of the parent event.
        */
       parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
       /**
        * Name
        * @description The name of the event.

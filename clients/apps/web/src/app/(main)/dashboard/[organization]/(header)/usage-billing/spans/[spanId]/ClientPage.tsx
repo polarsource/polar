@@ -3,7 +3,6 @@
 import Chart from '@/components/Chart/Chart'
 import { CustomerStatBox } from '@/components/Customer/CustomerStatBox'
 import { Events } from '@/components/Events/Events'
-import { useEventDisplayName } from '@/components/Events/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
@@ -102,7 +101,7 @@ export default function SpanDetailPage({
   const firstStat = hierarchyStats?.totals?.[0]
   const eventName = firstStat?.name ?? ''
   const eventLabel = firstStat?.label ?? eventName
-  const eventDisplayName = useEventDisplayName(eventLabel)
+  const eventDisplayName = firstStat?.label ?? ''
 
   const costMetrics = useMemo(() => {
     if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {

@@ -15,7 +15,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { EventCustomer } from './EventCustomer'
 import { EventSourceBadge } from './EventSourceBadge'
-import { useEventCard, useEventCostBadge, useEventDisplayName } from './utils'
+import { useEventCard, useEventCostBadge } from './utils'
 
 const PAGE_SIZE = 10
 
@@ -83,7 +83,6 @@ export const EventRow = ({
     [event, isExpanded],
   )
 
-  const eventDisplayName = useEventDisplayName(event.name)
   const eventCard = useEventCard(event)
   const eventCostBadge = useEventCostBadge(event)
 
@@ -137,7 +136,7 @@ export const EventRow = ({
               </div>
             )}
             <div className="flex flex-row items-center gap-x-4">
-              <span className="text-xs">{eventDisplayName}</span>
+              <span className="text-xs">{event.label}</span>
               <EventSourceBadge source={event.source} />
               {event.child_count > 0 && (
                 <span className="dark:text-polar-500 dark:bg-polar-700 text-xxs rounded-md bg-gray-100 px-2 py-1 text-gray-500 capitalize">

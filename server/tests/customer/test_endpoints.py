@@ -127,6 +127,7 @@ class TestListCustomers:
         # Create members for the customer
         member1 = Member(
             customer_id=customer.id,
+            organization_id=organization.id,
             email="member1@example.com",
             name="Member One",
             role="owner",
@@ -134,6 +135,7 @@ class TestListCustomers:
         )
         member2 = Member(
             customer_id=customer.id,
+            organization_id=organization.id,
             email="member2@example.com",
             name="Member Two",
             role="member",
@@ -172,6 +174,7 @@ class TestListCustomers:
         # Create members for the customer
         member1 = Member(
             customer_id=customer.id,
+            organization_id=organization.id,
             email="member1@example.com",
             name="Member One",
             role="owner",
@@ -179,6 +182,7 @@ class TestListCustomers:
         )
         member2 = Member(
             customer_id=customer.id,
+            organization_id=organization.id,
             email="member2@example.com",
             name="Member Two",
             role="member",
@@ -283,6 +287,7 @@ class TestGetExternal:
         # Create members for the customer
         member1 = Member(
             customer_id=customer.id,
+            organization_id=organization.id,
             email="owner@example.com",
             name="Owner Member",
             role="owner",
@@ -290,6 +295,7 @@ class TestGetExternal:
         )
         member2 = Member(
             customer_id=customer.id,
+            organization_id=organization.id,
             email="regular@example.com",
             name="Regular Member",
             external_id="ext_member_1",
@@ -343,6 +349,7 @@ class TestGetExternal:
         # Create a member
         member = Member(
             customer_id=customer.id,
+            organization_id=organization.id,
             email="member@example.com",
             name="Test Member",
             role="owner",
@@ -761,6 +768,7 @@ class TestUpdateCustomer:
 
         member = Member(
             customer_id=customer.id,
+            organization_id=organization.id,
             email="member@example.com",
             name="Member One",
             role="member",
@@ -801,6 +809,7 @@ class TestUpdateCustomer:
 
         member = Member(
             customer_id=customer.id,
+            organization_id=organization.id,
             email="member@example.com",
             name="Member One",
             role="member",

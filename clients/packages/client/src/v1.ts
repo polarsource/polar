@@ -3513,6 +3513,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/event_types/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update Event Type
+     * @description Update an event type's label.
+     */
+    patch: operations['event_types:update_event_type']
+    trace?: never
+  }
   '/v1/meters/': {
     parameters: {
       query?: never
@@ -15484,6 +15504,50 @@ export interface components {
       | '-p95'
       | 'p99'
       | '-p99'
+    /** EventType */
+    EventType: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description The name of the event type.
+       */
+      name: string
+      /**
+       * Label
+       * @description The label for the event type.
+       */
+      label: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event type.
+       */
+      organization_id: string
+    }
+    /** EventTypeUpdate */
+    EventTypeUpdate: {
+      /**
+       * Label
+       * @description The label for the event type.
+       */
+      label: string
+    }
     /** EventsIngest */
     EventsIngest: {
       /**
@@ -32520,6 +32584,49 @@ export interface operations {
         content: {
           'application/json': components['schemas']['EventsIngestResponse']
         }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'event_types:update_event_type': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The event type ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EventTypeUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['EventType']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Validation Error */
       422: {

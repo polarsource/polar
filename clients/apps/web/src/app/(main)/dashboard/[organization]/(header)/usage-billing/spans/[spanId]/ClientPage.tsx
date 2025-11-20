@@ -7,6 +7,8 @@ import { useEventDisplayName } from '@/components/Events/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
+import { InlineModal } from '@/components/Modal/InlineModal'
+import { useModal } from '@/components/Modal/useModal'
 import {
   useEventHierarchyStats,
   useInfiniteEvents,
@@ -20,6 +22,7 @@ import { useRouter } from 'next/navigation'
 import { parseAsIsoDateTime, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { EditEventTypeModal } from './EditEventTypeModal'
 
 const PAGE_SIZE = 50
 
@@ -86,7 +89,9 @@ export default function SpanDetailPage({
   }, [eventsData])
 
   const firstStat = hierarchyStats?.totals?.[0]
-  const eventDisplayName = useEventDisplayName(firstStat?.name ?? '')
+  const eventName = firstStat?.name ?? ''
+  const eventLabel = firstStat?.label ?? eventName
+  const eventDisplayName = useEventDisplayName(eventLabel)
 
   const costMetrics = useMemo(() => {
     if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
@@ -156,6 +161,12 @@ export default function SpanDetailPage({
   )
 
   const [hasScrolled, setHasScrolled] = useState(false)
+
+  const {
+    isShown: isEditEventTypeModalShown,
+    show: showEditEventTypeModal,
+    hide: hideEditEventTypeModal,
+  } = useModal()
 
   const handleScroll = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
@@ -248,7 +259,9 @@ export default function SpanDetailPage({
                         }
                       }}
                     >
-                      <span className="truncate">{stat.name}</span>
+                      <span className="truncate">
+                        {stat.label || stat.name}
+                      </span>
                       <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
                         {Number(stat.occurrences).toLocaleString('en-US', {
                           style: 'decimal',
@@ -265,8 +278,11 @@ export default function SpanDetailPage({
         </div>
       }
     >
-      <div className="flex flex-col gap-y-4">
+      <div className="flex flex-row items-center justify-between gap-y-4">
         <h3 className="text-4xl">{eventDisplayName}</h3>
+        <Button variant="secondary" onClick={showEditEventTypeModal}>
+          Edit
+        </Button>
       </div>
 
       {events.length > 0 && chartData.length > 0 && (
@@ -303,7 +319,7 @@ export default function SpanDetailPage({
           />
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <CustomerStatBox title="Total runs" size="lg">
+            <CustomerStatBox title="Total occurrences" size="lg">
               {costMetrics.totalOccurrences.toLocaleString()}
             </CustomerStatBox>
             <CustomerStatBox title="Total cost" size="lg">
@@ -347,6 +363,19 @@ export default function SpanDetailPage({
           </p>
         </div>
       )}
+
+      <InlineModal
+        isShown={isEditEventTypeModalShown}
+        hide={hideEditEventTypeModal}
+        modalContent={
+          <EditEventTypeModal
+            eventTypeId={spanId}
+            eventName={eventName}
+            currentLabel={eventLabel}
+            hide={hideEditEventTypeModal}
+          />
+        }
+      />
     </DashboardBody>
   )
 }

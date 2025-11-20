@@ -6,7 +6,7 @@ import { useMutation } from '@tanstack/react-query'
 export const useUpdateEventType = (id: string) =>
   useMutation({
     mutationFn: (body: schemas['EventTypeUpdate']) =>
-      api.PATCH('/v1/event_types/{id}', {
+      api.PATCH('/v1/event-types/{id}', {
         params: { path: { id } },
         body,
       }),

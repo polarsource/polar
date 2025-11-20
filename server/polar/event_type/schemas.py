@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import Path
@@ -26,6 +27,12 @@ class EventType(IDSchema, TimestampedSchema):
     organization_id: UUID4 = Field(
         ..., description="The ID of the organization owning the event type."
     )
+
+
+class EventTypeWithStats(EventType):
+    occurrences: int = Field(description="Number of times the event has occurred.")
+    first_seen: datetime = Field(description="The first time the event occurred.")
+    last_seen: datetime = Field(description="The last time the event occurred.")
 
 
 EventTypeID = Annotated[UUID4, Path(description="The event type ID.")]

@@ -3513,7 +3513,29 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/event_types/{id}': {
+  '/v1/event-types/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Event Types
+     * @description List event types with aggregated statistics.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['event-types:list_event_types']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/event-types/{id}': {
     parameters: {
       query?: never
       header?: never
@@ -3530,7 +3552,7 @@ export interface paths {
      * Update Event Type
      * @description Update an event type's label.
      */
-    patch: operations['event_types:update_event_type']
+    patch: operations['event-types:update_event_type']
     trace?: never
   }
   '/v1/meters/': {
@@ -15568,6 +15590,74 @@ export interface components {
        */
       label: string
     }
+    /** EventTypeWithStats */
+    EventTypeWithStats: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description The name of the event type.
+       */
+      name: string
+      /**
+       * Label
+       * @description The label for the event type.
+       */
+      label: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event type.
+       */
+      organization_id: string
+      /**
+       * Occurrences
+       * @description Number of times the event has occurred.
+       */
+      occurrences: number
+      /**
+       * First Seen
+       * Format: date-time
+       * @description The first time the event occurred.
+       */
+      first_seen: string
+      /**
+       * Last Seen
+       * Format: date-time
+       * @description The last time the event occurred.
+       */
+      last_seen: string
+    }
+    /**
+     * EventTypesSortProperty
+     * @enum {string}
+     */
+    EventTypesSortProperty:
+      | 'name'
+      | '-name'
+      | 'label'
+      | '-label'
+      | 'occurrences'
+      | '-occurrences'
+      | 'first_seen'
+      | '-first_seen'
+      | 'last_seen'
+      | '-last_seen'
     /** EventsIngest */
     EventsIngest: {
       /**
@@ -16639,6 +16729,12 @@ export interface components {
     ListResource_EventName_: {
       /** Items */
       items: components['schemas']['EventName'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[EventTypeWithStats] */
+    ListResource_EventTypeWithStats_: {
+      /** Items */
+      items: components['schemas']['EventTypeWithStats'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Event] */
@@ -33297,7 +33393,51 @@ export interface operations {
       }
     }
   }
-  'event_types:update_event_type': {
+  'event-types:list_event_types': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Query to filter event types by name or label. */
+        query?: string | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['EventTypesSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_EventTypeWithStats_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'event-types:update_event_type': {
     parameters: {
       query?: never
       header?: never
@@ -37902,6 +38042,20 @@ export const eventStatisticsSortPropertyValues: ReadonlyArray<
   '-p95',
   'p99',
   '-p99',
+]
+export const eventTypesSortPropertyValues: ReadonlyArray<
+  components['schemas']['EventTypesSortProperty']
+> = [
+  'name',
+  '-name',
+  'label',
+  '-label',
+  'occurrences',
+  '-occurrences',
+  'first_seen',
+  '-first_seen',
+  'last_seen',
+  '-last_seen',
 ]
 export const fileServiceTypesValues: ReadonlyArray<
   components['schemas']['FileServiceTypes']

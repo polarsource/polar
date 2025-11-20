@@ -290,7 +290,8 @@ class DiscountService(ResourceServiceReader[Discount]):
             discount.stripe_coupon_id = new_stripe_coupon.id
         elif "name" in updated_fields:
             await stripe_service.update_coupon(
-                discount.stripe_coupon_id, name=discount.name
+                discount.stripe_coupon_id,
+                name=discount.name[:40],  # Stripe coupon name max length is 40
             )
 
         session.add(discount)

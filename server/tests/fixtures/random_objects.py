@@ -32,6 +32,7 @@ from polar.models import (
     Discount,
     DiscountProduct,
     Event,
+    EventType,
     IssueReward,
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
@@ -2111,3 +2112,27 @@ async def create_trial_redemption(
     )
     await save_fixture(trial_redemption)
     return trial_redemption
+
+
+async def create_event_type(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    name: str = "test.event",
+    label: str = "Test Event",
+) -> EventType:
+    event_type = EventType(
+        name=name,
+        label=label,
+        organization_id=organization.id,
+    )
+    await save_fixture(event_type)
+    return event_type
+
+
+@pytest_asyncio.fixture
+async def event_type(
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> EventType:
+    return await create_event_type(save_fixture, organization=organization)

@@ -195,7 +195,9 @@ export default function ClientPage({ organization }: ClientPageProps) {
                         )
                       }}
                     >
-                      <span className="truncate">{stat.name}</span>
+                      <span className="truncate">
+                        {stat.label || stat.name}
+                      </span>
                       <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
                         {Number(stat.occurrences).toLocaleString('en-US', {
                           style: 'decimal',
@@ -254,7 +256,9 @@ export default function ClientPage({ organization }: ClientPageProps) {
                   <DataTableColumnHeader column={column} title="Name" />
                 ),
                 cell: ({ row }) => (
-                  <span className="font-medium">{row.original.name}</span>
+                  <span className="font-medium">
+                    {row.original.label || row.original.name}
+                  </span>
                 ),
               },
               {

@@ -15,6 +15,7 @@ from polar.customer_session.endpoints import router as customer_session_router
 from polar.discount.endpoints import router as discount_router
 from polar.email_update.endpoints import router as email_update_router
 from polar.event.endpoints import router as event_router
+from polar.event_type.endpoints import router as event_type_router
 from polar.eventstream.endpoints import router as stream_router
 from polar.file.endpoints import router as files_router
 from polar.integrations.apple.endpoints import router as apple_router
@@ -127,6 +128,8 @@ router.include_router(customer_session_router)
 router.include_router(plain_router)
 # /events
 router.include_router(event_router)
+# /event_types
+router.include_router(event_type_router)
 # /meters
 router.include_router(meter_router)
 # /organization-access-tokens

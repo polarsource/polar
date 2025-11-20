@@ -6,6 +6,12 @@
   "type": "module",
   "private": true,
   "version": "0.0.0",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "generate": "openapi-typescript http://127.0.0.1:8000/openapi.json --enum-values -o ./src/v1.ts && prettier --write ./src && pnpm run build",
     "test:ts": "tsc --noEmit",

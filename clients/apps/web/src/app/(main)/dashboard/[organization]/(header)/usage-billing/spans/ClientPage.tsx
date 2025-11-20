@@ -70,11 +70,13 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
   const { data: costData, isLoading: costDataLoading } = useEventHierarchyStats(
     organization.id,
-    startDate,
-    endDate,
-    interval,
-    ['_cost.amount'],
-    sortingParam,
+    {
+      start_timestamp: startDate.toISOString(),
+      end_timestamp: endDate.toISOString(),
+      interval,
+      aggregate_fields: ['_cost.amount'],
+      sorting: sortingParam,
+    },
   )
 
   const dateRange = useMemo(

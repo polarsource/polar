@@ -69,12 +69,14 @@ export default function SpanDetailPage({
 
   const { data: hierarchyStats } = useEventHierarchyStats(
     organization.id,
-    startDate,
-    endDate,
-    interval,
-    ['_cost.amount'],
-    ['-occurrences'],
-    spanId,
+    {
+      event_type_id: spanId,
+      start_timestamp: startDate.toISOString(),
+      end_timestamp: endDate.toISOString(),
+      interval,
+      aggregate_fields: ['_cost.amount'],
+      sorting: ['-occurrences'],
+    },
     true,
   )
 

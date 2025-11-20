@@ -2429,28 +2429,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/customers/{id}/balance': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Customer Balance
-     * @description Get customer balance information.
-     *
-     *     **Scopes**: `customers:read` `customers:write`
-     */
-    get: operations['customers:get_balance']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/customer-portal/benefit-grants/': {
     parameters: {
       query?: never
@@ -11446,23 +11424,6 @@ export interface components {
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
       readonly avatar_url: string
-    }
-    /**
-     * CustomerBalance
-     * @description Customer balance information.
-     */
-    CustomerBalance: {
-      /**
-       * Balance
-       * @description Customer balance in cents. Positive values represent credit (customer is owed money), negative values represent debit (customer owes money).
-       */
-      balance: number
-      /**
-       * Currency
-       * @description The currency code (ISO 4217) for the balance amount.
-       * @example usd
-       */
-      currency: string
     }
     CustomerBenefitGrant:
       | components['schemas']['CustomerBenefitGrantDiscord']
@@ -22907,6 +22868,11 @@ export interface components {
       currency: string
     }
     /**
+     * WalletType
+     * @enum {string}
+     */
+    WalletType: 'usage' | 'billing'
+    /**
      * WebhookBenefitCreatedPayload
      * @description Sent when a new benefit is created.
      *
@@ -30146,47 +30112,6 @@ export interface operations {
       }
     }
   }
-  'customers:get_balance': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The customer ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerBalance']
-        }
-      }
-      /** @description Customer not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'customer_portal:benefit-grants:list': {
     parameters: {
       query?: {
@@ -34105,6 +34030,11 @@ export interface operations {
       query?: {
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by wallet type. */
+        type?:
+          | components['schemas']['WalletType']
+          | components['schemas']['WalletType'][]
+          | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Page number, defaults to 1. */
@@ -38574,6 +38504,9 @@ export const userSignupAttributionIntentValues: ReadonlyArray<
 export const walletSortPropertyValues: ReadonlyArray<
   components['schemas']['WalletSortProperty']
 > = ['created_at', '-created_at', 'balance', '-balance']
+export const walletTypeValues: ReadonlyArray<
+  components['schemas']['WalletType']
+> = ['usage', 'billing']
 export const webhookEventTypeValues: ReadonlyArray<
   components['schemas']['WebhookEventType']
 > = [

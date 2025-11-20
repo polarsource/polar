@@ -16,7 +16,6 @@ export function CustomerSessionCode({
 }: schemas['CustomerSessionCodeProps']) {
   return (
     <Wrapper>
-      <Wrapper>
       <Preview>Your code to access purchases for {organization.name}.</Preview>
       <OrganizationHeader organization={organization} />
       <IntroWithHi>

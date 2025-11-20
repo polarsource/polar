@@ -584,6 +584,172 @@ class TestCreateCustomer:
         assert "members" in json
         assert len(json["members"]) == 0
 
+    @pytest.mark.auth
+    async def test_owner_override_all_fields(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test that owner email, name, and external_id can all be overridden."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.post(
+            "/v1/customers/",
+            json={
+                "email": "customer@polar.sh",
+                "name": "Customer Name",
+                "external_id": "customer_ext_123",
+                "organization_id": str(organization.id),
+                "owner": {
+                    "email": "owner@polar.sh",
+                    "name": "Owner Name",
+                    "external_id": "owner_ext_456",
+                },
+            },
+            params={"include_members": True},
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["email"] == "customer@polar.sh"
+        assert json["name"] == "Customer Name"
+        assert json["external_id"] == "customer_ext_123"
+        assert "members" in json
+        assert len(json["members"]) == 1
+
+        owner = json["members"][0]
+        assert owner["email"] == "owner@polar.sh"
+        assert owner["name"] == "Owner Name"
+        assert owner["external_id"] == "owner_ext_456"
+        assert owner["role"] == "owner"
+
+    @pytest.mark.auth
+    async def test_owner_override_email_only(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test that only owner email can be overridden, name and external_id fall back to customer values."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.post(
+            "/v1/customers/",
+            json={
+                "email": "customer@polar.sh",
+                "name": "Customer Name",
+                "external_id": "customer_ext_789",
+                "organization_id": str(organization.id),
+                "owner": {
+                    "email": "different.owner@polar.sh",
+                },
+            },
+            params={"include_members": True},
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["email"] == "customer@polar.sh"
+        assert json["name"] == "Customer Name"
+        assert json["external_id"] == "customer_ext_789"
+        assert "members" in json
+        assert len(json["members"]) == 1
+
+        owner = json["members"][0]
+        assert owner["email"] == "different.owner@polar.sh"
+        assert owner["name"] == "Customer Name"
+        assert owner["external_id"] == "customer_ext_789"
+        assert owner["role"] == "owner"
+
+    @pytest.mark.auth
+    async def test_owner_override_name_only(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test that only owner name can be overridden, email and external_id fall back to customer values."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.post(
+            "/v1/customers/",
+            json={
+                "email": "customer@polar.sh",
+                "name": "Customer Name",
+                "external_id": "customer_ext_abc",
+                "organization_id": str(organization.id),
+                "owner": {
+                    "name": "Different Owner Name",
+                },
+            },
+            params={"include_members": True},
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["email"] == "customer@polar.sh"
+        assert json["name"] == "Customer Name"
+        assert json["external_id"] == "customer_ext_abc"
+        assert "members" in json
+        assert len(json["members"]) == 1
+
+        owner = json["members"][0]
+        assert owner["email"] == "customer@polar.sh"
+        assert owner["name"] == "Different Owner Name"
+        assert owner["external_id"] == "customer_ext_abc"
+        assert owner["role"] == "owner"
+
+    @pytest.mark.auth
+    async def test_owner_override_external_id_only(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test that only owner external_id can be overridden, email and name fall back to customer values."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.post(
+            "/v1/customers/",
+            json={
+                "email": "customer@polar.sh",
+                "name": "Customer Name",
+                "external_id": "customer_ext_xyz",
+                "organization_id": str(organization.id),
+                "owner": {
+                    "external_id": "different_owner_ext_id",
+                },
+            },
+            params={"include_members": True},
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["email"] == "customer@polar.sh"
+        assert json["name"] == "Customer Name"
+        assert json["external_id"] == "customer_ext_xyz"
+        assert "members" in json
+        assert len(json["members"]) == 1
+
+        owner = json["members"][0]
+        assert owner["email"] == "customer@polar.sh"
+        assert owner["name"] == "Customer Name"
+        assert owner["external_id"] == "different_owner_ext_id"
+        assert owner["role"] == "owner"
+
 
 @pytest.mark.asyncio
 class TestUpdateCustomer:

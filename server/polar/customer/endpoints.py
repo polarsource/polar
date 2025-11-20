@@ -12,7 +12,6 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.member import member_service
 from polar.member.schemas import Member as MemberSchema
 from polar.openapi import APITag
-from polar.order.service import order as order_service
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -27,7 +26,6 @@ from . import auth, sorting
 from .repository import CustomerRepository
 from .schemas.customer import Customer as CustomerSchema
 from .schemas.customer import (
-    CustomerBalance,
     CustomerCreate,
     CustomerID,
     CustomerUpdate,
@@ -299,31 +297,6 @@ async def get_state_external(
         raise ResourceNotFound()
 
     return await customer_service.get_state(session, redis, customer)
-
-
-@router.get(
-    "/{id}/balance",
-    summary="Get Customer Balance",
-    response_model=CustomerBalance,
-    responses={404: CustomerNotFound},
-)
-async def get_balance(
-    id: CustomerID,
-    auth_subject: auth.CustomerRead,
-    session: AsyncSession = Depends(get_db_session),
-) -> CustomerBalance:
-    """Get customer balance information."""
-    customer = await customer_service.get(session, auth_subject, id)
-
-    if customer is None:
-        raise ResourceNotFound()
-
-    balance_amount = await order_service.customer_balance(session, customer)
-
-    # Currency is always USD as specified by the user
-    currency = "USD"
-
-    return CustomerBalance(balance=balance_amount, currency=currency)
 
 
 @router.post(

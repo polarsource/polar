@@ -6,6 +6,7 @@ from httpx import AsyncClient
 
 from polar.auth.scope import Scope
 from polar.models import Customer, Order, UserOrganization, Wallet
+from polar.models.wallet import WalletType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_wallet
@@ -13,7 +14,7 @@ from tests.fixtures.random_objects import create_wallet
 
 @pytest_asyncio.fixture
 async def wallets(save_fixture: SaveFixture, customer: Customer) -> list[Wallet]:
-    return [await create_wallet(save_fixture, customer=customer)]
+    return [await create_wallet(save_fixture, type=WalletType.usage, customer=customer)]
 
 
 @pytest.mark.asyncio

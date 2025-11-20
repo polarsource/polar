@@ -2,10 +2,10 @@ from fastapi import Depends, Query
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import ResourceNotFound
-from polar.kit.metadata import MetadataQuery
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Wallet
+from polar.models.wallet import WalletType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
@@ -22,7 +22,7 @@ from .schemas import WalletID, WalletNotFound, WalletTopUpCreate
 from .service import MissingPaymentMethodError, PaymentIntentFailedError
 from .service import wallet as wallet_service
 
-router = APIRouter(prefix="/wallets", tags=["wallets", APITag.public, APITag.mcp])
+router = APIRouter(prefix="/wallets", tags=["wallets", APITag.private])
 
 
 @router.get("/", summary="List Wallets", response_model=ListResource[WalletSchema])
@@ -30,9 +30,11 @@ async def list(
     auth_subject: auth.WalletsRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    metadata: MetadataQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    type: MultipleQueryFilter[WalletType] | None = Query(
+        None, title="Wallet Type Filter", description="Filter by wallet type."
     ),
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
@@ -44,6 +46,7 @@ async def list(
         session,
         auth_subject,
         organization_id=organization_id,
+        type=type,
         customer_id=customer_id,
         pagination=pagination,
         sorting=sorting,

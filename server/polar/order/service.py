@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import and_, or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
@@ -75,7 +75,6 @@ from polar.models.order import (
     OrderBillingReasonInternal,
     OrderStatus,
 )
-from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
@@ -103,6 +102,7 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from polar.wallet.repository import WalletTransactionRepository
+from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -710,13 +710,28 @@ class OrderService:
         )
 
         total_amount = subtotal_amount - discount_amount + tax_amount
-        customer_balance = await self.customer_balance(session, customer)
-        applied_balance_amount = 0
-        if total_amount < 0:
-            if customer_balance < 0:
-                applied_balance_amount = -max(total_amount, customer_balance)
+        customer_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, subscription.currency
+        )
+
+        # Calculate balance change and applied amount
+        if total_amount >= 0:
+            # Order is a charge: use customer balance if available
+            balance_change = -min(total_amount, customer_balance)
+            applied_balance_amount = balance_change
         else:
-            applied_balance_amount = -min(total_amount, customer_balance)
+            # Order is a credit: always add to balance
+            balance_change = -total_amount
+            # Track how much existing debt was cleared
+            if customer_balance < 0:
+                applied_balance_amount = min(-total_amount, -customer_balance)
+            else:
+                applied_balance_amount = 0
+
+        if balance_change != 0:
+            await wallet_service.create_balance_transaction(
+                session, customer, balance_change, subscription.currency
+            )
 
         repository = OrderRepository.from_session(session)
         order = await repository.create(
@@ -1982,98 +1997,6 @@ class OrderService:
         )
 
         return order
-
-    async def customer_balance(self, session: AsyncSession, customer: Customer) -> int:
-        """
-        Returns what the customer is "owed".
-
-        The returned integer is positive if the customer is owed, and negative
-        if the customer owes the selling organization.
-
-        This can happen if the customer switches from e.g. a yearly plan at $100/yr to
-        a monthly plan at $15/mo. In that case the customer has $85 in "credit" or balance
-        on their account (depending on when they changed the plan).
-        """
-        order_repository = OrderRepository.from_session(session)
-        paid_orders = await order_repository.get_all(
-            order_repository.get_base_statement()
-            .join(Customer, Order.customer_id == Customer.id)
-            .where(
-                Customer.id == customer.id,
-                Order.deleted_at.is_(None),
-                Order.status.in_(
-                    [
-                        OrderStatus.paid,
-                        OrderStatus.partially_refunded,
-                    ]
-                ),
-            )
-        )
-
-        payment_repository = PaymentRepository.from_session(session)
-        payments = await payment_repository.get_all(
-            payment_repository.get_base_statement()
-            .join(Order, Payment.order_id == Order.id, isouter=True)
-            .join(Checkout, Payment.checkout_id == Checkout.id, isouter=True)
-            .where(
-                or_(
-                    and_(
-                        Order.customer_id == customer.id,
-                        Order.deleted_at.is_(None),
-                        Order.status.in_(
-                            [
-                                OrderStatus.paid,
-                                OrderStatus.partially_refunded,
-                            ]
-                        ),
-                    ),
-                    and_(
-                        Checkout.customer_id == customer.id,
-                        Checkout.deleted_at.is_(None),
-                    ),
-                ),
-                Payment.status == PaymentStatus.succeeded,
-            )
-        )
-
-        # Calculate positive and negative order amounts separately
-        positive_order_total = 0
-        negative_order_total = 0  # Absolute value of negative orders (customer credits)
-        refunds_on_positive_orders = 0
-
-        for order in paid_orders:
-            if order.total_amount >= 0:
-                # Positive order: track gross amount and refunds separately
-                positive_order_total += order.total_amount
-                refunds_on_positive_orders += (
-                    order.refunded_amount + order.refunded_tax_amount
-                )
-            else:
-                # Negative order (credit): use absolute value
-                # Refunds on negative orders don't make sense, so we ignore them
-                negative_order_total += abs(order.total_amount)
-
-        total_paid = sum(payment.amount for payment in payments)
-
-        # When there are negative orders (customer credits), refunds can settle them
-        # Otherwise, refunds just reduce the customer's debt
-        if negative_order_total > 0:
-            # Refunds first settle negative orders (customer credits)
-            settled_amount = min(refunds_on_positive_orders, negative_order_total)
-            remaining_refunds = refunds_on_positive_orders - settled_amount
-            remaining_credits = negative_order_total - settled_amount
-
-            # Balance = paid - positive orders + remaining refunds + remaining credits
-            return (
-                total_paid
-                - positive_order_total
-                + remaining_refunds
-                + remaining_credits
-            )
-        else:
-            # No negative orders: standard calculation
-            # The refunds cancel out in the formula
-            return total_paid - positive_order_total
 
 
 order = OrderService()

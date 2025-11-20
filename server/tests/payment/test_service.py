@@ -3,6 +3,7 @@ import pytest
 from polar.enums import PaymentProcessor
 from polar.models import Customer, Product
 from polar.models.payment import PaymentStatus
+from polar.models.wallet import WalletType
 from polar.payment.service import UnlinkedPaymentError
 from polar.payment.service import payment as payment_service
 from polar.postgres import AsyncSession
@@ -151,7 +152,9 @@ class TestUpsertFromStripeCharge:
         product: Product,
         customer: Customer,
     ) -> None:
-        wallet = await create_wallet(save_fixture, customer=customer)
+        wallet = await create_wallet(
+            save_fixture, type=WalletType.usage, customer=customer
+        )
 
         # Create a charge with wallet_id in metadata
         charge = build_stripe_charge(

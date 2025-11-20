@@ -10,9 +10,9 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.tax import TaxCode, calculate_tax
-from polar.models import Customer, Refund, Wallet, WalletTransaction
+from polar.models import Customer, Wallet, WalletTransaction
 from polar.models.payment_method import PaymentMethod
-from polar.models.wallet_transaction import WalletTransactionType
+from polar.models.wallet import WalletType
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -62,6 +62,7 @@ class WalletService:
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
+        type: Sequence[WalletType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[WalletSortProperty]] = [
@@ -73,6 +74,9 @@ class WalletService:
 
         if organization_id is not None:
             statement = statement.where(Customer.organization_id.in_(organization_id))
+
+        if type is not None:
+            statement = statement.where(Wallet.type.in_(type))
 
         if customer_id is not None:
             statement = statement.where(Customer.id.in_(customer_id))
@@ -94,19 +98,6 @@ class WalletService:
             Wallet.id == id
         )
         return await repository.get_one_or_none(statement)
-
-    async def create(self, session: AsyncSession, customer: Customer) -> Wallet:
-        repository = WalletRepository(session)
-
-        if await repository.get_by_customer(customer.id) is not None:
-            raise WalletAlreadyExistsError(customer)
-
-        return await repository.create(
-            Wallet(
-                customer=customer,
-                currency="usd",  # FIXME: Main Polar currency
-            )
-        )
 
     async def top_up(
         self,
@@ -145,7 +136,7 @@ class WalletService:
             tax_calculation_processor_id = tax_calculation["processor_id"]
             tax_amount = tax_calculation["amount"]
 
-        transaction = await self.credit(
+        transaction = await self.create_transaction(
             session,
             wallet,
             amount,
@@ -183,7 +174,7 @@ class WalletService:
 
         return transaction
 
-    async def credit(
+    async def create_transaction(
         self,
         session: AsyncSession,
         wallet: Wallet,
@@ -196,7 +187,6 @@ class WalletService:
         repository = WalletTransactionRepository(session)
         return await repository.create(
             WalletTransaction(
-                type=WalletTransactionType.credit,
                 currency=wallet.currency,
                 amount=amount,
                 wallet=wallet,
@@ -206,41 +196,41 @@ class WalletService:
             flush=flush,
         )
 
-    async def debit(
-        self, session: AsyncSession, wallet: Wallet, amount: int
-    ) -> WalletTransaction:
-        repository = WalletTransactionRepository(session)
-
-        current_balance = await repository.get_balance(wallet.id)
-        amount = min(amount, current_balance)  # Prevent going negative
-
-        return await repository.create(
-            WalletTransaction(
-                type=WalletTransactionType.debit,
-                currency=wallet.currency,
-                amount=-amount,
-                wallet=wallet,
-            ),
+    async def get_billing_wallet_balance(
+        self, session: AsyncSession, customer: Customer, currency: str
+    ) -> int:
+        repository = WalletRepository.from_session(session)
+        wallet = await repository.get_by_type_currency_customer(
+            WalletType.billing, currency, customer.id
         )
+        # Small optimization to avoid creating wallet if not existing
+        if wallet is None:
+            return 0
+        await session.refresh(wallet, {"balance"})
+        return wallet.balance
 
-    async def refund(
-        self, session: AsyncSession, wallet: Wallet, refund: Refund
-    ) -> WalletTransaction:
-        repository = WalletTransactionRepository(session)
-
-        current_balance = await repository.get_balance(wallet.id)
-        amount = min(refund.amount, current_balance)  # Prevent going negative
-
-        return await repository.create(
-            WalletTransaction(
-                type=WalletTransactionType.refund,
-                currency=wallet.currency,
-                amount=-amount,
-                wallet=wallet,
-                order=refund.order,
-                refund=refund,
-            ),
+    async def get_or_create_billing_wallet(
+        self, session: AsyncSession, customer: Customer, currency: str
+    ) -> Wallet:
+        repository = WalletRepository.from_session(session)
+        wallet = await repository.get_by_type_currency_customer(
+            WalletType.billing, currency, customer.id
         )
+        if wallet is None:
+            wallet = await repository.create(
+                Wallet(
+                    type=WalletType.billing,
+                    currency=currency,
+                    customer=customer,
+                )
+            )
+        return wallet
+
+    async def create_balance_transaction(
+        self, session: AsyncSession, customer: Customer, amount: int, currency: str
+    ) -> WalletTransaction:
+        wallet = await self.get_or_create_billing_wallet(session, customer, currency)
+        return await self.create_transaction(session, wallet, amount)
 
 
 wallet = WalletService()

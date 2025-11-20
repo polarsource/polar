@@ -14,6 +14,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import Customer, UserOrganization, Wallet, WalletTransaction
+from polar.models.wallet import WalletType
 
 from .sorting import WalletSortProperty
 
@@ -26,8 +27,12 @@ class WalletRepository(
 ):
     model = Wallet
 
-    async def get_by_customer(self, customer_id: UUID) -> Wallet | None:
+    async def get_by_type_currency_customer(
+        self, type: WalletType, currency: str, customer_id: UUID
+    ) -> Wallet | None:
         statement = self.get_base_statement().where(
+            Wallet.type == type,
+            Wallet.currency == currency,
             Wallet.customer_id == customer_id,
         )
         return await self.get_one_or_none(statement)

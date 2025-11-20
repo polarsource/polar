@@ -3,6 +3,33 @@ import * as Sentry from '@sentry/nextjs'
 import { headers } from 'next/headers'
 import { cache } from 'react'
 
+async function retryWithBackoff<T>(
+  fn: () => Promise<{ data?: T; error?: any }>,
+  maxRetries = 3,
+): Promise<{ data?: T; error?: any }> {
+  let delay = 100
+  let lastResult
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      lastResult = await fn()
+
+      if (!lastResult.error) {
+        return lastResult
+      }
+    } catch (error) {
+      lastResult = { error }
+    }
+
+    if (attempt < maxRetries) {
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      delay = Math.min(delay * 2, 1000)
+    }
+  }
+
+  return lastResult!
+}
+
 const _getAuthenticatedUser = async (): Promise<
   schemas['UserRead'] | undefined
 > => {
@@ -44,11 +71,19 @@ const _getUserOrganizations = async (
     }
   }
 
-  const { data, error } = await api.GET('/v1/organizations/', requestOptions)
+  const { data, error } = await retryWithBackoff(() =>
+    api.GET('/v1/organizations/', requestOptions),
+  )
 
   if (error) {
-    console.error('getUserOrganizations failed:', user.id, error)
-    Sentry.captureException(error, { user: { id: user.id, email: user.email } })
+    console.error('getUserOrganizations failed after retries:', user.id, error)
+    Sentry.captureException(
+      new Error('Failed to fetch organizations after retries'),
+      {
+        user: { id: user.id, email: user.email },
+        extra: { originalError: error },
+      },
+    )
     return []
   }
 

@@ -1,6 +1,13 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Discriminator, Field, StringConstraints, TypeAdapter
+from pydantic import (
+    UUID4,
+    Discriminator,
+    Field,
+    StringConstraints,
+    TypeAdapter,
+    field_validator,
+)
 
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -40,6 +47,28 @@ Slug = Annotated[
 Name = Annotated[str, Field(description="Name of the custom field.", min_length=1)]
 
 
+class CustomFieldNumberPropertiesInput(Schema):
+    """Validated input schema for custom field number properties."""
+
+    form_label: str | None = None
+    form_help_text: str | None = None
+    form_placeholder: str | None = None
+    ge: int | None = None
+    le: int | None = None
+
+    @field_validator("le")
+    @classmethod
+    def validate_ge_le_relationship(cls, v: int | None, info: Any) -> int | None:
+        """Ensure ge <= le when both are provided."""
+        ge = info.data.get("ge")
+        if ge is not None and v is not None and ge > v:
+            raise ValueError(
+                "Greater than or equal (ge) must be less than or equal to "
+                "Less than or equal (le)"
+            )
+        return v
+
+
 class CustomFieldCreateBase(MetadataInputMixin, Schema):
     """Schema to create a new custom field."""
 
@@ -66,7 +95,7 @@ class CustomFieldCreateNumber(CustomFieldCreateBase):
     """Schema to create a custom field of type number."""
 
     type: Literal[CustomFieldType.number]
-    properties: CustomFieldNumberProperties
+    properties: CustomFieldNumberPropertiesInput
 
 
 class CustomFieldCreateDate(CustomFieldCreateBase):
@@ -119,7 +148,7 @@ class CustomFieldUpdateNumber(CustomFieldUpdateBase):
     """Schema to update a custom field of type number."""
 
     type: Literal[CustomFieldType.number]
-    properties: CustomFieldNumberProperties | None = None
+    properties: CustomFieldNumberPropertiesInput | None = None
 
 
 class CustomFieldUpdateDate(CustomFieldUpdateBase):

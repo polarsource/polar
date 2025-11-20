@@ -29,6 +29,7 @@ from polar.integrations.plain.endpoints import router as plain_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
 from polar.login_code.endpoints import router as login_code_router
+from polar.member.endpoints import router as member_router
 from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
 from polar.notifications.endpoints import router as notifications_router
@@ -116,6 +117,8 @@ router.include_router(custom_field_router)
 router.include_router(discount_router)
 # /customers
 router.include_router(customer_router)
+# /members
+router.include_router(member_router)
 # /customer-portal
 router.include_router(customer_portal_router)
 # /seats

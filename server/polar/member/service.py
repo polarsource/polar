@@ -1,25 +1,60 @@
 from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
 import structlog
+from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.exc import IntegrityError
 
+from polar.auth.models import AuthSubject, Organization, User
+from polar.kit.pagination import PaginationParams
+from polar.kit.sorting import Sorting
 from polar.models.customer import Customer
 from polar.models.member import Member, MemberRole
-from polar.models.organization import Organization
+from polar.models.organization import Organization as OrgModel
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import MemberRepository
+from .sorting import MemberSortProperty
 
 log = structlog.get_logger()
 
 
 class MemberService:
+    async def list(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        customer_id: UUID | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[MemberSortProperty]] = [
+            (MemberSortProperty.created_at, True)
+        ],
+    ) -> tuple[Sequence[Member], int]:
+        """List members with pagination and filtering."""
+        repository = MemberRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
+
+        if customer_id is not None:
+            statement = statement.where(Member.customer_id == customer_id)
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == MemberSortProperty.created_at:
+                order_by_clauses.append(clause_function(Member.created_at))
+        statement = statement.order_by(*order_by_clauses)
+
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
     async def create_owner_member(
         self,
         session: AsyncSession,
         customer: Customer,
-        organization: Organization,
+        organization: OrgModel,
         *,
         owner_email: str | None = None,
         owner_name: str | None = None,
@@ -68,6 +103,7 @@ class MemberService:
 
         member = Member(
             customer_id=customer.id,
+            organization_id=organization.id,
             email=email,
             name=name,
             external_id=external_id,

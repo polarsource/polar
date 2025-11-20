@@ -8,9 +8,9 @@ import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   ParsedMetricsResponse,
   useBenefitGrants,
-  useCustomerBalance,
   useMetrics,
   useSubscriptions,
+  useWallets,
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import {
@@ -32,6 +32,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { benefitsDisplayNames } from '../Benefit/utils'
@@ -76,7 +77,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       sorting: ['-granted_at'],
     })
 
-  const { data: customerBalance } = useCustomerBalance(customer.id)
+  const { data: billingWallets } = useWallets(organization.id, {
+    customer_id: customer.id,
+    type: 'billing',
+  })
 
   const [selectedMetric, setSelectedMetric] = React.useState<
     keyof schemas['Metrics']
@@ -266,7 +270,13 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             </>
           )}
           <CustomerStatBox title="Customer Balance" size="lg">
-            {formatCurrency(customerBalance?.balance ?? 0)}
+            {billingWallets && billingWallets.items.length > 0
+              ? billingWallets.items.map((wallet) => (
+                  <div key={wallet.id}>
+                    {formatCurrencyAndAmount(wallet.balance, wallet.currency)}
+                  </div>
+                ))
+              : '—'}
           </CustomerStatBox>
         </div>
 

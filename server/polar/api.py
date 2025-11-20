@@ -131,7 +131,7 @@ router.include_router(customer_session_router)
 router.include_router(plain_router)
 # /events
 router.include_router(event_router)
-# /event_types
+# /event-types
 router.include_router(event_type_router)
 # /meters
 router.include_router(meter_router)

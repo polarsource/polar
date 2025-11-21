@@ -2,6 +2,7 @@ import uuid
 from datetime import timedelta
 from typing import Any
 from unittest.mock import AsyncMock
+from zoneinfo import ZoneInfo
 
 import pytest
 from pydantic import ValidationError
@@ -758,15 +759,16 @@ class TestListStatisticsTimeseries:
         await save_fixture(request_event_type)
 
         now = utc_now()
-        one_hour_ago = now - timedelta(hours=1)
-        two_hours_ago = now - timedelta(hours=2)
+        today = now.replace(hour=12, minute=0, second=0, microsecond=0)
+        yesterday = today - timedelta(days=1)
+        two_days_ago = today - timedelta(days=2)
 
         root1_p0 = await create_event(
             save_fixture,
             organization=organization,
             customer=customer,
             name="request",
-            timestamp=two_hours_ago,
+            timestamp=two_days_ago,
             metadata={"_cost": {"amount": 10, "currency": "usd"}},
         )
         child1_p0 = await create_event(
@@ -775,7 +777,7 @@ class TestListStatisticsTimeseries:
             customer=customer,
             name="child",
             parent_id=root1_p0.id,
-            timestamp=two_hours_ago,
+            timestamp=two_days_ago,
             metadata={"_cost": {"amount": 5, "currency": "usd"}},
         )
 
@@ -784,7 +786,7 @@ class TestListStatisticsTimeseries:
             organization=organization,
             customer=customer,
             name="request",
-            timestamp=two_hours_ago,
+            timestamp=two_days_ago,
             metadata={"_cost": {"amount": 20, "currency": "usd"}},
         )
         child2_p0 = await create_event(
@@ -793,7 +795,7 @@ class TestListStatisticsTimeseries:
             customer=customer,
             name="child",
             parent_id=root2_p0.id,
-            timestamp=two_hours_ago,
+            timestamp=two_days_ago,
             metadata={"_cost": {"amount": 10, "currency": "usd"}},
         )
 
@@ -802,7 +804,7 @@ class TestListStatisticsTimeseries:
             organization=organization,
             customer=customer,
             name="request",
-            timestamp=one_hour_ago,
+            timestamp=yesterday,
             metadata={"_cost": {"amount": 30, "currency": "usd"}},
         )
         child1_p1 = await create_event(
@@ -811,7 +813,7 @@ class TestListStatisticsTimeseries:
             customer=customer,
             name="child",
             parent_id=root1_p1.id,
-            timestamp=one_hour_ago,
+            timestamp=yesterday,
             metadata={"_cost": {"amount": 15, "currency": "usd"}},
         )
 
@@ -820,7 +822,7 @@ class TestListStatisticsTimeseries:
             organization=organization,
             customer=customer,
             name="request",
-            timestamp=one_hour_ago,
+            timestamp=yesterday,
             metadata={"_cost": {"amount": 40, "currency": "usd"}},
         )
         child2_p1 = await create_event(
@@ -829,16 +831,17 @@ class TestListStatisticsTimeseries:
             customer=customer,
             name="child",
             parent_id=root2_p1.id,
-            timestamp=one_hour_ago,
+            timestamp=yesterday,
             metadata={"_cost": {"amount": 20, "currency": "usd"}},
         )
 
         result = await event_service.list_statistics_timeseries(
             session,
             auth_subject,
-            start_timestamp=two_hours_ago - timedelta(minutes=30),
-            end_timestamp=now,
-            interval=TimeInterval.hour,
+            start_date=two_days_ago.date(),
+            end_date=today.date(),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
             aggregate_fields=("_cost.amount",),
         )
 
@@ -890,6 +893,14 @@ class TestListStatisticsTimeseries:
         assert float(period_1_stats[0].p99["_cost_amount"]) == pytest.approx(
             p1_event1_cost + 0.99 * (p1_event2_cost - p1_event1_cost)
         )
+
+        # Period 2 (today) should have the event type with zero values
+        period_2_stats = result.periods[2].stats
+        assert len(period_2_stats) == 1
+        assert period_2_stats[0].name == "request"
+        assert period_2_stats[0].occurrences == 0
+        assert period_2_stats[0].totals["_cost_amount"] == 0
+        assert period_2_stats[0].averages["_cost_amount"] == 0
 
         assert len(result.totals) == 1
         assert result.totals[0].occurrences == 4

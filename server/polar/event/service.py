@@ -1,8 +1,9 @@
 import uuid
 from collections import defaultdict
 from collections.abc import Callable, Sequence
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import structlog
 from sqlalchemy import (
@@ -300,8 +301,9 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        start_timestamp: datetime,
-        end_timestamp: datetime,
+        start_date: date,
+        end_date: date,
+        timezone: ZoneInfo,
         interval: TimeInterval,
         filter: Filter | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -319,6 +321,13 @@ class EventService:
         aggregate_fields: Sequence[str] = ("_cost.amount",),
         hierarchy_stats_sorting: Sequence[tuple[str, bool]] = (("total", True),),
     ) -> ListStatisticsTimeseries:
+        start_timestamp = datetime(
+            start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
+        )
+        end_timestamp = datetime(
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
+        )
+
         timestamp_series_cte = get_timestamp_series_cte(
             start_timestamp, end_timestamp, interval
         )
@@ -354,6 +363,8 @@ class EventService:
         timestamps = [row[0] for row in result.all()]
 
         stats_by_timestamp: dict[datetime, list[dict[str, Any]]] = {}
+        all_event_types: dict[tuple[str, str, uuid.UUID], dict[str, Any]] = {}
+
         for stat in timeseries_stats:
             ts = stat.pop("timestamp")
             if stat["name"] is None:
@@ -361,6 +372,18 @@ class EventService:
             if ts not in stats_by_timestamp:
                 stats_by_timestamp[ts] = []
             stats_by_timestamp[ts].append(stat)
+
+            # Track all unique event types
+            event_key = (stat["name"], stat["label"], stat["event_type_id"])
+            if event_key not in all_event_types:
+                all_event_types[event_key] = {
+                    "name": stat["name"],
+                    "label": stat["label"],
+                    "event_type_id": stat["event_type_id"],
+                }
+
+        # Convert field names from dot notation to underscore (e.g., "_cost.amount" -> "_cost_amount")
+        zero_values = {field.replace(".", "_"): "0" for field in aggregate_fields}
 
         periods = []
         for i, period_start in enumerate(timestamps):
@@ -370,12 +393,32 @@ class EventService:
                 period_end = end_timestamp
 
             period_stats = stats_by_timestamp.get(period_start, [])
+
+            # Fill in missing event types with zeros
+            stats_by_name = {s["name"]: s for s in period_stats}
+            complete_stats = []
+            for event_type_info in all_event_types.values():
+                if event_type_info["name"] in stats_by_name:
+                    complete_stats.append(stats_by_name[event_type_info["name"]])
+                else:
+                    complete_stats.append(
+                        {
+                            **event_type_info,
+                            "occurrences": 0,
+                            "totals": zero_values,
+                            "averages": zero_values,
+                            "p50": zero_values,
+                            "p95": zero_values,
+                            "p99": zero_values,
+                        }
+                    )
+
             periods.append(
                 StatisticsPeriod(
                     timestamp=period_start,
                     period_start=period_start,
                     period_end=period_end,
-                    stats=[EventStatistics(**s) for s in period_stats],
+                    stats=[EventStatistics(**s) for s in complete_stats],
                 )
             )
 

@@ -14,14 +14,16 @@ import {
   useInfiniteEvents,
 } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
+import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { endOfToday, format, subMonths } from 'date-fns'
 import { useRouter } from 'next/navigation'
-import { parseAsIsoDateTime, parseAsStringLiteral, useQueryState } from 'nuqs'
+import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { getSearchParams } from '../utils'
 import { EditEventTypeModal } from './EditEventTypeModal'
 
 const PAGE_SIZE = 50
@@ -37,14 +39,23 @@ export default function SpanDetailPage({
 }: SpanDetailPageProps) {
   const router = useRouter()
 
-  const [startDate, setStartDate] = useQueryState(
+  const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
-    parseAsIsoDateTime.withDefault(subMonths(endOfToday(), 1)),
+    parseAsString.withDefault(toISODate(subMonths(endOfToday(), 1))),
   )
-  const [endDate, setEndDate] = useQueryState(
+  const [endDateISOString, setEndDateISOString] = useQueryState(
     'endDate',
-    parseAsIsoDateTime.withDefault(endOfToday()),
+    parseAsString.withDefault(toISODate(endOfToday())),
   )
+
+  const [startDate, endDate] = useMemo(() => {
+    const today = new Date()
+    const startDate = startDateISOString
+      ? fromISODate(startDateISOString)
+      : subMonths(today, 1)
+    const endDate = endDateISOString ? fromISODate(endDateISOString) : today
+    return [startDate, endDate]
+  }, [startDateISOString, endDateISOString])
   const [interval, setInterval] = useQueryState(
     'interval',
     parseAsStringLiteral([
@@ -75,8 +86,8 @@ export default function SpanDetailPage({
     organization.id,
     {
       event_type_id: spanId,
-      start_timestamp: startDate.toISOString(),
-      end_timestamp: endDate.toISOString(),
+      start_date: startDateISOString,
+      end_date: endDateISOString,
       interval,
       aggregate_fields: ['_cost.amount'],
     },
@@ -147,17 +158,25 @@ export default function SpanDetailPage({
 
   const onDateRangeChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
-      setStartDate(dateRange.from)
-      setEndDate(dateRange.to)
+      const params = getSearchParams(dateRange, interval)
+      router.push(
+        `/dashboard/${organization.slug}/usage-billing/spans/${spanId}?${params}`,
+      )
     },
-    [setStartDate, setEndDate],
+    [router, organization, spanId, interval],
   )
 
   const onIntervalChange = useCallback(
     (newInterval: schemas['TimeInterval']) => {
-      setInterval(newInterval)
+      const params = getSearchParams(
+        { from: startDate, to: endDate },
+        newInterval,
+      )
+      router.push(
+        `/dashboard/${organization.slug}/usage-billing/spans/${spanId}?${params}`,
+      )
     },
-    [setInterval],
+    [router, organization, spanId, startDate, endDate],
   )
 
   const [hasScrolled, setHasScrolled] = useState(false)

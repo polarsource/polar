@@ -80,15 +80,17 @@ export const useEventHierarchyStats = (
     NonNullable<
       operations['events:list_statistics_timeseries']['parameters']['query']
     >,
-    'organization_id'
+    'organization_id' | 'timezone'
   >,
   enabled: boolean = true,
 ) => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['events:list_statistics_timeseries']['parameters']['query']['timezone']
   return useQuery({
     queryKey: [
       'eventHierarchyStats',
       organizationId,
-      { ...(parameters || {}) },
+      { timezone, ...(parameters || {}) },
     ],
     queryFn: () =>
       unwrap(
@@ -96,6 +98,7 @@ export const useEventHierarchyStats = (
           params: {
             query: {
               organization_id: organizationId,
+              timezone,
               ...(parameters || {}),
             },
           },

@@ -175,7 +175,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
               updatedSorting,
             )
             router.push(
-              `/dashboard/${organization.slug}/usage-billing/spans?${sortingParams}`,
+              `/dashboard/${organization.slug}/analytics/spans?${sortingParams}`,
             )
           }}
           onRowClick={(row) => {
@@ -184,7 +184,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
               interval,
             )
             router.push(
-              `/dashboard/${organization.slug}/usage-billing/spans/${row.original.event_type_id}?${params}`,
+              `/dashboard/${organization.slug}/analytics/spans/${row.original.event_type_id}?${params}`,
             )
           }}
           columns={

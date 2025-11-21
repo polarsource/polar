@@ -64,7 +64,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         title: 'Benefit Deleted',
         description: `Benefit ${benefit.description} successfully deleted`,
       })
-      pushRouteWithoutCache(`/dashboard/${organization.slug}/benefits`)
+      pushRouteWithoutCache(`/dashboard/${organization.slug}/products/benefits`)
     })
   }, [deleteBenefit, benefit, toast, organization, pushRouteWithoutCache])
 

@@ -146,7 +146,7 @@ export const BenefitListSidebar = ({
         <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
           {benefits.map((benefit) => {
             const queryString = searchParams.toString()
-            const benefitHref = `/dashboard/${organization.slug}/benefits/${benefit.id}${queryString ? `?${queryString}` : ''}`
+            const benefitHref = `/dashboard/${organization.slug}/products/benefits/${benefit.id}${queryString ? `?${queryString}` : ''}`
 
             return (
               <Link
@@ -193,7 +193,7 @@ export const BenefitListSidebar = ({
             hideModal={hideCreateBenefitModal}
             onSelectBenefit={(benefit) => {
               hideCreateBenefitModal()
-              window.location.href = `/dashboard/${organization.slug}/benefits/${benefit.id}`
+              window.location.href = `/dashboard/${organization.slug}/products/benefits/${benefit.id}`
             }}
           />
         }

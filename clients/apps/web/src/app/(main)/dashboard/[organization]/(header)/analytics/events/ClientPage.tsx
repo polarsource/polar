@@ -243,7 +243,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                     variant="ghost"
                     onClick={() => {
                       router.replace(
-                        `/dashboard/${organization.slug}/usage-billing/events`,
+                        `/dashboard/${organization.slug}/analytics/events`,
                       )
                     }}
                   >

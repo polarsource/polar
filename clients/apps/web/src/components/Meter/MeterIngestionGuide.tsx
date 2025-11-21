@@ -36,7 +36,7 @@ export const MeterIngestionGuide = () => {
                 </p>
               </div>
               <Link
-                href={`/dashboard/${organization.slug}/usage-billing/meters/create`}
+                href={`/dashboard/${organization.slug}/products/meters/create`}
               >
                 <Button>Create Meter</Button>
               </Link>

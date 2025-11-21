@@ -56,7 +56,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
 
     if (isArchiving) {
       router.push(
-        `/dashboard/${organization.slug}/usage-billing/meters/${meter.id}?filter=all`,
+        `/dashboard/${organization.slug}/products/meters/${meter.id}?filter=all`,
       )
     }
   }, [updateMeter, toast, organization, meter, router])

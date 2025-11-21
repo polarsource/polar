@@ -93,7 +93,7 @@ export const EventRow = ({
       e.stopPropagation()
       e.preventDefault()
       router.push(
-        `/dashboard/${organization.slug}/usage-billing/events/${event.id}`,
+        `/dashboard/${organization.slug}/analytics/events/${event.id}`,
       )
     },
     [organization, event.id, router],
@@ -154,7 +154,7 @@ export const EventRow = ({
             {isExpanded ? (
               renderEventLink ? (
                 <Link
-                  href={`/dashboard/${organization.slug}/usage-billing/events/${event.id}`}
+                  href={`/dashboard/${organization.slug}/analytics/events/${event.id}`}
                   className={twMerge('flex flex-col')}
                   onClick={(e) => {
                     e.stopPropagation()

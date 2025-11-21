@@ -10,7 +10,6 @@ import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
-import Storefront from '@mui/icons-material/Storefront'
 import StreamOutlined from '@mui/icons-material/StreamOutlined'
 import TrendingUp from '@mui/icons-material/TrendingUp'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
@@ -164,39 +163,17 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         link: `/dashboard/${org?.slug}/products/discounts`,
         icon: <DiscountOutlined fontSize="inherit" />,
       },
-    ],
-  },
-  {
-    id: 'usage-billing',
-    title: 'Usage Billing',
-    icon: <DonutLargeOutlined fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/usage-billing`,
-    if: true,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org?.slug}/usage-billing`)
-    },
-    subs: [
+      {
+        title: 'Benefits',
+        link: `/dashboard/${org?.slug}/products/benefits`,
+        icon: <DiamondOutlined fontSize="inherit" />,
+      },
       {
         title: 'Meters',
-        link: `/dashboard/${org?.slug}/usage-billing/meters`,
+        link: `/dashboard/${org?.slug}/products/meters`,
         icon: <DonutLargeOutlined fontSize="inherit" />,
       },
-      {
-        title: 'Events',
-        link: `/dashboard/${org?.slug}/usage-billing/events`,
-        icon: <StreamOutlined fontSize="inherit" />,
-      },
     ],
-  },
-  {
-    id: 'benefits',
-    title: 'Benefits',
-    icon: <DiamondOutlined fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/benefits`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org?.slug}/benefits`)
-    },
-    if: true,
   },
   {
     id: 'customers',
@@ -207,6 +184,25 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
       return currentRoute.startsWith(`/dashboard/${org?.slug}/customers`)
     },
     if: true,
+  },
+  {
+    id: 'analytics',
+    title: 'Analytics',
+    icon: <TrendingUp fontSize="inherit" />,
+    link: `/dashboard/${org?.slug}/analytics`,
+    if: true,
+    subs: [
+      {
+        title: 'Metrics',
+        link: `/dashboard/${org?.slug}/analytics`,
+        icon: <StreamOutlined fontSize="inherit" />,
+      },
+      {
+        title: 'Events',
+        link: `/dashboard/${org?.slug}/analytics/events`,
+        icon: <StreamOutlined fontSize="inherit" />,
+      },
+    ],
   },
   {
     id: 'org-sales',
@@ -234,20 +230,6 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         icon: <ShoppingCart />,
       },
     ],
-  },
-  {
-    id: 'storefront',
-    title: 'Storefront',
-    icon: <Storefront fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/storefront`,
-    if: false,
-  },
-  {
-    id: 'analytics',
-    title: 'Analytics',
-    icon: <TrendingUp fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/analytics`,
-    if: true,
   },
 ]
 

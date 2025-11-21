@@ -3552,7 +3552,7 @@ export interface paths {
      * Update Event Type
      * @description Update an event type's label.
      */
-    patch: operations['event-types:update_event_type']
+    patch: operations['event-types:update']
     trace?: never
   }
   '/v1/meters/': {
@@ -33445,7 +33445,7 @@ export interface operations {
       }
     }
   }
-  'event-types:update_event_type': {
+  'event-types:update': {
     parameters: {
       query?: never
       header?: never

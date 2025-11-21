@@ -11,7 +11,7 @@ import { getSearchParams } from './utils'
 
 interface SpansSidebarProps {
   organization: schemas['Organization']
-  hierarchyStats: schemas['ListStatisticsTimeseries'] | undefined
+  eventTypes: schemas['EventTypeWithStats'][] | undefined
   dateRange: { from: Date; to: Date }
   interval: schemas['TimeInterval']
   startDate: Date
@@ -24,7 +24,7 @@ interface SpansSidebarProps {
 
 export function SpansSidebar({
   organization,
-  hierarchyStats,
+  eventTypes,
   dateRange,
   interval,
   startDate,
@@ -81,33 +81,35 @@ export function SpansSidebar({
           <div className="flex flex-col gap-y-2">
             <h3 className="text-sm">Events</h3>
             <List size="small" className="rounded-xl">
-              {hierarchyStats?.totals?.map((stat) => (
+              {eventTypes?.map((eventType) => (
                 <ListItem
-                  key={stat.name}
+                  key={eventType.id}
                   size="small"
                   className="justify-between px-3"
                   inactiveClassName="text-gray-500 dark:text-polar-500"
-                  selected={selectedSpanId === stat.event_type_id}
+                  selected={selectedSpanId === eventType.id}
                   onSelect={() => {
                     const params = getSearchParams(
                       { from: startDate, to: endDate },
                       interval,
                     )
 
-                    if (selectedSpanId === stat.event_type_id) {
+                    if (selectedSpanId === eventType.id) {
                       router.push(
                         `/dashboard/${organization.slug}/analytics/spans?${params}`,
                       )
                     } else {
                       router.push(
-                        `/dashboard/${organization.slug}/analytics/spans/${stat.event_type_id}?${params}`,
+                        `/dashboard/${organization.slug}/analytics/spans/${eventType.id}?${params}`,
                       )
                     }
                   }}
                 >
-                  <span className="truncate">{stat.label || stat.name}</span>
+                  <span className="truncate">
+                    {eventType.label || eventType.name}
+                  </span>
                   <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                    {Number(stat.occurrences).toLocaleString('en-US', {
+                    {Number(eventType.occurrences).toLocaleString('en-US', {
                       style: 'decimal',
                       compactDisplay: 'short',
                       notation: 'compact',

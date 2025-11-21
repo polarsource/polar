@@ -30,6 +30,20 @@ export const useInviteOrganizationMember = (id: string) =>
     },
   })
 
+export const useRemoveOrganizationMember = (id: string) =>
+  useMutation({
+    mutationFn: (userId: string) => {
+      return api.DELETE('/v1/organizations/{id}/members/{user_id}', {
+        params: { path: { id, user_id: userId } },
+      })
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['organizationMembers', id],
+      })
+    },
+  })
+
 export const useListOrganizations = (
   params: operations['organizations:list']['parameters']['query'],
   enabled: boolean = true,

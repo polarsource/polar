@@ -2429,6 +2429,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/members/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Members
+     * @description List members with optional customer ID filter.
+     *
+     *     **Scopes**: `members:read` `members:write`
+     */
+    get: operations['members:list_members']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/benefit-grants/': {
     parameters: {
       query?: never
@@ -5381,6 +5403,8 @@ export interface components {
       | 'subscriptions:write'
       | 'customers:read'
       | 'customers:write'
+      | 'members:read'
+      | 'members:write'
       | 'wallets:read'
       | 'wallets:write'
       | 'customer_meters:read'
@@ -16639,6 +16663,12 @@ export interface components {
       items: components['schemas']['LicenseKeyRead'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[Member] */
+    ListResource_Member_: {
+      /** Items */
+      items: components['schemas']['Member'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Meter] */
     ListResource_Meter_: {
       /** Items */
@@ -16883,6 +16913,12 @@ export interface components {
        */
       modified_at: string | null
       /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer this member belongs to.
+       */
+      customer_id: string
+      /**
        * Email
        * @description The email address of the member.
        * @example member@example.com
@@ -16911,6 +16947,11 @@ export interface components {
      * @enum {string}
      */
     MemberRole: 'owner' | 'billing_manager' | 'member'
+    /**
+     * MemberSortProperty
+     * @enum {string}
+     */
+    MemberSortProperty: 'created_at' | '-created_at'
     /** Meter */
     Meter: {
       /** Metadata */
@@ -17674,7 +17715,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -17739,7 +17780,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -17785,7 +17826,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -20859,6 +20900,8 @@ export interface components {
       | 'subscriptions:write'
       | 'customers:read'
       | 'customers:write'
+      | 'members:read'
+      | 'members:write'
       | 'wallets:read'
       | 'wallets:write'
       | 'customer_meters:read'
@@ -30112,6 +30155,44 @@ export interface operations {
       }
     }
   }
+  'members:list_members': {
+    parameters: {
+      query?: {
+        /** @description Filter by customer ID. */
+        customer_id?: string | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['MemberSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_Member_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer_portal:benefit-grants:list': {
     parameters: {
       query?: {
@@ -36930,6 +37011,8 @@ export const availableScopeValues: ReadonlyArray<
   'subscriptions:write',
   'customers:read',
   'customers:write',
+  'members:read',
+  'members:write',
   'wallets:read',
   'wallets:write',
   'customer_meters:read',
@@ -37862,6 +37945,9 @@ export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
 export const memberRoleValues: ReadonlyArray<
   components['schemas']['MemberRole']
 > = ['owner', 'billing_manager', 'member']
+export const memberSortPropertyValues: ReadonlyArray<
+  components['schemas']['MemberSortProperty']
+> = ['created_at', '-created_at']
 export const meterCreditEventNameValues: ReadonlyArray<
   components['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']
@@ -38181,6 +38267,8 @@ export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'subscriptions:write',
   'customers:read',
   'customers:write',
+  'members:read',
+  'members:write',
   'wallets:read',
   'wallets:write',
   'customer_meters:read',

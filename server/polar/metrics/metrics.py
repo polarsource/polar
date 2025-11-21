@@ -721,8 +721,11 @@ class CanceledSubscriptionsOtherMetric(SQLMetric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.count(Subscription.id).filter(
-            Subscription.customer_cancellation_reason
-            == CustomerCancellationReason.other
+            or_(
+                Subscription.customer_cancellation_reason
+                == CustomerCancellationReason.other,
+                Subscription.customer_cancellation_reason.is_(None),
+            )
         )
 
     @classmethod

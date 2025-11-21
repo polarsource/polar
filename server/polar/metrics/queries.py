@@ -315,8 +315,11 @@ def get_active_subscriptions_cte(
                         Subscription.started_at <= end_timestamp,
                     ),
                     or_(
-                        func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(None),
-                        func.coalesce(Subscription.ended_at, Subscription.ends_at) >= start_timestamp,
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
+                            None
+                        ),
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at)
+                        >= start_timestamp,
                     ),
                 ),
             )
@@ -556,8 +559,10 @@ def get_churned_subscriptions_cte(
                     )
                     == interval.sql_date_trunc(timestamp_column),
                     Subscription.id.in_(readable_subscriptions_statement),
-                    func.coalesce(Subscription.ended_at, Subscription.ends_at) >= start_timestamp,
-                    func.coalesce(Subscription.ended_at, Subscription.ends_at) <= end_timestamp,
+                    func.coalesce(Subscription.ended_at, Subscription.ends_at)
+                    >= start_timestamp,
+                    func.coalesce(Subscription.ended_at, Subscription.ends_at)
+                    <= end_timestamp,
                 ),
             )
         )

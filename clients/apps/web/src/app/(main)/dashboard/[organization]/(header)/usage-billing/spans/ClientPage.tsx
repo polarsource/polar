@@ -7,6 +7,7 @@ import { Sparkline, SparklineColor } from '@/components/Sparkline/Sparkline'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
 import { parseSearchParams, serializeSearchParams } from '@/utils/datatable'
 import { formatSubCentCurrency } from '@/utils/formatters'
+import { fromISODate, toISODate } from '@/utils/metrics'
 import { operations, schemas } from '@polar-sh/client'
 import {
   DataTable,
@@ -16,9 +17,10 @@ import {
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { endOfToday, subMonths } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { parseAsIsoDateTime, parseAsStringLiteral, useQueryState } from 'nuqs'
+import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { getSearchParams } from './utils'
 
 const formatOccurrences = (value: number): string => {
   return value.toLocaleString('en-US')
@@ -41,14 +43,23 @@ export default function ClientPage({ organization }: ClientPageProps) {
   }
   const { sorting: costSorting } = parseSearchParams(dataTableParams)
 
-  const [startDate, setStartDate] = useQueryState(
+  const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
-    parseAsIsoDateTime.withDefault(subMonths(endOfToday(), 1)),
+    parseAsString.withDefault(toISODate(subMonths(endOfToday(), 1))),
   )
-  const [endDate, setEndDate] = useQueryState(
+  const [endDateISOString, setEndDateISOString] = useQueryState(
     'endDate',
-    parseAsIsoDateTime.withDefault(endOfToday()),
+    parseAsString.withDefault(toISODate(endOfToday())),
   )
+
+  const [startDate, endDate] = useMemo(() => {
+    const today = new Date()
+    const startDate = startDateISOString
+      ? fromISODate(startDateISOString)
+      : subMonths(today, 1)
+    const endDate = endDateISOString ? fromISODate(endDateISOString) : today
+    return [startDate, endDate]
+  }, [startDateISOString, endDateISOString])
   const [interval, setInterval] = useQueryState(
     'interval',
     parseAsStringLiteral([
@@ -71,8 +82,8 @@ export default function ClientPage({ organization }: ClientPageProps) {
   const { data: costData, isLoading: costDataLoading } = useEventHierarchyStats(
     organization.id,
     {
-      start_timestamp: startDate.toISOString(),
-      end_timestamp: endDate.toISOString(),
+      start_date: startDateISOString,
+      end_date: endDateISOString,
       interval,
       aggregate_fields: ['_cost.amount'],
       sorting: sortingParam,
@@ -86,17 +97,25 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
   const onDateRangeChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
-      setStartDate(dateRange.from)
-      setEndDate(dateRange.to)
+      const params = getSearchParams(dateRange, interval)
+      router.push(
+        `/dashboard/${organization.slug}/usage-billing/spans?${params}`,
+      )
     },
-    [setStartDate, setEndDate],
+    [router, organization, interval],
   )
 
   const onIntervalChange = useCallback(
     (newInterval: schemas['TimeInterval']) => {
-      setInterval(newInterval)
+      const params = getSearchParams(
+        { from: startDate, to: endDate },
+        newInterval,
+      )
+      router.push(
+        `/dashboard/${organization.slug}/usage-billing/spans?${params}`,
+      )
     },
-    [setInterval],
+    [router, organization, startDate, endDate],
   )
 
   const [hasScrolled, setHasScrolled] = useState(false)
@@ -235,14 +254,10 @@ export default function ClientPage({ organization }: ClientPageProps) {
             )
           }}
           onRowClick={(row) => {
-            const params = new URLSearchParams()
-            if (startDate) {
-              params.set('startDate', startDate.toISOString())
-            }
-            if (endDate) {
-              params.set('endDate', endDate.toISOString())
-            }
-            params.set('interval', interval)
+            const params = getSearchParams(
+              { from: startDate, to: endDate },
+              interval,
+            )
             router.push(
               `/dashboard/${organization.slug}/usage-billing/spans/${row.original.event_type_id}?${params}`,
             )

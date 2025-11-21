@@ -1,8 +1,11 @@
 from collections.abc import Sequence
+from datetime import date
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Query
 from fastapi.exceptions import RequestValidationError
 from pydantic import UUID4, AwareDatetime, ValidationError
+from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
@@ -166,12 +169,16 @@ async def list_statistics_timeseries(
     auth_subject: auth.EventRead,
     metadata: MetadataQuery,
     hierarchy_sorting: sorting.EventStatisticsSorting,
-    start_timestamp: AwareDatetime = Query(
+    start_date: date = Query(
         ...,
-        description="Start timestamp.",
+        description="Start date.",
     ),
-    end_timestamp: AwareDatetime = Query(..., description="End timestamp."),
-    interval: TimeInterval = Query(..., description="Interval between two timestamps."),
+    end_date: date = Query(..., description="End date."),
+    timezone: TimeZoneName = Query(
+        default="UTC",
+        description="Timezone to use for the dates. Default is UTC.",
+    ),
+    interval: TimeInterval = Query(..., description="Interval between two dates."),
     filter: str | None = Query(
         None,
         description=(
@@ -221,7 +228,7 @@ async def list_statistics_timeseries(
     across all periods.
     """
     # Validate interval limits
-    if not is_under_limits(start_timestamp, end_timestamp, interval):
+    if not is_under_limits(start_date, end_date, interval):
         raise PolarRequestValidationError(
             [
                 {
@@ -231,7 +238,7 @@ async def list_statistics_timeseries(
                         "Try to change the interval or reduce the date range."
                     ),
                     "type": "value_error",
-                    "input": (start_timestamp, end_timestamp, interval),
+                    "input": (start_date, end_date, interval),
                 }
             ]
         )
@@ -257,8 +264,9 @@ async def list_statistics_timeseries(
     return await event_service.list_statistics_timeseries(
         session,
         auth_subject,
-        start_timestamp=start_timestamp,
-        end_timestamp=end_timestamp,
+        start_date=start_date,
+        end_date=end_date,
+        timezone=ZoneInfo(timezone),
         interval=interval,
         filter=parsed_filter,
         organization_id=organization_id,

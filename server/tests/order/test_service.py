@@ -3114,6 +3114,11 @@ class TestTriggerPayment:
         assert order.status == OrderStatus.paid
         assert order.payment_lock_acquired_at is None
 
+        customer_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert customer_balance == -10
+
     async def test_applied_balance_amount(
         self,
         stripe_service_mock: MagicMock,

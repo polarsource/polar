@@ -10,7 +10,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.tax import TaxCode, calculate_tax
-from polar.models import Customer, Wallet, WalletTransaction
+from polar.models import Customer, Order, Wallet, WalletTransaction
 from polar.models.payment_method import PaymentMethod
 from polar.models.wallet import WalletType
 from polar.payment_method.service import payment_method as payment_method_service
@@ -182,6 +182,7 @@ class WalletService:
         *,
         tax_amount: int | None = None,
         tax_calculation_processor_id: str | None = None,
+        order: Order | None = None,
         flush: bool = False,
     ) -> WalletTransaction:
         repository = WalletTransactionRepository(session)
@@ -192,6 +193,7 @@ class WalletService:
                 wallet=wallet,
                 tax_amount=tax_amount,
                 tax_calculation_processor_id=tax_calculation_processor_id,
+                order=order,
             ),
             flush=flush,
         )
@@ -227,10 +229,16 @@ class WalletService:
         return wallet
 
     async def create_balance_transaction(
-        self, session: AsyncSession, customer: Customer, amount: int, currency: str
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        amount: int,
+        currency: str,
+        *,
+        order: Order | None = None,
     ) -> WalletTransaction:
         wallet = await self.get_or_create_billing_wallet(session, customer, currency)
-        return await self.create_transaction(session, wallet, amount)
+        return await self.create_transaction(session, wallet, amount, order=order)
 
 
 wallet = WalletService()

@@ -309,6 +309,11 @@ const nextConfig = {
         destination: '/dashboard/:organization/analytics/events',
         permanent: true,
       },
+      {
+        source: '/dashboard/:organization/usage-billing/spans',
+        destination: '/dashboard/:organization/analytics/spans',
+        permanent: true,
+      },
 
       // Account Settings Redirects
       {

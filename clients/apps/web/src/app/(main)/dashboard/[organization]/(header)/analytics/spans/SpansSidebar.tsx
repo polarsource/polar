@@ -96,11 +96,11 @@ export function SpansSidebar({
 
                     if (selectedSpanId === stat.event_type_id) {
                       router.push(
-                        `/dashboard/${organization.slug}/usage-billing/spans?${params}`,
+                        `/dashboard/${organization.slug}/analytics/spans?${params}`,
                       )
                     } else {
                       router.push(
-                        `/dashboard/${organization.slug}/usage-billing/spans/${stat.event_type_id}?${params}`,
+                        `/dashboard/${organization.slug}/analytics/spans/${stat.event_type_id}?${params}`,
                       )
                     }
                   }}

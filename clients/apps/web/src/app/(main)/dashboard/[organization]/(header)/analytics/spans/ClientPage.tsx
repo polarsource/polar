@@ -95,9 +95,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
   const onDateRangeChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
       const params = getSearchParams(dateRange, interval)
-      router.push(
-        `/dashboard/${organization.slug}/usage-billing/spans?${params}`,
-      )
+      router.push(`/dashboard/${organization.slug}/analytics/spans?${params}`)
     },
     [router, organization, interval],
   )
@@ -108,9 +106,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
         { from: startDate, to: endDate },
         newInterval,
       )
-      router.push(
-        `/dashboard/${organization.slug}/usage-billing/spans?${params}`,
-      )
+      router.push(`/dashboard/${organization.slug}/analytics/spans?${params}`)
     },
     [router, organization, startDate, endDate],
   )

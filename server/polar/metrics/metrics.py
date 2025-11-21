@@ -730,6 +730,23 @@ class CanceledSubscriptionsOtherMetric(SQLMetric):
         return cumulative_sum(periods, cls.slug)
 
 
+class ChurnedSubscriptionsMetric(SQLMetric):
+    slug = "churned_subscriptions"
+    display_name = "Churned Subscriptions"
+    type = MetricType.scalar
+    query = MetricQuery.churned_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id)
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
 class CostsMetric(SQLMetric):
     slug = "costs"
     display_name = "Costs"
@@ -906,9 +923,12 @@ class ChurnRateMetric(MetaMetric):
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> float:
-        active = period.active_subscriptions
+        active_during = period.active_subscriptions
+        new = period.new_subscriptions
+        churned = period.churned_subscriptions
         canceled = period.canceled_subscriptions
-        return canceled / active if active > 0 else 0.0
+        active_at_start = active_during - new + churned
+        return canceled / active_at_start if active_at_start > 0 else 0.0
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
@@ -971,10 +991,11 @@ METRICS_SQL: list[type[SQLMetric]] = [
     CanceledSubscriptionsTooExpensiveMetric,
     CanceledSubscriptionsUnusedMetric,
     CanceledSubscriptionsOtherMetric,
+    ChurnedSubscriptionsMetric,
 ]
 
 METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
-    # ChurnRateMetric,
+    ChurnRateMetric,
     GrossMarginMetric,
     GrossMarginPercentageMetric,
     CashflowMetric,

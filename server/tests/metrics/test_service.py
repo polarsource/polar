@@ -1460,7 +1460,6 @@ class TestGetMetrics:
         assert jan.cost_per_user == 0
 
     @pytest.mark.auth
-    @pytest.mark.skip("churn rate is still in development")
     async def test_churn_rate(
         self,
         save_fixture: SaveFixture,
@@ -1511,17 +1510,23 @@ class TestGetMetrics:
 
         jan = metrics.periods[0]
         assert jan.active_subscriptions == 2
+        assert jan.new_subscriptions == 2
         assert jan.canceled_subscriptions == 0
+        assert jan.churned_subscriptions == 0
         assert jan.churn_rate == 0.0
 
         feb = metrics.periods[1]
         assert feb.active_subscriptions == 2
+        assert feb.new_subscriptions == 0
         assert feb.canceled_subscriptions == 1
+        assert feb.churned_subscriptions == 0
         assert feb.churn_rate == 0.5
 
         mar = metrics.periods[2]
         assert mar.active_subscriptions == 1
+        assert mar.new_subscriptions == 0
         assert mar.canceled_subscriptions == 0
+        assert mar.churned_subscriptions == 1
         assert mar.churn_rate == 0.0
 
     @pytest.mark.auth

@@ -170,6 +170,13 @@ export default function ClientPage({
     'checkouts',
     'succeeded_checkouts',
   ]
+
+  const cancellationEvents: (keyof schemas['Metrics'])[] = [
+    'canceled_subscriptions',
+    'churned_subscriptions',
+    'churn_rate',
+  ]
+
   const costEvents: (keyof schemas['Metrics'])[] = [
     'costs', // COGS
     'cost_per_user', // Cost To Serve
@@ -260,6 +267,17 @@ export default function ClientPage({
                           height={20}
                         />
                       </div>
+                      {cancellationEvents.map((metricKey) => (
+                        <MetricChartBox
+                          key={metricKey}
+                          data={data}
+                          interval={interval}
+                          metric={metricKey}
+                          height={200}
+                          chartType="line"
+                          className="dark:border-polar-700 rounded-none! border-t-0 border-r border-b border-l-0 border-gray-200 bg-transparent shadow-none dark:bg-transparent"
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>

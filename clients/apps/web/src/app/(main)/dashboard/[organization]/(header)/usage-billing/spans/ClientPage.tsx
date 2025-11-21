@@ -2,8 +2,8 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Sparkline, SparklineColor } from '@/components/Sparkline/Sparkline'
-import { useEventHierarchyStats } from '@/hooks/queries/events'
 import { useEventTypes } from '@/hooks/queries/event_types'
+import { useEventHierarchyStats } from '@/hooks/queries/events'
 import { parseSearchParams, serializeSearchParams } from '@/utils/datatable'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
@@ -90,7 +90,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
   const { data: eventTypes } = useEventTypes(organization.id, {
     sorting: ['-last_seen'],
-    parent_id: null,
+    root_events: true,
     source: 'user',
   })
 

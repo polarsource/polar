@@ -5,6 +5,7 @@ from fastapi import Path
 from pydantic import UUID4, Field, field_validator
 
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.models.event import EventSource
 
 
 class EventTypeUpdate(Schema):
@@ -30,6 +31,9 @@ class EventType(IDSchema, TimestampedSchema):
 
 
 class EventTypeWithStats(EventType):
+    source: EventSource = Field(
+        description="The source of the events (system or user)."
+    )
     occurrences: int = Field(description="Number of times the event has occurred.")
     first_seen: datetime = Field(description="The first time the event occurred.")
     last_seen: datetime = Field(description="The last time the event occurred.")

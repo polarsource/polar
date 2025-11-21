@@ -319,7 +319,7 @@ class TestListEventTypes:
             source=EventSource.user,
         )
 
-        response = await client.get("/v1/event-types/", params={"parent_id": None})
+        response = await client.get("/v1/event-types/", params={"root_events": True})
 
         assert response.status_code == 200
         json = response.json()

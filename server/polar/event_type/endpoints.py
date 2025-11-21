@@ -22,7 +22,7 @@ router = APIRouter(prefix="/event-types", tags=["event-types", APITag.public])
     summary="List Event Types",
     response_model=ListResource[schemas.EventTypeWithStats],
 )
-async def list_event_types(
+async def list(
     auth_subject: auth.EventTypeRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.EventTypesSorting,
@@ -43,10 +43,15 @@ async def list_event_types(
         title="Query",
         description="Query to filter event types by name or label.",
     ),
+    root_events: bool = Query(
+        False,
+        title="Root Events Filter",
+        description="When true, only return event types with root events (parent_id IS NULL).",
+    ),
     parent_id: UUID | None = Query(
         None,
         title="ParentID Filter",
-        description="Filter by parent event ID. Use 'null' to get only root events.",
+        description="Filter by specific parent event ID.",
     ),
     source: EventSource | None = Query(
         None,
@@ -62,6 +67,7 @@ async def list_event_types(
         customer_id=customer_id,
         external_customer_id=external_customer_id,
         query=query,
+        root_events=root_events,
         parent_id=parent_id,
         source=source,
         pagination=pagination,
@@ -78,7 +84,7 @@ async def list_event_types(
     status_code=200,
     responses={404: {}},
 )
-async def update_event_type(
+async def update(
     id: schemas.EventTypeID,
     body: schemas.EventTypeUpdate,
     auth_subject: auth.EventTypeWrite,

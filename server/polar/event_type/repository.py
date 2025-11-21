@@ -6,6 +6,7 @@ from sqlalchemy import Select, func, select
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.models import Event, EventType, UserOrganization
+from polar.models.event import EventSource
 
 
 class EventTypeRepository(
@@ -37,12 +38,13 @@ class EventTypeRepository(
 
     def get_event_types_with_stats_statement(
         self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[EventType, int, datetime, datetime]]:
+    ) -> Select[tuple[EventType, EventSource, int, datetime, datetime]]:
         return (
             self.get_readable_statement(auth_subject)
             .join(Event, EventType.id == Event.event_type_id)
             .with_only_columns(
                 EventType,
+                Event.source,
                 func.count(Event.id).label("occurrences"),
                 func.min(Event.timestamp).label("first_seen"),
                 func.max(Event.timestamp).label("last_seen"),
@@ -55,6 +57,7 @@ class EventTypeRepository(
                 EventType.name,
                 EventType.label,
                 EventType.organization_id,
+                Event.source,
             )
         )
 

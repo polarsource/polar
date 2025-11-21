@@ -39,7 +39,7 @@ export default async function Page(props: {
     const queryString = new URLSearchParams(
       searchParams as Record<string, string>,
     ).toString()
-    const redirectUrl = `/dashboard/${organization.slug}/benefits/${data.items[0].id}${queryString ? `?${queryString}` : ''}`
+    const redirectUrl = `/dashboard/${organization.slug}/products/benefits/${data.items[0].id}${queryString ? `?${queryString}` : ''}`
     redirect(redirectUrl)
   }
 
@@ -51,7 +51,7 @@ export default async function Page(props: {
         Create a benefit to get started
       </p>
       <Link
-        href={`/dashboard/${organization.slug}/benefits?create_benefit=true`}
+        href={`/dashboard/${organization.slug}/products/benefits?create_benefit=true`}
       >
         <Button>Create Benefit</Button>
       </Link>

@@ -76,7 +76,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
       })
 
       router.push(
-        `/dashboard/${organization.slug}/usage-billing/meters?selectedMeter=${meter.id}`,
+        `/dashboard/${organization.slug}/products/meters?selectedMeter=${meter.id}`,
       )
     },
     [setError, createMeter, organization.slug, router],

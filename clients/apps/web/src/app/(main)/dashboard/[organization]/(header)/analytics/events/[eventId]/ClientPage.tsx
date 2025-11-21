@@ -51,7 +51,7 @@ export default function EventDetailPage({
         <div className="flex flex-col gap-y-6">
           {event.parent_id ? (
             <Link
-              href={`/dashboard/${organization.slug}/usage-billing/events/${event.parent_id}`}
+              href={`/dashboard/${organization.slug}/analytics/events/${event.parent_id}`}
               className="flex w-fit flex-row items-center gap-x-4 text-sm"
             >
               <Button

@@ -143,9 +143,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
               <ArrowDownward fontSize="small" />
             )}
           </Button>
-          <Link
-            href={`/dashboard/${organization.slug}/usage-billing/meters/create`}
-          >
+          <Link href={`/dashboard/${organization.slug}/products/meters/create`}>
             <Button size="icon" className="h-6 w-6">
               <AddOutlined fontSize="small" />
             </Button>
@@ -169,7 +167,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
       <div className="dark:divide-polar-800 flex h-full grow flex-col divide-y divide-gray-50 overflow-y-auto">
         {meters.map((meter) => {
           const queryString = searchParams.toString()
-          const meterHref = `/dashboard/${organization.slug}/usage-billing/meters/${meter.id}${queryString ? `?${queryString}` : ''}`
+          const meterHref = `/dashboard/${organization.slug}/products/meters/${meter.id}${queryString ? `?${queryString}` : ''}`
 
           return (
             <Link

@@ -39,7 +39,7 @@ export default async function Page(props: {
     const queryString = new URLSearchParams(
       searchParams as Record<string, string>,
     ).toString()
-    const redirectUrl = `/dashboard/${organization.slug}/usage-billing/meters/${data.items[0].id}${queryString ? `?${queryString}` : ''}`
+    const redirectUrl = `/dashboard/${organization.slug}/products/meters/${data.items[0].id}${queryString ? `?${queryString}` : ''}`
     redirect(redirectUrl)
   }
 

@@ -265,8 +265,8 @@ const nextConfig = {
         permanent: true,
       },
       {
-        source: '/dashboard/:organization/products/benefits',
-        destination: '/dashboard/:organization/benefits',
+        source: '/dashboard/:organization/benefits',
+        destination: '/dashboard/:organization/products/benefits',
         permanent: true,
       },
       {
@@ -293,6 +293,21 @@ const nextConfig = {
         source: '/dashboard/:organization/finance',
         destination: '/dashboard/:organization/finance/income',
         permanent: false,
+      },
+      {
+        source: '/dashboard/:organization/usage-billing',
+        destination: '/dashboard/:organization/products/meters',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/:organization/usage-billing/meters',
+        destination: '/dashboard/:organization/products/meters',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/:organization/usage-billing/events',
+        destination: '/dashboard/:organization/analytics/events',
+        permanent: true,
       },
 
       // Account Settings Redirects

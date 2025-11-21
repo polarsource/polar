@@ -463,7 +463,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 cell: ({ row: { original } }) => (
                   <div className="flex justify-end">
                     <Link
-                      href={`/dashboard/${organization.slug}/benefits/${original.benefit.id}`}
+                      href={`/dashboard/${organization.slug}/products/benefits/${original.benefit.id}`}
                     >
                       <Button variant="secondary" size="sm">
                         View Benefit

@@ -84,7 +84,7 @@ export const LicenseKeysPage = ({
         : updaterOrValue
 
     router.push(
-      `/dashboard/${organization.slug}/benefits/${benefit.id}?${getSearchParams(
+      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
         updatedPagination,
         sorting,
       )}`,
@@ -102,7 +102,7 @@ export const LicenseKeysPage = ({
         : updaterOrValue
 
     router.push(
-      `/dashboard/${organization.slug}/benefits/${benefit.id}?${getSearchParams(
+      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
         pagination,
         updatedSorting,
       )}`,

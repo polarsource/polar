@@ -81,7 +81,7 @@ export async function proxy(request: NextRequest) {
   if (benefitsMatch && request.nextUrl.searchParams.has('benefitId')) {
     const benefitId = request.nextUrl.searchParams.get('benefitId')
     const redirectURL = request.nextUrl.clone()
-    redirectURL.pathname = `/dashboard/${benefitsMatch[1]}/benefits/${benefitId}`
+    redirectURL.pathname = `/dashboard/${benefitsMatch[1]}/products/benefits/${benefitId}`
     redirectURL.searchParams.delete('benefitId')
     return NextResponse.redirect(redirectURL)
   }
@@ -108,7 +108,7 @@ export async function proxy(request: NextRequest) {
   if (metersMatch && request.nextUrl.searchParams.has('selectedMeter')) {
     const selectedMeter = request.nextUrl.searchParams.get('selectedMeter')
     const redirectURL = request.nextUrl.clone()
-    redirectURL.pathname = `/dashboard/${metersMatch[1]}/usage-billing/meters/${selectedMeter}`
+    redirectURL.pathname = `/dashboard/${metersMatch[1]}/products/meters/${selectedMeter}`
     redirectURL.searchParams.delete('selectedMeter')
     return NextResponse.redirect(redirectURL)
   }

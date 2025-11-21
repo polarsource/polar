@@ -17377,6 +17377,11 @@ export interface components {
      */
     MetricsIntervalLimit: {
       /**
+       * Min Days
+       * @description Minimum number of days for this interval.
+       */
+      min_days: number
+      /**
        * Max Days
        * @description Maximum number of days for this interval.
        */

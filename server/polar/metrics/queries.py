@@ -223,9 +223,12 @@ def get_orders_metrics_cte(
         select(
             timestamp_column.label("timestamp"),
             *[
-                func.coalesce(
-                    func.sum(getattr(daily_metrics.c, metric.slug)).over(
-                        order_by=timestamp_column
+                (
+                    func.coalesce(
+                        func.sum(getattr(daily_metrics.c, metric.slug)).over(
+                            order_by=timestamp_column
+                        ),
+                        0,
                     )
                     + (
                         getattr(historical_baseline.c, f"hist_{metric.slug}")
@@ -233,8 +236,7 @@ def get_orders_metrics_cte(
                         else 0
                     )
                     if metric.slug in cumulative_metrics
-                    else getattr(daily_metrics.c, metric.slug),
-                    0,
+                    else func.coalesce(getattr(daily_metrics.c, metric.slug), 0)
                 ).label(metric.slug)
                 for metric in metrics
                 if metric.query == MetricQuery.orders

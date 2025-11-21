@@ -156,7 +156,7 @@ export default function SpanDetailPage({
     (dateRange: { from: Date; to: Date }) => {
       const params = getSearchParams(dateRange, interval)
       router.push(
-        `/dashboard/${organization.slug}/usage-billing/spans/${spanId}?${params}`,
+        `/dashboard/${organization.slug}/analytics/spans/${spanId}?${params}`,
       )
     },
     [router, organization, spanId, interval],
@@ -169,7 +169,7 @@ export default function SpanDetailPage({
         newInterval,
       )
       router.push(
-        `/dashboard/${organization.slug}/usage-billing/spans/${spanId}?${params}`,
+        `/dashboard/${organization.slug}/analytics/spans/${spanId}?${params}`,
       )
     },
     [router, organization, spanId, startDate, endDate],

@@ -4,6 +4,10 @@ import { usePostHog } from '@/hooks/posthog'
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 
+interface Props {
+  continent: string | null
+}
+
 export function cookieConsentGiven() {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
     return 'undecided'
@@ -16,7 +20,7 @@ export function cookieConsentGiven() {
   return localStorage.getItem('cookie_consent')
 }
 
-export function CookieConsent() {
+export function CookieConsent({ continent }: Props) {
   const [consentGiven, setConsentGiven] = useState<string | null>('')
   const { setPersistence } = usePostHog()
   const searchParams = useSearchParams()
@@ -66,6 +70,11 @@ export function CookieConsent() {
 
   const handleDeclineCookies = () => {
     declineCookies()
+  }
+
+  // TODO this should probably check for countries part of the European Union, not Europe
+  if (continent === 'EU') {
+    return null
   }
 
   return (

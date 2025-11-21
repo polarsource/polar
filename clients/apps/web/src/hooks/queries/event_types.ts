@@ -1,7 +1,31 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { schemas } from '@polar-sh/client'
-import { useMutation } from '@tanstack/react-query'
+import { operations, schemas, unwrap } from '@polar-sh/client'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { defaultRetry } from './retry'
+
+export const useEventTypes = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['event_types:list']['parameters']['query']>,
+    'organization_id'
+  >,
+  enabled: boolean = true,
+) => {
+  return useQuery({
+    queryKey: ['eventTypes', organizationId, { ...(parameters || {}) }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/event-types/', {
+          params: {
+            query: { organization_id: organizationId, ...(parameters || {}) },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+}
 
 export const useUpdateEventType = (id: string) =>
   useMutation({
@@ -20,6 +44,9 @@ export const useUpdateEventType = (id: string) =>
       }
 
       const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['eventTypes', data.organization_id],
+      })
       queryClient.invalidateQueries({
         queryKey: ['eventNames', data.organization_id],
       })

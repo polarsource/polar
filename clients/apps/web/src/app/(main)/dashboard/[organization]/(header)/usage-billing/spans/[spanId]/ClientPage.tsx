@@ -10,6 +10,7 @@ import {
   useEventHierarchyStats,
   useInfiniteEvents,
 } from '@/hooks/queries/events'
+import { useEventTypes } from '@/hooks/queries/event_types'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
@@ -89,6 +90,12 @@ export default function SpanDetailPage({
     },
     true,
   )
+
+  const { data: eventTypes } = useEventTypes(organization.id, {
+    sorting: ['-last_seen'],
+    parent_id: null,
+    source: 'user',
+  })
 
   const events = useMemo(() => {
     if (!eventsData) return []
@@ -203,7 +210,7 @@ export default function SpanDetailPage({
       contextView={
         <SpansSidebar
           organization={organization}
-          hierarchyStats={hierarchyStats}
+          eventTypes={eventTypes?.items}
           dateRange={dateRange}
           interval={interval}
           startDate={startDate}

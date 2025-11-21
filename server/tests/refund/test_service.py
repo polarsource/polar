@@ -29,6 +29,7 @@ from polar.transaction.repository import RefundTransactionRepository
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
+from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_order,
@@ -37,6 +38,7 @@ from tests.fixtures.random_objects import (
     create_pledge,
     create_refund,
     create_user,
+    create_wallet_billing,
 )
 from tests.fixtures.stripe import build_stripe_refund
 
@@ -276,6 +278,77 @@ class TestCreateAbuse(StripeRefund):
         assert updated_order is not None
         assert updated_order.refunded_amount == 0
         assert updated_order.refunded_tax_amount == 0
+
+    @pytest.mark.parametrize(
+        "initial_balance,order_amount,order_tax_amount,refund_amount,expected_balance",
+        [
+            pytest.param(500, 1000, 250, 1000, 0, id="full refund within balance"),
+            pytest.param(500, 1000, 250, 100, 375, id="partial refund within balance"),
+            pytest.param(0, 1000, 250, 1000, 0, id="no balance"),
+            pytest.param(-500, 1000, 250, 1000, -500, id="negative balance"),
+        ],
+    )
+    async def test_create_impact_customer_balance(
+        self,
+        initial_balance: int,
+        order_amount: int,
+        order_tax_amount: int,
+        refund_amount: int,
+        expected_balance: int,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Complex Swedish order. $99.9 with 25% VAT = $24.75
+        order, payment = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=order_amount,
+            tax_amount=order_tax_amount,
+        )
+        assert order.refunded_amount == 0
+        assert order.refunded_tax_amount == 0
+
+        # Create customer balance
+        await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=initial_balance,
+        )
+
+        refund_tax_amount = refund_service.calculate_tax(order, refund_amount)
+
+        stripe_refund = build_stripe_refund(
+            amount=(refund_amount + refund_tax_amount),
+            charge_id=payment.charge_id,
+        )
+        stripe_service_mock.create_refund.return_value = stripe_refund
+
+        await refund_service.create(
+            session,
+            order,
+            RefundCreate(
+                order_id=order.id,
+                reason=RefundReason.service_disruption,
+                amount=refund_amount,
+                comment=None,
+                revoke_benefits=False,
+            ),
+        )
+
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.refunded_amount == refund_amount
+        assert updated_order.refunded_tax_amount == refund_tax_amount
+
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == expected_balance
 
 
 @pytest.mark.asyncio

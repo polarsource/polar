@@ -3526,7 +3526,7 @@ export interface paths {
      *
      *     **Scopes**: `events:read` `events:write`
      */
-    get: operations['event-types:list_event_types']
+    get: operations['event-types:list']
     put?: never
     post?: never
     delete?: never
@@ -15625,6 +15625,8 @@ export interface components {
        * @description The ID of the organization owning the event type.
        */
       organization_id: string
+      /** @description The source of the events (system or user). */
+      source: components['schemas']['EventSource']
       /**
        * Occurrences
        * @description Number of times the event has occurred.
@@ -33393,7 +33395,7 @@ export interface operations {
       }
     }
   }
-  'event-types:list_event_types': {
+  'event-types:list': {
     parameters: {
       query?: {
         /** @description Filter by organization ID. */
@@ -33404,6 +33406,12 @@ export interface operations {
         external_customer_id?: string | string[] | null
         /** @description Query to filter event types by name or label. */
         query?: string | null
+        /** @description When true, only return event types with root events (parent_id IS NULL). */
+        root_events?: boolean
+        /** @description Filter by specific parent event ID. */
+        parent_id?: string | null
+        /** @description Filter by event source (system or user). */
+        source?: components['schemas']['EventSource'] | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

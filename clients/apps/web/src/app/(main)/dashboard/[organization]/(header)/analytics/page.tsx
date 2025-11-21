@@ -67,26 +67,37 @@ export default async function Page(props: {
     end: Date,
     currentInterval: schemas['TimeInterval'],
   ): schemas['TimeInterval'] => {
-    // Match backend logic: ordinal difference <= max_days
+    // Match backend logic: check both min and max constraints
     const daysDifference = Math.floor(
       (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
     )
-    if (daysDifference <= limits.intervals[currentInterval].max_days) {
+    if (
+      daysDifference >= limits.intervals[currentInterval].min_days &&
+      daysDifference <= limits.intervals[currentInterval].max_days
+    ) {
       return currentInterval
     }
 
-    const intervalOrder: schemas['TimeInterval'][] = [
-      'hour',
-      'day',
-      'week',
-      'month',
+    const intervals: schemas['TimeInterval'][] = [
       'year',
+      'month',
+      'week',
+      'day',
+      'hour',
     ]
 
+    // If current interval is too wide for the range, pick the widest matching one
+    // If it's too narrow, pick the narrowest matching one
+    if (daysDifference > limits.intervals[currentInterval].max_days) {
+      intervals.reverse()
+    }
+
     return (
-      intervalOrder.find((int) => {
-        return daysDifference <= limits.intervals[int].max_days
-      }) || intervalOrder.at(-1)!
+      intervals.find(
+        (interval) =>
+          daysDifference >= limits.intervals[interval].min_days &&
+          daysDifference <= limits.intervals[interval].max_days,
+      ) || 'day'
     )
   }
 

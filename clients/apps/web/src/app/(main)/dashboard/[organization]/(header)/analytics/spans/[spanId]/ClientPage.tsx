@@ -6,11 +6,11 @@ import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
+import { useEventTypes } from '@/hooks/queries/event_types'
 import {
   useEventHierarchyStats,
   useInfiniteEvents,
 } from '@/hooks/queries/events'
-import { useEventTypes } from '@/hooks/queries/event_types'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
@@ -93,7 +93,7 @@ export default function SpanDetailPage({
 
   const { data: eventTypes } = useEventTypes(organization.id, {
     sorting: ['-last_seen'],
-    parent_id: null,
+    root_events: true,
     source: 'user',
   })
 

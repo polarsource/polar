@@ -7,7 +7,7 @@ import { defaultRetry } from './retry'
 export const useEventTypes = (
   organizationId: string,
   parameters?: Omit<
-    NonNullable<operations['event_types:list']['parameters']['query']>,
+    NonNullable<operations['event-types:list']['parameters']['query']>,
     'organization_id'
   >,
   enabled: boolean = true,

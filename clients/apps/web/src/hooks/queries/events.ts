@@ -111,15 +111,19 @@ export const useEventHierarchyStats = (
 
 export const useEventNames = (
   organizationId: string,
-  parameters?: operations['events:list_names']['parameters']['query'],
+  parameters?: operations['event-types:list']['parameters']['query'],
 ) => {
   return useInfiniteQuery({
     queryKey: ['eventNames', organizationId, { ...(parameters || {}) }],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       unwrap(
-        api.GET('/v1/events/names', {
+        api.GET('/v1/event-types/', {
           params: {
-            query: { organization_id: organizationId, ...(parameters || {}) },
+            query: {
+              organization_id: organizationId,
+              ...(parameters || {}),
+              page: pageParam,
+            },
           },
         }),
       ),

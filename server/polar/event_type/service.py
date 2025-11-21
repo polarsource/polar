@@ -1,11 +1,12 @@
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import UnaryExpression, asc, desc, text
 
 from polar.auth.models import AuthSubject
 from polar.event.repository import EventRepository
+from polar.event.system import SYSTEM_EVENT_LABELS
 from polar.event_type.repository import EventTypeRepository
 from polar.event_type.schemas import EventTypeWithStats
 from polar.event_type.sorting import EventTypesSortProperty
@@ -38,7 +39,8 @@ class EventTypeService:
         customer_id: Sequence[UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         query: str | None = None,
-        parent_id: UUID | Literal["null"] | None = None,
+        root_events: bool = False,
+        parent_id: UUID | None = None,
         source: EventSource | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[EventTypesSortProperty]] = [
@@ -71,7 +73,11 @@ class EventTypeService:
                 EventType.name.ilike(f"%{query}%") | EventType.label.ilike(f"%{query}%")
             )
 
-        statement = statement.where(Event.parent_id.is_(parent_id))
+        if root_events:
+            statement = statement.where(Event.parent_id.is_(None))
+
+        if parent_id is not None:
+            statement = statement.where(Event.parent_id == parent_id)
 
         if source is not None:
             statement = statement.where(Event.source == source)
@@ -95,11 +101,24 @@ class EventTypeService:
 
         event_types_with_stats: list[EventTypeWithStats] = []
         for result in results:
-            event_type, occurrences, first_seen, last_seen = result
+            event_type, source, occurrences, first_seen, last_seen = result
+
+            # Use system event label for system events
+            if source == EventSource.system:
+                label = SYSTEM_EVENT_LABELS.get(event_type.name, event_type.label)
+            else:
+                label = event_type.label
+
             event_types_with_stats.append(
                 EventTypeWithStats.model_validate(
                     {
-                        **event_type.__dict__,
+                        "id": event_type.id,
+                        "created_at": event_type.created_at,
+                        "modified_at": event_type.modified_at,
+                        "name": event_type.name,
+                        "label": label,
+                        "organization_id": event_type.organization_id,
+                        "source": source,
                         "occurrences": occurrences,
                         "first_seen": first_seen,
                         "last_seen": last_seen,

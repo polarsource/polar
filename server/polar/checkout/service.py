@@ -552,6 +552,7 @@ class CheckoutService:
                     checkout_product.product, []
                 )
                 session.add(checkout_product)
+            await session.flush()
 
         await self._after_checkout_created(session, checkout)
 

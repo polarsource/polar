@@ -62,6 +62,7 @@ from polar.models import (
     UserOrganization,
     Wallet,
     WalletTransaction,
+    WebhookEndpoint,
 )
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import (
@@ -100,6 +101,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.models.user import OAuthAccount, OAuthPlatform
 from polar.models.wallet import WalletType
+from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
 from tests.fixtures.database import SaveFixture
 
@@ -2164,3 +2166,20 @@ async def event_type(
     organization: Organization,
 ) -> EventType:
     return await create_event_type(save_fixture, organization=organization)
+
+
+async def create_webhook_endpoint(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    events: list[WebhookEventType] | None = None,
+) -> WebhookEndpoint:
+    webhook_endpoint = WebhookEndpoint(
+        url="https://example.com/webhook",
+        format=WebhookFormat.raw,
+        secret="SECRET",
+        events=events or list(WebhookEventType),
+        organization=organization,
+    )
+    await save_fixture(webhook_endpoint)
+    return webhook_endpoint

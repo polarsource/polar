@@ -26,6 +26,7 @@ from polar.models import (
     Subscription,
     User,
     UserOrganization,
+    WebhookEndpoint,
 )
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
@@ -38,6 +39,7 @@ from tests.fixtures.random_objects import (
     create_organization,
     create_product,
     create_product_price_seat_unit,
+    create_webhook_endpoint,
 )
 
 
@@ -71,6 +73,13 @@ async def checkout_open(
     save_fixture: SaveFixture, product_one_time: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_one_time])
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def webhook_endpoint(
+    save_fixture: SaveFixture, organization: Organization
+) -> WebhookEndpoint:
+    return await create_webhook_endpoint(save_fixture, organization=organization)
 
 
 async def create_blocked_product(
@@ -459,13 +468,14 @@ class TestCreateCheckout:
         api_prefix: str,
         client: AsyncClient,
         product: Product,
+        product_recurring_trial: Product,
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
             f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
-                "products": [str(product.id)],
+                "products": [str(product.id), str(product_recurring_trial.id)],
                 "prices": {
                     str(product.id): [
                         {
@@ -473,7 +483,14 @@ class TestCreateCheckout:
                             "price_amount": 100_00,
                             "currency": "usd",
                         }
-                    ]
+                    ],
+                    str(product_recurring_trial.id): [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 50_00,
+                            "currency": "usd",
+                        }
+                    ],
                 },
             },
         )
@@ -481,11 +498,12 @@ class TestCreateCheckout:
         assert response.status_code == 201
 
         json = response.json()
-        assert len(json["products"]) == 1
-        assert len(json["prices"][str(product.id)]) == 1
+        assert len(json["products"]) == 2
 
-        ad_hoc_price = json["prices"][str(product.id)][0]
-        assert ad_hoc_price["id"] != str(product.prices[0].id)
+        for p in [product, product_recurring_trial]:
+            assert len(json["prices"][str(p.id)]) == 1
+            ad_hoc_price = json["prices"][str(p.id)][0]
+            assert ad_hoc_price["id"] != str(p.prices[0].id)
 
 
 @pytest.mark.asyncio

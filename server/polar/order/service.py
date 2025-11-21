@@ -728,11 +728,6 @@ class OrderService:
             else:
                 applied_balance_amount = 0
 
-        if balance_change != 0:
-            await wallet_service.create_balance_transaction(
-                session, customer, balance_change, subscription.currency
-            )
-
         repository = OrderRepository.from_session(session)
         order = await repository.create(
             Order(
@@ -762,6 +757,12 @@ class OrderService:
             ),
             flush=True,
         )
+
+        # Impact customer's balance
+        if balance_change != 0:
+            await wallet_service.create_balance_transaction(
+                session, customer, balance_change, subscription.currency, order=order
+            )
 
         # Reset the associated meters, if any
         if billing_reason in {
@@ -955,12 +956,21 @@ class OrderService:
             and order.due_amount < 50
         ):
             # Stripe requires a minimum amount of 50 cents, mark it as paid
-            # The amount will be added on the customer's balance
             repository = OrderRepository.from_session(session)
             previous_status = order.status
             order = await repository.update(
                 order, update_dict={"status": OrderStatus.paid}
             )
+
+            # Add to the customer's balance
+            await wallet_service.create_balance_transaction(
+                session,
+                order.customer,
+                -order.due_amount,
+                order.currency,
+                order=order,
+            )
+
             await self._on_order_updated(session, order, previous_status)
             return
 

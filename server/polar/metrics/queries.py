@@ -71,6 +71,7 @@ class QueryCallable(Protocol):
         metrics: list["type[SQLMetric]"],
         now: datetime,
         *,
+        bounds: tuple[datetime, datetime],
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         billing_type: Sequence[ProductBillingType] | None = None,
@@ -127,11 +128,13 @@ def get_orders_metrics_cte(
     metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
+    bounds: tuple[datetime, datetime],
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> CTE:
+    start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
     readable_orders_statement = _get_readable_orders_statement(
@@ -171,7 +174,7 @@ def get_orders_metrics_cte(
             .where(
                 Order.paid.is_(True),
                 Order.id.in_(readable_orders_statement),
-                interval.sql_date_trunc(Order.created_at) < min_timestamp_subquery,
+                Order.created_at < start_timestamp,
             )
         )
 
@@ -195,6 +198,8 @@ def get_orders_metrics_cte(
         .where(
             Order.paid.is_(True),
             Order.id.in_(readable_orders_statement),
+            Order.created_at >= start_timestamp,
+            Order.created_at <= end_timestamp,
         )
         .group_by(day_column)
     )
@@ -247,11 +252,13 @@ def get_active_subscriptions_cte(
     metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
+    bounds: tuple[datetime, datetime],
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> CTE:
+    start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
     readable_subscriptions_statement = _get_readable_subscriptions_statement(
@@ -300,6 +307,15 @@ def get_active_subscriptions_cte(
                         > interval.sql_date_trunc(timestamp_column),
                     ),
                     Subscription.id.in_(readable_subscriptions_statement),
+                    # Filter to only include subscriptions that overlap with the original bounds
+                    or_(
+                        Subscription.started_at.is_(None),
+                        Subscription.started_at <= end_timestamp,
+                    ),
+                    or_(
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(None),
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at) >= start_timestamp,
+                    ),
                 ),
             )
         )
@@ -357,11 +373,13 @@ def get_checkouts_cte(
     metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
+    bounds: tuple[datetime, datetime],
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> CTE:
+    start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
     readable_checkouts_statement = (
@@ -419,6 +437,8 @@ def get_checkouts_cte(
                     interval.sql_date_trunc(Checkout.created_at)
                     == interval.sql_date_trunc(timestamp_column),
                     Checkout.id.in_(readable_checkouts_statement),
+                    Checkout.created_at >= start_timestamp,
+                    Checkout.created_at <= end_timestamp,
                 ),
             )
         )
@@ -434,11 +454,13 @@ def get_canceled_subscriptions_cte(
     metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
+    bounds: tuple[datetime, datetime],
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> CTE:
+    start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
     readable_subscriptions_statement = _get_readable_subscriptions_statement(
@@ -471,6 +493,8 @@ def get_canceled_subscriptions_cte(
                     )
                     == interval.sql_date_trunc(timestamp_column),
                     Subscription.id.in_(readable_subscriptions_statement),
+                    Subscription.canceled_at >= start_timestamp,
+                    Subscription.canceled_at <= end_timestamp,
                 ),
             )
         )
@@ -486,11 +510,13 @@ def get_churned_subscriptions_cte(
     metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
+    bounds: tuple[datetime, datetime],
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> CTE:
+    start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
     readable_subscriptions_statement = _get_readable_subscriptions_statement(
@@ -528,6 +554,8 @@ def get_churned_subscriptions_cte(
                     )
                     == interval.sql_date_trunc(timestamp_column),
                     Subscription.id.in_(readable_subscriptions_statement),
+                    func.coalesce(Subscription.ended_at, Subscription.ends_at) >= start_timestamp,
+                    func.coalesce(Subscription.ended_at, Subscription.ends_at) <= end_timestamp,
                 ),
             )
         )
@@ -582,11 +610,13 @@ def get_events_metrics_cte(
     metrics: list["type[SQLMetric]"],
     now: datetime,
     *,
+    bounds: tuple[datetime, datetime],
     organization_id: Sequence[uuid.UUID] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
 ) -> CTE:
+    start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
     readable_events_statement = _get_readable_events_statement(
@@ -609,7 +639,11 @@ def get_events_metrics_cte(
             ],
         )
         .select_from(Event)
-        .where(Event.id.in_(readable_events_statement))
+        .where(
+            Event.id.in_(readable_events_statement),
+            Event.timestamp >= start_timestamp,
+            Event.timestamp <= end_timestamp,
+        )
         .group_by(day_column)
     )
 

@@ -101,6 +101,7 @@ export const useOAuth = () => {
       usePKCE: true,
       extraParams: {
         do_not_track: 'true',
+        sub_type: 'user',
       },
     },
     discovery,

@@ -47,9 +47,17 @@ MIN_DATE = MIN_DATETIME.date()
 MAX_INTERVAL_DAYS: dict[TimeInterval, int] = {
     TimeInterval.hour: 7,
     TimeInterval.day: 366,
-    TimeInterval.week: 365,
+    TimeInterval.week: 7 * 53,
     TimeInterval.month: 365 * 4,
     TimeInterval.year: 365 * 10,
+}
+
+MIN_INTERVAL_DAYS: dict[TimeInterval, int] = {
+    TimeInterval.hour: 0,
+    TimeInterval.day: 0,
+    TimeInterval.week: 14,
+    TimeInterval.month: 60,
+    TimeInterval.year: 366,
 }
 
 

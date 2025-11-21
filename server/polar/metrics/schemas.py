@@ -88,6 +88,7 @@ class MetricsResponse(Schema):
 class MetricsIntervalLimit(Schema):
     """Date interval limit to get metrics for a given interval."""
 
+    min_days: int = Field(description="Minimum number of days for this interval.")
     max_days: int = Field(description="Maximum number of days for this interval.")
 
 

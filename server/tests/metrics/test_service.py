@@ -381,9 +381,10 @@ class TestGetMetrics:
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
     ) -> None:
         """
-        Test that cumulative revenue works correctly when the start date is not
-        on the first of the month (e.g., March 11 instead of March 1).
-        This reproduces the bug where cumulative revenue shows as 0.
+        Test that metrics correctly filter by date range bounds.
+        When querying from Jan 11 to Jun 15, orders from Jan 1-10 should not be
+        included in the January period, but they should be included in the
+        historical baseline for cumulative metrics.
         """
         metrics = await metrics_service.get_metrics(
             session,
@@ -397,9 +398,11 @@ class TestGetMetrics:
         assert len(metrics.periods) == 6
 
         jan = metrics.periods[0]
-        assert jan.orders == 3
-        assert jan.revenue == 1200_00
-        assert jan.cumulative_revenue == 1300_00  # Includes $100 order from earlier
+        # Orders from Jan 1 are before the start date (Jan 11), so excluded from period
+        assert jan.orders == 0
+        assert jan.revenue == 0
+        # But they ARE included in cumulative (historical baseline)
+        assert jan.cumulative_revenue == 1300_00  # Includes all orders before Jan 11
 
         feb = metrics.periods[1]
         assert feb.orders == 1
@@ -433,8 +436,10 @@ class TestGetMetrics:
         assert len(metrics.periods) == 2
 
         year_2023 = metrics.periods[0]
-        assert year_2023.orders == 1  # order from 2023-06-01
-        assert year_2023.revenue == 100_00
+        # Order from 2023-06-01 is before the start date (2023-06-15), so excluded
+        assert year_2023.orders == 0
+        assert year_2023.revenue == 0
+        # But it IS included in cumulative (historical baseline)
         assert year_2023.cumulative_revenue == 100_00
 
         year_2024 = metrics.periods[1]

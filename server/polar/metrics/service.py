@@ -42,6 +42,10 @@ class MetricsService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
+        # Store original bounds before truncation for filtering queries
+        original_start_timestamp = start_timestamp
+        original_end_timestamp = end_timestamp
+
         # Truncate start_timestamp to the beginning of the interval period
         # This ensures the timestamp series aligns with how daily metrics are grouped
         if interval == TimeInterval.month:
@@ -61,6 +65,7 @@ class MetricsService:
                 auth_subject,
                 METRICS_SQL,
                 now or datetime.now(tz=timezone),
+                bounds=(original_start_timestamp, original_end_timestamp),
                 organization_id=organization_id,
                 product_id=product_id,
                 billing_type=billing_type,

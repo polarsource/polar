@@ -1,8 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import DateRangePicker from '@/components/Metrics/DateRangePicker'
-import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import { Sparkline, SparklineColor } from '@/components/Sparkline/Sparkline'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
 import { parseSearchParams, serializeSearchParams } from '@/utils/datatable'
@@ -14,12 +12,11 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { endOfToday, subMonths } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useCallback, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useCallback, useMemo } from 'react'
+import { SpansSidebar } from './SpansSidebar'
 import { getSearchParams } from './utils'
 
 const formatOccurrences = (value: number): string => {
@@ -118,19 +115,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
     [router, organization, startDate, endDate],
   )
 
-  const [hasScrolled, setHasScrolled] = useState(false)
-
-  const handleScroll = useCallback(
-    (event: React.UIEvent<HTMLDivElement>) => {
-      if (event.currentTarget.scrollTop > 0 && !hasScrolled) {
-        setHasScrolled(true)
-      } else if (event.currentTarget.scrollTop === 0 && hasScrolled) {
-        setHasScrolled(false)
-      }
-    },
-    [hasScrolled],
-  )
-
   const getTimeSeriesValues = useCallback(
     (
       eventName: schemas['EventStatistics']['name'],
@@ -162,75 +146,16 @@ export default function ClientPage({ organization }: ClientPageProps) {
       contextViewPlacement="left"
       contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
       contextView={
-        <div className="flex h-full flex-col gap-y-4">
-          <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
-            <div>Spans</div>
-          </div>
-          <div
-            className={twMerge(
-              'flex flex-col gap-y-6 overflow-y-auto px-4 pt-2 pb-4',
-              hasScrolled && 'dark:border-polar-700 border-t border-gray-200',
-            )}
-            onScroll={handleScroll}
-          >
-            <div className="flex h-full grow flex-col gap-y-6">
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-sm">Timeline</h3>
-                <DateRangePicker
-                  date={dateRange}
-                  onDateChange={onDateRangeChange}
-                />
-              </div>
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-sm">Interval</h3>
-                <IntervalPicker
-                  interval={interval}
-                  onChange={onIntervalChange}
-                  startDate={startDate}
-                  endDate={endDate}
-                />
-              </div>
-              <div className="dark:border-polar-700 -mx-4 border-t border-gray-200" />
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-sm">Events</h3>
-                <List size="small" className="rounded-xl">
-                  {costData?.totals?.map((stat) => (
-                    <ListItem
-                      key={stat.name}
-                      size="small"
-                      className="justify-between px-3"
-                      inactiveClassName="text-gray-500 dark:text-polar-500"
-                      onSelect={() => {
-                        const params = new URLSearchParams()
-                        if (startDate) {
-                          params.set('startDate', startDate.toISOString())
-                        }
-                        if (endDate) {
-                          params.set('endDate', endDate.toISOString())
-                        }
-                        params.set('interval', interval)
-                        router.push(
-                          `/dashboard/${organization.slug}/usage-billing/spans/${stat.event_type_id}?${params}`,
-                        )
-                      }}
-                    >
-                      <span className="truncate">
-                        {stat.label || stat.name}
-                      </span>
-                      <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                        {Number(stat.occurrences).toLocaleString('en-US', {
-                          style: 'decimal',
-                          compactDisplay: 'short',
-                          notation: 'compact',
-                        })}
-                      </span>
-                    </ListItem>
-                  ))}
-                </List>
-              </div>
-            </div>
-          </div>
-        </div>
+        <SpansSidebar
+          organization={organization}
+          hierarchyStats={costData}
+          dateRange={dateRange}
+          interval={interval}
+          startDate={startDate}
+          endDate={endDate}
+          onDateRangeChange={onDateRangeChange}
+          onIntervalChange={onIntervalChange}
+        />
       }
     >
       <div className="flex flex-col gap-y-6">

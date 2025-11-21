@@ -4,8 +4,6 @@ import Chart from '@/components/Chart/Chart'
 import { CustomerStatBox } from '@/components/Customer/CustomerStatBox'
 import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import DateRangePicker from '@/components/Metrics/DateRangePicker'
-import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import {
@@ -16,12 +14,11 @@ import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { endOfToday, format, subMonths } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useCallback, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useCallback, useMemo } from 'react'
+import { SpansSidebar } from '../SpansSidebar'
 import { getSearchParams } from '../utils'
 import { EditEventTypeModal } from './EditEventTypeModal'
 
@@ -178,24 +175,11 @@ export default function SpanDetailPage({
     [router, organization, spanId, startDate, endDate],
   )
 
-  const [hasScrolled, setHasScrolled] = useState(false)
-
   const {
     isShown: isEditEventTypeModalShown,
     show: showEditEventTypeModal,
     hide: hideEditEventTypeModal,
   } = useModal()
-
-  const handleScroll = useCallback(
-    (event: React.UIEvent<HTMLDivElement>) => {
-      if (event.currentTarget.scrollTop > 0 && !hasScrolled) {
-        setHasScrolled(true)
-      } else if (event.currentTarget.scrollTop === 0 && hasScrolled) {
-        setHasScrolled(false)
-      }
-    },
-    [hasScrolled],
-  )
 
   if (!spanId) {
     return (
@@ -217,83 +201,18 @@ export default function SpanDetailPage({
       contextViewPlacement="left"
       contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
       contextView={
-        <div className="flex h-full flex-col gap-y-4">
-          <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
-            <div>Spans (Root events)</div>
-          </div>
-          <div
-            className={twMerge(
-              'flex flex-col gap-y-6 overflow-y-auto px-4 pt-2 pb-4',
-              hasScrolled && 'dark:border-polar-700 border-t border-gray-200',
-            )}
-            onScroll={handleScroll}
-          >
-            <div className="flex h-full grow flex-col gap-y-6">
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-sm">Timeline</h3>
-                <DateRangePicker
-                  date={dateRange}
-                  onDateChange={onDateRangeChange}
-                />
-              </div>
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-sm">Interval</h3>
-                <IntervalPicker
-                  interval={interval}
-                  onChange={onIntervalChange}
-                  startDate={startDate}
-                  endDate={endDate}
-                />
-              </div>
-              <div className="dark:border-polar-700 -mx-4 border-t border-gray-200" />
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-sm">Events</h3>
-                <List size="small" className="rounded-xl">
-                  {hierarchyStats?.totals?.map((stat) => (
-                    <ListItem
-                      key={stat.name}
-                      size="small"
-                      className="justify-between px-3"
-                      inactiveClassName="text-gray-500 dark:text-polar-500"
-                      selected={spanId === stat.event_type_id}
-                      onSelect={() => {
-                        const params = new URLSearchParams()
-                        if (startDate) {
-                          params.set('startDate', startDate.toISOString())
-                        }
-                        if (endDate) {
-                          params.set('endDate', endDate.toISOString())
-                        }
-                        params.set('interval', interval)
-
-                        if (spanId === stat.event_type_id) {
-                          router.push(
-                            `/dashboard/${organization.slug}/usage-billing/spans?${params}`,
-                          )
-                        } else {
-                          router.push(
-                            `/dashboard/${organization.slug}/usage-billing/spans/${spanId}?${params}`,
-                          )
-                        }
-                      }}
-                    >
-                      <span className="truncate">
-                        {stat.label || stat.name}
-                      </span>
-                      <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                        {Number(stat.occurrences).toLocaleString('en-US', {
-                          style: 'decimal',
-                          compactDisplay: 'short',
-                          notation: 'compact',
-                        })}
-                      </span>
-                    </ListItem>
-                  ))}
-                </List>
-              </div>
-            </div>
-          </div>
-        </div>
+        <SpansSidebar
+          organization={organization}
+          hierarchyStats={hierarchyStats}
+          dateRange={dateRange}
+          interval={interval}
+          startDate={startDate}
+          endDate={endDate}
+          onDateRangeChange={onDateRangeChange}
+          onIntervalChange={onIntervalChange}
+          selectedSpanId={spanId}
+          title="Spans (Root events)"
+        />
       }
     >
       <div className="flex flex-row items-center justify-between gap-y-4">

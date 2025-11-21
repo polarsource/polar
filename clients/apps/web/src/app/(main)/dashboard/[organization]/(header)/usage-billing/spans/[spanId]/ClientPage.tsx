@@ -6,6 +6,7 @@ import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
+import { useEventTypes } from '@/hooks/queries/event_types'
 import {
   useEventHierarchyStats,
   useInfiniteEvents,
@@ -89,6 +90,12 @@ export default function SpanDetailPage({
     },
     true,
   )
+
+  const { data: eventTypes } = useEventTypes(organization.id, {
+    sorting: ['-last_seen'],
+    root_events: true,
+    source: 'user',
+  })
 
   const events = useMemo(() => {
     if (!eventsData) return []
@@ -203,7 +210,7 @@ export default function SpanDetailPage({
       contextView={
         <SpansSidebar
           organization={organization}
-          hierarchyStats={hierarchyStats}
+          eventTypes={eventTypes?.items}
           dateRange={dateRange}
           interval={interval}
           startDate={startDate}

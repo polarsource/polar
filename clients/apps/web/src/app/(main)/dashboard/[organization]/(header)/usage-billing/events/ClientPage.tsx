@@ -47,51 +47,6 @@ import z from 'zod'
 
 const PAGE_SIZE = 100
 
-// Replace this after migrating /v1/events/names to use labels.
-const useEventDisplayName = (eventName: schemas['Event']['name']) => {
-  return useMemo(() => {
-    switch (eventName) {
-      case 'benefit.granted':
-        return 'Benefit Granted'
-      case 'benefit.cycled':
-        return 'Benefit Cycled'
-      case 'benefit.updated':
-        return 'Benefit Updated'
-      case 'benefit.revoked':
-        return 'Benefit Revoked'
-      case 'subscription.cycled':
-        return 'Subscription Cycled'
-      case 'subscription.revoked':
-        return 'Subscription Revoked'
-      case 'subscription.product_updated':
-        return 'Subscription Product Updated'
-      case 'order.paid':
-        return 'Order Paid'
-      case 'order.refunded':
-        return 'Order Refunded'
-      case 'subscription.seats_updated':
-        return 'Subscription Seats Updated'
-      case 'customer.created':
-        return 'Customer Created'
-      case 'customer.updated':
-        return 'Customer Updated'
-      case 'customer.deleted':
-        return 'Customer Deleted'
-      case 'meter.credited':
-        return 'Meter Credited'
-      case 'meter.reset':
-        return 'Meter Reset'
-      default:
-        return eventName
-    }
-  }, [eventName])
-}
-
-const EventName = ({ eventName }: { eventName: schemas['EventName'] }) => {
-  const displayName = useEventDisplayName(eventName.name)
-  return <span className="w-full truncate">{displayName}</span>
-}
-
 interface ClientPageProps {
   organization: schemas['Organization']
 }
@@ -104,8 +59,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     ),
   )
   const [query, setQuery] = useQueryState('query', parseAsString)
-  const [selectedEventNames, setSelectedEventNames] = useQueryState(
-    'eventNames',
+  const [selectedEventTypes, setSelectedEventTypes] = useQueryState(
+    'eventTypes',
     parseAsArrayOf(parseAsString),
   )
   const [startDate, setStartDate] = useQueryState(
@@ -144,7 +99,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     limit: 500,
   })
 
-  const eventNames = useMemo(
+  const eventTypes = useMemo(
     () =>
       data?.pages
         .flatMap((page) => page.items)
@@ -153,7 +108,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             acc[curr.source] = [...(acc[curr.source] ?? []), curr]
             return acc
           },
-          {} as Record<schemas['EventSource'], schemas['EventName'][]>,
+          {} as Record<schemas['EventSource'], schemas['EventTypeWithStats'][]>,
         ),
     [data],
   )
@@ -166,8 +121,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     | undefined => {
     return {
       name:
-        selectedEventNames && selectedEventNames.length > 0
-          ? selectedEventNames
+        selectedEventTypes && selectedEventTypes.length > 0
+          ? selectedEventTypes
           : null,
       page: currentPage,
       customer_id: selectedCustomerIds ?? null,
@@ -179,7 +134,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       metadata: debouncedMetadata ?? null,
     }
   }, [
-    selectedEventNames,
+    selectedEventTypes,
     currentPage,
     startDate,
     endDate,
@@ -304,40 +259,42 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 </Select>
               </div>
 
-              {Object.entries(eventNames ?? {})
+              {Object.entries(eventTypes ?? {})
                 .sort((a) => (a[0] === 'system' ? 1 : -1))
-                .map(([source, eventNames]) => {
-                  if (eventNames.length === 0) return null
+                .map(([source, eventTypes]) => {
+                  if (eventTypes.length === 0) return null
 
                   return (
                     <div className="flex flex-col gap-y-2" key={source}>
                       <h3 className="text-sm capitalize">{source} Events</h3>
                       <List size="small" className="rounded-xl">
-                        {eventNames.map((eventName) => (
+                        {eventTypes.map((eventType) => (
                           <ListItem
-                            key={eventName.name}
+                            key={eventType.name}
                             size="small"
                             className="justify-between px-3 font-mono text-xs"
                             inactiveClassName="text-gray-500 dark:text-polar-500"
-                            selected={selectedEventNames?.includes(
-                              eventName.name,
+                            selected={selectedEventTypes?.includes(
+                              eventType.name,
                             )}
                             onSelect={() =>
-                              setSelectedEventNames((prev) =>
-                                prev && prev.includes(eventName.name)
+                              setSelectedEventTypes((prev) =>
+                                prev && prev.includes(eventType.name)
                                   ? prev.filter(
-                                      (name) => name !== eventName.name,
+                                      (name) => name !== eventType.name,
                                     )
                                   : ([
                                       ...(prev ?? []),
-                                      eventName.name,
+                                      eventType.name,
                                     ] as string[]),
                               )
                             }
                           >
-                            <EventName eventName={eventName} />
+                            <span className="w-full truncate">
+                              {eventType.label}
+                            </span>
                             <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                              {Number(eventName.occurrences).toLocaleString(
+                              {Number(eventType.occurrences).toLocaleString(
                                 'en-US',
                                 {
                                   style: 'decimal',

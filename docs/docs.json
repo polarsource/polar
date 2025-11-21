@@ -569,11 +569,11 @@
               "guides/customize-benefits-order-in-checkouts",
               "guides/customize-products-order-in-checkouts",
               "guides/disable-subscription-changes-in-customer-portal",
+              "guides/expiring-one-time-purchases",
               "guides/subscription-downgrades",
               "guides/subscription-upgrades",
               "guides/seat-based-pricing",
-              "guides/theme-switch-in-checkout",
-              "guides/expiring-one-time-purchases"
+              "guides/theme-switch-in-checkout"
             ]
           }
         ]

@@ -13,10 +13,19 @@ on:
         description: "Docker image digest to deploy"
         required: true
         type: string
-      render-service-ids:
-        description: "Comma-separated list of Render service IDs to deploy to"
+      render-api-service-id:
+        description: "Render API service ID"
         required: true
         type: string
+      render-worker-service-ids:
+        description: "Comma-separated list of Render worker service IDs"
+        required: true
+        type: string
+      has-migrations:
+        description: "Whether this deployment includes database migrations"
+        required: false
+        type: boolean
+        default: false
       skip-backend:
         description: "Skip backend deployment if no backend changes"
         required: false
@@ -88,8 +97,11 @@ jobs:
 
       - name: Deploy Backend to Render
         run: |
-          IFS=',' read -ra SERVICE_IDS <<< "${{ inputs.render-service-ids }}"
-          ./.github/workflows/deploy_server.sh ${{ inputs.docker-digest }} "${SERVICE_IDS[@]}"
+          ./.github/workflows/deploy_server.sh \
+            ${{ inputs.docker-digest }} \
+            ${{ inputs.has-migrations }} \
+            "${{ inputs.render-api-service-id }}" \
+            "${{ inputs.render-worker-service-ids }}"
         env:
           RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
 

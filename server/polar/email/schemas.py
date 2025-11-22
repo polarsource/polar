@@ -279,6 +279,7 @@ class SubscriptionUncanceledEmail(BaseModel):
 
 class SubscriptionUpdatedProps(SubscriptionPropsBase):
     order: OrderEmail | None
+    has_static_prices: bool
 
 
 class SubscriptionUpdatedEmail(BaseModel):

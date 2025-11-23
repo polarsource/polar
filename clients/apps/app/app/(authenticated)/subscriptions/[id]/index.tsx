@@ -43,17 +43,14 @@ export default function Index() {
   } = useSubscription(id as string)
 
   const { data: subscriptionOrders } = useOrders(organization?.id, {
-    customerId: subscription?.customer.id,
-    productId: subscription?.product.id,
+    customer_id: subscription?.customer.id,
+    product_id: subscription?.product.id,
+    subscription_id: id,
   })
 
   const flatSubscriptionOrders = useMemo(() => {
-    const allOrders =
-      subscriptionOrders?.pages.flatMap((page) => page.items) ?? []
-    return allOrders.filter(
-      (order) => order.subscription_id === subscription?.id,
-    )
-  }, [subscriptionOrders, subscription?.id])
+    return subscriptionOrders?.pages.flatMap((page) => page.items) ?? []
+  }, [subscriptionOrders])
 
   if (!subscription) {
     return (

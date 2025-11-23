@@ -270,6 +270,6 @@ export const getThemePreset = (
   preset: ThemePreset | (string & {}),
   theme?: 'light' | 'dark',
 ) => {
-  const validatedPreset = preset === 'midday' ? 'midday' : 'polar'
+  const validatedPreset = 'polar' // preset === 'midday' ? 'midday' : 'polar'
   return useThemePreset(validatedPreset, theme)
 }

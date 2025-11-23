@@ -48,8 +48,12 @@ export default function Index() {
   })
 
   const flatSubscriptionOrders = useMemo(() => {
-    return subscriptionOrders?.pages.flatMap((page) => page.items) ?? []
-  }, [subscriptionOrders])
+    const allOrders =
+      subscriptionOrders?.pages.flatMap((page) => page.items) ?? []
+    return allOrders.filter(
+      (order) => order.subscription_id === subscription?.id,
+    )
+  }, [subscriptionOrders, subscription?.id])
 
   if (!subscription) {
     return (

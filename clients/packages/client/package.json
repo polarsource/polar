@@ -27,7 +27,7 @@
   "devDependencies": {
     "openapi-typescript": "^7.10.1",
     "@polar-sh/typescript-config": "workspace:*",
-    "tsup": "^8.5.0",
+    "tsup": "^8.5.1",
     "typescript": "latest"
   },
   "publishConfig": {

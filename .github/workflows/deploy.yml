@@ -6,6 +6,7 @@ on:
     paths:
       - "server/**"
       - "clients/**"
+      - "!clients/apps/app/**"
       - ".github/workflows/deploy.yml"
       - ".github/workflows/deploy-environment.yml"
       - ".github/workflows/deploy_server.sh"

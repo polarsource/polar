@@ -19,6 +19,7 @@ from polar.models import (
 from polar.models.order import OrderStatus
 from polar.models.pledge import PledgeState
 from polar.models.refund import RefundReason, RefundStatus
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
@@ -679,3 +680,149 @@ class TestUpdatedWebhooks(StripeRefund):
         assert updated_order.status == OrderStatus.paid
 
         revert_refund_transaction.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+class TestWebhookEvents(StripeRefund):
+    """Test that correct webhook events are sent during refund lifecycle."""
+
+    async def test_order_updated_webhook_on_full_refund(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that order.updated webhook is sent on full refund."""
+        order, payment = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+
+        webhook_send_mock = mocker.patch("polar.refund.service.webhook_service.send")
+
+        stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=1250,
+            charge_id=payment.charge_id,
+        )
+        refund = await refund_service.create_from_stripe(session, stripe_refund)
+        assert refund.status == RefundStatus.succeeded
+
+        # Verify both webhooks were sent
+        assert webhook_send_mock.call_count == 2
+        calls = webhook_send_mock.call_args_list
+
+        # First call should be order.updated
+        assert calls[0][0][2] == WebhookEventType.order_updated
+        assert calls[0][0][3].id == order.id
+
+        # Second call should be order.refunded
+        assert calls[1][0][2] == WebhookEventType.order_refunded
+        assert calls[1][0][3].id == order.id
+
+    async def test_order_updated_webhook_on_partial_refund(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that order.updated webhook is sent on partial refund."""
+        order, payment = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+
+        webhook_send_mock = mocker.patch("polar.refund.service.webhook_service.send")
+
+        stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=375,  # Partial: 300 + 75 VAT
+            charge_id=payment.charge_id,
+        )
+        refund = await refund_service.create_from_stripe(session, stripe_refund)
+        assert refund.status == RefundStatus.succeeded
+
+        # Verify both webhooks were sent
+        assert webhook_send_mock.call_count == 2
+        calls = webhook_send_mock.call_args_list
+
+        # First call should be order.updated
+        assert calls[0][0][2] == WebhookEventType.order_updated
+        assert calls[0][0][3].id == order.id
+
+        # Second call should be order.refunded
+        assert calls[1][0][2] == WebhookEventType.order_refunded
+        assert calls[1][0][3].id == order.id
+
+    async def test_order_updated_webhook_on_pending_then_succeeded(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that order.updated webhook is sent when pending refund transitions to succeeded."""
+        order, payment = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+
+        webhook_send_mock = mocker.patch("polar.refund.service.webhook_service.send")
+
+        # Create pending refund
+        pending_stripe_refund = build_stripe_refund(
+            status="pending",
+            amount=100,
+            charge_id=payment.charge_id,
+        )
+        refund = await refund_service.upsert_from_stripe(session, pending_stripe_refund)
+        assert refund.status == RefundStatus.pending
+
+        # Only refund.created should be sent for pending refunds
+        assert webhook_send_mock.call_count == 1
+        assert (
+            webhook_send_mock.call_args_list[0][0][2] == WebhookEventType.refund_created
+        )
+
+        webhook_send_mock.reset_mock()
+
+        # Update to succeeded
+        succeeded_stripe_refund = build_stripe_refund(
+            id=pending_stripe_refund.id,
+            status="succeeded",
+            amount=100,
+            charge_id=payment.charge_id,
+        )
+        refund = await refund_service.upsert_from_stripe(
+            session, succeeded_stripe_refund
+        )
+        assert refund.status == RefundStatus.succeeded
+
+        # Now we should see refund.updated, order.updated, and order.refunded
+        assert webhook_send_mock.call_count == 3
+        calls = webhook_send_mock.call_args_list
+
+        # First call should be refund.updated
+        assert calls[0][0][2] == WebhookEventType.refund_updated
+
+        # Second call should be order.updated
+        assert calls[1][0][2] == WebhookEventType.order_updated
+        assert calls[1][0][3].id == order.id
+
+        # Third call should be order.refunded
+        assert calls[2][0][2] == WebhookEventType.order_refunded
+        assert calls[2][0][3].id == order.id

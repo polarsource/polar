@@ -1,7 +1,7 @@
 """add member_id to benefit_grants
 
 Revision ID: c4a698f55b85
-Revises: 2990d8555091
+Revises: 4b9bb0cb2d44
 Create Date: 2025-11-21 14:22:30.864674
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "c4a698f55b85"
-down_revision = "2990d8555091"
+down_revision = "4b9bb0cb2d44"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

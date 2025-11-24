@@ -646,6 +646,11 @@ class RefundService(ResourceServiceReader[Refund]):
             ),
         )
 
+        # Send order.updated
+        await webhook_service.send(
+            session, organization, WebhookEventType.order_updated, order
+        )
+
         # Send order.refunded
         await webhook_service.send(
             session, organization, WebhookEventType.order_refunded, order

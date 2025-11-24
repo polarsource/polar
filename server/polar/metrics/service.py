@@ -107,15 +107,21 @@ class MetricsService:
                     row_count += 1
                     period_dict = row._asdict()
 
-                    for meta_metric in METRICS_POST_COMPUTE:
-                        period_dict[meta_metric.slug] = 0
+                    # Compute meta metrics with cascading dependencies
+                    # Each metric can depend on previously computed metrics
+                    temp_period_dict = dict(period_dict)
 
-                    temp_period = MetricsPeriod(**period_dict)
-
+                    # Initialize all computed metrics to 0 first to satisfy Pydantic schema
                     for meta_metric in METRICS_POST_COMPUTE:
-                        period_dict[meta_metric.slug] = meta_metric.compute_from_period(
-                            temp_period
-                        )
+                        temp_period_dict[meta_metric.slug] = 0
+
+                    # Now compute each metric, updating the dict as we go
+                    # This allows later metrics to depend on earlier computed metrics
+                    for meta_metric in METRICS_POST_COMPUTE:
+                        temp_period = MetricsPeriod(**temp_period_dict)
+                        computed_value = meta_metric.compute_from_period(temp_period)
+                        temp_period_dict[meta_metric.slug] = computed_value
+                        period_dict[meta_metric.slug] = computed_value
 
                     periods.append(MetricsPeriod(**period_dict))
 

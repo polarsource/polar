@@ -938,6 +938,30 @@ class ChurnRateMetric(MetaMetric):
         return cumulative_last(periods, cls.slug)
 
 
+class LTVMetric(MetaMetric):
+    slug = "ltv"
+    display_name = "Lifetime Value"
+    type = MetricType.currency
+
+    @classmethod
+    def compute_from_period(cls, period: "MetricsPeriod") -> int:
+        arpu = period.average_revenue_per_user
+        cost_per_user = period.cost_per_user
+        churn_rate = period.churn_rate
+
+        if churn_rate == 0:
+            return 0
+
+        net_revenue_per_user = arpu - cost_per_user
+        ltv = int(net_revenue_per_user / churn_rate)
+
+        return max(0, ltv)
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int:
+        return int(cumulative_last(periods, cls.slug))
+
+
 class ActiveUserMetric(SQLMetric):
     slug = "active_user_by_event"
     display_name = "Active User (By event)"
@@ -999,6 +1023,7 @@ METRICS_SQL: list[type[SQLMetric]] = [
 
 METRICS_POST_COMPUTE: list[type[MetaMetric]] = [
     ChurnRateMetric,
+    LTVMetric,
     GrossMarginMetric,
     GrossMarginPercentageMetric,
     CashflowMetric,

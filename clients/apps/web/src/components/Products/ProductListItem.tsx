@@ -20,6 +20,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import {
@@ -176,10 +177,20 @@ export const ProductListItem = ({
                 >
                   Integrate Checkout
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleContextMenuCallback(showModal)}
                 >
                   Archive Product
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleContextMenuCallback(() => {
+                    router.push(
+                      `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
+                    )
+                  })}
+                >
+                  Duplicate Product
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

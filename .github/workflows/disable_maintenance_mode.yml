@@ -13,7 +13,7 @@ jobs:
     environment: maintenance
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Disable Frontend Maintenance Rule
         uses: ./.github/actions/maintenance-mode

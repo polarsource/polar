@@ -45,6 +45,17 @@ interface MetricChartBoxProps {
   chartType?: 'line' | 'bar'
 }
 
+const EXPERIMENTAL_METRICS: Record<string, { tooltip: string }> = {
+  churn_rate: {
+    tooltip:
+      'Churn rate values vary based on the selected time interval. For best results, use monthly or longer intervals.',
+  },
+  ltv: {
+    tooltip:
+      'LTV is based on Churn Rate, and values vary based on the selected interval. For best results, use monthly or longer intervals.',
+  },
+}
+
 const MetricChartBox = ({
   ref,
   metric,
@@ -147,23 +158,57 @@ const MetricChartBox = ({
           )}
         >
           {onMetricChange ? (
-            <Select value={metric} onValueChange={onMetricChange}>
-              <SelectTrigger className="dark:hover:bg-polar-700 -mt-2 -ml-3 h-fit w-fit rounded-lg border-0 border-none bg-transparent px-3 py-2 shadow-none ring-0 transition-colors hover:bg-gray-200 focus-visible:ring-0 focus-visible:ring-offset-0">
-                <SelectValue placeholder="Select a metric" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200">
-                {data &&
-                  Object.values(data.metrics).map((metric) => (
-                    <SelectItem key={metric.slug} value={metric.slug}>
-                      {metric.display_name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-row items-center gap-x-2">
+              <Select value={metric} onValueChange={onMetricChange}>
+                <SelectTrigger className="dark:hover:bg-polar-700 -mt-2 -ml-3 h-fit w-fit rounded-lg border-0 border-none bg-transparent px-3 py-2 shadow-none ring-0 transition-colors hover:bg-gray-200 focus-visible:ring-0 focus-visible:ring-offset-0">
+                  <SelectValue placeholder="Select a metric" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200">
+                  {data &&
+                    Object.values(data.metrics).map((metric) => (
+                      <SelectItem key={metric.slug} value={metric.slug}>
+                        {metric.display_name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {metric in EXPERIMENTAL_METRICS && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex cursor-help">
+                      <Status
+                        status="Experimental"
+                        className="bg-blue-100 text-xs text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    {EXPERIMENTAL_METRICS[metric]?.tooltip}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           ) : (
-            <h3 className={compact ? 'text-base' : 'text-lg'}>
-              {selectedMetric?.display_name}
-            </h3>
+            <div className="flex flex-row items-center gap-x-2">
+              <h3 className={compact ? 'text-base' : 'text-lg'}>
+                {selectedMetric?.display_name}
+              </h3>
+              {metric in EXPERIMENTAL_METRICS && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex cursor-help">
+                      <Status
+                        status="Experimental"
+                        className="bg-blue-100 text-xs text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    {EXPERIMENTAL_METRICS[metric]?.tooltip}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           )}
           <h2 className={compact ? 'text-base' : 'text-5xl font-light'}>
             {metricValue}

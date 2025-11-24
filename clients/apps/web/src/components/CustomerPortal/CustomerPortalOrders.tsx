@@ -26,15 +26,15 @@ export const CustomerPortalOrders = ({
 }: CustomerPortalOrdersProps) => {
   const api = createClientSideAPI(customerSessionToken)
 
+  const [selectedOrder, setSelectedOrder] = useState<
+    schemas['CustomerOrder'] | null
+  >(null)
+
   const theme = useTheme()
   const themingPreset = getThemePreset(
     organization.slug,
     theme.resolvedTheme as 'light' | 'dark',
   )
-
-  const [selectedOrder, setSelectedOrder] = useState<
-    schemas['CustomerOrder'] | null
-  >(null)
 
   const {
     isShown: isOrderModalOpen,
@@ -48,8 +48,6 @@ export const CustomerPortalOrders = ({
         <h3 className="text-xl">Order History</h3>
       </div>
       <DataTable
-        wrapperClassName={themingPreset.polar.table}
-        headerClassName={themingPreset.polar.tableHeader}
         data={orders ?? []}
         isLoading={false}
         columns={[
@@ -91,10 +89,7 @@ export const CustomerPortalOrders = ({
                       setSelectedOrder(order)
                       showOrderModal()
                     }}
-                    className={twMerge(
-                      'hidden md:flex',
-                      themingPreset.polar.buttonSecondary,
-                    )}
+                    className={twMerge('hidden md:flex')}
                     size="sm"
                   >
                     View Order
@@ -103,11 +98,7 @@ export const CustomerPortalOrders = ({
                     className="md:hidden"
                     href={`/${organization.slug}/portal/orders/${order.id}?customer_session_token=${customerSessionToken}`}
                   >
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className={twMerge(themingPreset.polar.buttonSecondary)}
-                    >
+                    <Button variant="secondary" size="sm">
                       View Order
                     </Button>
                   </Link>

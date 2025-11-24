@@ -4,7 +4,6 @@ import { useCustomerUpdateSubscription } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Client, isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { MinusIcon, PlusIcon } from 'lucide-react'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
@@ -18,7 +17,6 @@ interface CustomerSeatQuantityManagerProps {
   totalSeats: number
   assignedSeats: number
   onUpdate?: () => void
-  themingPreset: ThemingPresetProps
 }
 
 export const CustomerSeatQuantityManager = ({
@@ -27,7 +25,6 @@ export const CustomerSeatQuantityManager = ({
   totalSeats,
   assignedSeats,
   onUpdate,
-  themingPreset,
 }: CustomerSeatQuantityManagerProps) => {
   const updateSubscription = useCustomerUpdateSubscription(api)
 
@@ -119,10 +116,7 @@ export const CustomerSeatQuantityManager = ({
                     size="sm"
                     onClick={handleDecrement}
                     disabled={!canDecrease || updateSubscription.isPending}
-                    className={twMerge(
-                      themingPreset.polar.buttonSecondary,
-                      'text-xxs h-6 w-6',
-                    )}
+                    className={twMerge('text-xxs h-6 w-6')}
                   >
                     <MinusIcon className="h-4 w-4" />
                   </Button>
@@ -132,10 +126,7 @@ export const CustomerSeatQuantityManager = ({
                     size="sm"
                     onClick={handleIncrement}
                     disabled={updateSubscription.isPending}
-                    className={twMerge(
-                      themingPreset.polar.buttonSecondary,
-                      'text-xxs h-6 w-6',
-                    )}
+                    className={twMerge('text-xxs h-6 w-6')}
                   >
                     <PlusIcon className="h-4 w-4" />
                   </Button>

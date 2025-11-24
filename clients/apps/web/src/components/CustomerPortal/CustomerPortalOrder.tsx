@@ -163,7 +163,6 @@ const CustomerPortalOrder = ({
               variant="default"
               size="sm"
               onClick={() => setIsPaymentModalOpen(true)}
-              className={twMerge(themingPreset?.polar.buttonSecondary)}
             >
               Retry payment
             </Button>
@@ -338,7 +337,7 @@ const CustomerPortalOrder = ({
           <h3 className="text-lg">Benefit Grants</h3>
           {(benefitGrants?.items.length ?? 0) > 0 ? (
             <div className="flex flex-col gap-4">
-              <List className={themingPreset.polar.list}>
+              <List>
                 {benefitGrants?.items.map((benefitGrant) => (
                   <ListItem
                     key={benefitGrant.id}

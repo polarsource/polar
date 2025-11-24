@@ -17,7 +17,6 @@ import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useState } from 'react'
 import { useModal } from '../Modal/useModal'
@@ -34,12 +33,10 @@ const CustomerPortalSubscription = ({
   api,
   customerSessionToken,
   subscription,
-  themingPreset,
 }: {
   api: Client
   customerSessionToken: string
   subscription: schemas['CustomerSubscription']
-  themingPreset: ThemingPresetProps
 }) => {
   const {
     show: showCancelModal,
@@ -239,7 +236,6 @@ const CustomerPortalSubscription = ({
           fullWidth
           onClick={showCancelModal}
           aria-label="Cancel subscription"
-          className={themingPreset.polar.buttonSecondary}
         >
           Cancel Subscription
         </Button>
@@ -254,7 +250,6 @@ const CustomerPortalSubscription = ({
               subscription={subscription}
               totalSeats={totalSeats}
               assignedSeats={totalSeats - availableSeats}
-              themingPreset={themingPreset}
             />
           </div>
 
@@ -315,7 +310,7 @@ const CustomerPortalSubscription = ({
         <h3 className="text-lg">Benefit Grants</h3>
         {(benefitGrants?.items.length ?? 0) > 0 ? (
           <div className="flex flex-col gap-4">
-            <List className={themingPreset.polar.list}>
+            <List>
               {benefitGrants?.items.map((benefitGrant) => (
                 <ListItem
                   key={benefitGrant.id}
@@ -340,8 +335,6 @@ const CustomerPortalSubscription = ({
           <div className="flex flex-col gap-y-4">
             <h3 className="text-lg">Invoices</h3>
             <DataTable
-              wrapperClassName={themingPreset.polar.table}
-              headerClassName={themingPreset.polar.tableHeader}
               data={orders.items ?? []}
               isLoading={false}
               columns={[
@@ -394,7 +387,6 @@ const CustomerPortalSubscription = ({
         isShown={cancelModalIsShown}
         hide={hideCancelModal}
         cancelSubscription={cancelSubscription}
-        themingPreset={themingPreset}
       />
     </div>
   )

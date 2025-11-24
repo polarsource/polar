@@ -19,7 +19,6 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
@@ -47,14 +46,12 @@ interface CustomerCancellationModalProps
   subscription: schemas['CustomerSubscription']
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
   onAbort?: () => void
-  themingPreset: ThemingPresetProps
 }
 
 const CustomerCancellationModal = ({
   subscription,
   cancelSubscription,
   onAbort,
-  themingPreset,
   ...props
 }: CustomerCancellationModalProps) => {
   const router = useRouter()
@@ -190,15 +187,10 @@ const CustomerCancellationModal = ({
                   variant="destructive"
                   loading={cancelSubscription.isPending}
                   disabled={cancelSubscription.isPending}
-                  className={themingPreset.polar.button}
                 >
                   Cancel Subscription
                 </Button>
-                <Button
-                  variant="ghost"
-                  onClick={handleCancel}
-                  className={themingPreset.polar.buttonSecondary}
-                >
+                <Button variant="ghost" onClick={handleCancel}>
                   I&apos;ve changed my mind
                 </Button>
               </div>

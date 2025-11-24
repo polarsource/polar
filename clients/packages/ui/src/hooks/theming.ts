@@ -1,36 +1,8 @@
 export type ThemePreset = 'polar' | 'midday'
 
-export interface PolarThemingPresetProps {
-  input: string
-  button: string
-  buttonSecondary: string
-  checkbox: string
-  dropdown: string
-  dropdownContent: string
-  dropdownItem: string
-  list: string
-  listItem: string
-  well: string
-  wellSecondary: string
-  table: string
-  tableHeader: string
-  checkoutWrapper: string
-  checkoutInnerWrapper: string
-  checkoutInfoWrapper: string
-  checkoutCardWrapper: string
-  checkoutProductSwitch: string
-  checkoutProductSwitchSelected: string
-  customerPortalWrapper: string
-  customerPortalHeader: string
-  customerPortalNavigationItem: string
-  customerPortalNavigationItemActive: string
-  customerPortalSubscriptionCard: string
-}
-
 export type StripeThemingPresetProps = Record<string, unknown>
 
 export interface ThemingPresetProps {
-  polar: PolarThemingPresetProps
   stripe: StripeThemingPresetProps
 }
 

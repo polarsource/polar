@@ -9,8 +9,6 @@ import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
@@ -30,7 +28,6 @@ interface CustomerPortalSettingsProps {
 }
 
 export const CustomerPortalSettings = ({
-  organization,
   customerSessionToken,
   setupIntentParams,
 }: CustomerPortalSettingsProps) => {
@@ -45,12 +42,6 @@ export const CustomerPortalSettings = ({
   const { data: customer } = useAuthenticatedCustomer(api)
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
-  const theme = useTheme()
-  const themingPreset = getThemePreset(
-    organization.slug,
-    theme.resolvedTheme as 'light' | 'dark',
-  )
-
   if (!customer) {
     return null
   }
@@ -59,7 +50,9 @@ export const CustomerPortalSettings = ({
     <div className="flex flex-col gap-y-8">
       <h3 className="text-2xl">Settings</h3>
       <Well
-        className={twMerge('flex flex-col gap-y-6', themingPreset.polar.well)}
+        className={twMerge(
+          'dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50',
+        )}
       >
         <WellHeader className="flex-row items-start justify-between">
           <div className="flex flex-col gap-y-2">
@@ -68,10 +61,7 @@ export const CustomerPortalSettings = ({
               Methods used for subscriptions & one-time purchases
             </p>
           </div>
-          <Button
-            onClick={showAddPaymentMethodModal}
-            className={themingPreset.polar.button}
-          >
+          <Button onClick={showAddPaymentMethodModal}>
             Add Payment Method
           </Button>
         </WellHeader>
@@ -88,7 +78,9 @@ export const CustomerPortalSettings = ({
         </WellContent>
       </Well>
       <Well
-        className={twMerge('flex flex-col gap-y-6', themingPreset.polar.well)}
+        className={twMerge(
+          'dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50',
+        )}
       >
         <WellHeader className="flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">
@@ -107,7 +99,6 @@ export const CustomerPortalSettings = ({
               revalidate(`customer_portal`)
               router.refresh()
             }}
-            themingPreset={themingPreset}
           />
         </WellContent>
       </Well>
@@ -126,7 +117,6 @@ export const CustomerPortalSettings = ({
             }}
             setupIntentParams={setupIntentParams}
             hide={hideAddPaymentMethodModal}
-            themingPreset={themingPreset}
           />
         }
       />

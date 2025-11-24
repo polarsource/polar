@@ -185,8 +185,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     return (
       <ShadowBox
         className={twMerge(
-          themePreset.polar.checkoutInnerWrapper,
-          'flex flex-col gap-y-12 overflow-hidden',
+          'dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent',
         )}
       >
         <PaymentNotReadyBanner />
@@ -230,14 +229,12 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   return (
     <ShadowBoxOnMd
       className={twMerge(
-        themePreset.polar.checkoutInnerWrapper,
-        'md:dark:border-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:p-0 md:shadow-xs',
+        'md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent',
       )}
     >
       <div
         className={twMerge(
-          themePreset.polar.checkoutInfoWrapper,
-          'flex flex-col gap-y-8 md:p-12',
+          'md:dark:bg-polar-950 flex flex-col gap-y-8 md:bg-gray-50 md:p-12',
         )}
       >
         {checkout.returnUrl && (
@@ -279,7 +276,6 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                   data: CheckoutUpdatePublic,
                 ) => Promise<ProductCheckoutPublic>
               }
-              themePreset={themePreset}
             />
           </>
         )}

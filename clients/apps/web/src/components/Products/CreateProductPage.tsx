@@ -4,7 +4,7 @@ import {
   useUpdateProductBenefits,
 } from '@/hooks/queries'
 import { setProductValidationErrors } from '@/utils/api/errors'
-import { ProductCreateForm, productToCreateForm } from '@/utils/product'
+import { ProductEditOrCreateForm, productToCreateForm } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -65,7 +65,7 @@ export const CreateProductPage = ({
     }
   }
 
-  const form = useForm<ProductCreateForm>({
+  const form = useForm<ProductEditOrCreateForm>({
     defaultValues: getDefaultValues(),
   })
   const { handleSubmit, setError } = form
@@ -74,7 +74,7 @@ export const CreateProductPage = ({
   const updateBenefits = useUpdateProductBenefits(organization)
 
   const onSubmit = useCallback(
-    async (productCreate: ProductCreateForm) => {
+    async (productCreate: ProductEditOrCreateForm) => {
       const { full_medias, metadata, ...productCreateRest } = productCreate
 
       const { data: product, error } = await createProduct.mutateAsync({

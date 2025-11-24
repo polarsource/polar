@@ -178,6 +178,17 @@ export const ProductListItem = ({
                   Integrate Checkout
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                {product.is_archived ? null : (
+                  <DropdownMenuItem
+                    onClick={handleContextMenuCallback(() => {
+                      router.push(
+                        `/dashboard/${organization.slug}/products/${product.id}/edit`,
+                      )
+                    })}
+                  >
+                    Edit Product
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={handleContextMenuCallback(showModal)}
                 >

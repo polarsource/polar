@@ -117,6 +117,7 @@ class EventTypeService:
                         "modified_at": event_type.modified_at,
                         "name": event_type.name,
                         "label": label,
+                        "label_property_selector": event_type.label_property_selector,
                         "organization_id": event_type.organization_id,
                         "source": source,
                         "occurrences": occurrences,
@@ -133,8 +134,10 @@ class EventTypeService:
         session: AsyncSession,
         event_type: EventType,
         label: str,
+        label_property_selector: str | None = None,
     ) -> EventType:
         event_type.label = label
+        event_type.label_property_selector = label_property_selector
         session.add(event_type)
         return event_type
 

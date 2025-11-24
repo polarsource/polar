@@ -97,15 +97,12 @@ export default function SpanDetailPage({
     source: 'user',
   })
 
+  const eventType = eventTypes?.items.find((item) => item.id === spanId)
+
   const events = useMemo(() => {
     if (!eventsData) return []
     return eventsData.pages.flatMap((page) => page.items)
   }, [eventsData])
-
-  const firstStat = hierarchyStats?.totals?.[0]
-  const eventName = firstStat?.name ?? ''
-  const eventLabel = firstStat?.label ?? eventName
-  const eventDisplayName = firstStat?.label ?? ''
 
   const costMetrics = useMemo(() => {
     if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
@@ -223,7 +220,7 @@ export default function SpanDetailPage({
       }
     >
       <div className="flex flex-row items-center justify-between gap-y-4">
-        <h3 className="text-4xl">{eventDisplayName}</h3>
+        <h3 className="text-4xl">{eventType?.label ?? ''}</h3>
         <Button variant="secondary" onClick={showEditEventTypeModal}>
           Edit
         </Button>
@@ -312,12 +309,19 @@ export default function SpanDetailPage({
         isShown={isEditEventTypeModalShown}
         hide={hideEditEventTypeModal}
         modalContent={
-          <EditEventTypeModal
-            eventTypeId={spanId}
-            eventName={eventName}
-            currentLabel={eventLabel}
-            hide={hideEditEventTypeModal}
-          />
+          eventType ? (
+            <EditEventTypeModal
+              eventTypeId={spanId}
+              eventName={eventType.name}
+              currentLabel={eventType.label}
+              currentLabelPropertySelector={
+                eventType.label_property_selector ?? null
+              }
+              hide={hideEditEventTypeModal}
+            />
+          ) : (
+            <></>
+          )
         }
       />
     </DashboardBody>

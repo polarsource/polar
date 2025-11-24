@@ -22,6 +22,9 @@ class EventType(RecordModel):
 
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     label: Mapped[str] = mapped_column(String(128), nullable=False)
+    label_property_selector: Mapped[str | None] = mapped_column(
+        String(256), nullable=True
+    )
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,

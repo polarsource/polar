@@ -15576,6 +15576,11 @@ export interface components {
        */
       label: string
       /**
+       * Label Property Selector
+       * @description Property path to extract dynamic label from event metadata.
+       */
+      label_property_selector?: string | null
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the event type.
@@ -15589,6 +15594,11 @@ export interface components {
        * @description The label for the event type.
        */
       label: string
+      /**
+       * Label Property Selector
+       * @description Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject').
+       */
+      label_property_selector?: string | null
     }
     /** EventTypeWithStats */
     EventTypeWithStats: {
@@ -15619,6 +15629,11 @@ export interface components {
        * @description The label for the event type.
        */
       label: string
+      /**
+       * Label Property Selector
+       * @description Property path to extract dynamic label from event metadata.
+       */
+      label_property_selector?: string | null
       /**
        * Organization Id
        * Format: uuid4

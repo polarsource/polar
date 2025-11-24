@@ -53,5 +53,14 @@ export const useUpdateEventType = (id: string) =>
       queryClient.invalidateQueries({
         queryKey: ['eventHierarchyStats', data.organization_id],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['events', 'infinite'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['events', data.organization_id],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['event', data.organization_id],
+      })
     },
   })

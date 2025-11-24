@@ -71,10 +71,12 @@ export default function EventDetailPage({
       className="flex flex-col gap-y-12"
       contextViewPlacement="right"
       contextView={
-        <CustomerContextView
-          organization={organization}
-          customer={event.customer as schemas['Customer']}
-        />
+        event.customer ? (
+          <CustomerContextView
+            organization={organization}
+            customer={event.customer as schemas['Customer']}
+          />
+        ) : undefined
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
     >

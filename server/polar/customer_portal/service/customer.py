@@ -271,7 +271,16 @@ class CustomerService:
     async def delete_payment_method(
         self, session: AsyncSession, payment_method: PaymentMethod
     ) -> None:
+        # Get the customer before deletion to trigger webhooks
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(payment_method.customer_id)
+        assert customer is not None
+
         await payment_method_service.delete(session, payment_method)
+
+        # Trigger customer update webhooks
+        # This ensures customer.updated and customer.state_changed events are sent
+        await customer_repository.update(customer, flush=True)
 
 
 customer = CustomerService()

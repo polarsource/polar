@@ -30,23 +30,23 @@ export const useThemePreset = (
         },
         '.PickerItem': {
           padding: '12px',
-          backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
+          backgroundColor: theme === 'dark' ? 'rgb(23 23 25)' : 'white',
           color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
           borderRadius: '0.75rem',
           boxShadow: inputBoxShadow,
           borderColor: 'transparent',
         },
         '.PickerItem--selected': {
-          backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
+          backgroundColor: theme === 'dark' ? 'rgb(23 23 25)' : 'white',
           borderColor: '#0062FF',
           borderWidth: '2px',
         },
         '.PickerItem--selected:hover': {
-          backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
+          backgroundColor: theme === 'dark' ? 'rgb(23 23 25)' : 'white',
         },
         '.Input': {
           padding: '12px',
-          backgroundColor: theme === 'dark' ? 'rgb(25, 25, 29)' : 'white',
+          backgroundColor: theme === 'dark' ? 'rgb(23 23 25)' : 'white',
           color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
           borderRadius: '0.75rem',
           borderColor: theme === 'dark' ? 'rgb(36, 36.5, 40.5)' : '#EEE',
@@ -58,7 +58,7 @@ export const useThemePreset = (
           boxShadow: focusBoxShadow,
         },
         '.Tab': {
-          backgroundColor: theme === 'dark' ? 'rgb(25, 25, 29)' : 'white',
+          backgroundColor: theme === 'dark' ? 'rgb(23 23 25)' : 'white',
           borderColor: theme === 'dark' ? 'rgb(36, 36.5, 40.5)' : '#EEE',
         },
         '.Tab--selected': {
@@ -86,37 +86,6 @@ export const useThemePreset = (
         spacingGridRow: '18px',
         colorDanger: theme === 'dark' ? '#F17878' : '#E64D4D',
       },
-    },
-    polar: {
-      input: 'bg-white shadow-xs',
-      button: '',
-      buttonSecondary: '',
-      dropdown: '',
-      dropdownContent: '',
-      dropdownItem: '',
-      checkbox: '',
-      list: '',
-      listItem: '',
-      well: 'dark:bg-polar-900 bg-gray-50',
-      wellSecondary: '',
-      table: '',
-      tableHeader: '',
-      checkoutWrapper:
-        'md:dark:bg-polar-950 md:bg-gray-100 dark:bg-polar-900 bg-white dark:text-white',
-      checkoutInnerWrapper:
-        'rounded-3xl dark:md:bg-polar-900 md:bg-white divide-gray-200 dark:divide-transparent',
-      checkoutInfoWrapper: 'md:bg-gray-50 md:dark:bg-polar-950',
-      checkoutCardWrapper:
-        'dark:bg-polar-900 dark:border-polar-700 rounded-3xl! bg-white shadow-xs border border-gray-200',
-      checkoutProductSwitch:
-        'rounded-2xl md:shadow-none shadow-xs hover:border-blue-500 dark:hover:border-blue-500 divide-y divide-gray-200 dark:divide-polar-700 md:bg-white dark:md:bg-polar-950',
-      checkoutProductSwitchSelected: 'border-blue-500 dark:border-blue-500',
-      customerPortalWrapper: '',
-      customerPortalHeader: 'dark:bg-polar-900 bg-gray-50',
-      customerPortalNavigationItem: 'rounded-xl',
-      customerPortalNavigationItemActive:
-        'dark:bg-polar-800 dark:border-polar-700 bg-gray-100 text-black dark:text-white',
-      customerPortalSubscriptionCard: '',
     },
   }
 }

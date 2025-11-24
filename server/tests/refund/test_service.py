@@ -19,7 +19,9 @@ from polar.models import (
 from polar.models.order import OrderStatus
 from polar.models.pledge import PledgeState
 from polar.models.refund import RefundReason, RefundStatus
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
+from polar.order.service import order as order_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
@@ -78,6 +80,17 @@ def assert_hooks_called_once(refund_hooks: Hooks, called: set[str]) -> None:
 def reset_hooks(refund_hooks: Hooks) -> None:
     for hook in HookNames:
         getattr(refund_hooks, hook).reset_mock()
+
+
+def assert_order_updated_webhook_called(send_webhook_mock: MagicMock) -> None:
+    """Helper to verify that order.updated webhook was sent."""
+    calls = send_webhook_mock.call_args_list
+    order_updated_calls = [
+        call
+        for call in calls
+        if len(call[0]) > 2 and call[0][2] == WebhookEventType.order_updated
+    ]
+    assert len(order_updated_calls) >= 1, "order.updated webhook should be called"
 
 
 class StripeRefund:
@@ -704,8 +717,6 @@ class TestOrderUpdatedWebhook(StripeRefund):
         )
 
         # Mock order_service.send_webhook to verify it's called
-        from polar.order.service import order as order_service
-
         send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
 
         # Create a full refund
@@ -717,16 +728,7 @@ class TestOrderUpdatedWebhook(StripeRefund):
         await refund_service.create_from_stripe(session, stripe_refund)
 
         # Verify order.updated webhook was sent
-        from polar.models.webhook_endpoint import WebhookEventType
-
-        # Should be called at least once with order.updated
-        calls = send_webhook_mock.call_args_list
-        order_updated_calls = [
-            call
-            for call in calls
-            if len(call[0]) > 2 and call[0][2] == WebhookEventType.order_updated
-        ]
-        assert len(order_updated_calls) >= 1, "order.updated webhook should be called"
+        assert_order_updated_webhook_called(send_webhook_mock)
 
     async def test_order_updated_webhook_on_partial_refund(
         self,
@@ -747,8 +749,6 @@ class TestOrderUpdatedWebhook(StripeRefund):
         )
 
         # Mock order_service.send_webhook to verify it's called
-        from polar.order.service import order as order_service
-
         send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
 
         # Create a partial refund (30% of the order)
@@ -760,16 +760,7 @@ class TestOrderUpdatedWebhook(StripeRefund):
         await refund_service.create_from_stripe(session, stripe_refund)
 
         # Verify order.updated webhook was sent
-        from polar.models.webhook_endpoint import WebhookEventType
-
-        # Should be called at least once with order.updated
-        calls = send_webhook_mock.call_args_list
-        order_updated_calls = [
-            call
-            for call in calls
-            if len(call[0]) > 2 and call[0][2] == WebhookEventType.order_updated
-        ]
-        assert len(order_updated_calls) >= 1, "order.updated webhook should be called"
+        assert_order_updated_webhook_called(send_webhook_mock)
 
     async def test_order_updated_webhook_on_refund_revert(
         self,
@@ -798,8 +789,6 @@ class TestOrderUpdatedWebhook(StripeRefund):
         refund = await create_refund(save_fixture, order, amount=80, tax_amount=20)
 
         # Mock order_service.send_webhook to verify it's called
-        from polar.order.service import order as order_service
-
         send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
 
         # Mock the revert transaction
@@ -818,15 +807,4 @@ class TestOrderUpdatedWebhook(StripeRefund):
         )
 
         # Verify order.updated webhook was sent
-        from polar.models.webhook_endpoint import WebhookEventType
-
-        # Should be called at least once with order.updated
-        calls = send_webhook_mock.call_args_list
-        order_updated_calls = [
-            call
-            for call in calls
-            if len(call[0]) > 2 and call[0][2] == WebhookEventType.order_updated
-        ]
-        assert len(order_updated_calls) >= 1, (
-            "order.updated webhook should be called on refund revert"
-        )
+        assert_order_updated_webhook_called(send_webhook_mock)

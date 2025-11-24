@@ -2,7 +2,6 @@ import { FileObject } from '@/components/FileUpload'
 import { useDraggable } from '@/hooks/draggable'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
-import { twMerge } from 'tailwind-merge'
 import { DraggableFileListItem, FileListItem } from './FileListItem'
 
 export const FileList = ({
@@ -68,9 +67,7 @@ export const FileList = ({
       <SortableContext items={files} strategy={rectSortingStrategy}>
         <div className="flex flex-col gap-y-6">
           <div
-            className={twMerge(
-              '-mx-4 flex-row justify-start gap-4 px-4 pb-4 md:mx-0 md:p-0',
-            )}
+            className="-mx-4 flex-row justify-start gap-4 px-4 pb-4 md:mx-0 md:p-0"
           >
             {files.map((file) => (
               <DraggableFileListItem

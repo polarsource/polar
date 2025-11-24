@@ -1,21 +1,16 @@
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Link from 'next/link'
 import { PropsWithChildren } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { PolarLogotype } from '../Layout/Public/PolarLogotype'
 
 const Footer = () => {
   return (
     <div className="mt-16 flex w-full flex-col items-center gap-y-12 bg-white dark:bg-black">
       <div
-        className={twMerge(
-          'flex w-full flex-col items-center px-6 py-16 md:max-w-3xl md:px-0 lg:py-32 xl:max-w-6xl',
-        )}
+        className="flex w-full flex-col items-center px-6 py-16 md:max-w-3xl md:px-0 lg:py-32 xl:max-w-6xl"
       >
         <div
-          className={twMerge(
-            'grid w-full grid-cols-1 gap-12 md:grid-cols-2 md:justify-between md:gap-24 lg:grid-cols-6',
-          )}
+          className="grid w-full grid-cols-1 gap-12 md:grid-cols-2 md:justify-between md:gap-24 lg:grid-cols-6"
         >
           <div className="flex h-full flex-1 flex-col justify-between gap-y-6 md:col-span-3">
             <span className="text-black md:ml-0">

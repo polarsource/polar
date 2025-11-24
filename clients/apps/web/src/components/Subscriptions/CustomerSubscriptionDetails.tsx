@@ -17,7 +17,6 @@ import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import CustomerPortalSubscription from '../CustomerPortal/CustomerPortalSubscription'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
@@ -124,9 +123,7 @@ const CustomerSubscriptionDetails = ({
 
   return (
     <ShadowBox
-      className={twMerge(
-        'dark:bg-polar-900 flex w-full flex-col gap-y-6 bg-gray-50 dark:border-transparent',
-      )}
+      className="dark:bg-polar-900 flex w-full flex-col gap-y-6 bg-gray-50 dark:border-transparent"
     >
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
@@ -251,7 +248,7 @@ const CustomerSubscriptionDetails = ({
           </Button>
         )}
         <Button
-          className={twMerge('hidden md:flex')}
+          className="hidden md:flex"
           variant="secondary"
           onClick={showBenefitGrantsModal}
         >

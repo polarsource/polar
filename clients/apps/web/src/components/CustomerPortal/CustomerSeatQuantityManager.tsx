@@ -7,7 +7,6 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { MinusIcon, PlusIcon } from 'lucide-react'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
 
@@ -116,7 +115,7 @@ export const CustomerSeatQuantityManager = ({
                     size="sm"
                     onClick={handleDecrement}
                     disabled={!canDecrease || updateSubscription.isPending}
-                    className={twMerge('text-xxs h-6 w-6')}
+                    className="text-xxs h-6 w-6"
                   >
                     <MinusIcon className="h-4 w-4" />
                   </Button>
@@ -126,7 +125,7 @@ export const CustomerSeatQuantityManager = ({
                     size="sm"
                     onClick={handleIncrement}
                     disabled={updateSubscription.isPending}
-                    className={twMerge('text-xxs h-6 w-6')}
+                    className="text-xxs h-6 w-6"
                   >
                     <PlusIcon className="h-4 w-4" />
                   </Button>

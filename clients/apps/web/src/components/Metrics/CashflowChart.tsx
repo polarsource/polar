@@ -100,9 +100,7 @@ const CashflowChart = ({
       )}
     >
       <div
-        className={twMerge(
-          'flex flex-col gap-6 p-6 md:flex-row md:items-start md:justify-between',
-        )}
+        className="flex flex-col gap-6 p-6 md:flex-row md:items-start md:justify-between"
       >
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-row gap-x-4">
@@ -119,9 +117,7 @@ const CashflowChart = ({
         </div>
       </div>
       <div
-        className={twMerge(
-          'dark:bg-polar-900 flex max-h-[464px] w-full flex-col gap-y-2 overflow-y-auto rounded-3xl bg-white p-4 pl-8',
-        )}
+        className="dark:bg-polar-900 flex max-h-[464px] w-full flex-col gap-y-2 overflow-y-auto rounded-3xl bg-white p-4 pl-8"
       >
         {metricsLoading ? (
           <div className="flex flex-col items-center justify-center">

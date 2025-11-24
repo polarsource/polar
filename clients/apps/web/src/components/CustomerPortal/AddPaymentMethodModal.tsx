@@ -19,8 +19,6 @@ import {
 } from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-
 export interface AddPaymentMethodModalProps {
   api: Client
   onPaymentMethodAdded: () => void
@@ -219,7 +217,7 @@ export const AddPaymentMethodModal = ({
               <div className="flex flex-row items-center gap-2">
                 <Button
                   type="submit"
-                  className={twMerge('self-start')}
+                  className="self-start"
                   disabled={!stripe || loading}
                   loading={loading}
                 >

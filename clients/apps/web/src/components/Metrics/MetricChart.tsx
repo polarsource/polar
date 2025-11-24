@@ -18,8 +18,6 @@ import {
 import { useTheme } from 'next-themes'
 import { useCallback, useMemo } from 'react'
 import type { ExternalMouseEvents } from 'recharts/types/chart/types'
-import { twMerge } from 'tailwind-merge'
-
 interface MetricChartProps {
   ref?: React.RefObject<HTMLDivElement | null>
   data: ParsedMetricPeriod[]
@@ -120,7 +118,7 @@ const MetricChart = ({
         <div className="flex w-40 flex-row justify-between gap-x-8">
           <div className="flex flex-row items-center gap-x-2">
             <span
-              className={twMerge('h-2 w-2 rounded-full')}
+              className="h-2 w-2 rounded-full"
               style={{
                 backgroundColor: item?.color,
               }}

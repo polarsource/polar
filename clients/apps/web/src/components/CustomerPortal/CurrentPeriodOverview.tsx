@@ -1,7 +1,6 @@
 import { useCustomerSubscriptionChargePreview } from '@/hooks/queries/customerPortal'
 import { formatCurrency } from '@/utils/formatters'
 import { Client, schemas } from '@polar-sh/client'
-import { twMerge } from 'tailwind-merge'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 
 interface CurrentPeriodOverviewProps {
@@ -66,9 +65,7 @@ export const CurrentPeriodOverview = ({
 
   return (
     <div
-      className={twMerge(
-        'dark:border-polar-700 flex flex-col gap-4 rounded-3xl border border-gray-200 p-8',
-      )}
+      className="dark:border-polar-700 flex flex-col gap-4 rounded-3xl border border-gray-200 p-8"
     >
       <div className="items-center justify-between space-y-1.5 sm:flex sm:space-y-0">
         <h4 className="text-lg font-medium">{headerTitle}</h4>

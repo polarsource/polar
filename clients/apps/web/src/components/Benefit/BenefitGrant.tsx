@@ -13,7 +13,6 @@ import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Markdown from 'markdown-to-jsx'
 import { usePathname } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import DownloadablesBenefitGrant from './Downloadables/DownloadablesBenefitGrant'
 import { LicenseKeyBenefitGrant } from './LicenseKeys/LicenseKeyBenefitGrant'
 import { benefitsDisplayNames, resolveBenefitIcon } from './utils'
@@ -256,7 +255,7 @@ export const BenefitGrant = ({ api, benefitGrant }: BenefitGrantProps) => {
   const { benefit } = benefitGrant
 
   return (
-    <div className={twMerge('flex w-full flex-col gap-4')}>
+    <div className="flex w-full flex-col gap-4">
       <div className="flex flex-row items-center gap-x-4">
         <div className="flex flex-row items-center gap-x-2 text-xs text-blue-500 dark:text-white">
           <span className="dark:bg-polar-700 flex h-8 w-8 flex-row items-center justify-center rounded-full bg-blue-50 text-sm">

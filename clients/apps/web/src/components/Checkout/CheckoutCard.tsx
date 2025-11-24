@@ -8,7 +8,6 @@ import {
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { twMerge } from 'tailwind-merge'
 export interface CheckoutCardProps {
   checkout: ProductCheckoutPublic
   update?: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
@@ -25,9 +24,7 @@ export const CheckoutCard = ({
 
   return (
     <ShadowBox
-      className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-6 rounded-3xl! border border-gray-200 bg-white shadow-xs',
-      )}
+      className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-6 rounded-3xl! border border-gray-200 bg-white shadow-xs"
     >
       {isSeatBased && update ? (
         <CheckoutSeatSelector checkout={checkout} update={update} />

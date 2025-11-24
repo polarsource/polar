@@ -7,7 +7,6 @@ import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import { OrderStatus } from '../Orders/OrderStatus'
@@ -89,7 +88,7 @@ export const CustomerPortalOrders = ({
                       setSelectedOrder(order)
                       showOrderModal()
                     }}
-                    className={twMerge('hidden md:flex')}
+                    className="hidden md:flex"
                     size="sm"
                   >
                     View Order

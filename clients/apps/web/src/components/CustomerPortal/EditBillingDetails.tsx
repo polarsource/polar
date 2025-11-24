@@ -15,8 +15,6 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
-
 const EditBillingDetails = ({
   api,
   customer,
@@ -273,7 +271,7 @@ const EditBillingDetails = ({
           type="submit"
           loading={updateCustomer.isPending}
           disabled={updateCustomer.isPending || !isDirty}
-          className={twMerge('self-start')}
+          className="self-start"
         >
           Update Billing Details
         </Button>

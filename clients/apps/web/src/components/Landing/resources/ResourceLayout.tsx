@@ -29,7 +29,7 @@ export const ResourceLayout = ({
           <div className="dark:md:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-8 rounded-lg border-gray-200 shadow-xs md:gap-y-12 md:border md:bg-white md:p-24 md:px-16">
             {/* Top Section */}
             <div className="flex flex-col">
-              <div className={twMerge('flex flex-col gap-y-8 lg:items-center')}>
+              <div className="flex flex-col gap-y-8 lg:items-center">
                 <h1 className="text-5xl leading-tight! text-balance md:text-6xl lg:w-2/3 lg:text-center">
                   {title}
                 </h1>
@@ -70,7 +70,7 @@ export const ResourceSection = ({
   return (
     <section
       id={id}
-      className={twMerge('grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8')}
+      className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8"
     >
       <div className="dark:border-polar-700 sticky top-0 col-span-1 flex h-fit flex-col border-gray-200 pt-4 text-lg md:border-t md:text-base">
         <h2>{title}</h2>

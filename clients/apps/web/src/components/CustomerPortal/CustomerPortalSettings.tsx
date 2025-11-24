@@ -11,6 +11,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'
+import { useRouter } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
@@ -34,6 +35,7 @@ export const CustomerPortalSettings = ({
   setupIntentParams,
 }: CustomerPortalSettingsProps) => {
   const api = createClientSideAPI(customerSessionToken)
+  const router = useRouter()
 
   const {
     isShown: isAddPaymentMethodModalOpen,
@@ -103,6 +105,7 @@ export const CustomerPortalSettings = ({
             customer={customer}
             onSuccess={() => {
               revalidate(`customer_portal`)
+              router.refresh()
             }}
             themingPreset={themingPreset}
           />
@@ -118,6 +121,7 @@ export const CustomerPortalSettings = ({
             api={api}
             onPaymentMethodAdded={() => {
               revalidate(`customer_portal`)
+              router.refresh()
               hideAddPaymentMethodModal()
             }}
             setupIntentParams={setupIntentParams}

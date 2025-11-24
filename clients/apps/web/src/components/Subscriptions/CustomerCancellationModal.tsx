@@ -20,6 +20,7 @@ import {
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
+import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
@@ -56,6 +57,8 @@ const CustomerCancellationModal = ({
   themingPreset,
   ...props
 }: CustomerCancellationModalProps) => {
+  const router = useRouter()
+
   const handleCancel = useCallback(() => {
     onAbort?.()
     props.hide()
@@ -91,9 +94,10 @@ const CustomerCancellationModal = ({
         title: 'Subscription Cancelled',
         description: `Subscription was cancelled successfully`,
       })
+      router.refresh()
       props.hide()
     },
-    [subscription.id, cancelSubscription, setError, props],
+    [subscription.id, cancelSubscription, setError, props, router],
   )
 
   const onReasonSelect = (value: schemas['CustomerCancellationReason']) => {

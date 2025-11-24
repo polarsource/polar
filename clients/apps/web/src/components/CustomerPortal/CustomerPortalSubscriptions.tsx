@@ -6,6 +6,7 @@ import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'
+import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
@@ -67,6 +68,7 @@ export const InactiveSubscriptionsOverview = ({
   api,
   customerSessionToken,
 }: SubscriptionsOverviewProps) => {
+  const router = useRouter()
   const theme = useTheme()
   const themingPreset = getThemePreset(
     organization.slug,
@@ -227,6 +229,7 @@ export const InactiveSubscriptionsOverview = ({
           onSuccess={async () => {
             hideRetryPaymentModal()
             await revalidate(`customer_portal`)
+            router.refresh()
           }}
           themingPreset={themingPreset}
         />

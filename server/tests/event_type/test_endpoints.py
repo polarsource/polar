@@ -427,13 +427,14 @@ class TestUpdateEventType:
     ) -> None:
         response = await client.patch(
             f"/v1/event-types/{event_type.id}",
-            json={"label": "Updated Label"},
+            json={"label": "Updated Label", "label_property_selector": "subject"},
         )
 
         assert response.status_code == 200
         json = response.json()
         assert json["id"] == str(event_type.id)
         assert json["label"] == "Updated Label"
+        assert json["label_property_selector"] == "subject"
         assert json["name"] == event_type.name
         assert json["organization_id"] == str(organization.id)
 

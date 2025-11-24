@@ -207,6 +207,20 @@ class Transaction(RecordModel):
     """Country for which Polar collected the tax."""
     tax_state: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
     """State for which Polar collected the tax."""
+    presentment_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    """Amount in cents of this transaction from customer's perspective."""
+    presentment_tax_amount: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True
+    )
+    """Amount of tax in the presentment currency collected by Polar for this payment."""
+    presentment_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    """Currency in which the customer made the payment."""
+    tax_remittance_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    """Amount of tax remitted to the authorities by Polar for this payment."""
+    tax_remittance_currency: Mapped[str | None] = mapped_column(
+        String(3), nullable=True
+    )
+    """Currency in which the tax was remitted to the authorities by Polar."""
 
     processor_fee_type: Mapped[ProcessorFeeType | None] = mapped_column(
         String, nullable=True, index=True

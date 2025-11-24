@@ -6,7 +6,7 @@ import { useCreateOrganization } from '@/hooks/polar/organizations'
 import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { themes } from '@/utils/theme'
-import { schemas } from '@polar-sh/client'
+import { ClientResponseError, schemas } from '@polar-sh/client'
 import { Stack, useRouter } from 'expo-router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -67,19 +67,32 @@ export default function Onboarding() {
 
   const onSubmit = useCallback(
     async (data: schemas['OrganizationCreate']) => {
-      const organization = await createOrganization.mutateAsync(data, {
-        onError: (error) => {
-          if (error) {
-            setError('root', { message: error.message })
+      clearErrors('root')
+      try {
+        const organization = await createOrganization.mutateAsync(data)
+        setOrganization(organization)
+        router.replace('/')
+      } catch (error) {
+        if (error instanceof ClientResponseError) {
+          const errorDetail = error.error.detail
+
+          if (Array.isArray(errorDetail)) {
+            const validationError = errorDetail[0]
+
+            setError('root', { message: validationError.msg })
+            return
           }
-        },
-      })
+        }
 
-      setOrganization(organization)
-
-      router.replace('/')
+        setError('root', {
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Failed to create organization',
+        })
+      }
     },
-    [createOrganization, setOrganization, router],
+    [clearErrors, createOrganization, setOrganization, router, setError],
   )
 
   return (

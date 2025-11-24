@@ -544,6 +544,11 @@ class RefundService(ResourceServiceReader[Refund]):
                 refunded_tax_amount=refund.tax_amount,
             )
 
+            # Send order.updated webhook
+            await order_service.send_webhook(
+                session, order, WebhookEventType.order_updated
+            )
+
             # Revert the tax transaction in the tax processor ledger
             if order.tax_transaction_processor_id and order.tax_amount > 0:
                 if refund.total_amount == order.total_amount:
@@ -602,6 +607,11 @@ class RefundService(ResourceServiceReader[Refund]):
                 order,
                 refunded_amount=-refund.amount,
                 refunded_tax_amount=-refund.tax_amount,
+            )
+
+            # Send order.updated webhook
+            await order_service.send_webhook(
+                session, order, WebhookEventType.order_updated
             )
 
     async def _on_created(

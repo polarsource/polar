@@ -19,7 +19,9 @@ from polar.models import (
 from polar.models.order import OrderStatus
 from polar.models.pledge import PledgeState
 from polar.models.refund import RefundReason, RefundStatus
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
+from polar.order.service import order as order_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
@@ -78,6 +80,17 @@ def assert_hooks_called_once(refund_hooks: Hooks, called: set[str]) -> None:
 def reset_hooks(refund_hooks: Hooks) -> None:
     for hook in HookNames:
         getattr(refund_hooks, hook).reset_mock()
+
+
+def assert_order_updated_webhook_called(send_webhook_mock: MagicMock) -> None:
+    """Helper to verify that order.updated webhook was sent."""
+    calls = send_webhook_mock.call_args_list
+    order_updated_calls = [
+        call
+        for call in calls
+        if len(call[0]) > 2 and call[0][2] == WebhookEventType.order_updated
+    ]
+    assert len(order_updated_calls) >= 1, "order.updated webhook should be called"
 
 
 class StripeRefund:
@@ -679,3 +692,119 @@ class TestUpdatedWebhooks(StripeRefund):
         assert updated_order.status == OrderStatus.paid
 
         revert_refund_transaction.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+class TestOrderUpdatedWebhook(StripeRefund):
+    """Test that order.updated webhook is sent when refunds are processed."""
+
+    async def test_order_updated_webhook_on_full_refund(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that order.updated webhook is invoked on full refund."""
+        # Create order and payment
+        order, payment = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+
+        # Mock order_service.send_webhook to verify it's called
+        send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
+
+        # Create a full refund
+        stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=1250,  # Full amount including tax
+            charge_id=payment.charge_id,
+        )
+        await refund_service.create_from_stripe(session, stripe_refund)
+
+        # Verify order.updated webhook was sent
+        assert_order_updated_webhook_called(send_webhook_mock)
+
+    async def test_order_updated_webhook_on_partial_refund(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that order.updated webhook is invoked on partial refund."""
+        # Create order and payment
+        order, payment = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+
+        # Mock order_service.send_webhook to verify it's called
+        send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
+
+        # Create a partial refund (30% of the order)
+        stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=375,  # 300 + 75 in tax
+            charge_id=payment.charge_id,
+        )
+        await refund_service.create_from_stripe(session, stripe_refund)
+
+        # Verify order.updated webhook was sent
+        assert_order_updated_webhook_called(send_webhook_mock)
+
+    async def test_order_updated_webhook_on_refund_revert(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product_organization_second: Product,
+        refund_hooks: Hooks,
+        customer: Customer,
+    ) -> None:
+        """Test that order.updated webhook is invoked when a refund is reverted."""
+        # Create a fully refunded order
+        order = await create_order(
+            save_fixture,
+            product=product_organization_second,
+            customer=customer,
+            status=OrderStatus.refunded,
+            subtotal_amount=80,
+            tax_amount=20,
+            refunded_amount=80,
+            refunded_tax_amount=20,
+        )
+        payment = await create_payment_transaction(
+            save_fixture, amount=80, tax_amount=20, order=order
+        )
+        refund = await create_refund(save_fixture, order, amount=80, tax_amount=20)
+
+        # Mock order_service.send_webhook to verify it's called
+        send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
+
+        # Mock the revert transaction
+        mocker.patch.object(refund_transaction_service, "revert")
+
+        # Update refund to failed status (which reverts the refund)
+        await refund_service.update_from_stripe(
+            session,
+            refund,
+            build_stripe_refund(
+                status="failed",
+                amount=100,
+                id=refund.processor_id,
+                charge_id=payment.charge_id,
+            ),
+        )
+
+        # Verify order.updated webhook was sent
+        assert_order_updated_webhook_called(send_webhook_mock)

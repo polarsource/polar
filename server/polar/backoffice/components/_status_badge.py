@@ -43,11 +43,11 @@ def status_badge(
             "aria": "active status",
         },
         OrganizationStatus.INITIAL_REVIEW: {
-            "class": "badge-ghost border border-base-300",
+            "class": "badge-warning",
             "aria": "initial review status",
         },
         OrganizationStatus.ONGOING_REVIEW: {
-            "class": "badge-ghost border border-base-300",
+            "class": "badge-warning",
             "aria": "ongoing review status",
         },
         OrganizationStatus.DENIED: {

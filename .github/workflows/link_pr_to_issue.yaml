@@ -34,11 +34,13 @@ jobs:
 
       - name: Update PR description
         if: steps.extract-ticket.outputs.ticket_number
+        env:
+          GITHUB_ISSUE_NUMBER: ${{ steps.extract-ticket.outputs.ticket_number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          CURRENT_BODY: ${{ github.event.pull_request.body }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          GITHUB_ISSUE_NUMBER="${{ steps.extract-ticket.outputs.ticket_number }}"
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          CURRENT_BODY="${{ github.event.pull_request.body }}"
-
           # Check if the fix reference already exists in the description
           if echo "$CURRENT_BODY" | grep -q "Fix #$GITHUB_ISSUE_NUMBER"; then
             echo "PR description already contains fix reference for issue #$GITHUB_ISSUE_NUMBER"
@@ -57,6 +59,6 @@ jobs:
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -d "{\"body\":$(echo "$NEW_BODY" | jq -Rs .)}" \
-            "${{ github.api_url }}/repos/${{ github.repository }}/pulls/$PR_NUMBER" > /dev/null
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" > /dev/null
 
           echo "Updated PR #$PR_NUMBER description to include fix reference for GitHub issue #$GITHUB_ISSUE_NUMBER"

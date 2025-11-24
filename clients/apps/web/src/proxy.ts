@@ -113,6 +113,37 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectURL)
   }
 
+  // Redirect deprecated path-based URLs to new structure
+  // Events: /dashboard/{org}/usage-billing/events/* -> /dashboard/{org}/analytics/events/*
+  const eventsPathMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/usage-billing\/events(\/.*)?$/,
+  )
+  if (eventsPathMatch) {
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${eventsPathMatch[1]}/analytics/events${eventsPathMatch[2] || ''}`
+    return NextResponse.redirect(redirectURL, { status: 308 })
+  }
+
+  // Benefits: /dashboard/{org}/benefits/* -> /dashboard/{org}/products/benefits/*
+  const benefitsPathMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/benefits(\/.*)?$/,
+  )
+  if (benefitsPathMatch) {
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${benefitsPathMatch[1]}/products/benefits${benefitsPathMatch[2] || ''}`
+    return NextResponse.redirect(redirectURL, { status: 308 })
+  }
+
+  // Meters: /dashboard/{org}/usage-billing/meters/* -> /dashboard/{org}/products/meters/*
+  const metersPathMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/usage-billing\/meters(\/.*)?$/,
+  )
+  if (metersPathMatch) {
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${metersPathMatch[1]}/products/meters${metersPathMatch[2] || ''}`
+    return NextResponse.redirect(redirectURL, { status: 308 })
+  }
+
   let user: schemas['UserRead'] | undefined = undefined
 
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {

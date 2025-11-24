@@ -227,6 +227,7 @@ const CustomerChangePlanModal = ({
         description: `Subscription was updated successfully`,
       })
       onUserSubscriptionUpdate(data)
+      router.refresh()
       hide()
     }
   }, [

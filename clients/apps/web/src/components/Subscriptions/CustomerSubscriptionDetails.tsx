@@ -15,6 +15,7 @@ import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CustomerPortalSubscription from '../CustomerPortal/CustomerPortalSubscription'
@@ -64,6 +65,7 @@ const CustomerSubscriptionDetails = ({
   const organization = subscription.product.organization
 
   const uncancelSubscription = useCustomerUncancelSubscription(api)
+  const router = useRouter()
 
   const primaryAction = useMemo(() => {
     if (
@@ -91,12 +93,13 @@ const CustomerSubscriptionDetails = ({
         onClick: async () => {
           await uncancelSubscription.mutateAsync({ id: subscription.id })
           await revalidate(`customer_portal`)
+          router.refresh()
         },
       }
     }
 
     return null
-  }, [subscription, isCanceled, organization, uncancelSubscription])
+  }, [subscription, isCanceled, organization, uncancelSubscription, router])
 
   const subscriptionBaseAmount = useMemo(() => {
     const price = subscription.product.prices.find(

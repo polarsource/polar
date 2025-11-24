@@ -43,8 +43,9 @@ export default function Index() {
   } = useSubscription(id as string)
 
   const { data: subscriptionOrders } = useOrders(organization?.id, {
-    customerId: subscription?.customer.id,
-    productId: subscription?.product.id,
+    customer_id: subscription?.customer.id,
+    product_id: subscription?.product.id,
+    subscription_id: id,
   })
 
   const flatSubscriptionOrders = useMemo(() => {

@@ -1,4 +1,5 @@
 import { api } from '@/utils/client'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -95,9 +96,9 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
       hide={hide}
       modalContent={
         <>
-          <div className="overflow-scroll p-8">
+          <div className="overflow-scroll p-6">
             {!canWithdraw && (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-6">
                 <p>
                   Your organization is currently under review, as part of our
                   compliance process. Withdrawals are disabled until the review
@@ -109,8 +110,15 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Button variant="default">
-                      Learn more about our review process
+                    <Button
+                      variant="default"
+                      className="flex flex-row items-center"
+                    >
+                      <span>Learn more</span>
+                      <ArrowOutwardOutlined
+                        className="ml-2"
+                        fontSize="inherit"
+                      />
                     </Button>
                   </Link>
                 </p>
@@ -119,9 +127,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
             {errorMessage && (
               <div className="flex flex-col gap-8">
-                <div className="text-red-500 dark:text-red-400">
-                  {errorMessage}
-                </div>
+                <p className="text-black dark:text-white">{errorMessage}</p>
                 <div className="flex flex-row gap-x-4">
                   <Button variant="default" onClick={hide}>
                     Close

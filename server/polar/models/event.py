@@ -41,7 +41,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.sql.elements import BinaryExpression
 
 from polar.kit.db.models import Model
-from polar.kit.metadata import MetadataMixin
+from polar.kit.metadata import MetadataMixin, extract_metadata_value
 from polar.kit.utils import generate_uuid, utc_now
 
 from .customer import Customer
@@ -215,7 +215,14 @@ class Event(Model, MetadataMixin):
 
             return SYSTEM_EVENT_LABELS.get(self.name, self.name)
         if self.event_types is not None:
-            return self.event_types.label
+            base_label = self.event_types.label
+            if self.event_types.label_property_selector:
+                dynamic_label = extract_metadata_value(
+                    self.user_metadata, self.event_types.label_property_selector
+                )
+                if dynamic_label:
+                    return f"{base_label} → {dynamic_label}"
+            return base_label
         return self.name
 
     @hybrid_property

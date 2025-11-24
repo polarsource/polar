@@ -13,6 +13,7 @@ import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -25,6 +26,7 @@ interface EditEventTypeModalProps {
   eventTypeId: string
   eventName: string
   currentLabel: string
+  currentLabelPropertySelector: string | null
   hide: () => void
 }
 
@@ -32,21 +34,24 @@ export const EditEventTypeModal = ({
   eventTypeId,
   eventName,
   currentLabel,
+  currentLabelPropertySelector,
   hide,
 }: EditEventTypeModalProps) => {
   const { toast } = useToast()
   const updateEventType = useUpdateEventType(eventTypeId)
 
-  const form = useForm<{ label: string }>({
+  const form = useForm<{ label: string; label_property_selector: string }>({
     defaultValues: {
       label: currentLabel,
+      label_property_selector: currentLabelPropertySelector || '',
     },
   })
 
   const onSubmit = useCallback(
-    async (data: { label: string }) => {
+    async (data: { label: string; label_property_selector: string }) => {
       const { error } = await updateEventType.mutateAsync({
         label: data.label.trim(),
+        label_property_selector: data.label_property_selector.trim() || null,
       })
 
       if (error) {
@@ -60,7 +65,7 @@ export const EditEventTypeModal = ({
 
       toast({
         title: 'Event type updated',
-        description: `Label has been updated to "${data.label.trim()}".`,
+        description: 'The event type has been updated successfully.',
       })
 
       hide()
@@ -112,6 +117,27 @@ export const EditEventTypeModal = ({
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="label_property_selector"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Property Selector (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="e.g., subject or metadata.category"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Extract a value from event metadata to append to the
+                      label. Leave empty to disable.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="mt-4 flex flex-row items-center gap-x-4">
                 <Button
                   className="self-start"
@@ -131,12 +157,26 @@ export const EditEventTypeModal = ({
         <div className="dark:border-polar-700 border-t border-gray-200 pt-6">
           <h3 className="text-sm font-medium">Ingesting Events</h3>
           <p className="dark:text-polar-500 mt-2 text-xs text-gray-500">
-            To ingest events with this label, use the following event name:
+            {form.watch('label_property_selector')
+              ? 'To ingest events with dynamic labels, include the property in metadata:'
+              : 'To ingest events with this label, use the following event name:'}
           </p>
           <Well className="dark:bg-polar-900 mt-4 rounded-lg bg-gray-100 p-4 text-xs">
             <SyntaxHighlighterClient
               lang="typescript"
-              code={`await polar.events.ingest({
+              code={
+                form.watch('label_property_selector')
+                  ? `await polar.events.ingest({
+  events: [{
+    name: "${eventName}",
+    customerId: "<value>",
+    metadata: {
+      ${form.watch('label_property_selector')}: "<value>", // Used for dynamic label
+      // other custom properties
+    },
+  }],
+});`
+                  : `await polar.events.ingest({
   events: [{
     name: "${eventName}",
     customerId: "<value>",
@@ -144,7 +184,8 @@ export const EditEventTypeModal = ({
       // your custom properties
     },
   }],
-});`}
+});`
+              }
             />
           </Well>
         </div>

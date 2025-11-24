@@ -1,12 +1,18 @@
 'use client'
 
-import { useDiscounts, useOrganization, useProducts } from '@/hooks/queries'
+import {
+  useDiscount,
+  useDiscounts,
+  useOrganization,
+  useProducts,
+} from '@/hooks/queries'
 import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { setValidationErrors } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import { hasLegacyRecurringPrices } from '@/utils/product'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import {
@@ -246,14 +252,22 @@ const UpdateDiscount = ({
   onUpdate?: () => void
 }) => {
   const updateSubscription = useUpdateSubscription(subscription.id)
+  const [discountQuery, setDiscountQuery] = useState('')
 
-  const { data: discounts } = useDiscounts(
+  const { data: discounts, isLoading: isLoadingDiscounts } = useDiscounts(
     subscription.product.organization_id,
     {
-      limit: 100,
+      query: discountQuery || undefined,
+      limit: 10,
       sorting: ['name'],
     },
   )
+
+  const { data: selectedDiscount } = useDiscount(
+    subscription.product.organization_id,
+    subscription.discount_id,
+  )
+
   const form = useForm<schemas['SubscriptionUpdateDiscount']>({
     defaultValues: {
       discount_id: subscription.discount_id || '',
@@ -292,17 +306,6 @@ const UpdateDiscount = ({
     [updateSubscription, subscription, setError, onUpdate],
   )
 
-  if (discounts?.items.length === 0) {
-    return (
-      <div className="dark:bg-polar-800 flex flex-col items-center justify-center gap-2 rounded-2xl bg-gray-50 p-6">
-        <h3 className="text-lg font-medium">Discounts</h3>
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          No discounts found
-        </p>
-      </div>
-    )
-  }
-
   return (
     <Form {...form}>
       <form
@@ -310,54 +313,57 @@ const UpdateDiscount = ({
         onSubmit={handleSubmit(onSubmit)}
       >
         <div className="flex flex-col gap-y-6">
-          {(discounts?.items.length ?? 0) > 0 && (
-            <FormField
-              control={control}
-              name="discount_id"
-              render={({ field }) => {
-                return (
-                  <FormItem>
-                    <FormLabel>Discount</FormLabel>
-                    <div className="flex flex-row items-center gap-2">
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ''}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a discount" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {discounts?.items.map((discount) => (
-                            <SelectItem
-                              key={discount.id}
-                              value={discount.id}
-                              textValue={discount.name}
-                            >
-                              {discount.name} ({getDiscountDisplay(discount)})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {field.value && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          type="button"
-                          onClick={() => field.onChange(null)}
-                        >
-                          <XIcon className="h-4 w-4" />
-                        </Button>
+          <FormField
+            control={control}
+            name="discount_id"
+            render={({ field }) => {
+              const selectedItem =
+                selectedDiscount?.id === field.value
+                  ? selectedDiscount
+                  : discounts?.items.find((d) => d.id === field.value)
+
+              return (
+                <FormItem>
+                  <FormLabel>Discount</FormLabel>
+                  <div className="flex flex-row items-center gap-2">
+                    <Combobox
+                      items={discounts?.items || []}
+                      value={field.value || null}
+                      selectedItem={selectedItem || null}
+                      onChange={(value) => field.onChange(value || '')}
+                      onQueryChange={setDiscountQuery}
+                      getItemValue={(discount) => discount.id}
+                      getItemLabel={(discount) => discount.name}
+                      renderItem={(discount) => (
+                        <>
+                          {discount.name} ({getDiscountDisplay(discount)})
+                        </>
                       )}
-                    </div>
-                    <FormMessage />
-                    <FormDescription>
-                      The change will be applied on the next invoice.
-                    </FormDescription>
-                  </FormItem>
-                )
-              }}
-            />
-          )}
+                      isLoading={isLoadingDiscounts}
+                      placeholder="Select a discount"
+                      searchPlaceholder="Search discounts…"
+                      emptyLabel="No discounts found"
+                      className="flex-1"
+                    />
+                    {field.value && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        type="button"
+                        onClick={() => field.onChange(null)}
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <FormMessage />
+                  <FormDescription>
+                    The change will be applied on the next invoice.
+                  </FormDescription>
+                </FormItem>
+              )
+            }}
+          />
         </div>
         <div className="flex flex-col gap-4">
           <Button

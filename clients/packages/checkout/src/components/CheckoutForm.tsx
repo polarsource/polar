@@ -361,7 +361,6 @@ const BaseCheckoutForm = ({
                       <Input
                         type="email"
                         autoComplete="email"
-                        className={themePresetProps.polar.input}
                         {...field}
                         value={field.value || ''}
                         disabled={checkout.customerId !== null}
@@ -386,7 +385,6 @@ const BaseCheckoutForm = ({
                       <FormLabel>Cardholder name</FormLabel>
                       <FormControl>
                         <Input
-                          className={themePresetProps.polar.input}
                           type="text"
                           autoComplete="name"
                           {...field}
@@ -442,7 +440,6 @@ const BaseCheckoutForm = ({
                           <FormLabel>Business name</FormLabel>
                           <FormControl>
                             <Input
-                              className={themePresetProps.polar.input}
                               type="text"
                               autoComplete="billing organization"
                               {...field}
@@ -475,7 +472,6 @@ const BaseCheckoutForm = ({
                                 type="text"
                                 autoComplete="billing address-line1"
                                 placeholder="Line 1"
-                                className={themePresetProps.polar.input}
                                 {...field}
                                 value={field.value || ''}
                               />
@@ -503,7 +499,6 @@ const BaseCheckoutForm = ({
                                 type="text"
                                 autoComplete="billing address-line2"
                                 placeholder="Line 2"
-                                className={themePresetProps.polar.input}
                                 {...field}
                                 value={field.value || ''}
                               />
@@ -538,7 +533,6 @@ const BaseCheckoutForm = ({
                                     type="text"
                                     autoComplete="billing postal-code"
                                     placeholder="Postal code"
-                                    className={themePresetProps.polar.input}
                                     {...field}
                                     value={field.value || ''}
                                   />
@@ -568,7 +562,6 @@ const BaseCheckoutForm = ({
                                     type="text"
                                     autoComplete="billing address-level2"
                                     placeholder="City"
-                                    className={themePresetProps.polar.input}
                                     {...field}
                                     value={field.value || ''}
                                   />
@@ -599,13 +592,6 @@ const BaseCheckoutForm = ({
                                 country={country}
                                 value={field.value || ''}
                                 onChange={field.onChange}
-                                className={themePresetProps.polar.dropdown}
-                                itemClassName={
-                                  themePresetProps.polar.dropdownItem
-                                }
-                                contentClassName={
-                                  themePresetProps.polar.dropdownContent
-                                }
                               />
                               <FormMessage />
                             </>
@@ -636,13 +622,6 @@ const BaseCheckoutForm = ({
                                 autoComplete="billing country"
                                 value={field.value || undefined}
                                 onChange={field.onChange}
-                                className={themePresetProps.polar.dropdown}
-                                itemClassName={
-                                  themePresetProps.polar.dropdownItem
-                                }
-                                contentClassName={
-                                  themePresetProps.polar.dropdownContent
-                                }
                               />
                               <FormMessage />
                             </>
@@ -674,7 +653,6 @@ const BaseCheckoutForm = ({
                               <Input
                                 type="text"
                                 autoComplete="off"
-                                className={themePresetProps.polar.input}
                                 {...field}
                                 value={field.value || ''}
                                 disabled={validTaxID}
@@ -686,7 +664,6 @@ const BaseCheckoutForm = ({
                                     variant="secondary"
                                     size="sm"
                                     onClick={addTaxID}
-                                    className={themePresetProps.polar.button}
                                   >
                                     Apply
                                   </Button>
@@ -697,7 +674,6 @@ const BaseCheckoutForm = ({
                                     variant="secondary"
                                     size="sm"
                                     onClick={() => clearTaxId()}
-                                    className={themePresetProps.polar.button}
                                   >
                                     <XIcon className="h-4 w-4" />
                                   </Button>
@@ -729,7 +705,6 @@ const BaseCheckoutForm = ({
                           <Input
                             type="text"
                             autoComplete="off"
-                            className={themePresetProps.polar.input}
                             {...field}
                             value={field.value || ''}
                             disabled={checkoutDiscounted}
@@ -747,7 +722,6 @@ const BaseCheckoutForm = ({
                                 variant="secondary"
                                 size="sm"
                                 onClick={addDiscountCode}
-                                className={themePresetProps.polar.button}
                               >
                                 Apply
                               </Button>
@@ -899,7 +873,7 @@ const BaseCheckoutForm = ({
                 type="submit"
                 size="lg"
                 wrapperClassNames="text-base"
-                className={cn(themePresetProps.polar.button, 'w-full')}
+                className={cn('w-full')}
                 disabled={disabled || isUpdatePending}
                 loading={loading}
               >

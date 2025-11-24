@@ -4,7 +4,7 @@ import {
 } from '@/hooks/queries'
 import { type Client } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import {
   Elements,
   ElementsConsumer,
@@ -29,6 +29,7 @@ export interface AddPaymentMethodModalProps {
     setup_intent: string
   }
   hide: () => void
+  themePreset: ThemingPresetProps
 }
 
 export const AddPaymentMethodModal = ({
@@ -36,6 +37,7 @@ export const AddPaymentMethodModal = ({
   onPaymentMethodAdded,
   setupIntentParams,
   hide,
+  themePreset,
 }: AddPaymentMethodModalProps) => {
   const stripePromise = useMemo(
     () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
@@ -46,8 +48,6 @@ export const AddPaymentMethodModal = ({
   const [error, setError] = useState<string | null>(null)
 
   const [loading, setLoading] = useState(false)
-
-  const theme = useThemePreset()
 
   const confirm = useCallback(
     async (setupIntentId: string) => {
@@ -193,7 +193,7 @@ export const AddPaymentMethodModal = ({
           paymentMethodCreation: 'manual',
           setupFutureUsage: 'off_session',
           currency: 'usd',
-          appearance: theme.stripe,
+          appearance: themePreset.stripe,
         }}
       >
         <ElementsConsumer>

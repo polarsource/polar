@@ -48,7 +48,7 @@ export default function Index() {
     refetch: refetchOrders,
     isRefetching: isOrdersRefetching,
   } = useOrders(organization?.id, {
-    customerId: id as string,
+    customer_id: id as string,
   })
 
   const flatOrders = useMemo(() => {
@@ -60,7 +60,7 @@ export default function Index() {
     refetch: refetchSubscriptions,
     isRefetching: isSubscriptionsRefetching,
   } = useSubscriptions(organization?.id, {
-    customerId: id as string,
+    customer_id: id as string,
     active: null,
   })
 

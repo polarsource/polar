@@ -56,7 +56,7 @@ export default function Index() {
   )
 
   const { data: latestProductOrders } = useOrders(organization?.id, {
-    productId: id as string,
+    product_id: id as string,
     limit: 3,
   })
 

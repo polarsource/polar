@@ -1505,6 +1505,9 @@ class SubscriptionService:
         if not subscription.active:
             raise InactiveSubscription(subscription)
 
+        previous_status = subscription.status
+        previous_is_canceled = subscription.canceled
+
         # Already trialing
         if subscription.trialing:
             # End trial immediately
@@ -1555,7 +1558,16 @@ class SubscriptionService:
                 )
 
         repository = SubscriptionRepository.from_session(session)
-        return await repository.update(subscription)
+        subscription = await repository.update(subscription)
+
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_is_canceled=previous_is_canceled,
+        )
+
+        return subscription
 
     async def update_seats(
         self,

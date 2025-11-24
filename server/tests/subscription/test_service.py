@@ -2360,6 +2360,34 @@ class TestUpdateTrial:
         assert updated_subscription.trial_end is not None
         assert updated_subscription.trial_end > original_trial_end
 
+    async def test_trialing_subscription_extending_webhook_triggered(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        subscription_hooks: Hooks,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        assert subscription.trial_end is not None
+        original_trial_end = subscription.trial_end
+
+        new_trial_end = original_trial_end + timedelta(days=30)
+
+        reset_hooks(subscription_hooks)
+        updated_subscription = await subscription_service.update_trial(
+            session, subscription, trial_end=new_trial_end
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.trialing
+        assert updated_subscription.trial_end == new_trial_end
+
+        # Verify that the webhook was triggered
+        assert_hooks_called_once(subscription_hooks, {"updated"})
+
     async def test_active_subscription_ending_now_validation_error(
         self,
         session: AsyncSession,

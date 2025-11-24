@@ -3,7 +3,8 @@ from sqlalchemy.orm import joinedload
 
 from polar.event.repository import EventRepository
 from polar.kit.utils import utc_now
-from polar.models import Customer, Event, Organization
+from polar.models import Customer, Event, EventType, Organization
+from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_event
@@ -183,3 +184,130 @@ class TestCustomerRelationship:
 
         assert loaded_event is not None
         assert loaded_event.customer is None
+
+
+@pytest.mark.asyncio
+class TestEventLabel:
+    async def test_label_with_property_selector(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        event_type = EventType(
+            name="support.request",
+            label="Support Request",
+            label_property_selector="subject",
+            organization_id=organization.id,
+        )
+        await save_fixture(event_type)
+
+        event = Event(
+            name="support.request",
+            source=EventSource.user,
+            organization_id=organization.id,
+            event_type_id=event_type.id,
+            user_metadata={"subject": "Billing complaint"},
+        )
+        await save_fixture(event)
+
+        repository = EventRepository.from_session(session)
+        loaded_event = await repository.get_by_id(
+            event.id, options=(joinedload(Event.event_types),)
+        )
+
+        assert loaded_event is not None
+        assert loaded_event.label == "Support Request → Billing complaint"
+
+    async def test_label_without_property_selector(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        event_type = EventType(
+            name="api.request",
+            label="API Request",
+            label_property_selector=None,
+            organization_id=organization.id,
+        )
+        await save_fixture(event_type)
+
+        event = Event(
+            name="api.request",
+            source=EventSource.user,
+            organization_id=organization.id,
+            event_type_id=event_type.id,
+            user_metadata={"endpoint": "/api/users"},
+        )
+        await save_fixture(event)
+
+        repository = EventRepository.from_session(session)
+        loaded_event = await repository.get_by_id(
+            event.id, options=(joinedload(Event.event_types),)
+        )
+
+        assert loaded_event is not None
+        assert loaded_event.label == "API Request"
+
+    async def test_label_with_nested_metadata_path(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        event_type = EventType(
+            name="llm.call",
+            label="LLM Call",
+            label_property_selector="metadata.model",
+            organization_id=organization.id,
+        )
+        await save_fixture(event_type)
+
+        event = Event(
+            name="llm.call",
+            source=EventSource.user,
+            organization_id=organization.id,
+            event_type_id=event_type.id,
+            user_metadata={"metadata": {"model": "gpt-4"}},
+        )
+        await save_fixture(event)
+
+        repository = EventRepository.from_session(session)
+        loaded_event = await repository.get_by_id(
+            event.id, options=(joinedload(Event.event_types),)
+        )
+
+        assert loaded_event is not None
+        assert loaded_event.label == "LLM Call → gpt-4"
+
+    async def test_label_with_missing_metadata_value(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        event_type = EventType(
+            name="support.request",
+            label="Support Request",
+            label_property_selector="subject",
+            organization_id=organization.id,
+        )
+        await save_fixture(event_type)
+
+        event = Event(
+            name="support.request",
+            source=EventSource.user,
+            organization_id=organization.id,
+            event_type_id=event_type.id,
+            user_metadata={"category": "billing"},
+        )
+        await save_fixture(event)
+
+        repository = EventRepository.from_session(session)
+        loaded_event = await repository.get_by_id(
+            event.id, options=(joinedload(Event.event_types),)
+        )
+
+        assert loaded_event is not None
+        assert loaded_event.label == "Support Request"

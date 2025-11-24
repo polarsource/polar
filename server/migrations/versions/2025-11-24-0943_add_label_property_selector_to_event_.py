@@ -1,7 +1,7 @@
 """Add label_property_selector to event_types
 
 Revision ID: d289021770a8
-Revises: 4b9bb0cb2d44
+Revises: c4a698f55b85
 Create Date: 2025-11-24 09:43:10.849667
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "d289021770a8"
-down_revision = "4b9bb0cb2d44"
+down_revision = "c4a698f55b85"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

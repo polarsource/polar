@@ -22,9 +22,7 @@ export default async function Layout(props: {
 
   return (
     <div className="flex min-h-screen grow flex-col">
-      <div
-        className="dark:bg-polar-900 flex w-full flex-col bg-gray-50"
-      >
+      <div className="dark:bg-polar-900 flex w-full flex-col bg-gray-50">
         <div className="mx-auto flex w-full max-w-5xl flex-col justify-center gap-y-12 px-4 py-12 lg:px-0">
           <div className="flex flex-row items-center gap-x-4">
             <Avatar

@@ -66,9 +66,7 @@ export const FileList = ({
     >
       <SortableContext items={files} strategy={rectSortingStrategy}>
         <div className="flex flex-col gap-y-6">
-          <div
-            className="-mx-4 flex-row justify-start gap-4 px-4 pb-4 md:mx-0 md:p-0"
-          >
+          <div className="-mx-4 flex-row justify-start gap-4 px-4 pb-4 md:mx-0 md:p-0">
             {files.map((file) => (
               <DraggableFileListItem
                 key={file.id}

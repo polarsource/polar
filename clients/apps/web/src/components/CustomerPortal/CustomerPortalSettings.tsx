@@ -57,9 +57,7 @@ export const CustomerPortalSettings = ({
   return (
     <div className="flex flex-col gap-y-8">
       <h3 className="text-2xl">Settings</h3>
-      <Well
-        className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50"
-      >
+      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-start justify-between">
           <div className="flex flex-col gap-y-2">
             <h3 className="text-xl">Payment Methods</h3>
@@ -83,9 +81,7 @@ export const CustomerPortalSettings = ({
           ))}
         </WellContent>
       </Well>
-      <Well
-        className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50"
-      >
+      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">
             <h3 className="text-xl">Billing Details</h3>

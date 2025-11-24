@@ -23,9 +23,7 @@ export const CheckoutCard = ({
   const isSeatBased = productPrice && productPrice.amountType === 'seat_based'
 
   return (
-    <ShadowBox
-      className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-6 rounded-3xl! border border-gray-200 bg-white shadow-xs"
-    >
+    <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-6 rounded-3xl! border border-gray-200 bg-white shadow-xs">
       {isSeatBased && update ? (
         <CheckoutSeatSelector checkout={checkout} update={update} />
       ) : (

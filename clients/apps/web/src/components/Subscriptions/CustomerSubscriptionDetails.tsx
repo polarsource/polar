@@ -122,9 +122,7 @@ const CustomerSubscriptionDetails = ({
   }
 
   return (
-    <ShadowBox
-      className="dark:bg-polar-900 flex w-full flex-col gap-y-6 bg-gray-50 dark:border-transparent"
-    >
+    <ShadowBox className="dark:bg-polar-900 flex w-full flex-col gap-y-6 bg-gray-50 dark:border-transparent">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
           <h3 className="truncate text-2xl">{subscription.product.name}</h3>

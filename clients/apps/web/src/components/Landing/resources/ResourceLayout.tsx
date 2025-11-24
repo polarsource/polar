@@ -68,10 +68,7 @@ export const ResourceSection = ({
   className?: string
 }>) => {
   return (
-    <section
-      id={id}
-      className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8"
-    >
+    <section id={id} className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8">
       <div className="dark:border-polar-700 sticky top-0 col-span-1 flex h-fit flex-col border-gray-200 pt-4 text-lg md:border-t md:text-base">
         <h2>{title}</h2>
       </div>

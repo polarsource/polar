@@ -49,9 +49,7 @@ const ClientPage = ({
   )
 
   return (
-    <ShadowBox
-      className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24"
-    >
+    <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
       <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
         <div className="flex flex-col gap-4">
           <h2 className="text-2xl text-black dark:text-white">Sign in</h2>

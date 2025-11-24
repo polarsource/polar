@@ -82,9 +82,7 @@ const BenefitRow = ({
   }, [deleteBenefit, benefit])
 
   return (
-    <div
-      className="flex w-full flex-row items-center justify-between"
-    >
+    <div className="flex w-full flex-row items-center justify-between">
       <div className="flex flex-row items-center gap-x-3">
         <span
           className={twMerge(
@@ -196,9 +194,7 @@ const SortableBenefitRow = ({ benefit, onRemove }: SortableBenefitRowProps) => {
         >
           <DragIndicatorOutlined fontSize="small" />
         </button>
-        <span
-          className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-blue-500 dark:text-white"
-        >
+        <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-blue-500 dark:text-white">
           <CheckOutlined fontSize="inherit" />
         </span>
         <span className="text-sm">{benefit.description}</span>

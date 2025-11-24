@@ -214,9 +214,7 @@ export default function ClientPage({
   }
 
   return (
-    <ShadowBox
-      className="flex w-full max-w-2xl flex-col gap-8 p-8 md:p-12"
-    >
+    <ShadowBox className="flex w-full max-w-2xl flex-col gap-8 p-8 md:p-12">
       <div className="flex flex-col gap-4">
         <h2 className="text-xl">Claim Your Seat</h2>
         <p className="dark:text-polar-500 text-gray-500">

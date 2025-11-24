@@ -79,9 +79,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           )}
         </div>
         {subscriptionTier.description && (
-          <div
-            className="prose dark:prose-invert dark:text-polar-500 shrink leading-normal text-gray-500"
-          >
+          <div className="prose dark:prose-invert dark:text-polar-500 shrink leading-normal text-gray-500">
             <Markdown options={markdownOptionsJustText}>
               {subscriptionTier.description}
             </Markdown>

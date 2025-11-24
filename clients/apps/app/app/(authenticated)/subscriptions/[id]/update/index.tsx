@@ -48,10 +48,10 @@ export default function Index() {
   const { handleSubmit, watch, resetField, setValue } = form
 
   const { data: allProducts } = useProducts(organization?.id ?? '', {
-    isRecurring: true,
+    is_recurring: true,
     limit: 100,
     sorting: ['price_amount'],
-    isArchived: false,
+    is_archived: false,
   })
 
   const products = useMemo(

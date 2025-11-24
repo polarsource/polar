@@ -135,7 +135,9 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
           <AccountWidget />
         </motion.div>
       </motion.div>
-      {!organization.feature_settings?.revops_enabled && <EventsUpsell />}
+      {!organization.feature_settings?.revops_enabled && (
+        <EventsUpsell organization={organization} />
+      )}
     </DashboardBody>
   )
 }

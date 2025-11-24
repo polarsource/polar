@@ -143,8 +143,6 @@ export const InactiveSubscriptionsOverview = ({
         <h3 className="text-xl">Inactive Subscriptions</h3>
       </div>
       <DataTable
-        wrapperClassName={themingPreset.polar.table}
-        headerClassName={themingPreset.polar.tableHeader}
         data={subscriptions ?? []}
         isLoading={false}
         columns={[
@@ -211,7 +209,6 @@ export const InactiveSubscriptionsOverview = ({
                 api={api}
                 customerSessionToken={customerSessionToken}
                 subscription={selectedSubscription}
-                themingPreset={themingPreset}
               />
             </div>
           ) : (

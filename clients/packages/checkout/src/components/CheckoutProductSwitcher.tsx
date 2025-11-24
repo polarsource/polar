@@ -91,10 +91,9 @@ const CheckoutProductSwitcher = ({
               <label
                 key={price.id}
                 className={cn(
-                  themePreset.polar.checkoutProductSwitch,
-                  `flex cursor-pointer flex-col border transition-colors`,
+                  `dark:divide-polar-700 dark:md:bg-polar-950 flex cursor-pointer flex-col divide-y divide-gray-200 rounded-2xl border shadow-xs transition-colors hover:border-blue-500 md:bg-white md:shadow-none dark:hover:border-blue-500`,
                   price.id === selectedProduct.id
-                    ? themePreset.polar.checkoutProductSwitchSelected
+                    ? 'border-blue-500 dark:border-blue-500'
                     : '',
                 )}
                 htmlFor={`product-${price.id}`}
@@ -121,10 +120,9 @@ const CheckoutProductSwitcher = ({
           <label
             key={product.id}
             className={cn(
-              themePreset.polar.checkoutProductSwitch,
-              `flex cursor-pointer flex-col border transition-colors`,
+              `dark:divide-polar-700 dark:md:bg-polar-950 flex cursor-pointer flex-col divide-y divide-gray-200 rounded-2xl border shadow-xs transition-colors hover:border-blue-500 md:bg-white md:shadow-none dark:hover:border-blue-500`,
               product.id === selectedProduct.id
-                ? themePreset.polar.checkoutProductSwitchSelected
+                ? 'border-blue-500 dark:border-blue-500'
                 : '',
             )}
             htmlFor={`product-${product.id}`}

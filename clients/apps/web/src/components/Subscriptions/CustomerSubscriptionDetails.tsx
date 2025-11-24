@@ -125,8 +125,7 @@ const CustomerSubscriptionDetails = ({
   return (
     <ShadowBox
       className={twMerge(
-        'flex w-full flex-col gap-y-6 dark:border-transparent',
-        themePreset.polar.well,
+        'dark:bg-polar-900 flex w-full flex-col gap-y-6 bg-gray-50 dark:border-transparent',
       )}
     >
       <div className="flex flex-row items-start justify-between">
@@ -247,16 +246,12 @@ const CustomerSubscriptionDetails = ({
           <Button
             onClick={primaryAction.onClick}
             loading={primaryAction.loading}
-            className={themePreset.polar.button}
           >
             {primaryAction.label}
           </Button>
         )}
         <Button
-          className={twMerge(
-            'hidden md:flex',
-            themePreset.polar.buttonSecondary,
-          )}
+          className={twMerge('hidden md:flex')}
           variant="secondary"
           onClick={showBenefitGrantsModal}
         >
@@ -266,19 +261,13 @@ const CustomerSubscriptionDetails = ({
           className="md:hidden"
           href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
         >
-          <Button
-            variant="secondary"
-            className={themePreset.polar.buttonSecondary}
-          >
-            View Subscription
-          </Button>
+          <Button variant="secondary">View Subscription</Button>
         </Link>
         <CustomerCancellationModal
           isShown={showCancelModal}
           hide={() => setShowCancelModal(false)}
           subscription={subscription}
           cancelSubscription={cancelSubscription}
-          themingPreset={themePreset}
         />
       </div>
 
@@ -293,7 +282,6 @@ const CustomerSubscriptionDetails = ({
             subscription={subscription}
             hide={() => setShowChangePlanModal(false)}
             onUserSubscriptionUpdate={onUserSubscriptionUpdate}
-            themingPreset={themePreset}
           />
         }
       />
@@ -307,7 +295,6 @@ const CustomerSubscriptionDetails = ({
               api={api}
               customerSessionToken={customerSessionToken}
               subscription={subscription}
-              themingPreset={themePreset}
             />
           </div>
         }

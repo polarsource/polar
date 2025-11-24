@@ -126,7 +126,7 @@ export const CheckoutPWYWForm = ({
               return (
                 <FormItem className="w-full">
                   <MoneyInput
-                    className={themePreset.polar.input}
+                    className="bg-white shadow-xs"
                     name={field.name}
                     value={field.value || undefined}
                     onChange={field.onChange}

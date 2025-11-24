@@ -73,7 +73,6 @@ const ClientPage = ({
     <ShadowBox
       className={twMerge(
         'flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24',
-        themePreset.polar.wellSecondary,
       )}
     >
       <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
@@ -132,7 +131,7 @@ const ClientPage = ({
             <Button
               type="submit"
               size="lg"
-              className={twMerge('w-full', themePreset.polar.button)}
+              className={twMerge('w-full')}
               loading={sessionRequest.isPending}
               disabled={sessionRequest.isPending || code.length !== 6}
             >

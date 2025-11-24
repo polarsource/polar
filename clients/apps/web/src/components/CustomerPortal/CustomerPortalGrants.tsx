@@ -1,7 +1,5 @@
 import { Client, schemas } from '@polar-sh/client'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useTheme } from 'next-themes'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
 
 export interface CustomerPortalGrantsProps {
@@ -12,20 +10,13 @@ export interface CustomerPortalGrantsProps {
 
 export const CustomerPortalGrants = ({
   api,
-  organization,
   benefitGrants,
 }: CustomerPortalGrantsProps) => {
-  const theme = useTheme()
-  const themingPreset = getThemePreset(
-    organization.slug,
-    theme.resolvedTheme as 'light' | 'dark',
-  )
-
   return (
     <div className="flex w-full flex-col gap-4">
       <h3 className="text-xl">Benefit Grants</h3>
       <div className="flex flex-col gap-4">
-        <List className={themingPreset.polar.list}>
+        <List>
           {benefitGrants?.map((benefitGrant) => (
             <ListItem
               key={benefitGrant.id}

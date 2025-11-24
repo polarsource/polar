@@ -16,8 +16,6 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useTheme } from 'next-themes'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
@@ -52,17 +50,10 @@ const ClientPage = ({
     [sessionRequest, setError, router, organization],
   )
 
-  const theme = useTheme()
-  const themingPreset = getThemePreset(
-    organization.slug,
-    theme.resolvedTheme as 'light' | 'dark',
-  )
-
   return (
     <ShadowBox
       className={twMerge(
         'flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24',
-        themingPreset.polar.wellSecondary,
       )}
     >
       <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
@@ -93,7 +84,7 @@ const ClientPage = ({
                         required
                         placeholder="Email address"
                         autoComplete="email"
-                        className={themingPreset.polar.input}
+                        className="bg-white shadow-xs"
                         {...field}
                       />
                     </FormControl>
@@ -107,7 +98,6 @@ const ClientPage = ({
               size="lg"
               loading={sessionRequest.isPending}
               disabled={sessionRequest.isPending}
-              className={themingPreset.polar.button}
             >
               Access my purchases
             </Button>

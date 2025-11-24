@@ -2,30 +2,21 @@
 
 import { useCustomerCustomerMeters } from '@/hooks/queries'
 import Search from '@mui/icons-material/Search'
-import { Client, schemas } from '@polar-sh/client'
+import { Client } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useTheme } from 'next-themes'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import FormattedUnits from '../Meter/FormattedUnits'
 export interface CustomerUsageProps {
   api: Client
-  organization: schemas['CustomerOrganization']
 }
 
-export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {
+export const CustomerUsage = ({ api }: CustomerUsageProps) => {
   const [query, setQuery] = useState<string | null>(null)
   const { data, isLoading } = useCustomerCustomerMeters(api, { query })
   const customerMeters = useMemo(() => data?.items ?? [], [data])
-
-  const theme = useTheme()
-  const themingPreset = getThemePreset(
-    organization.slug,
-    theme.resolvedTheme as 'light' | 'dark',
-  )
 
   return (
     <div className="flex flex-col">
@@ -38,7 +29,7 @@ export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {
             <div className="flex flex-col items-center gap-4 lg:flex-row">
               <div className="w-full lg:w-1/3">
                 <Input
-                  className={twMerge('w-full', themingPreset.polar.input)}
+                  className={twMerge('w-full bg-white shadow-xs')}
                   preSlot={<Search fontSize="inherit" />}
                   placeholder="Search Usage Meter"
                   value={query || ''}
@@ -52,8 +43,6 @@ export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {
             <h3 className="text-xl">Overview</h3>
             <DataTable
               isLoading={isLoading}
-              wrapperClassName={themingPreset.polar.table}
-              headerClassName={themingPreset.polar.tableHeader}
               columns={[
                 {
                   header: 'Name',

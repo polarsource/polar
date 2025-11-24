@@ -155,7 +155,7 @@ export const EventRow = ({
               renderEventLink ? (
                 <Link
                   href={`/dashboard/${organization.slug}/analytics/events/${event.id}`}
-                  className={twMerge('flex flex-col')}
+                  className="flex flex-col"
                   onClick={(e) => {
                     e.stopPropagation()
                   }}

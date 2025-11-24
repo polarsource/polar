@@ -49,9 +49,7 @@ const ProductsCommandGroup = ({
   return (
     <CommandGroup className={className}>
       <CommandItem
-        className={twMerge(
-          'flex flex-row items-center justify-between py-2 text-black dark:text-white',
-        )}
+        className="flex flex-row items-center justify-between py-2 text-black dark:text-white"
         key={productPriceType}
         value={productPriceType}
         onSelect={() => onSelectProductType(productPriceType)}
@@ -73,9 +71,7 @@ const ProductsCommandGroup = ({
 
         return (
           <CommandItem
-            className={twMerge(
-              'flex flex-row items-center justify-between text-black dark:text-white',
-            )}
+            className="flex flex-row items-center justify-between text-black dark:text-white"
             key={product.id}
             value={product.id}
             onSelect={() => onSelectProduct(product)}

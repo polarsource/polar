@@ -52,7 +52,7 @@ const StorefrontSidebarContentWrapper = ({
             </Button>
           )}
         </div>
-        <div className={twMerge('flex grow flex-col justify-between gap-y-8')}>
+        <div className="flex grow flex-col justify-between gap-y-8">
           {children}
         </div>
       </div>

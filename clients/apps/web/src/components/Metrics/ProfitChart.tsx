@@ -59,11 +59,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
           className,
         )}
       >
-        <div
-          className={twMerge(
-            'flex flex-col gap-6 p-6 md:flex-row md:items-start md:justify-between',
-          )}
-        >
+        <div className="flex flex-col gap-6 p-6 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col gap-y-4">
             <h3 className="text-xl">Profit</h3>
             <h3 className="text-5xl font-light">
@@ -77,11 +73,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
             </p>
           </div>
         </div>
-        <div
-          className={twMerge(
-            'dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white py-4 pr-4',
-          )}
-        >
+        <div className="dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white py-4 pr-4">
           {loading ? (
             <div
               style={{ height: _height }}
@@ -153,7 +145,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                           >
                             <div className="flex flex-row items-center gap-x-2">
                               <span
-                                className={twMerge('h-2 w-2 rounded-full')}
+                                className="h-2 w-2 rounded-full"
                                 style={{
                                   backgroundColor: item?.color,
                                 }}

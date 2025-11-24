@@ -82,9 +82,7 @@ const BenefitRow = ({
   }, [deleteBenefit, benefit])
 
   return (
-    <div
-      className={twMerge('flex w-full flex-row items-center justify-between')}
-    >
+    <div className="flex w-full flex-row items-center justify-between">
       <div className="flex flex-row items-center gap-x-3">
         <span
           className={twMerge(
@@ -196,11 +194,7 @@ const SortableBenefitRow = ({ benefit, onRemove }: SortableBenefitRowProps) => {
         >
           <DragIndicatorOutlined fontSize="small" />
         </button>
-        <span
-          className={twMerge(
-            'dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-blue-500 dark:text-white',
-          )}
-        >
+        <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-blue-500 dark:text-white">
           <CheckOutlined fontSize="inherit" />
         </span>
         <span className="text-sm">{benefit.description}</span>
@@ -415,9 +409,7 @@ const BenefitsContainer = ({
   return (
     <div className="flex flex-col gap-2">
       <div
-        className={twMerge(
-          'dark:bg-polar-800 dark:hover:border-polar-700 group flex cursor-pointer flex-row items-center justify-between gap-2 rounded-xl border border-transparent bg-gray-100 px-4 py-3 text-sm transition-colors hover:border-gray-200 dark:border-transparent',
-        )}
+        className="dark:bg-polar-800 dark:hover:border-polar-700 group flex cursor-pointer flex-row items-center justify-between gap-2 rounded-xl border border-transparent bg-gray-100 px-4 py-3 text-sm transition-colors hover:border-gray-200 dark:border-transparent"
         onClick={() => setOpen((v) => !v)}
         role="button"
       >

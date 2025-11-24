@@ -24,8 +24,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
-
 const ClientPage = ({
   organization,
 }: {
@@ -70,11 +68,7 @@ const ClientPage = ({
   )
 
   return (
-    <ShadowBox
-      className={twMerge(
-        'flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24',
-      )}
-    >
+    <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
       <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
         <div className="flex flex-col gap-4">
           <h2 className="text-2xl text-black dark:text-white">
@@ -131,7 +125,7 @@ const ClientPage = ({
             <Button
               type="submit"
               size="lg"
-              className={twMerge('w-full')}
+              className="w-full"
               loading={sessionRequest.isPending}
               disabled={sessionRequest.isPending || code.length !== 6}
             >

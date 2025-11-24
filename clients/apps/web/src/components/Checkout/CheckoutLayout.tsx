@@ -1,6 +1,5 @@
 import { PolarThemeProvider } from '@/app/providers'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import { twMerge } from 'tailwind-merge'
 import PublicLayout from '../Layout/PublicLayout'
 import CheckoutEmbedLayout from './Embed/CheckoutEmbedLayout'
 
@@ -23,11 +22,7 @@ const CheckoutLayout: React.FC<
 
   return (
     <PolarThemeProvider>
-      <div
-        className={twMerge(
-          'md:dark:bg-polar-950 dark:bg-polar-900 h-full bg-white md:bg-gray-100 dark:text-white',
-        )}
-      >
+      <div className="md:dark:bg-polar-950 dark:bg-polar-900 h-full bg-white md:bg-gray-100 dark:text-white">
         <PublicLayout className="gap-y-0 py-6 md:py-12" wide footer={false}>
           {children}
         </PublicLayout>

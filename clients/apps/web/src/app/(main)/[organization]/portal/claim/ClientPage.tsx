@@ -11,8 +11,6 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-
 export default function ClientPage({
   organization,
   invitationToken,
@@ -144,7 +142,7 @@ export default function ClientPage({
 
   if (!invitationToken) {
     return (
-      <ShadowBox className={twMerge('flex flex-col items-center gap-6 p-12')}>
+      <ShadowBox className="flex flex-col items-center gap-6 p-12">
         <ErrorOutlined fontSize="large" />
         <div className="flex flex-col items-center gap-2 text-center">
           <h2 className="text-xl">Missing Invitation Token</h2>
@@ -158,7 +156,7 @@ export default function ClientPage({
 
   if (isLoading) {
     return (
-      <ShadowBox className={twMerge('flex flex-col items-center gap-6 p-12')}>
+      <ShadowBox className="flex flex-col items-center gap-6 p-12">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p className="dark:text-polar-400 text-gray-500">
           Loading invitation details...
@@ -169,7 +167,7 @@ export default function ClientPage({
 
   if (fetchError || !claimInfo) {
     return (
-      <ShadowBox className={twMerge('flex flex-col items-center gap-6 p-12')}>
+      <ShadowBox className="flex flex-col items-center gap-6 p-12">
         <ErrorOutlined fontSize="large" />
         <div className="flex flex-col items-center gap-4 text-center">
           <h2 className="text-xl">Invalid Invitation</h2>
@@ -187,7 +185,7 @@ export default function ClientPage({
     const isRedirecting = claimingState === 'redirecting'
 
     return (
-      <ShadowBox className={twMerge('flex flex-col items-center gap-6 p-12')}>
+      <ShadowBox className="flex flex-col items-center gap-6 p-12">
         {isRedirecting ? (
           <>
             <CheckOutlined fontSize="large" />
@@ -216,9 +214,7 @@ export default function ClientPage({
   }
 
   return (
-    <ShadowBox
-      className={twMerge('flex w-full max-w-2xl flex-col gap-8 p-8 md:p-12')}
-    >
+    <ShadowBox className="flex w-full max-w-2xl flex-col gap-8 p-8 md:p-12">
       <div className="flex flex-col gap-4">
         <h2 className="text-xl">Claim Your Seat</h2>
         <p className="dark:text-polar-500 text-gray-500">

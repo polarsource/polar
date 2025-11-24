@@ -7,7 +7,6 @@ import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import FormattedUnits from '../Meter/FormattedUnits'
 export interface CustomerUsageProps {
   api: Client
@@ -29,7 +28,7 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
             <div className="flex flex-col items-center gap-4 lg:flex-row">
               <div className="w-full lg:w-1/3">
                 <Input
-                  className={twMerge('w-full bg-white shadow-xs')}
+                  className="w-full bg-white shadow-xs"
                   preSlot={<Search fontSize="inherit" />}
                   placeholder="Search Usage Meter"
                   value={query || ''}

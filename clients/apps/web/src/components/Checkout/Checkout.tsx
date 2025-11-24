@@ -29,7 +29,6 @@ import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { CheckoutCard } from './CheckoutCard'
 import CheckoutProductInfo from './CheckoutProductInfo'
 
@@ -183,11 +182,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
 
   if (embed) {
     return (
-      <ShadowBox
-        className={twMerge(
-          'dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent',
-        )}
-      >
+      <ShadowBox className="dark:md:bg-polar-900 flex flex-col gap-y-12 divide-gray-200 overflow-hidden rounded-3xl md:bg-white dark:divide-transparent">
         <PaymentNotReadyBanner />
         {hasProductCheckout(checkout) && (
           <>
@@ -227,16 +222,8 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   }
 
   return (
-    <ShadowBoxOnMd
-      className={twMerge(
-        'md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent',
-      )}
-    >
-      <div
-        className={twMerge(
-          'md:dark:bg-polar-950 flex flex-col gap-y-8 md:bg-gray-50 md:p-12',
-        )}
-      >
+    <ShadowBoxOnMd className="md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent">
+      <div className="md:dark:bg-polar-950 flex flex-col gap-y-8 md:bg-gray-50 md:p-12">
         {checkout.returnUrl && (
           <Link
             href={checkout.returnUrl}

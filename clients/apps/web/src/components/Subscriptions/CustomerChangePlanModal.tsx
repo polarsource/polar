@@ -12,7 +12,6 @@ import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
@@ -30,7 +29,7 @@ const ProductPriceListItem = ({
   return (
     <ListItem
       selected={selected}
-      className={twMerge('flex flex-row items-center justify-between text-sm')}
+      className="flex flex-row items-center justify-between text-sm"
       onSelect={onSelect}
       size="small"
     >

@@ -52,7 +52,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
           {formatCurrencyAndAmount(summary?.balance.amount ?? 0, 'USD', 0)}
         </h2>
       </div>
-      <div className="dark:bg-polar-900 m-2 flex flex-col gap-y-4 rounded-3xl bg-white p-4">
+      <div className="dark:bg-polar-700 m-2 flex flex-col gap-y-4 rounded-3xl bg-white p-4">
         {lastPayout ? (
           <div className="flex flex-col">
             <div className="flex flex-row items-center justify-between gap-x-2">

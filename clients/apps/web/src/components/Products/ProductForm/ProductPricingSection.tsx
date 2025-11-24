@@ -71,15 +71,17 @@ export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
             <FormItem className="grow">
               <div className="flex items-center gap-2">
                 <FormControl>
-                  <MoneyInput
-                    name={field.name}
-                    value={field.value}
-                    onChange={(v) => {
-                      field.onChange(v)
-                      setValue(`prices.${index}.id`, '')
-                    }}
-                    placeholder={0}
-                  />
+                  <div ref={field.ref} tabIndex={-1}>
+                    <MoneyInput
+                      name={field.name}
+                      value={field.value}
+                      onChange={(v) => {
+                        field.onChange(v)
+                        setValue(`prices.${index}.id`, '')
+                      }}
+                      placeholder={0}
+                    />
+                  </div>
                 </FormControl>
               </div>
               <FormMessage />
@@ -113,15 +115,17 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
             <FormItem className="flex flex-1 flex-col gap-0.5">
               <FormLabel>Minimum amount</FormLabel>
               <FormControl>
-                <MoneyInput
-                  name={field.name}
-                  value={field.value}
-                  onChange={(v) => {
-                    field.onChange(v)
-                    setValue(`prices.${index}.id`, '')
-                  }}
-                  placeholder={1000}
-                />
+                <div ref={field.ref} tabIndex={-1}>
+                  <MoneyInput
+                    name={field.name}
+                    value={field.value}
+                    onChange={(v) => {
+                      field.onChange(v)
+                      setValue(`prices.${index}.id`, '')
+                    }}
+                    placeholder={1000}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -143,15 +147,17 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
             <FormItem className="flex flex-1 flex-col gap-0.5">
               <FormLabel>Suggested amount</FormLabel>
               <FormControl>
-                <MoneyInput
-                  name={field.name}
-                  value={field.value}
-                  onChange={(v) => {
-                    field.onChange(v)
-                    setValue(`prices.${index}.id`, '')
-                  }}
-                  placeholder={5000}
-                />
+                <div ref={field.ref} tabIndex={-1}>
+                  <MoneyInput
+                    name={field.name}
+                    value={field.value}
+                    onChange={(v) => {
+                      field.onChange(v)
+                      setValue(`prices.${index}.id`, '')
+                    }}
+                    placeholder={5000}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -386,15 +392,17 @@ export const ProductPriceSeatBasedItem: React.FC<
                       Price per seat
                     </FormLabel>
                     <FormControl>
-                      <MoneyInput
-                        name={field.name}
-                        value={field.value}
-                        onChange={(v) => {
-                          field.onChange(v)
-                          setValue(`prices.${index}.id`, '')
-                        }}
-                        placeholder={1000}
-                      />
+                      <div ref={field.ref} tabIndex={-1}>
+                        <MoneyInput
+                          name={field.name}
+                          value={field.value}
+                          onChange={(v) => {
+                            field.onChange(v)
+                            setValue(`prices.${index}.id`, '')
+                          }}
+                          placeholder={1000}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -718,6 +726,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       }
                     >
                       <SelectTrigger
+                        ref={field.ref}
                         className={twMerge(
                           field.value
                             ? ''

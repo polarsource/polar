@@ -59,7 +59,7 @@ const docsCSP = `
   img-src 'self' data: blob: d3gk2c5xim1je2.cloudfront.net mintcdn.com *.mintcdn.com cdn.jsdelivr.net mintlify.s3.us-west-1.amazonaws.com;
   connect-src 'self' *.mintlify.dev *.mintlify.com d1ctpt7j8wusba.cloudfront.net mintcdn.com *.mintcdn.com
   api.mintlifytrieve.com www.googletagmanager.com cdn.segment.com plausible.io us.posthog.com browser.sentry-cdn.com;
-  frame-src 'self' *.mintlify.dev;
+  frame-src 'self' *.mintlify.dev https://polar-public-assets.s3.us-east-2.amazonaws.com;
 `
 
 /** @type {import('next').NextConfig} */

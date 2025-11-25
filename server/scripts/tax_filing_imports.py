@@ -249,7 +249,7 @@ async def tax_filing_import(
 
                     process_row(batch_row, transaction, pending_transactions, session)
 
-                await session.flush()
+                await session.commit()
                 progress.update(process_task, advance=len(batch))
 
         if unmatching_transactions:

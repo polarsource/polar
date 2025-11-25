@@ -3,11 +3,12 @@ from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
+from sqlalchemy import delete
 
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.anonymization import anonymize_email_for_deletion
-from polar.models import User
+from polar.models import OAuthAccount, User
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
@@ -260,16 +261,15 @@ class UserService:
 
         update_dict: dict[str, Any] = {}
 
-        # Anonymize email
         update_dict["email"] = anonymize_email_for_deletion(user.email)
 
-        # Clear avatar
         if user.avatar_url:
             update_dict["avatar_url"] = None
 
-        # Clear metadata
         if user.meta:
             update_dict["meta"] = {}
+
+        await self._delete_oauth_accounts(session, user)
 
         user = await repository.update(user, update_dict=update_dict)
         await repository.soft_delete(user)
@@ -280,6 +280,20 @@ class UserService:
         )
 
         return user
+
+    async def _delete_oauth_accounts(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """Delete all OAuth accounts for a user."""
+        stmt = delete(OAuthAccount).where(OAuthAccount.user_id == user.id)
+        await session.execute(stmt)
+
+        log.info(
+            "user.oauth_accounts_deleted",
+            user_id=user.id,
+        )
 
 
 user = UserService()

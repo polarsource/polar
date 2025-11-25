@@ -40,6 +40,7 @@ from .schemas import (
     OrganizationAppealRequest,
     OrganizationAppealResponse,
     OrganizationCreate,
+    OrganizationDeletionResponse,
     OrganizationID,
     OrganizationPaymentStatus,
     OrganizationPaymentStep,
@@ -150,6 +151,50 @@ async def update(
         raise ResourceNotFound()
 
     return await organization_service.update(session, organization, organization_update)
+
+
+@router.delete(
+    "/{id}",
+    response_model=OrganizationDeletionResponse,
+    summary="Delete Organization",
+    responses={
+        200: {"description": "Organization deleted or deletion request submitted."},
+        403: {
+            "description": "You don't have the permission to delete this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.private],
+)
+async def delete(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsWriteUser,
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationDeletionResponse:
+    """Request deletion of an organization.
+
+    If the organization has no orders or active subscriptions, it will be
+    immediately soft-deleted. If it has an account, the Stripe account will
+    be deleted first.
+
+    If deletion cannot proceed immediately (has orders, subscriptions, or
+    Stripe deletion fails), a support ticket will be created for manual handling.
+    """
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    result = await organization_service.request_deletion(
+        session, auth_subject, organization
+    )
+
+    return OrganizationDeletionResponse(
+        deleted=result.can_delete_immediately,
+        requires_support=not result.can_delete_immediately,
+        blocked_reasons=result.blocked_reasons,
+    )
 
 
 @router.get(

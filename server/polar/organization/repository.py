@@ -50,6 +50,18 @@ class OrganizationRepository(
         statement = self.get_base_statement().where(Organization.slug == slug)
         return await self.get_one_or_none(statement)
 
+    async def slug_exists(self, slug: str) -> bool:
+        """Check if slug exists, including soft-deleted organizations.
+
+        Soft-deleted organizations are included to prevent slug reuse,
+        ensuring backoffice links continue to work.
+        """
+        statement = self.get_base_statement(include_deleted=True).where(
+            Organization.slug == slug
+        )
+        result = await self.get_one_or_none(statement)
+        return result is not None
+
     async def get_by_customer(self, customer_id: UUID) -> Organization:
         statement = (
             self.get_base_statement()

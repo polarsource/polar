@@ -338,6 +338,130 @@ class PlainService:
                     user.id, thread_result.error.message
                 )
 
+    async def create_organization_deletion_thread(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        requesting_user: User,
+        blocked_reasons: list[str],
+    ) -> None:
+        """Create Plain ticket for organization deletion request."""
+        if not self.enabled:
+            return
+
+        async with self._get_plain_client() as plain:
+            customer_result = await plain.upsert_customer(
+                UpsertCustomerInput(
+                    identifier=UpsertCustomerIdentifierInput(
+                        email_address=requesting_user.email
+                    ),
+                    on_create=UpsertCustomerOnCreateInput(
+                        external_id=str(requesting_user.id),
+                        full_name=requesting_user.email,
+                        email=EmailAddressInput(
+                            email=requesting_user.email,
+                            is_verified=requesting_user.email_verified,
+                        ),
+                    ),
+                    on_update=UpsertCustomerOnUpdateInput(
+                        email=EmailAddressInput(
+                            email=requesting_user.email,
+                            is_verified=requesting_user.email_verified,
+                        ),
+                    ),
+                )
+            )
+            if customer_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    organization.id, customer_result.error.message
+                )
+
+            reasons_text = ", ".join(blocked_reasons) if blocked_reasons else "unknown"
+
+            thread_result = await plain.create_thread(
+                CreateThreadInput(
+                    customer_identifier=self._get_customer_identifier(
+                        customer_result, requesting_user.email
+                    ),
+                    title=f"Organization Deletion Request - {organization.slug}",
+                    label_type_ids=["lt_01JKD9ASBPVX09YYXGHSXZRWSA"],
+                    components=[
+                        ComponentInput(
+                            component_text=ComponentTextInput(
+                                text=f"User has requested deletion of organization `{organization.slug}`."
+                            )
+                        ),
+                        ComponentInput(
+                            component_text=ComponentTextInput(
+                                text=f"Blocked reasons: {reasons_text}",
+                                text_color=ComponentTextColor.MUTED,
+                            )
+                        ),
+                        ComponentInput(
+                            component_spacer=ComponentSpacerInput(
+                                spacer_size=ComponentSpacerSize.M
+                            )
+                        ),
+                        ComponentInput(
+                            component_container=ComponentContainerInput(
+                                container_content=[
+                                    ComponentContainerContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=organization.name or organization.slug
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_divider=ComponentDividerInput(
+                                            divider_spacing_size=ComponentDividerSpacingSize.M
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_row=ComponentRowInput(
+                                            row_main_content=[
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text="Organization ID",
+                                                        text_size=ComponentTextSize.S,
+                                                        text_color=ComponentTextColor.MUTED,
+                                                    )
+                                                ),
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text=str(organization.id)
+                                                    )
+                                                ),
+                                            ],
+                                            row_aside_content=[
+                                                ComponentRowContentInput(
+                                                    component_copy_button=ComponentCopyButtonInput(
+                                                        copy_button_value=str(
+                                                            organization.id
+                                                        ),
+                                                        copy_button_tooltip_label="Copy Organization ID",
+                                                    )
+                                                )
+                                            ],
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_link_button=ComponentLinkButtonInput(
+                                            link_button_url=settings.generate_backoffice_url(
+                                                f"/organizations/{organization.id}"
+                                            ),
+                                            link_button_label="View in Backoffice",
+                                        )
+                                    ),
+                                ]
+                            )
+                        ),
+                    ],
+                )
+            )
+            if thread_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    organization.id, thread_result.error.message
+                )
+
     async def _get_user_card(
         self, session: AsyncSession, request: CustomerCardsRequest
     ) -> CustomerCard | None:

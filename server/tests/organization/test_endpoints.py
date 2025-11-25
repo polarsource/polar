@@ -9,6 +9,7 @@ from polar.enums import AccountType
 from polar.models import Product, User
 from polar.models.account import Account
 from polar.models.organization import Organization, OrganizationStatus
+from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
@@ -17,6 +18,11 @@ from polar.user_organization.service import (
 )
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_order,
+    create_subscription,
+)
 
 
 @pytest.mark.asyncio
@@ -633,3 +639,249 @@ class TestGetAccount:
         assert json["is_details_submitted"]
         assert json["is_charges_enabled"]
         assert json["is_payouts_enabled"]
+
+
+@pytest.mark.asyncio
+class TestDeleteOrganization:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.delete(f"/v1/organizations/{organization.id}")
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_member(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.delete(f"/v1/organizations/{organization.id}")
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.delete(f"/v1/organizations/{uuid.uuid4()}")
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid_no_activity(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Mock the enqueue_job to prevent actual task execution
+        mock_enqueue = mocker.patch("polar.organization.service.enqueue_job")
+
+        response = await client.delete(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["deleted"] is True
+        assert json["requires_support"] is False
+        assert json["blocked_reasons"] == []
+
+        # Ensure no background task was enqueued (immediate deletion)
+        mock_enqueue.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_blocked_has_orders(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        # Create a customer and order for this organization
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+            stripe_customer_id="STRIPE_CUSTOMER_ID",
+        )
+        await create_order(save_fixture, customer=customer, product=product)
+
+        # Mock the enqueue_job to prevent actual task execution
+        mock_enqueue = mocker.patch("polar.organization.service.enqueue_job")
+
+        response = await client.delete(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["deleted"] is False
+        assert json["requires_support"] is True
+        assert "has_orders" in json["blocked_reasons"]
+
+        # Ensure background task was enqueued for support ticket
+        mock_enqueue.assert_called_once()
+
+    @pytest.mark.auth
+    async def test_blocked_has_active_subscriptions(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        # Create a customer and active subscription for this organization
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+            stripe_customer_id="STRIPE_CUSTOMER_ID",
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+
+        # Mock the enqueue_job to prevent actual task execution
+        mock_enqueue = mocker.patch("polar.organization.service.enqueue_job")
+
+        response = await client.delete(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["deleted"] is False
+        assert json["requires_support"] is True
+        assert "has_active_subscriptions" in json["blocked_reasons"]
+
+        # Ensure background task was enqueued for support ticket
+        mock_enqueue.assert_called_once()
+
+    @pytest.mark.auth
+    async def test_valid_with_account_deletion(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        # Create an account for the organization
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="acct_test123",
+        )
+        await save_fixture(account)
+        organization.account_id = account.id
+        await save_fixture(organization)
+
+        # Mock Stripe account deletion to succeed (returns None on success)
+        mock_stripe_delete = mocker.patch(
+            "polar.account.service.account.delete_stripe_account",
+            return_value=None,
+        )
+        mock_enqueue = mocker.patch("polar.organization.service.enqueue_job")
+
+        response = await client.delete(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["deleted"] is True
+        assert json["requires_support"] is False
+        assert json["blocked_reasons"] == []
+
+        # Stripe account should have been deleted
+        mock_stripe_delete.assert_called_once()
+        # No background task should be enqueued (immediate deletion)
+        mock_enqueue.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_stripe_account_deletion_failure(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        # Create an account for the organization
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="acct_test123",
+        )
+        await save_fixture(account)
+        organization.account_id = account.id
+        await save_fixture(organization)
+
+        # Mock Stripe account deletion to fail with an exception
+        from polar.account.service import AccountServiceError
+
+        mock_stripe_delete = mocker.patch(
+            "polar.account.service.account.delete_stripe_account",
+            side_effect=AccountServiceError("Stripe account deletion failed"),
+        )
+        mock_enqueue = mocker.patch("polar.organization.service.enqueue_job")
+
+        response = await client.delete(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["deleted"] is False
+        assert json["requires_support"] is True
+        assert "stripe_account_deletion_failed" in json["blocked_reasons"]
+
+        # Stripe account deletion should have been attempted
+        mock_stripe_delete.assert_called_once()
+        # Background task should be enqueued for support ticket
+        mock_enqueue.assert_called_once()
+
+    @pytest.mark.auth
+    async def test_not_admin_with_account(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        # Create an account with a different admin (not the current user)
+        other_user = User(
+            email="other@example.com",
+        )
+        await save_fixture(other_user)
+
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=other_user.id,  # Different admin than the current user
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="acct_test123",
+        )
+        await save_fixture(account)
+        organization.account_id = account.id
+        await save_fixture(organization)
+
+        response = await client.delete(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 403
+        json = response.json()
+        assert (
+            json["detail"]
+            == "Only the account admin can delete an organization with an account"
+        )

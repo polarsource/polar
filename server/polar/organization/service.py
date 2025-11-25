@@ -18,16 +18,25 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import Environment, settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import InvoiceNumbering
-from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.plain.service import plain as plain_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
-from polar.models import Account, Organization, User, UserOrganization
+from polar.models import (
+    Account,
+    Customer,
+    Order,
+    Organization,
+    Subscription,
+    User,
+    UserOrganization,
+)
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
+from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -43,12 +52,13 @@ from polar.worker import enqueue_job
 from .repository import OrganizationRepository, OrganizationReviewRepository
 from .schemas import (
     OrganizationCreate,
+    OrganizationDeletionBlockedReason,
     OrganizationUpdate,
 )
 from .sorting import OrganizationSortProperty
 
 if TYPE_CHECKING:
-    from polar.models import Customer
+    pass
 
 log = structlog.get_logger()
 
@@ -79,6 +89,18 @@ class PaymentStatusResponse(BaseModel):
     steps: list[PaymentStep] = Field(description="List of onboarding steps")
     organization_status: OrganizationStatus = Field(
         description="Current organization status"
+    )
+
+
+class OrganizationDeletionCheckResult(BaseModel):
+    """Result of checking if an organization can be deleted."""
+
+    can_delete_immediately: bool = Field(
+        description="Whether the organization can be deleted immediately"
+    )
+    blocked_reasons: list[OrganizationDeletionBlockedReason] = Field(
+        default_factory=list,
+        description="Reasons why immediate deletion is blocked",
     )
 
 
@@ -166,8 +188,7 @@ class OrganizationService:
         auth_subject: AuthSubject[User],
     ) -> Organization:
         repository = OrganizationRepository.from_session(session)
-        existing_slug = await repository.get_by_slug(create_schema.slug)
-        if existing_slug is not None:
+        if await repository.slug_exists(create_schema.slug):
             raise PolarRequestValidationError(
                 [
                     {
@@ -293,6 +314,229 @@ class OrganizationService:
         await repository.soft_delete(organization)
 
         return organization
+
+    async def check_can_delete(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+    ) -> OrganizationDeletionCheckResult:
+        """Check if an organization can be deleted immediately.
+
+        An organization can be deleted immediately if it has:
+        - No orders
+        - No active subscriptions
+
+        If it has an account but no orders/subscriptions, we'll attempt to
+        delete the Stripe account first.
+        """
+        blocked_reasons: list[OrganizationDeletionBlockedReason] = []
+
+        # Check for orders
+        order_count = await self._count_orders_by_organization(session, organization.id)
+        if order_count > 0:
+            blocked_reasons.append(OrganizationDeletionBlockedReason.HAS_ORDERS)
+
+        # Check for active subscriptions
+        active_subscription_count = (
+            await self._count_active_subscriptions_by_organization(
+                session, organization.id
+            )
+        )
+        if active_subscription_count > 0:
+            blocked_reasons.append(
+                OrganizationDeletionBlockedReason.HAS_ACTIVE_SUBSCRIPTIONS
+            )
+
+        return OrganizationDeletionCheckResult(
+            can_delete_immediately=len(blocked_reasons) == 0,
+            blocked_reasons=blocked_reasons,
+        )
+
+    async def request_deletion(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+    ) -> OrganizationDeletionCheckResult:
+        """Request deletion of an organization.
+
+        Authorization:
+        - If the organization has an account, only the account admin can delete
+        - If there is no account, any organization member can delete
+
+        Flow:
+        1. Check authorization
+        2. Check for orders/subscriptions -> if blocked, create support ticket
+        3. If has account -> try to delete Stripe account
+        4. If Stripe deletion fails -> create support ticket
+        5. Soft delete organization
+        """
+        # Authorization check: only account admin can delete if account exists
+        if organization.account_id is not None:
+            is_admin = await account_service.is_user_admin(
+                session, organization.account_id, auth_subject.subject
+            )
+            if not is_admin:
+                raise NotPermitted(
+                    "Only the account admin can delete an organization with an account"
+                )
+
+        check_result = await self.check_can_delete(session, organization)
+
+        if not check_result.can_delete_immediately:
+            # Organization has orders or active subscriptions
+            enqueue_job(
+                "organization.deletion_requested",
+                organization_id=organization.id,
+                user_id=auth_subject.subject.id,
+                blocked_reasons=[r.value for r in check_result.blocked_reasons],
+            )
+            return check_result
+
+        # Organization is eligible for deletion
+        # If it has an account, try to delete it first
+        if organization.account_id is not None:
+            try:
+                await self._delete_account(session, organization)
+            except Exception as e:
+                log.error(
+                    "organization.deletion.stripe_account_deletion_failed",
+                    organization_id=organization.id,
+                    error=str(e),
+                )
+                # Stripe deletion failed, create support ticket
+                check_result = OrganizationDeletionCheckResult(
+                    can_delete_immediately=False,
+                    blocked_reasons=[
+                        OrganizationDeletionBlockedReason.STRIPE_ACCOUNT_DELETION_FAILED
+                    ],
+                )
+                enqueue_job(
+                    "organization.deletion_requested",
+                    organization_id=organization.id,
+                    user_id=auth_subject.subject.id,
+                    blocked_reasons=[r.value for r in check_result.blocked_reasons],
+                )
+                return check_result
+
+        # Soft delete the organization
+        await self.soft_delete_organization(session, organization)
+
+        return OrganizationDeletionCheckResult(
+            can_delete_immediately=True,
+            blocked_reasons=[],
+        )
+
+    async def soft_delete_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> Organization:
+        """Soft-delete an organization, preserving the slug for backoffice links.
+
+        Anonymizes PII fields (except slug) and sets deleted_at timestamp.
+        """
+        repository = OrganizationRepository.from_session(session)
+
+        update_dict: dict[str, Any] = {}
+
+        # Anonymize PII fields but NOT slug (to keep backoffice links working)
+        pii_fields = ["name", "website", "customer_invoice_prefix"]
+        github_fields = ["bio", "company", "blog", "location", "twitter_username"]
+        for pii_field in pii_fields + github_fields:
+            value = getattr(organization, pii_field)
+            if value:
+                update_dict[pii_field] = anonymize_for_deletion(value)
+
+        if organization.email:
+            update_dict["email"] = anonymize_email_for_deletion(organization.email)
+
+        if organization.avatar_url:
+            # Anonymize by setting to Polar logo
+            update_dict["avatar_url"] = (
+                "https://avatars.githubusercontent.com/u/105373340?s=48&v=4"
+            )
+
+        if organization.details:
+            update_dict["details"] = {}
+
+        if organization.socials:
+            update_dict["socials"] = []
+
+        organization = await repository.update(organization, update_dict=update_dict)
+        await repository.soft_delete(organization)
+
+        log.info(
+            "organization.deleted",
+            organization_id=organization.id,
+            slug=organization.slug,
+        )
+
+        return organization
+
+    async def _delete_account(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Delete the Stripe account linked to an organization."""
+        if organization.account_id is None:
+            return
+
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_id(organization.account_id)
+
+        if account is None:
+            return
+
+        if account.stripe_id:
+            await account_service.delete_stripe_account(session, account)
+
+        organization.account_id = None
+        session.add(organization)
+
+        await account_service.delete(session, account)
+
+        log.info(
+            "organization.account_deleted",
+            organization_id=organization.id,
+            account_id=account.id,
+        )
+
+    async def _count_orders_by_organization(
+        self,
+        session: AsyncReadSession,
+        organization_id: UUID,
+    ) -> int:
+        """Count orders for all customers of this organization."""
+        statement = (
+            sql.select(sql.func.count(Order.id))
+            .join(Customer, Order.customer_id == Customer.id)
+            .where(
+                Customer.organization_id == organization_id,
+                Customer.deleted_at.is_(None),
+            )
+        )
+        result = await session.execute(statement)
+        return result.scalar() or 0
+
+    async def _count_active_subscriptions_by_organization(
+        self,
+        session: AsyncReadSession,
+        organization_id: UUID,
+    ) -> int:
+        """Count active subscriptions for all customers of this organization."""
+        statement = (
+            sql.select(sql.func.count(Subscription.id))
+            .join(Customer, Subscription.customer_id == Customer.id)
+            .where(
+                Customer.organization_id == organization_id,
+                Customer.deleted_at.is_(None),
+                Subscription.status.in_(SubscriptionStatus.active_statuses()),
+            )
+        )
+        result = await session.execute(statement)
+        return result.scalar() or 0
 
     async def add_user(
         self,

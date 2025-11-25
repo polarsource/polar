@@ -1687,6 +1687,7 @@ class TestSoftDeleteOrganization:
         assert result.bio != "Test bio"
 
         # Avatar should be set to Polar logo
+        assert result.avatar_url is not None
         assert "avatars.githubusercontent.com" in result.avatar_url
 
         # Should be soft deleted
@@ -1699,15 +1700,15 @@ class TestSoftDeleteOrganization:
         organization: Organization,
     ) -> None:
         """Soft delete clears details and socials."""
-        organization.details = {"about": "Test company"}  # type: ignore
+        organization.details = {"about": "Test company"}  # type: ignore[assignment]
         organization.socials = [
             {"platform": "twitter", "url": "https://twitter.com/test"}
-        ]  # type: ignore
+        ]
         await save_fixture(organization)
 
         result = await organization_service.soft_delete_organization(
             session, organization
         )
 
-        assert result.details == {}
+        assert result.details == {}  # type: ignore[comparison-overlap]
         assert result.socials == []

@@ -34,7 +34,9 @@ class TestCheckCanDelete:
         """User with active organization cannot be deleted."""
         result = await user_service.check_can_delete(session, user)
 
-        assert UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS in result.blocked_reasons
+        assert (
+            UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS in result.blocked_reasons
+        )
         assert len(result.blocking_organizations) == 1
         assert result.blocking_organizations[0].id == organization.id
         assert result.blocking_organizations[0].slug == organization.slug
@@ -103,7 +105,9 @@ class TestRequestDeletion:
         result = await user_service.request_deletion(session, user)
 
         assert result.deleted is False
-        assert UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS in result.blocked_reasons
+        assert (
+            UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS in result.blocked_reasons
+        )
         assert len(result.blocking_organizations) == 1
         assert user.deleted_at is None
 

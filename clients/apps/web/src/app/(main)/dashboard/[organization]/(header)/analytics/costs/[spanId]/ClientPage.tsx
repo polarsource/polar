@@ -1,6 +1,6 @@
 'use client'
 
-import Chart from '@/components/Chart/Chart'
+import { Chart } from '@/components/Chart/Chart'
 import { CustomerStatBox } from '@/components/Customer/CustomerStatBox'
 import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -160,7 +160,7 @@ export default function SpanDetailPage({
     (dateRange: { from: Date; to: Date }) => {
       const params = getSearchParams(dateRange, interval)
       router.push(
-        `/dashboard/${organization.slug}/analytics/spans/${spanId}?${params}`,
+        `/dashboard/${organization.slug}/analytics/costs/${spanId}?${params}`,
       )
     },
     [router, organization, spanId, interval],
@@ -173,7 +173,7 @@ export default function SpanDetailPage({
         newInterval,
       )
       router.push(
-        `/dashboard/${organization.slug}/analytics/spans/${spanId}?${params}`,
+        `/dashboard/${organization.slug}/analytics/costs/${spanId}?${params}`,
       )
     },
     [router, organization, spanId, startDate, endDate],
@@ -199,7 +199,7 @@ export default function SpanDetailPage({
 
   return (
     <DashboardBody
-      title="Span"
+      title="Costs"
       className="flex flex-col gap-y-12"
       wide
       contextViewPlacement="left"
@@ -215,7 +215,6 @@ export default function SpanDetailPage({
           onDateRangeChange={onDateRangeChange}
           onIntervalChange={onIntervalChange}
           selectedSpanId={spanId}
-          title="Spans (Root events)"
         />
       }
     >
@@ -234,7 +233,7 @@ export default function SpanDetailPage({
               {
                 key: 'average',
                 label: 'Avg',
-                color: '#8b5cf6',
+                color: '#10b981',
               },
               {
                 key: 'p50',
@@ -244,7 +243,7 @@ export default function SpanDetailPage({
               {
                 key: 'p95',
                 label: 'P95',
-                color: '#10b981',
+                color: '#eab308',
               },
               {
                 key: 'p99',
@@ -254,9 +253,9 @@ export default function SpanDetailPage({
             ]}
             xAxisKey="date"
             title="Costs"
-            height={300}
             showYAxis={true}
             yAxisFormatter={(value) => formatSubCentCurrency(value)}
+            loading={isFetching}
           />
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

@@ -99,7 +99,7 @@ export default function ProductPage({
             />
           </div>
         </div>
-        <div className="dark:border-polar-800 border border-gray-200">
+        <div className="dark:border-polar-700 border border-gray-200">
           <section className="grid grid-cols-1 [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-4">
             {products.data?.items.map((product) => (
               <ProductCard key={product.id} product={product} />
@@ -121,7 +121,7 @@ const ProductCard = ({ product }: { product: schemas['Product'] }) => {
       href={`/dashboard/${organization.slug}/catalogue/${product.id}`}
       className={twMerge(
         'relative flex h-96 flex-col justify-between gap-y-4 overflow-hidden rounded-none! bg-transparent p-12 dark:bg-transparent',
-        'dark:border-polar-800 border-t-0 border-r border-b border-l-0 border-gray-200 shadow-none',
+        'dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200 shadow-none',
         'dark:hover:text-polar-950 hover:text-gray-50',
       )}
       onMouseEnter={() => setIsHovered(true)}

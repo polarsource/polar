@@ -81,7 +81,7 @@ export const DashboardNavigation = () => {
   const { organization } = useContext(OrganizationContext)
 
   return (
-    <nav className="dark:border-polar-800 dark:divide-polar-800 grid grid-cols-6 divide-x divide-gray-200 border-b border-gray-200">
+    <nav className="dark:border-polar-700 dark:divide-polar-700 grid grid-cols-6 divide-x divide-gray-200 border-b border-gray-200">
       <div className="flex flex-row items-center justify-center px-16 py-8">
         <PolarLogotype size={64} />
       </div>

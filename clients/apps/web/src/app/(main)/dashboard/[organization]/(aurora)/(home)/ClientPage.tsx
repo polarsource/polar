@@ -19,7 +19,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
   })
 
   return (
-    <DashboardBody className="dark:divide-polar-800 gap-y-12 divide-y divide-gray-200">
+    <DashboardBody className="dark:divide-polar-700 gap-y-12 divide-y divide-gray-200">
       <section className="flex flex-col gap-y-12 p-24">
         <h3 className="text-2xl">Revenue</h3>
         <h1 className="font-mono text-9xl font-thin">

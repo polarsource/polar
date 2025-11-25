@@ -280,7 +280,7 @@
     --accent: var(--color-blue);
     --accent-foreground: var(--color-polar-50);
 
-    --destructive: var(--color-red-800);
+    --destructive: var(--color-red-500);
     --destructive-foreground: var(--color-red-500);
 
     --border: var(--color-polar-700);

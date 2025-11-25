@@ -1,6 +1,5 @@
 import { UpsellKey, useUpsell } from '@/hooks/upsell'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import { schemas } from '@polar-sh/client'
 import AvatarWrapper from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -9,15 +8,8 @@ import Link from 'next/link'
 import { useMemo, useRef, useState } from 'react'
 import { EventCostBadge } from '../Events/EventCostBadge'
 
-interface EventsUpsellProps {
-  organization: schemas['Organization']
-}
-
-export const EventsUpsell = ({ organization }: EventsUpsellProps) => {
-  const { isUpsellDisabled, disableUpsell } = useUpsell(
-    organization.id,
-    UpsellKey.COST_INSIGHTS,
-  )
+export const EventsUpsell = () => {
+  const { isUpsellDisabled, disableUpsell } = useUpsell(UpsellKey.COST_INSIGHTS)
 
   const [eventOffset, setEventOffset] = useState(() => 7)
   const y = useMotionValue(0)

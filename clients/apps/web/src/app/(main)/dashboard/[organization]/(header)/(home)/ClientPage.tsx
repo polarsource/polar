@@ -4,7 +4,6 @@ import LogoIcon from '@/components/Brand/LogoIcon'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import PaymentOnboardingStepper from '@/components/Onboarding/PaymentOnboardingStepper'
-import { EventsUpsell } from '@/components/Upsell/EventsUpsell'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
 import { MonthWidget } from '@/components/Widgets/MonthWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
@@ -135,7 +134,6 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
           <AccountWidget />
         </motion.div>
       </motion.div>
-      {!organization.feature_settings?.revops_enabled && <EventsUpsell />}
     </DashboardBody>
   )
 }

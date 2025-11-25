@@ -24,7 +24,7 @@ export const EventCostCreationGuideModal = ({
             event metadata.
           </p>
         </div>
-        <Well className="dark:bg-polar-900 rounded-lg bg-gray-100 p-4 text-sm">
+        <Well className="dark:bg-polar-800 rounded-lg bg-gray-100 p-4 text-sm">
           <SyntaxHighlighterClient
             lang="typescript"
             code={`import { Polar } from "@polar-sh/sdk";

@@ -266,3 +266,17 @@ export const useOrganizationReviewStatus = (
     enabled: enabled && !!id,
     refetchInterval,
   })
+
+export const useDeleteOrganization = () =>
+  useMutation({
+    mutationFn: (variables: { id: string }) => {
+      return api.DELETE('/v1/organizations/{id}', {
+        params: { path: { id: variables.id } },
+      })
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['organizations'],
+      })
+    },
+  })

@@ -175,9 +175,9 @@ export const Testamonial = ({
           />
         </div>
         <div className="flex flex-col gap-y-6">
-          <p className="dark:text-polar-50 flex flex-col gap-y-4 text-lg text-gray-950">
+          <span className="dark:text-polar-50 flex flex-col gap-y-4 text-lg text-gray-950">
             {text}
-          </p>
+          </span>
         </div>
       </div>
       <div className="flex flex-col">

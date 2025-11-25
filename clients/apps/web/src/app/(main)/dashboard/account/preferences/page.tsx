@@ -1,3 +1,4 @@
+import AccountDeleteSettings from '@/components/Settings/AccountDeleteSettings'
 import AuthenticationSettings from '@/components/Settings/AuthenticationSettings'
 import GeneralSettings from '@/components/Settings/GeneralSettings'
 import { NotificationRecipientsSettings } from '@/components/Settings/NotificationRecipientsSettings'
@@ -32,6 +33,13 @@ export default function Page() {
           description="Manage the devices which receive notifications"
         />
         <NotificationRecipientsSettings />
+      </Section>
+      <Section>
+        <SectionDescription
+          title="Danger Zone"
+          description="Irreversible actions for your account"
+        />
+        <AccountDeleteSettings />
       </Section>
     </>
   )

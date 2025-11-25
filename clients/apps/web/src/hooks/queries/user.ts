@@ -36,3 +36,14 @@ export const useCreateIdentityVerification = () =>
       return api.POST('/v1/users/me/identity-verification')
     },
   })
+
+export const useDeleteUser = () =>
+  useMutation({
+    mutationFn: () => {
+      return api.DELETE('/v1/users/me')
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      // Clear all queries since user is being deleted
+      getQueryClient().clear()
+    },
+  })

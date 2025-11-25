@@ -32,6 +32,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
@@ -262,13 +263,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
               <DropdownMenuItem onClick={handleCopyDiscountId(discount)}>
                 Copy Discount ID
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => {
                   setDiscountToDelete(discount)
                   toggleDiscountModal()
                 }}
+                destructive
               >
-                Delete
+                Delete Discount
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -178,11 +178,18 @@ export const ProductListItem = ({
                   Integrate Checkout
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleContextMenuCallback(showModal)}
-                >
-                  Archive Product
-                </DropdownMenuItem>
+                {product.is_archived ? null : (
+                  <DropdownMenuItem
+                    onClick={handleContextMenuCallback(() => {
+                      router.push(
+                        `/dashboard/${organization.slug}/products/${product.id}/edit`,
+                      )
+                    })}
+                  >
+                    Edit Product
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuItem
                   onClick={handleContextMenuCallback(() => {
                     router.push(
@@ -191,6 +198,13 @@ export const ProductListItem = ({
                   })}
                 >
                   Duplicate Product
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  destructive
+                  onClick={handleContextMenuCallback(showModal)}
+                >
+                  Archive Product
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -21,6 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useCallback } from 'react'
@@ -119,9 +120,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
                   Copy ID
                 </DropdownMenuItem>
                 {benefit?.deletable && (
-                  <DropdownMenuItem onClick={toggleDelete}>
-                    Delete
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem destructive onClick={toggleDelete}>
+                      Delete Benefit
+                    </DropdownMenuItem>
+                  </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>

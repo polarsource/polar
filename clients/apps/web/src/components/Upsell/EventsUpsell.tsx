@@ -1,3 +1,4 @@
+import { UpsellKey, useUpsell } from '@/hooks/upsell'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import AvatarWrapper from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -8,6 +9,8 @@ import { useMemo, useRef, useState } from 'react'
 import { EventCostBadge } from '../Events/EventCostBadge'
 
 export const EventsUpsell = () => {
+  const { isUpsellDisabled, disableUpsell } = useUpsell(UpsellKey.COST_INSIGHTS)
+
   const [eventOffset, setEventOffset] = useState(() => 7)
   const y = useMotionValue(0)
   const previousClosestIndexRef = useRef<number | null>(null)
@@ -55,8 +58,12 @@ export const EventsUpsell = () => {
     return profit
   }, [eventOffset])
 
+  if (isUpsellDisabled) {
+    return null
+  }
+
   return (
-    <div className="dark:bg-polar-800 flex w-full flex-col gap-y-6 overflow-hidden rounded-4xl bg-gray-50 p-2 xl:flex-row">
+    <div className="dark:bg-polar-800 relative flex w-full flex-col gap-y-6 overflow-hidden rounded-4xl bg-gray-50 p-2 xl:flex-row">
       <div className="flex w-full flex-1 flex-col gap-y-8 p-6 md:p-12">
         <span className="bg-blue w-fit rounded-full px-3 py-1 text-xs font-medium text-white">
           Now in Beta
@@ -82,6 +89,13 @@ export const EventsUpsell = () => {
               <ArrowOutwardOutlined fontSize="inherit" />
             </Button>
           </Link>
+          <Button
+            variant="secondary"
+            className="rounded-full"
+            onClick={disableUpsell}
+          >
+            Dismiss
+          </Button>
         </div>
       </div>
       <div className="dark:bg-polar-900 flex w-full flex-1 flex-col gap-y-4 rounded-3xl bg-white p-8">

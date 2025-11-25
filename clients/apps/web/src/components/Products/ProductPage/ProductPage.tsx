@@ -27,7 +27,6 @@ import { DashboardBody } from '../../Layout/DashboardLayout'
 import { ProductThumbnail } from '../ProductThumbnail'
 import { ProductMetricsView } from './ProductMetricsView'
 import { ProductOverview } from './ProductOverview'
-import { ProductPageContextView } from './ProductPageContextView'
 
 const ProductTypeDisplayColor: Record<string, string> = {
   subscription: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
@@ -144,74 +143,84 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
           </div>
         }
         header={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="secondary">
-                <MoreVert fontSize="small" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  if (typeof navigator !== 'undefined') {
-                    navigator.clipboard.writeText(product.id)
+          <div className="flex flex-row items-center justify-between gap-2">
+            {product.is_archived ? null : (
+              <div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    router.push(
+                      `/dashboard/${organization.slug}/products/${product.id}/edit`,
+                    )
+                  }}
+                >
+                  Edit Product
+                </Button>
+              </div>
+            )}
+            <div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="secondary">
+                    <MoreVert fontSize="small" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (typeof navigator !== 'undefined') {
+                        navigator.clipboard.writeText(product.id)
 
-                    toast({
-                      title: 'Product ID Copied',
-                      description: 'Product ID copied to clipboard',
-                    })
-                  }
-                }}
-              >
-                Copy Product ID
-              </DropdownMenuItem>
-              {!product.is_archived && (
-                <>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      router.push(
-                        `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
-                      )
+                        toast({
+                          title: 'Product ID Copied',
+                          description: 'Product ID copied to clipboard',
+                        })
+                      }
                     }}
                   >
-                    Integrate Checkout
+                    Copy Product ID
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={showArchiveModal}>
-                    Archive Product
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      router.push(
-                        `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
-                      )
-                    }}
-                  >
-                    Duplicate Product
-                  </DropdownMenuItem>
-                </>
-              )}
-              {product.is_archived && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={showUnarchiveModal}>
-                    Unarchive Product
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  {!product.is_archived && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          router.push(
+                            `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
+                          )
+                        }}
+                      >
+                        Integrate Checkout
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => {
+                          router.push(
+                            `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
+                          )
+                        }}
+                      >
+                        Duplicate Product
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem destructive onClick={showArchiveModal}>
+                        Archive Product
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {product.is_archived && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={showUnarchiveModal}>
+                        Unarchive Product
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         }
-        contextViewClassName="hidden md:block"
-        contextView={
-          product.is_archived ? undefined : (
-            <ProductPageContextView
-              organization={organization}
-              product={product}
-            />
-          )
-        }
-        wide
       >
         <TabsList className="pb-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>

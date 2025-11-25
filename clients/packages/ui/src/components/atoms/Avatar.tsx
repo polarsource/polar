@@ -61,10 +61,11 @@ const Avatar = ({
   return (
     <div
       className={cn(
-        'dark:bg-polar-900 dark:border-polar-700 relative z-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-50 text-sm',
+        'dark:bg-polar-900 dark:border-polar-700 dark:text-polar-500 relative z-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-50 text-[10px] text-gray-700',
         className,
       )}
     >
+      <span className="absolute inset-0 z-2 rounded-full ring ring-black/10 ring-inset dark:ring-white/10"></span>
       {!avatar_url || showInitials ? (
         <div className="absolute inset-0 flex items-center justify-center bg-transparent">
           <span>{initials}</span>
@@ -99,7 +100,11 @@ const AvatarWrapper = (props: ComponentProps<typeof Avatar>) => {
 export default AvatarWrapper
 
 const getInitials = (fullName: string) => {
-  const allNames = fullName.trim().split(' ')
+  const allNames = fullName
+    .replace(/[^a-zA-Z ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
   const initials = allNames.reduce((acc, curr, index) => {
     if (index === 0 || index === allNames.length - 1) {
       acc = `${acc}${curr.charAt(0).toUpperCase()}`

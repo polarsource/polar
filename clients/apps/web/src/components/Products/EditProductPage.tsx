@@ -4,30 +4,27 @@ import {
   useUpdateProductBenefits,
 } from '@/hooks/queries'
 import { setProductValidationErrors } from '@/utils/api/errors'
+import { ProductEditOrCreateForm } from '@/utils/product'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { getStatusRedirect } from '../../Toast/utils'
-import ProductBenefitsForm from '../ProductBenefitsForm'
-import ProductForm, { ProductFullMediasMixin } from '../ProductForm/ProductForm'
+import { DashboardBody } from '../Layout/DashboardLayout'
+import { getStatusRedirect } from '../Toast/utils'
+import ProductBenefitsForm from './ProductBenefitsForm'
+import ProductForm from './ProductForm/ProductForm'
 
-type ProductUpdateForm = Omit<schemas['ProductUpdate'], 'metadata'> &
-  ProductFullMediasMixin & {
-    metadata: { key: string; value: string | number | boolean }[]
-  }
-
-export interface ProductPageContextViewProps {
+export interface EditProductPageProps {
   organization: schemas['Organization']
   product: schemas['Product']
 }
 
-export const ProductPageContextView = ({
+export const EditProductPage = ({
   organization,
   product,
-}: ProductPageContextViewProps) => {
+}: EditProductPageProps) => {
   const router = useRouter()
   const benefits = useBenefits(organization.id, {
     limit: 200,
@@ -41,7 +38,7 @@ export const ProductPageContextView = ({
     schemas['Benefit']['id'][]
   >(product.benefits.map((benefit) => benefit.id) ?? [])
 
-  const form = useForm<ProductUpdateForm>({
+  const form = useForm<ProductEditOrCreateForm>({
     defaultValues: {
       ...product,
       medias: product.medias.map((media) => media.id),
@@ -52,21 +49,21 @@ export const ProductPageContextView = ({
       })),
     },
   })
-
   const { handleSubmit, setError } = form
 
   const updateProduct = useUpdateProduct(organization)
   const updateBenefits = useUpdateProductBenefits(organization)
 
   const onSubmit = useCallback(
-    async (productUpdate: ProductUpdateForm) => {
-      const { full_medias, ...productUpdateRest } = productUpdate
-      const { error } = await updateProduct.mutateAsync({
+    async (productUpdate: ProductEditOrCreateForm) => {
+      const { full_medias, metadata, ...productUpdateRest } = productUpdate
+
+      const { data: updatedProduct, error } = await updateProduct.mutateAsync({
         id: product.id,
         body: {
           ...productUpdateRest,
           medias: full_medias.map((media) => media.id),
-          metadata: productUpdateRest.metadata?.reduce(
+          metadata: metadata.reduce(
             (acc, { key, value }) => ({ ...acc, [key]: value }),
             {},
           ),
@@ -96,15 +93,15 @@ export const ProductPageContextView = ({
 
       router.push(
         getStatusRedirect(
-          `/dashboard/${organization.slug}/products`,
+          `/dashboard/${organization.slug}/products/${product.id}`,
           'Product Updated',
-          `Product ${product.name} updated successfully`,
+          `Product ${updatedProduct.name} was updated successfully`,
         ),
       )
     },
     [
-      organization,
       product,
+      organization,
       enabledBenefitIds,
       updateProduct,
       updateBenefits,
@@ -163,66 +160,61 @@ export const ProductPageContextView = ({
   )
 
   return (
-    <div className="flex h-full flex-col justify-between pt-4">
-      <div className="flex h-full flex-col overflow-y-auto">
-        <div className="dark:divide-polar-700 divide-y">
-          <Form {...form}>
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="flex flex-col gap-y-6"
-            >
-              <ProductForm
-                organization={organization}
-                update={true}
-                compact={true}
-              />
-            </form>
-          </Form>
-          <ProductBenefitsForm
-            organization={organization}
-            organizationBenefits={organizationBenefits.filter(
-              (benefit) =>
-                // Hide not selectable benefits unless they are already enabled
-                benefit.selectable ||
-                enabledBenefits.some((b) => b.id === benefit.id),
-            )}
-            benefits={enabledBenefits}
-            onSelectBenefit={onSelectBenefit}
-            onRemoveBenefit={onRemoveBenefit}
-            onReorderBenefits={onReorderBenefits}
-            compact={true}
-          />
-        </div>
-        {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (
-          <div className="mx-8 mb-2 rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
-            Existing customers will immediately{' '}
-            {benefitsAdded.length > 0 && (
-              <>
-                get access to{' '}
-                {benefitsAdded.map((benefit) => benefit.description).join(', ')}
-              </>
-            )}
-            {benefitsRemoved.length > 0 && (
-              <>
-                {benefitsAdded.length > 0 && ' and '}lose access to{' '}
-                {benefitsRemoved
-                  .map((benefit) => benefit.description)
-                  .join(', ')}
-              </>
-            )}
-            .
-          </div>
-        )}
-        <div className="flex flex-row items-center gap-4 p-8">
-          <Button
-            onClick={handleSubmit(onSubmit)}
-            loading={updateProduct.isPending || updateBenefits.isPending}
-            disabled={updateProduct.isPending || updateBenefits.isPending}
+    <DashboardBody
+      title="Edit Product"
+      wrapperClassName="max-w-(--breakpoint-md)!"
+      className="gap-y-16"
+    >
+      <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-200 rounded-4xl border border-gray-200">
+        <Form {...form}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-y-6"
           >
-            Save Product
-          </Button>
-        </div>
+            <ProductForm organization={organization} update={true} />
+          </form>
+        </Form>
+        <ProductBenefitsForm
+          organization={organization}
+          organizationBenefits={organizationBenefits.filter(
+            (benefit) =>
+              // Hide not selectable benefits unless they are already enabled
+              benefit.selectable ||
+              enabledBenefits.some((b) => b.id === benefit.id),
+          )}
+          benefits={enabledBenefits}
+          onSelectBenefit={onSelectBenefit}
+          onRemoveBenefit={onRemoveBenefit}
+          onReorderBenefits={onReorderBenefits}
+        />
       </div>
-    </div>
+      {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (
+        <div className="rounded-2xl bg-yellow-50 p-4 text-sm text-yellow-500 dark:bg-yellow-950">
+          Existing customers will immediately{' '}
+          {benefitsAdded.length > 0 && (
+            <>
+              get access to{' '}
+              {benefitsAdded.map((benefit) => benefit.description).join(', ')}
+            </>
+          )}
+          {benefitsRemoved.length > 0 && (
+            <>
+              {benefitsAdded.length > 0 && ' and '}lose access to{' '}
+              {benefitsRemoved.map((benefit) => benefit.description).join(', ')}
+            </>
+          )}
+          .
+        </div>
+      )}
+      <div className="flex flex-row items-center gap-2 pb-12">
+        <Button
+          onClick={handleSubmit(onSubmit)}
+          loading={updateProduct.isPending || updateBenefits.isPending}
+          disabled={updateProduct.isPending || updateBenefits.isPending}
+        >
+          Update Product
+        </Button>
+      </div>
+    </DashboardBody>
   )
 }

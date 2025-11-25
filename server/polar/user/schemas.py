@@ -1,10 +1,11 @@
 import hashlib
 import hmac
 import uuid
+from enum import StrEnum
 from typing import Annotated, Literal
 
 from fastapi import Depends
-from pydantic import UUID4, EmailStr, computed_field
+from pydantic import UUID4, EmailStr, Field, computed_field
 
 from polar.auth.scope import Scope
 from polar.config import settings
@@ -111,3 +112,33 @@ async def get_signup_attribution(
 UserSignupAttributionQuery = Annotated[
     UserSignupAttribution | None, Depends(get_signup_attribution)
 ]
+
+
+class UserDeletionBlockedReason(StrEnum):
+    """Reasons why a user account cannot be immediately deleted."""
+
+    HAS_ACTIVE_ORGANIZATIONS = "has_active_organizations"
+
+
+class BlockingOrganization(Schema):
+    """Organization that is blocking user deletion."""
+
+    id: UUID4
+    slug: str
+    name: str
+
+
+class UserDeletionResponse(Schema):
+    """Response for user deletion request."""
+
+    deleted: bool = Field(
+        description="Whether the user account was immediately deleted"
+    )
+    blocked_reasons: list[UserDeletionBlockedReason] = Field(
+        default_factory=list,
+        description="Reasons why immediate deletion is blocked",
+    )
+    blocking_organizations: list[BlockingOrganization] = Field(
+        default_factory=list,
+        description="Organizations that must be deleted first",
+    )

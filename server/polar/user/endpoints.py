@@ -14,7 +14,12 @@ from polar.routing import APIRouter
 from polar.user.oauth_service import oauth_account_service
 from polar.user.service import user as user_service
 
-from .schemas import UserIdentityVerification, UserRead, UserScopes
+from .schemas import (
+    UserDeletionResponse,
+    UserIdentityVerification,
+    UserRead,
+    UserScopes,
+)
 
 router = APIRouter(prefix="/users", tags=["users", APITag.private])
 
@@ -45,6 +50,34 @@ async def create_identity_verification(
     return await user_service.create_identity_verification(
         session, user=auth_subject.subject
     )
+
+
+@router.delete(
+    "/me",
+    response_model=UserDeletionResponse,
+    responses={
+        200: {"description": "Deletion result"},
+    },
+)
+async def delete_authenticated_user(
+    auth_subject: WebUserWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> UserDeletionResponse:
+    """
+    Delete the authenticated user account.
+
+    A user can only be deleted if all organizations they are members of have been
+    deleted first. If the user has active organizations, the response will include
+    the list of organizations that must be deleted before the user account can be
+    removed.
+
+    When deleted:
+    - User's email is anonymized
+    - User's avatar and metadata are cleared
+    - User's OAuth accounts are deleted (cascade)
+    - User's Account (payout account) is deleted if present
+    """
+    return await user_service.request_deletion(session, auth_subject.subject)
 
 
 @router.delete(

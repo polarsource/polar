@@ -160,7 +160,7 @@ const CustomerHeader = ({
             Edit Customer
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={showDeleteCustomerModal}>
+          <DropdownMenuItem destructive onClick={showDeleteCustomerModal}>
             Delete Customer
           </DropdownMenuItem>
         </DropdownMenuContent>

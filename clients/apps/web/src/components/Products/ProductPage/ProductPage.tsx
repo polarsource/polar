@@ -193,9 +193,6 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                         Integrate Checkout
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={showArchiveModal}>
-                        Archive Product
-                      </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => {
                           router.push(
@@ -204,6 +201,10 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                         }}
                       >
                         Duplicate Product
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem destructive onClick={showArchiveModal}>
+                        Archive Product
                       </DropdownMenuItem>
                     </>
                   )}

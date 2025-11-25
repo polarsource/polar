@@ -189,11 +189,7 @@ export const ProductListItem = ({
                     Edit Product
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem
-                  onClick={handleContextMenuCallback(showModal)}
-                >
-                  Archive Product
-                </DropdownMenuItem>
+
                 <DropdownMenuItem
                   onClick={handleContextMenuCallback(() => {
                     router.push(
@@ -202,6 +198,13 @@ export const ProductListItem = ({
                   })}
                 >
                   Duplicate Product
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  destructive
+                  onClick={handleContextMenuCallback(showModal)}
+                >
+                  Archive Product
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

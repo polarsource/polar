@@ -221,7 +221,7 @@ class Event(Model, MetadataMixin):
                     self.user_metadata, self.event_types.label_property_selector
                 )
                 if dynamic_label:
-                    return f"{base_label} → {dynamic_label}"
+                    return dynamic_label
             return base_label
         return self.name
 

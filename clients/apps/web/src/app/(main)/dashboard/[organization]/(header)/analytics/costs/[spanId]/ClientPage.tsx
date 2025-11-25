@@ -2,7 +2,6 @@
 
 import { Chart } from '@/components/Chart/Chart'
 import { CustomerStatBox } from '@/components/Customer/CustomerStatBox'
-import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -15,6 +14,7 @@ import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { endOfToday, format, subMonths } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
@@ -117,11 +117,13 @@ export default function SpanDetailPage({
     const totalOccurrences = stat.occurrences || 0
     const totalCost = parseFloat(stat.totals?.['_cost_amount'] || '0')
     const averageCost = parseFloat(stat.averages?.['_cost_amount'] || '0')
+    const p99Cost = parseFloat(stat.p99?.['_cost_amount'] || '0')
 
     return {
       totalOccurrences,
       totalCost,
       averageCost,
+      p99Cost,
     }
   }, [hierarchyStats])
 
@@ -195,6 +197,11 @@ export default function SpanDetailPage({
         </div>
       </DashboardBody>
     )
+  }
+
+  if (!eventType) {
+    // loader
+    return null
   }
 
   return (
@@ -282,7 +289,31 @@ export default function SpanDetailPage({
             </h3>
           </div>
           <div className="flex flex-col gap-y-3">
-            <Events events={events} organization={organization} />
+            <div className="dark:border-polar-700 w-full border-collapse overflow-hidden rounded-xl border border-gray-200">
+              <table className="w-full table-auto border-collapse rounded-lg">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody className="dark:divide-polar-700 divide-y divide-gray-200">
+                  {events.map((event) => (
+                    <NewEvent
+                      key={event.id}
+                      event={event}
+                      eventType={eventType}
+                      organization={organization}
+                      averageCost={costMetrics.averageCost}
+                      p99Cost={costMetrics.p99Cost}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* <Events events={events} organization={organization} /> */}
             {hasNextPage && (
               <Button
                 className="self-start"
@@ -324,5 +355,99 @@ export default function SpanDetailPage({
         }
       />
     </DashboardBody>
+  )
+}
+
+import { EventCustomer } from '@/components/Events/EventCustomer'
+
+function getEventCostDeviation(
+  eventCost: number,
+  averageCost: number,
+  p99Cost: number,
+) {
+  // Calculate percentage deviation from average
+  const deviation = ((eventCost - averageCost) / averageCost) * 100
+
+  // Determine color based on position in range
+  let colorClass: string
+
+  if (eventCost <= averageCost) {
+    colorClass = 'text-gray-500'
+  } else if (eventCost >= p99Cost) {
+    colorClass = 'text-red-500'
+  } else {
+    // Interpolate between average and p99
+    const range = p99Cost - averageCost
+    const position = (eventCost - averageCost) / range
+
+    if (position < 0.5) {
+      // First half: amber-300
+      colorClass = 'text-amber-300'
+    } else if (position < 0.85) {
+      // Second half up to 85%: orange-400
+      colorClass = 'text-orange-400'
+    } else {
+      // Final 15% before p99: red-500
+      colorClass = 'text-red-500'
+    }
+  }
+
+  return {
+    deviation: deviation.toFixed(2), // e.g., "23.5"
+    deviationFormatted: `${deviation > 0 ? '+' : ''}${deviation.toFixed(2)}%`,
+    colorClass,
+  }
+}
+
+function NewEvent({
+  event,
+  eventType,
+  organization,
+  averageCost,
+  p99Cost,
+}: {
+  event: schemas['Event']
+  eventType: schemas['EventType']
+  organization: schemas['Organization']
+  averageCost: number
+  p99Cost: number
+}) {
+  const costMetadata = (event.metadata as { _cost: { amount: string } })._cost
+  const parsedCost = costMetadata ? Number(costMetadata.amount) : 0
+  const mappedCost = costMetadata
+    ? getEventCostDeviation(parsedCost, averageCost, p99Cost)
+    : null
+
+  return (
+    <tr>
+      <td className="p-2">
+        <h4 className="text-sm font-medium">{event.label}</h4>
+      </td>
+
+      <td className="p-2">
+        <EventCustomer event={event} />
+      </td>
+
+      <td className="dark:text-polar-500 p-2 text-sm text-gray-600">
+        <FormattedDateTime datetime={event.timestamp} resolution="time" />
+      </td>
+
+      <td className="p-2 text-left text-sm tabular-nums">
+        {mappedCost && (
+          <div className="flex w-full flex-row items-center justify-between gap-x-2">
+            <span>
+              {(
+                event.metadata as {
+                  _cost: { amount: string; currency: string }
+                }
+              )._cost && formatSubCentCurrency(parsedCost)}
+            </span>
+            <span className={mappedCost.colorClass}>
+              {mappedCost.deviationFormatted}
+            </span>
+          </div>
+        )}
+      </td>
+    </tr>
   )
 }

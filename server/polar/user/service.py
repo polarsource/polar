@@ -1,16 +1,28 @@
+from typing import Any
 from uuid import UUID
 
 import stripe as stripe_lib
+import structlog
 
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.kit.anonymization import anonymize_email_for_deletion
 from polar.models import User
 from polar.models.user import IdentityVerificationStatus
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
 from .repository import UserRepository
-from .schemas import UserIdentityVerification, UserSignupAttribution
+from .schemas import (
+    BlockingOrganization,
+    UserDeletionBlockedReason,
+    UserDeletionResponse,
+    UserIdentityVerification,
+    UserSignupAttribution,
+)
+
+log = structlog.get_logger()
 
 
 class UserError(PolarError): ...
@@ -178,6 +190,96 @@ class UserService:
                 "identity_verification_status": IdentityVerificationStatus.failed
             },
         )
+
+    async def check_can_delete(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> UserDeletionResponse:
+        """Check if a user can be deleted.
+
+        A user can be deleted if all organizations they are members of
+        are soft-deleted (deleted_at is not None).
+        """
+        blocked_reasons: list[UserDeletionBlockedReason] = []
+        blocking_organizations: list[BlockingOrganization] = []
+
+        # Get all organizations the user is a member of (excluding deleted orgs)
+        org_repository = OrganizationRepository.from_session(session)
+        organizations = await org_repository.get_all_by_user(user.id)
+
+        if organizations:
+            blocked_reasons.append(UserDeletionBlockedReason.HAS_ACTIVE_ORGANIZATIONS)
+            for org in organizations:
+                blocking_organizations.append(
+                    BlockingOrganization(id=org.id, slug=org.slug, name=org.name)
+                )
+
+        return UserDeletionResponse(
+            deleted=False,
+            blocked_reasons=blocked_reasons,
+            blocking_organizations=blocking_organizations,
+        )
+
+    async def request_deletion(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> UserDeletionResponse:
+        """Request deletion of the user account.
+
+        Flow:
+        1. Check if user has any active organizations -> block if yes
+        2. Soft delete the user
+
+        Note: The user's Account (payout account) is not deleted here.
+        Accounts are tied to organizations and should be deleted when the
+        organization is deleted, not when the user account is deleted.
+        """
+        check_result = await self.check_can_delete(session, user)
+
+        if check_result.blocked_reasons:
+            return check_result
+
+        # Soft delete the user
+        await self.soft_delete_user(session, user)
+
+        return UserDeletionResponse(
+            deleted=True,
+            blocked_reasons=[],
+            blocking_organizations=[],
+        )
+
+    async def soft_delete_user(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> User:
+        """Soft-delete a user, anonymizing PII fields."""
+        repository = UserRepository.from_session(session)
+
+        update_dict: dict[str, Any] = {}
+
+        # Anonymize email
+        update_dict["email"] = anonymize_email_for_deletion(user.email)
+
+        # Clear avatar
+        if user.avatar_url:
+            update_dict["avatar_url"] = None
+
+        # Clear metadata
+        if user.meta:
+            update_dict["meta"] = {}
+
+        user = await repository.update(user, update_dict=update_dict)
+        await repository.soft_delete(user)
+
+        log.info(
+            "user.deleted",
+            user_id=user.id,
+        )
+
+        return user
 
 
 user = UserService()

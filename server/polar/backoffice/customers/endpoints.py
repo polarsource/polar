@@ -17,8 +17,10 @@ from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.sorting import SubscriptionSortProperty
+from polar.wallet.service import wallet as wallet_service
 
 from ..components import button, datatable, description_list, modal
+from ..formatters import currency
 from ..layout import layout
 from ..orders.components import orders_datatable
 from .components import customers_datatable, email_verified_badge
@@ -132,6 +134,11 @@ async def get(
         .limit(50)
     )
     orders = await order_repository.get_all(orders_statement)
+
+    # Get credit balance
+    credit_balance = await wallet_service.get_billing_wallet_balance(
+        session, customer, "usd"
+    )
 
     with layout(
         request,
@@ -265,6 +272,20 @@ async def get(
                                     text("Email Verified:")
                                 with email_verified_badge(customer.email_verified):
                                     pass
+
+                # Credit Balance
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with tag.div(classes="card-body"):
+                        with tag.h2(classes="card-title"):
+                            text("Credit Balance")
+                        with tag.div(classes="flex items-center gap-2"):
+                            with tag.span(classes="font-semibold"):
+                                text("Available Balance:")
+                            with tag.span(
+                                classes="text-lg"
+                                + (" text-success" if credit_balance > 0 else "")
+                            ):
+                                text(currency(credit_balance, "usd"))
 
             # Subscriptions Section
             with tag.div(classes="mt-8"):

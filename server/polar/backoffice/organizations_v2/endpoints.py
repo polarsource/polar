@@ -57,7 +57,7 @@ logger = structlog.getLogger(__name__)
 async def list_organizations(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
-    status: OrganizationStatus | None = Query(None),
+    status: str | None = Query(None),
     q: str | None = Query(None),
     sort: str = Query("priority"),
     direction: str = Query("asc"),
@@ -93,6 +93,21 @@ async def list_organizations(
     has_appeal = has_appeal if has_appeal else None
     days_in_status_int = int(days_in_status) if days_in_status else None
 
+    # Parse status filter
+    status_filter: OrganizationStatus | None = None
+    if status == "active":
+        status_filter = OrganizationStatus.ACTIVE
+    elif status == "denied":
+        status_filter = OrganizationStatus.DENIED
+    elif status == "initial_review":
+        status_filter = OrganizationStatus.INITIAL_REVIEW
+    elif status == "ongoing_review":
+        status_filter = OrganizationStatus.ONGOING_REVIEW
+    elif status == "created":
+        status_filter = OrganizationStatus.CREATED
+    elif status == "onboarding_started":
+        status_filter = OrganizationStatus.ONBOARDING_STARTED
+
     # Build query
     stmt = select(Organization).options(
         joinedload(Organization.account),
@@ -100,8 +115,8 @@ async def list_organizations(
     )
 
     # Apply filters
-    if status:
-        stmt = stmt.where(Organization.status == status)
+    if status_filter:
+        stmt = stmt.where(Organization.status == status_filter)
     else:
         # By default, exclude denied organizations
         stmt = stmt.where(Organization.status != OrganizationStatus.DENIED)
@@ -249,7 +264,7 @@ async def list_organizations(
         with list_view.render_table_only(
             request,
             organizations,
-            status,
+            status_filter,
             status_counts,
             page,
             has_more,
@@ -267,7 +282,7 @@ async def list_organizations(
             with list_view.render(
                 request,
                 organizations,
-                status,
+                status_filter,
                 status_counts,
                 page,
                 has_more,

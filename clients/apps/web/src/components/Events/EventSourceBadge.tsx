@@ -6,7 +6,7 @@ const getEventSourceStyle = (source: schemas['Event']['source']) => {
     case 'system':
       return 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950 dark:text-indigo-500'
     case 'user':
-      return 'text-amber-500 bg-amber-50 dark:bg-amber-950 dark:text-amber-500'
+      return 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-500'
     default:
       return ''
   }

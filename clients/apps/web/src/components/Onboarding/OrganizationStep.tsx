@@ -151,13 +151,15 @@ export const OrganizationStep = ({
           <div className="flex flex-col items-center gap-y-4">
             <h1 className="text-3xl">
               {hasExistingOrg
-                ? 'Create a new Organization'
-                : "Let's get you onboarded"}
+                ? 'Create a new organization'
+                : "Let's get you started"}
             </h1>
             <p className="dark:text-polar-400 text-lg text-gray-600">
-              {hasExistingOrg
-                ? 'Follow the instructions below to create a new Organization'
-                : 'Get up to speed with an Organization, Product & Checkout Session'}
+              {hasExistingOrg ? (
+                'Follow the instructions below to create a new organization'
+              ) : (
+                <>You&rsquo;ll be up and running in no time</>
+              )}
             </p>
           </div>
         </FadeUp>
@@ -213,51 +215,49 @@ export const OrganizationStep = ({
 
                 <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
                   {/* Simple Product Restrictions */}
-                  <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-3 rounded-lg border border-gray-200 bg-white p-4">
-                    <div className="flex flex-col gap-y-4 text-sm">
-                      <div className="flex flex-col gap-y-2">
-                        <p className="font-medium">Supported Usecases</p>
-                        <p className="dark:text-polar-500 text-sm text-gray-500">
-                          SaaS subscriptions, digital downloads, software
-                          licenses, online courses, and other purely digital
-                          products.
-                        </p>
-                      </div>
+                  <div className="flex flex-col gap-y-4 text-sm">
+                    <div className="flex flex-col gap-y-2">
+                      <p className="font-medium">Supported Usecases</p>
+                      <p className="dark:text-polar-500 text-sm text-gray-500">
+                        SaaS subscriptions, digital downloads, software
+                        licenses, online courses, and other purely digital
+                        products.
+                      </p>
+                    </div>
 
-                      <div className="flex flex-col gap-y-2">
-                        <p className="font-medium">Prohibited Usecases</p>
-                        <ul className="dark:text-polar-500 space-y-1 text-sm text-gray-500">
-                          <li>
-                            • Physical goods or products requiring shipping
-                          </li>
-                          <li>
-                            • Human services (custom development, design and
-                            consultancy)
-                          </li>
-                          <li>• Marketplaces</li>
-                          <li>
-                            • Anything in our list of{' '}
-                            <a
-                              href="https://polar.sh/docs/merchant-of-record/acceptable-use"
-                              className="text-blue-500 underline dark:text-blue-400"
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              prohibited products
-                            </a>
-                          </li>
-                        </ul>
-                      </div>
+                    <div className="flex flex-col gap-y-2">
+                      <p className="font-medium">Prohibited Usecases</p>
+                      <ul className="dark:text-polar-500 space-y-1 text-sm text-gray-500">
+                        <li>• Physical goods or products requiring shipping</li>
+                        <li>
+                          • Human services (custom development, design and
+                          consultancy)
+                        </li>
+                        <li>• Marketplaces</li>
+                        <li>
+                          • Anything in our list of{' '}
+                          <a
+                            href="https://polar.sh/docs/merchant-of-record/acceptable-use"
+                            className="text-blue-500 underline dark:text-blue-400"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            prohibited products
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
 
-                      <div className="dark:border-polar-700 border-t border-gray-200 pt-4">
-                        <p className="dark:text-polar-500 text-xs text-gray-500">
-                          Transactions that violate our policy will be canceled
-                          and refunded.
-                        </p>
-                      </div>
+                    <div className="dark:border-polar-700 border-t border-gray-200 pt-4">
+                      <p className="dark:text-polar-500 text-xs text-gray-500">
+                        Transactions that violate our policy will be canceled
+                        and refunded.
+                      </p>
                     </div>
                   </div>
+                </FadeUp>
 
+                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
                   <FormField
                     control={control}
                     name="terms"
@@ -267,7 +267,7 @@ export const OrganizationStep = ({
                     render={({ field }) => {
                       return (
                         <FormItem>
-                          <div className="dark:border-polar-700 dark:bg-polar-900 flex flex-row items-start gap-x-3 rounded-lg border border-gray-200 bg-white p-4">
+                          <div className="flex flex-row items-start gap-x-3">
                             <Checkbox
                               id="terms"
                               checked={field.value}

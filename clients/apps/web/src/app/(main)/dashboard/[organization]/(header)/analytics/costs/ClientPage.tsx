@@ -102,7 +102,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
   const onDateRangeChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
       const params = getSearchParams(dateRange, interval)
-      router.push(`/dashboard/${organization.slug}/analytics/spans?${params}`)
+      router.push(`/dashboard/${organization.slug}/analytics/costs?${params}`)
     },
     [router, organization, interval],
   )
@@ -113,7 +113,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
         { from: startDate, to: endDate },
         newInterval,
       )
-      router.push(`/dashboard/${organization.slug}/analytics/spans?${params}`)
+      router.push(`/dashboard/${organization.slug}/analytics/costs?${params}`)
     },
     [router, organization, startDate, endDate],
   )
@@ -144,7 +144,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
   return (
     <DashboardBody
-      title="Spans"
+      title="Costs"
       wide
       contextViewPlacement="left"
       contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
@@ -162,7 +162,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
       }
     >
       <div className="flex flex-col gap-y-6">
-        <h3 className="text-2xl">Event Costs</h3>
+        <h3 className="text-2xl">Event Types</h3>
         <DataTable
           data={costData?.totals || []}
           isLoading={costDataLoading}
@@ -178,7 +178,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
               updatedSorting,
             )
             router.push(
-              `/dashboard/${organization.slug}/analytics/spans?${sortingParams}`,
+              `/dashboard/${organization.slug}/analytics/costs?${sortingParams}`,
             )
           }}
           onRowClick={(row) => {
@@ -187,7 +187,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
               interval,
             )
             router.push(
-              `/dashboard/${organization.slug}/analytics/spans/${row.original.event_type_id}?${params}`,
+              `/dashboard/${organization.slug}/analytics/costs/${row.original.event_type_id}?${params}`,
             )
           }}
           columns={
@@ -237,8 +237,8 @@ export default function ClientPage({ organization }: ClientPageProps) {
                     'average',
                   )
                   return (
-                    <div className="flex items-center gap-3">
-                      <span className="min-w-20">
+                    <div className="flex items-baseline gap-3">
+                      <span className="min-w-28">
                         {formatSubCentCurrency(
                           Number(row.original.averages?.['_cost_amount'] || 0),
                         )}
@@ -248,7 +248,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                           values={values}
                           color={SparklineColor.Green}
                           width={80}
-                          height={24}
+                          height={16}
                         />
                       )}
                     </div>
@@ -265,8 +265,8 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 cell: ({ row }) => {
                   const values = getTimeSeriesValues(row.original.name, 'p95')
                   return (
-                    <div className="flex items-center gap-3">
-                      <span className="min-w-20">
+                    <div className="flex items-baseline gap-3">
+                      <span className="min-w-28">
                         {formatSubCentCurrency(
                           Number(row.original.p95?.['_cost_amount'] || 0),
                         )}
@@ -274,9 +274,9 @@ export default function ClientPage({ organization }: ClientPageProps) {
                       {values.length > 0 && (
                         <Sparkline
                           values={values}
-                          color={SparklineColor.Green}
+                          color={SparklineColor.Yellow}
                           width={80}
-                          height={24}
+                          height={16}
                         />
                       )}
                     </div>
@@ -293,8 +293,8 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 cell: ({ row }) => {
                   const values = getTimeSeriesValues(row.original.name, 'p99')
                   return (
-                    <div className="flex items-center gap-3">
-                      <span className="min-w-20">
+                    <div className="flex items-baseline gap-3">
+                      <span className="min-w-28">
                         {formatSubCentCurrency(
                           Number(row.original.p99?.['_cost_amount'] || 0),
                         )}
@@ -304,7 +304,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                           values={values}
                           color={SparklineColor.Red}
                           width={80}
-                          height={24}
+                          height={16}
                         />
                       )}
                     </div>

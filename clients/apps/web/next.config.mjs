@@ -311,7 +311,7 @@ const nextConfig = {
       },
       {
         source: '/dashboard/:organization/usage-billing/spans',
-        destination: '/dashboard/:organization/analytics/spans',
+        destination: '/dashboard/:organization/analytics/costs',
         permanent: true,
       },
 

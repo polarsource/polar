@@ -2,6 +2,7 @@ import React from 'react'
 
 export enum SparklineColor {
   Green = 'green',
+  Yellow = 'yellow',
   Red = 'red',
 }
 
@@ -57,6 +58,11 @@ export const Sparkline: React.FC<SparklineProps> = ({
       gradientStart: 'rgba(239, 68, 68, 0.3)',
       gradientEnd: 'rgba(239, 68, 68, 0)',
     },
+    [SparklineColor.Yellow]: {
+      stroke: '#eab308',
+      gradientStart: 'rgba(245, 158, 11, 0.3)',
+      gradientEnd: 'rgba(245, 158, 11, 0)',
+    },
   }
 
   const config = colorConfig[color]
@@ -79,14 +85,7 @@ export const Sparkline: React.FC<SparklineProps> = ({
 
       <path d={areaPath} fill={`url(#${gradientId})`} />
 
-      <path
-        d={linePath}
-        fill="none"
-        stroke={config.stroke}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d={linePath} fill="none" stroke={config.stroke} strokeWidth="1.5" />
     </svg>
   )
 }

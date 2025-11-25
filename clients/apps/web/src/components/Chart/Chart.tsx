@@ -1,3 +1,4 @@
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
   CartesianGrid,
   ChartContainer,
@@ -11,6 +12,7 @@ import {
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
 import { useMemo } from 'react'
+import Spinner from '../Shared/Spinner'
 
 export interface ChartSeries {
   key: string
@@ -30,9 +32,10 @@ export interface ChartProps<T extends Record<string, unknown>> {
   showLegend?: boolean
   showYAxis?: boolean
   title?: string
+  loading?: boolean
 }
 
-const Chart = <T extends Record<string, unknown>>({
+export const Chart = <T extends Record<string, unknown>>({
   data,
   series,
   height,
@@ -40,10 +43,11 @@ const Chart = <T extends Record<string, unknown>>({
   xAxisKey,
   xAxisFormatter,
   yAxisFormatter,
+  title,
   showGrid = true,
   showLegend = true,
   showYAxis = false,
-  title,
+  loading = false,
 }: ChartProps<T>) => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
@@ -73,110 +77,121 @@ const Chart = <T extends Record<string, unknown>>({
   }, [data, series])
 
   return (
-    <div className="flex w-full flex-col">
-      {title && (
-        <div className="mb-4">
-          <h3 className="text-lg font-medium">{title}</h3>
+    <ShadowBox className="dark:bg-polar-800 flex w-full flex-col bg-gray-50 p-2 shadow-xs">
+      <div className="flex flex-col gap-6 p-6 md:flex-row md:items-start md:justify-between">
+        <div className="flex flex-col gap-y-4">
+          <h3 className="text-xl">{title}</h3>
         </div>
-      )}
-      <ChartContainer
-        style={{ height: height || 400, width: width || '100%' }}
-        config={config}
-      >
-        <LineChart
-          accessibilityLayer
-          data={data}
-          margin={{
-            left: showYAxis ? 4 : 24,
-            right: 24,
-            top: 24,
-            bottom: showLegend && !title ? 40 : 24,
-          }}
-        >
-          {showGrid && (
-            <CartesianGrid
-              horizontal={false}
-              vertical={true}
-              stroke={isDark ? '#222225' : '#ccc'}
-              strokeDasharray="6 6"
-            />
-          )}
-          <XAxis
-            dataKey={xAxisKey as string}
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            interval="equidistantPreserveStart"
-            tickFormatter={
-              xAxisFormatter
-                ? (value) => xAxisFormatter(value as T[keyof T])
-                : undefined
-            }
-          />
-          {showYAxis && (
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              allowDecimals={hasDecimalValues}
-              tickMargin={4}
-              width="auto"
-              tickFormatter={yAxisFormatter}
-            />
-          )}
-          <ChartTooltip
-            cursor={true}
-            content={(props) => {
-              if (!props.active || !props.payload?.length) return null
+      </div>
+      <div className="dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white px-4 pt-4">
+        {loading ? (
+          <div
+            style={{ height }}
+            className="flex flex-col items-center justify-center"
+          >
+            <Spinner />
+          </div>
+        ) : (
+          <ChartContainer
+            style={{ height: height || 400, width: width || '100%' }}
+            config={config}
+          >
+            <LineChart
+              accessibilityLayer
+              data={data}
+              margin={{
+                left: showYAxis ? 4 : 24,
+                right: 24,
+                top: 24,
+                bottom: showLegend && !title ? 40 : 24,
+              }}
+            >
+              {showGrid && (
+                <CartesianGrid
+                  horizontal={false}
+                  vertical={true}
+                  stroke={
+                    isDark ? 'var(--color-polar-700)' : 'var(--color-gray-200)'
+                  }
+                  strokeDasharray="6 6"
+                />
+              )}
+              <XAxis
+                dataKey={xAxisKey as string}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                interval="equidistantPreserveStart"
+                tickFormatter={
+                  xAxisFormatter
+                    ? (value) => xAxisFormatter(value as T[keyof T])
+                    : undefined
+                }
+              />
+              {showYAxis && (
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  allowDecimals={hasDecimalValues}
+                  tickMargin={4}
+                  width="auto"
+                  tickFormatter={yAxisFormatter}
+                />
+              )}
+              <ChartTooltip
+                cursor={true}
+                content={(props) => {
+                  if (!props.active || !props.payload?.length) return null
 
-              return (
-                <div className="border-border/50 bg-background rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
-                  <div className="mb-1 font-medium">{props.label}</div>
-                  <div className="grid gap-1.5">
-                    {props.payload.map((item) => {
-                      const itemConfig = config[item.dataKey as string]
-                      const label = itemConfig?.label || item.name
-                      const formattedValue = yAxisFormatter
-                        ? yAxisFormatter(item.value as number)
-                        : String(item.value)
+                  return (
+                    <div className="border-border/50 bg-background rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
+                      <div className="mb-1 font-medium">{props.label}</div>
+                      <div className="grid gap-1.5">
+                        {props.payload.map((item) => {
+                          const itemConfig = config[item.dataKey as string]
+                          const label = itemConfig?.label || item.name
+                          const formattedValue = yAxisFormatter
+                            ? yAxisFormatter(item.value as number)
+                            : String(item.value)
 
-                      return (
-                        <div
-                          key={item.dataKey}
-                          className="flex items-center gap-2"
-                        >
-                          <div
-                            className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
-                            style={{ backgroundColor: item.color }}
-                          />
-                          <span className="text-muted-foreground">{label}</span>
-                          <span className="text-foreground ml-auto font-mono font-medium tabular-nums">
-                            {formattedValue}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            }}
-          />
-          {showLegend && <ChartLegend content={<ChartLegendContent />} />}
-          {series.map((s) => (
-            <Line
-              key={s.key}
-              dataKey={s.key}
-              stroke={`var(--color-${s.key})`}
-              type="linear"
-              dot={false}
-              strokeWidth={1.5}
-            />
-          ))}
-        </LineChart>
-      </ChartContainer>
-    </div>
+                          return (
+                            <div
+                              key={item.dataKey}
+                              className="flex items-center gap-2"
+                            >
+                              <div
+                                className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                                style={{ backgroundColor: item.color }}
+                              />
+                              <span className="text-muted-foreground">
+                                {label}
+                              </span>
+                              <span className="text-foreground ml-auto font-mono font-medium tabular-nums">
+                                {formattedValue}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                }}
+              />
+              {showLegend && <ChartLegend content={<ChartLegendContent />} />}
+              {series.map((s) => (
+                <Line
+                  key={s.key}
+                  dataKey={s.key}
+                  stroke={`var(--color-${s.key})`}
+                  type="linear"
+                  dot={false}
+                  strokeWidth={1.5}
+                />
+              ))}
+            </LineChart>
+          </ChartContainer>
+        )}
+      </div>
+    </ShadowBox>
   )
 }
-
-Chart.displayName = 'Chart'
-
-export default Chart

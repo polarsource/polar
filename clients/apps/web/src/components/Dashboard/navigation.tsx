@@ -10,7 +10,6 @@ import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
-import StreamOutlined from '@mui/icons-material/StreamOutlined'
 import TrendingUp from '@mui/icons-material/TrendingUp'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import { schemas } from '@polar-sh/client'
@@ -22,6 +21,7 @@ export type SubRoute = {
   readonly title: string
   readonly link: string
   readonly icon?: React.ReactNode
+  readonly if?: boolean | (() => boolean)
 }
 
 export type Route = {
@@ -92,9 +92,25 @@ const useResolveRoutes = (
   const posthog = usePostHog()
 
   return useMemo(() => {
-    return routesResolver(org, posthog)
-      .filter((o) => allowAll || o.if)
-      .map(applyIsActive(path))
+    return (
+      routesResolver(org, posthog)
+        .filter((o) => allowAll || o.if)
+        // Filter out child routes if they have an if-function and it evaluates to false
+        .map((route) => {
+          if (route.subs && Array.isArray(route.subs)) {
+            return {
+              ...route,
+              subs: route.subs.filter(
+                (child) =>
+                  typeof child.if === 'undefined' ||
+                  (typeof child.if === 'function' ? child.if() : child.if),
+              ),
+            }
+          }
+          return route
+        })
+        .map(applyIsActive(path))
+    )
   }, [org, path, allowAll, routesResolver, posthog])
 }
 
@@ -195,12 +211,15 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
       {
         title: 'Metrics',
         link: `/dashboard/${org?.slug}/analytics`,
-        icon: <StreamOutlined fontSize="inherit" />,
       },
       {
         title: 'Events',
         link: `/dashboard/${org?.slug}/analytics/events`,
-        icon: <StreamOutlined fontSize="inherit" />,
+      },
+      {
+        title: 'Costs',
+        link: `/dashboard/${org?.slug}/analytics/costs`,
+        if: () => org?.feature_settings?.revops_enabled ?? false,
       },
     ],
   },

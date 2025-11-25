@@ -1,9 +1,14 @@
 'use client'
 
+import { EventCostCreationGuideModal } from '@/components/Events/EventCostCreationGuideModal'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
+import { Modal } from '@/components/Modal'
+import { useModal } from '@/components/Modal/useModal'
+import AddOutlined from '@mui/icons-material/AddOutlined'
 import { schemas } from '@polar-sh/client'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { Button } from '@polar-sh/ui/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -32,7 +37,7 @@ export function SpansSidebar({
   onDateRangeChange,
   onIntervalChange,
   selectedSpanId,
-  title = 'Spans',
+  title = 'Costs',
 }: SpansSidebarProps) {
   const router = useRouter()
   const [hasScrolled, setHasScrolled] = useState(false)
@@ -48,10 +53,23 @@ export function SpansSidebar({
     [hasScrolled],
   )
 
+  const {
+    isShown: isEventCostCreationGuideShown,
+    show: showEventCostCreationGuide,
+    hide: hideEventCostCreationGuide,
+  } = useModal()
+
   return (
     <div className="flex h-full flex-col gap-y-4">
       <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
         <div>{title}</div>
+        <Button
+          size="icon"
+          className="h-6 w-6 rounded-full"
+          onClick={showEventCostCreationGuide}
+        >
+          <AddOutlined fontSize="small" />
+        </Button>
       </div>
       <div
         className={twMerge(
@@ -77,7 +95,6 @@ export function SpansSidebar({
               endDate={endDate}
             />
           </div>
-          <div className="dark:border-polar-700 -mx-4 border-t border-gray-200" />
           <div className="flex flex-col gap-y-2">
             <h3 className="text-sm">Events</h3>
             <List size="small" className="rounded-xl">
@@ -85,7 +102,7 @@ export function SpansSidebar({
                 <ListItem
                   key={eventType.id}
                   size="small"
-                  className="justify-between px-3"
+                  className="justify-between px-3 font-mono text-xs"
                   inactiveClassName="text-gray-500 dark:text-polar-500"
                   selected={selectedSpanId === eventType.id}
                   onSelect={() => {
@@ -96,11 +113,11 @@ export function SpansSidebar({
 
                     if (selectedSpanId === eventType.id) {
                       router.push(
-                        `/dashboard/${organization.slug}/analytics/spans?${params}`,
+                        `/dashboard/${organization.slug}/analytics/costs?${params}`,
                       )
                     } else {
                       router.push(
-                        `/dashboard/${organization.slug}/analytics/spans/${eventType.id}?${params}`,
+                        `/dashboard/${organization.slug}/analytics/costs/${eventType.id}?${params}`,
                       )
                     }
                   }}
@@ -121,6 +138,14 @@ export function SpansSidebar({
           </div>
         </div>
       </div>
+      <Modal
+        title="Cost Ingestion"
+        isShown={isEventCostCreationGuideShown}
+        hide={hideEventCostCreationGuide}
+        modalContent={
+          <EventCostCreationGuideModal hide={hideEventCostCreationGuide} />
+        }
+      />
     </div>
   )
 }

@@ -155,13 +155,15 @@ export const EditEventTypeModal = ({
         </div>
 
         <div className="dark:border-polar-700 border-t border-gray-200 pt-6">
-          <h3 className="text-sm font-medium">Ingesting Events</h3>
-          <p className="dark:text-polar-500 mt-2 text-xs text-gray-500">
-            {form.watch('label_property_selector')
-              ? 'To ingest events with dynamic labels, include the property in metadata:'
-              : 'To ingest events with this label, use the following event name:'}
-          </p>
-          <Well className="dark:bg-polar-900 mt-4 rounded-lg bg-gray-100 p-4 text-xs">
+          <div className="flex flex-col gap-y-2">
+            <h3>Ingesting Events</h3>
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              {form.watch('label_property_selector')
+                ? 'To ingest events with dynamic labels, include the property in metadata.'
+                : 'To ingest events with this label, use the following event name.'}
+            </p>
+          </div>
+          <Well className="dark:bg-polar-800 mt-4 rounded-lg bg-gray-50 p-4 text-sm">
             <SyntaxHighlighterClient
               lang="typescript"
               code={
@@ -171,8 +173,8 @@ export const EditEventTypeModal = ({
     name: "${eventName}",
     customerId: "<value>",
     metadata: {
-      ${form.watch('label_property_selector')}: "<value>", // Used for dynamic label
-      // other custom properties
+      // Used for dynamic label
+      ${form.watch('label_property_selector')}: "<value>", 
     },
   }],
 });`

@@ -1,5 +1,6 @@
 // app/banner.js
 'use client'
+import { EU_COUNTRY_CODES } from '@/components/Privacy/countries'
 import { usePostHog } from '@/hooks/posthog'
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
@@ -16,7 +17,8 @@ export function cookieConsentGiven() {
   return localStorage.getItem('cookie_consent')
 }
 
-export function CookieConsent() {
+export function CookieConsent({ countryCode }: { countryCode: string | null }) {
+  const isEU = countryCode ? EU_COUNTRY_CODES.includes(countryCode) : false
   const [consentGiven, setConsentGiven] = useState<string | null>('')
   const { setPersistence } = usePostHog()
   const searchParams = useSearchParams()
@@ -66,6 +68,10 @@ export function CookieConsent() {
 
   const handleDeclineCookies = () => {
     declineCookies()
+  }
+
+  if (isEU) {
+    return null
   }
 
   return (

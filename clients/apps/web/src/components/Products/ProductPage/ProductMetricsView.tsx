@@ -35,7 +35,7 @@ export const ProductMetricsView = ({
     : ['average_order_value', 'cumulative_revenue']
 
   return (
-    <div className="flex flex-col gap-y-12">
+    <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
       {product.is_recurring ? (
         <>
           {subscriptionMetrics.map((metric) => (

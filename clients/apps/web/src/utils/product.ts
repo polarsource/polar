@@ -83,14 +83,17 @@ const _getProductById = async (
 // Tell React to memoize it for the duration of the request
 export const getProductById = cache(_getProductById)
 
-export type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
+export type ProductEditOrCreateForm = Omit<
+  schemas['ProductCreate'],
+  'metadata'
+> &
   ProductFullMediasMixin & {
     metadata: { key: string; value: string | number | boolean }[]
   }
 
 export const productToCreateForm = (
   product: schemas['Product'],
-): ProductCreateForm => {
+): ProductEditOrCreateForm => {
   /* eslint-disable @typescript-eslint/no-unused-vars */
   // We want to omit a few fields from the product to create a new product form.
   // This approach somewhat wonky, the alternative is omitting them which forces us

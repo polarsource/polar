@@ -404,3 +404,26 @@ class OrganizationReviewStatus(Schema):
     appeal_reviewed_at: datetime | None = Field(
         default=None, description="When appeal was reviewed"
     )
+
+
+class OrganizationDeletionBlockedReason(StrEnum):
+    """Reasons why an organization cannot be immediately deleted."""
+
+    HAS_ORDERS = "has_orders"
+    HAS_ACTIVE_SUBSCRIPTIONS = "has_active_subscriptions"
+    STRIPE_ACCOUNT_DELETION_FAILED = "stripe_account_deletion_failed"
+
+
+class OrganizationDeletionResponse(Schema):
+    """Response for organization deletion request."""
+
+    deleted: bool = Field(
+        description="Whether the organization was immediately deleted"
+    )
+    requires_support: bool = Field(
+        description="Whether a support ticket was created for manual handling"
+    )
+    blocked_reasons: list[OrganizationDeletionBlockedReason] = Field(
+        default_factory=list,
+        description="Reasons why immediate deletion is blocked",
+    )

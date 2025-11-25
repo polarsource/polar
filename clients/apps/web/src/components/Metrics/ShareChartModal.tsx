@@ -121,7 +121,7 @@ export const ShareChartModal = ({
             simple
             chartType="line"
           />
-          <LogoType className="text-white dark:text-white" height={35} />
+          <LogoType className="text-white dark:text-white" height={48} />
         </div>
         <div className="flex w-full flex-row items-center justify-between gap-6">
           <div className="flex flex-row gap-4">

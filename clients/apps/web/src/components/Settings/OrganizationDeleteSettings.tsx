@@ -76,34 +76,14 @@ export default function OrganizationDeleteSettings({
         <SettingsGroupItem
           title="Delete Organization"
           description="Permanently delete this organization and all associated data. This action cannot be undone."
-          vertical
         >
-          <div className="flex flex-col gap-4">
-            <div className="dark:text-polar-400 text-sm text-gray-600">
-              <p className="mb-2">When you delete an organization:</p>
-              <ul className="list-inside list-disc space-y-1">
-                <li>
-                  Organization data will be anonymized and marked as deleted
-                </li>
-                <li>
-                  If you have orders or active subscriptions, a support ticket
-                  will be created for manual review
-                </li>
-                <li>
-                  Connected Stripe account will be deleted if no blocking
-                  conditions exist
-                </li>
-              </ul>
-            </div>
-            <div>
-              <Button
-                variant="destructive"
-                onClick={() => setShowDeleteModal(true)}
-              >
-                Delete Organization
-              </Button>
-            </div>
-          </div>
+          <Button
+            variant="destructive"
+            onClick={() => setShowDeleteModal(true)}
+            size="sm"
+          >
+            Delete
+          </Button>
         </SettingsGroupItem>
       </SettingsGroup>
 
@@ -112,6 +92,24 @@ export default function OrganizationDeleteSettings({
         hide={() => setShowDeleteModal(false)}
         title="Delete Organization"
         description={`Are you sure you want to delete "${organization.name}"? This action cannot be undone.`}
+        body={
+          <div className="dark:text-polar-400 text-sm text-gray-600">
+            <p className="mb-2">When you delete an organization:</p>
+            <ul className="list-inside list-disc space-y-1">
+              <li>
+                Organization data will be anonymized and marked as deleted
+              </li>
+              <li>
+                If you have orders or active subscriptions, a support ticket
+                will be created for manual review
+              </li>
+              <li>
+                Connected Stripe account will be deleted if no blocking
+                conditions exist
+              </li>
+            </ul>
+          </div>
+        }
         onConfirm={handleDelete}
         destructive
         destructiveText="Delete"

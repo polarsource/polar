@@ -74,7 +74,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
             <div className="block h-20 w-2 lg:max-h-[10%] lg:grow-2"></div>
             <motion.div
               className={twMerge(
-                'dark:bg-polar-900 dark:border-polar-800 relative z-10 flex max-h-full w-full flex-col gap-y-1 overflow-x-hidden overflow-y-auto rounded-3xl bg-gray-100 p-1 shadow-sm lg:w-[800px] lg:max-w-full dark:border',
+                'dark:bg-polar-950 dark:border-polar-800 relative z-10 flex max-h-full w-full flex-col gap-y-1 overflow-x-hidden overflow-y-auto rounded-3xl bg-gray-100 p-1 shadow-sm lg:w-[800px] lg:max-w-full dark:border',
                 className,
               )}
               initial={{ opacity: 0, scale: 0.99 }}
@@ -95,7 +95,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
                   <CloseOutlined fontSize="inherit" />
                 </Button>
               </div>
-              <div className="dark:bg-polar-800 flex flex-col overflow-y-auto rounded-[20px] bg-white">
+              <div className="dark:bg-polar-900 flex flex-col overflow-y-auto rounded-[20px] bg-white">
                 {modalContent}
               </div>
             </motion.div>

@@ -10,7 +10,7 @@ export default function ClientPage({
   organization: schemas['Organization']
 }) {
   return (
-    <DashboardBody title="Webhooks" wide>
+    <DashboardBody title="Webhooks">
       <WebhookSettings org={org} />
     </DashboardBody>
   )

@@ -152,12 +152,14 @@ export const OrganizationStep = ({
             <h1 className="text-3xl">
               {hasExistingOrg
                 ? 'Create a new organization'
-                : "Let's get you onboarded"}
+                : "Let's get you started"}
             </h1>
             <p className="dark:text-polar-400 text-lg text-gray-600">
-              {hasExistingOrg
-                ? 'Follow the instructions below to create a new organization'
-                : 'Get up to speed with an organization, product & checkout session'}
+              {hasExistingOrg ? (
+                'Follow the instructions below to create a new organization'
+              ) : (
+                <>You&rsquo;ll be up and running in no time</>
+              )}
             </p>
           </div>
         </FadeUp>

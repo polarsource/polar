@@ -28,6 +28,7 @@ export interface ChartProps<T extends Record<string, unknown>> {
   xAxisKey: keyof T
   xAxisFormatter?: (value: T[keyof T]) => string
   yAxisFormatter?: (value: number) => string
+  labelFormatter?: (value: T[keyof T]) => string
   showGrid?: boolean
   showLegend?: boolean
   showYAxis?: boolean
@@ -44,6 +45,7 @@ export const Chart = <T extends Record<string, unknown>>({
   xAxisFormatter,
   yAxisFormatter,
   title,
+  labelFormatter,
   showGrid = true,
   showLegend = true,
   showYAxis = false,
@@ -143,9 +145,13 @@ export const Chart = <T extends Record<string, unknown>>({
                 content={(props) => {
                   if (!props.active || !props.payload?.length) return null
 
+                  const formattedLabel = labelFormatter
+                    ? labelFormatter(props.label as T[keyof T])
+                    : String(props.label)
+
                   return (
                     <div className="border-border/50 bg-background rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
-                      <div className="mb-1 font-medium">{props.label}</div>
+                      <div className="mb-1 font-medium">{formattedLabel}</div>
                       <div className="grid gap-1.5">
                         {props.payload.map((item) => {
                           const itemConfig = config[item.dataKey as string]

@@ -11,11 +11,12 @@ import {
   useInfiniteEvents,
 } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
-import { fromISODate, toISODate } from '@/utils/metrics'
+import { fromISODate, getTimestampFormatter, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { endOfToday, format, subMonths } from 'date-fns'
+import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
@@ -35,6 +36,8 @@ export default function SpanDetailPage({
   spanId,
 }: SpanDetailPageProps) {
   const router = useRouter()
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
 
   const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
@@ -110,6 +113,7 @@ export default function SpanDetailPage({
         totalOccurrences: 0,
         totalCost: 0,
         averageCost: 0,
+        p99Cost: 0,
       }
     }
 
@@ -140,18 +144,25 @@ export default function SpanDetailPage({
         const p50 = parseFloat(stat.p50?.['_cost_amount'] || '0')
         const p95 = parseFloat(stat.p95?.['_cost_amount'] || '0')
         const p99 = parseFloat(stat.p99?.['_cost_amount'] || '0')
+        const occurrences = stat.occurrences || 0
 
         return {
           date: format(new Date(period.timestamp), 'MMM d, yyyy'),
-          timestamp: period.timestamp,
+          timestamp: new Date(period.timestamp),
           average,
           p50,
           p95,
           p99,
+          occurrences,
         }
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)
   }, [hierarchyStats])
+
+  const timestampFormatter = useMemo(
+    () => getTimestampFormatter(interval),
+    [interval],
+  )
 
   const dateRange = useMemo(
     () => ({ from: startDate, to: endDate }),
@@ -234,6 +245,46 @@ export default function SpanDetailPage({
 
       {events.length > 0 && chartData.length > 0 && (
         <div className="flex flex-col gap-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <CustomerStatBox title="Total occurrences" size="lg">
+              {costMetrics.totalOccurrences.toLocaleString()}
+            </CustomerStatBox>
+            <CustomerStatBox title="Total cost" size="lg">
+              {formatSubCentCurrency(costMetrics.totalCost)}
+            </CustomerStatBox>
+            <CustomerStatBox title="Average cost" size="lg">
+              {formatSubCentCurrency(costMetrics.averageCost)}
+            </CustomerStatBox>
+          </div>
+
+          <Chart
+            data={chartData}
+            series={[
+              {
+                key: 'occurrences',
+                label: 'Occurrences',
+                color: '#2563eb',
+              },
+            ]}
+            xAxisKey="timestamp"
+            xAxisFormatter={(value) =>
+              value instanceof Date ? timestampFormatter(value) : String(value)
+            }
+            labelFormatter={(value) =>
+              value instanceof Date
+                ? value.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric',
+                  })
+                : String(value)
+            }
+            title="Occurrences"
+            showYAxis={true}
+            yAxisFormatter={(value) => value.toLocaleString()}
+            loading={isFetching}
+          />
+
           <Chart
             data={chartData}
             series={[
@@ -258,24 +309,24 @@ export default function SpanDetailPage({
                 color: '#ef4444',
               },
             ]}
-            xAxisKey="date"
+            xAxisKey="timestamp"
+            xAxisFormatter={(value) =>
+              value instanceof Date ? timestampFormatter(value) : String(value)
+            }
+            labelFormatter={(value) =>
+              value instanceof Date
+                ? value.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric',
+                  })
+                : String(value)
+            }
             title="Costs"
             showYAxis={true}
             yAxisFormatter={(value) => formatSubCentCurrency(value)}
             loading={isFetching}
           />
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <CustomerStatBox title="Total occurrences" size="lg">
-              {costMetrics.totalOccurrences.toLocaleString()}
-            </CustomerStatBox>
-            <CustomerStatBox title="Total cost" size="lg">
-              {formatSubCentCurrency(costMetrics.totalCost)}
-            </CustomerStatBox>
-            <CustomerStatBox title="Average cost" size="lg">
-              {formatSubCentCurrency(costMetrics.averageCost)}
-            </CustomerStatBox>
-          </div>
         </div>
       )}
 

@@ -523,6 +523,37 @@ async def get(
                                                     )
                                                 )
 
+                                        if order.applied_balance_amount != 0:
+                                            with tag.tr():
+                                                with tag.td(
+                                                    colspan="3", classes="text-right"
+                                                ):
+                                                    text("Applied balance")
+                                                with tag.td(classes="text-right"):
+                                                    text(
+                                                        formatters.currency(
+                                                            order.applied_balance_amount,
+                                                            order.currency,
+                                                        )
+                                                    )
+
+                                        if order.due_amount != order.total_amount:
+                                            with tag.tr():
+                                                with tag.td(
+                                                    colspan="3",
+                                                    classes="text-right font-bold",
+                                                ):
+                                                    text("To be paid")
+                                                with tag.td(
+                                                    classes="text-right font-bold"
+                                                ):
+                                                    text(
+                                                        formatters.currency(
+                                                            order.due_amount,
+                                                            order.currency,
+                                                        )
+                                                    )
+
                                         if (
                                             order.refunded_amount
                                             and order.refunded_amount > 0

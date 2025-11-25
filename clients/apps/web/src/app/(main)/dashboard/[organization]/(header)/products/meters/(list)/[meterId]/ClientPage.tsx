@@ -99,7 +99,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
                 align="end"
                 className="dark:bg-polar-800 bg-gray-50 shadow-lg"
               >
-                <DropdownMenuItem onClick={handleArchiveMeter}>
+                <DropdownMenuItem
+                  destructive={!meter.archived_at}
+                  onClick={handleArchiveMeter}
+                >
                   {meter.archived_at ? 'Unarchive' : 'Archive'} Meter
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -101,7 +101,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 align="end"
                 className="dark:bg-polar-800 bg-gray-50 shadow-lg"
               >
-                <DropdownMenuItem onClick={showDeleteModal}>
+                <DropdownMenuItem destructive onClick={showDeleteModal}>
                   Delete Checkout Link
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -15,7 +15,22 @@ export interface paths {
     get: operations['users:get_authenticated']
     put?: never
     post?: never
-    delete?: never
+    /**
+     * Delete Authenticated User
+     * @description Delete the authenticated user account.
+     *
+     *     A user can only be deleted if all organizations they are members of have been
+     *     deleted first. If the user has active organizations, the response will include
+     *     the list of organizations that must be deleted before the user account can be
+     *     removed.
+     *
+     *     When deleted:
+     *     - User's email is anonymized
+     *     - User's avatar and metadata are cleared
+     *     - User's OAuth accounts are deleted (cascade)
+     *     - User's Account (payout account) is deleted if present
+     */
+    delete: operations['users:delete_authenticated_user']
     options?: never
     head?: never
     patch?: never
@@ -7764,6 +7779,21 @@ export interface components {
      * @enum {string}
      */
     BillingAddressFieldMode: 'required' | 'optional' | 'disabled'
+    /**
+     * BlockingOrganization
+     * @description Organization that is blocking user deletion.
+     */
+    BlockingOrganization: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Slug */
+      slug: string
+      /** Name */
+      name: string
+    }
     /** Body_email-update:verify_email_update */
     'Body_email-update_verify_email_update': {
       /** Token */
@@ -22776,6 +22806,33 @@ export interface components {
       account_id: string | null
     }
     /**
+     * UserDeletionBlockedReason
+     * @description Reasons why a user account cannot be immediately deleted.
+     * @enum {string}
+     */
+    UserDeletionBlockedReason: 'has_active_organizations'
+    /**
+     * UserDeletionResponse
+     * @description Response for user deletion request.
+     */
+    UserDeletionResponse: {
+      /**
+       * Deleted
+       * @description Whether the user account was immediately deleted
+       */
+      deleted: boolean
+      /**
+       * Blocked Reasons
+       * @description Reasons why immediate deletion is blocked
+       */
+      blocked_reasons?: components['schemas']['UserDeletionBlockedReason'][]
+      /**
+       * Blocking Organizations
+       * @description Organizations that must be deleted first
+       */
+      blocking_organizations?: components['schemas']['BlockingOrganization'][]
+    }
+    /**
      * UserEvent
      * @description An event you created through the ingestion API.
      */
@@ -24085,6 +24142,26 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['UserRead']
+        }
+      }
+    }
+  }
+  'users:delete_authenticated_user': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Deletion result */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserDeletionResponse']
         }
       }
     }
@@ -38860,6 +38937,9 @@ export const trialIntervalValues: ReadonlyArray<
 export const uniqueAggregationFuncValues: ReadonlyArray<
   components['schemas']['UniqueAggregation']['func']
 > = ['unique']
+export const userDeletionBlockedReasonValues: ReadonlyArray<
+  components['schemas']['UserDeletionBlockedReason']
+> = ['has_active_organizations']
 export const userEventSourceValues: ReadonlyArray<
   components['schemas']['UserEvent']['source']
 > = ['user']

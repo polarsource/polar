@@ -281,10 +281,12 @@ async def get(
                         with tag.div(classes="flex items-center gap-2"):
                             with tag.span(classes="font-semibold"):
                                 text("Available Balance:")
-                            with tag.span(
-                                classes="text-lg"
-                                + (" text-success" if credit_balance > 0 else "")
-                            ):
+                            balance_classes = (
+                                "text-lg text-success"
+                                if credit_balance > 0
+                                else "text-lg"
+                            )
+                            with tag.span(classes=balance_classes):
                                 text(currency(credit_balance, "usd"))
 
             # Subscriptions Section

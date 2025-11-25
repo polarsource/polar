@@ -77,8 +77,7 @@ const AccountListItem = ({ account, organization }: AccountListItemProps) => {
     'dark:group-hover:bg-polar-700 px-4 py-2 transition-colors group-hover:bg-blue-50 group-hover:text-gray-950 text-gray-700 dark:text-polar-200 group-hover:dark:text-white',
   )
 
-  const isActive =
-    organization?.status === 'active' && account?.stripe_id !== null
+  const isActive = account?.stripe_id !== null
 
   const goToDashboard = async () => {
     const link = await unwrap(

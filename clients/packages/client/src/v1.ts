@@ -584,7 +584,20 @@ export interface paths {
     get: operations['organizations:get']
     put?: never
     post?: never
-    delete?: never
+    /**
+     * Delete Organization
+     * @description Request deletion of an organization.
+     *
+     *     If the organization has no orders or active subscriptions, it will be
+     *     immediately soft-deleted. If it has an account, the Stripe account will
+     *     be deleted first.
+     *
+     *     If deletion cannot proceed immediately (has orders, subscriptions, or
+     *     Stripe deletion fails), a support ticket will be created for manual handling.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    delete: operations['organizations:delete']
     options?: never
     head?: never
     /**
@@ -19061,6 +19074,36 @@ export interface components {
       /** Subscription Updated */
       subscription_updated: boolean
     }
+    /**
+     * OrganizationDeletionBlockedReason
+     * @description Reasons why an organization cannot be immediately deleted.
+     * @enum {string}
+     */
+    OrganizationDeletionBlockedReason:
+      | 'has_orders'
+      | 'has_active_subscriptions'
+      | 'stripe_account_deletion_failed'
+    /**
+     * OrganizationDeletionResponse
+     * @description Response for organization deletion request.
+     */
+    OrganizationDeletionResponse: {
+      /**
+       * Deleted
+       * @description Whether the organization was immediately deleted
+       */
+      deleted: boolean
+      /**
+       * Requires Support
+       * @description Whether a support ticket was created for manual handling
+       */
+      requires_support: boolean
+      /**
+       * Blocked Reasons
+       * @description Reasons why immediate deletion is blocked
+       */
+      blocked_reasons?: components['schemas']['OrganizationDeletionBlockedReason'][]
+    }
     /** OrganizationDetails */
     OrganizationDetails: {
       /**
@@ -25061,6 +25104,55 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Organization']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:delete': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Organization deleted or deletion request submitted. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDeletionResponse']
+        }
+      }
+      /** @description You don't have the permission to delete this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Organization not found. */
@@ -38232,6 +38324,9 @@ export const organizationAvatarFileCreateServiceValues: ReadonlyArray<
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<
   components['schemas']['OrganizationAvatarFileRead']['service']
 > = ['organization_avatar']
+export const organizationDeletionBlockedReasonValues: ReadonlyArray<
+  components['schemas']['OrganizationDeletionBlockedReason']
+> = ['has_orders', 'has_active_subscriptions', 'stripe_account_deletion_failed']
 export const organizationDetailsSwitching_fromValues: ReadonlyArray<
   components['schemas']['OrganizationDetails']['switching_from']
 > = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']

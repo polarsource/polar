@@ -3,6 +3,7 @@ import secrets
 import string
 from math import ceil
 
+import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
@@ -18,6 +19,8 @@ from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 from polar.user.schemas import UserSignupAttribution
 from polar.user.service import user as user_service
+
+log = structlog.get_logger()
 
 
 class LoginCodeError(PolarError): ...
@@ -75,6 +78,16 @@ class LoginCodeService:
         )
 
         enqueue_email(to_email_addr=email, subject=subject, html_content=body)
+
+        if settings.is_development():
+            log.info(
+                "\n"
+                "╔══════════════════════════════════════════════════════════╗\n"
+                "║                                                          ║\n"
+                f"║                   🔑 LOGIN CODE: {code}                  ║\n"
+                "║                                                          ║\n"
+                "╚══════════════════════════════════════════════════════════╝"
+            )
 
     async def authenticate(
         self,

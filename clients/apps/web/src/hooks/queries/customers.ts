@@ -4,6 +4,39 @@ import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
+export const useCustomerAnalytics = (
+  organizationId: string,
+  parameters: Omit<
+    NonNullable<operations['customers:list_analytics']['parameters']['query']>,
+    'organization_id' | 'timezone'
+  >,
+  enabled: boolean = true,
+) => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['customers:list_analytics']['parameters']['query']['timezone']
+  return useQuery({
+    queryKey: [
+      'customerAnalytics',
+      organizationId,
+      { timezone, ...(parameters || {}) },
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customers/analytics', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              timezone,
+              ...parameters,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+}
+
 export const useCustomers = (
   organizationId: string,
   parameters?: Omit<

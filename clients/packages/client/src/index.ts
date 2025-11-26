@@ -112,5 +112,7 @@ export const isValidationError = (
 export type { Middleware } from 'openapi-fetch'
 export * as enums from './enums'
 export type { components, operations, paths } from './v1'
-export type schemas = components['schemas']
+export type schemas = components['schemas'] & {
+  CustomerSubscription: components['schemas']['polar__customer_portal__schemas__subscription__CustomerSubscription']
+}
 export type Client = ReturnType<typeof createClient>

@@ -2,10 +2,16 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Sparkline, SparklineColor } from '@/components/Sparkline/Sparkline'
+import { useCustomerAnalytics } from '@/hooks/queries/customers'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
-import { parseSearchParams, serializeSearchParams } from '@/utils/datatable'
-import { formatSubCentCurrency } from '@/utils/formatters'
+import {
+  DataTablePaginationState,
+  DataTableSortingState,
+  parseSearchParams,
+  serializeSearchParams,
+} from '@/utils/datatable'
+import { formatCurrency, formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { operations, schemas } from '@polar-sh/client'
 import {
@@ -16,7 +22,7 @@ import {
 import { endOfToday, subMonths } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { SpansSidebar } from './SpansSidebar'
 import { getSearchParams } from './utils'
 
@@ -93,6 +99,35 @@ export default function ClientPage({ organization }: ClientPageProps) {
     root_events: true,
     source: 'user',
   })
+
+  const [customerPagination, setCustomerPagination] =
+    useState<DataTablePaginationState>({
+      pageIndex: 0,
+      pageSize: 10,
+    })
+
+  const [customerSorting, setCustomerSorting] = useState<DataTableSortingState>(
+    [{ id: 'lifetime_revenue', desc: true }],
+  )
+
+  const customerSortingParam = useMemo(():
+    | operations['customers:list_analytics']['parameters']['query']['sorting']
+    | undefined => {
+    if (customerSorting.length === 0) return ['-lifetime_revenue']
+    return customerSorting.map((s) => (s.desc ? `-${s.id}` : s.id)) as
+      | operations['customers:list_analytics']['parameters']['query']['sorting']
+      | undefined
+  }, [customerSorting])
+
+  const { data: customerData, isLoading: customerDataLoading } =
+    useCustomerAnalytics(organization.id, {
+      start_date: startDateISOString,
+      end_date: endDateISOString,
+      interval,
+      page: customerPagination.pageIndex + 1,
+      limit: customerPagination.pageSize,
+      sorting: customerSortingParam,
+    })
 
   const dateRange = useMemo(
     () => ({ from: startDate, to: endDate }),
@@ -316,6 +351,85 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 },
               },
             ] as DataTableColumnDef<schemas['EventStatistics']>[]
+          }
+        />
+
+        <h3 className="text-2xl">Customers</h3>
+        <DataTable
+          data={customerData?.items || []}
+          isLoading={customerDataLoading}
+          sorting={customerSorting}
+          onSortingChange={setCustomerSorting}
+          pagination={customerPagination}
+          onPaginationChange={setCustomerPagination}
+          pageCount={customerData?.pagination?.max_page ?? 1}
+          onRowClick={(row) => {
+            router.push(
+              `/dashboard/${organization.slug}/customers/${row.original.customer_id}`,
+            )
+          }}
+          columns={
+            [
+              {
+                id: 'customer_name',
+                accessorFn: (row) => row.customer_name || row.customer_email,
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Customer" />
+                ),
+                cell: ({ row }) => (
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {row.original.customer_name ||
+                        row.original.customer_email}
+                    </span>
+                    {row.original.customer_name && (
+                      <span className="text-muted-foreground text-xs">
+                        {row.original.customer_email}
+                      </span>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                id: 'lifetime_revenue',
+                accessorKey: 'lifetime_revenue',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Revenue" />
+                ),
+                cell: ({ row }) =>
+                  formatCurrency(row.original.lifetime_revenue, 'usd'),
+              },
+              {
+                id: 'lifetime_cost',
+                accessorKey: 'lifetime_cost',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Cost" />
+                ),
+                cell: ({ row }) =>
+                  formatCurrency(row.original.lifetime_cost, 'usd'),
+              },
+              {
+                id: 'profit',
+                accessorKey: 'profit',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Profit" />
+                ),
+                cell: ({ row }) => formatCurrency(row.original.profit, 'usd'),
+              },
+              {
+                id: 'margin_percent',
+                accessorKey: 'margin_percent',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Margin" />
+                ),
+                cell: ({ row }) => `${row.original.margin_percent}%`,
+              },
+            ] as DataTableColumnDef<schemas['CustomerMetrics']>[]
           }
         />
       </div>

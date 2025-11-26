@@ -107,16 +107,33 @@ export default async function RootLayout({
       className={`antialiased ${GeistSans.variable} ${GeistMono.variable}`}
     >
       <head>
-        <link
-          href="/favicon.png"
-          rel="icon"
-          media="(prefers-color-scheme: dark)"
-        ></link>
-        <link
-          href="/favicon-dark.png"
-          rel="icon"
-          media="(prefers-color-scheme: light)"
-        ></link>
+        {CONFIG.ENVIRONMENT === 'development' ? (
+          <>
+            <link
+              href="/favicon-dev.png"
+              rel="icon"
+              media="(prefers-color-scheme: dark)"
+            />
+            <link
+              href="/favicon-dev-dark.png"
+              rel="icon"
+              media="(prefers-color-scheme: light)"
+            />
+          </>
+        ) : (
+          <>
+            <link
+              href="/favicon.png"
+              rel="icon"
+              media="(prefers-color-scheme: dark)"
+            />
+            <link
+              href="/favicon-dark.png"
+              rel="icon"
+              media="(prefers-color-scheme: light)"
+            />
+          </>
+        )}
       </head>
       <body
         style={{

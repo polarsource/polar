@@ -31,7 +31,7 @@ const CheckoutSeatSelector = ({
 
   const seats = checkout.seats || 1
   const netAmount = checkout.netAmount || 0
-  const currency = productPrice.priceCurrency || 'usd'
+  const currency = productPrice.priceCurrency
   const pricePerSeat = checkout.pricePerSeat || 0
 
   const handleUpdateSeats = async (newSeats: number) => {

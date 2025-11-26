@@ -105,7 +105,7 @@ export const EventsUpsell = () => {
             <div className="flex flex-row items-center gap-x-4 font-mono text-xs">
               <span>Profit</span>
               <span className="dark:text-polar-500 text-gray-500">
-                {formatCurrencyAndAmount(profit, 'USD', 2, 'compact', 12)}
+                {formatCurrencyAndAmount(profit, 'usd', 2, 'compact', 12)}
               </span>
             </div>
           </div>
@@ -190,7 +190,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:14Z'),
     cost: {
       amount: 24,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -199,7 +199,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:13Z'),
     cost: {
       amount: 15,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -208,7 +208,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:12Z'),
     revenue: {
       amount: 2500,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -217,7 +217,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:11Z'),
     cost: {
       amount: 33,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -226,7 +226,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:10Z'),
     cost: {
       amount: 28,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -235,7 +235,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:09Z'),
     cost: {
       amount: 24,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -244,7 +244,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:08Z'),
     cost: {
       amount: 15,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -253,7 +253,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:07Z'),
     revenue: {
       amount: 1000,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -262,7 +262,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:06Z'),
     cost: {
       amount: 33,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -271,7 +271,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:05Z'),
     cost: {
       amount: 21,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -280,7 +280,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:04Z'),
     cost: {
       amount: 29,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -289,7 +289,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:03Z'),
     cost: {
       amount: 52,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -298,7 +298,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:02Z'),
     cost: {
       amount: 78,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -307,7 +307,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:01Z'),
     cost: {
       amount: 0,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
   {
@@ -316,7 +316,7 @@ const mockedEvents = [
     timestamp: new Date('2025-10-30T00:00:00Z'),
     cost: {
       amount: 5000,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
 ]

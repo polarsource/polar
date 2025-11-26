@@ -254,7 +254,7 @@ export default function SpanDetailPage({
             xAxisKey="date"
             title="Costs"
             showYAxis={true}
-            yAxisFormatter={(value) => formatSubCentCurrency(value)}
+            yAxisFormatter={(value) => formatSubCentCurrency(value, 'usd')}
             loading={isFetching}
           />
 
@@ -263,10 +263,10 @@ export default function SpanDetailPage({
               {costMetrics.totalOccurrences.toLocaleString()}
             </CustomerStatBox>
             <CustomerStatBox title="Total cost" size="lg">
-              {formatSubCentCurrency(costMetrics.totalCost)}
+              {formatSubCentCurrency(costMetrics.totalCost, 'usd')}
             </CustomerStatBox>
             <CustomerStatBox title="Average cost" size="lg">
-              {formatSubCentCurrency(costMetrics.averageCost)}
+              {formatSubCentCurrency(costMetrics.averageCost, 'usd')}
             </CustomerStatBox>
           </div>
         </div>

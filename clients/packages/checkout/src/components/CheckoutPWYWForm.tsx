@@ -84,13 +84,13 @@ export const CheckoutPWYWForm = ({
 
   customAmountMinLabel = formatCurrencyNumber(
     productPrice.minimumAmount || 50,
-    checkout.currency || 'usd',
+    checkout.currency,
   )
 
   if (productPrice.maximumAmount) {
     customAmountMaxLabel = formatCurrencyNumber(
       productPrice.maximumAmount,
-      checkout.currency || 'usd',
+      checkout.currency,
     )
   }
 

@@ -80,7 +80,7 @@ export const CustomerTrendStatBox = ({
               <span className="dark:text-polar-500 font-sans text-sm text-gray-500">
                 Previous Period
               </span>
-              <span>{formatter?.(trend.previousValue)}</span>
+              <span>{formatter?.(trend.previousValue, 'usd')}</span>
             </TooltipContent>
           </Tooltip>
         ) : (

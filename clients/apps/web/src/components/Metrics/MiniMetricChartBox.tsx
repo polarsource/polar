@@ -32,7 +32,7 @@ export const MiniMetricChartBox = ({
           {metric &&
             (metric.type === 'scalar'
               ? formatHumanFriendlyScalar(value ?? 0)
-              : formatHumanFriendlyCurrency(value ?? 0))}
+              : formatHumanFriendlyCurrency(value ?? 0, 'usd'))}
         </h3>
       </CardContent>
     </Card>

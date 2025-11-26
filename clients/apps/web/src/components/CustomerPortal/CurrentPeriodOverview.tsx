@@ -103,7 +103,7 @@ export const CurrentPeriodOverview = ({
                   {meter.meter.name}
                 </span>
                 <span className="font-medium">
-                  {formatCurrency(meter.amount)}
+                  {formatCurrency(meter.amount, subscription.currency)}
                 </span>
               </div>
             ))}
@@ -114,7 +114,12 @@ export const CurrentPeriodOverview = ({
           {(hasTaxes || hasDiscount) && (
             <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
               <span>Subtotal</span>
-              <span>{formatCurrency(subscriptionPreview.subtotal_amount)}</span>
+              <span>
+                {formatCurrency(
+                  subscriptionPreview.subtotal_amount,
+                  subscription.currency,
+                )}
+              </span>
             </div>
           )}
 
@@ -122,7 +127,10 @@ export const CurrentPeriodOverview = ({
             <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
               <span>Discount</span>
               <span>
-                {formatCurrency(-1 * subscriptionPreview.discount_amount)}
+                {formatCurrency(
+                  -1 * subscriptionPreview.discount_amount,
+                  subscription.currency,
+                )}
               </span>
             </div>
           )}
@@ -130,7 +138,12 @@ export const CurrentPeriodOverview = ({
           {hasTaxes && (
             <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
               <span>Taxes</span>
-              <span>{formatCurrency(subscriptionPreview.tax_amount)}</span>
+              <span>
+                {formatCurrency(
+                  subscriptionPreview.tax_amount,
+                  subscription.currency,
+                )}
+              </span>
             </div>
           )}
 
@@ -140,7 +153,10 @@ export const CurrentPeriodOverview = ({
             </span>
             <span className="text-lg font-medium">
               {subscriptionPreview ? (
-                formatCurrency(subscriptionPreview.total_amount)
+                formatCurrency(
+                  subscriptionPreview.total_amount,
+                  subscription.currency,
+                )
               ) : (
                 <span className="dark:text-polar-500 animate-pulse text-gray-500">
                   Loading…

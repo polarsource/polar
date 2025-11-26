@@ -214,6 +214,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 cell: ({ row }) =>
                   formatSubCentCurrency(
                     Number(row.original.totals?.['_cost_amount'] || 0),
+                    'usd',
                   ),
               },
               {
@@ -241,6 +242,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                       <span className="min-w-28">
                         {formatSubCentCurrency(
                           Number(row.original.averages?.['_cost_amount'] || 0),
+                          'usd',
                         )}
                       </span>
                       {values.length > 0 && (
@@ -269,6 +271,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                       <span className="min-w-28">
                         {formatSubCentCurrency(
                           Number(row.original.p95?.['_cost_amount'] || 0),
+                          'usd',
                         )}
                       </span>
                       {values.length > 0 && (
@@ -297,6 +300,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                       <span className="min-w-28">
                         {formatSubCentCurrency(
                           Number(row.original.p99?.['_cost_amount'] || 0),
+                          'usd',
                         )}
                       </span>
                       {values.length > 0 && (

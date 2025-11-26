@@ -180,44 +180,59 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 <DetailRow
                   key={item.id}
                   label={item.label}
-                  value={formatCurrencyAndAmount(item.amount)}
+                  value={formatCurrencyAndAmount(item.amount, order.currency)}
                 />
               ))}
             </div>
 
             <DetailRow
               label="Subtotal"
-              value={formatCurrencyAndAmount(order.subtotal_amount)}
+              value={formatCurrencyAndAmount(
+                order.subtotal_amount,
+                order.currency,
+              )}
             />
             <DetailRow
               label="Discount"
               value={
                 order.discount_amount
-                  ? formatCurrencyAndAmount(-order.discount_amount)
+                  ? formatCurrencyAndAmount(
+                      -order.discount_amount,
+                      order.currency,
+                    )
                   : '—'
               }
             />
             <DetailRow
               label="Net amount"
-              value={formatCurrencyAndAmount(order.net_amount)}
+              value={formatCurrencyAndAmount(order.net_amount, order.currency)}
             />
             <DetailRow
               label="Tax"
-              value={formatCurrencyAndAmount(order.tax_amount)}
+              value={formatCurrencyAndAmount(order.tax_amount, order.currency)}
             />
             <DetailRow
               label="Total"
-              value={formatCurrencyAndAmount(order.total_amount)}
+              value={formatCurrencyAndAmount(
+                order.total_amount,
+                order.currency,
+              )}
             />
             {order.applied_balance_amount !== 0 && (
               <>
                 <DetailRow
                   label="Applied balance"
-                  value={formatCurrencyAndAmount(order.applied_balance_amount)}
+                  value={formatCurrencyAndAmount(
+                    order.applied_balance_amount,
+                    order.currency,
+                  )}
                 />
                 <DetailRow
                   label="To be paid"
-                  value={formatCurrencyAndAmount(order.due_amount)}
+                  value={formatCurrencyAndAmount(
+                    order.due_amount,
+                    order.currency,
+                  )}
                 />
               </>
             )}

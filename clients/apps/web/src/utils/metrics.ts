@@ -47,11 +47,11 @@ export const getTickFormatter = (
     case 'scalar':
       return formatHumanFriendlyScalar
     case 'currency':
-      return formatHumanFriendlyCurrency
+      return (value: number) => formatHumanFriendlyCurrency(value, 'usd')
     case 'percentage':
       return formatPercentage
     case 'currency_sub_cent':
-      return formatSubCentCurrency
+      return (value: number) => formatSubCentCurrency(value, 'usd')
   }
 }
 
@@ -63,11 +63,11 @@ export const getFormattedMetricValue = (
     case 'scalar':
       return formatScalar(value)
     case 'currency':
-      return formatAccountingFriendlyCurrency(value)
+      return formatAccountingFriendlyCurrency(value, 'usd')
     case 'percentage':
       return formatPercentage(value)
     case 'currency_sub_cent':
-      return formatSubCentCurrency(value)
+      return formatSubCentCurrency(value, 'usd')
   }
 }
 

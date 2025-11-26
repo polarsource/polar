@@ -51,10 +51,11 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
                 <Skeleton />
               ) : (
                 <>
-                  {formatCurrencyAndAmount(
-                    summary?.balance.amount ?? 0,
-                    summary?.balance.currency,
-                  )}
+                  {summary &&
+                    formatCurrencyAndAmount(
+                      summary.balance.amount,
+                      summary.balance.currency,
+                    )}
                 </>
               )}
             </div>

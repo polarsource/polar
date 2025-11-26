@@ -38,7 +38,10 @@ export const TreeNode = ({
 
   const costDisplay = useMemo(() => {
     if ('_cost' in event.metadata && event.metadata._cost) {
-      return formatSubCentCurrency(Number(event.metadata._cost?.amount ?? 0))
+      return formatSubCentCurrency(
+        Number(event.metadata._cost?.amount ?? 0),
+        event.metadata._cost?.currency ?? 'usd',
+      )
     }
     return null
   }, [event.metadata])

@@ -20,9 +20,6 @@ from polar.order.service import order as order_service
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
-from polar.transaction.service.payment import (
-    payment_transaction as payment_transaction_service,
-)
 from polar.wallet.repository import WalletRepository, WalletTransactionRepository
 
 
@@ -144,7 +141,6 @@ async def handle_success(
         payment = await payment_service.upsert_from_stripe_charge(
             session, object, checkout, wallet, order
         )
-        await payment_transaction_service.create_payment(session, charge=object)
 
     if checkout is not None:
         if object.OBJECT_NAME == "setup_intent":

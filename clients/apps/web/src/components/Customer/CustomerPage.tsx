@@ -222,16 +222,20 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 trend={calculateTrend('revenue')}
               >
                 {typeof metricsData?.totals.revenue === 'number'
-                  ? formatHumanFriendlyCurrency(metricsData.totals.revenue)
+                  ? formatHumanFriendlyCurrency(
+                      metricsData.totals.revenue,
+                      'usd',
+                    )
                   : '—'}
               </CustomerTrendStatBox>
               <CustomerTrendStatBox
                 title="Cost"
                 size="lg"
                 trend={calculateTrend('costs')}
+                trendUpIsBad
               >
                 {typeof metricsData?.totals.costs === 'number'
-                  ? formatSubCentCurrency(metricsData.totals.costs)
+                  ? formatSubCentCurrency(metricsData.totals.costs, 'usd')
                   : '—'}
               </CustomerTrendStatBox>
               <CustomerTrendStatBox
@@ -240,7 +244,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 trend={calculateTrend('gross_margin')}
               >
                 {typeof metricsData?.totals.gross_margin === 'number'
-                  ? formatHumanFriendlyCurrency(metricsData.totals.gross_margin)
+                  ? formatHumanFriendlyCurrency(
+                      metricsData.totals.gross_margin,
+                      'usd',
+                    )
                   : '—'}
               </CustomerTrendStatBox>
               <CustomerTrendStatBox
@@ -259,6 +266,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 {typeof metricsData?.totals.cumulative_revenue === 'number'
                   ? formatHumanFriendlyCurrency(
                       metricsData.totals.cumulative_revenue,
+                      'usd',
                     )
                   : '—'}
               </CustomerStatBox>
@@ -327,6 +335,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                   original.amount && original.currency ? (
                     <AmountLabel
                       amount={original.amount}
+                      currency={original.currency}
                       interval={original.recurring_interval}
                       intervalCount={original.recurring_interval_count}
                     />
@@ -385,7 +394,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 header: 'Amount',
                 accessorKey: 'amount',
                 cell: ({ row: { original } }) =>
-                  formatCurrency(original.net_amount),
+                  formatCurrency(original.net_amount, original.currency),
               },
               {
                 header: '',

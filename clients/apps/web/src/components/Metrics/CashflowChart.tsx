@@ -110,6 +110,7 @@ const CashflowChart = ({
           <h3 className="text-5xl font-light">
             {formatAccountingFriendlyCurrency(
               metricsData ? metricsData.totals.cashflow : 0,
+              'usd',
             )}
           </h3>
         </div>
@@ -153,7 +154,7 @@ const CashflowChart = ({
                         }}
                         data-empty={period.costs === 0 ? true : undefined}
                       >
-                        {formatSubCentCurrency(Math.abs(period.costs))}
+                        {formatSubCentCurrency(Math.abs(period.costs), 'usd')}
                       </div>
                     </div>
                     {dayOrders.length > 0 && (
@@ -192,7 +193,7 @@ const CashflowChart = ({
                               )}
                             </span>
                             {order.description} -{' '}
-                            {formatCurrency(order.net_amount)}
+                            {formatCurrency(order.net_amount, order.currency)}
                           </li>
                         ))}
                       </ul>

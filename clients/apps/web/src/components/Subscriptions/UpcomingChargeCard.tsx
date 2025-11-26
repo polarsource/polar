@@ -77,7 +77,7 @@ const UpcomingChargeCard = ({
               isCancelingAtPeriodEnd ? (
                 <span className="text-gray-500">Canceled</span>
               ) : (
-                formatCurrency(subscription.amount || 0)
+                formatCurrency(subscription.amount, subscription.currency)
               )
             }
           />
@@ -92,7 +92,7 @@ const UpcomingChargeCard = ({
                 <DetailRow
                   key={meter.id}
                   label={meter.meter.name}
-                  value={formatCurrency(meter.amount)}
+                  value={formatCurrency(meter.amount, subscription.currency)}
                 />
               ))}
             </>
@@ -112,7 +112,10 @@ const UpcomingChargeCard = ({
                   {(hasTaxes || hasDiscount) && (
                     <DetailRow
                       label="Subtotal"
-                      value={formatCurrency(chargePreview.subtotal_amount)}
+                      value={formatCurrency(
+                        chargePreview.subtotal_amount,
+                        subscription.currency,
+                      )}
                       valueClassName="dark:text-polar-500 text-gray-500"
                       labelClassName="dark:text-polar-500 text-gray-500"
                     />
@@ -121,7 +124,10 @@ const UpcomingChargeCard = ({
                   {hasDiscount && (
                     <DetailRow
                       label="Discount"
-                      value={formatCurrency(-1 * chargePreview.discount_amount)}
+                      value={formatCurrency(
+                        -1 * chargePreview.discount_amount,
+                        subscription.currency,
+                      )}
                       valueClassName="dark:text-polar-500 text-gray-500"
                       labelClassName="dark:text-polar-500 text-gray-500"
                     />
@@ -130,7 +136,10 @@ const UpcomingChargeCard = ({
                   {hasTaxes && (
                     <DetailRow
                       label="Taxes"
-                      value={formatCurrency(chargePreview.tax_amount)}
+                      value={formatCurrency(
+                        chargePreview.tax_amount,
+                        subscription.currency,
+                      )}
                       valueClassName="dark:text-polar-500 text-gray-500"
                       labelClassName="dark:text-polar-500 text-gray-500"
                     />
@@ -145,7 +154,10 @@ const UpcomingChargeCard = ({
                       .join(' ')}
                     value={
                       <span className="text-lg font-semibold">
-                        {formatCurrency(chargePreview.total_amount)}
+                        {formatCurrency(
+                          chargePreview.total_amount,
+                          subscription.currency,
+                        )}
                       </span>
                     }
                     valueClassName="font-medium"

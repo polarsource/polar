@@ -238,10 +238,19 @@ def construct_stripe_invoice(
 
 def build_stripe_balance_transaction(
     *,
+    amount: int = 1000,
+    currency: str = "usd",
     fee: int | None = 100,
     reporting_category: str | None = None,
+    exchange_rate: float | None = None,
 ) -> stripe_lib.BalanceTransaction:
-    obj: dict[str, Any] = {"id": "STRIPE_BALANCE_TRANSACTION_ID", "fee": fee}
+    obj: dict[str, Any] = {
+        "id": "STRIPE_BALANCE_TRANSACTION_ID",
+        "amount": amount,
+        "currency": currency,
+        "fee": fee,
+        "exchange_rate": exchange_rate,
+    }
     if reporting_category:
         obj["reporting_category"] = reporting_category
 
@@ -282,6 +291,7 @@ def build_stripe_charge(
     *,
     status: str = "succeeded",
     amount: int = 1000,
+    currency: str = "usd",
     customer: str | None = None,
     invoice: str | None = None,
     payment_intent: str | None = None,
@@ -298,7 +308,7 @@ def build_stripe_charge(
         "id": "STRIPE_CHARGE_ID",
         "status": status,
         "customer": customer,
-        "currency": "usd",
+        "currency": currency,
         "amount": amount,
         "invoice": invoice,
         "payment_intent": payment_intent,
@@ -321,7 +331,8 @@ def build_stripe_charge(
 def build_stripe_refund(
     *,
     status: str = "succeeded",
-    amount: int = 100,
+    amount: int = 1000,
+    currency: str = "usd",
     reason: str = "requested_by_customer",
     id: str | None = None,
     charge_id: str | None = None,
@@ -341,7 +352,7 @@ def build_stripe_refund(
             "id": id,
             "charge": charge_id,
             "status": status,
-            "currency": "usd",
+            "currency": currency,
             "amount": amount,
             "reason": reason,
             "destination_details": "{}",
@@ -358,7 +369,8 @@ def build_stripe_dispute(
     status: str,
     id: str = "STRIPE_DISPUTE_ID",
     charge_id: str = "STRIPE_CHARGE_ID",
-    amount: int = 100,
+    amount: int = 1000,
+    currency: str = "usd",
     balance_transactions: list[stripe_lib.BalanceTransaction],
 ) -> stripe_lib.Dispute:
     return stripe_lib.Dispute.construct_from(
@@ -366,7 +378,7 @@ def build_stripe_dispute(
             "id": id,
             "status": status,
             "charge": charge_id,
-            "currency": "usd",
+            "currency": currency,
             "amount": amount,
             "balance_transactions": balance_transactions,
         },

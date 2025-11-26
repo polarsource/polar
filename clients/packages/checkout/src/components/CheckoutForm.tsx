@@ -961,14 +961,14 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
         setupFutureUsage: 'off_session',
         paymentMethodCreation: 'manual',
         amount: checkout.totalAmount,
-        currency: checkout.currency || 'usd',
+        currency: checkout.currency,
       }
     } else if (checkout.isPaymentRequired && checkout.totalAmount) {
       return {
         mode: 'payment',
         paymentMethodCreation: 'manual',
         amount: checkout.totalAmount,
-        currency: checkout.currency || 'usd',
+        currency: checkout.currency,
       }
     }
 
@@ -976,7 +976,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       mode: 'setup',
       paymentMethodCreation: 'manual',
       setupFutureUsage: 'off_session',
-      currency: checkout.currency || 'usd',
+      currency: checkout.currency,
     }
   }, [checkout])
 

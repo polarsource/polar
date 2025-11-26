@@ -19,7 +19,7 @@ export const getCentsInDollarString = (
 
 export const formatCurrencyAndAmount = (
   cents: number,
-  currency: string = 'usd',
+  currency: string,
   minimumFractionDigits?: number,
   notation?: 'standard' | 'scientific' | 'engineering' | 'compact',
   maximumFractionDigits?: number,

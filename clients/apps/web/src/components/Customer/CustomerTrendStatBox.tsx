@@ -22,6 +22,7 @@ export interface CustomerTrendStatBoxProps extends CustomerStatBoxProps {
     metric: schemas['Metric']
   }
   period?: string
+  trendUpIsBad?: boolean
 }
 
 export const CustomerTrendStatBox = ({
@@ -31,6 +32,7 @@ export const CustomerTrendStatBox = ({
   valueClassName,
   size = 'sm',
   trend,
+  trendUpIsBad = false,
 }: PropsWithChildren<CustomerTrendStatBoxProps>) => {
   const formatter = useMemo(() => {
     switch (trend?.metric.type) {
@@ -61,9 +63,13 @@ export const CustomerTrendStatBox = ({
                 <div
                   className={`flex items-center gap-1 text-sm ${
                     trend.direction === 'up'
-                      ? 'text-emerald-500'
-                      : trend.direction === 'down'
+                      ? trendUpIsBad
                         ? 'text-red-500'
+                        : 'text-emerald-500'
+                      : trend.direction === 'down'
+                        ? trendUpIsBad
+                          ? 'text-emerald-500'
+                          : 'text-red-500'
                         : 'dark:text-polar-500 text-gray-500'
                   }`}
                 >
@@ -80,7 +86,7 @@ export const CustomerTrendStatBox = ({
               <span className="dark:text-polar-500 font-sans text-sm text-gray-500">
                 Previous Period
               </span>
-              <span>{formatter?.(trend.previousValue)}</span>
+              <span>{formatter?.(trend.previousValue, 'usd')}</span>
             </TooltipContent>
           </Tooltip>
         ) : (

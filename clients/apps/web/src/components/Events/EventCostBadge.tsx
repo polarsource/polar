@@ -79,12 +79,12 @@ export const EventCostBadge = (props: EventCostBadgeProps) => {
     )
   }
 
-  const { cost, type } = props as EventCostWithAmountBadgeProps
+  const { cost, type, currency } = props as EventCostWithAmountBadgeProps
   const parsedNumber = Number(cost)
 
   return (
     <div className="flex flex-row items-center gap-x-4 font-mono">
-      {formatSubCentCurrency(parsedNumber)}
+      {formatSubCentCurrency(parsedNumber, currency)}
       <EventCostIndicator type={cost === 0 ? 'neutral' : type} />
     </div>
   )

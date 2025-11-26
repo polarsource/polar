@@ -203,6 +203,9 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
     platform_fee_amount: int = Field(
         description="Platform fee amount in cents.", examples=[500]
     )
+    platform_fee_currency: str | None = Field(
+        description="Currency of the platform fee.", examples=["usd"]
+    )
     customer: OrderCustomer
     user_id: UUID4 = Field(
         validation_alias=AliasChoices(

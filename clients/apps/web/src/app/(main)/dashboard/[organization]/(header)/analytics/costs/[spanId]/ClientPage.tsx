@@ -251,10 +251,10 @@ export default function SpanDetailPage({
               {costMetrics.totalOccurrences.toLocaleString()}
             </CustomerStatBox>
             <CustomerStatBox title="Total cost" size="lg">
-              {formatSubCentCurrency(costMetrics.totalCost)}
+              {formatSubCentCurrency(costMetrics.totalCost, 'usd')}
             </CustomerStatBox>
             <CustomerStatBox title="Average cost" size="lg">
-              {formatSubCentCurrency(costMetrics.averageCost)}
+              {formatSubCentCurrency(costMetrics.averageCost, 'usd')}
             </CustomerStatBox>
           </div>
 
@@ -325,7 +325,7 @@ export default function SpanDetailPage({
             }
             title="Costs"
             showYAxis={true}
-            yAxisFormatter={(value) => formatSubCentCurrency(value)}
+            yAxisFormatter={(value) => formatSubCentCurrency(value, 'usd')}
             loading={isFetching}
           />
         </div>
@@ -506,7 +506,15 @@ function EventRow({
                 event.metadata as {
                   _cost: { amount: string; currency: string }
                 }
-              )._cost && formatSubCentCurrency(parsedCost)}
+              )._cost &&
+                formatSubCentCurrency(
+                  parsedCost,
+                  (
+                    event.metadata as {
+                      _cost: { amount: string; currency: string }
+                    }
+                  )._cost.currency ?? 'usd',
+                )}
             </span>
             <span className={mappedCost.colorClass}>
               {mappedCost.deviationFormatted}

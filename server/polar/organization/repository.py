@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, or_, select
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.repository import (
@@ -157,6 +157,20 @@ class OrganizationRepository(
         )
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
+
+    async def enable_revops(self, organization_ids: set[UUID]) -> None:
+        statement = self.get_base_statement().where(
+            Organization.id.in_(organization_ids),
+            or_(
+                Organization.feature_settings["revops_enabled"].is_(None),
+                Organization.feature_settings["revops_enabled"].as_boolean().is_(False),
+            ),
+        )
+        orgs = await self.get_all(statement)
+        for org in orgs:
+            org.feature_settings = {**org.feature_settings, "revops_enabled": True}
+            self.session.add(org)
+        await self.session.flush()
 
 
 class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):

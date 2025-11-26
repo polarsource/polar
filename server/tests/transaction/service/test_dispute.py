@@ -86,9 +86,12 @@ class TestCreateDispute:
         charge = build_stripe_charge()
         dispute = build_stripe_dispute(
             status="lost",
+            amount=1000,
             charge_id=charge.id,
             balance_transactions=[
-                build_stripe_balance_transaction(reporting_category="dispute")
+                build_stripe_balance_transaction(
+                    reporting_category="dispute", amount=-1000
+                ),
             ],
         )
 
@@ -218,13 +221,14 @@ class TestCreateDispute:
         charge = build_stripe_charge()
         dispute = build_stripe_dispute(
             status="won",
+            amount=1000,
             charge_id=charge.id,
             balance_transactions=[
                 build_stripe_balance_transaction(
-                    reporting_category="dispute", fee=1500
+                    reporting_category="dispute", fee=1500, amount=-1000
                 ),
                 build_stripe_balance_transaction(
-                    reporting_category="dispute_reversal", fee=0
+                    reporting_category="dispute_reversal", fee=0, amount=1000
                 ),
             ],
         )
@@ -330,6 +334,322 @@ class TestCreateDispute:
         create_dispute_fees_mock.assert_awaited()
         assert create_dispute_fees_mock.call_count == 2
 
+        create_dispute_fees_balances_mock.assert_awaited_once()
+
+    async def test_valid_won_different_settlement_currency(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        balance_transaction_service_mock: MagicMock,
+        create_dispute_fees_mock: AsyncMock,
+        create_dispute_fees_balances_mock: AsyncMock,
+    ) -> None:
+        charge_balance_transaction = build_stripe_balance_transaction(
+            amount=1800, currency="usd", exchange_rate=1.5
+        )
+        charge = build_stripe_charge(
+            amount=1200,
+            currency="eur",
+            balance_transaction=charge_balance_transaction.id,
+        )
+        dispute = build_stripe_dispute(
+            status="won",
+            currency="eur",
+            amount=1200,
+            charge_id=charge.id,
+            balance_transactions=[
+                build_stripe_balance_transaction(
+                    reporting_category="dispute",
+                    fee=1500,
+                    amount=-1800,
+                    currency="usd",
+                ),
+                build_stripe_balance_transaction(
+                    reporting_category="dispute_reversal",
+                    fee=0,
+                    amount=1800,
+                    currency="usd",
+                ),
+            ],
+        )
+
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        payment_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=1500,
+            account_currency="usd",
+            account_amount=1500,
+            tax_amount=300,
+            presentment_currency=charge.currency,
+            presentment_amount=1000,
+            presentment_tax_amount=200,
+            charge_id=charge.id,
+        )
+        await save_fixture(payment_transaction)
+
+        # First balance
+        outgoing_balance_1 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency=payment_transaction.currency,
+            amount=-payment_transaction.amount * 0.75,
+            account_currency=payment_transaction.currency,
+            account_amount=-payment_transaction.amount * 0.75,
+            tax_amount=0,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        incoming_balance_1 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency=payment_transaction.currency,
+            amount=payment_transaction.amount * 0.75,
+            account_currency=payment_transaction.currency,
+            account_amount=payment_transaction.amount * 0.75,
+            tax_amount=0,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        await save_fixture(outgoing_balance_1)
+        await save_fixture(incoming_balance_1)
+
+        # Second balance
+        outgoing_balance_2 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency=payment_transaction.currency,
+            amount=-payment_transaction.amount * 0.25,
+            account_currency=payment_transaction.currency,
+            account_amount=-payment_transaction.amount * 0.25,
+            tax_amount=0,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_2",
+        )
+        incoming_balance_2 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency=payment_transaction.currency,
+            amount=payment_transaction.amount * 0.25,
+            account_currency=payment_transaction.currency,
+            account_amount=payment_transaction.amount * 0.25,
+            tax_amount=0,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_2",
+        )
+        await save_fixture(outgoing_balance_2)
+        await save_fixture(incoming_balance_2)
+
+        (
+            dispute_transaction,
+            dispute_reversal_transaction,
+        ) = await dispute_transaction_service.create_dispute(session, dispute=dispute)
+
+        assert dispute_transaction.type == TransactionType.dispute
+        assert dispute_transaction.processor == Processor.stripe
+        assert dispute_transaction.currency == "usd"
+        assert dispute_transaction.amount == -1500
+        assert dispute_transaction.tax_amount == -300
+        assert dispute_transaction.presentment_currency == "eur"
+        assert dispute_transaction.presentment_amount == -1000
+        assert dispute_transaction.presentment_tax_amount == -200
+
+        assert dispute_reversal_transaction is not None
+        assert dispute_reversal_transaction.type == TransactionType.dispute_reversal
+        assert dispute_reversal_transaction.processor == Processor.stripe
+        assert dispute_reversal_transaction.currency == "usd"
+        assert dispute_reversal_transaction.amount == 1500
+        assert dispute_reversal_transaction.tax_amount == 300
+        assert dispute_reversal_transaction.presentment_currency == "eur"
+        assert dispute_reversal_transaction.presentment_amount == 1000
+        assert dispute_reversal_transaction.presentment_tax_amount == 200
+
+        balance_transaction_service_mock.create_reversal_balance.assert_not_called()
+
+        create_dispute_fees_mock.assert_awaited()
+        assert create_dispute_fees_mock.call_count == 2
+
+        create_dispute_fees_balances_mock.assert_awaited_once()
+
+    async def test_valid_lost_different_settlement_currency(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        balance_transaction_service_mock: MagicMock,
+        create_dispute_fees_mock: AsyncMock,
+        create_dispute_fees_balances_mock: AsyncMock,
+    ) -> None:
+        charge_balance_transaction = build_stripe_balance_transaction(
+            amount=1800, currency="usd", exchange_rate=1.5
+        )
+        charge = build_stripe_charge(
+            amount=1200,
+            currency="eur",
+            balance_transaction=charge_balance_transaction.id,
+        )
+        dispute = build_stripe_dispute(
+            status="lost",
+            currency="eur",
+            amount=1200,
+            charge_id=charge.id,
+            balance_transactions=[
+                build_stripe_balance_transaction(
+                    reporting_category="dispute",
+                    fee=1500,
+                    amount=-1800,
+                    currency="usd",
+                ),
+                build_stripe_balance_transaction(
+                    reporting_category="dispute_reversal",
+                    fee=0,
+                    amount=1800,
+                    currency="usd",
+                ),
+            ],
+        )
+
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        payment_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=1500,
+            account_currency="usd",
+            account_amount=1500,
+            tax_amount=300,
+            presentment_currency=charge.currency,
+            presentment_amount=1000,
+            presentment_tax_amount=200,
+            charge_id=charge.id,
+        )
+        await save_fixture(payment_transaction)
+
+        # First balance
+        outgoing_balance_1 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency=payment_transaction.currency,
+            amount=-payment_transaction.amount * 0.75,
+            account_currency=payment_transaction.currency,
+            account_amount=-payment_transaction.amount * 0.75,
+            tax_amount=0,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        incoming_balance_1 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency=payment_transaction.currency,
+            amount=payment_transaction.amount * 0.75,
+            account_currency=payment_transaction.currency,
+            account_amount=payment_transaction.amount * 0.75,
+            tax_amount=0,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        await save_fixture(outgoing_balance_1)
+        await save_fixture(incoming_balance_1)
+
+        # Second balance
+        outgoing_balance_2 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency=payment_transaction.currency,
+            amount=-payment_transaction.amount * 0.25,
+            account_currency=payment_transaction.currency,
+            account_amount=-payment_transaction.amount * 0.25,
+            tax_amount=0,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_2",
+        )
+        incoming_balance_2 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency=payment_transaction.currency,
+            amount=payment_transaction.amount * 0.25,
+            account_currency=payment_transaction.currency,
+            account_amount=payment_transaction.amount * 0.25,
+            tax_amount=0,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_2",
+        )
+        await save_fixture(outgoing_balance_2)
+        await save_fixture(incoming_balance_2)
+
+        (
+            dispute_transaction,
+            dispute_reversal_transaction,
+        ) = await dispute_transaction_service.create_dispute(session, dispute=dispute)
+
+        assert dispute_transaction.type == TransactionType.dispute
+        assert dispute_transaction.processor == Processor.stripe
+        assert dispute_transaction.currency == "usd"
+        assert dispute_transaction.amount == -1500
+        assert dispute_transaction.tax_amount == -300
+        assert dispute_transaction.presentment_currency == "eur"
+        assert dispute_transaction.presentment_amount == -1000
+        assert dispute_transaction.presentment_tax_amount == -200
+
+        assert dispute_reversal_transaction is None
+
+        assert balance_transaction_service_mock.create_reversal_balance.call_count == 2
+
+        first_call = (
+            balance_transaction_service_mock.create_reversal_balance.call_args_list[0]
+        )
+        assert [t.id for t in first_call[1]["balance_transactions"]] == [
+            outgoing_balance_1.id,
+            incoming_balance_1.id,
+        ]
+        assert first_call[1]["amount"] == payment_transaction.amount * 0.75
+
+        second_call = (
+            balance_transaction_service_mock.create_reversal_balance.call_args_list[1]
+        )
+        assert [t.id for t in second_call[1]["balance_transactions"]] == [
+            outgoing_balance_2.id,
+            incoming_balance_2.id,
+        ]
+        assert second_call[1]["amount"] == payment_transaction.amount * 0.25
+
+        create_dispute_fees_mock.assert_awaited_once()
         create_dispute_fees_balances_mock.assert_awaited_once()
 
 

@@ -2180,11 +2180,13 @@ class TestCreateOrderBalance:
                 Transaction(
                     type=TransactionType.balance,
                     amount=-100,
+                    currency="usd",
                     platform_fee_type=PlatformFeeType.payment,
                 ),
                 Transaction(
                     type=TransactionType.balance,
                     amount=100,
+                    currency="usd",
                     platform_fee_type=PlatformFeeType.payment,
                     account=organization_account,
                 ),
@@ -2193,11 +2195,13 @@ class TestCreateOrderBalance:
                 Transaction(
                     type=TransactionType.balance,
                     amount=-50,
+                    currency="usd",
                     platform_fee_type=PlatformFeeType.payment,
                 ),
                 Transaction(
                     type=TransactionType.balance,
                     amount=50,
+                    currency="usd",
                     platform_fee_type=PlatformFeeType.payment,
                     account=organization_account,
                 ),
@@ -2226,6 +2230,7 @@ class TestCreateOrderBalance:
 
         platform_fee_transaction_service_mock.create_fees_reversal_balances.assert_called_once()
         assert order.platform_fee_amount == 150
+        assert order.platform_fee_currency == "usd"
 
         updated_payment_transaction = await payment_transaction_service.get(
             session,

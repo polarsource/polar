@@ -92,6 +92,7 @@ export const CustomerContextView = ({
             {formatAccountingFriendlyCurrency(
               metrics.data?.periods[metrics.data.periods.length - 1]
                 .cumulative_revenue ?? 0,
+              'usd',
             )}
           </CustomerStatBox>
           <CustomerStatBox title="First Seen">

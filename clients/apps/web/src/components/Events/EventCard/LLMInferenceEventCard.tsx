@@ -74,7 +74,10 @@ export const LLMInferenceEventCard = ({
           </span>
           <DataRow
             label="Cost"
-            value={formatSubCentCurrency(Number(costMetadata.amount))}
+            value={formatSubCentCurrency(
+              Number(costMetadata.amount),
+              costMetadata.currency ?? 'usd',
+            )}
           />
         </EventCardBase>
       )}

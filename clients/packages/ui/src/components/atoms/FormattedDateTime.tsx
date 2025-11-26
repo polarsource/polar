@@ -15,9 +15,9 @@ const FormattedDateTime: React.FC<FormattedDateTimeProps> = ({
   timeStyle = 'short',
   resolution = 'day',
 }) => {
+  const parsedDate = useMemo(() => new Date(datetime), [datetime])
   const formatted = useMemo(() => {
     try {
-      const parsedDate = new Date(datetime)
       if (resolution === 'time') {
         return parsedDate.toLocaleString(locale, { dateStyle, timeStyle })
       }
@@ -35,9 +35,13 @@ const FormattedDateTime: React.FC<FormattedDateTimeProps> = ({
     } catch {
       return 'Invalid date or locale'
     }
-  }, [datetime, locale, resolution, dateStyle, timeStyle])
+  }, [parsedDate, locale, resolution, dateStyle, timeStyle])
 
-  return <>{formatted}</>
+  return (
+    <time suppressHydrationWarning dateTime={parsedDate.toISOString()}>
+      {formatted}
+    </time>
+  )
 }
 
 export default FormattedDateTime

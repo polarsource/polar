@@ -1793,6 +1793,7 @@ class OrderService:
         order.platform_fee_amount = sum(
             incoming.amount for _, incoming in platform_fee_transactions
         )
+        order.platform_fee_currency = platform_fee_transactions[0][0].currency
         session.add(order)
 
     async def send_webhook(

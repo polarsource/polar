@@ -110,6 +110,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     refunded_tax_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     platform_fee_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    platform_fee_currency: Mapped[str | None] = mapped_column(
+        String(3), nullable=True, default=None
+    )
 
     billing_name: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None

@@ -2,7 +2,8 @@
 
 import { AnonymousCustomerContextView } from '@/components/Customer/AnonymousCustomerContextView'
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
-import { EventRow } from '@/components/Events/EventRow'
+import { LLMInferenceEventCard } from '@/components/Events/EventCard/LLMInferenceEventCard'
+import { TreeView } from '@/components/Events/TreeView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
@@ -12,6 +13,7 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ArrowLeftIcon } from 'lucide-react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
 
 const PAGE_SIZE = 50
@@ -26,6 +28,7 @@ export default function EventDetailPage({
   eventId,
 }: EventDetailPageProps) {
   const { data: event } = useEvent(organization.id, eventId)
+  const searchParams = useSearchParams()
 
   const {
     data: childrenData,
@@ -52,10 +55,34 @@ export default function EventDetailPage({
     )
   }, [event, eventTypes])
 
-  const children = useMemo(() => {
+  const childEvents = useMemo(() => {
     if (!childrenData) return []
     return childrenData.pages.flatMap((page) => page.items)
   }, [childrenData])
+
+  const expandedEvent = useMemo(() => {
+    const expandedEventId = searchParams.get('event')
+    if (!expandedEventId || !event) {
+      return event
+    }
+
+    const findEventById = (
+      events: schemas['Event'][],
+    ): schemas['Event'] | undefined => {
+      for (const e of events) {
+        if (e.id === expandedEventId) {
+          return e
+        }
+        if (e.children && e.children.length > 0) {
+          const found = findEventById(e.children)
+          if (found) return found
+        }
+      }
+      return undefined
+    }
+
+    return findEventById(childEvents) || event
+  }, [searchParams, event, childEvents])
 
   if (!event) {
     return null
@@ -134,47 +161,27 @@ export default function EventDetailPage({
           })}
         </span>
       </div>
-      <div className="flex flex-col gap-y-3">
-        <EventRow
-          event={event}
-          organization={organization}
-          expanded={true}
-          depth={0}
-          renderChildren={false}
-          renderEventLink={false}
-        />
-      </div>
-      {children.length > 0 ? (
-        <div className="flex flex-col gap-y-8">
-          <div className="flex flex-row justify-between">
-            <h3 className="text-2xl">Child Events</h3>
-            <h3 className="dark:text-polar-500 text-2xl text-gray-400">
-              {children.length} {children.length === 1 ? 'Event' : 'Events'}
-            </h3>
-          </div>
-          <div className="flex flex-col gap-y-3">
-            {children.map((child) => (
-              <EventRow
-                key={child.id}
-                event={child}
-                organization={organization}
-                expanded
-                renderChildren={false}
-              />
-            ))}
-            {hasNextPage && (
-              <Button
-                className="self-start"
-                variant="secondary"
-                onClick={() => fetchNextPage()}
-                loading={isFetching}
-              >
-                Load More
-              </Button>
-            )}
-          </div>
+      <div className="flex flex-col gap-y-3"></div>
+      <div className="flex w-full items-start justify-between gap-8">
+        <div className="w-96 flex-none">
+          {childEvents.length > 0 && (
+            <TreeView
+              rootEvent={event}
+              childEvents={childEvents}
+              organization={organization}
+            />
+          )}
         </div>
-      ) : null}
+        <div className="flex-1">
+          {expandedEvent && (
+            <div className="flex-1">
+              {expandedEvent.source === 'user' && (
+                <LLMInferenceEventCard event={expandedEvent} />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </DashboardBody>
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { Sparkline, SparklineColor } from '@/components/Sparkline/Sparkline'
+import { Sparkline } from '@/components/Sparkline/Sparkline'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
 import { parseSearchParams, serializeSearchParams } from '@/utils/datatable'
@@ -248,7 +248,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                       {values.length > 0 && (
                         <Sparkline
                           values={values}
-                          color={SparklineColor.Green}
+                          trendUpIsBad={true}
                           width={80}
                           height={16}
                         />
@@ -277,7 +277,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                       {values.length > 0 && (
                         <Sparkline
                           values={values}
-                          color={SparklineColor.Yellow}
+                          trendUpIsBad={true}
                           width={80}
                           height={16}
                         />
@@ -306,7 +306,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
                       {values.length > 0 && (
                         <Sparkline
                           values={values}
-                          color={SparklineColor.Red}
+                          trendUpIsBad={true}
                           width={80}
                           height={16}
                         />

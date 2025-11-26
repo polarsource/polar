@@ -626,15 +626,9 @@ def get_events_metrics_cte(
     start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-    readable_events_statement = _get_readable_events_statement(
-        auth_subject,
-        organization_id=organization_id,
-        customer_id=customer_id,
-    )
-
     day_column = interval.sql_date_trunc(Event.timestamp)
 
-    daily_metrics = cte(
+    statement = (
         select(
             day_column.label("day"),
             *[
@@ -647,47 +641,19 @@ def get_events_metrics_cte(
         )
         .select_from(Event)
         .where(
-            Event.id.in_(readable_events_statement),
             Event.timestamp >= start_timestamp,
             Event.timestamp <= end_timestamp,
         )
         .group_by(day_column)
     )
 
-    return cte(
-        select(
-            timestamp_column.label("timestamp"),
-            *[
-                func.coalesce(
-                    func.sum(getattr(daily_metrics.c, metric.slug)).over(
-                        order_by=timestamp_column
-                    )
-                    if metric.slug in ["cumulative_costs"]
-                    else getattr(daily_metrics.c, metric.slug),
-                    0,
-                ).label(metric.slug)
-                for metric in metrics
-                if metric.query == MetricQuery.events
-            ],
+    if bounds is not None:
+        start_timestamp, end_timestamp = bounds
+        statement = statement.where(
+            Event.timestamp >= start_timestamp,
+            Event.timestamp <= end_timestamp,
         )
-        .select_from(
-            timestamp_series.join(
-                daily_metrics,
-                onclause=daily_metrics.c.day == timestamp_column,
-                isouter=True,
-            )
-        )
-        .order_by(timestamp_column.asc())
-    )
-
-
-def _get_readable_events_statement(
-    auth_subject: AuthSubject[User | Organization],
-    *,
-    organization_id: Sequence[uuid.UUID] | None = None,
-    customer_id: Sequence[uuid.UUID] | None = None,
-) -> Select[tuple[uuid.UUID]]:
-    statement = select(Event.id)
+    # _get_readable_events_statement
 
     if is_user(auth_subject):
         statement = statement.where(
@@ -717,7 +683,33 @@ def _get_readable_events_statement(
             ),
         ).where(Customer.id.in_(customer_id))
 
-    return statement
+    daily_metrics = cte(statement)
+
+    return cte(
+        select(
+            timestamp_column.label("timestamp"),
+            *[
+                func.coalesce(
+                    func.sum(getattr(daily_metrics.c, metric.slug)).over(
+                        order_by=timestamp_column
+                    )
+                    if metric.slug in ["cumulative_costs"]
+                    else getattr(daily_metrics.c, metric.slug),
+                    0,
+                ).label(metric.slug)
+                for metric in metrics
+                if metric.query == MetricQuery.events
+            ],
+        )
+        .select_from(
+            timestamp_series.join(
+                daily_metrics,
+                onclause=daily_metrics.c.day == timestamp_column,
+                isouter=True,
+            )
+        )
+        .order_by(timestamp_column.asc())
+    )
 
 
 QUERIES: list[QueryCallable] = [

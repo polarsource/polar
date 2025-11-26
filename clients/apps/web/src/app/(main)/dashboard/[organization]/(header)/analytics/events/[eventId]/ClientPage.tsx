@@ -3,6 +3,7 @@
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { EventRow } from '@/components/Events/EventRow'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import KeyboardArrowUpOutlined from '@mui/icons-material/KeyboardArrowUpOutlined'
@@ -36,6 +37,19 @@ export default function EventDetailPage({
     hierarchical: true,
   })
 
+  const { data: eventTypes } = useEventTypes(organization.id)
+
+  const eventType = useMemo(() => {
+    if (!event || !eventTypes) {
+      return null
+    }
+
+    return (
+      eventTypes.items.find((eventType) => eventType.name === event.name) ||
+      null
+    )
+  }, [event, eventTypes])
+
   const children = useMemo(() => {
     if (!childrenData) return []
     return childrenData.pages.flatMap((page) => page.items)
@@ -62,6 +76,12 @@ export default function EventDetailPage({
                 <KeyboardArrowUpOutlined className="h-2 w-2" />
               </Button>
               <span>Parent Event</span>
+            </Link>
+          ) : eventType ? (
+            <Link
+              href={`/dashboard/${organization.slug}/analytics/costs/${eventType.id}`}
+            >
+              {eventType.label}
             </Link>
           ) : (
             <span>Event</span>

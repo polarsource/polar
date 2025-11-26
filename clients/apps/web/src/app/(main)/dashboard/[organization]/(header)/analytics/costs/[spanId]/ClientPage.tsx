@@ -2,6 +2,7 @@
 
 import { Chart } from '@/components/Chart/Chart'
 import { CustomerStatBox } from '@/components/Customer/CustomerStatBox'
+import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -332,13 +333,7 @@ export default function SpanDetailPage({
 
       {events.length > 0 ? (
         <div className="flex flex-col gap-y-8">
-          <div className="flex flex-row justify-between">
-            <h3 className="text-2xl">Spans</h3>
-            <h3 className="dark:text-polar-500 text-2xl text-gray-400">
-              {events.length}
-              {hasNextPage ? '+' : ''} {events.length === 1 ? 'Span' : 'Spans'}
-            </h3>
-          </div>
+          <h3 className="text-2xl">Spans</h3>
           <div className="flex flex-col gap-y-3">
             <div className="dark:border-polar-700 w-full border-collapse overflow-hidden rounded-xl border border-gray-200">
               <table className="w-full table-auto border-collapse rounded-lg">
@@ -352,29 +347,45 @@ export default function SpanDetailPage({
                 </thead>
                 <tbody className="dark:divide-polar-700 divide-y divide-gray-200">
                   {events.map((event) => (
-                    <NewEvent
+                    <EventRow
                       key={event.id}
                       event={event}
-                      eventType={eventType}
                       organization={organization}
                       averageCost={costMetrics.averageCost}
                       p99Cost={costMetrics.p99Cost}
                     />
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="dark:border-polar-700 border-t border-gray-200"
+                    >
+                      {hasNextPage ? (
+                        <button
+                          className="group dark:text-polar-500 dark:hover:bg-polar-700 dark:hover:text-polar-300 relative flex h-10 w-full cursor-pointer items-center justify-center gap-x-2 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+                          onClick={() => fetchNextPage()}
+                        >
+                          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-100 transition-all duration-200 group-hover:opacity-0 group-hover:blur-[2px]">
+                            Showing first {events.length} events
+                          </span>
+                          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:blur-none">
+                            Load more
+                          </span>
+                        </button>
+                      ) : (
+                        <span className="group dark:text-polar-500/60 dark:bg-polar-800 relative flex h-10 w-full items-center justify-center gap-x-2 bg-gray-50 py-3 text-sm text-gray-400">
+                          Showing all {events.length} events
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
-            {/* <Events events={events} organization={organization} /> */}
-            {hasNextPage && (
-              <Button
-                className="self-start"
-                variant="secondary"
-                onClick={() => fetchNextPage()}
-                loading={isFetching}
-              >
-                Load More
-              </Button>
-            )}
+
+            <Events events={events} organization={organization} />
           </div>
         </div>
       ) : (
@@ -410,6 +421,7 @@ export default function SpanDetailPage({
 }
 
 import { EventCustomer } from '@/components/Events/EventCustomer'
+import Link from 'next/link'
 
 function getEventCostDeviation(
   eventCost: number,
@@ -450,15 +462,13 @@ function getEventCostDeviation(
   }
 }
 
-function NewEvent({
+function EventRow({
   event,
-  eventType,
   organization,
   averageCost,
   p99Cost,
 }: {
   event: schemas['Event']
-  eventType: schemas['EventType']
   organization: schemas['Organization']
   averageCost: number
   p99Cost: number
@@ -472,7 +482,12 @@ function NewEvent({
   return (
     <tr>
       <td className="p-2">
-        <h4 className="text-sm font-medium">{event.label}</h4>
+        <Link
+          href={`/dashboard/${organization.slug}/analytics/events/${event.id}`}
+          className="text-sm font-medium"
+        >
+          {event.label}
+        </Link>
       </td>
 
       <td className="p-2">

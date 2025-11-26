@@ -1,14 +1,71 @@
-import React from 'react'
+import { useTheme } from 'next-themes'
+import React, { useId } from 'react'
+
+// Find the least squares slope to determine trend direction
+// We can't just use first and last values because of noise in the data (and each day/period resetting the counter at 0)
+const calculateTrendSlope = (values: number[]): number => {
+  if (values.length < 2) {
+    return 0
+  }
+
+  const n = values.length
+  let sumX = 0
+  let sumY = 0
+  let sumXY = 0
+  let sumX2 = 0
+
+  for (let i = 0; i < n; i++) {
+    sumX += i
+    sumY += values[i]
+    sumXY += i * values[i]
+    sumX2 += i * i
+  }
+
+  const denominator = n * sumX2 - sumX * sumX
+  if (denominator === 0) {
+    return 0
+  }
+
+  const slope = (n * sumXY - sumX * sumY) / denominator
+  return slope
+}
+
+const getTrendColor = (
+  values: number[],
+  trendUpIsBad: boolean,
+): SparklineColor => {
+  if (values.length < 2) {
+    return SparklineColor.Gray
+  }
+
+  const slope = calculateTrendSlope(values)
+  const range = Math.max(...values) - Math.min(...values)
+  const normalizedSlope = range > 0 ? slope / range : 0
+  const threshold = 0.01
+
+  if (Math.abs(normalizedSlope) < threshold) {
+    return SparklineColor.Gray
+  }
+
+  const isTrendingUp = normalizedSlope > 0
+
+  if (isTrendingUp) {
+    return trendUpIsBad ? SparklineColor.Red : SparklineColor.Green
+  } else {
+    return trendUpIsBad ? SparklineColor.Green : SparklineColor.Red
+  }
+}
 
 export enum SparklineColor {
   Green = 'green',
   Yellow = 'yellow',
   Red = 'red',
+  Gray = 'gray',
 }
 
 interface SparklineProps {
   values: number[]
-  color: SparklineColor
+  trendUpIsBad?: boolean
   width?: number
   height?: number
   className?: string
@@ -16,14 +73,20 @@ interface SparklineProps {
 
 export const Sparkline: React.FC<SparklineProps> = ({
   values,
-  color,
+  trendUpIsBad = false,
   width = 160,
   height = 40,
   className = '',
 }) => {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
+  const gradientId = useId()
+
   if (values.length === 0) {
     return null
   }
+
+  const color = getTrendColor(values, trendUpIsBad)
 
   const min = Math.min(...values)
   const max = Math.max(...values)
@@ -63,10 +126,20 @@ export const Sparkline: React.FC<SparklineProps> = ({
       gradientStart: 'rgba(245, 158, 11, 0.3)',
       gradientEnd: 'rgba(245, 158, 11, 0)',
     },
+    [SparklineColor.Gray]: isDark
+      ? {
+          stroke: 'hsl(233, 5%, 46%)',
+          gradientStart: 'hsla(233, 5%, 46%, 0.3)',
+          gradientEnd: 'hsla(233, 5%, 46%, 0)',
+        }
+      : {
+          stroke: '#6b7280',
+          gradientStart: 'rgba(107, 114, 128, 0.3)',
+          gradientEnd: 'rgba(107, 114, 128, 0)',
+        },
   }
 
   const config = colorConfig[color]
-  const gradientId = `sparkline-gradient-${color}-${Math.random().toString(36).substr(2, 9)}`
 
   return (
     <svg

@@ -1,5 +1,6 @@
 'use client'
 
+import { AnonymousCustomerContextView } from '@/components/Customer/AnonymousCustomerContextView'
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { EventRow } from '@/components/Events/EventRow'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -95,6 +96,10 @@ export default function EventDetailPage({
           <CustomerContextView
             organization={organization}
             customer={event.customer as schemas['Customer']}
+          />
+        ) : event.external_customer_id ? (
+          <AnonymousCustomerContextView
+            externalCustomerId={event.external_customer_id}
           />
         ) : undefined
       }

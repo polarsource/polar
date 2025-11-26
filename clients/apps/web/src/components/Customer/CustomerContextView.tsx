@@ -71,7 +71,7 @@ export const CustomerContextView = ({
           <Avatar
             avatar_url={customer.avatar_url}
             name={customer.name || customer.email}
-            className="h-12 w-12"
+            className="size-12 text-sm"
           />
           <div className="flex flex-col">
             <p>
@@ -154,10 +154,17 @@ export const CustomerContextView = ({
         {!customer.deleted_at && (
           <DetailRow
             labelClassName="flex-none md:basis-24"
+            valueClassName="font-mono"
             label="ID"
             value={customer.id}
           />
         )}
+        <DetailRow
+          labelClassName="flex-none md:basis-24"
+          valueClassName="font-mono"
+          label="External ID"
+          value={customer.external_id ?? '—'}
+        />
         <DetailRow
           labelClassName="flex-none md:basis-24"
           label="Email"

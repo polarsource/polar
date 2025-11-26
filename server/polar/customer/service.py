@@ -1,6 +1,8 @@
 import uuid
 from collections.abc import Sequence
+from datetime import date, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from sqlalchemy.orm import joinedload
@@ -13,6 +15,7 @@ from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.member import member_service
 from polar.member.schemas import Member as MemberSchema
 from polar.models import BenefitGrant, Customer, Organization, User
@@ -25,13 +28,19 @@ from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .repository import CustomerRepository
+from .schemas.analytics import (
+    CustomerCostTimeseries,
+    CustomerMetricPeriod,
+    CustomerMetrics,
+    CustomerSubscription,
+)
 from .schemas.customer import (
     CustomerCreate,
     CustomerUpdate,
     CustomerUpdateExternalID,
 )
 from .schemas.state import CustomerState
-from .sorting import CustomerSortProperty
+from .sorting import CustomerAnalyticsSortProperty, CustomerSortProperty
 
 
 class CustomerService:
@@ -332,6 +341,95 @@ class CustomerService:
     ) -> Sequence[MemberSchema]:
         members = await member_service.list_by_customer(session, customer_id)
         return [MemberSchema.model_validate(member) for member in members]
+
+    async def get_analytics(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: uuid.UUID,
+        start_date: date,
+        end_date: date,
+        timezone: ZoneInfo,
+        interval: TimeInterval,
+        pagination: PaginationParams,
+        sorting: Sequence[Sorting[CustomerAnalyticsSortProperty]],
+        include_periods: bool = False,
+    ) -> tuple[Sequence[CustomerMetrics], int]:
+        repository = CustomerRepository.from_session(session)
+
+        start_timestamp = datetime(
+            start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
+        )
+        end_timestamp = datetime(
+            end_date.year,
+            end_date.month,
+            end_date.day,
+            23,
+            59,
+            59,
+            999999,
+            timezone,
+        )
+
+        cost_metrics, count = await repository.get_cost_metrics(
+            auth_subject,
+            organization_id,
+            start_timestamp,
+            end_timestamp,
+            pagination,
+            sorting,
+        )
+
+        timeseries_by_customer: dict[uuid.UUID, list[CustomerCostTimeseries]] = {}
+        if include_periods:
+            timestamp_series_cte = get_timestamp_series_cte(
+                start_timestamp, end_timestamp, interval
+            )
+            customer_ids = [m.customer.id for m in cost_metrics]
+            timeseries_by_customer = await repository.get_customers_cost_timeseries(
+                organization_id, customer_ids, timestamp_series_cte
+            )
+
+        customers: list[CustomerMetrics] = []
+        for metric in cost_metrics:
+            periods: list[CustomerMetricPeriod] = []
+            if include_periods:
+                timeseries = timeseries_by_customer.get(metric.customer.id, [])
+                periods = [
+                    CustomerMetricPeriod(
+                        timestamp=ts.timestamp,
+                        cost=ts.cost,
+                        revenue=ts.revenue,
+                        profit=ts.revenue - ts.cost,
+                    )
+                    for ts in timeseries
+                ]
+
+            subscription = None
+            if metric.subscription is not None:
+                subscription = CustomerSubscription(
+                    id=metric.subscription.id,
+                    status=metric.subscription.status,
+                    amount=metric.subscription.amount,
+                    currency=metric.subscription.currency,
+                    recurring_interval=metric.subscription.recurring_interval,
+                )
+
+            customers.append(
+                CustomerMetrics(
+                    customer_id=metric.customer.id,
+                    customer_name=metric.customer.name,
+                    customer_email=metric.customer.email,
+                    subscription=subscription,
+                    lifetime_revenue=metric.lifetime_revenue,
+                    lifetime_cost=metric.lifetime_cost,
+                    profit=metric.profit,
+                    margin_percent=metric.margin_percent,
+                    periods=periods,
+                )
+            )
+
+        return customers, count
 
 
 customer = CustomerService()

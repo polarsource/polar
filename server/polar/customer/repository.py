@@ -1,24 +1,46 @@
 import contextlib
 from collections.abc import AsyncGenerator, Iterable, Sequence
+from datetime import datetime
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import (
+    CTE,
+    Numeric,
+    Select,
+    UnaryExpression,
+    asc,
+    case,
+    cast,
+    desc,
+    func,
+    literal,
+    select,
+    update,
+)
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.event.system import CustomerUpdatedFields, SystemEvent
+from polar.kit.pagination import PaginationParams
 from polar.kit.repository import (
     Options,
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
+from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
-from polar.models import Customer, UserOrganization
+from polar.models import Customer, Event, Order, Subscription, UserOrganization
+from polar.models.order import OrderStatus
+from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
+
+from .schemas.analytics import CustomerCostTimeseries, CustomerWithMetrics
+from .sorting import CustomerAnalyticsSortProperty
 
 
 def _get_changed_value(
@@ -251,3 +273,320 @@ class CustomerRepository(
             )
 
         return statement
+
+    async def get_cost_metrics(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: UUID,
+        start_date: datetime,
+        end_date: datetime,
+        pagination: PaginationParams,
+        sorting: Sequence[Sorting[CustomerAnalyticsSortProperty]],
+    ) -> tuple[Sequence[CustomerWithMetrics], int]:
+        event_agg_by_customer_id = (
+            select(
+                Event.customer_id.label("customer_id"),
+                func.sum(
+                    func.coalesce(
+                        cast(Event.user_metadata["_cost"]["amount"].astext, Numeric),
+                        literal(0),
+                    )
+                ).label("lifetime_cost"),
+            )
+            .where(
+                Event.customer_id.is_not(None),
+                Event.organization_id == organization_id,
+                Event.timestamp >= start_date,
+                Event.timestamp <= end_date,
+            )
+            .group_by(Event.customer_id)
+            .cte("event_agg_by_customer_id")
+        )
+
+        event_agg_by_external_id = (
+            select(
+                Event.external_customer_id.label("external_customer_id"),
+                func.sum(
+                    func.coalesce(
+                        cast(Event.user_metadata["_cost"]["amount"].astext, Numeric),
+                        literal(0),
+                    )
+                ).label("lifetime_cost"),
+            )
+            .where(
+                Event.customer_id.is_(None),
+                Event.external_customer_id.is_not(None),
+                Event.organization_id == organization_id,
+                Event.timestamp >= start_date,
+                Event.timestamp <= end_date,
+            )
+            .group_by(Event.external_customer_id)
+            .cte("event_agg_by_external_id")
+        )
+
+        lifetime_revenue_subquery = (
+            select(
+                func.sum(
+                    case(
+                        (Order.paid, Order.net_amount - Order.refunded_amount),
+                        else_=literal(0),
+                    )
+                ).label("lifetime_revenue")
+            )
+            .where(
+                Order.customer_id == Customer.id,
+                Order.deleted_at.is_(None),
+                Order.created_at >= start_date,
+                Order.created_at <= end_date,
+            )
+            .correlate(Customer)
+            .scalar_subquery()
+        )
+
+        active_subscription_id_subquery = (
+            select(Subscription.id)
+            .where(
+                Subscription.customer_id == Customer.id,
+                Subscription.deleted_at.is_(None),
+                Subscription.status == SubscriptionStatus.active,
+            )
+            .correlate(Customer)
+            .limit(1)
+            .scalar_subquery()
+        )
+
+        lifetime_cost_expr = func.coalesce(
+            event_agg_by_customer_id.c.lifetime_cost, literal(0)
+        ) + func.coalesce(event_agg_by_external_id.c.lifetime_cost, literal(0))
+
+        lifetime_revenue_expr = func.coalesce(lifetime_revenue_subquery, literal(0))
+
+        profit_expr = lifetime_revenue_expr - lifetime_cost_expr
+
+        margin_percent_expr = case(
+            (
+                lifetime_revenue_expr > literal(0),
+                func.round(profit_expr * literal(100) / lifetime_revenue_expr, 2),
+            ),
+            else_=literal(0),
+        )
+
+        lifetime_revenue_col = lifetime_revenue_expr.label("lifetime_revenue")
+        lifetime_cost_col = lifetime_cost_expr.label("lifetime_cost")
+        profit_col = profit_expr.label("profit")
+        margin_percent_col = margin_percent_expr.label("margin_percent")
+
+        statement = (
+            select(
+                Customer,
+                Subscription,
+                lifetime_revenue_col,
+                lifetime_cost_col,
+                profit_col,
+                margin_percent_col,
+            )
+            .select_from(Customer)
+            .outerjoin(
+                Subscription,
+                Subscription.id == active_subscription_id_subquery,
+            )
+            .outerjoin(
+                event_agg_by_customer_id,
+                event_agg_by_customer_id.c.customer_id == Customer.id,
+            )
+            .outerjoin(
+                event_agg_by_external_id,
+                event_agg_by_external_id.c.external_customer_id == Customer.external_id,
+            )
+            .where(
+                Customer.deleted_at.is_(None),
+                Customer.organization_id == organization_id,
+            )
+        )
+
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            statement = statement.where(
+                Customer.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == user.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                Customer.organization_id == auth_subject.subject.id,
+            )
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == CustomerAnalyticsSortProperty.customer_name:
+                order_by_clauses.append(clause_function(Customer.name).nullslast())
+            elif criterion == CustomerAnalyticsSortProperty.email:
+                order_by_clauses.append(clause_function(Customer.email))
+            elif criterion == CustomerAnalyticsSortProperty.lifetime_revenue:
+                order_by_clauses.append(
+                    clause_function(lifetime_revenue_col).nullslast()
+                )
+            elif criterion == CustomerAnalyticsSortProperty.lifetime_cost:
+                order_by_clauses.append(clause_function(lifetime_cost_col).nullslast())
+            elif criterion == CustomerAnalyticsSortProperty.profit:
+                order_by_clauses.append(clause_function(profit_col).nullslast())
+            elif criterion == CustomerAnalyticsSortProperty.margin_percent:
+                order_by_clauses.append(clause_function(margin_percent_col).nullslast())
+        statement = statement.order_by(*order_by_clauses)
+
+        count_statement = select(func.count()).select_from(statement.subquery())
+        count_result = await self.session.execute(count_statement)
+        count = count_result.scalar() or 0
+
+        offset = (pagination.page - 1) * pagination.limit
+        statement = statement.limit(pagination.limit).offset(offset)
+
+        result = await self.session.execute(statement)
+        rows = result.all()
+
+        metrics = [
+            CustomerWithMetrics(
+                customer=row.Customer,
+                subscription=row.Subscription,
+                lifetime_revenue=int(row.lifetime_revenue)
+                if row.lifetime_revenue
+                else 0,
+                lifetime_cost=int(row.lifetime_cost) if row.lifetime_cost else 0,
+                profit=int(row.profit) if row.profit else 0,
+                margin_percent=Decimal(str(row.margin_percent))
+                if row.margin_percent
+                else Decimal("0"),
+            )
+            for row in rows
+        ]
+
+        return metrics, count
+
+    async def get_customers_cost_timeseries(
+        self,
+        organization_id: UUID,
+        customer_ids: Sequence[UUID],
+        timestamp_series_cte: CTE,
+    ) -> dict[UUID, list[CustomerCostTimeseries]]:
+        if not customer_ids:
+            return {}
+
+        period_col = func.date_trunc("day", Event.timestamp).label("period")
+        cost_by_customer_and_period = (
+            select(
+                Event.customer_id.label("customer_id"),
+                period_col,
+                func.sum(
+                    func.coalesce(
+                        cast(Event.user_metadata["_cost"]["amount"].astext, Numeric),
+                        literal(0),
+                    )
+                ).label("cost"),
+            )
+            .where(
+                Event.organization_id == organization_id,
+                Event.customer_id.in_(customer_ids),
+            )
+            .group_by(
+                Event.customer_id,
+                period_col,
+            )
+        ).cte("cost_by_customer_and_period")
+
+        order_period_col = func.date_trunc("day", Order.created_at).label("period")
+        revenue_by_customer_and_period = (
+            select(
+                Order.customer_id.label("customer_id"),
+                order_period_col,
+                func.sum(
+                    case(
+                        (
+                            Order.status.in_(
+                                (
+                                    OrderStatus.paid,
+                                    OrderStatus.refunded,
+                                    OrderStatus.partially_refunded,
+                                )
+                            ),
+                            (Order.subtotal_amount - Order.discount_amount)
+                            - Order.refunded_amount,
+                        ),
+                        else_=literal(0),
+                    )
+                ).label("revenue"),
+            )
+            .where(
+                Order.deleted_at.is_(None),
+                Order.customer_id.in_(customer_ids),
+            )
+            .group_by(Order.customer_id, order_period_col)
+        ).cte("revenue_by_customer_and_period")
+
+        customers_subquery = (
+            select(Customer.id.label("customer_id")).where(
+                Customer.id.in_(customer_ids),
+                Customer.deleted_at.is_(None),
+            )
+        ).cte("customer_ids_cte")
+
+        statement = (
+            select(
+                customers_subquery.c.customer_id,
+                timestamp_series_cte.c.timestamp,
+                func.coalesce(cost_by_customer_and_period.c.cost, literal(0)).label(
+                    "cost"
+                ),
+                func.coalesce(
+                    revenue_by_customer_and_period.c.revenue, literal(0)
+                ).label("revenue"),
+            )
+            .select_from(customers_subquery)
+            .join(timestamp_series_cte, literal(True))
+            .outerjoin(
+                cost_by_customer_and_period,
+                (
+                    cost_by_customer_and_period.c.customer_id
+                    == customers_subquery.c.customer_id
+                )
+                & (
+                    cost_by_customer_and_period.c.period
+                    == func.date_trunc("day", timestamp_series_cte.c.timestamp)
+                ),
+            )
+            .outerjoin(
+                revenue_by_customer_and_period,
+                (
+                    revenue_by_customer_and_period.c.customer_id
+                    == customers_subquery.c.customer_id
+                )
+                & (
+                    revenue_by_customer_and_period.c.period
+                    == func.date_trunc("day", timestamp_series_cte.c.timestamp)
+                ),
+            )
+            .order_by(
+                customers_subquery.c.customer_id, timestamp_series_cte.c.timestamp
+            )
+        )
+
+        result = await self.session.execute(statement)
+        rows = result.all()
+
+        timeseries_by_customer: dict[UUID, list[CustomerCostTimeseries]] = {}
+        for row in rows:
+            customer_id = row.customer_id
+            if customer_id not in timeseries_by_customer:
+                timeseries_by_customer[customer_id] = []
+            timeseries_by_customer[customer_id].append(
+                CustomerCostTimeseries(
+                    timestamp=row.timestamp,
+                    cost=Decimal(str(row.cost)) if row.cost else Decimal("0"),
+                    revenue=Decimal(str(row.revenue)) if row.revenue else Decimal("0"),
+                )
+            )
+
+        return timeseries_by_customer

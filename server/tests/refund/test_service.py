@@ -13,7 +13,6 @@ from polar.models import (
     Order,
     Organization,
     Product,
-    Refund,
     Transaction,
 )
 from polar.models.order import OrderStatus
@@ -27,10 +26,6 @@ from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
 from polar.refund.service import RefundedAlready
 from polar.refund.service import refund as refund_service
-from polar.transaction.repository import RefundTransactionRepository
-from polar.transaction.service.refund import (
-    refund_transaction as refund_transaction_service,
-)
 from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -49,6 +44,14 @@ from tests.fixtures.stripe import build_stripe_refund
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.refund.service.stripe_service", new=mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def refund_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
+    mock = mocker.patch(
+        "polar.refund.service.refund_transaction_service", autospec=True
+    )
     return mock
 
 
@@ -217,29 +220,6 @@ class StripeRefund:
         assert updated.refunded_tax_amount == refunded_tax_amount
         return updated, response
 
-    async def assert_transaction_amounts_from_response(
-        self, session: AsyncSession, response: Response
-    ) -> Transaction:
-        refund_id = response.json()["id"]
-        refund = await refund_service.get(session, refund_id)
-        assert refund
-        return await self.assert_transaction_amounts_from_refund(session, refund)
-
-    async def assert_transaction_amounts_from_refund(
-        self, session: AsyncSession, refund: Refund
-    ) -> Transaction:
-        refund_transaction_repository = RefundTransactionRepository.from_session(
-            session
-        )
-        refund_transaction = await refund_transaction_repository.get_by_refund_id(
-            refund.processor_id
-        )
-        assert refund_transaction
-        assert refund_transaction.amount == -1 * refund.amount
-        assert refund_transaction.tax_amount == -1 * refund.tax_amount
-        assert refund_transaction.account_amount == -1 * refund.amount
-        return refund_transaction
-
 
 @pytest.mark.asyncio
 class TestCreateAbuse(StripeRefund):
@@ -369,7 +349,7 @@ class TestCreatedWebhooks(StripeRefund):
     async def test_valid_pledge_refund(
         self,
         session: AsyncSession,
-        mocker: MockerFixture,
+        refund_transaction_service_mock: MagicMock,
         save_fixture: SaveFixture,
         organization: Organization,
         refund_hooks: Hooks,
@@ -388,9 +368,6 @@ class TestCreatedWebhooks(StripeRefund):
             tax_amount=0,
             pledge=pledge,
         )
-        create_refund_transaction = mocker.patch.object(
-            refund_transaction_service, "create"
-        )
 
         stripe_refund = build_stripe_refund(
             status="succeeded",
@@ -401,7 +378,7 @@ class TestCreatedWebhooks(StripeRefund):
         refund = await refund_service.upsert_from_stripe(session, stripe_refund)
         assert refund
         assert refund.status == RefundStatus.succeeded
-        assert create_refund_transaction.call_count == 1
+        assert refund_transaction_service_mock.create.call_count == 1
 
         # Only call webhooks on orders
         assert_hooks_called_once(refund_hooks, set())
@@ -415,7 +392,7 @@ class TestCreatedWebhooks(StripeRefund):
     async def test_valid_pending(
         self,
         session: AsyncSession,
-        mocker: MockerFixture,
+        refund_transaction_service_mock: MagicMock,
         save_fixture: SaveFixture,
         product: Product,
         refund_hooks: Hooks,
@@ -442,13 +419,7 @@ class TestCreatedWebhooks(StripeRefund):
         assert refund
         assert refund.status == RefundStatus.pending
         assert_hooks_called_once(refund_hooks, {"created"})
-        refund_transaction_repository = RefundTransactionRepository.from_session(
-            session
-        )
-        refund_transaction = await refund_transaction_repository.get_by_refund_id(
-            refund.processor_id
-        )
-        assert refund_transaction is None
+        refund_transaction_service_mock.create.assert_not_called()
 
         order_repository = OrderRepository.from_session(session)
         updated_order = await order_repository.get_by_id(order.id)
@@ -469,7 +440,6 @@ class TestCreatedWebhooks(StripeRefund):
         assert refund
         assert refund.status == RefundStatus.succeeded
         assert_hooks_called_once(refund_hooks, {"updated", "succeeded"})
-        await self.assert_transaction_amounts_from_refund(session, refund)
 
     async def test_valid_full_refund(
         self,
@@ -506,7 +476,6 @@ class TestCreatedWebhooks(StripeRefund):
         assert webhook_refund.status == RefundStatus.succeeded
 
         # Ensure we only record and process refund once
-        await self.assert_transaction_amounts_from_refund(session, refund)
         assert_hooks_called_once(refund_hooks, {"created", "succeeded"})
 
         order_repository = OrderRepository.from_session(session)
@@ -547,7 +516,6 @@ class TestCreatedWebhooks(StripeRefund):
         await refund_service.create_from_stripe(session, stripe_refund)
         assert refund
         assert refund.status == RefundStatus.succeeded
-        await self.assert_transaction_amounts_from_refund(session, refund)
         assert_hooks_called_once(refund_hooks, {"created", "succeeded"})
 
         order_repository = OrderRepository.from_session(session)
@@ -570,7 +538,6 @@ class TestCreatedWebhooks(StripeRefund):
         await refund_service.create_from_stripe(session, stripe_refund)
         assert refund
         assert refund.status == RefundStatus.succeeded
-        await self.assert_transaction_amounts_from_refund(session, refund)
         assert_hooks_called_once(refund_hooks, {"created", "succeeded"})
 
         order_repository = OrderRepository.from_session(session)
@@ -586,7 +553,7 @@ class TestUpdatedWebhooks(StripeRefund):
     async def test_valid(
         self,
         session: AsyncSession,
-        mocker: MockerFixture,
+        refund_transaction_service_mock: MagicMock,
         save_fixture: SaveFixture,
         product_organization_second: Product,
         refund_hooks: Hooks,
@@ -601,10 +568,6 @@ class TestUpdatedWebhooks(StripeRefund):
             tax_amount=250,
         )
 
-        create_refund_transaction = mocker.patch.object(
-            refund_transaction_service, "create"
-        )
-
         refund_id = "re_stripe_refund_1337"
         stripe_refund = build_stripe_refund(
             status="pending",
@@ -615,7 +578,7 @@ class TestUpdatedWebhooks(StripeRefund):
         refund = await refund_service.upsert_from_stripe(session, stripe_refund)
         assert refund
         assert refund.status == RefundStatus.pending
-        assert create_refund_transaction.call_count == 0
+        assert refund_transaction_service_mock.create.call_count == 0
         assert_hooks_called_once(refund_hooks, {"created"})
         reset_hooks(refund_hooks)
 
@@ -634,7 +597,7 @@ class TestUpdatedWebhooks(StripeRefund):
         refund = await refund_service.upsert_from_stripe(session, stripe_refund)
         assert refund
         assert refund.status == RefundStatus.succeeded
-        assert create_refund_transaction.call_count == 1
+        assert refund_transaction_service_mock.create.call_count == 1
         assert_hooks_called_once(refund_hooks, {"updated", "succeeded"})
 
         order_repository = OrderRepository.from_session(session)
@@ -646,7 +609,7 @@ class TestUpdatedWebhooks(StripeRefund):
     async def test_reverted(
         self,
         session: AsyncSession,
-        mocker: MockerFixture,
+        refund_transaction_service_mock: MagicMock,
         save_fixture: SaveFixture,
         product_organization_second: Product,
         refund_hooks: Hooks,
@@ -666,10 +629,6 @@ class TestUpdatedWebhooks(StripeRefund):
             save_fixture, amount=80, tax_amount=20, order=order
         )
         refund = await create_refund(save_fixture, order, amount=80, tax_amount=20)
-
-        revert_refund_transaction = mocker.patch.object(
-            refund_transaction_service, "revert"
-        )
 
         updated_refund = await refund_service.update_from_stripe(
             session,
@@ -691,7 +650,7 @@ class TestUpdatedWebhooks(StripeRefund):
         assert updated_order.refunded_tax_amount == 0
         assert updated_order.status == OrderStatus.paid
 
-        revert_refund_transaction.assert_awaited_once()
+        refund_transaction_service_mock.revert.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -790,9 +749,6 @@ class TestOrderUpdatedWebhook(StripeRefund):
 
         # Mock order_service.send_webhook to verify it's called
         send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
-
-        # Mock the revert transaction
-        mocker.patch.object(refund_transaction_service, "revert")
 
         # Update refund to failed status (which reverts the refund)
         await refund_service.update_from_stripe(

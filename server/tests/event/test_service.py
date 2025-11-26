@@ -1027,3 +1027,47 @@ class TestIngested:
 
         assert customer.meters_dirtied_at is not None
         assert customer_second.meters_dirtied_at is not None
+
+    async def test_auto_enable_revops_for_cost_events(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        assert organization.feature_settings.get("revops_enabled", False) is False
+
+        event = await create_event(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            source=EventSource.user,
+            metadata={"_cost": {"amount": 10, "currency": "usd"}},
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        await session.refresh(organization)
+        assert organization.feature_settings.get("revops_enabled", False) is True
+
+    async def test_no_auto_enable_revops_without_cost(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        assert organization.feature_settings.get("revops_enabled", False) is False
+
+        event = await create_event(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            source=EventSource.user,
+            metadata={"some_field": "some_value"},
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        await session.refresh(organization)
+        assert organization.feature_settings.get("revops_enabled", False) is False

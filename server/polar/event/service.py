@@ -40,6 +40,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.event import EventSource
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_events
 
@@ -705,17 +706,24 @@ class EventService:
         repository = EventRepository.from_session(session)
         statement = (
             repository.get_base_statement()
-            .where(Event.id.in_(event_ids), Event.customer.is_not(None))
+            .where(Event.id.in_(event_ids))
             .options(*repository.get_eager_options())
         )
         events = await repository.get_all(statement)
         customers: set[Customer] = set()
+        organization_ids_for_revops: set[uuid.UUID] = set()
         for event in events:
-            assert event.customer is not None
-            customers.add(event.customer)
+            if event.customer:
+                customers.add(event.customer)
+            if "_cost" in event.user_metadata:
+                organization_ids_for_revops.add(event.organization_id)
 
         customer_repository = CustomerRepository.from_session(session)
         await customer_repository.touch_meters(customers)
+
+        if organization_ids_for_revops:
+            organization_repository = OrganizationRepository.from_session(session)
+            await organization_repository.enable_revops(organization_ids_for_revops)
 
     async def _get_organization_validation_function(
         self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]

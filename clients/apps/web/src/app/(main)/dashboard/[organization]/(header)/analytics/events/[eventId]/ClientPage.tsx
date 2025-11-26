@@ -10,6 +10,7 @@ import { formatSubCentCurrency } from '@/utils/formatters'
 import KeyboardArrowUpOutlined from '@mui/icons-material/KeyboardArrowUpOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { ArrowLeftIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo } from 'react'
 
@@ -81,8 +82,16 @@ export default function EventDetailPage({
           ) : eventType ? (
             <Link
               href={`/dashboard/${organization.slug}/analytics/costs/${eventType.id}`}
+              className="group -my-2 -ml-3 rounded-xl py-2 pr-3.5 pl-3 transition-colors duration-200 hover:bg-gray-50"
             >
-              {eventType.label}
+              <span className="flex items-center gap-x-2 overflow-hidden">
+                <span className="-translate-x-4 opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100">
+                  <ArrowLeftIcon strokeWidth={2} className="size-4" />
+                </span>
+                <span className="-translate-x-6 transition-all duration-200 group-hover:translate-x-0">
+                  {eventType.label}
+                </span>
+              </span>
             </Link>
           ) : (
             <span>Event</span>

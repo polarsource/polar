@@ -244,23 +244,32 @@ export const OrganizationDetailsForm: React.FC<
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-12">
           <div className="sm:col-span-2">
             <label className="mb-2 block text-sm font-medium">Logo</label>
-            <div
-              {...getRootProps()}
-              className={twMerge(
-                'relative cursor-pointer',
-                isDragActive && 'opacity-50',
+            <FormField
+              control={control}
+              name="avatar_url"
+              render={() => (
+                <div>
+                  <div
+                    {...getRootProps()}
+                    className={twMerge(
+                      'relative cursor-pointer',
+                      isDragActive && 'opacity-50',
+                    )}
+                  >
+                    <input {...getInputProps()} />
+                    <Avatar
+                      avatar_url={avatarURL ?? ''}
+                      name={name ?? ''}
+                      className="h-16 w-16 transition-opacity hover:opacity-75"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
+                      <AddPhotoAlternateOutlined className="text-gray-600" />
+                    </div>
+                  </div>
+                  <FormMessage className="mt-2 text-xs/snug" />
+                </div>
               )}
-            >
-              <input {...getInputProps()} />
-              <Avatar
-                avatar_url={avatarURL ?? ''}
-                name={name ?? ''}
-                className="h-16 w-16 transition-opacity hover:opacity-75"
-              />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
-                <AddPhotoAlternateOutlined className="text-gray-600" />
-              </div>
-            </div>
+            />
           </div>
 
           <div className="space-y-4 sm:col-span-10">

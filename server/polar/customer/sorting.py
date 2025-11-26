@@ -16,3 +16,18 @@ ListSorting = Annotated[
     list[Sorting[CustomerSortProperty]],
     Depends(SortingGetter(CustomerSortProperty, ["-created_at"])),
 ]
+
+
+class CustomerAnalyticsSortProperty(StrEnum):
+    customer_name = "customer_name"
+    email = "email"
+    lifetime_revenue = "lifetime_revenue"
+    lifetime_cost = "lifetime_cost"
+    profit = "profit"
+    margin_percent = "margin_percent"
+
+
+AnalyticsSorting = Annotated[
+    list[Sorting[CustomerAnalyticsSortProperty]],
+    Depends(SortingGetter(CustomerAnalyticsSortProperty, ["-lifetime_revenue"])),
+]

@@ -1,14 +1,18 @@
 import json
 from collections.abc import AsyncGenerator
+from datetime import date
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
+from pydantic_extra_types.timezone_name import TimeZoneName
 
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.time_queries import TimeInterval, is_under_limits
 from polar.member import member_service
 from polar.member.schemas import Member as MemberSchema
 from polar.openapi import APITag
@@ -24,6 +28,7 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .repository import CustomerRepository
+from .schemas.analytics import CustomerMetrics
 from .schemas.customer import Customer as CustomerSchema
 from .schemas.customer import (
     CustomerCreate,
@@ -112,6 +117,69 @@ async def list(
         count,
         pagination,
     )
+
+
+@router.get(
+    "/analytics",
+    summary="List Customer Analytics",
+    response_model=ListResource[CustomerMetrics],
+    tags=[APITag.private],
+)
+async def list_analytics(
+    auth_subject: auth.CustomerRead,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.AnalyticsSorting,
+    organization_id: OrganizationID = Query(
+        ..., description="Filter by organization ID."
+    ),
+    start_date: date = Query(..., description="Start date for timeseries."),
+    end_date: date = Query(..., description="End date for timeseries."),
+    timezone: TimeZoneName = Query(
+        default="UTC",
+        description="Timezone to use for the dates. Default is UTC.",
+    ),
+    interval: TimeInterval = Query(..., description="Interval between two dates."),
+    include_periods: bool = Query(
+        default=False,
+        description="Include time series data for sparklines. Increases response time.",
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[CustomerMetrics]:
+    """
+    Get customer analytics with lifetime revenue, costs, and profit metrics.
+
+    Returns a list of customers with their subscription info and lifetime metrics.
+    Optionally includes time series data for sparklines when include_periods=true.
+    """
+    if include_periods and not is_under_limits(start_date, end_date, interval):
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("query",),
+                    "msg": (
+                        "The interval is too big. "
+                        "Try to change the interval or reduce the date range."
+                    ),
+                    "type": "value_error",
+                    "input": (start_date, end_date, interval),
+                }
+            ]
+        )
+
+    results, count = await customer_service.get_analytics(
+        session,
+        auth_subject,
+        organization_id,
+        start_date,
+        end_date,
+        ZoneInfo(timezone),
+        interval,
+        pagination,
+        sorting,
+        include_periods,
+    )
+
+    return ListResource.from_paginated_results(results, count, pagination)
 
 
 @router.get("/export", summary="Export Customers")

@@ -24,7 +24,7 @@ const CheckoutProductAmountLabel = ({
     <div className="flex flex-row justify-between">
       <AmountLabel
         amount={checkout.netAmount}
-        currency={checkout.currency || 'usd'}
+        currency={checkout.currency}
         interval={
           isLegacyRecurringPrice(productPrice)
             ? productPrice.recurringInterval
@@ -68,11 +68,7 @@ const CheckoutPricing = ({
           {productPrice.amountType !== 'custom' ? (
             <CheckoutProductAmountLabel checkout={checkout} />
           ) : (
-            formatCurrencyNumber(
-              amount || 0,
-              productPrice.priceCurrency || 'usd',
-              0,
-            )
+            formatCurrencyNumber(amount, productPrice.priceCurrency, 0)
           )}
         </h1>
 

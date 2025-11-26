@@ -85,7 +85,10 @@ export default function EventDetailPage({
           <h3 className="text-4xl">{event.label}</h3>
           {'_cost' in event.metadata && event.metadata._cost && (
             <h3 className="dark:text-polar-500 font-mono text-4xl text-gray-400">
-              {formatSubCentCurrency(Number(event.metadata._cost?.amount ?? 0))}
+              {formatSubCentCurrency(
+                Number(event.metadata._cost?.amount ?? 0),
+                event.metadata._cost?.currency ?? 'usd',
+              )}
             </h3>
           )}
         </div>

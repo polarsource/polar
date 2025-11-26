@@ -65,7 +65,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
             <h3 className="text-5xl font-light">
               {formatCurrencyAndAmount(
                 data ? data.totals.revenue - data.totals.costs : 0,
-                'USD',
+                'usd',
               )}
             </h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">

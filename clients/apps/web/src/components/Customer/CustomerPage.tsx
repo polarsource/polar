@@ -232,6 +232,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 title="Cost"
                 size="lg"
                 trend={calculateTrend('costs')}
+                trendUpIsBad
               >
                 {typeof metricsData?.totals.costs === 'number'
                   ? formatSubCentCurrency(metricsData.totals.costs, 'usd')

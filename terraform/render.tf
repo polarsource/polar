@@ -810,7 +810,7 @@ resource "render_web_service" "api" {
 
 resource "render_web_service" "worker_old" {
   environment_id    = render_project.polar.environments["Production"].id
-  name              = "worker"
+  name              = "worker_old"
   plan              = "pro"
   region            = "ohio"
   health_check_path = "/"

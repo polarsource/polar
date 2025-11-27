@@ -29,6 +29,7 @@ from polar.models import (
     Customer,
     CustomerMeter,
     EventType,
+    Meter,
     Organization,
     Product,
     User,

@@ -223,7 +223,14 @@ class OrderPaidMetadata(TypedDict):
     order_id: str
     amount: int
     currency: str
-    backfilled: NotRequired[bool]
+    net_amount: int
+    tax_amount: int
+    applied_balance_amount: int
+    discount_amount: int
+    discount_id: NotRequired[str]
+    platform_fee: int
+    subscription_id: NotRequired[str]
+    subscription_type: NotRequired[str]
 
 
 class OrderPaidEvent(Event):
@@ -237,7 +244,6 @@ class OrderRefundedMetadata(TypedDict):
     order_id: str
     refunded_amount: int
     currency: str
-    backfilled: NotRequired[bool]
 
 
 class OrderRefundedEvent(Event):

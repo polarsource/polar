@@ -211,11 +211,14 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 header: ({ column }) => (
                   <DataTableColumnHeader column={column} title="Total Cost" />
                 ),
-                cell: ({ row }) =>
-                  formatSubCentCurrency(
-                    Number(row.original.totals?.['_cost_amount'] || 0),
-                    'usd',
-                  ),
+                cell: ({ row }) => (
+                  <span className="tabular-nums">
+                    {formatSubCentCurrency(
+                      Number(row.original.totals?.['_cost_amount'] || 0),
+                      'usd',
+                    )}
+                  </span>
+                ),
               },
               {
                 accessorKey: 'occurrences',
@@ -223,7 +226,11 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 header: ({ column }) => (
                   <DataTableColumnHeader column={column} title="Occurrences" />
                 ),
-                cell: ({ row }) => formatOccurrences(row.original.occurrences),
+                cell: ({ row }) => (
+                  <span className="tabular-nums">
+                    {formatOccurrences(row.original.occurrences)}
+                  </span>
+                ),
               },
               {
                 id: 'average',
@@ -238,20 +245,22 @@ export default function ClientPage({ organization }: ClientPageProps) {
                     'average',
                   )
                   return (
-                    <div className="flex items-baseline gap-3">
-                      <span className="min-w-28">
+                    <div className="flex w-full items-center justify-between gap-3">
+                      <span className="tabular-nums">
                         {formatSubCentCurrency(
                           Number(row.original.averages?.['_cost_amount'] || 0),
                           'usd',
                         )}
                       </span>
                       {values.length > 0 && (
-                        <Sparkline
-                          values={values}
-                          trendUpIsBad={true}
-                          width={80}
-                          height={16}
-                        />
+                        <div className="shrink-0">
+                          <Sparkline
+                            values={values}
+                            trendUpIsBad={true}
+                            width={80}
+                            height={16}
+                          />
+                        </div>
                       )}
                     </div>
                   )
@@ -267,20 +276,22 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 cell: ({ row }) => {
                   const values = getTimeSeriesValues(row.original.name, 'p95')
                   return (
-                    <div className="flex items-baseline gap-3">
-                      <span className="min-w-28">
+                    <div className="flex w-full items-center justify-between gap-3">
+                      <span className="tabular-nums">
                         {formatSubCentCurrency(
                           Number(row.original.p95?.['_cost_amount'] || 0),
                           'usd',
                         )}
                       </span>
                       {values.length > 0 && (
-                        <Sparkline
-                          values={values}
-                          trendUpIsBad={true}
-                          width={80}
-                          height={16}
-                        />
+                        <div className="shrink-0">
+                          <Sparkline
+                            values={values}
+                            trendUpIsBad={true}
+                            width={80}
+                            height={16}
+                          />
+                        </div>
                       )}
                     </div>
                   )
@@ -296,20 +307,22 @@ export default function ClientPage({ organization }: ClientPageProps) {
                 cell: ({ row }) => {
                   const values = getTimeSeriesValues(row.original.name, 'p99')
                   return (
-                    <div className="flex items-baseline gap-3">
-                      <span className="min-w-28">
+                    <div className="flex w-full items-center justify-between gap-3">
+                      <span className="tabular-nums">
                         {formatSubCentCurrency(
                           Number(row.original.p99?.['_cost_amount'] || 0),
                           'usd',
                         )}
                       </span>
                       {values.length > 0 && (
-                        <Sparkline
-                          values={values}
-                          trendUpIsBad={true}
-                          width={80}
-                          height={16}
-                        />
+                        <div className="shrink-0">
+                          <Sparkline
+                            values={values}
+                            trendUpIsBad={true}
+                            width={80}
+                            height={16}
+                          />
+                        </div>
                       )}
                     </div>
                   )

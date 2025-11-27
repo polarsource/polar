@@ -1004,27 +1004,27 @@ resource "render_web_service" "worker_sandbox" {
 
 resource "render_env_group_link" "aws_s3_production" {
   env_group_id = render_env_group.aws_s3_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id]
 }
 
 resource "render_env_group_link" "google_production" {
   env_group_id = render_env_group.google_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id]
 }
 
 resource "render_env_group_link" "github_production" {
   env_group_id = render_env_group.github_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id]
 }
 
 resource "render_env_group_link" "backend_production" {
   env_group_id = render_env_group.backend_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id]
 }
 
 resource "render_env_group_link" "stripe_production" {
   env_group_id = render_env_group.stripe_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id]
 }
 
 resource "render_env_group_link" "logfire_server" {
@@ -1034,12 +1034,12 @@ resource "render_env_group_link" "logfire_server" {
 
 resource "render_env_group_link" "logfire_worker" {
   env_group_id = render_env_group.logfire_worker.id
-  service_ids  = [render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id]
 }
 
 resource "render_env_group_link" "openai_production" {
   env_group_id = render_env_group.openai_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id]
 }
 
 resource "render_env_group_link" "apple_production" {

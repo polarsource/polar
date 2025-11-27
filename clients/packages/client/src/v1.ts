@@ -15537,6 +15537,11 @@ export interface components {
        */
       occurrences: number
       /**
+       * Customers
+       * @description Number of distinct customers associated with events.
+       */
+      customers: number
+      /**
        * Totals
        * @description Sum of each field across all events in all hierarchies.
        */

@@ -406,6 +406,7 @@ class EventService:
                         {
                             **event_type_info,
                             "occurrences": 0,
+                            "customers": 0,
                             "totals": zero_values,
                             "averages": zero_values,
                             "p50": zero_values,

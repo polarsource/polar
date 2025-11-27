@@ -29,7 +29,11 @@ from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.service import event as event_service
-from polar.event.system import SystemEvent, build_system_event
+from polar.event.system import (
+    SubscriptionRevokedMetadata,
+    SystemEvent,
+    build_system_event,
+)
 from polar.exceptions import (
     BadRequest,
     PolarError,
@@ -887,7 +891,13 @@ class SubscriptionService:
                     SystemEvent.subscription_revoked,
                     customer=subscription.customer,
                     organization=subscription.organization,
-                    metadata={"subscription_id": str(subscription.id)},
+                    metadata=SubscriptionRevokedMetadata(
+                        subscription_id=str(subscription.id),
+                        amount=subscription.amount,
+                        currency=subscription.currency,
+                        recurring_interval=subscription.recurring_interval.value,
+                        recurring_interval_count=subscription.recurring_interval_count,
+                    ),
                 ),
             )
             await self.enqueue_benefits_grants(session, subscription)

@@ -4,30 +4,48 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Sparkline } from '@/components/Sparkline/Sparkline'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
-import { parseSearchParams, serializeSearchParams } from '@/utils/datatable'
+import { parseSearchParams } from '@/utils/datatable'
+// import { parseSearchParams, serializeSearchParams } from '@/utils/datatable'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { operations, schemas } from '@polar-sh/client'
-import {
-  DataTable,
-  DataTableColumnDef,
-  DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/DataTable'
 import { endOfToday, subMonths } from 'date-fns'
+import {
+  BadgeDollarSignIcon,
+  CircleUserRound,
+  MousePointerClickIcon,
+} from 'lucide-react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { SpansSidebar } from './SpansSidebar'
 import { getSearchParams } from './utils'
 
-const formatOccurrences = (value: number): string => {
-  return value.toLocaleString('en-US')
-}
-
 type TimeSeriesField = 'average' | 'p95' | 'p99'
 
 interface ClientPageProps {
   organization: schemas['Organization']
+}
+
+const getTimeSeriesValues = (
+  periods: schemas['StatisticsPeriod'][],
+  eventName: schemas['EventStatistics']['name'],
+  field: TimeSeriesField,
+): number[] => {
+  return periods.map((period) => {
+    const eventStats = period.stats.find((stat) => stat.name === eventName)
+    if (!eventStats) return 0
+
+    if (field === 'average') {
+      return parseFloat(eventStats.averages?.['_cost_amount'] || '0')
+    } else if (field === 'p95') {
+      return parseFloat(eventStats.p95?.['_cost_amount'] || '0')
+    } else if (field === 'p99') {
+      return parseFloat(eventStats.p99?.['_cost_amount'] || '0')
+    }
+    return 0
+  })
 }
 
 export default function ClientPage({ organization }: ClientPageProps) {
@@ -118,30 +136,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
     [router, organization, startDate, endDate],
   )
 
-  const getTimeSeriesValues = useCallback(
-    (
-      eventName: schemas['EventStatistics']['name'],
-      field: TimeSeriesField,
-    ): number[] => {
-      if (!costData?.periods) return []
-
-      return costData.periods.map((period) => {
-        const eventStats = period.stats.find((stat) => stat.name === eventName)
-        if (!eventStats) return 0
-
-        if (field === 'average') {
-          return parseFloat(eventStats.averages?.['_cost_amount'] || '0')
-        } else if (field === 'p95') {
-          return parseFloat(eventStats.p95?.['_cost_amount'] || '0')
-        } else if (field === 'p99') {
-          return parseFloat(eventStats.p99?.['_cost_amount'] || '0')
-        }
-        return 0
-      })
-    },
-    [costData],
-  )
-
   return (
     <DashboardBody
       title="Costs"
@@ -162,176 +156,143 @@ export default function ClientPage({ organization }: ClientPageProps) {
       }
     >
       <div className="flex flex-col gap-y-6">
-        <h3 className="text-2xl">Event Types</h3>
-        <DataTable
-          data={costData?.totals || []}
-          isLoading={costDataLoading}
-          sorting={costSorting}
-          onSortingChange={(updaterOrValue) => {
-            const updatedSorting =
-              typeof updaterOrValue === 'function'
-                ? updaterOrValue(costSorting)
-                : updaterOrValue
-
-            const sortingParams = serializeSearchParams(
-              { pageIndex: 0, pageSize: 100 },
-              updatedSorting,
-            )
-            router.push(
-              `/dashboard/${organization.slug}/analytics/costs?${sortingParams}`,
-            )
-          }}
-          onRowClick={(row) => {
-            const params = getSearchParams(
-              { from: startDate, to: endDate },
-              interval,
-            )
-            router.push(
-              `/dashboard/${organization.slug}/analytics/costs/${row.original.event_type_id}?${params}`,
-            )
-          }}
-          columns={
-            [
-              {
-                accessorKey: 'name',
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="Name" />
-                ),
-                cell: ({ row }) => (
-                  <span className="font-medium">
-                    {row.original.label || row.original.name}
-                  </span>
-                ),
-              },
-              {
-                id: 'total',
-                accessorFn: (row) => row.totals?.['_cost_amount'],
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="Total Cost" />
-                ),
-                cell: ({ row }) => (
-                  <span className="tabular-nums">
-                    {formatSubCentCurrency(
-                      Number(row.original.totals?.['_cost_amount'] || 0),
-                      'usd',
-                    )}
-                  </span>
-                ),
-              },
-              {
-                accessorKey: 'occurrences',
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="Occurrences" />
-                ),
-                cell: ({ row }) => (
-                  <span className="tabular-nums">
-                    {formatOccurrences(row.original.occurrences)}
-                  </span>
-                ),
-              },
-              {
-                id: 'average',
-                accessorFn: (row) => row.averages?.['_cost_amount'],
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="Average Cost" />
-                ),
-                cell: ({ row }) => {
-                  const values = getTimeSeriesValues(
-                    row.original.name,
-                    'average',
-                  )
-                  return (
-                    <div className="flex w-full items-center justify-between gap-3">
-                      <span className="tabular-nums">
-                        {formatSubCentCurrency(
-                          Number(row.original.averages?.['_cost_amount'] || 0),
-                          'usd',
-                        )}
-                      </span>
-                      {values.length > 0 && (
-                        <div className="shrink-0">
-                          <Sparkline
-                            values={values}
-                            trendUpIsBad={true}
-                            width={80}
-                            height={16}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )
-                },
-              },
-              {
-                id: 'p95',
-                accessorFn: (row) => row.p95?.['_cost_amount'],
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="p95 Cost" />
-                ),
-                cell: ({ row }) => {
-                  const values = getTimeSeriesValues(row.original.name, 'p95')
-                  return (
-                    <div className="flex w-full items-center justify-between gap-3">
-                      <span className="tabular-nums">
-                        {formatSubCentCurrency(
-                          Number(row.original.p95?.['_cost_amount'] || 0),
-                          'usd',
-                        )}
-                      </span>
-                      {values.length > 0 && (
-                        <div className="shrink-0">
-                          <Sparkline
-                            values={values}
-                            trendUpIsBad={true}
-                            width={80}
-                            height={16}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )
-                },
-              },
-              {
-                id: 'p99',
-                accessorFn: (row) => row.p99?.['_cost_amount'],
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="p99 Cost" />
-                ),
-                cell: ({ row }) => {
-                  const values = getTimeSeriesValues(row.original.name, 'p99')
-                  return (
-                    <div className="flex w-full items-center justify-between gap-3">
-                      <span className="tabular-nums">
-                        {formatSubCentCurrency(
-                          Number(row.original.p99?.['_cost_amount'] || 0),
-                          'usd',
-                        )}
-                      </span>
-                      {values.length > 0 && (
-                        <div className="shrink-0">
-                          <Sparkline
-                            values={values}
-                            trendUpIsBad={true}
-                            width={80}
-                            height={16}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )
-                },
-              },
-            ] as DataTableColumnDef<schemas['EventStatistics']>[]
-          }
-        />
+        {(costData?.totals ?? []).map((totals) => (
+          <EventStatisticsCard
+            key={totals.name}
+            periods={costData?.periods || []}
+            eventStatistics={totals}
+            organization={organization}
+          />
+        ))}
       </div>
     </DashboardBody>
+  )
+}
+
+function EventStatisticsCard({
+  periods,
+  eventStatistics,
+  organization,
+}: {
+  periods: schemas['StatisticsPeriod'][]
+  eventStatistics: schemas['EventStatistics']
+  organization: schemas['Organization']
+}) {
+  const averageCostValues = useMemo(() => {
+    return getTimeSeriesValues(periods, eventStatistics.name, 'average')
+  }, [periods, eventStatistics.name])
+
+  const p95CostValues = useMemo(() => {
+    return getTimeSeriesValues(periods, eventStatistics.name, 'p95')
+  }, [periods, eventStatistics.name])
+
+  const p99CostValues = useMemo(() => {
+    return getTimeSeriesValues(periods, eventStatistics.name, 'p99')
+  }, [periods, eventStatistics.name])
+
+  return (
+    <Link
+      href={`/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}`}
+      className="dark:bg-polar-700 dark:hover:border-polar-600 dark:border-polar-700 @container flex cursor-pointer flex-col gap-4 rounded-2xl border border-gray-100 p-4 transition-colors hover:border-gray-200"
+    >
+      <div className="flex flex-col justify-between gap-3 @xl:flex-row">
+        <h2 className="text-lg font-medium">{eventStatistics.name}</h2>
+        <dl className="dark:text-polar-500 flex max-w-sm flex-1 items-center gap-5 font-mono text-gray-500">
+          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
+            <dt>
+              <MousePointerClickIcon className="size-5" strokeWidth={1.5} />
+            </dt>
+            <dd>{eventStatistics.occurrences}</dd>
+          </div>
+          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
+            <dt>
+              <CircleUserRound className="size-5" strokeWidth={1.5} />
+            </dt>
+            <dd>{eventStatistics.customers}</dd>
+          </div>
+          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
+            {eventStatistics.totals?._cost_amount !== undefined && (
+              <>
+                <dt>
+                  <BadgeDollarSignIcon className="size-5" strokeWidth={1.5} />
+                </dt>
+                <dd>
+                  {formatSubCentCurrency(
+                    Number(eventStatistics.totals?._cost_amount),
+                    'usd',
+                  )}
+                </dd>
+              </>
+            )}
+          </div>
+        </dl>
+      </div>
+      <div className="flex flex-col gap-5 @3xl:flex-row">
+        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
+          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
+            <h3>Average cost</h3>
+            <span className="font-mono">
+              {formatSubCentCurrency(
+                Number(eventStatistics.averages?._cost_amount),
+                'usd',
+              )}
+            </span>
+          </div>
+          <div>
+            <Sparkline
+              values={averageCostValues}
+              trendUpIsBad={true}
+              className="pointer-events-none"
+            />
+          </div>
+        </div>
+        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
+          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
+            <h3>
+              95<sup>th</sup> percentile{' '}
+              <span className="hidden sm:inline @3xl:hidden @5xl:inline">
+                cost
+              </span>
+            </h3>
+            <span className="font-mono">
+              {formatSubCentCurrency(
+                Number(eventStatistics.p95?._cost_amount),
+                'usd',
+              )}
+            </span>
+          </div>
+          <div>
+            <Sparkline
+              values={p95CostValues}
+              trendUpIsBad={true}
+              className="pointer-events-none"
+            />
+          </div>
+        </div>
+        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
+          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
+            <h3>
+              99<sup>th</sup> percentile{' '}
+              <span className="hidden sm:inline @3xl:hidden @5xl:inline">
+                cost
+              </span>
+            </h3>
+            <span className="font-mono">
+              {formatSubCentCurrency(
+                Number(eventStatistics.p99?._cost_amount),
+                'usd',
+              )}
+            </span>
+          </div>
+          <div>
+            <Sparkline
+              values={p99CostValues}
+              trendUpIsBad={true}
+              className="pointer-events-none"
+            />
+          </div>
+        </div>
+      </div>
+    </Link>
   )
 }

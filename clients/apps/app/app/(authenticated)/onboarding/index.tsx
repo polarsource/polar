@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/Shared/ThemedText'
 import { useCreateOrganization } from '@/hooks/polar/organizations'
 import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { queryClient } from '@/utils/query'
 import { themes } from '@/utils/theme'
 import { ClientResponseError, schemas } from '@polar-sh/client'
 import { Stack, useRouter } from 'expo-router'
@@ -71,6 +72,7 @@ export default function Onboarding() {
       try {
         const organization = await createOrganization.mutateAsync(data)
         setOrganization(organization)
+        await queryClient.refetchQueries({ queryKey: ['organizations'] })
         router.replace('/')
       } catch (error) {
         if (error instanceof ClientResponseError) {

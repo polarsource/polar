@@ -149,6 +149,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
+    refunds_blocked_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+
     customer_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("customers.id"), nullable=False, index=True
     )
@@ -290,6 +294,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @property
     def refunded(self) -> bool:
         return self.status == OrderStatus.refunded
+
+    @property
+    def refunds_blocked(self) -> bool:
+        return self.refunds_blocked_at is not None
 
     @property
     def refundable_amount(self) -> int:

@@ -10,6 +10,7 @@ class Scope(StrEnum):
     profile = "profile"
     email = "email"
     user_read = "user:read"
+    users_write = "users:write"
 
     web_read = "web:read"  # Read-only web access
     web_write = "web:write"  # Write web access
@@ -120,6 +121,7 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.web_read: "Web Read Access",
     Scope.web_write: "Web Write Access",
     Scope.user_read: "User Read",
+    Scope.users_write: "Update or delete your user account",
     Scope.organizations_read: "Read your organizations",
     Scope.organizations_write: "Create or modify organizations",
     Scope.custom_fields_read: "Read custom fields",

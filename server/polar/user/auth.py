@@ -6,11 +6,11 @@ from polar.auth.dependencies import Authenticator
 from polar.auth.models import AuthSubject, User
 from polar.auth.scope import Scope
 
-_UsersWrite = Authenticator(
+_UserWrite = Authenticator(
     required_scopes={
         Scope.web_write,
-        Scope.users_write,
+        Scope.user_write,
     },
     allowed_subjects={User},
 )
-UsersWrite = Annotated[AuthSubject[User], Depends(_UsersWrite)]
+UserWrite = Annotated[AuthSubject[User], Depends(_UserWrite)]

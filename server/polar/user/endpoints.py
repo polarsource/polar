@@ -1,8 +1,6 @@
 from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator, WebUserRead, WebUserWrite
-
-from .auth import UsersWrite
 from polar.auth.models import AuthSubject
 from polar.customer_portal.endpoints.downloadables import router as downloadables_router
 from polar.customer_portal.endpoints.license_keys import router as license_keys_router
@@ -16,6 +14,7 @@ from polar.routing import APIRouter
 from polar.user.oauth_service import oauth_account_service
 from polar.user.service import user as user_service
 
+from .auth import UserWrite
 from .schemas import (
     UserDeletionResponse,
     UserIdentityVerification,
@@ -62,7 +61,7 @@ async def create_identity_verification(
     },
 )
 async def delete_authenticated_user(
-    auth_subject: UsersWrite,
+    auth_subject: UserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> UserDeletionResponse:
     """

@@ -30,6 +30,7 @@ from polar.email.sender import enqueue_email
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.service import event as event_service
 from polar.event.system import (
+    SubscriptionCreatedMetadata,
     SubscriptionRevokedMetadata,
     SystemEvent,
     build_system_event,
@@ -1033,6 +1034,26 @@ class SubscriptionService:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_created
         )
+
+        assert subscription.started_at is not None
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_created,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionCreatedMetadata(
+                    subscription_id=str(subscription.id),
+                    product_id=str(subscription.product_id),
+                    amount=subscription.amount,
+                    currency=subscription.currency,
+                    recurring_interval=subscription.recurring_interval.value,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                    started_at=subscription.started_at.isoformat(),
+                ),
+            ),
+        )
+
         # ⚠️ In some cases, the subscription is immediately active
         # Make sure then to perform all the operations required!
         if subscription.active:

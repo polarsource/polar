@@ -17,6 +17,7 @@ class SystemEvent(StrEnum):
     benefit_cycled = "benefit.cycled"
     benefit_updated = "benefit.updated"
     benefit_revoked = "benefit.revoked"
+    subscription_created = "subscription.created"
     subscription_cycled = "subscription.cycled"
     subscription_revoked = "subscription.revoked"
     subscription_product_updated = "subscription.product_updated"
@@ -34,6 +35,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "benefit.cycled": "Benefit Cycled",
     "benefit.updated": "Benefit Updated",
     "benefit.revoked": "Benefit Revoked",
+    "subscription.created": "Subscription Created",
     "subscription.cycled": "Subscription Cycled",
     "subscription.revoked": "Subscription Revoked",
     "subscription.product_updated": "Subscription Product Updated",
@@ -155,6 +157,23 @@ class CustomerDeletedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.customer_deleted]]
         user_metadata: Mapped[CustomerDeletedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionCreatedMetadata(TypedDict):
+    subscription_id: str
+    product_id: str
+    amount: int
+    currency: str
+    recurring_interval: str
+    recurring_interval_count: int
+    started_at: str
+
+
+class SubscriptionCreatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_created]]
+        user_metadata: Mapped[SubscriptionCreatedMetadata]  # type: ignore[assignment]
 
 
 class SubscriptionCycledMetadata(TypedDict):
@@ -336,6 +355,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: CustomerDeletedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_created],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionCreatedMetadata,
 ) -> Event: ...
 
 

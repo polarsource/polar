@@ -293,7 +293,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def refundable_amount(self) -> int:
-        return self.net_amount - self.refunded_amount
+        return self.net_amount + self.applied_balance_amount - self.refunded_amount
 
     @property
     def refundable_tax_amount(self) -> int:
@@ -308,7 +308,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         new_tax_amount = self.refunded_tax_amount + refunded_tax_amount
         exceeds_original_amount = (
             new_amount < 0
-            or new_amount > self.net_amount
+            or new_amount > (self.net_amount + self.applied_balance_amount)
             or new_tax_amount < 0
             or new_tax_amount > self.tax_amount
         )
@@ -317,7 +317,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
         if new_amount == 0:
             new_status = OrderStatus.paid
-        elif new_amount == self.net_amount:
+        elif new_amount == (self.net_amount + self.applied_balance_amount):
             new_status = OrderStatus.refunded
         else:
             new_status = OrderStatus.partially_refunded

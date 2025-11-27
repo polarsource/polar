@@ -874,6 +874,7 @@ class TestListStatisticsTimeseries:
         assert len(period_0_stats) == 1
         assert period_0_stats[0].name == "request"
         assert period_0_stats[0].occurrences == 2
+        assert period_0_stats[0].customers == 1
         assert period_0_stats[0].totals["_cost_amount"] == p0_total_cost
         assert period_0_stats[0].averages["_cost_amount"] == p0_total_cost / 2
         assert float(period_0_stats[0].p50["_cost_amount"]) == pytest.approx(
@@ -890,6 +891,7 @@ class TestListStatisticsTimeseries:
         assert len(period_1_stats) == 1
         assert period_1_stats[0].name == "request"
         assert period_1_stats[0].occurrences == 2
+        assert period_1_stats[0].customers == 1
         assert period_1_stats[0].totals["_cost_amount"] == p1_total_cost
         assert period_1_stats[0].averages["_cost_amount"] == p1_total_cost / 2
         assert float(period_1_stats[0].p50["_cost_amount"]) == pytest.approx(
@@ -907,11 +909,13 @@ class TestListStatisticsTimeseries:
         assert len(period_2_stats) == 1
         assert period_2_stats[0].name == "request"
         assert period_2_stats[0].occurrences == 0
+        assert period_2_stats[0].customers == 0
         assert period_2_stats[0].totals["_cost_amount"] == 0
         assert period_2_stats[0].averages["_cost_amount"] == 0
 
         assert len(result.totals) == 1
         assert result.totals[0].occurrences == 4
+        assert result.totals[0].customers == 1
         assert result.totals[0].totals["_cost_amount"] == total_cost
         assert result.totals[0].averages["_cost_amount"] == total_cost / 4
         sorted_costs = sorted(all_costs)
@@ -924,6 +928,165 @@ class TestListStatisticsTimeseries:
         assert float(result.totals[0].p99["_cost_amount"]) == pytest.approx(
             sorted_costs[0] + 0.99 * (sorted_costs[3] - sorted_costs[0])
         )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_hierarchy_stats_multiple_customers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        request_event_type = EventType(
+            name="request",
+            label="API Request",
+            organization=organization,
+        )
+        await save_fixture(request_event_type)
+
+        customer1 = await create_customer(
+            save_fixture, organization=organization, email="customer1@example.com"
+        )
+        customer2 = await create_customer(
+            save_fixture, organization=organization, email="customer2@example.com"
+        )
+        customer3 = await create_customer(
+            save_fixture, organization=organization, email="customer3@example.com"
+        )
+
+        now = utc_now()
+        today = now.replace(hour=12, minute=0, second=0, microsecond=0)
+        yesterday = today - timedelta(days=1)
+
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer1,
+            name="request",
+            timestamp=yesterday,
+            metadata={"_cost": {"amount": 10, "currency": "usd"}},
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer1,
+            name="request",
+            timestamp=yesterday,
+            metadata={"_cost": {"amount": 20, "currency": "usd"}},
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer2,
+            name="request",
+            timestamp=yesterday,
+            metadata={"_cost": {"amount": 30, "currency": "usd"}},
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer3,
+            name="request",
+            timestamp=today,
+            metadata={"_cost": {"amount": 40, "currency": "usd"}},
+        )
+
+        result = await event_service.list_statistics_timeseries(
+            session,
+            auth_subject,
+            start_date=yesterday.date(),
+            end_date=today.date(),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            aggregate_fields=("_cost.amount",),
+        )
+
+        assert len(result.periods) == 2
+
+        period_0_stats = result.periods[0].stats
+        assert len(period_0_stats) == 1
+        assert period_0_stats[0].name == "request"
+        assert period_0_stats[0].occurrences == 3
+        assert period_0_stats[0].customers == 2
+
+        period_1_stats = result.periods[1].stats
+        assert len(period_1_stats) == 1
+        assert period_1_stats[0].name == "request"
+        assert period_1_stats[0].occurrences == 1
+        assert period_1_stats[0].customers == 1
+
+        assert len(result.totals) == 1
+        assert result.totals[0].occurrences == 4
+        assert result.totals[0].customers == 3
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_hierarchy_stats_external_customer_not_in_db(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test that external_customer_id events without a matching Customer record
+        are counted as anonymous customers in the distinct count."""
+        request_event_type = EventType(
+            name="request",
+            label="API Request",
+            organization=organization,
+        )
+        await save_fixture(request_event_type)
+
+        customer1 = await create_customer(
+            save_fixture, organization=organization, email="customer1@example.com"
+        )
+
+        now = utc_now()
+        today = now.replace(hour=12, minute=0, second=0, microsecond=0)
+
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer1,
+            name="request",
+            timestamp=today,
+            metadata={"_cost": {"amount": 10, "currency": "usd"}},
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            external_customer_id="unknown_external_customer",
+            name="request",
+            timestamp=today,
+            metadata={"_cost": {"amount": 20, "currency": "usd"}},
+        )
+
+        result = await event_service.list_statistics_timeseries(
+            session,
+            auth_subject,
+            start_date=today.date(),
+            end_date=today.date(),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            aggregate_fields=("_cost.amount",),
+        )
+
+        assert len(result.periods) == 1
+        period_stats = result.periods[0].stats
+        assert len(period_stats) == 1
+        assert period_stats[0].occurrences == 2
+        assert period_stats[0].customers == 2
+
+        assert len(result.totals) == 1
+        assert result.totals[0].occurrences == 2
+        assert result.totals[0].customers == 2
 
 
 @pytest.mark.asyncio

@@ -2,7 +2,6 @@
 
 import { Chart } from '@/components/Chart/Chart'
 import { CustomerStatBox } from '@/components/Customer/CustomerStatBox'
-import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -17,12 +16,10 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { endOfToday, format, subMonths } from 'date-fns'
-import { useTheme } from 'next-themes'
-import { useRouter } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
-import { SpansSidebar } from '../SpansSidebar'
-import { getSearchParams } from '../utils'
+import { SpansHeader } from '../SpansHeader'
+import { SpansTitle } from '../SpansTitle'
 import { EditEventTypeModal } from './EditEventTypeModal'
 
 const PAGE_SIZE = 50
@@ -36,10 +33,6 @@ export default function SpanDetailPage({
   organization,
   spanId,
 }: SpanDetailPageProps) {
-  const router = useRouter()
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === 'dark'
-
   const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
     parseAsString.withDefault(toISODate(subMonths(endOfToday(), 1))),
@@ -57,6 +50,7 @@ export default function SpanDetailPage({
     const endDate = endDateISOString ? fromISODate(endDateISOString) : today
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
+
   const [interval, setInterval] = useQueryState(
     'interval',
     parseAsStringLiteral([
@@ -172,25 +166,17 @@ export default function SpanDetailPage({
 
   const onDateRangeChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
-      const params = getSearchParams(dateRange, interval)
-      router.push(
-        `/dashboard/${organization.slug}/analytics/costs/${spanId}?${params}`,
-      )
+      setStartDateISOString(toISODate(dateRange.from))
+      setEndDateISOString(toISODate(dateRange.to))
     },
-    [router, organization, spanId, interval],
+    [setStartDateISOString, setEndDateISOString],
   )
 
   const onIntervalChange = useCallback(
     (newInterval: schemas['TimeInterval']) => {
-      const params = getSearchParams(
-        { from: startDate, to: endDate },
-        newInterval,
-      )
-      router.push(
-        `/dashboard/${organization.slug}/analytics/costs/${spanId}?${params}`,
-      )
+      setInterval(newInterval)
     },
-    [router, organization, spanId, startDate, endDate],
+    [setInterval],
   )
 
   const {
@@ -218,22 +204,17 @@ export default function SpanDetailPage({
 
   return (
     <DashboardBody
-      title="Costs"
+      title={<SpansTitle organization={organization} />}
       className="flex flex-col gap-y-12"
       wide
-      contextViewPlacement="left"
-      contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
-      contextView={
-        <SpansSidebar
-          organization={organization}
-          eventTypes={eventTypes?.items}
+      header={
+        <SpansHeader
           dateRange={dateRange}
           interval={interval}
           startDate={startDate}
           endDate={endDate}
           onDateRangeChange={onDateRangeChange}
           onIntervalChange={onIntervalChange}
-          selectedSpanId={spanId}
         />
       }
     >
@@ -384,8 +365,6 @@ export default function SpanDetailPage({
                 </tfoot>
               </table>
             </div>
-
-            <Events events={events} organization={organization} />
           </div>
         </div>
       ) : (

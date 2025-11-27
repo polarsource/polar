@@ -2,27 +2,23 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Sparkline } from '@/components/Sparkline/Sparkline'
-import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
-import { parseSearchParams, serializeSearchParams } from '@/utils/datatable'
+// import { parseSearchParams, serializeSearchParams } from '@/utils/datatable'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
-import { operations, schemas } from '@polar-sh/client'
-import {
-  DataTable,
-  DataTableColumnDef,
-  DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/DataTable'
+import { schemas } from '@polar-sh/client'
 import { endOfToday, subMonths } from 'date-fns'
-import { useRouter, useSearchParams } from 'next/navigation'
+import {
+  BadgeDollarSignIcon,
+  CircleUserRound,
+  MousePointerClickIcon,
+} from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
-import { SpansSidebar } from './SpansSidebar'
-import { getSearchParams } from './utils'
-
-const formatOccurrences = (value: number): string => {
-  return value.toLocaleString('en-US')
-}
+import { SpansHeader } from './SpansHeader'
+import { SpansTitle } from './SpansTitle'
 
 type TimeSeriesField = 'average' | 'p95' | 'p99'
 
@@ -30,16 +26,28 @@ interface ClientPageProps {
   organization: schemas['Organization']
 }
 
+const getTimeSeriesValues = (
+  periods: schemas['StatisticsPeriod'][],
+  eventName: schemas['EventStatistics']['name'],
+  field: TimeSeriesField,
+): number[] => {
+  return periods.map((period) => {
+    const eventStats = period.stats.find((stat) => stat.name === eventName)
+    if (!eventStats) return 0
+
+    if (field === 'average') {
+      return parseFloat(eventStats.averages?.['_cost_amount'] || '0')
+    } else if (field === 'p95') {
+      return parseFloat(eventStats.p95?.['_cost_amount'] || '0')
+    } else if (field === 'p99') {
+      return parseFloat(eventStats.p99?.['_cost_amount'] || '0')
+    }
+    return 0
+  })
+}
+
 export default function ClientPage({ organization }: ClientPageProps) {
   const router = useRouter()
-
-  const searchParams = useSearchParams()
-  const dataTableParams = {
-    page: searchParams.get('page') ?? undefined,
-    limit: searchParams.get('limit') ?? undefined,
-    sorting: searchParams.getAll('sorting'),
-  }
-  const { sorting: costSorting } = parseSearchParams(dataTableParams)
 
   const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
@@ -58,6 +66,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
     const endDate = endDateISOString ? fromISODate(endDateISOString) : today
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
+
   const [interval, setInterval] = useQueryState(
     'interval',
     parseAsStringLiteral([
@@ -69,30 +78,16 @@ export default function ClientPage({ organization }: ClientPageProps) {
     ] as const).withDefault('day'),
   )
 
-  const sortingParam: operations['events:list_statistics_timeseries']['parameters']['query']['sorting'] =
-    useMemo(() => {
-      if (costSorting.length === 0) return ['-total'] as const
-      return costSorting.map((s) =>
-        s.desc ? `-${s.id}` : s.id,
-      ) as operations['events:list_statistics_timeseries']['parameters']['query']['sorting']
-    }, [costSorting])
-
-  const { data: costData, isLoading: costDataLoading } = useEventHierarchyStats(
+  const { data: costData, isLoading } = useEventHierarchyStats(
     organization.id,
     {
       start_date: startDateISOString,
       end_date: endDateISOString,
       interval,
       aggregate_fields: ['_cost.amount'],
-      sorting: sortingParam,
+      sorting: ['-total'],
     },
   )
-
-  const { data: eventTypes } = useEventTypes(organization.id, {
-    sorting: ['-last_seen'],
-    root_events: true,
-    source: 'user',
-  })
 
   const dateRange = useMemo(
     () => ({ from: startDate, to: endDate }),
@@ -101,57 +96,25 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
   const onDateRangeChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
-      const params = getSearchParams(dateRange, interval)
-      router.push(`/dashboard/${organization.slug}/analytics/costs?${params}`)
+      setStartDateISOString(toISODate(dateRange.from))
+      setEndDateISOString(toISODate(dateRange.to))
     },
-    [router, organization, interval],
+    [setStartDateISOString, setEndDateISOString],
   )
 
   const onIntervalChange = useCallback(
     (newInterval: schemas['TimeInterval']) => {
-      const params = getSearchParams(
-        { from: startDate, to: endDate },
-        newInterval,
-      )
-      router.push(`/dashboard/${organization.slug}/analytics/costs?${params}`)
+      setInterval(newInterval)
     },
-    [router, organization, startDate, endDate],
-  )
-
-  const getTimeSeriesValues = useCallback(
-    (
-      eventName: schemas['EventStatistics']['name'],
-      field: TimeSeriesField,
-    ): number[] => {
-      if (!costData?.periods) return []
-
-      return costData.periods.map((period) => {
-        const eventStats = period.stats.find((stat) => stat.name === eventName)
-        if (!eventStats) return 0
-
-        if (field === 'average') {
-          return parseFloat(eventStats.averages?.['_cost_amount'] || '0')
-        } else if (field === 'p95') {
-          return parseFloat(eventStats.p95?.['_cost_amount'] || '0')
-        } else if (field === 'p99') {
-          return parseFloat(eventStats.p99?.['_cost_amount'] || '0')
-        }
-        return 0
-      })
-    },
-    [costData],
+    [setInterval],
   )
 
   return (
     <DashboardBody
-      title="Costs"
+      title={<SpansTitle organization={organization} />}
       wide
-      contextViewPlacement="left"
-      contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
-      contextView={
-        <SpansSidebar
-          organization={organization}
-          eventTypes={eventTypes?.items}
+      header={
+        <SpansHeader
           dateRange={dateRange}
           interval={interval}
           startDate={startDate}
@@ -162,163 +125,148 @@ export default function ClientPage({ organization }: ClientPageProps) {
       }
     >
       <div className="flex flex-col gap-y-6">
-        <h3 className="text-2xl">Event Types</h3>
-        <DataTable
-          data={costData?.totals || []}
-          isLoading={costDataLoading}
-          sorting={costSorting}
-          onSortingChange={(updaterOrValue) => {
-            const updatedSorting =
-              typeof updaterOrValue === 'function'
-                ? updaterOrValue(costSorting)
-                : updaterOrValue
-
-            const sortingParams = serializeSearchParams(
-              { pageIndex: 0, pageSize: 100 },
-              updatedSorting,
-            )
-            router.push(
-              `/dashboard/${organization.slug}/analytics/costs?${sortingParams}`,
-            )
-          }}
-          onRowClick={(row) => {
-            const params = getSearchParams(
-              { from: startDate, to: endDate },
-              interval,
-            )
-            router.push(
-              `/dashboard/${organization.slug}/analytics/costs/${row.original.event_type_id}?${params}`,
-            )
-          }}
-          columns={
-            [
-              {
-                accessorKey: 'name',
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="Name" />
-                ),
-                cell: ({ row }) => (
-                  <span className="font-medium">
-                    {row.original.label || row.original.name}
-                  </span>
-                ),
-              },
-              {
-                id: 'total',
-                accessorFn: (row) => row.totals?.['_cost_amount'],
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="Total Cost" />
-                ),
-                cell: ({ row }) =>
-                  formatSubCentCurrency(
-                    Number(row.original.totals?.['_cost_amount'] || 0),
-                    'usd',
-                  ),
-              },
-              {
-                accessorKey: 'occurrences',
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="Occurrences" />
-                ),
-                cell: ({ row }) => formatOccurrences(row.original.occurrences),
-              },
-              {
-                id: 'average',
-                accessorFn: (row) => row.averages?.['_cost_amount'],
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="Average Cost" />
-                ),
-                cell: ({ row }) => {
-                  const values = getTimeSeriesValues(
-                    row.original.name,
-                    'average',
-                  )
-                  return (
-                    <div className="flex items-baseline gap-3">
-                      <span className="min-w-28">
-                        {formatSubCentCurrency(
-                          Number(row.original.averages?.['_cost_amount'] || 0),
-                          'usd',
-                        )}
-                      </span>
-                      {values.length > 0 && (
-                        <Sparkline
-                          values={values}
-                          trendUpIsBad={true}
-                          width={80}
-                          height={16}
-                        />
-                      )}
-                    </div>
-                  )
-                },
-              },
-              {
-                id: 'p95',
-                accessorFn: (row) => row.p95?.['_cost_amount'],
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="p95 Cost" />
-                ),
-                cell: ({ row }) => {
-                  const values = getTimeSeriesValues(row.original.name, 'p95')
-                  return (
-                    <div className="flex items-baseline gap-3">
-                      <span className="min-w-28">
-                        {formatSubCentCurrency(
-                          Number(row.original.p95?.['_cost_amount'] || 0),
-                          'usd',
-                        )}
-                      </span>
-                      {values.length > 0 && (
-                        <Sparkline
-                          values={values}
-                          trendUpIsBad={true}
-                          width={80}
-                          height={16}
-                        />
-                      )}
-                    </div>
-                  )
-                },
-              },
-              {
-                id: 'p99',
-                accessorFn: (row) => row.p99?.['_cost_amount'],
-                enableSorting: true,
-                header: ({ column }) => (
-                  <DataTableColumnHeader column={column} title="p99 Cost" />
-                ),
-                cell: ({ row }) => {
-                  const values = getTimeSeriesValues(row.original.name, 'p99')
-                  return (
-                    <div className="flex items-baseline gap-3">
-                      <span className="min-w-28">
-                        {formatSubCentCurrency(
-                          Number(row.original.p99?.['_cost_amount'] || 0),
-                          'usd',
-                        )}
-                      </span>
-                      {values.length > 0 && (
-                        <Sparkline
-                          values={values}
-                          trendUpIsBad={true}
-                          width={80}
-                          height={16}
-                        />
-                      )}
-                    </div>
-                  )
-                },
-              },
-            ] as DataTableColumnDef<schemas['EventStatistics']>[]
-          }
-        />
+        {!isLoading && costData?.totals.length === 0 && (
+          <p className="dark:text-polar-400 dark:bg-polar-800 flex items-center justify-center rounded-2xl bg-gray-50 p-12 text-center text-sm text-gray-500">
+            No cost data available for the selected date range
+          </p>
+        )}
+        {(costData?.totals ?? []).map((totals) => (
+          <EventStatisticsCard
+            key={totals.name}
+            periods={costData?.periods || []}
+            eventStatistics={totals}
+            organization={organization}
+          />
+        ))}
       </div>
     </DashboardBody>
+  )
+}
+
+function EventStatisticsCard({
+  periods,
+  eventStatistics,
+  organization,
+}: {
+  periods: schemas['StatisticsPeriod'][]
+  eventStatistics: schemas['EventStatistics']
+  organization: schemas['Organization']
+}) {
+  const averageCostValues = useMemo(() => {
+    return getTimeSeriesValues(periods, eventStatistics.name, 'average')
+  }, [periods, eventStatistics.name])
+
+  const p95CostValues = useMemo(() => {
+    return getTimeSeriesValues(periods, eventStatistics.name, 'p95')
+  }, [periods, eventStatistics.name])
+
+  const p99CostValues = useMemo(() => {
+    return getTimeSeriesValues(periods, eventStatistics.name, 'p99')
+  }, [periods, eventStatistics.name])
+
+  return (
+    <Link
+      href={`/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}`}
+      className="dark:bg-polar-700 dark:hover:border-polar-600 dark:border-polar-700 @container flex cursor-pointer flex-col gap-4 rounded-2xl border border-gray-100 p-4 transition-colors hover:border-gray-200"
+    >
+      <div className="flex flex-col justify-between gap-3 @xl:flex-row">
+        <h2 className="text-lg font-medium">{eventStatistics.name}</h2>
+        <dl className="dark:text-polar-500 flex max-w-sm flex-1 items-center gap-5 font-mono text-gray-500">
+          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
+            <dt>
+              <MousePointerClickIcon className="size-5" strokeWidth={1.5} />
+            </dt>
+            <dd>{eventStatistics.occurrences}</dd>
+          </div>
+          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
+            <dt>
+              <CircleUserRound className="size-5" strokeWidth={1.5} />
+            </dt>
+            <dd>{eventStatistics.customers}</dd>
+          </div>
+          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
+            {eventStatistics.totals?._cost_amount !== undefined && (
+              <>
+                <dt>
+                  <BadgeDollarSignIcon className="size-5" strokeWidth={1.5} />
+                </dt>
+                <dd>
+                  {formatSubCentCurrency(
+                    Number(eventStatistics.totals?._cost_amount),
+                    'usd',
+                  )}
+                </dd>
+              </>
+            )}
+          </div>
+        </dl>
+      </div>
+      <div className="flex flex-col gap-5 @3xl:flex-row">
+        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
+          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
+            <h3>Average cost</h3>
+            <span className="font-mono">
+              {formatSubCentCurrency(
+                Number(eventStatistics.averages?._cost_amount),
+                'usd',
+              )}
+            </span>
+          </div>
+          <div>
+            <Sparkline
+              values={averageCostValues}
+              trendUpIsBad={true}
+              className="pointer-events-none"
+            />
+          </div>
+        </div>
+        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
+          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
+            <h3>
+              95<sup>th</sup> percentile{' '}
+              <span className="hidden sm:inline @3xl:hidden @5xl:inline">
+                cost
+              </span>
+            </h3>
+            <span className="font-mono">
+              {formatSubCentCurrency(
+                Number(eventStatistics.p95?._cost_amount),
+                'usd',
+              )}
+            </span>
+          </div>
+          <div>
+            <Sparkline
+              values={p95CostValues}
+              trendUpIsBad={true}
+              className="pointer-events-none"
+            />
+          </div>
+        </div>
+        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
+          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
+            <h3>
+              99<sup>th</sup> percentile{' '}
+              <span className="hidden sm:inline @3xl:hidden @5xl:inline">
+                cost
+              </span>
+            </h3>
+            <span className="font-mono">
+              {formatSubCentCurrency(
+                Number(eventStatistics.p99?._cost_amount),
+                'usd',
+              )}
+            </span>
+          </div>
+          <div>
+            <Sparkline
+              values={p99CostValues}
+              trendUpIsBad={true}
+              className="pointer-events-none"
+            />
+          </div>
+        </div>
+      </div>
+    </Link>
   )
 }

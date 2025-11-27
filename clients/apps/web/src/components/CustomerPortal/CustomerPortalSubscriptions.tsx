@@ -163,13 +163,16 @@ export const InactiveSubscriptionsOverview = ({
           {
             accessorKey: 'ended_at',
             header: 'Ended At',
-            cell: ({ row }) => (
-              <FormattedDateTime
-                datetime={row.original.ended_at ?? '—'}
-                dateStyle="medium"
-                resolution="day"
-              />
-            ),
+            cell: ({ row }) =>
+              row.original.ended_at ? (
+                <FormattedDateTime
+                  datetime={row.original.ended_at}
+                  dateStyle="medium"
+                  resolution="day"
+                />
+              ) : (
+                '—'
+              ),
           },
           {
             accessorKey: 'id',

@@ -468,6 +468,9 @@ class EventStatistics(Schema):
     occurrences: int = Field(
         description="Number of root events with this name (i.e., number of traces)."
     )
+    customers: int = Field(
+        description="Number of distinct customers associated with events."
+    )
     totals: dict[str, Decimal] = Field(
         description="Sum of each field across all events in all hierarchies.",
         default_factory=dict,

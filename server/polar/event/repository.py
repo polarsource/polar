@@ -11,6 +11,7 @@ from sqlalchemy import (
     UnaryExpression,
     and_,
     asc,
+    case,
     cast,
     desc,
     func,
@@ -413,11 +414,16 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         ).subquery()
 
         all_events = aliased(Event, name="all_events")
+        customer = aliased(Customer, name="customer")
 
         per_root_select_exprs: list[ColumnElement[Any]] = [
             literal_column("root_event.id").label("root_id"),
             literal_column("root_event.name").label("root_name"),
             literal_column("root_event.organization_id").label("root_org_id"),
+            customer.id.label("customer_id"),
+            literal_column("root_event.external_customer_id").label(
+                "external_customer_id"
+            ),
         ]
 
         if timestamp_series is not None:
@@ -442,6 +448,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             literal_column("root_event.id"),
             literal_column("root_event.name"),
             literal_column("root_event.organization_id"),
+            literal_column("customer.id"),
+            literal_column("root_event.external_customer_id"),
         ]
         if timestamp_series is not None:
             group_by_exprs.append(literal_column("root_event.timestamp"))
@@ -450,6 +458,18 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             select(*per_root_select_exprs)
             .select_from(root_events_subquery.alias("root_event"))
             .join(all_events, all_events.root_id == literal_column("root_event.id"))
+            .outerjoin(
+                customer,
+                or_(
+                    customer.id == literal_column("root_event.customer_id"),
+                    and_(
+                        customer.external_id
+                        == literal_column("root_event.external_customer_id"),
+                        customer.organization_id
+                        == literal_column("root_event.organization_id"),
+                    ),
+                ),
+            )
             .group_by(*group_by_exprs)
         )
 
@@ -473,6 +493,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 timestamp_with_next.c.bucket_start.label("bucket"),
                 per_root_subquery.c.root_name,
                 per_root_subquery.c.root_org_id,
+                per_root_subquery.c.customer_id,
+                per_root_subquery.c.external_customer_id,
             ]
             for field_path in aggregate_fields:
                 safe_field_name = field_path.replace(".", "_")
@@ -534,6 +556,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                             f"{aggregate_fields[0].replace('.', '_')}_total",
                         )
                     ).label("occurrences"),
+                    (
+                        func.count(bucketed_subquery.c.customer_id.distinct())
+                        + func.count(
+                            case(
+                                (
+                                    bucketed_subquery.c.customer_id.is_(None),
+                                    bucketed_subquery.c.external_customer_id,
+                                )
+                            ).distinct()
+                        )
+                    ).label("customers"),
                     *aggregation_exprs,
                 )
                 .select_from(bucketed_subquery)
@@ -583,6 +616,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                     event_type.id.label("event_type_id"),
                     event_type.label.label("label"),
                     func.count(per_root_subquery.c.root_id).label("occurrences"),
+                    (
+                        func.count(per_root_subquery.c.customer_id.distinct())
+                        + func.count(
+                            case(
+                                (
+                                    per_root_subquery.c.customer_id.is_(None),
+                                    per_root_subquery.c.external_customer_id,
+                                )
+                            ).distinct()
+                        )
+                    ).label("customers"),
                     *aggregation_exprs,
                 )
                 .select_from(per_root_subquery)
@@ -636,6 +680,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 "label": row.label,
                 "event_type_id": row.event_type_id,
                 "occurrences": row.occurrences,
+                "customers": row.customers,
                 "totals": {
                     field.replace(".", "_"): getattr(
                         row, f"{field.replace('.', '_')}_sum"

@@ -32,7 +32,7 @@ export function PolarOrganizationProvider({ children }: PropsWithChildren) {
 
   const pathname = usePathname()
 
-  const { data: organizationData, isFetching: isFetchingOrganizations } =
+  const { data: organizationData, isLoading: isLoadingOrganizations } =
     useOrganizations({
       enabled: !!session,
     })
@@ -41,13 +41,21 @@ export function PolarOrganizationProvider({ children }: PropsWithChildren) {
     AsyncStorage.getItem('organizationId').then((organizationId) => {
       setOrganizationId(organizationId ?? null)
     })
-  }, [])
+  }, [setOrganizationId])
 
   useEffect(() => {
-    if (!organizationId) {
-      if (organizationData && organizationData.items.length > 0) {
-        setOrganizationId(organizationData.items[0].id ?? null)
-      }
+    if (!organizationData || organizationData.items.length === 0) {
+      return
+    }
+
+    // If no organizationId is set, or the current organizationId doesn't match
+    // any organization (e.g., after logging in with a different user), select the first one
+    const currentOrgExists = organizationData.items.some(
+      (org) => org.id === organizationId,
+    )
+
+    if (!organizationId || !currentOrgExists) {
+      setOrganizationId(organizationData.items[0].id ?? null)
     }
   }, [organizationData, organizationId, setOrganizationId])
 
@@ -57,7 +65,7 @@ export function PolarOrganizationProvider({ children }: PropsWithChildren) {
     )
   }, [organizationData, organizationId])
 
-  const isLoading = isStorageLoading || isFetchingOrganizations
+  const isLoading = isStorageLoading || isLoadingOrganizations
 
   const organizations = organizationData?.items ?? []
 

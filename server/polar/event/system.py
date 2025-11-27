@@ -170,6 +170,10 @@ class SubscriptionCycledEvent(Event):
 
 class SubscriptionRevokedMetadata(TypedDict):
     subscription_id: str
+    amount: int
+    currency: str
+    recurring_interval: str
+    recurring_interval_count: int
 
 
 class SubscriptionRevokedEvent(Event):

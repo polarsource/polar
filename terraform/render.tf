@@ -814,7 +814,7 @@ resource "render_web_service" "worker" {
   plan              = "pro"
   region            = "ohio"
   health_check_path = "/"
-  start_command     = "uv run dramatiq -p 2 -t 8 --queues default polar.worker.run"
+  start_command     = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues low_priority"
   num_instances     = 1
 
   custom_domains = [
@@ -831,6 +831,41 @@ resource "render_web_service" "worker" {
 
   env_vars = {
     dramatiq_prom_port           = { value = "10000" }
+    POLAR_POSTGRES_DATABASE      = { value = "polar_cpit" }
+    POLAR_POSTGRES_HOST          = { value = local.db_internal_host }
+    POLAR_POSTGRES_PORT          = { value = local.db_port }
+    POLAR_POSTGRES_USER          = { value = local.db_user }
+    POLAR_POSTGRES_PWD           = { value = local.db_password }
+    POLAR_POSTGRES_READ_DATABASE = { value = "polar_cpit" }
+    POLAR_POSTGRES_READ_HOST     = { value = local.read_replica.id }
+    POLAR_POSTGRES_READ_PORT     = { value = local.db_port }
+    POLAR_POSTGRES_READ_USER     = { value = local.db_user }
+    POLAR_POSTGRES_READ_PWD      = { value = local.db_password }
+    POLAR_REDIS_HOST             = { value = local.redis_host }
+    POLAR_REDIS_PORT             = { value = local.redis_port }
+    POLAR_REDIS_DB               = { value = "0" }
+  }
+}
+
+resource "render_web_service" "worker_medium_priority" {
+  environment_id    = render_project.polar.environments["Production"].id
+  name              = "worker-medium-priority"
+  plan              = "pro"
+  region            = "ohio"
+  health_check_path = "/"
+  start_command     = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues default medium_priority"
+  num_instances     = 1
+
+  runtime_source = {
+    image = {
+      image_url              = "ghcr.io/polarsource/polar"
+      tag                    = "latest"
+      registry_credential_id = render_registry_credential.ghcr.id
+    }
+  }
+
+  env_vars = {
+    dramatiq_prom_port           = { value = "10001" }
     POLAR_POSTGRES_DATABASE      = { value = "polar_cpit" }
     POLAR_POSTGRES_HOST          = { value = local.db_internal_host }
     POLAR_POSTGRES_PORT          = { value = local.db_port }

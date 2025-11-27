@@ -17,6 +17,7 @@ from polar.event.schemas import (
 )
 from polar.event.service import event as event_service
 from polar.event.sorting import EventNamesSortProperty
+from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
@@ -28,16 +29,26 @@ from polar.models import (
     Customer,
     CustomerMeter,
     EventType,
-    Meter,
     Organization,
+    Product,
     User,
     UserOrganization,
 )
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.event import EventSource
+from polar.models.order import OrderStatus
+from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_event
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_customer,
+    create_discount,
+    create_event,
+    create_order,
+    create_payment,
+)
 
 
 @pytest.fixture
@@ -1335,3 +1346,139 @@ class TestIngested:
 
         await session.refresh(customer_meter)
         assert customer_meter.activated_at is None
+
+
+@pytest.mark.asyncio
+class TestSystemEvents:
+    @pytest.fixture
+    def stripe_service_mock(self, mocker: Any) -> Any:
+        mock = mocker.patch("polar.order.service.stripe_service")
+        mock.create_tax_transaction.return_value = None
+        return mock
+
+    async def test_order_paid_one_time(
+        self,
+        stripe_service_mock: Any,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_one_time: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product_one_time,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        await order_service.handle_payment(session, order, payment)
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(SystemEvent.order_paid)
+        assert len(events) == 1
+        event = events[0]
+
+        assert event.customer_id == customer.id
+        assert event.organization_id == organization.id
+        assert event.user_metadata["order_id"] == str(order.id)
+        assert event.user_metadata["amount"] == order.total_amount
+        assert event.user_metadata["currency"] == order.currency
+        assert event.user_metadata["net_amount"] == order.net_amount
+        assert event.user_metadata["tax_amount"] == order.tax_amount
+        assert (
+            event.user_metadata["applied_balance_amount"]
+            == order.applied_balance_amount
+        )
+        assert event.user_metadata["discount_amount"] == order.discount_amount
+        assert event.user_metadata["platform_fee"] == order.platform_fee_amount
+        assert "subscription_id" not in event.user_metadata
+        assert "subscription_type" not in event.user_metadata
+        assert "discount_id" not in event.user_metadata
+
+    async def test_order_paid_subscription(
+        self,
+        stripe_service_mock: Any,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        await order_service.handle_payment(session, order, payment)
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(SystemEvent.order_paid)
+        assert len(events) == 1
+        event = events[0]
+
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["recurring_interval"] == "month"
+        assert event.user_metadata["recurring_interval_count"] == 1
+
+    async def test_order_paid_with_discount(
+        self,
+        stripe_service_mock: Any,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amount=1000,
+            currency="usd",
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            status=OrderStatus.pending,
+        )
+
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        await order_service.handle_payment(session, order, payment)
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(SystemEvent.order_paid)
+        assert len(events) == 1
+        event = events[0]
+
+        assert event.user_metadata["discount_id"] == str(discount.id)

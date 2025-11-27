@@ -1970,17 +1970,34 @@ class OrderService:
 
         await self.send_webhook(session, order, WebhookEventType.order_paid)
 
+        metadata = OrderPaidMetadata(
+            order_id=str(order.id),
+            amount=order.total_amount,
+            currency=order.currency,
+            net_amount=order.net_amount,
+            tax_amount=order.tax_amount,
+            applied_balance_amount=order.applied_balance_amount,
+            discount_amount=order.discount_amount,
+            platform_fee=order.platform_fee_amount,
+        )
+        if order.discount_id is not None:
+            metadata["discount_id"] = str(order.discount_id)
+        if order.subscription_id is not None:
+            metadata["subscription_id"] = str(order.subscription_id)
+            subscription = order.subscription
+            if subscription is not None:
+                metadata["recurring_interval"] = subscription.recurring_interval.value
+                metadata["recurring_interval_count"] = (
+                    subscription.recurring_interval_count
+                )
+
         await event_service.create_event(
             session,
             build_system_event(
                 SystemEvent.order_paid,
                 customer=order.customer,
                 organization=order.organization,
-                metadata=OrderPaidMetadata(
-                    order_id=str(order.id),
-                    amount=order.total_amount,
-                    currency=order.currency,
-                ),
+                metadata=metadata,
             ),
         )
 

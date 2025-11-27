@@ -37,6 +37,7 @@ from polar.models import (
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.event import EventSource
 from polar.models.order import OrderStatus
+from polar.models.subscription import CustomerCancellationReason
 from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from polar.subscription.service import subscription as subscription_service
@@ -1523,3 +1524,50 @@ class TestSystemEvents:
         assert event.user_metadata["recurring_interval"] == "month"
         assert event.user_metadata["recurring_interval_count"] == 1
         assert "started_at" in event.user_metadata
+
+    async def test_subscription_canceled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        await subscription_service.cancel(
+            session,
+            subscription,
+            customer_reason=CustomerCancellationReason.too_expensive,
+            customer_comment="Too pricey for me",
+        )
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_canceled
+        )
+        assert len(events) == 1
+        event = events[0]
+
+        assert event.customer_id == customer.id
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["amount"] == subscription.amount
+        assert event.user_metadata["currency"] == subscription.currency
+        assert (
+            event.user_metadata["recurring_interval"]
+            == subscription.recurring_interval.value
+        )
+        assert (
+            event.user_metadata["recurring_interval_count"]
+            == subscription.recurring_interval_count
+        )
+        assert event.user_metadata["customer_cancellation_reason"] == "too_expensive"
+        assert (
+            event.user_metadata["customer_cancellation_comment"] == "Too pricey for me"
+        )
+        assert "canceled_at" in event.user_metadata
+        assert "ends_at" in event.user_metadata

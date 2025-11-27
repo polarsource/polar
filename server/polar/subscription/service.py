@@ -30,6 +30,7 @@ from polar.email.sender import enqueue_email
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.service import event as event_service
 from polar.event.system import (
+    SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
     SubscriptionRevokedMetadata,
     SystemEvent,
@@ -2342,6 +2343,36 @@ class SubscriptionService:
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_canceled
+        )
+
+        assert subscription.canceled_at is not None
+        metadata = SubscriptionCanceledMetadata(
+            subscription_id=str(subscription.id),
+            amount=subscription.amount,
+            currency=subscription.currency,
+            recurring_interval=subscription.recurring_interval.value,
+            recurring_interval_count=subscription.recurring_interval_count,
+            canceled_at=subscription.canceled_at.isoformat(),
+        )
+        if subscription.customer_cancellation_reason is not None:
+            metadata["customer_cancellation_reason"] = (
+                subscription.customer_cancellation_reason.value
+            )
+        if subscription.customer_cancellation_comment is not None:
+            metadata["customer_cancellation_comment"] = (
+                subscription.customer_cancellation_comment
+            )
+        if subscription.ends_at is not None:
+            metadata["ends_at"] = subscription.ends_at.isoformat()
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_canceled,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=metadata,
+            ),
         )
 
         # Only send cancellation email if the subscription is not revoked,

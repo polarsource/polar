@@ -24,6 +24,7 @@ from polar.event.system import (
     MeterResetMetadata,
     OrderPaidMetadata,
     OrderRefundedMetadata,
+    SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
     SubscriptionProductUpdatedMetadata,
@@ -307,6 +308,17 @@ class SubscriptionCycledEvent(SystemEventBase):
     )
 
 
+class SubscriptionCanceledEvent(SystemEventBase):
+    """An event created by Polar when a subscription is canceled."""
+
+    name: Literal[SystemEventEnum.subscription_canceled] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionCanceledMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class SubscriptionRevokedEvent(SystemEventBase):
     """An event created by Polar when a subscription is revoked from a customer."""
 
@@ -400,6 +412,7 @@ SystemEvent = Annotated[
     | BenefitRevokedEvent
     | SubscriptionCreatedEvent
     | SubscriptionCycledEvent
+    | SubscriptionCanceledEvent
     | SubscriptionRevokedEvent
     | SubscriptionProductUpdatedEvent
     | SubscriptionSeatsUpdatedEvent

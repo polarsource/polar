@@ -847,11 +847,6 @@ resource "render_web_service" "worker" {
   }
 }
 
-moved {
-  from = render_web_service.worker_old
-  to   = render_web_service.worker
-}
-
 resource "render_web_service" "worker_medium_priority" {
   environment_id    = render_project.polar.environments["Production"].id
   name              = "worker-medium-priority"

@@ -814,7 +814,7 @@ resource "render_web_service" "worker" {
   plan              = "pro"
   region            = "ohio"
   health_check_path = "/"
-  start_command     = "uv run dramatiq -p 2 -t 8 --queues default -f polar.worker.scheduler:start polar.worker.run"
+  start_command     = "uv run dramatiq -p 2 -t 8 --queues default polar.worker.run"
   num_instances     = 1
 
   custom_domains = [
@@ -853,7 +853,7 @@ resource "render_web_service" "worker_high_priority" {
   plan              = "pro"
   region            = "ohio"
   health_check_path = "/"
-  start_command     = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues high_priority"
+  start_command     = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues high_priority -f polar.worker.scheduler:start"
   num_instances     = 1
 
   runtime_source = {

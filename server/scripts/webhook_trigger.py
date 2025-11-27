@@ -68,6 +68,7 @@ async def webhook_trigger(newer_than: datetime) -> None:
                     WebhookDelivery.id.is_(None),
                     WebhookEvent.created_at >= newer_than,
                     WebhookEvent.payload.is_not(None),
+                    WebhookEvent.skipped.is_(False),
                 )
             )
 

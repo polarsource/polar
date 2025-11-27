@@ -41,6 +41,7 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
 _SANDBOX_RULES: dict[str, Sequence[Rule]] = {
     **_BASE_RULES,
     "^/v1": [
+        Rule(group=RateLimitGroup.restricted, minute=10, zone="api"),
         Rule(group=RateLimitGroup.default, minute=100, zone="api"),
         Rule(group=RateLimitGroup.web, second=50, zone="api"),
         Rule(group=RateLimitGroup.elevated, second=50, zone="api"),
@@ -50,6 +51,7 @@ _SANDBOX_RULES: dict[str, Sequence[Rule]] = {
 _PRODUCTION_RULES: dict[str, Sequence[Rule]] = {
     **_BASE_RULES,
     "^/v1": [
+        Rule(group=RateLimitGroup.restricted, minute=60, zone="api"),
         Rule(group=RateLimitGroup.default, minute=500, zone="api"),
         Rule(group=RateLimitGroup.web, second=100, zone="api"),
         Rule(group=RateLimitGroup.elevated, second=100, zone="api"),

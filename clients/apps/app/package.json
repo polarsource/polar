@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier -c .",
     "lint": "pnpm format:check && expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "pnpm --filter @polar-sh/client build"
   },
   "jest": {
     "preset": "jest-expo"

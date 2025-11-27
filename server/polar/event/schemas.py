@@ -17,6 +17,7 @@ from typing_extensions import TypedDict
 from polar.customer.schemas.customer import Customer
 from polar.event.system import (
     BenefitGrantMetadata,
+    CheckoutCreatedMetadata,
     CustomerCreatedMetadata,
     CustomerDeletedMetadata,
     CustomerUpdatedMetadata,
@@ -381,6 +382,17 @@ class OrderRefundedEvent(SystemEventBase):
     )
 
 
+class CheckoutCreatedEvent(SystemEventBase):
+    """An event created by Polar when a checkout is created."""
+
+    name: Literal[SystemEventEnum.checkout_created] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: CheckoutCreatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class CustomerUpdatedEvent(SystemEventBase):
     """An event created by Polar when a customer is updated."""
 
@@ -418,6 +430,7 @@ SystemEvent = Annotated[
     | SubscriptionSeatsUpdatedEvent
     | OrderPaidEvent
     | OrderRefundedEvent
+    | CheckoutCreatedEvent
     | CustomerCreatedEvent
     | CustomerUpdatedEvent
     | CustomerDeletedEvent,

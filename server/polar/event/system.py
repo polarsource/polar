@@ -26,6 +26,7 @@ class SystemEvent(StrEnum):
     subscription_billing_period_updated = "subscription.billing_period_updated"
     order_paid = "order.paid"
     order_refunded = "order.refunded"
+    checkout_created = "checkout.created"
     customer_created = "customer.created"
     customer_updated = "customer.updated"
     customer_deleted = "customer.deleted"
@@ -43,6 +44,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "subscription.product_updated": "Subscription Product Updated",
     "order.paid": "Order Paid",
     "order.refunded": "Order Refunded",
+    "checkout.created": "Checkout Created",
     "subscription.seats_updated": "Subscription Seats Updated",
     "customer.created": "Customer Created",
     "customer.updated": "Customer Updated",
@@ -298,6 +300,19 @@ class OrderRefundedEvent(Event):
         user_metadata: Mapped[OrderRefundedMetadata]  # type: ignore[assignment]
 
 
+class CheckoutCreatedMetadata(TypedDict):
+    checkout_id: str
+    checkout_status: str
+    product_id: NotRequired[str]
+
+
+class CheckoutCreatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.checkout_created]]
+        user_metadata: Mapped[CheckoutCreatedMetadata]  # type: ignore[assignment]
+
+
 @overload
 def build_system_event(
     name: Literal[SystemEvent.meter_credited],
@@ -470,6 +485,20 @@ def build_system_event(
         name=name,
         source=EventSource.system,
         customer_id=customer.id,
+        organization=organization,
+        user_metadata=metadata,
+    )
+
+
+def build_checkout_event(
+    name: Literal[SystemEvent.checkout_created],
+    organization: Organization,
+    metadata: CheckoutCreatedMetadata,
+) -> Event:
+    return Event(
+        name=name,
+        source=EventSource.system,
+        customer_id=None,
         organization=organization,
         user_metadata=metadata,
     )

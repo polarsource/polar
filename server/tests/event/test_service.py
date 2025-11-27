@@ -34,6 +34,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.event import EventSource
 from polar.models.order import OrderStatus
@@ -45,6 +46,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_checkout,
     create_customer,
     create_discount,
     create_event,
@@ -1493,10 +1495,6 @@ class TestSystemEvents:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        from polar.models.checkout import CheckoutStatus
-        from polar.subscription.service import subscription as subscription_service
-        from tests.fixtures.random_objects import create_checkout
-
         checkout = await create_checkout(
             save_fixture,
             products=[product],

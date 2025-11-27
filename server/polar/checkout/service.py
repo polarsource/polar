@@ -28,6 +28,12 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
+from polar.event.service import event as event_service
+from polar.event.system import (
+    CheckoutCreatedMetadata,
+    SystemEvent,
+    build_checkout_event,
+)
 from polar.exceptions import (
     BadRequest,
     NotPermitted,
@@ -2208,6 +2214,20 @@ class CheckoutService:
     async def _after_checkout_created(
         self, session: AsyncSession, checkout: Checkout
     ) -> None:
+        metadata = CheckoutCreatedMetadata(
+            checkout_id=str(checkout.id),
+            checkout_status=checkout.status,
+        )
+        if checkout.product_id:
+            metadata["product_id"] = str(checkout.product_id)
+        await event_service.create_event(
+            session,
+            build_checkout_event(
+                SystemEvent.checkout_created,
+                checkout.organization,
+                metadata,
+            ),
+        )
         await webhook_service.send(
             session, checkout.organization, WebhookEventType.checkout_created, checkout
         )

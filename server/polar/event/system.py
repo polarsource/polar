@@ -18,6 +18,7 @@ class SystemEvent(StrEnum):
     benefit_updated = "benefit.updated"
     benefit_revoked = "benefit.revoked"
     subscription_created = "subscription.created"
+    subscription_canceled = "subscription.canceled"
     subscription_cycled = "subscription.cycled"
     subscription_revoked = "subscription.revoked"
     subscription_product_updated = "subscription.product_updated"
@@ -36,6 +37,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "benefit.updated": "Benefit Updated",
     "benefit.revoked": "Benefit Revoked",
     "subscription.created": "Subscription Created",
+    "subscription.canceled": "Subscription Canceled",
     "subscription.cycled": "Subscription Cycled",
     "subscription.revoked": "Subscription Revoked",
     "subscription.product_updated": "Subscription Product Updated",
@@ -174,6 +176,25 @@ class SubscriptionCreatedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_created]]
         user_metadata: Mapped[SubscriptionCreatedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionCanceledMetadata(TypedDict):
+    subscription_id: str
+    amount: int
+    currency: str
+    recurring_interval: str
+    recurring_interval_count: int
+    customer_cancellation_reason: NotRequired[str]
+    customer_cancellation_comment: NotRequired[str]
+    canceled_at: str
+    ends_at: NotRequired[str]
+
+
+class SubscriptionCanceledEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_canceled]]
+        user_metadata: Mapped[SubscriptionCanceledMetadata]  # type: ignore[assignment]
 
 
 class SubscriptionCycledMetadata(TypedDict):
@@ -364,6 +385,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionCreatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_canceled],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionCanceledMetadata,
 ) -> Event: ...
 
 

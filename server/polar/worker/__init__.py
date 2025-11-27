@@ -183,7 +183,8 @@ class TaskPriority(IntEnum):
 
 class TaskQueue:
     HIGH_PRIORITY = "high_priority"
-    DEFAULT = "default"
+    MEDIUM_PRIORITY = "medium_priority"
+    LOW_PRIORITY = "low_priority"
 
 
 P = ParamSpec("P")
@@ -198,11 +199,13 @@ def actor[**P, R](
     **options: Any,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     if queue_name is None:
-        queue_name = (
-            TaskQueue.HIGH_PRIORITY
-            if priority == TaskPriority.HIGH
-            else TaskQueue.DEFAULT
-        )
+        match priority:
+            case TaskPriority.LOW:
+                queue_name = TaskQueue.LOW_PRIORITY
+            case TaskPriority.MEDIUM:
+                queue_name = TaskQueue.MEDIUM_PRIORITY
+            case TaskPriority.HIGH:
+                queue_name = TaskQueue.HIGH_PRIORITY
 
     def decorator(
         fn: Callable[P, Awaitable[R]],

@@ -7,20 +7,15 @@ import {
   SyntaxHighlighterProvider,
 } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 
-export interface EventCreationGuideModalProps {
-  hide: () => void
-}
-
-export const EventCostCreationGuideModal = ({
-  hide,
-}: EventCreationGuideModalProps) => {
+export const EventCostCreationGuideModal = () => {
   return (
     <SyntaxHighlighterProvider>
       <div className="flex flex-col gap-8 p-6">
         <div className="flex flex-col gap-y-4">
           <h1 className="text-2xl">Event Cost Ingestion</h1>
           <p className="dark:text-polar-500 text-gray-500">
-            Associate costs with events by adding a `_cost` property to your
+            Associate costs with events by adding a{' '}
+            <code className="font-mono text-sm">_cost</code> property to your
             event metadata.
           </p>
         </div>

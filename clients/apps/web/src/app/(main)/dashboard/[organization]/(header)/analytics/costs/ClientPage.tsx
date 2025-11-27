@@ -19,7 +19,8 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
-import { SpansSidebar } from './SpansSidebar'
+import { SpansHeader } from './SpansHeader'
+import { SpansTitle } from './SpansTitle'
 import { getSearchParams } from './utils'
 
 type TimeSeriesField = 'average' | 'p95' | 'p99'
@@ -138,14 +139,10 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
   return (
     <DashboardBody
-      title="Costs"
+      title={<SpansTitle organization={organization} />}
       wide
-      contextViewPlacement="left"
-      contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
-      contextView={
-        <SpansSidebar
-          organization={organization}
-          eventTypes={eventTypes?.items}
+      header={
+        <SpansHeader
           dateRange={dateRange}
           interval={interval}
           startDate={startDate}

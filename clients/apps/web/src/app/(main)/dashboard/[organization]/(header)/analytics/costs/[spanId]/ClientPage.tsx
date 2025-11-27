@@ -19,7 +19,8 @@ import { endOfToday, format, subMonths } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
-import { SpansSidebar } from '../SpansSidebar'
+import { SpansHeader } from '../SpansHeader'
+import { SpansTitle } from '../SpansTitle'
 import { getSearchParams } from '../utils'
 import { EditEventTypeModal } from './EditEventTypeModal'
 
@@ -199,22 +200,17 @@ export default function SpanDetailPage({
 
   return (
     <DashboardBody
-      title="Costs"
+      title={<SpansTitle organization={organization} />}
       className="flex flex-col gap-y-12"
       wide
-      contextViewPlacement="left"
-      contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
-      contextView={
-        <SpansSidebar
-          organization={organization}
-          eventTypes={eventTypes?.items}
+      header={
+        <SpansHeader
           dateRange={dateRange}
           interval={interval}
           startDate={startDate}
           endDate={endDate}
           onDateRangeChange={onDateRangeChange}
           onIntervalChange={onIntervalChange}
-          selectedSpanId={spanId}
         />
       }
     >

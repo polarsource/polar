@@ -477,9 +477,9 @@ function EventRow({
         <FormattedDateTime datetime={event.timestamp} resolution="time" />
       </td>
 
-      <td className="p-2 text-left text-sm tabular-nums">
+      <td className="p-2 text-right text-sm tabular-nums">
         {mappedCost && (
-          <div className="flex w-full flex-row items-center justify-between gap-x-2">
+          <div className="ml-auto flex w-40 flex-row items-center justify-between gap-x-2">
             <span>
               {(
                 event.metadata as {

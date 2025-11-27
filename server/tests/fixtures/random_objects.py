@@ -875,6 +875,7 @@ async def create_order_and_payment(
     customer: Customer,
     subtotal_amount: int,
     tax_amount: int,
+    applied_balance_amount: int = 0,
 ) -> tuple[Order, Transaction]:
     order = await create_order(
         save_fixture,
@@ -882,9 +883,13 @@ async def create_order_and_payment(
         customer=customer,
         subtotal_amount=subtotal_amount,
         tax_amount=tax_amount,
+        applied_balance_amount=applied_balance_amount,
     )
     payment = await create_payment_transaction(
-        save_fixture, amount=subtotal_amount, tax_amount=tax_amount, order=order
+        save_fixture,
+        amount=subtotal_amount + applied_balance_amount,
+        tax_amount=tax_amount,
+        order=order,
     )
     return order, payment
 

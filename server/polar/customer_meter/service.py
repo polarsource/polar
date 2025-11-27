@@ -113,7 +113,7 @@ class CustomerMeterService:
         async with locker.lock(
             f"customer_meter:{customer.id}:{meter.id}",
             timeout=5.0,
-            blocking_timeout=0.2,
+            blocking_timeout=2.0,
         ):
             repository = CustomerMeterRepository.from_session(session)
             customer_meter = await repository.get_by_customer_and_meter(

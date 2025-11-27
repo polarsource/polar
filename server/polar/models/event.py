@@ -61,10 +61,13 @@ class CustomerComparator(Relationship.Comparator[Customer]):
         if isinstance(other, Customer):
             clause = Event.customer_id == other.id
             if other.external_id is not None:
-                clause |= and_(
-                    Event.external_customer_id.is_not(None),
-                    Event.external_customer_id == other.external_id,
-                    Event.organization_id == other.organization_id,
+                clause = or_(
+                    clause,
+                    and_(
+                        Event.external_customer_id.is_not(None),
+                        Event.external_customer_id == other.external_id,
+                        Event.organization_id == other.organization_id,
+                    ),
                 )
             return clause
 

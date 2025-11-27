@@ -1224,3 +1224,43 @@ class TestSystemEvents:
         event = events[0]
 
         assert event.user_metadata["discount_id"] == str(discount.id)
+
+    async def test_subscription_created(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        from polar.models.checkout import CheckoutStatus
+        from polar.subscription.service import subscription as subscription_service
+        from tests.fixtures.random_objects import create_checkout
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+        )
+
+        subscription, _ = await subscription_service.create_or_update_from_checkout(
+            session, checkout
+        )
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_created
+        )
+        assert len(events) == 1
+        event = events[0]
+
+        assert event.customer_id == customer.id
+        assert event.organization_id == organization.id
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["product_id"] == str(product.id)
+        assert event.user_metadata["amount"] == subscription.amount
+        assert event.user_metadata["currency"] == subscription.currency
+        assert event.user_metadata["recurring_interval"] == "month"
+        assert event.user_metadata["recurring_interval_count"] == 1
+        assert "started_at" in event.user_metadata

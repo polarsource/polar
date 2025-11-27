@@ -439,6 +439,27 @@ class OrderService:
 
         return order
 
+    async def set_refunds_blocked(
+        self,
+        session: AsyncSession,
+        order: Order,
+        blocked: bool,
+    ) -> Order:
+        repository = OrderRepository.from_session(session)
+        refunds_blocked_at = utc_now() if blocked else None
+        order = await repository.update(
+            order, update_dict={"refunds_blocked_at": refunds_blocked_at}
+        )
+
+        log.info(
+            "order.refunds_blocked_changed",
+            order_id=order.id,
+            refunds_blocked=blocked,
+            refunds_blocked_at=refunds_blocked_at,
+        )
+
+        return order
+
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order
     ) -> None:

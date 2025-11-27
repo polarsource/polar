@@ -127,7 +127,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   return (
     <div
       className={twMerge(
-        'dark:border-polar-700 dark:bg-polar-800 dark:divide-polar-700 flex flex-row divide-x divide-gray-200 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs',
+        'dark:border-polar-700 dark:bg-polar-800 dark:divide-polar-700 flex h-10 w-52 flex-row divide-x divide-gray-200 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs',
         className,
       )}
     >

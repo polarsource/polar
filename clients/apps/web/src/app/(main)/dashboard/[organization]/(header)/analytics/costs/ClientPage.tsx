@@ -2,13 +2,11 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Sparkline } from '@/components/Sparkline/Sparkline'
-import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
-import { parseSearchParams } from '@/utils/datatable'
 // import { parseSearchParams, serializeSearchParams } from '@/utils/datatable'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
-import { operations, schemas } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { endOfToday, subMonths } from 'date-fns'
 import {
   BadgeDollarSignIcon,
@@ -16,12 +14,11 @@ import {
   MousePointerClickIcon,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { SpansHeader } from './SpansHeader'
 import { SpansTitle } from './SpansTitle'
-import { getSearchParams } from './utils'
 
 type TimeSeriesField = 'average' | 'p95' | 'p99'
 
@@ -52,14 +49,6 @@ const getTimeSeriesValues = (
 export default function ClientPage({ organization }: ClientPageProps) {
   const router = useRouter()
 
-  const searchParams = useSearchParams()
-  const dataTableParams = {
-    page: searchParams.get('page') ?? undefined,
-    limit: searchParams.get('limit') ?? undefined,
-    sorting: searchParams.getAll('sorting'),
-  }
-  const { sorting: costSorting } = parseSearchParams(dataTableParams)
-
   const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
     parseAsString.withDefault(toISODate(subMonths(endOfToday(), 1))),
@@ -77,6 +66,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
     const endDate = endDateISOString ? fromISODate(endDateISOString) : today
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
+
   const [interval, setInterval] = useQueryState(
     'interval',
     parseAsStringLiteral([
@@ -88,30 +78,16 @@ export default function ClientPage({ organization }: ClientPageProps) {
     ] as const).withDefault('day'),
   )
 
-  const sortingParam: operations['events:list_statistics_timeseries']['parameters']['query']['sorting'] =
-    useMemo(() => {
-      if (costSorting.length === 0) return ['-total'] as const
-      return costSorting.map((s) =>
-        s.desc ? `-${s.id}` : s.id,
-      ) as operations['events:list_statistics_timeseries']['parameters']['query']['sorting']
-    }, [costSorting])
-
-  const { data: costData, isLoading: costDataLoading } = useEventHierarchyStats(
+  const { data: costData, isLoading } = useEventHierarchyStats(
     organization.id,
     {
       start_date: startDateISOString,
       end_date: endDateISOString,
       interval,
       aggregate_fields: ['_cost.amount'],
-      sorting: sortingParam,
+      sorting: ['-total'],
     },
   )
-
-  const { data: eventTypes } = useEventTypes(organization.id, {
-    sorting: ['-last_seen'],
-    root_events: true,
-    source: 'user',
-  })
 
   const dateRange = useMemo(
     () => ({ from: startDate, to: endDate }),
@@ -120,21 +96,17 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
   const onDateRangeChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
-      const params = getSearchParams(dateRange, interval)
-      router.push(`/dashboard/${organization.slug}/analytics/costs?${params}`)
+      setStartDateISOString(toISODate(dateRange.from))
+      setEndDateISOString(toISODate(dateRange.to))
     },
-    [router, organization, interval],
+    [setStartDateISOString, setEndDateISOString],
   )
 
   const onIntervalChange = useCallback(
     (newInterval: schemas['TimeInterval']) => {
-      const params = getSearchParams(
-        { from: startDate, to: endDate },
-        newInterval,
-      )
-      router.push(`/dashboard/${organization.slug}/analytics/costs?${params}`)
+      setInterval(newInterval)
     },
-    [router, organization, startDate, endDate],
+    [setInterval],
   )
 
   return (
@@ -153,6 +125,11 @@ export default function ClientPage({ organization }: ClientPageProps) {
       }
     >
       <div className="flex flex-col gap-y-6">
+        {!isLoading && costData?.totals.length === 0 && (
+          <p className="dark:text-polar-400 dark:bg-polar-800 flex items-center justify-center rounded-2xl bg-gray-50 p-12 text-center text-sm text-gray-500">
+            No cost data available for the selected date range
+          </p>
+        )}
         {(costData?.totals ?? []).map((totals) => (
           <EventStatisticsCard
             key={totals.name}

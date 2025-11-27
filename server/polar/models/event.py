@@ -120,6 +120,18 @@ class Event(Model, MetadataMixin):
             literal_column("timestamp DESC"),
             "id",
         ),
+        Index(
+            "ix_events_organization_external_id_ingested_at_desc",
+            "organization_id",
+            "external_customer_id",
+            literal_column("ingested_at DESC"),
+        ),
+        Index(
+            "ix_events_organization_customer_id_ingested_at_desc",
+            "organization_id",
+            "customer_id",
+            literal_column("ingested_at DESC"),
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)

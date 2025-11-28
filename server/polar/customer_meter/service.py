@@ -1,9 +1,8 @@
 import uuid
 from collections.abc import Sequence
 from decimal import Decimal
-from typing import cast
 
-from sqlalchemy import Select, or_, select, union_all
+from sqlalchemy import Select, or_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
@@ -125,7 +124,11 @@ class CustomerMeterService:
             events_statement = await self._get_current_window_events_statement(
                 session, customer, meter
             )
-            last_event = await event_repository.get_one_or_none(events_statement)
+            last_event = await event_repository.get_one_or_none(
+                events_statement.order_by(None)
+                .order_by(Event.ingested_at.desc())
+                .limit(1)
+            )
 
             if last_event is None:
                 return customer_meter, False
@@ -168,7 +171,9 @@ class CustomerMeterService:
         events_statement = await self._get_current_window_events_statement(
             session, customer, meter
         )
-        last_event = await event_repository.get_one_or_none(events_statement)
+        last_event = await event_repository.get_one_or_none(
+            events_statement.order_by(None).order_by(Event.ingested_at.desc()).limit(1)
+        )
 
         if last_event is None:
             return 0
@@ -205,63 +210,25 @@ class CustomerMeterService:
         meter_reset_event = await event_repository.get_latest_meter_reset(
             customer, meter.id
         )
-        by_customer_id = await self._get_latest_customer_event_statement(
-            session, customer, meter, meter_reset_event, by_external_id=False
+        statement = (
+            event_repository.get_base_statement()
+            .where(
+                Event.organization_id == meter.organization_id,
+                Event.customer == customer,
+                or_(
+                    # Events matching meter definitions
+                    event_repository.get_meter_clause(meter),
+                    # System events impacting the meter balance
+                    event_repository.get_meter_system_clause(meter),
+                ),
+            )
+            .order_by(Event.ingested_at.asc())
         )
-        # No union required.
-        if customer.external_id is None:
-            return by_customer_id
-
-        # Why union?
-        #   1. We want to capture both OR(customer_id, customer_external_id)
-        #   2. Postgres needs to Bitmap index scan each one and BitmapOr them
-        #   together (slow)
-        #
-        # Union ensures we can write indexed queries for both cases and merge
-        # them together more effectively. At least in this case of getting 1
-        # record. Don't change this to allow unlimited records!
-        by_customer_external_id = await self._get_latest_customer_event_statement(
-            session, customer, meter, meter_reset_event, by_external_id=True
-        )
-        union_statement = union_all(by_customer_id, by_customer_external_id)
-        # Union can return 2 records. So sort & limit again.
-        union_statement = union_statement.order_by(Event.ingested_at.desc()).limit(1)
-        # Wrap in select() to return Select[tuple[Event]] for callers
-        return cast(Select[tuple[Event]], select(Event).from_statement(union_statement))
-
-    async def _get_latest_customer_event_statement(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        meter: Meter,
-        meter_reset_event: Event | None,
-        by_external_id: bool = False,
-    ) -> Select[tuple[Event]]:
-        event_repository = EventRepository.from_session(session)
-        statement = event_repository.get_base_statement().where(
-            Event.organization_id == meter.organization_id,
-        )
-
-        if by_external_id:
-            statement = statement.where(Customer.external_id == customer.external_id)
-        else:
-            statement = statement.where(Customer.id == customer.id)
-
         if meter_reset_event is not None:
             statement = statement.where(
                 Event.ingested_at >= meter_reset_event.ingested_at
             )
 
-        statement = statement.where(
-            or_(
-                # Events matching meter definitions
-                event_repository.get_meter_clause(meter),
-                # System events impacting the meter balance
-                event_repository.get_meter_system_clause(meter),
-            ),
-        )
-
-        statement = statement.order_by(Event.ingested_at.desc()).limit(1)
         return statement
 
 

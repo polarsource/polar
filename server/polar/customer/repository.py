@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator, Iterable, Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, case, func, select, update
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
@@ -140,15 +140,22 @@ class CustomerRepository(
         statement = (
             update(Customer)
             .where(Customer.id.in_([c.id for c in customers]))
-            .values(meters_dirtied_at=utc_now())
+            .values(meters_dirtied_at=utc_now(), dirty=True)
         )
         await self.session.execute(statement)
 
     async def set_meters_updated_at(self, customers: Iterable[Customer]) -> None:
+        now = utc_now()
         statement = (
             update(Customer)
             .where(Customer.id.in_([c.id for c in customers]))
-            .values(meters_updated_at=utc_now())
+            .values(
+                meters_updated_at=now,
+                dirty=case(
+                    (Customer.meters_dirtied_at.is_(None), False),
+                    else_=Customer.dirty,
+                ),
+            )
         )
         await self.session.execute(statement)
 

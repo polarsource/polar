@@ -119,7 +119,9 @@ export default function Index() {
           </View>
           <View style={{ gap: 16 }}>
             <View>
-              <ThemedText style={[SettingsStyle.title]}>Danger zone</ThemedText>
+              <ThemedText style={[SettingsStyle.title]}>
+                Danger zone {user?.email}
+              </ThemedText>
               <ThemedText style={{ color: colors.subtext }}>
                 Irreversible actions for this account
               </ThemedText>

@@ -97,6 +97,13 @@ class RevokeSubscriptionBenefitsProhibited(RefundError):
         super().__init__(message, 400)
 
 
+class RefundsBlocked(RefundError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Refunds are blocked for order: {order.id}"
+        super().__init__(message, 403)
+
+
 class RefundService(ResourceServiceReader[Refund]):
     async def get_list(
         self,
@@ -176,6 +183,9 @@ class RefundService(ResourceServiceReader[Refund]):
         order: Order,
         create_schema: RefundCreate,
     ) -> Refund:
+        if order.refunds_blocked:
+            raise RefundsBlocked(order)
+
         if order.refunded:
             raise RefundedAlready(order)
 

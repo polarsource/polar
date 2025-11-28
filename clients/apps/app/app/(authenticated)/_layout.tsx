@@ -5,6 +5,7 @@ import { PolarOrganizationProvider } from '@/providers/OrganizationProvider'
 import { PolarClientProvider } from '@/providers/PolarClientProvider'
 import { PolarQueryClientProvider } from '@/providers/PolarQueryClientProvider'
 import { useSession } from '@/providers/SessionProvider'
+import { UserProvider } from '@/providers/UserProvider'
 import { DarkTheme, ThemeProvider } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
 import { Redirect, Stack, useRouter } from 'expo-router'
@@ -59,11 +60,13 @@ export default function Providers() {
     <ThemeProvider value={DarkTheme}>
       <PolarClientProvider>
         <PolarQueryClientProvider>
-          <NotificationsProvider>
-            <PolarOrganizationProvider>
-              <RootLayout />
-            </PolarOrganizationProvider>
-          </NotificationsProvider>
+          <UserProvider>
+            <NotificationsProvider>
+              <PolarOrganizationProvider>
+                <RootLayout />
+              </PolarOrganizationProvider>
+            </NotificationsProvider>
+          </UserProvider>
         </PolarQueryClientProvider>
       </PolarClientProvider>
     </ThemeProvider>

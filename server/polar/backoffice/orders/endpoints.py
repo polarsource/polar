@@ -16,6 +16,7 @@ from polar.models import Customer, Order, Organization, Product
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.order import sorting
 from polar.order.repository import OrderRepository
+from polar.order.service import order as order_service
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.refund.schemas import RefundCreate
 from polar.refund.service import refund as refund_service
@@ -257,17 +258,43 @@ async def get(
     ):
         with tag.div(classes="flex flex-col gap-4"):
             with tag.div(classes="flex justify-between items-center"):
-                with tag.h1(classes="text-4xl"):
-                    text(f"Order {order.invoice_number}")
-                # Add Refund button if order is paid and can be refunded
-                if order.paid and (order.refunded_amount or 0) < (
-                    order.net_amount or 0
-                ):
-                    with button(
-                        hx_get=str(request.url_for("orders:refund", id=order.id)),
-                        hx_target="#modal",
+                with tag.div(classes="flex items-center gap-2"):
+                    with tag.h1(classes="text-4xl"):
+                        text(f"Order {order.invoice_number}")
+                    if order.refunds_blocked:
+                        with tag.div(classes="badge badge-warning"):
+                            text("Refunds Blocked")
+                with tag.div(classes="flex gap-2"):
+                    # Block/Unblock Refunds button
+                    if order.refunds_blocked:
+                        with tag.form(
+                            method="POST",
+                            action=str(
+                                request.url_for("orders:unblock_refunds", id=order.id)
+                            ),
+                        ):
+                            with button(type="submit", outline=True):
+                                text("Unblock Refunds")
+                    else:
+                        with tag.form(
+                            method="POST",
+                            action=str(
+                                request.url_for("orders:block_refunds", id=order.id)
+                            ),
+                        ):
+                            with button(type="submit", outline=True):
+                                text("Block Refunds")
+                    # Add Refund button if order is paid, can be refunded, and refunds are not blocked
+                    if (
+                        order.paid
+                        and not order.refunds_blocked
+                        and (order.refunded_amount or 0) < (order.net_amount or 0)
                     ):
-                        text("Refund")
+                        with button(
+                            hx_get=str(request.url_for("orders:refund", id=order.id)),
+                            hx_target="#modal",
+                        ):
+                            text("Refund")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Order Details
@@ -597,6 +624,10 @@ async def refund(
         await add_toast(request, "This order has not been paid yet.", "error")
         return
 
+    if order.refunds_blocked:
+        await add_toast(request, "Refunds are blocked for this order.", "error")
+        return
+
     if (order.refunded_amount or 0) >= (order.net_amount or 0):
         await add_toast(request, "This order has already been fully refunded.", "error")
         return
@@ -654,3 +685,49 @@ async def refund(
                             text("Cancel")
                     with button(type="submit", variant="primary"):
                         text("Submit")
+
+
+@router.post("/{id}/block-refunds", name="orders:block_refunds")
+async def block_refunds(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    order_repository = OrderRepository.from_session(session)
+    order = await order_repository.get_by_id(id)
+
+    if order is None:
+        raise HTTPException(status_code=404)
+
+    if order.refunds_blocked:
+        await add_toast(request, "Refunds are already blocked for this order.", "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("orders:get", id=id)), 303
+        )
+
+    await order_service.set_refunds_blocked(session, order, blocked=True)
+    await add_toast(request, "Refunds have been blocked for this order.", "success")
+    return HXRedirectResponse(request, str(request.url_for("orders:get", id=id)), 303)
+
+
+@router.post("/{id}/unblock-refunds", name="orders:unblock_refunds")
+async def unblock_refunds(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    order_repository = OrderRepository.from_session(session)
+    order = await order_repository.get_by_id(id)
+
+    if order is None:
+        raise HTTPException(status_code=404)
+
+    if not order.refunds_blocked:
+        await add_toast(request, "Refunds are not blocked for this order.", "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("orders:get", id=id)), 303
+        )
+
+    await order_service.set_refunds_blocked(session, order, blocked=False)
+    await add_toast(request, "Refunds have been unblocked for this order.", "success")
+    return HXRedirectResponse(request, str(request.url_for("orders:get", id=id)), 303)

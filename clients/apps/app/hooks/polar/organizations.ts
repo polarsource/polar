@@ -1,7 +1,14 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
+import { useSession } from '@/providers/SessionProvider'
 import { queryClient } from '@/utils/query'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, UseMutationResult, useQuery } from '@tanstack/react-query'
+
+interface OrganizationDeletionResponse {
+  deleted: boolean
+  requires_support: boolean
+  blocked_reasons: string[]
+}
 
 export const useOrganizations = (
   {
@@ -66,6 +73,37 @@ export const useCreateOrganization = () => {
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] })
+    },
+  })
+}
+
+export const useDeleteOrganization = (): UseMutationResult<
+  { data?: OrganizationDeletionResponse; error?: { detail: string } },
+  Error,
+  string
+> => {
+  const { session } = useSession()
+
+  return useMutation({
+    mutationFn: async (organizationId: string) => {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/organizations/${organizationId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session}`,
+          },
+        },
+      )
+
+      if (!response.ok) {
+        const error = await response.json()
+        return { error }
+      }
+
+      const data = await response.json()
+      return { data }
     },
   })
 }

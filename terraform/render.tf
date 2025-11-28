@@ -814,7 +814,7 @@ resource "render_web_service" "worker" {
   plan              = "pro"
   region            = "ohio"
   health_check_path = "/"
-  start_command     = "uv run dramatiq -p 2 -t 8 --queues default -f polar.worker.scheduler:start polar.worker.run"
+  start_command     = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues low_priority"
   num_instances     = 1
 
   custom_domains = [
@@ -824,7 +824,7 @@ resource "render_web_service" "worker" {
   runtime_source = {
     image = {
       image_url              = "ghcr.io/polarsource/polar"
-      tag                    = "latest"
+      digest                 = "sha256:d55ecc35d8a51bcf7dde0d4d865c96b9de8d2c3469b12d1a719fef2ae39a4825"
       registry_credential_id = render_registry_credential.ghcr.id
     }
   }
@@ -847,13 +847,83 @@ resource "render_web_service" "worker" {
   }
 }
 
+resource "render_web_service" "worker_medium_priority" {
+  environment_id    = render_project.polar.environments["Production"].id
+  name              = "worker-medium-priority"
+  plan              = "pro"
+  region            = "ohio"
+  health_check_path = "/"
+  start_command     = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues default medium_priority"
+  num_instances     = 1
+
+  runtime_source = {
+    image = {
+      image_url              = "ghcr.io/polarsource/polar"
+      tag                    = "latest"
+      registry_credential_id = render_registry_credential.ghcr.id
+    }
+  }
+
+  env_vars = {
+    dramatiq_prom_port           = { value = "10001" }
+    POLAR_POSTGRES_DATABASE      = { value = "polar_cpit" }
+    POLAR_POSTGRES_HOST          = { value = local.db_internal_host }
+    POLAR_POSTGRES_PORT          = { value = local.db_port }
+    POLAR_POSTGRES_USER          = { value = local.db_user }
+    POLAR_POSTGRES_PWD           = { value = local.db_password }
+    POLAR_POSTGRES_READ_DATABASE = { value = "polar_cpit" }
+    POLAR_POSTGRES_READ_HOST     = { value = local.read_replica.id }
+    POLAR_POSTGRES_READ_PORT     = { value = local.db_port }
+    POLAR_POSTGRES_READ_USER     = { value = local.db_user }
+    POLAR_POSTGRES_READ_PWD      = { value = local.db_password }
+    POLAR_REDIS_HOST             = { value = local.redis_host }
+    POLAR_REDIS_PORT             = { value = local.redis_port }
+    POLAR_REDIS_DB               = { value = "0" }
+  }
+}
+
 resource "render_web_service" "worker_high_priority" {
   environment_id    = render_project.polar.environments["Production"].id
   name              = "worker-high-priority"
   plan              = "pro"
   region            = "ohio"
   health_check_path = "/"
-  start_command     = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues high_priority"
+  start_command     = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues high_priority -f polar.worker.scheduler:start"
+  num_instances     = 1
+
+  runtime_source = {
+    image = {
+      image_url              = "ghcr.io/polarsource/polar"
+      tag                    = "latest"
+      registry_credential_id = render_registry_credential.ghcr.id
+    }
+  }
+
+  env_vars = {
+    dramatiq_prom_port           = { value = "10001" }
+    POLAR_POSTGRES_DATABASE      = { value = "polar_cpit" }
+    POLAR_POSTGRES_HOST          = { value = local.db_internal_host }
+    POLAR_POSTGRES_PORT          = { value = local.db_port }
+    POLAR_POSTGRES_USER          = { value = local.db_user }
+    POLAR_POSTGRES_PWD           = { value = local.db_password }
+    POLAR_POSTGRES_READ_DATABASE = { value = "polar_cpit" }
+    POLAR_POSTGRES_READ_HOST     = { value = local.read_replica.id }
+    POLAR_POSTGRES_READ_PORT     = { value = local.db_port }
+    POLAR_POSTGRES_READ_USER     = { value = local.db_user }
+    POLAR_POSTGRES_READ_PWD      = { value = local.db_password }
+    POLAR_REDIS_HOST             = { value = local.redis_host }
+    POLAR_REDIS_PORT             = { value = local.redis_port }
+    POLAR_REDIS_DB               = { value = "0" }
+  }
+}
+
+resource "render_web_service" "worker_default" {
+  environment_id    = render_project.polar.environments["Production"].id
+  name              = "worker-default"
+  plan              = "pro"
+  region            = "ohio"
+  health_check_path = "/"
+  start_command     = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues default"
   num_instances     = 1
 
   runtime_source = {
@@ -969,27 +1039,27 @@ resource "render_web_service" "worker_sandbox" {
 
 resource "render_env_group_link" "aws_s3_production" {
   env_group_id = render_env_group.aws_s3_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id, render_web_service.worker_default.id]
 }
 
 resource "render_env_group_link" "google_production" {
   env_group_id = render_env_group.google_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id, render_web_service.worker_default.id]
 }
 
 resource "render_env_group_link" "github_production" {
   env_group_id = render_env_group.github_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id, render_web_service.worker_default.id]
 }
 
 resource "render_env_group_link" "backend_production" {
   env_group_id = render_env_group.backend_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id, render_web_service.worker_default.id]
 }
 
 resource "render_env_group_link" "stripe_production" {
   env_group_id = render_env_group.stripe_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id, render_web_service.worker_default.id]
 }
 
 resource "render_env_group_link" "logfire_server" {
@@ -999,12 +1069,12 @@ resource "render_env_group_link" "logfire_server" {
 
 resource "render_env_group_link" "logfire_worker" {
   env_group_id = render_env_group.logfire_worker.id
-  service_ids  = [render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id, render_web_service.worker_default.id]
 }
 
 resource "render_env_group_link" "openai_production" {
   env_group_id = render_env_group.openai_production.id
-  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id]
+  service_ids  = [render_web_service.api.id, render_web_service.worker.id, render_web_service.worker_high_priority.id, render_web_service.worker_medium_priority.id, render_web_service.worker_default.id]
 }
 
 resource "render_env_group_link" "apple_production" {

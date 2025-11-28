@@ -2,10 +2,8 @@ import { useSession } from '@/providers/SessionProvider'
 import {
   exchangeCodeAsync,
   makeRedirectUri,
-  Prompt,
   useAuthRequest,
 } from 'expo-auth-session'
-import { useRouter } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { useEffect } from 'react'
 
@@ -37,6 +35,7 @@ export const useOAuthConfig = () => {
     'profile',
     'email',
     'user:read',
+    'user:write',
     'checkout_links:read',
     'checkout_links:write',
     'organizations:read',
@@ -77,7 +76,6 @@ export const useOAuthConfig = () => {
 }
 
 export const useOAuth = () => {
-  const { navigate } = useRouter()
   const { setSession } = useSession()
 
   useEffect(() => {
@@ -97,7 +95,6 @@ export const useOAuth = () => {
         scheme: 'polar',
         path: 'oauth/callback',
       }),
-      prompt: Prompt.Consent,
       usePKCE: true,
       extraParams: {
         do_not_track: 'true',
@@ -108,28 +105,32 @@ export const useOAuth = () => {
   )
 
   const authenticate = async () => {
-    const response = await promptAsync()
+    try {
+      const response = await promptAsync({ preferEphemeralSession: true })
 
-    if (response?.type !== 'success') {
-      return
-    }
+      if (response?.type !== 'success') {
+        return
+      }
 
-    const token = await exchangeCodeAsync(
-      {
-        clientId: CLIENT_ID,
-        code: response.params.code,
-        redirectUri: makeRedirectUri({
-          scheme: 'polar',
-          path: 'oauth/callback',
-        }),
-        extraParams: {
-          code_verifier: authRequest?.codeVerifier ?? '',
+      const token = await exchangeCodeAsync(
+        {
+          clientId: CLIENT_ID,
+          code: response.params.code,
+          redirectUri: makeRedirectUri({
+            scheme: 'polar',
+            path: 'oauth/callback',
+          }),
+          extraParams: {
+            code_verifier: authRequest?.codeVerifier ?? '',
+          },
         },
-      },
-      discovery,
-    )
+        discovery,
+      )
 
-    setSession(token.accessToken)
+      setSession(token.accessToken)
+    } catch (error) {
+      console.error('[OAuth] Error:', error)
+    }
   }
 
   return { authRequest, authenticate }

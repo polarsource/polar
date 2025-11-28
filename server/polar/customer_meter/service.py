@@ -1,8 +1,9 @@
 import uuid
 from collections.abc import Sequence
 from decimal import Decimal
+from typing import cast
 
-from sqlalchemy import Select, or_, union_all
+from sqlalchemy import Select, or_, select, union_all
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
@@ -219,10 +220,11 @@ class CustomerMeterService:
         by_customer_external_id = await self._get_latest_customer_event_statement(
             session, customer, meter, meter_reset_event, by_external_id=True
         )
-        statement = union_all(by_customer_id, by_customer_external_id)
+        union_statement = union_all(by_customer_id, by_customer_external_id)
         # Union can return 2 records. So sort & limit again.
-        statement.order_by(Event.ingested_at.desc()).limit(1)
-        return statement
+        union_statement = union_statement.order_by(Event.ingested_at.desc()).limit(1)
+        # Wrap in select() to return Select[tuple[Event]] for callers
+        return cast(Select[tuple[Event]], select(Event).from_statement(union_statement))
 
     async def _get_latest_customer_event_statement(
         self,
@@ -230,8 +232,9 @@ class CustomerMeterService:
         customer: Customer,
         meter: Meter,
         meter_reset_event: Event | None,
-        by_external_id=False,
+        by_external_id: bool = False,
     ) -> Select[tuple[Event]]:
+        event_repository = EventRepository.from_session(session)
         statement = event_repository.get_base_statement().where(
             Event.organization_id == meter.organization_id,
         )
@@ -240,7 +243,6 @@ class CustomerMeterService:
             statement = statement.where(Customer.external_id == customer.external_id)
         else:
             statement = statement.where(Customer.id == customer.id)
-
 
         if meter_reset_event is not None:
             statement = statement.where(

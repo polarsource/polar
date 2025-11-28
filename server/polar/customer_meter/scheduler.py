@@ -44,6 +44,7 @@ class CustomerMeterJobStore(BaseJobStore):
         statement = (
             select(Customer)
             .where(
+                Customer.dirty.is_(True),
                 Customer.meters_dirtied_at.is_not(None),
                 or_(
                     Customer.meters_dirtied_at

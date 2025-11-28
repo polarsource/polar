@@ -1,5 +1,7 @@
 import uuid
 
+import logfire
+
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
 from polar.locker import Locker
@@ -31,7 +33,8 @@ async def update_customer(customer_id: uuid.UUID) -> None:
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
-        redis = RedisMiddleware.get()
-        locker = Locker(redis)
+        with logfire.set_baggage(organization_id=str(customer.organization_id)):
+            redis = RedisMiddleware.get()
+            locker = Locker(redis)
 
-        await customer_meter_service.update_customer(session, locker, customer)
+            await customer_meter_service.update_customer(session, locker, customer)

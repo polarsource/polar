@@ -68,26 +68,7 @@ class CustomerMeterJobStore(BaseJobStore):
         return jobs
 
     def get_next_run_time(self) -> datetime.datetime:
-        statement = (
-            select(
-                func.least(
-                    Customer.meters_dirtied_at
-                    + settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD,
-                    func.coalesce(Customer.meters_updated_at, Customer.created_at)
-                    + settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD,
-                )
-            )
-            .where(Customer.meters_dirtied_at.is_not(None))
-            .order_by(Customer.meters_dirtied_at.asc())
-            .limit(1)
-        )
-        with self.engine.connect() as connection:
-            result = connection.execute(statement)
-            next_run_time = result.scalar_one_or_none() or (
-                utc_now() + settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD
-            )
-            self.log.debug("Next run time", next_run_time=next_run_time)
-            return next_run_time
+        return utc_now() + settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD
 
     def get_all_jobs(self) -> list[Job]:
         now = utc_now()

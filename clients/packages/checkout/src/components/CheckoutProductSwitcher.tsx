@@ -1,6 +1,5 @@
 'use client'
 
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
@@ -10,7 +9,8 @@ import {
 } from '@polar-sh/ui/components/ui/radio-group'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { cn } from '@polar-sh/ui/lib/utils'
-import { useCallback } from 'react'
+import { Fragment, useCallback } from 'react'
+import type { ProductCheckoutPublic } from '../guards'
 import {
   formatRecurringFrequency,
   hasLegacyRecurringPrices,
@@ -18,8 +18,8 @@ import {
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface CheckoutProductSwitcherProps {
-  checkout: CheckoutPublic
-  update?: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  checkout: ProductCheckoutPublic
+  update?: (data: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   disabled?: boolean
   themePreset: ThemingPresetProps
 }
@@ -27,13 +27,13 @@ interface CheckoutProductSwitcherProps {
 const CheckoutProductSwitcher = ({
   checkout,
   update,
-  disabled,
   themePreset,
 }: CheckoutProductSwitcherProps) => {
   const {
     product: selectedProduct,
     productPrice: selectedPrice,
     products,
+    prices,
   } = checkout
 
   const selectProduct = useCallback(
@@ -41,7 +41,7 @@ const CheckoutProductSwitcher = ({
       const [productId, priceId] = value.split(':')
       const product = products.find((product) => product.id === productId)
       if (product) {
-        if (hasLegacyRecurringPrices(product)) {
+        if (hasLegacyRecurringPrices(prices[product.id])) {
           update?.({
             productId: product.id,
             productPriceId: priceId,
@@ -54,15 +54,18 @@ const CheckoutProductSwitcher = ({
     [update, products],
   )
 
-  if (products.length === 1 && !hasLegacyRecurringPrices(products[0])) {
+  if (
+    products.length === 1 &&
+    !hasLegacyRecurringPrices(prices[products[0].id])
+  ) {
     return null
   }
 
   const getDescription = (
-    product: CheckoutPublic['product'],
+    product: ProductCheckoutPublic['product'],
     price: ProductPrice | LegacyRecurringProductPrice,
   ) => {
-    const interval = hasLegacyRecurringPrices(product)
+    const interval = hasLegacyRecurringPrices(prices[product.id])
       ? price.recurringInterval
       : product.recurringInterval
     const intervalCount = product.recurringIntervalCount
@@ -82,16 +85,15 @@ const CheckoutProductSwitcher = ({
       className="flex flex-col gap-2"
     >
       {products.map((product) =>
-        hasLegacyRecurringPrices(product) ? (
-          <>
-            {product.prices.map((price) => (
+        hasLegacyRecurringPrices(prices[product.id]) ? (
+          <Fragment key={product.id}>
+            {prices[product.id].map((price) => (
               <label
                 key={price.id}
                 className={cn(
-                  themePreset.polar.checkoutProductSwitch,
-                  `flex cursor-pointer flex-col border transition-colors`,
+                  `dark:divide-polar-700 dark:md:bg-polar-950 flex cursor-pointer flex-col divide-y divide-gray-200 rounded-2xl border shadow-xs transition-colors hover:border-blue-500 md:bg-white md:shadow-none dark:hover:border-blue-500`,
                   price.id === selectedProduct.id
-                    ? themePreset.polar.checkoutProductSwitchSelected
+                    ? 'border-blue-500 dark:border-blue-500'
                     : '',
                 )}
                 htmlFor={`product-${price.id}`}
@@ -113,35 +115,34 @@ const CheckoutProductSwitcher = ({
                 </div>
               </label>
             ))}
-          </>
+          </Fragment>
         ) : (
           <label
             key={product.id}
             className={cn(
-              themePreset.polar.checkoutProductSwitch,
-              `flex cursor-pointer flex-col border transition-colors`,
+              `dark:divide-polar-700 dark:md:bg-polar-950 flex cursor-pointer flex-col divide-y divide-gray-200 rounded-2xl border shadow-xs transition-colors hover:border-blue-500 md:bg-white md:shadow-none dark:hover:border-blue-500`,
               product.id === selectedProduct.id
-                ? themePreset.polar.checkoutProductSwitchSelected
+                ? 'border-blue-500 dark:border-blue-500'
                 : '',
             )}
             htmlFor={`product-${product.id}`}
           >
             <div className="flex flex-row items-center gap-4 p-4">
               <RadioGroupItem
-                value={`${product.id}:${product.prices[0].id}`}
+                value={`${product.id}:${prices[product.id][0].id}`}
                 id={`product-${product.id}`}
               />
               <div className="flex grow flex-row items-center justify-between text-sm">
                 <div>{product.name}</div>
                 <ProductPriceLabel
                   product={product}
-                  price={product.prices[0]}
+                  price={prices[product.id][0]}
                 />
               </div>
             </div>
             <div className="flex grow flex-row items-center justify-between p-4 text-sm">
               <p className="dark:text-polar-500 text-gray-500">
-                {getDescription(product, product.prices[0])}
+                {getDescription(product, prices[product.id][0])}
               </p>
             </div>
           </label>

@@ -112,9 +112,7 @@ export const PaymentOnboardingStepper = ({
             return (
               <div
                 key={step.id}
-                className={twMerge(
-                  'relative flex flex-col gap-6 p-6 md:p-8 lg:p-10',
-                )}
+                className="relative flex flex-col gap-6 p-6 md:p-8 lg:p-10"
               >
                 {/* Step Icon */}
                 <div className="shrink-0">

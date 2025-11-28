@@ -6,7 +6,7 @@ const _getOrganizationOrNotFound = async (
   api: Client,
   slug: string,
   searchParams?: Record<string, string>,
-): Promise<schemas['CustomerOrganization']> => {
+): Promise<schemas['CustomerOrganizationData']> => {
   return unwrap(
     api.GET('/v1/customer-portal/organizations/{slug}', {
       params: {

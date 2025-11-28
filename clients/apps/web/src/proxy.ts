@@ -12,6 +12,7 @@ const AUTHENTICATED_ROUTES = [
   new RegExp('^/dashboard(/.*)?'),
   new RegExp('^/finance(/.*)?'),
   new RegExp('^/settings(/.*)?'),
+  new RegExp('^/oauth2(/.*)?'),
 ]
 
 const isForwardedRoute = (request: NextRequest): boolean => {
@@ -59,6 +60,88 @@ export async function proxy(request: NextRequest) {
   // doesn't appear to be working consistently with Vercel rewrites
   if (isForwardedRoute(request)) {
     return NextResponse.next()
+  }
+
+  // Redirect old customer query string URLs to path-based URLs
+  const customersMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/customers$/,
+  )
+  if (customersMatch && request.nextUrl.searchParams.has('customerId')) {
+    const customerId = request.nextUrl.searchParams.get('customerId')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${customersMatch[1]}/customers/${customerId}`
+    redirectURL.searchParams.delete('customerId')
+    return NextResponse.redirect(redirectURL)
+  }
+
+  // Redirect old benefit query string URLs to path-based URLs
+  const benefitsMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/benefits$/,
+  )
+  if (benefitsMatch && request.nextUrl.searchParams.has('benefitId')) {
+    const benefitId = request.nextUrl.searchParams.get('benefitId')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${benefitsMatch[1]}/products/benefits/${benefitId}`
+    redirectURL.searchParams.delete('benefitId')
+    return NextResponse.redirect(redirectURL)
+  }
+
+  // Redirect old checkout link query string URLs to path-based URLs
+  const checkoutLinksMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/products\/checkout-links$/,
+  )
+  if (
+    checkoutLinksMatch &&
+    request.nextUrl.searchParams.has('checkoutLinkId')
+  ) {
+    const checkoutLinkId = request.nextUrl.searchParams.get('checkoutLinkId')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${checkoutLinksMatch[1]}/products/checkout-links/${checkoutLinkId}`
+    redirectURL.searchParams.delete('checkoutLinkId')
+    return NextResponse.redirect(redirectURL)
+  }
+
+  // Redirect old meter query string URLs to path-based URLs
+  const metersMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/usage-billing\/meters$/,
+  )
+  if (metersMatch && request.nextUrl.searchParams.has('selectedMeter')) {
+    const selectedMeter = request.nextUrl.searchParams.get('selectedMeter')
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${metersMatch[1]}/products/meters/${selectedMeter}`
+    redirectURL.searchParams.delete('selectedMeter')
+    return NextResponse.redirect(redirectURL)
+  }
+
+  // Redirect deprecated path-based URLs to new structure
+  // Events: /dashboard/{org}/usage-billing/events/* -> /dashboard/{org}/analytics/events/*
+  const eventsPathMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/usage-billing\/events(\/.*)?$/,
+  )
+  if (eventsPathMatch) {
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${eventsPathMatch[1]}/analytics/events${eventsPathMatch[2] || ''}`
+    return NextResponse.redirect(redirectURL, { status: 308 })
+  }
+
+  // Benefits: /dashboard/{org}/benefits/* -> /dashboard/{org}/products/benefits/*
+  const benefitsPathMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/benefits(\/.*)?$/,
+  )
+  if (benefitsPathMatch) {
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${benefitsPathMatch[1]}/products/benefits${benefitsPathMatch[2] || ''}`
+    return NextResponse.redirect(redirectURL, { status: 308 })
+  }
+
+  // Meters: /dashboard/{org}/usage-billing/meters/* -> /dashboard/{org}/products/meters/*
+  const metersPathMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/usage-billing\/meters(\/.*)?$/,
+  )
+  if (metersPathMatch) {
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${metersPathMatch[1]}/products/meters${metersPathMatch[2] || ''}`
+    return NextResponse.redirect(redirectURL, { status: 308 })
   }
 
   let user: schemas['UserRead'] | undefined = undefined

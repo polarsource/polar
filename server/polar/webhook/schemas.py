@@ -52,6 +52,9 @@ class WebhookEndpoint(IDSchema, TimestampedSchema):
         description="The organization ID associated with the webhook endpoint."
     )
     events: EndpointEvents
+    enabled: bool = Field(
+        description="Whether the webhook endpoint is enabled and will receive events."
+    )
 
 
 class WebhookEndpointCreate(Schema):
@@ -89,6 +92,9 @@ class WebhookEndpointUpdate(Schema):
     )
     format: EndpointFormat | None = None
     events: EndpointEvents | None = None
+    enabled: bool | None = Field(
+        default=None, description="Whether the webhook endpoint is enabled."
+    )
 
 
 class WebhookEvent(IDSchema, TimestampedSchema):
@@ -113,6 +119,9 @@ class WebhookEvent(IDSchema, TimestampedSchema):
             "Whether this event was successfully delivered."
             " `null` if no delivery has been attempted."
         ),
+    )
+    skipped: bool = Field(
+        description="Whether this event was skipped because the webhook endpoint was disabled."
     )
     payload: str | None = Field(description="The payload of the webhook event.")
     type: WebhookEventType = Field(description="The type of the webhook event.")

@@ -13,17 +13,17 @@ import { AuthModal } from './AuthModal'
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
   orgSlug?: string
-  storefrontOrg?: schemas['Organization']
+  storefrontOrg?: schemas['CustomerOrganization']
 }
 
-const GetStartedButton: React.FC<GetStartedButtonProps> = ({
+const GetStartedButton = ({
   text: _text,
   wrapperClassNames,
   orgSlug: slug,
   storefrontOrg,
   size = 'lg',
   ...props
-}) => {
+}: GetStartedButtonProps) => {
   const posthog = usePostHog()
 
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
@@ -75,6 +75,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
       </Button>
 
       <Modal
+        title="Login"
         isShown={isModalShown}
         hide={hideModal}
         modalContent={

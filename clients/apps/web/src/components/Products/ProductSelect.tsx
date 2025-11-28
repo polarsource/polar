@@ -1,5 +1,4 @@
 import { useProducts, useSelectedProducts } from '@/hooks/queries'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
 import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -17,6 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
+import { CheckIcon } from 'lucide-react'
 import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ProductPriceTypeLabel from './ProductPriceTypeLabel'
@@ -42,24 +42,27 @@ const ProductsCommandGroup = ({
     )
   }, [groupedProducts, productPriceType, selectedProducts])
 
+  if (groupedProducts[productPriceType].length === 0) {
+    return null
+  }
+
   return (
     <CommandGroup className={className}>
       <CommandItem
-        className={twMerge(
-          'flex flex-row items-center justify-between py-2 text-black dark:text-white',
-        )}
+        className="flex flex-row items-center justify-between py-2 text-black dark:text-white"
         key={productPriceType}
         value={productPriceType}
         onSelect={() => onSelectProductType(productPriceType)}
       >
-        <div className="flew-row flex items-center gap-2 font-semibold">
+        <div className="flew-row flex items-center gap-2 font-medium">
           <ProductPriceTypeLabel productPriceType={productPriceType} />
         </div>
-        <div className="flex items-center font-light">
+
+        <div className="text-xs opacity-70">
           {!areAllSelected ? (
             <>Select all {groupedProducts[productPriceType].length}</>
           ) : (
-            <>Unselect all</>
+            <>Deselect all</>
           )}
         </div>
       </CommandItem>
@@ -68,17 +71,15 @@ const ProductsCommandGroup = ({
 
         return (
           <CommandItem
-            className={twMerge(
-              'flex flex-row items-center justify-between text-black dark:text-white',
-            )}
+            className="flex flex-row items-center justify-between text-black dark:text-white"
             key={product.id}
             value={product.id}
             onSelect={() => onSelectProduct(product)}
           >
             {`${product.name} ${product.is_archived ? '(Archived)' : ''}`}
-            <CheckOutlined
+            <CheckIcon
               className={twMerge(
-                'mr-2 h-4 w-4',
+                'h-4 w-4',
                 isSelected ? 'visible' : 'invisible',
               )}
             />
@@ -218,7 +219,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
           role="combobox"
           aria-expanded={open}
           className={twMerge(
-            'ring-offset-background placeholder:text-muted-foreground focus:ring-ring dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 flex h-10 w-full! flex-row items-center justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm shadow-xs transition-colors hover:bg-gray-100 focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
+            'ring-offset-background placeholder:text-muted-foreground focus:ring-ring dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 dark:hover:border-polar-700 flex h-10 w-full! flex-row items-center justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-normal shadow-xs transition-colors hover:border-gray-300 hover:bg-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
             className,
           )}
           wrapperClassNames="justify-between w-full min-w-[200px]"
@@ -233,7 +234,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         <Command shouldFilter={false}>
           <CommandInput
             className="border-none focus:ring-transparent"
-            placeholder="Search product"
+            placeholder="Search products…"
             value={query}
             onValueChange={setQuery}
           />
@@ -245,19 +246,24 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
                   productPriceType="one_time"
                   onSelectProduct={onSelectProduct}
                   onSelectProductType={onSelectProductType}
-                  selectedProducts={selectedProducts || []}
+                  selectedProducts={
+                    value.length > 0 ? selectedProducts || [] : []
+                  }
                 />
-                <CommandSeparator />
+                {groupedProducts.one_time.length > 0 &&
+                  groupedProducts.recurring.length > 0 && <CommandSeparator />}
                 <ProductsCommandGroup
                   groupedProducts={groupedProducts}
                   productPriceType="recurring"
                   onSelectProduct={onSelectProduct}
                   onSelectProductType={onSelectProductType}
-                  selectedProducts={selectedProducts || []}
+                  selectedProducts={
+                    value.length > 0 ? selectedProducts || [] : []
+                  }
                 />
               </>
             ) : (
-              <CommandEmpty>No product found</CommandEmpty>
+              <CommandEmpty>No products found</CommandEmpty>
             )}
           </CommandList>
         </Command>

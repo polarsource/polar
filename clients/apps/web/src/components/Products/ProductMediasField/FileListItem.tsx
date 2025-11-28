@@ -47,9 +47,8 @@ export const FileListItem = ({
   const imageURL = useMemo(() => {
     if (file.public_url) {
       return file.public_url
-    } else if (file.buffer) {
-      const blob = new Blob([file.buffer], { type: file.mime_type })
-      return URL.createObjectURL(blob)
+    } else if (file.file) {
+      return URL.createObjectURL(file.file)
     }
     return undefined
   }, [file])
@@ -80,9 +79,11 @@ export const FileListItem = ({
         <button
           type="button"
           onClick={onDelete}
-          className="absolute top-4 right-4 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white"
+          className="absolute top-0 right-0 flex h-[44px] w-[44px] cursor-pointer items-center justify-center"
         >
-          <ClearOutlined fontSize="inherit" />
+          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+            <ClearOutlined fontSize="inherit" />
+          </div>
         </button>
       )}
       {isUploading && (

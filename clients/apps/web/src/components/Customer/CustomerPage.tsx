@@ -8,12 +8,19 @@ import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   ParsedMetricsResponse,
   useBenefitGrants,
-  useCustomerBalance,
   useMetrics,
   useSubscriptions,
+  useWallets,
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
-import { getChartRangeParams } from '@/utils/metrics'
+import {
+  formatCurrency,
+  formatHumanFriendlyCurrency,
+  formatPercentage,
+  formatScalar,
+  formatSubCentCurrency,
+} from '@/utils/formatters'
+import { getPreviousDateRange } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -25,22 +32,27 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
-import ProfitChart from '../Metrics/ProfitChart'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerStatBox } from './CustomerStatBox'
+import { CustomerTrendStatBox } from './CustomerTrendStatBox'
 
 interface CustomerPageProps {
   organization: schemas['Organization']
   customer: schemas['Customer']
+  dateRange: { startDate: Date; endDate: Date }
+  interval: schemas['TimeInterval']
 }
 
 export const CustomerPage: React.FC<CustomerPageProps> = ({
   organization,
   customer,
+  dateRange,
+  interval,
 }) => {
   const { data: orders, isLoading: ordersLoading } = useOrders(
     customer.organization_id,
@@ -65,22 +77,85 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       sorting: ['-granted_at'],
     })
 
-  const { data: customerBalance, isLoading: balanceLoading } =
-    useCustomerBalance(customer.id)
+  const { data: billingWallets } = useWallets(organization.id, {
+    customer_id: customer.id,
+    type: 'billing',
+  })
 
-  const [selectedMetric, setSelectedMetric] =
-    React.useState<keyof schemas['Metrics']>('revenue')
-  const [startDate, endDate, interval] = React.useMemo(
-    () => getChartRangeParams('all_time', customer.created_at),
-    [customer.created_at],
-  )
+  const [selectedMetric, setSelectedMetric] = React.useState<
+    keyof schemas['Metrics']
+  >(organization.feature_settings?.revops_enabled ? 'cashflow' : 'revenue')
+
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
-    startDate,
-    endDate,
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate,
     organization_id: organization.id,
     interval,
     customer_id: [customer.id],
   })
+
+  const { data: previousPeriodMetrics } = useMetrics(
+    {
+      startDate: getPreviousDateRange(
+        dateRange.startDate,
+        dateRange.endDate,
+      )[0],
+      endDate: getPreviousDateRange(dateRange.startDate, dateRange.endDate)[1],
+      organization_id: organization.id,
+      interval: interval,
+      customer_id: [customer.id],
+    },
+    organization.feature_settings?.revops_enabled ?? false,
+  )
+
+  const calculateTrend = React.useCallback(
+    (
+      metricKey: keyof schemas['MetricsTotals'],
+    ):
+      | {
+          value: number
+          direction: 'up' | 'down' | 'none'
+          metric: schemas['Metric']
+          previousValue: number
+        }
+      | undefined => {
+      if (!metricsData?.totals || !previousPeriodMetrics?.totals) {
+        return undefined
+      }
+
+      const metric = metricsData.metrics[metricKey]
+      const currentValue = metricsData.totals[metricKey]
+      const previousValue = previousPeriodMetrics.totals[metricKey]
+
+      if (
+        typeof currentValue !== 'number' ||
+        typeof previousValue !== 'number'
+      ) {
+        return undefined
+      }
+
+      if (previousValue === 0) {
+        if (currentValue === 0)
+          return { value: 0, direction: 'none', metric, previousValue }
+        return { value: 100, direction: 'up', metric, previousValue }
+      }
+
+      const percentageChange =
+        ((currentValue - previousValue) / Math.abs(previousValue)) * 100
+
+      if (Math.abs(percentageChange) < 0.01) {
+        return { value: 0, direction: 'none', metric, previousValue }
+      }
+
+      return {
+        value: percentageChange,
+        direction: percentageChange > 0 ? 'up' : 'down',
+        previousValue,
+        metric,
+      }
+    },
+    [metricsData, previousPeriodMetrics],
+  )
 
   const relevantMetricsData = useMemo(() => {
     if (!metricsData) {
@@ -101,6 +176,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       'net_average_order_value',
       'net_cumulative_revenue',
       'net_revenue',
+      'cashflow',
+      'gross_margin',
+      'gross_margin_percentage',
       'new_subscriptions',
       'new_subscriptions_net_revenue',
       'new_subscriptions_revenue',
@@ -135,69 +213,90 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <TabsTrigger value="usage">Usage</TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-8">
-        <div className="flex flex-col gap-4 md:flex-row md:gap-6">
-          <CustomerStatBox title="Cumulative Revenue" size="lg">
-            {typeof metricsData?.totals.cumulative_revenue === 'number' ? (
-              <AmountLabel
-                amount={metricsData?.totals.cumulative_revenue ?? 0}
-                currency="USD"
-                minimumFractionDigits={2}
-              />
-            ) : (
-              '—'
-            )}
-          </CustomerStatBox>
-
+        <div className="grid grid-cols-2 flex-row gap-4 md:gap-6 xl:flex">
           {organization.feature_settings?.revops_enabled ? (
             <>
-              <CustomerStatBox title="Cumulative Costs" size="lg">
-                {typeof metricsData?.totals.cumulative_costs === 'number' ? (
-                  <AmountLabel
-                    amount={metricsData?.totals.cumulative_costs ?? 0}
-                    currency="USD"
-                    minimumFractionDigits={2}
-                  />
-                ) : (
-                  '—'
-                )}
-              </CustomerStatBox>
-              <CustomerStatBox title="Profit" size="lg">
-                {metricsData?.totals.cumulative_revenue &&
-                metricsData?.totals.cumulative_costs ? (
-                  <AmountLabel
-                    amount={
-                      metricsData.totals.cumulative_revenue -
-                      metricsData.totals.cumulative_costs
-                    }
-                    currency="USD"
-                    minimumFractionDigits={2}
-                  />
-                ) : (
-                  '—'
-                )}
-              </CustomerStatBox>
+              <CustomerTrendStatBox
+                title="Revenue"
+                size="lg"
+                trend={calculateTrend('revenue')}
+              >
+                {typeof metricsData?.totals.revenue === 'number'
+                  ? formatHumanFriendlyCurrency(
+                      metricsData.totals.revenue,
+                      'usd',
+                    )
+                  : '—'}
+              </CustomerTrendStatBox>
+              <CustomerTrendStatBox
+                title="Cost"
+                size="lg"
+                trend={calculateTrend('costs')}
+                trendUpIsBad
+              >
+                {typeof metricsData?.totals.costs === 'number'
+                  ? formatSubCentCurrency(metricsData.totals.costs, 'usd')
+                  : '—'}
+              </CustomerTrendStatBox>
+              <CustomerTrendStatBox
+                title="Profit"
+                size="lg"
+                trend={calculateTrend('gross_margin')}
+              >
+                {typeof metricsData?.totals.gross_margin === 'number'
+                  ? formatHumanFriendlyCurrency(
+                      metricsData.totals.gross_margin,
+                      'usd',
+                    )
+                  : '—'}
+              </CustomerTrendStatBox>
+              <CustomerTrendStatBox
+                title="Profit Margin"
+                size="lg"
+                trend={calculateTrend('gross_margin_percentage')}
+              >
+                {typeof metricsData?.totals.gross_margin_percentage === 'number'
+                  ? formatPercentage(metricsData.totals.gross_margin_percentage)
+                  : '—'}
+              </CustomerTrendStatBox>
             </>
           ) : (
-            <CustomerStatBox title="Orders" size="lg">
-              {metricsData?.totals.orders ?? '—'}
-            </CustomerStatBox>
+            <>
+              <CustomerStatBox title="Lifetime Revenue" size="lg">
+                {typeof metricsData?.totals.cumulative_revenue === 'number'
+                  ? formatHumanFriendlyCurrency(
+                      metricsData.totals.cumulative_revenue,
+                      'usd',
+                    )
+                  : '—'}
+              </CustomerStatBox>
+              <CustomerStatBox title="Orders" size="lg">
+                {metricsData?.totals.orders
+                  ? formatScalar(metricsData?.totals.orders)
+                  : '—'}
+              </CustomerStatBox>
+            </>
           )}
           <CustomerStatBox title="Customer Balance" size="lg">
-            <AmountLabel
-              amount={customerBalance?.balance ?? 0}
-              currency="USD"
-              minimumFractionDigits={2}
-            />
+            {billingWallets && billingWallets.items.length > 0
+              ? billingWallets.items.map((wallet) => (
+                  <div key={wallet.id}>
+                    {formatCurrencyAndAmount(wallet.balance, wallet.currency)}
+                  </div>
+                ))
+              : '—'}
           </CustomerStatBox>
         </div>
-        {organization.feature_settings?.revops_enabled && (
-          <ProfitChart
-            loading={metricsLoading}
-            data={relevantMetricsData}
-            interval={interval}
-            height={300}
+
+        {/** Disabling this for now until we're satisfied with the layout/presentation design */}
+
+        {/** organization.feature_settings?.revops_enabled && (}
+          <CashflowChart
+            organizationId={organization.id}
+            customerId={customer.id}
+            customerCreatedAt={customer.created_at}
           />
-        )}
+        ) */}
 
         <MetricChartBox
           metric={selectedMetric}
@@ -294,12 +393,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               {
                 header: 'Amount',
                 accessorKey: 'amount',
-                cell: ({ row: { original } }) => (
-                  <AmountLabel
-                    amount={original.net_amount}
-                    currency={original.currency}
-                  />
-                ),
+                cell: ({ row: { original } }) =>
+                  formatCurrency(original.net_amount, original.currency),
               },
               {
                 header: '',
@@ -377,7 +472,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 cell: ({ row: { original } }) => (
                   <div className="flex justify-end">
                     <Link
-                      href={`/dashboard/${organization.slug}/benefits?benefitId=${original.benefit.id}`}
+                      href={`/dashboard/${organization.slug}/products/benefits/${original.benefit.id}`}
                     >
                       <Button variant="secondary" size="sm">
                         View Benefit
@@ -402,7 +497,20 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               <DetailRow label="Name" value={customer.name} />
               <DetailRow
                 label="Tax ID"
-                value={customer.tax_id ? customer.tax_id[0] : null}
+                value={
+                  customer.tax_id ? (
+                    <span className="flex flex-row items-center gap-1.5">
+                      <span>{customer.tax_id[0]}</span>
+                      <span className="font-mono text-xs opacity-70">
+                        {customer.tax_id[1]
+                          .toLocaleUpperCase()
+                          .replace('_', ' ')}
+                      </span>
+                    </span>
+                  ) : (
+                    '—'
+                  )
+                }
               />
               <DetailRow
                 label="Created At"
@@ -446,8 +554,16 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </div>
         </ShadowBox>
       </TabsContent>
-      <CustomerUsageView customer={customer} />
-      <CustomerEventsView customer={customer} organization={organization} />
+      <CustomerUsageView
+        customer={customer}
+        dateRange={dateRange}
+        interval={interval}
+      />
+      <CustomerEventsView
+        customer={customer}
+        organization={organization}
+        dateRange={dateRange}
+      />
     </Tabs>
   )
 }

@@ -90,6 +90,7 @@ export default function ClientPage({
       )}
 
       <Modal
+        title="Invite Member"
         className="max-w-(--breakpoint-sm)!"
         modalContent={
           <InviteMemberModal
@@ -137,7 +138,7 @@ function InviteMemberModal({
           description: 'Failed to invite user. Please try again.',
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Invite failed',
         description: 'Failed to invite user. Please try again.',
@@ -145,8 +146,13 @@ function InviteMemberModal({
     }
   }
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    handleInvite()
+  }
+
   return (
-    <div className="flex w-full flex-col gap-y-6 p-8">
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-y-6 p-8">
       <h3 className="text-lg font-medium">Invite User</h3>
       <Input
         type="email"
@@ -157,16 +163,16 @@ function InviteMemberModal({
       />
       <div className="flex gap-2">
         <Button
-          onClick={handleInvite}
+          type="submit"
           disabled={!email || inviteMember.isPending}
           loading={inviteMember.isPending}
         >
           Send Invite
         </Button>
-        <Button variant="ghost" onClick={onClose}>
+        <Button type="button" variant="ghost" onClick={onClose}>
           Cancel
         </Button>
       </div>
-    </div>
+    </form>
   )
 }

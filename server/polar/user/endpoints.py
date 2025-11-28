@@ -7,12 +7,20 @@ from polar.customer_portal.endpoints.license_keys import router as license_keys_
 from polar.customer_portal.endpoints.order import router as order_router
 from polar.customer_portal.endpoints.subscription import router as subscription_router
 from polar.models import User
+from polar.models.user import OAuthPlatform
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
+from polar.user.oauth_service import oauth_account_service
 from polar.user.service import user as user_service
 
-from .schemas import UserIdentityVerification, UserRead, UserScopes
+from .auth import UserWrite
+from .schemas import (
+    UserDeletionResponse,
+    UserIdentityVerification,
+    UserRead,
+    UserScopes,
+)
 
 router = APIRouter(prefix="/users", tags=["users", APITag.private])
 
@@ -43,3 +51,56 @@ async def create_identity_verification(
     return await user_service.create_identity_verification(
         session, user=auth_subject.subject
     )
+
+
+@router.delete(
+    "/me",
+    response_model=UserDeletionResponse,
+    responses={
+        200: {"description": "Deletion result"},
+    },
+)
+async def delete_authenticated_user(
+    auth_subject: UserWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> UserDeletionResponse:
+    """
+    Delete the authenticated user account.
+
+    A user can only be deleted if all organizations they are members of have been
+    deleted first. If the user has active organizations, the response will include
+    the list of organizations that must be deleted before the user account can be
+    removed.
+
+    When deleted:
+    - User's email is anonymized
+    - User's avatar and metadata are cleared
+    - User's OAuth accounts are deleted (cascade)
+    - User's Account (payout account) is deleted if present
+    """
+    return await user_service.request_deletion(session, auth_subject.subject)
+
+
+@router.delete(
+    "/me/oauth-accounts/{platform}",
+    status_code=204,
+    responses={
+        404: {"description": "OAuth account not found"},
+        400: {"description": "Cannot disconnect last authentication method"},
+    },
+)
+async def disconnect_oauth_account(
+    platform: OAuthPlatform,
+    auth_subject: WebUserWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """
+    Disconnect an OAuth account (GitHub or Google) from the authenticated user.
+
+    This allows users to unlink their OAuth provider while keeping their Polar account.
+    They can still authenticate using other methods (email magic link or other OAuth providers).
+
+    Note: You cannot disconnect your last authentication method if your email is not verified.
+    """
+    user = auth_subject.subject
+    await oauth_account_service.disconnect_platform(session, user, platform)

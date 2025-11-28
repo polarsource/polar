@@ -1,12 +1,18 @@
+from collections.abc import Sequence
+from datetime import date
+from zoneinfo import ZoneInfo
+
 from fastapi import Depends, Query
 from fastapi.exceptions import RequestValidationError
-from pydantic import AwareDatetime, ValidationError
+from pydantic import UUID4, AwareDatetime, ValidationError
+from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.time_queries import TimeInterval, is_under_limits
 from polar.meter.filter import Filter
 from polar.meter.schemas import MeterID
 from polar.models import Event
@@ -24,6 +30,7 @@ from .schemas import (
     EventsIngest,
     EventsIngestResponse,
     EventTypeAdapter,
+    ListStatisticsTimeseries,
 )
 from .service import event as event_service
 
@@ -77,8 +84,27 @@ async def list(
     source: MultipleQueryFilter[EventSource] | None = Query(
         None, title="Source Filter", description="Filter by event source."
     ),
+    event_type_id: UUID4 | None = Query(
+        None,
+        title="Event Type ID Filter",
+        description="Filter by event type ID.",
+        include_in_schema=False,
+    ),
     query: str | None = Query(
         None, title="Query", description="Query to filter events."
+    ),
+    parent_id: EventID | None = Query(
+        None,
+        description="Filter events by parent event ID when hierarchical is set to true. When not specified or null, returns root events only.",
+    ),
+    hierarchical: bool = Query(
+        False,
+        description="When true, filters by parent_id (root events if not specified). When false, returns all events regardless of hierarchy.",
+    ),
+    aggregate_fields: Sequence[str] = Query(
+        default=[],
+        description="Metadata field paths to aggregate from descendants into ancestors (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
+        include_in_schema=False,
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[EventSchema]:
@@ -115,16 +141,145 @@ async def list(
         meter_id=meter_id,
         name=name,
         source=source,
+        event_type_id=event_type_id,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,
         query=query,
+        parent_id=parent_id,
+        hierarchical=hierarchical,
+        aggregate_fields=aggregate_fields,
     )
 
     return ListResource.from_paginated_results(
         [EventTypeAdapter.validate_python(result) for result in results],
         count,
         pagination,
+    )
+
+
+@router.get(
+    "/statistics/timeseries",
+    summary="List statistics timeseries",
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    tags=[APITag.private],
+    response_model=ListStatisticsTimeseries,
+)
+async def list_statistics_timeseries(
+    auth_subject: auth.EventRead,
+    metadata: MetadataQuery,
+    hierarchy_sorting: sorting.EventStatisticsSorting,
+    start_date: date = Query(
+        ...,
+        description="Start date.",
+    ),
+    end_date: date = Query(..., description="End date."),
+    timezone: TimeZoneName = Query(
+        default="UTC",
+        description="Timezone to use for the dates. Default is UTC.",
+    ),
+    interval: TimeInterval = Query(..., description="Interval between two dates."),
+    filter: str | None = Query(
+        None,
+        description=(
+            "Filter events following filter clauses. "
+            "JSON string following the same schema a meter filter clause. "
+        ),
+    ),
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
+    external_customer_id: MultipleQueryFilter[str] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    ),
+    meter_id: MeterID | None = Query(
+        None, title="MeterID Filter", description="Filter by a meter filter clause."
+    ),
+    name: MultipleQueryFilter[str] | None = Query(
+        None, title="Name Filter", description="Filter by event name."
+    ),
+    source: MultipleQueryFilter[EventSource] | None = Query(
+        None, title="Source Filter", description="Filter by event source."
+    ),
+    event_type_id: UUID4 | None = Query(
+        None,
+        title="Event Type ID Filter",
+        description="Filter by event type ID.",
+    ),
+    query: str | None = Query(
+        None, title="Query", description="Query to filter events."
+    ),
+    aggregate_fields: Sequence[str] = Query(
+        default=["_cost.amount"],
+        description="Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListStatisticsTimeseries:
+    """
+    Get aggregate statistics grouped by root event name over time.
+
+    Returns time series data with periods and totals, similar to the metrics endpoint.
+    Each period contains stats grouped by event name, and totals show overall stats
+    across all periods.
+    """
+    # Validate interval limits
+    if not is_under_limits(start_date, end_date, interval):
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("query",),
+                    "msg": (
+                        "The interval is too big. "
+                        "Try to change the interval or reduce the date range."
+                    ),
+                    "type": "value_error",
+                    "input": (start_date, end_date, interval),
+                }
+            ]
+        )
+
+    # Parse filter if provided
+    parsed_filter: Filter | None = None
+    if filter is not None:
+        try:
+            parsed_filter = Filter.model_validate_json(filter)
+        except ValidationError as e:
+            raise RequestValidationError(e.errors()) from e
+
+    if query is not None and organization_id is None:
+        raise RequestValidationError(
+            [
+                {
+                    "type": "query",
+                    "msg": "Query is only supported when organization_id is provided.",
+                }
+            ]
+        )
+
+    return await event_service.list_statistics_timeseries(
+        session,
+        auth_subject,
+        start_date=start_date,
+        end_date=end_date,
+        timezone=ZoneInfo(timezone),
+        interval=interval,
+        filter=parsed_filter,
+        organization_id=organization_id,
+        customer_id=customer_id,
+        external_customer_id=external_customer_id,
+        meter_id=meter_id,
+        name=name,
+        source=source,
+        event_type_id=event_type_id,
+        metadata=metadata,
+        query=query,
+        aggregate_fields=tuple(aggregate_fields),
+        hierarchy_stats_sorting=hierarchy_sorting,
     )
 
 

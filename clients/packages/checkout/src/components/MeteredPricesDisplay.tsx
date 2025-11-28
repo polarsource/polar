@@ -1,8 +1,8 @@
 'use client'
 
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 import { useMemo } from 'react'
+import { ProductCheckoutPublic } from '../guards'
 import { getMeteredPrices } from '../utils/product'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -27,15 +27,18 @@ const GaugeIcon = ({ className }: { className?: string }) => {
 }
 
 interface MeteredPricesDisplayProps {
-  checkout: CheckoutPublic
+  checkout: ProductCheckoutPublic
 }
 
 const MeteredPricesDisplay = ({ checkout }: MeteredPricesDisplayProps) => {
-  const { product, productPrice } = checkout
+  const { product, prices, productPrice } = checkout
 
   // Get the metered prices, minus the currently selected one, in case there are only metered prices
   const meteredPrices = useMemo(
-    () => getMeteredPrices(product).filter((p) => p.id !== productPrice.id),
+    () =>
+      getMeteredPrices(prices[product.id]).filter(
+        (p) => p.id !== productPrice.id,
+      ),
     [product, productPrice],
   )
 

@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import structlog
@@ -16,15 +16,27 @@ from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import Environment, settings
-from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.customer.repository import CustomerRepository
+from polar.enums import InvoiceNumbering
+from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.plain.service import plain as plain_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
-from polar.models import Account, Organization, User, UserOrganization
+from polar.models import (
+    Account,
+    Customer,
+    Order,
+    Organization,
+    Subscription,
+    User,
+    UserOrganization,
+)
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
+from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -40,9 +52,13 @@ from polar.worker import enqueue_job
 from .repository import OrganizationRepository, OrganizationReviewRepository
 from .schemas import (
     OrganizationCreate,
+    OrganizationDeletionBlockedReason,
     OrganizationUpdate,
 )
 from .sorting import OrganizationSortProperty
+
+if TYPE_CHECKING:
+    pass
 
 log = structlog.get_logger()
 
@@ -71,8 +87,20 @@ class PaymentStatusResponse(BaseModel):
         description="Whether the organization is ready to accept payments"
     )
     steps: list[PaymentStep] = Field(description="List of onboarding steps")
-    organization_status: Organization.Status = Field(
+    organization_status: OrganizationStatus = Field(
         description="Current organization status"
+    )
+
+
+class OrganizationDeletionCheckResult(BaseModel):
+    """Result of checking if an organization can be deleted."""
+
+    can_delete_immediately: bool = Field(
+        description="Whether the organization can be deleted immediately"
+    )
+    blocked_reasons: list[OrganizationDeletionBlockedReason] = Field(
+        default_factory=list,
+        description="Reasons why immediate deletion is blocked",
     )
 
 
@@ -160,8 +188,7 @@ class OrganizationService:
         auth_subject: AuthSubject[User],
     ) -> Organization:
         repository = OrganizationRepository.from_session(session)
-        existing_slug = await repository.get_by_slug(create_schema.slug)
-        if existing_slug is not None:
+        if await repository.slug_exists(create_schema.slug):
             raise PolarRequestValidationError(
                 [
                     {
@@ -288,6 +315,229 @@ class OrganizationService:
 
         return organization
 
+    async def check_can_delete(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+    ) -> OrganizationDeletionCheckResult:
+        """Check if an organization can be deleted immediately.
+
+        An organization can be deleted immediately if it has:
+        - No orders
+        - No active subscriptions
+
+        If it has an account but no orders/subscriptions, we'll attempt to
+        delete the Stripe account first.
+        """
+        blocked_reasons: list[OrganizationDeletionBlockedReason] = []
+
+        # Check for orders
+        order_count = await self._count_orders_by_organization(session, organization.id)
+        if order_count > 0:
+            blocked_reasons.append(OrganizationDeletionBlockedReason.HAS_ORDERS)
+
+        # Check for active subscriptions
+        active_subscription_count = (
+            await self._count_active_subscriptions_by_organization(
+                session, organization.id
+            )
+        )
+        if active_subscription_count > 0:
+            blocked_reasons.append(
+                OrganizationDeletionBlockedReason.HAS_ACTIVE_SUBSCRIPTIONS
+            )
+
+        return OrganizationDeletionCheckResult(
+            can_delete_immediately=len(blocked_reasons) == 0,
+            blocked_reasons=blocked_reasons,
+        )
+
+    async def request_deletion(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+    ) -> OrganizationDeletionCheckResult:
+        """Request deletion of an organization.
+
+        Authorization:
+        - If the organization has an account, only the account admin can delete
+        - If there is no account, any organization member can delete
+
+        Flow:
+        1. Check authorization
+        2. Check for orders/subscriptions -> if blocked, create support ticket
+        3. If has account -> try to delete Stripe account
+        4. If Stripe deletion fails -> create support ticket
+        5. Soft delete organization
+        """
+        # Authorization check: only account admin can delete if account exists
+        if organization.account_id is not None:
+            is_admin = await account_service.is_user_admin(
+                session, organization.account_id, auth_subject.subject
+            )
+            if not is_admin:
+                raise NotPermitted(
+                    "Only the account admin can delete an organization with an account"
+                )
+
+        check_result = await self.check_can_delete(session, organization)
+
+        if not check_result.can_delete_immediately:
+            # Organization has orders or active subscriptions
+            enqueue_job(
+                "organization.deletion_requested",
+                organization_id=organization.id,
+                user_id=auth_subject.subject.id,
+                blocked_reasons=[r.value for r in check_result.blocked_reasons],
+            )
+            return check_result
+
+        # Organization is eligible for deletion
+        # If it has an account, try to delete it first
+        if organization.account_id is not None:
+            try:
+                await self._delete_account(session, organization)
+            except Exception as e:
+                log.error(
+                    "organization.deletion.stripe_account_deletion_failed",
+                    organization_id=organization.id,
+                    error=str(e),
+                )
+                # Stripe deletion failed, create support ticket
+                check_result = OrganizationDeletionCheckResult(
+                    can_delete_immediately=False,
+                    blocked_reasons=[
+                        OrganizationDeletionBlockedReason.STRIPE_ACCOUNT_DELETION_FAILED
+                    ],
+                )
+                enqueue_job(
+                    "organization.deletion_requested",
+                    organization_id=organization.id,
+                    user_id=auth_subject.subject.id,
+                    blocked_reasons=[r.value for r in check_result.blocked_reasons],
+                )
+                return check_result
+
+        # Soft delete the organization
+        await self.soft_delete_organization(session, organization)
+
+        return OrganizationDeletionCheckResult(
+            can_delete_immediately=True,
+            blocked_reasons=[],
+        )
+
+    async def soft_delete_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> Organization:
+        """Soft-delete an organization, preserving the slug for backoffice links.
+
+        Anonymizes PII fields (except slug) and sets deleted_at timestamp.
+        """
+        repository = OrganizationRepository.from_session(session)
+
+        update_dict: dict[str, Any] = {}
+
+        # Anonymize PII fields but NOT slug (to keep backoffice links working)
+        pii_fields = ["name", "website", "customer_invoice_prefix"]
+        github_fields = ["bio", "company", "blog", "location", "twitter_username"]
+        for pii_field in pii_fields + github_fields:
+            value = getattr(organization, pii_field)
+            if value:
+                update_dict[pii_field] = anonymize_for_deletion(value)
+
+        if organization.email:
+            update_dict["email"] = anonymize_email_for_deletion(organization.email)
+
+        if organization.avatar_url:
+            # Anonymize by setting to Polar logo
+            update_dict["avatar_url"] = (
+                "https://avatars.githubusercontent.com/u/105373340?s=48&v=4"
+            )
+
+        if organization.details:
+            update_dict["details"] = {}
+
+        if organization.socials:
+            update_dict["socials"] = []
+
+        organization = await repository.update(organization, update_dict=update_dict)
+        await repository.soft_delete(organization)
+
+        log.info(
+            "organization.deleted",
+            organization_id=organization.id,
+            slug=organization.slug,
+        )
+
+        return organization
+
+    async def _delete_account(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Delete the Stripe account linked to an organization."""
+        if organization.account_id is None:
+            return
+
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_id(organization.account_id)
+
+        if account is None:
+            return
+
+        if account.stripe_id:
+            await account_service.delete_stripe_account(session, account)
+
+        organization.account_id = None
+        session.add(organization)
+
+        await account_service.delete(session, account)
+
+        log.info(
+            "organization.account_deleted",
+            organization_id=organization.id,
+            account_id=account.id,
+        )
+
+    async def _count_orders_by_organization(
+        self,
+        session: AsyncReadSession,
+        organization_id: UUID,
+    ) -> int:
+        """Count orders for all customers of this organization."""
+        statement = (
+            sql.select(sql.func.count(Order.id))
+            .join(Customer, Order.customer_id == Customer.id)
+            .where(
+                Customer.organization_id == organization_id,
+                Customer.deleted_at.is_(None),
+            )
+        )
+        result = await session.execute(statement)
+        return result.scalar() or 0
+
+    async def _count_active_subscriptions_by_organization(
+        self,
+        session: AsyncReadSession,
+        organization_id: UUID,
+    ) -> int:
+        """Count active subscriptions for all customers of this organization."""
+        statement = (
+            sql.select(sql.func.count(Subscription.id))
+            .join(Customer, Subscription.customer_id == Customer.id)
+            .where(
+                Customer.organization_id == organization_id,
+                Customer.deleted_at.is_(None),
+                Subscription.status.in_(SubscriptionStatus.active_statuses()),
+            )
+        )
+        result = await session.execute(statement)
+        return result.scalar() or 0
+
     async def add_user(
         self,
         session: AsyncSession,
@@ -361,17 +611,31 @@ class OrganizationService:
         self,
         session: AsyncSession,
         organization: Organization,
+        customer: "Customer",
     ) -> str:
-        invoice_number = f"{organization.customer_invoice_prefix}-{organization.customer_invoice_next_number:04d}"
-        repository = OrganizationRepository.from_session(session)
-        organization = await repository.update(
-            organization,
-            update_dict={
-                "customer_invoice_next_number": organization.customer_invoice_next_number
-                + 1
-            },
-        )
-        return invoice_number
+        match organization.invoice_numbering:
+            case InvoiceNumbering.customer:
+                invoice_number = f"{organization.customer_invoice_prefix}-{customer.short_id_str}-{customer.invoice_next_number:04d}"
+                customer_repository = CustomerRepository.from_session(session)
+                customer = await customer_repository.update(
+                    customer,
+                    update_dict={
+                        "invoice_next_number": customer.invoice_next_number + 1
+                    },
+                )
+                return invoice_number
+
+            case InvoiceNumbering.organization:
+                invoice_number = f"{organization.customer_invoice_prefix}-{organization.customer_invoice_next_number:04d}"
+                repository = OrganizationRepository.from_session(session)
+                organization = await repository.update(
+                    organization,
+                    update_dict={
+                        "customer_invoice_next_number": organization.customer_invoice_next_number
+                        + 1
+                    },
+                )
+                return invoice_number
 
     async def _after_update(
         self,
@@ -385,7 +649,7 @@ class OrganizationService:
     async def check_review_threshold(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
-        if organization.is_under_review():
+        if organization.is_under_review:
             return organization
 
         transfers_sum = await transaction_service.get_transactions_sum(
@@ -395,7 +659,11 @@ class OrganizationService:
             organization.next_review_threshold >= 0
             and transfers_sum >= organization.next_review_threshold
         ):
-            organization.status = Organization.Status.UNDER_REVIEW
+            organization.status = (
+                OrganizationStatus.ONGOING_REVIEW
+                if organization.initially_reviewed_at is not None
+                else OrganizationStatus.INITIAL_REVIEW
+            )
             organization.status_updated_at = datetime.now(UTC)
             await self._sync_account_status(session, organization)
             session.add(organization)
@@ -410,9 +678,15 @@ class OrganizationService:
         organization: Organization,
         next_review_threshold: int,
     ) -> Organization:
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.status_updated_at = datetime.now(UTC)
         organization.next_review_threshold = next_review_threshold
+
+        initial_review = False
+        if organization.initially_reviewed_at is None:
+            organization.initially_reviewed_at = datetime.now(UTC)
+            initial_review = True
+
         await self._sync_account_status(session, organization)
         session.add(organization)
 
@@ -424,13 +698,17 @@ class OrganizationService:
             review.appeal_reviewed_at = datetime.now(UTC)
             session.add(review)
 
-        enqueue_job("organization.reviewed", organization_id=organization.id)
+        enqueue_job(
+            "organization.reviewed",
+            organization_id=organization.id,
+            initial_review=initial_review,
+        )
         return organization
 
     async def deny_organization(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
-        organization.status = Organization.Status.DENIED
+        organization.status = OrganizationStatus.DENIED
         organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
@@ -448,7 +726,7 @@ class OrganizationService:
     async def set_organization_under_review(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
-        organization.status = Organization.Status.UNDER_REVIEW
+        organization.status = OrganizationStatus.ONGOING_REVIEW
         organization.status_updated_at = datetime.now(UTC)
         await self._sync_account_status(session, organization)
         session.add(organization)
@@ -464,13 +742,13 @@ class OrganizationService:
 
         for organization in organizations:
             # Don't override organizations that are denied
-            if organization.status == Organization.Status.DENIED:
+            if organization.status == OrganizationStatus.DENIED:
                 continue
 
             # If account is fully set up, set organization to ACTIVE
             if all(
                 (
-                    not organization.is_under_review(),
+                    not organization.is_under_review,
                     not organization.is_active(),
                     account.currency is not None,
                     account.is_details_submitted,
@@ -478,7 +756,7 @@ class OrganizationService:
                     account.is_payouts_enabled,
                 )
             ):
-                organization.status = Organization.Status.ACTIVE
+                organization.status = OrganizationStatus.ACTIVE
                 organization.status_updated_at = datetime.now(UTC)
 
             # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
@@ -489,7 +767,7 @@ class OrganizationService:
                     not account.is_payouts_enabled,
                 )
             ):
-                organization.status = Organization.Status.ONBOARDING_STARTED
+                organization.status = OrganizationStatus.ONBOARDING_STARTED
                 organization.status_updated_at = datetime.now(UTC)
 
             await self._sync_account_status(session, organization)
@@ -504,10 +782,11 @@ class OrganizationService:
 
         # Map organization status to account status
         status_mapping = {
-            Organization.Status.ONBOARDING_STARTED: Account.Status.ONBOARDING_STARTED,
-            Organization.Status.ACTIVE: Account.Status.ACTIVE,
-            Organization.Status.UNDER_REVIEW: Account.Status.UNDER_REVIEW,
-            Organization.Status.DENIED: Account.Status.DENIED,
+            OrganizationStatus.ONBOARDING_STARTED: Account.Status.ONBOARDING_STARTED,
+            OrganizationStatus.ACTIVE: Account.Status.ACTIVE,
+            OrganizationStatus.INITIAL_REVIEW: Account.Status.UNDER_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW: Account.Status.UNDER_REVIEW,
+            OrganizationStatus.DENIED: Account.Status.DENIED,
         }
 
         if organization.status in status_mapping:
@@ -614,7 +893,7 @@ class OrganizationService:
         # First check basic conditions that don't require account data
         if (
             organization.is_blocked()
-            or organization.status == Organization.Status.DENIED
+            or organization.status == OrganizationStatus.DENIED
         ):
             return False
 
@@ -624,10 +903,7 @@ class OrganizationService:
             return True
 
         # For new organizations, check basic conditions first
-        if organization.status not in [
-            Organization.Status.ACTIVE,
-            Organization.Status.UNDER_REVIEW,
-        ]:
+        if organization.status not in OrganizationStatus.payment_ready_statuses():
             return False
 
         # Details must be submitted (check for empty dict as well)
@@ -689,7 +965,6 @@ class OrganizationService:
             await self.deny_organization(session, organization)
 
         session.add(ai_validation)
-        await session.commit()
 
         return ai_validation
 
@@ -717,8 +992,6 @@ class OrganizationService:
 
         await plain_service.create_appeal_review_thread(session, organization, review)
 
-        await session.commit()
-
         return review
 
     async def approve_appeal(
@@ -738,7 +1011,7 @@ class OrganizationService:
         if review.appeal_decision is not None:
             raise ValueError("Appeal has already been reviewed")
 
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.status_updated_at = datetime.now(UTC)
         review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
         review.appeal_reviewed_at = datetime.now(UTC)
@@ -747,7 +1020,6 @@ class OrganizationService:
 
         session.add(organization)
         session.add(review)
-        await session.commit()
 
         return review
 
@@ -772,7 +1044,6 @@ class OrganizationService:
         review.appeal_reviewed_at = datetime.now(UTC)
 
         session.add(review)
-        await session.commit()
 
         return review
 

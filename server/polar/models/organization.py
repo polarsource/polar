@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Self, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
@@ -11,6 +11,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
     UniqueConstraint,
     Uuid,
     and_,
@@ -21,7 +22,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.email.sender import DEFAULT_REPLY_TO_EMAIL_ADDRESS, EmailFromReply
-from polar.enums import SubscriptionProrationBehavior
+from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 
@@ -63,12 +64,25 @@ class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
     allow_customer_updates: bool
     proration_behavior: SubscriptionProrationBehavior
+    benefit_revocation_grace_period: int
+    prevent_trial_abuse: bool
 
 
 _default_subscription_settings: OrganizationSubscriptionSettings = {
     "allow_multiple_subscriptions": False,
     "allow_customer_updates": True,
     "proration_behavior": SubscriptionProrationBehavior.prorate,
+    "benefit_revocation_grace_period": 0,
+    "prevent_trial_abuse": False,
+}
+
+
+class OrganizationOrderSettings(TypedDict):
+    invoice_numbering: InvoiceNumbering
+
+
+_default_order_settings: OrganizationOrderSettings = {
+    "invoice_numbering": InvoiceNumbering.customer,
 }
 
 
@@ -95,23 +109,34 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
 }
 
 
+class OrganizationStatus(StrEnum):
+    CREATED = "created"
+    ONBOARDING_STARTED = "onboarding_started"
+    INITIAL_REVIEW = "initial_review"
+    ONGOING_REVIEW = "ongoing_review"
+    DENIED = "denied"
+    ACTIVE = "active"
+
+    def get_display_name(self) -> str:
+        return {
+            OrganizationStatus.CREATED: "Created",
+            OrganizationStatus.ONBOARDING_STARTED: "Onboarding Started",
+            OrganizationStatus.INITIAL_REVIEW: "Initial Review",
+            OrganizationStatus.ONGOING_REVIEW: "Ongoing Review",
+            OrganizationStatus.DENIED: "Denied",
+            OrganizationStatus.ACTIVE: "Active",
+        }[self]
+
+    @classmethod
+    def review_statuses(cls) -> set[Self]:
+        return {cls.INITIAL_REVIEW, cls.ONGOING_REVIEW}  # type: ignore
+
+    @classmethod
+    def payment_ready_statuses(cls) -> set[Self]:
+        return {cls.ACTIVE, *cls.review_statuses()}  # type: ignore
+
+
 class Organization(RateLimitGroupMixin, RecordModel):
-    class Status(StrEnum):
-        CREATED = "created"
-        ONBOARDING_STARTED = "onboarding_started"
-        UNDER_REVIEW = "under_review"
-        DENIED = "denied"
-        ACTIVE = "active"
-
-        def get_display_name(self) -> str:
-            return {
-                Organization.Status.CREATED: "Created",
-                Organization.Status.ONBOARDING_STARTED: "Onboarding Started",
-                Organization.Status.UNDER_REVIEW: "Under Review",
-                Organization.Status.DENIED: "Denied",
-                Organization.Status.ACTIVE: "Active",
-            }[self]
-
     __tablename__ = "organizations"
     __table_args__ = (
         UniqueConstraint("slug"),
@@ -144,10 +169,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     account_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("accounts.id", ondelete="set null"), nullable=True
     )
-    status: Mapped[Status] = mapped_column(
-        StringEnum(Status),
+    status: Mapped[OrganizationStatus] = mapped_column(
+        StringEnum(OrganizationStatus),
         nullable=False,
-        default=Status.CREATED,
+        default=OrganizationStatus.CREATED,
     )
     next_review_threshold: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0
@@ -155,6 +180,11 @@ class Organization(RateLimitGroupMixin, RecordModel):
     status_updated_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
+    initially_reviewed_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+
+    internal_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     @declared_attr
     def account(cls) -> Mapped[Account | None]:
@@ -175,6 +205,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     subscription_settings: Mapped[OrganizationSubscriptionSettings] = mapped_column(
         JSONB, nullable=False, default=_default_subscription_settings
+    )
+
+    order_settings: Mapped[OrganizationOrderSettings] = mapped_column(
+        JSONB, nullable=False, default=_default_order_settings
     )
 
     notification_settings: Mapped[OrganizationNotificationSettings] = mapped_column(
@@ -231,6 +265,15 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def _storefront_enabled_expression(cls) -> ColumnElement[bool]:
         return Organization.profile_settings["enabled"].as_boolean()
 
+    @hybrid_property
+    def is_under_review(self) -> bool:
+        return self.status in OrganizationStatus.review_statuses()
+
+    @is_under_review.inplace.expression
+    @classmethod
+    def _is_under_review_expression(cls) -> ColumnElement[bool]:
+        return cls.status.in_(OrganizationStatus.review_statuses())
+
     @property
     def polar_site_url(self) -> str:
         return f"{settings.FRONTEND_BASE_URL}/{self.slug}"
@@ -252,6 +295,18 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return SubscriptionProrationBehavior(
             self.subscription_settings["proration_behavior"]
         )
+
+    @property
+    def benefit_revocation_grace_period(self) -> int:
+        return self.subscription_settings["benefit_revocation_grace_period"]
+
+    @property
+    def prevent_trial_abuse(self) -> bool:
+        return self.subscription_settings.get("prevent_trial_abuse", False)
+
+    @property
+    def invoice_numbering(self) -> InvoiceNumbering:
+        return InvoiceNumbering(self.order_settings["invoice_numbering"])
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:
@@ -286,11 +341,8 @@ class Organization(RateLimitGroupMixin, RecordModel):
             return True
         return False
 
-    def is_under_review(self) -> bool:
-        return self.status == Organization.Status.UNDER_REVIEW
-
     def is_active(self) -> bool:
-        return self.status == Organization.Status.ACTIVE
+        return self.status == OrganizationStatus.ACTIVE
 
     def statement_descriptor(self, suffix: str = "") -> str:
         max_length = settings.stripe_descriptor_suffix_max_length

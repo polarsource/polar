@@ -121,6 +121,7 @@ export const CheckoutLinkPage = ({ checkoutLink }: CheckoutLinkPageProps) => {
       />
 
       <Modal
+        title="Checkout QR Code"
         isShown={isQRCodeModalOpen}
         hide={hideQRCodeModal}
         modalContent={

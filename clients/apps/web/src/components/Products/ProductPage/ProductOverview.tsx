@@ -1,8 +1,10 @@
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
+import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { useDiscounts } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
+import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { getDiscountDisplay } from '@/utils/discount'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -36,6 +38,18 @@ export const ProductOverview = ({
     },
   )
 
+  const { data: subscriptions, isLoading: subscriptionsIsLoading } =
+    useSubscriptions(
+      product.is_recurring ? organization.id : undefined,
+      product.is_recurring
+        ? {
+            product_id: product.id,
+            active: true,
+            limit: 10,
+          }
+        : undefined,
+    )
+
   const { data: discountsData, isLoading: discountsLoading } = useDiscounts(
     organization.id,
     {
@@ -52,29 +66,157 @@ export const ProductOverview = ({
   return (
     <div className="flex flex-col gap-y-16">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <MiniMetricChartBox
-          metric={metrics?.metrics.orders}
-          value={metrics?.periods.reduce(
-            (acc, current) => acc + current.orders,
-            0,
-          )}
-        />
-        <MiniMetricChartBox
-          title="Today's Revenue"
-          metric={todayMetrics?.metrics.revenue}
-          value={todayMetrics?.periods[todayMetrics.periods.length - 1].revenue}
-        />
+        {product.is_recurring ? (
+          <>
+            <MiniMetricChartBox
+              title="Active Subscriptions"
+              metric={metrics?.metrics.active_subscriptions}
+              value={metrics?.totals.active_subscriptions}
+            />
+            <MiniMetricChartBox
+              title="Monthly Recurring Revenue"
+              metric={metrics?.metrics.monthly_recurring_revenue}
+              value={metrics?.totals.monthly_recurring_revenue}
+            />
+          </>
+        ) : (
+          <>
+            <MiniMetricChartBox
+              metric={metrics?.metrics.orders}
+              value={metrics?.totals.orders}
+            />
+            <MiniMetricChartBox
+              title="Today's Revenue"
+              metric={todayMetrics?.metrics.revenue}
+              value={todayMetrics?.periods.at(-1)?.revenue}
+            />
+          </>
+        )}
         <MiniMetricChartBox
           metric={metrics?.metrics.cumulative_revenue}
-          value={
-            metrics?.periods[metrics?.periods.length - 1].cumulative_revenue
-          }
+          value={metrics?.periods.at(-1)?.cumulative_revenue}
         />
       </div>
+      {product.is_recurring && (
+        <div className="flex flex-col gap-y-6">
+          <div className="flex flex-row items-center justify-between gap-x-6">
+            <div className="flex flex-col gap-y-1">
+              <h2 className="text-lg">Subscriptions</h2>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                Showing 10 most recent subscriptions for {product.name}
+              </p>
+            </div>
+            <Link
+              href={`/dashboard/${organization.slug}/sales/subscriptions?product_id=${product.id}`}
+            >
+              <Button size="sm">View All</Button>
+            </Link>
+          </div>
+          <DataTable
+            data={subscriptions?.items ?? []}
+            columns={[
+              {
+                id: 'customer',
+                accessorKey: 'customer',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Customer" />
+                ),
+                cell: ({ row: { original: subscription } }) => {
+                  const customer = subscription.customer
+                  return (
+                    <div className="flex flex-row items-center gap-2">
+                      <Avatar
+                        avatar_url={customer.avatar_url}
+                        name={customer.name || customer.email}
+                      />
+                      <div className="fw-medium overflow-hidden text-ellipsis">
+                        {customer.email}
+                      </div>
+                    </div>
+                  )
+                },
+              },
+              {
+                accessorKey: 'status',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Status" />
+                ),
+                cell: ({ row: { original: subscription } }) => {
+                  return (
+                    <SubscriptionStatusComponent subscription={subscription} />
+                  )
+                },
+              },
+              {
+                accessorKey: 'started_at',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader
+                    column={column}
+                    title="Subscription Date"
+                  />
+                ),
+                cell: (props) => (
+                  <FormattedDateTime datetime={props.getValue() as string} />
+                ),
+              },
+              {
+                accessorKey: 'current_period_end',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Renewal Date" />
+                ),
+                cell: ({
+                  getValue,
+                  row: {
+                    original: { status, cancel_at_period_end },
+                  },
+                }) => {
+                  const datetime = getValue() as string | null
+                  const willRenew =
+                    (status === 'active' || status === 'trialing') &&
+                    !cancel_at_period_end
+                  return datetime && willRenew ? (
+                    <FormattedDateTime datetime={datetime} />
+                  ) : (
+                    '—'
+                  )
+                },
+              },
+              {
+                accessorKey: 'actions',
+                enableSorting: false,
+                header: () => null,
+                cell: (props) => (
+                  <span className="flex flex-row justify-end gap-x-2">
+                    <Link
+                      href={`/dashboard/${organization.slug}/customers/${props.row.original.customer.id}`}
+                    >
+                      <Button variant="secondary" size="sm">
+                        View Customer
+                      </Button>
+                    </Link>
+                    <Link
+                      href={`/dashboard/${organization.slug}/sales/subscriptions/${props.row.original.id}`}
+                    >
+                      <Button variant="secondary" size="sm">
+                        View Subscription
+                      </Button>
+                    </Link>
+                  </span>
+                ),
+              },
+            ]}
+            isLoading={subscriptionsIsLoading}
+          />
+        </div>
+      )}
       <div className="flex flex-col gap-y-6">
         <div className="flex flex-row items-center justify-between gap-x-6">
           <div className="flex flex-col gap-y-1">
-            <h2 className="text-lg">Product Orders</h2>
+            <h2 className="text-lg">Orders</h2>
             <p className="dark:text-polar-500 text-sm text-gray-500">
               Showing last 10 orders for {product.name}
             </p>

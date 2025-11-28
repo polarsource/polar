@@ -84,7 +84,7 @@ export const SavedCardsSelector = ({
                   </div>
                   {isSelected && (
                     <div className="shrink-0">
-                      <div className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500">
+                      <div className="bg-blue flex h-4 w-4 items-center justify-center rounded-full">
                         <div className="h-2 w-2 rounded-full bg-white" />
                       </div>
                     </div>

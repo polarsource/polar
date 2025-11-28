@@ -184,7 +184,13 @@ const CancelSubscriptionModal = ({
                         onValueChange={field.onChange}
                         defaultValue={undefined}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger
+                          className={
+                            field.value
+                              ? ''
+                              : 'dark:text-polar-500 text-gray-400'
+                          }
+                        >
                           <SelectValue placeholder="Select customer cancellation reason" />
                         </SelectTrigger>
                         <SelectContent>

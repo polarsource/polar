@@ -8,6 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
+from migrations.functions import (
+    FUNCTION_GENERATE_CUSTOMER_SHORT_ID,
+    SEQUENCE_CREATE_CUSTOMER_SHORT_ID,
+)
 from polar.config import settings
 from polar.kit.db.postgres import create_async_engine
 from polar.models import Model
@@ -45,6 +49,8 @@ async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+        await conn.execute(text(SEQUENCE_CREATE_CUSTOMER_SHORT_ID))
+        await conn.execute(text(FUNCTION_GENERATE_CUSTOMER_SHORT_ID))
         await conn.run_sync(Model.metadata.create_all)
     await engine.dispose()
 

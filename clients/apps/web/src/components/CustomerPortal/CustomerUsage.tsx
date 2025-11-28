@@ -2,44 +2,33 @@
 
 import { useCustomerCustomerMeters } from '@/hooks/queries'
 import Search from '@mui/icons-material/Search'
-import { Client, schemas } from '@polar-sh/client'
+import { Client } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import FormattedUnits from '../Meter/FormattedUnits'
 export interface CustomerUsageProps {
   api: Client
-  organization: schemas['Organization']
 }
 
-export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {
+export const CustomerUsage = ({ api }: CustomerUsageProps) => {
   const [query, setQuery] = useState<string | null>(null)
   const { data, isLoading } = useCustomerCustomerMeters(api, { query })
   const customerMeters = useMemo(() => data?.items ?? [], [data])
-
-  const themingPreset = useThemePreset(
-    organization.slug === 'midday' ? 'midday' : 'polar',
-  )
 
   return (
     <div className="flex flex-col">
       <Tabs defaultValue="meters">
         <div className="flex flex-row items-center justify-between gap-x-12">
           <h3 className="text-2xl">Usage</h3>
-          {/* <TabsList>
-            <TabsTrigger value="meters">Meters</TabsTrigger>
-            {<TabsTrigger value="alerts">Alerts</TabsTrigger>}
-          </TabsList> */}
         </div>
         <TabsContent className="flex flex-col gap-y-12 pt-4" value="meters">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col items-center gap-4 lg:flex-row">
               <div className="w-full lg:w-1/3">
                 <Input
-                  className={twMerge('w-full', themingPreset.polar.input)}
+                  className="w-full bg-white shadow-xs"
                   preSlot={<Search fontSize="inherit" />}
                   placeholder="Search Usage Meter"
                   value={query || ''}
@@ -53,8 +42,6 @@ export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {
             <h3 className="text-xl">Overview</h3>
             <DataTable
               isLoading={isLoading}
-              wrapperClassName={themingPreset.polar.table}
-              headerClassName={themingPreset.polar.tableHeader}
               columns={[
                 {
                   header: 'Name',
@@ -67,7 +54,7 @@ export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {
                     return (
                       <div className="flex items-center gap-2">
                         <div className="relative h-3 w-3">
-                          <div className="absolute h-full w-full rounded-full border-2 border-gray-200 dark:border-gray-700" />
+                          <div className="dark:border-polar-700 absolute h-full w-full rounded-full border-2 border-gray-200" />
                           <div
                             className="absolute h-full w-full rounded-full border-2 border-blue-500"
                             style={{
@@ -120,72 +107,7 @@ export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {
               data={customerMeters}
             />
           </div>
-
-          {/* {customerMeters.map((customerMeter) => (
-            <CustomerMeter
-              key={customerMeter.id}
-              customerMeter={customerMeter}
-              data={{ quantities: [], total: 0 }}
-            />
-          ))} */}
         </TabsContent>
-        {/* <TabsContent value="alerts" className="flex flex-col gap-y-12">
-          <DataTable
-            isLoading={false}
-            columns={[
-              {
-                header: 'Meter',
-                accessorKey: 'meter',
-                cell: ({ row }) => {
-                  return <span>{row.original.meter.name}</span>
-                },
-              },
-              {
-                header: 'Threshold',
-                accessorKey: 'threshold',
-                cell: ({ row }) => {
-                  return <span>{row.original.threshold}</span>
-                },
-              },
-              {
-                header: 'Progress',
-                accessorKey: 'progress',
-                cell: ({ row }) => {
-                  return (
-                    <div className="flex flex-row items-center gap-2">
-                      <div className="relative h-3 w-3">
-                        <div className="absolute h-full w-full rounded-full border-2 border-gray-200 dark:border-gray-700" />
-                        <div
-                          className="absolute h-full w-full rounded-full border-2 border-blue-500"
-                          style={{
-                            clipPath: `polygon(0 0, ${(row.original.threshold / 100) * 100}% 0, ${(row.original.threshold / 100) * 100}% 100%, 0% 100%)`,
-                            transform: 'rotate(-90deg)',
-                            transition: 'all 0.3s ease',
-                          }}
-                        />
-                      </div>
-                      <span>{(row.original.threshold / 100) * 100}%</span>
-                    </div>
-                  )
-                },
-              },
-              {
-                header: 'Status',
-                accessorKey: 'status',
-                cell: () => {
-                  return (
-                    <Status
-                      status="Notified"
-                      className="w-fit bg-emerald-50 text-emerald-500 dark:bg-emerald-950"
-                    />
-                  )
-                },
-              },
-            ]}
-            data={mockedAlerts(organizationId)}
-          />
-          <Button className="self-start">Create Alert</Button>
-        </TabsContent> */}
       </Tabs>
     </div>
   )

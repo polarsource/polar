@@ -6,20 +6,37 @@ from uuid import UUID
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
+    Numeric,
     Select,
+    UnaryExpression,
     and_,
+    asc,
+    case,
+    cast,
+    desc,
     func,
-    insert,
+    literal_column,
     or_,
+    over,
     select,
+    text,
 )
-from sqlalchemy.orm import joinedload
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
-from polar.models import BillingEntry, Customer, Event, Meter, UserOrganization
-from polar.models.event import EventSource
+from polar.kit.utils import generate_uuid
+from polar.models import (
+    BillingEntry,
+    Customer,
+    Event,
+    EventType,
+    Meter,
+    UserOrganization,
+)
+from polar.models.event import EventClosure, EventSource
 from polar.models.product_price import ProductPriceMeteredUnit
 
 from .system import SystemEvent
@@ -38,12 +55,53 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
         return await self.get_all(statement)
 
-    async def insert_batch(self, events: Sequence[dict[str, Any]]) -> Sequence[UUID]:
+    async def insert_batch(
+        self, events: Sequence[dict[str, Any]]
+    ) -> tuple[Sequence[UUID], int]:
         if not events:
-            return []
-        statement = insert(Event).returning(Event.id)
+            return [], 0
+
+        events_needing_parent_lookup = []
+
+        # Set root_id for root events before insertion
+        for event in events:
+            if event.get("root_id") is not None:
+                continue
+            elif event.get("parent_id") is None:
+                if event.get("id") is None:
+                    event["id"] = generate_uuid()
+                event["root_id"] = event["id"]
+            else:
+                # Child event without root_id - needs to be looked up from parent
+                # This is a fail-safe in the event that we did not set this before calling
+                # insert_batch
+                events_needing_parent_lookup.append(event)
+
+        # Look up root_id from parents for events that need it
+        if events_needing_parent_lookup:
+            parent_ids = {event["parent_id"] for event in events_needing_parent_lookup}
+            result = await self.session.execute(
+                select(Event.id, Event.root_id).where(Event.id.in_(parent_ids))
+            )
+            parent_root_map = {
+                parent_id: root_id or parent_id for parent_id, root_id in result
+            }
+
+            for event in events_needing_parent_lookup:
+                parent_id = event["parent_id"]
+                event["root_id"] = parent_root_map.get(parent_id, parent_id)
+
+        statement = (
+            insert(Event)
+            .on_conflict_do_nothing(index_elements=["external_id"])
+            .returning(Event.id)
+        )
         result = await self.session.execute(statement, events)
-        return result.scalars().all()
+        inserted_ids = [row[0] for row in result.all()]
+
+        duplicates_count = len(events) - len(inserted_ids)
+
+        return inserted_ids, duplicates_count
 
     async def get_latest_meter_reset(
         self, customer: Customer, meter_id: UUID
@@ -179,4 +237,490 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
 
     def get_eager_options(self) -> Options:
-        return (joinedload(Event.customer),)
+        return (joinedload(Event.customer), joinedload(Event.event_types))
+
+    async def list_with_closure_table(
+        self,
+        statement: Select[tuple[Event]],
+        limit: int,
+        page: int,
+        aggregate_fields: Sequence[str] = (),
+    ) -> tuple[Sequence[Event], int]:
+        """
+        List events using closure table to get a correct children_count.
+        Optionally aggregates fields from descendants's metadata.
+        """
+        descendant_event = aliased(Event, name="descendant_event")
+
+        # Step 1: Get paginated event IDs with total count
+        offset = (page - 1) * limit
+
+        paginated_events_subquery = (
+            statement.add_columns(over(func.count()).label("total_count"))
+            .limit(limit)
+            .offset(offset)
+        ).subquery("paginated_events")
+
+        aggregation_columns: list[Any] = [
+            EventClosure.ancestor_id,
+            (func.count() - 1).label("descendant_count"),
+        ]
+
+        field_aggregations = {}
+        for field_path in aggregate_fields:
+            pg_path = "{" + field_path.replace(".", ",") + "}"
+            label = f"agg_{field_path.replace('.', '_')}"
+
+            # Only aggregate numeric fields by summing them
+            # Returns NULL if no values to sum or if all values are NULL
+            numeric_expr = cast(
+                descendant_event.user_metadata.op("#>>")(
+                    literal_column(f"'{pg_path}'")
+                ),
+                Numeric,
+            )
+
+            aggregation_columns.append(func.sum(numeric_expr).label(label))
+            field_aggregations[field_path] = label
+
+        paginated_event_id = paginated_events_subquery.c.id
+
+        aggregations_lateral = (
+            select(*aggregation_columns)
+            .select_from(EventClosure)
+            .join(descendant_event, EventClosure.descendant_id == descendant_event.id)
+            .where(EventClosure.ancestor_id == paginated_event_id)
+            .group_by(EventClosure.ancestor_id)
+        ).lateral("aggregations")
+
+        # Reference user_metadata from the paginated subquery
+        paginated_user_metadata = paginated_events_subquery.c.user_metadata
+
+        metadata_expr: Any = paginated_user_metadata
+        if aggregate_fields:
+            for field_path, label in field_aggregations.items():
+                parts = field_path.split(".")
+                pg_path = "{" + ",".join(parts) + "}"
+                agg_column = getattr(aggregations_lateral.c, label)
+
+                # For nested paths, jsonb_set with create_if_missing doesn't work reliably
+                # Use deep merge approach: extract parent, merge, set back
+                if len(parts) > 1:
+                    # Build the full nested structure
+                    # For "_cost.amount"=7: {"_cost": {"amount": 7}}
+                    nested_value = func.to_jsonb(agg_column)
+                    for part in reversed(parts):
+                        nested_value = func.jsonb_build_object(part, nested_value)
+
+                    # Deep merge: get existing parent object, merge with new, set back
+                    parent_key = parts[0]
+                    existing_parent = func.coalesce(
+                        metadata_expr.op("->")(parent_key), text("'{}'::jsonb")
+                    )
+                    merged_parent = existing_parent.op("||")(
+                        nested_value.op("->")(parent_key)
+                    )
+
+                    metadata_expr = func.jsonb_set(
+                        metadata_expr,
+                        text(f"'{{{parent_key}}}'"),
+                        merged_parent,
+                        text("true"),
+                    )
+                else:
+                    # Simple top-level key
+                    metadata_expr = func.jsonb_set(
+                        metadata_expr,
+                        text(f"'{pg_path}'"),
+                        func.to_jsonb(agg_column),
+                        text("true"),
+                    )
+
+        # Step 2: Join back to Event table to get full ORM objects with relationships
+        final_query = (
+            select(Event, paginated_events_subquery.c.total_count)
+            .select_from(paginated_events_subquery)
+            .join(Event, Event.id == paginated_events_subquery.c.id)
+            .add_columns(
+                func.coalesce(aggregations_lateral.c.descendant_count, 0).label(
+                    "child_count"
+                ),
+                metadata_expr.label("aggregated_metadata"),
+            )
+            .outerjoin(aggregations_lateral, literal_column("true"))
+            .options(*self.get_eager_options())
+        )
+
+        result = await self.session.execute(final_query)
+        rows = result.all()
+
+        events = []
+        total_count = 0
+        for row in rows:
+            event = row[0]
+            event.child_count = row.child_count
+
+            if aggregate_fields:
+                aggregated = row.aggregated_metadata
+                # If _cost exists but has None/missing fields, clean it up
+                if "_cost" in aggregated:
+                    cost_obj = aggregated.get("_cost")
+                    if cost_obj is None or cost_obj.get("amount") is None:
+                        # Remove incomplete _cost object entirely
+                        del aggregated["_cost"]
+                    elif "currency" not in cost_obj:
+                        # Add default currency if missing
+                        cost_obj["currency"] = "usd"  # FIXME: Main Polar currency
+
+                event.user_metadata = aggregated
+
+            # Expunge the event from the session to prevent modifications from being persisted
+            # We're only modifying transient display fields (child_count, aggregated metadata)
+            self.session.expunge(event)
+
+            events.append(event)
+            total_count = row.total_count
+
+        return events, total_count
+
+    async def get_hierarchy_stats(
+        self,
+        statement: Select[tuple[Event]],
+        aggregate_fields: Sequence[str] = ("cost.amount",),
+        sorting: Sequence[tuple[str, bool]] = (("total", True),),
+        timestamp_series: Any = None,
+    ) -> Sequence[dict[str, Any]]:
+        """
+        Get aggregate statistics grouped by root event name across all hierarchies.
+
+        Uses root_id for efficient rollup and joins with event_types for labels:
+        1. Filter root events based on statement
+        2. Roll up costs from all events in each hierarchy (via root_id)
+        3. Calculate avg, p95, p99 on those rolled-up totals across root events with same name
+        4. Join with event_types to include labels
+
+        Args:
+            statement: Base query for root events to include
+            aggregate_fields: List of user_metadata field paths to aggregate
+            sorting: List of (property, is_desc) tuples for sorting
+            timestamp_series: Optional CTE for time bucketing. If provided, stats are grouped by timestamp.
+
+        Returns:
+            List of dicts containing name, label, occurrences, and statistics for each field.
+            If timestamp_series is provided, also includes timestamp for each row.
+        """
+        root_events_subquery = statement.where(
+            and_(Event.parent_id.is_(None), Event.source == EventSource.user)
+        ).subquery()
+
+        all_events = aliased(Event, name="all_events")
+        customer = aliased(Customer, name="customer")
+
+        per_root_select_exprs: list[ColumnElement[Any]] = [
+            literal_column("root_event.id").label("root_id"),
+            literal_column("root_event.name").label("root_name"),
+            literal_column("root_event.organization_id").label("root_org_id"),
+            customer.id.label("customer_id"),
+            literal_column("root_event.external_customer_id").label(
+                "external_customer_id"
+            ),
+        ]
+
+        if timestamp_series is not None:
+            per_root_select_exprs.append(
+                literal_column("root_event.timestamp").label("root_timestamp")
+            )
+
+        for field_path in aggregate_fields:
+            field_parts = field_path.split(".")
+            pg_path = "{" + ",".join(field_parts) + "}"
+            safe_field_name = field_path.replace(".", "_")
+
+            field_expr = cast(
+                all_events.user_metadata.op("#>>")(literal_column(f"'{pg_path}'")),
+                Numeric,
+            )
+
+            sum_expr = func.sum(field_expr).label(f"{safe_field_name}_total")
+            per_root_select_exprs.append(sum_expr)
+
+        group_by_exprs: list[ColumnElement[Any]] = [
+            literal_column("root_event.id"),
+            literal_column("root_event.name"),
+            literal_column("root_event.organization_id"),
+            literal_column("customer.id"),
+            literal_column("root_event.external_customer_id"),
+        ]
+        if timestamp_series is not None:
+            group_by_exprs.append(literal_column("root_event.timestamp"))
+
+        per_root_query = (
+            select(*per_root_select_exprs)
+            .select_from(root_events_subquery.alias("root_event"))
+            .join(all_events, all_events.root_id == literal_column("root_event.id"))
+            .outerjoin(
+                customer,
+                or_(
+                    customer.id == literal_column("root_event.customer_id"),
+                    and_(
+                        customer.external_id
+                        == literal_column("root_event.external_customer_id"),
+                        customer.organization_id
+                        == literal_column("root_event.organization_id"),
+                    ),
+                ),
+            )
+            .group_by(*group_by_exprs)
+        )
+
+        per_root_subquery = per_root_query.subquery("per_root_totals")
+
+        event_type = aliased(EventType, name="event_type")
+
+        if timestamp_series is not None:
+            timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+            timestamp_with_next = (
+                select(
+                    timestamp_column.label("bucket_start"),
+                    func.lead(timestamp_column)
+                    .over(order_by=timestamp_column)
+                    .label("bucket_end"),
+                ).select_from(timestamp_series)
+            ).subquery("timestamp_with_next")
+
+            bucketed_columns = [
+                timestamp_with_next.c.bucket_start.label("bucket"),
+                per_root_subquery.c.root_name,
+                per_root_subquery.c.root_org_id,
+                per_root_subquery.c.customer_id,
+                per_root_subquery.c.external_customer_id,
+            ]
+            for field_path in aggregate_fields:
+                safe_field_name = field_path.replace(".", "_")
+                bucketed_columns.append(
+                    getattr(per_root_subquery.c, f"{safe_field_name}_total")
+                )
+
+            bucketed_subquery = (
+                select(*bucketed_columns)
+                .select_from(timestamp_with_next)
+                .outerjoin(
+                    per_root_subquery,
+                    and_(
+                        per_root_subquery.c.root_timestamp
+                        >= timestamp_with_next.c.bucket_start,
+                        or_(
+                            timestamp_with_next.c.bucket_end.is_(None),
+                            per_root_subquery.c.root_timestamp
+                            < timestamp_with_next.c.bucket_end,
+                        ),
+                    ),
+                )
+            ).subquery("bucketed")
+
+            aggregation_exprs = []
+            for field_path in aggregate_fields:
+                safe_field_name = field_path.replace(".", "_")
+                total_col: ColumnElement[Any] = getattr(
+                    bucketed_subquery.c, f"{safe_field_name}_total"
+                )
+
+                aggregation_exprs.extend(
+                    [
+                        func.sum(total_col).label(f"{safe_field_name}_sum"),
+                        func.avg(func.coalesce(total_col, 0)).label(
+                            f"{safe_field_name}_avg"
+                        ),
+                        func.percentile_cont(0.5)
+                        .within_group(func.coalesce(total_col, 0))
+                        .label(f"{safe_field_name}_p50"),
+                        func.percentile_cont(0.95)
+                        .within_group(func.coalesce(total_col, 0))
+                        .label(f"{safe_field_name}_p95"),
+                        func.percentile_cont(0.99)
+                        .within_group(func.coalesce(total_col, 0))
+                        .label(f"{safe_field_name}_p99"),
+                    ]
+                )
+
+            stats_query = (
+                select(
+                    bucketed_subquery.c.bucket.label("timestamp"),
+                    bucketed_subquery.c.root_name.label("name"),
+                    event_type.id.label("event_type_id"),
+                    event_type.label.label("label"),
+                    func.count(
+                        getattr(
+                            bucketed_subquery.c,
+                            f"{aggregate_fields[0].replace('.', '_')}_total",
+                        )
+                    ).label("occurrences"),
+                    (
+                        func.count(bucketed_subquery.c.customer_id.distinct())
+                        + func.count(
+                            case(
+                                (
+                                    bucketed_subquery.c.customer_id.is_(None),
+                                    bucketed_subquery.c.external_customer_id,
+                                )
+                            ).distinct()
+                        )
+                    ).label("customers"),
+                    *aggregation_exprs,
+                )
+                .select_from(bucketed_subquery)
+                .outerjoin(
+                    event_type,
+                    and_(
+                        event_type.name == bucketed_subquery.c.root_name,
+                        event_type.organization_id == bucketed_subquery.c.root_org_id,
+                    ),
+                )
+                .group_by(
+                    bucketed_subquery.c.bucket,
+                    bucketed_subquery.c.root_name,
+                    event_type.id,
+                    event_type.label,
+                )
+            )
+        else:
+            aggregation_exprs = []
+            for field_path in aggregate_fields:
+                safe_field_name = field_path.replace(".", "_")
+                total_col_ref: ColumnElement[Any] = literal_column(
+                    f"{safe_field_name}_total"
+                )
+
+                aggregation_exprs.extend(
+                    [
+                        func.sum(total_col_ref).label(f"{safe_field_name}_sum"),
+                        func.avg(func.coalesce(total_col_ref, 0)).label(
+                            f"{safe_field_name}_avg"
+                        ),
+                        func.percentile_cont(0.5)
+                        .within_group(func.coalesce(total_col_ref, 0))
+                        .label(f"{safe_field_name}_p50"),
+                        func.percentile_cont(0.95)
+                        .within_group(func.coalesce(total_col_ref, 0))
+                        .label(f"{safe_field_name}_p95"),
+                        func.percentile_cont(0.99)
+                        .within_group(func.coalesce(total_col_ref, 0))
+                        .label(f"{safe_field_name}_p99"),
+                    ]
+                )
+
+            stats_query = (
+                select(
+                    per_root_subquery.c.root_name.label("name"),
+                    event_type.id.label("event_type_id"),
+                    event_type.label.label("label"),
+                    func.count(per_root_subquery.c.root_id).label("occurrences"),
+                    (
+                        func.count(per_root_subquery.c.customer_id.distinct())
+                        + func.count(
+                            case(
+                                (
+                                    per_root_subquery.c.customer_id.is_(None),
+                                    per_root_subquery.c.external_customer_id,
+                                )
+                            ).distinct()
+                        )
+                    ).label("customers"),
+                    *aggregation_exprs,
+                )
+                .select_from(per_root_subquery)
+                .outerjoin(
+                    event_type,
+                    and_(
+                        event_type.name == per_root_subquery.c.root_name,
+                        event_type.organization_id == per_root_subquery.c.root_org_id,
+                    ),
+                )
+                .group_by(
+                    per_root_subquery.c.root_name, event_type.id, event_type.label
+                )
+            )
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+
+        if timestamp_series is not None:
+            order_by_clauses.append(asc(text("timestamp")))
+
+        for criterion, is_desc_sort in sorting:
+            clause_function = desc if is_desc_sort else asc
+            if criterion == "name":
+                order_by_clauses.append(clause_function(text("name")))
+            elif criterion == "occurrences":
+                order_by_clauses.append(clause_function(text("occurrences")))
+            elif criterion in ("total", "average", "p95", "p99"):
+                if aggregate_fields:
+                    safe_field_name = aggregate_fields[0].replace(".", "_")
+                    suffix_map = {
+                        "total": "sum",
+                        "average": "avg",
+                        "p95": "p95",
+                        "p99": "p99",
+                    }
+                    suffix = suffix_map[criterion]
+                    order_by_clauses.append(
+                        clause_function(text(f"{safe_field_name}_{suffix}"))
+                    )
+
+        if order_by_clauses:
+            stats_query = stats_query.order_by(*order_by_clauses)
+
+        result = await self.session.execute(stats_query)
+        rows = result.all()
+
+        result_list = []
+        for row in rows:
+            row_dict = {
+                "name": row.name,
+                "label": row.label,
+                "event_type_id": row.event_type_id,
+                "occurrences": row.occurrences,
+                "customers": row.customers,
+                "totals": {
+                    field.replace(".", "_"): getattr(
+                        row, f"{field.replace('.', '_')}_sum"
+                    )
+                    or 0
+                    for field in aggregate_fields
+                },
+                "averages": {
+                    field.replace(".", "_"): getattr(
+                        row, f"{field.replace('.', '_')}_avg"
+                    )
+                    or 0
+                    for field in aggregate_fields
+                },
+                "p50": {
+                    field.replace(".", "_"): getattr(
+                        row, f"{field.replace('.', '_')}_p50"
+                    )
+                    or 0
+                    for field in aggregate_fields
+                },
+                "p95": {
+                    field.replace(".", "_"): getattr(
+                        row, f"{field.replace('.', '_')}_p95"
+                    )
+                    or 0
+                    for field in aggregate_fields
+                },
+                "p99": {
+                    field.replace(".", "_"): getattr(
+                        row, f"{field.replace('.', '_')}_p99"
+                    )
+                    or 0
+                    for field in aggregate_fields
+                },
+            }
+
+            if timestamp_series is not None:
+                row_dict["timestamp"] = row.timestamp
+
+            result_list.append(row_dict)
+
+        return result_list

@@ -57,7 +57,7 @@ export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
     <EventCardBase loading={isLoadingBenefit}>
       {benefit ? (
         <Link
-          href={`/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}`}
+          href={`/dashboard/${organization.slug}/products/benefits/${benefit.id}`}
           className="flex flex-grow flex-row items-center justify-between gap-x-12"
         >
           <div className="flex flex-row items-center gap-x-4 px-1.5 py-2">

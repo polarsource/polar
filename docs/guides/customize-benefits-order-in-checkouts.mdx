@@ -1,0 +1,59 @@
+---
+title: "How to Customize Benefits Order in Checkouts"
+sidebarTitle: "Customize benefits order in checkouts"
+description: "Learn how to customize the order in which Benefits appear in checkouts."
+---
+
+## Create a Product with Benefits
+
+<Steps>
+    <Step title = "Create Multiple Benefits">
+        - [Create a Custom Benefit](https://polar.sh/docs/guides/automate-post-purchase-link-sharing#create-a-custom-benefit) 
+        - [Create a File Downloads Benefit](https://polar.sh/docs/features/benefits/file-downloads#create-downloadable-benefit)
+    </Step>
+    <Step title = "Create a Product">
+        [Create a Product](https://polar.sh/docs/features/products#create-a-product) that includes the two **Benefits** created above.
+        <Info>
+            Instead of creating the Benefits beforehand, you can also create them while creating the product by clicking the `Create New` button under the desired Benefit Type in the Automated Benefits section of the product configuration. 
+            <img height="200" src="/assets/guides/customize-benefits-order-in-checkouts/benefits-creation-while-product-creation.png" />
+        </Info>
+    </Step>
+    <Step title = "Create a Checkout Link">
+        [Create a Checkout Link](https://polar.sh/docs/features/checkout/links#create-a-checkout-link) for the product.
+    </Step>
+    <Step title = "View Checkout">
+        The checkout session looks like below. The Custom Benefit named **Product Link** appears first, followed by the File Downloads Benefit named **Product File**.
+        <img height="200" src="/assets/guides/customize-benefits-order-in-checkouts/checkout-session.png" />
+    </Step>
+</Steps>
+
+## Reorder Benefits
+
+<Steps>
+    <Step title="Navigate to Products">
+        In the Polar dashboard sidebar, navigate to **Products** > **Catalogue** for your organization. You can also go directly to `https://polar.sh/dashboard/${org_slug}/products`.
+
+        <img height="200" src="/assets/guides/customize-benefits-order-in-checkouts/products-catalogue.png" />
+    </Step>
+    <Step title="Select a Product">
+        Choose the product whose Benefits you want to reorder, click on it and scroll down to the **Automated Benefits** section.
+        <img height="200" src="/assets/guides/customize-benefits-order-in-checkouts/automated-benefits.png" />
+    </Step>
+    <Step title = "Click Reorder">
+        Click the `Reorder` button to change the order of benefits.
+        <img height="200" src="/assets/guides/customize-benefits-order-in-checkouts/reorder.png" />
+    </Step>
+    <Step title="Drag to reorder">
+        Drag the Benefits up or down to change their order as desired.
+        <img height="200" src="/assets/guides/customize-benefits-order-in-checkouts/drag-and-drop.png" />
+    </Step>
+    <Step title = "Verify the order in Checkout">
+        Open the product checkout page. The benefits have been reordered successfully. 
+        <img height="200" src="/assets/guides/customize-benefits-order-in-checkouts/order-changed.png" />
+    </Step>
+</Steps>
+
+<Info>
+    You can also Reorder the Benefits while creating the Product itself by clicking on `Reorder` button in Automated Benefits section.
+    <img height="200" src="/assets/guides/customize-benefits-order-in-checkouts/benefits-creation-while-product-creation.png" />
+</Info>

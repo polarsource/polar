@@ -34,6 +34,7 @@ import {
 } from '@stripe/stripe-js'
 import { PropsWithChildren, useCallback, useEffect, useMemo } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
+import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { getDiscountDisplay } from '../utils/discount'
@@ -107,10 +108,14 @@ const BaseCheckoutForm = ({
   children,
   themePreset: themePresetProps,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
-  const interval = hasLegacyRecurringPrices(checkout.product)
-    ? checkout.productPrice.recurringInterval
-    : checkout.product.recurringInterval
-  const intervalCount = checkout.product.recurringIntervalCount
+  const interval = hasProductCheckout(checkout)
+    ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
+      ? checkout.productPrice.recurringInterval
+      : checkout.product.recurringInterval
+    : null
+  const intervalCount = hasProductCheckout(checkout)
+    ? checkout.product.recurringIntervalCount
+    : null
   const {
     control,
     handleSubmit,
@@ -124,11 +129,10 @@ const BaseCheckoutForm = ({
   const discount = checkout.discount
   const isDiscountWithoutCode = discount && discount.code === null
 
-  const { product, productPrice, isBusinessCustomer } = checkout
-  const meteredPrices = useMemo(() => getMeteredPrices(product), [product])
-  const onlyMeteredPrices = useMemo(
-    () => meteredPrices.length === product.prices.length,
-    [meteredPrices, product],
+  const { product, prices, isBusinessCustomer } = checkout
+  const meteredPrices = useMemo(
+    () => (product && prices ? getMeteredPrices(prices[product.id]) : []),
+    [product],
   )
 
   const country = watch('customerBillingAddress.country')
@@ -357,7 +361,6 @@ const BaseCheckoutForm = ({
                       <Input
                         type="email"
                         autoComplete="email"
-                        className={themePresetProps.polar.input}
                         {...field}
                         value={field.value || ''}
                         disabled={checkout.customerId !== null}
@@ -382,7 +385,6 @@ const BaseCheckoutForm = ({
                       <FormLabel>Cardholder name</FormLabel>
                       <FormControl>
                         <Input
-                          className={themePresetProps.polar.input}
                           type="text"
                           autoComplete="name"
                           {...field}
@@ -438,7 +440,6 @@ const BaseCheckoutForm = ({
                           <FormLabel>Business name</FormLabel>
                           <FormControl>
                             <Input
-                              className={themePresetProps.polar.input}
                               type="text"
                               autoComplete="billing organization"
                               {...field}
@@ -471,7 +472,6 @@ const BaseCheckoutForm = ({
                                 type="text"
                                 autoComplete="billing address-line1"
                                 placeholder="Line 1"
-                                className={themePresetProps.polar.input}
                                 {...field}
                                 value={field.value || ''}
                               />
@@ -499,7 +499,6 @@ const BaseCheckoutForm = ({
                                 type="text"
                                 autoComplete="billing address-line2"
                                 placeholder="Line 2"
-                                className={themePresetProps.polar.input}
                                 {...field}
                                 value={field.value || ''}
                               />
@@ -509,66 +508,71 @@ const BaseCheckoutForm = ({
                         />
                       </FormControl>
                     )}
-                    <div className="grid grid-cols-2 gap-x-2">
-                      {isDisplayedField(
-                        checkout.billingAddressFields.postalCode,
-                      ) && (
-                        <FormControl>
-                          <FormField
-                            control={control}
-                            name="customerBillingAddress.postalCode"
-                            rules={{
-                              required: isRequiredField(
-                                checkout.billingAddressFields.postalCode,
-                              )
-                                ? 'This field is required'
-                                : false,
-                            }}
-                            render={({ field }) => (
-                              <div>
-                                <Input
-                                  type="text"
-                                  autoComplete="billing postal-code"
-                                  placeholder="Postal code"
-                                  className={themePresetProps.polar.input}
-                                  {...field}
-                                  value={field.value || ''}
-                                />
-                                <FormMessage />
-                              </div>
-                            )}
-                          />
-                        </FormControl>
-                      )}
-                      {isDisplayedField(checkout.billingAddressFields.city) && (
-                        <FormControl>
-                          <FormField
-                            control={control}
-                            name="customerBillingAddress.city"
-                            rules={{
-                              required: isRequiredField(
-                                checkout.billingAddressFields.city,
-                              )
-                                ? 'This field is required'
-                                : false,
-                            }}
-                            render={({ field }) => (
-                              <div>
-                                <Input
-                                  type="text"
-                                  autoComplete="billing address-level2"
-                                  placeholder="City"
-                                  className={themePresetProps.polar.input}
-                                  {...field}
-                                  value={field.value || ''}
-                                />
-                                <FormMessage />
-                              </div>
-                            )}
-                          />
-                        </FormControl>
-                      )}
-                    </div>
+                    {(isDisplayedField(
+                      checkout.billingAddressFields.postalCode,
+                    ) ||
+                      isDisplayedField(checkout.billingAddressFields.city)) && (
+                      <div className="grid grid-cols-2 gap-x-2">
+                        {isDisplayedField(
+                          checkout.billingAddressFields.postalCode,
+                        ) && (
+                          <FormControl>
+                            <FormField
+                              control={control}
+                              name="customerBillingAddress.postalCode"
+                              rules={{
+                                required: isRequiredField(
+                                  checkout.billingAddressFields.postalCode,
+                                )
+                                  ? 'This field is required'
+                                  : false,
+                              }}
+                              render={({ field }) => (
+                                <div>
+                                  <Input
+                                    type="text"
+                                    autoComplete="billing postal-code"
+                                    placeholder="Postal code"
+                                    {...field}
+                                    value={field.value || ''}
+                                  />
+                                  <FormMessage />
+                                </div>
+                              )}
+                            />
+                          </FormControl>
+                        )}
+                        {isDisplayedField(
+                          checkout.billingAddressFields.city,
+                        ) && (
+                          <FormControl>
+                            <FormField
+                              control={control}
+                              name="customerBillingAddress.city"
+                              rules={{
+                                required: isRequiredField(
+                                  checkout.billingAddressFields.city,
+                                )
+                                  ? 'This field is required'
+                                  : false,
+                              }}
+                              render={({ field }) => (
+                                <div>
+                                  <Input
+                                    type="text"
+                                    autoComplete="billing address-level2"
+                                    placeholder="City"
+                                    {...field}
+                                    value={field.value || ''}
+                                  />
+                                  <FormMessage />
+                                </div>
+                              )}
+                            />
+                          </FormControl>
+                        )}
+                      </div>
+                    )}
                     {isDisplayedField(checkout.billingAddressFields.state) && (
                       <FormControl>
                         <FormField
@@ -588,13 +592,6 @@ const BaseCheckoutForm = ({
                                 country={country}
                                 value={field.value || ''}
                                 onChange={field.onChange}
-                                className={themePresetProps.polar.dropdown}
-                                itemClassName={
-                                  themePresetProps.polar.dropdownItem
-                                }
-                                contentClassName={
-                                  themePresetProps.polar.dropdownContent
-                                }
                               />
                               <FormMessage />
                             </>
@@ -625,13 +622,6 @@ const BaseCheckoutForm = ({
                                 autoComplete="billing country"
                                 value={field.value || undefined}
                                 onChange={field.onChange}
-                                className={themePresetProps.polar.dropdown}
-                                itemClassName={
-                                  themePresetProps.polar.dropdownItem
-                                }
-                                contentClassName={
-                                  themePresetProps.polar.dropdownContent
-                                }
                               />
                               <FormMessage />
                             </>
@@ -663,7 +653,6 @@ const BaseCheckoutForm = ({
                               <Input
                                 type="text"
                                 autoComplete="off"
-                                className={themePresetProps.polar.input}
                                 {...field}
                                 value={field.value || ''}
                                 disabled={validTaxID}
@@ -675,7 +664,6 @@ const BaseCheckoutForm = ({
                                     variant="secondary"
                                     size="sm"
                                     onClick={addTaxID}
-                                    className={themePresetProps.polar.button}
                                   >
                                     Apply
                                   </Button>
@@ -686,7 +674,6 @@ const BaseCheckoutForm = ({
                                     variant="secondary"
                                     size="sm"
                                     onClick={() => clearTaxId()}
-                                    className={themePresetProps.polar.button}
                                   >
                                     <XIcon className="h-4 w-4" />
                                   </Button>
@@ -718,7 +705,6 @@ const BaseCheckoutForm = ({
                           <Input
                             type="text"
                             autoComplete="off"
-                            className={themePresetProps.polar.input}
                             {...field}
                             value={field.value || ''}
                             disabled={checkoutDiscounted}
@@ -736,7 +722,6 @@ const BaseCheckoutForm = ({
                                 variant="secondary"
                                 size="sm"
                                 onClick={addDiscountCode}
-                                className={themePresetProps.polar.button}
                               >
                                 Apply
                               </Button>
@@ -759,26 +744,29 @@ const BaseCheckoutForm = ({
                   )}
                 />
               )}
-              {checkout.attachedCustomFields.map(
-                ({ customField, required }) => (
-                  <FormField
-                    key={customField.id}
-                    control={control}
-                    name={`customFieldData.${customField.slug}`}
-                    rules={{
-                      required: required ? 'This field is required' : undefined,
-                    }}
-                    render={({ field }) => (
-                      <CustomFieldInput
-                        customField={customField}
-                        required={required}
-                        field={field}
-                        themePreset={themePresetProps}
-                      />
-                    )}
-                  />
-                ),
-              )}
+              {checkout.attachedCustomFields &&
+                checkout.attachedCustomFields.map(
+                  ({ customField, required }) => (
+                    <FormField
+                      key={customField.id}
+                      control={control}
+                      name={`customFieldData.${customField.slug}`}
+                      rules={{
+                        required: required
+                          ? 'This field is required'
+                          : undefined,
+                      }}
+                      render={({ field }) => (
+                        <CustomFieldInput
+                          customField={customField}
+                          required={required}
+                          field={field}
+                          themePreset={themePresetProps}
+                        />
+                      )}
+                    />
+                  ),
+                )}
             </div>
             {!checkout.isFreeProductPrice && (
               <div className="flex flex-col gap-y-2">
@@ -792,16 +780,26 @@ const BaseCheckoutForm = ({
                         intervalCount={intervalCount}
                       />
                     </DetailRow>
+
                     {checkout.discount && (
-                      <DetailRow
-                        title={`${checkout.discount.name} (${getDiscountDisplay(checkout.discount)})`}
-                      >
-                        {formatCurrencyNumber(
-                          -checkout.discountAmount,
-                          checkout.currency,
-                          checkout.discountAmount % 100 === 0 ? 0 : 2,
-                        )}
-                      </DetailRow>
+                      <>
+                        <DetailRow
+                          title={`${checkout.discount.name} (${getDiscountDisplay(checkout.discount)})`}
+                        >
+                          {formatCurrencyNumber(
+                            -checkout.discountAmount,
+                            checkout.currency,
+                            checkout.discountAmount % 100 === 0 ? 0 : 2,
+                          )}
+                        </DetailRow>
+                        <DetailRow title="Taxable amount">
+                          {formatCurrencyNumber(
+                            checkout.netAmount,
+                            checkout.currency,
+                            checkout.netAmount % 100 === 0 ? 0 : 2,
+                          )}
+                        </DetailRow>
+                      </>
                     )}
 
                     <DetailRow title="Taxes">
@@ -809,7 +807,7 @@ const BaseCheckoutForm = ({
                         ? formatCurrencyNumber(
                             checkout.taxAmount,
                             checkout.currency,
-                            checkout.discountAmount % 100 === 0 ? 0 : 2,
+                            checkout.taxAmount % 100 === 0 ? 0 : 2,
                           )
                         : '—'}
                     </DetailRow>
@@ -847,7 +845,7 @@ const BaseCheckoutForm = ({
                 {(checkout.trialEnd ||
                   (checkout.activeTrialInterval &&
                     checkout.activeTrialIntervalCount)) && (
-                  <div className="mt-3 border-t border-gray-300 pt-4 dark:border-gray-700">
+                  <div className="dark:border-polar-700 mt-3 border-t border-gray-300 pt-4">
                     {checkout.activeTrialInterval &&
                       checkout.activeTrialIntervalCount && (
                         <DetailRow
@@ -875,7 +873,7 @@ const BaseCheckoutForm = ({
                 type="submit"
                 size="lg"
                 wrapperClassNames="text-base"
-                className={cn(themePresetProps.polar.button, 'w-full')}
+                className={cn('w-full')}
                 disabled={disabled || isUpdatePending}
                 loading={loading}
               >
@@ -963,14 +961,14 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
         setupFutureUsage: 'off_session',
         paymentMethodCreation: 'manual',
         amount: checkout.totalAmount,
-        currency: checkout.currency || 'usd',
+        currency: checkout.currency,
       }
     } else if (checkout.isPaymentRequired && checkout.totalAmount) {
       return {
         mode: 'payment',
         paymentMethodCreation: 'manual',
         amount: checkout.totalAmount,
-        currency: checkout.currency || 'usd',
+        currency: checkout.currency,
       }
     }
 
@@ -978,7 +976,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       mode: 'setup',
       paymentMethodCreation: 'manual',
       setupFutureUsage: 'off_session',
-      currency: checkout.currency || 'usd',
+      currency: checkout.currency,
     }
   }, [checkout])
 

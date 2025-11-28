@@ -28,6 +28,7 @@ const DummyCheckoutContextProvider = ({
       ...checkout,
       customerBillingAddress:
         checkout.customerBillingAddress as AddressInput | null,
+      allowTrial: undefined,
     },
   })
 

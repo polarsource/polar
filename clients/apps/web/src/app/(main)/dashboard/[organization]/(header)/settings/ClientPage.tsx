@@ -4,6 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import FeatureSettings from '@/components/Settings/FeatureSettings'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
 import OrganizationCustomerEmailSettings from '@/components/Settings/OrganizationCustomerEmailSettings'
+import OrganizationDeleteSettings from '@/components/Settings/OrganizationDeleteSettings'
 import OrganizationNotificationSettings from '@/components/Settings/OrganizationNotificationSettings'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
@@ -55,6 +56,14 @@ export default function ClientPage({
             description="Manage access tokens to authenticate with the Polar API"
           />
           <OrganizationAccessTokensSettings organization={org} />
+        </Section>
+
+        <Section id="danger">
+          <SectionDescription
+            title="Danger Zone"
+            description="Irreversible actions for this organization"
+          />
+          <OrganizationDeleteSettings organization={org} />
         </Section>
       </div>
     </DashboardBody>

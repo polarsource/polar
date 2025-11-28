@@ -99,7 +99,13 @@ async def trigger_payment(order_id: uuid.UUID, payment_method_id: uuid.UUID) -> 
             payment_method_id, order.customer_id
         )
         if payment_method is None:
-            raise PaymentMethodDoesNotExist(payment_method_id)
+            log.info(
+                "Payment method not found, triggering dunning process",
+                order_id=order_id,
+                payment_method_id=payment_method_id,
+            )
+            await order_service.handle_payment_failure(session, order)
+            return
 
         try:
             await order_service.trigger_payment(session, order, payment_method)

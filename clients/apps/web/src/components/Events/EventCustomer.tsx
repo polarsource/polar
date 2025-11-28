@@ -9,8 +9,8 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
 
   return (
     <Link
-      href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}&query=${event.customer?.email}`}
-      className="flex flex-row items-center gap-x-2 px-3 py-2"
+      href={`/dashboard/${organization.slug}/customers/${event.customer?.id}?query=${event.customer?.email}`}
+      className="flex flex-row items-center gap-x-2"
     >
       <div className="flex flex-row items-center gap-x-2 font-sans">
         <Avatar
@@ -23,7 +23,7 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
             <span className="text-xs">{event.customer?.name}</span>
           ) : null}
           <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
-            {event.customer?.email}
+            {event.customer?.email ?? 'Anonymous'}
           </span>
         </div>
       </div>

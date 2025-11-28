@@ -1,10 +1,10 @@
 import builtins
 import uuid
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Literal
 
 import stripe
-from sqlalchemy import UnaryExpression, asc, case, desc, func, select
+from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject, is_user
@@ -32,12 +32,10 @@ from polar.models import (
     ProductBenefit,
     ProductMedia,
     ProductPrice,
-    ProductPriceCustom,
-    ProductPriceFixed,
     User,
 )
 from polar.models.product_custom_field import ProductCustomField
-from polar.models.product_price import HasStripePriceId, ProductPriceAmountType
+from polar.models.product_price import HasStripePriceId, ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
@@ -73,7 +71,7 @@ class ProductService:
         benefit_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: Sequence[Sorting[ProductSortProperty]] = [
+        sorting: list[Sorting[ProductSortProperty]] = [
             (ProductSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Product], int]:
@@ -122,56 +120,7 @@ class ProductService:
         if metadata is not None:
             statement = apply_metadata_clause(Product, statement, metadata)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == ProductSortProperty.created_at:
-                order_by_clauses.append(clause_function(Product.created_at))
-            elif criterion == ProductSortProperty.product_name:
-                order_by_clauses.append(clause_function(Product.name))
-            elif criterion == ProductSortProperty.price_amount_type:
-                order_by_clauses.append(
-                    clause_function(
-                        case(
-                            (
-                                ProductPrice.amount_type == ProductPriceAmountType.free,
-                                1,
-                            ),
-                            (
-                                ProductPrice.amount_type
-                                == ProductPriceAmountType.custom,
-                                2,
-                            ),
-                            (
-                                ProductPrice.amount_type
-                                == ProductPriceAmountType.fixed,
-                                3,
-                            ),
-                        )
-                    )
-                )
-            elif criterion == ProductSortProperty.price_amount:
-                order_by_clauses.append(
-                    clause_function(
-                        case(
-                            (
-                                ProductPrice.amount_type == ProductPriceAmountType.free,
-                                -2,
-                            ),
-                            (
-                                ProductPrice.amount_type
-                                == ProductPriceAmountType.custom,
-                                func.coalesce(ProductPriceCustom.minimum_amount, -1),
-                            ),
-                            (
-                                ProductPrice.amount_type
-                                == ProductPriceAmountType.fixed,
-                                ProductPriceFixed.price_amount,
-                            ),
-                        )
-                    )
-                )
-        statement = statement.order_by(*order_by_clauses)
+        statement = repository.apply_sorting(statement, sorting)
 
         statement = statement.options(
             selectinload(Product.product_medias),
@@ -219,7 +168,7 @@ class ProductService:
         )
 
         errors: list[ValidationError] = []
-        prices, _, _, prices_errors = await self._get_validated_prices(
+        prices, _, _, prices_errors = await self.get_validated_prices(
             session,
             create_schema.prices,
             create_schema.recurring_interval,
@@ -329,6 +278,24 @@ class ProductService:
     ) -> Product:
         errors: list[ValidationError] = []
 
+        # Validate prices
+        existing_prices = set(product.prices)
+        added_prices: list[ProductPrice] = []
+        if update_schema.prices is not None:
+            (
+                _,
+                existing_prices,
+                added_prices,
+                prices_errors,
+            ) = await self.get_validated_prices(
+                session,
+                update_schema.prices,
+                product.recurring_interval,
+                product,
+                auth_subject,
+            )
+            errors.extend(prices_errors)
+
         # Prevent non-legacy products from changing their recurring interval
         if (
             update_schema.recurring_interval is not None
@@ -431,23 +398,6 @@ class ProductService:
             if attached_custom_fields_errors:
                 await nested.rollback()
                 errors.extend(attached_custom_fields_errors)
-
-        existing_prices = set(product.prices)
-        added_prices: list[ProductPrice] = []
-        if update_schema.prices is not None:
-            (
-                _,
-                existing_prices,
-                added_prices,
-                prices_errors,
-            ) = await self._get_validated_prices(
-                session,
-                update_schema.prices,
-                product.recurring_interval,
-                product,
-                auth_subject,
-            )
-            errors.extend(prices_errors)
 
         if errors:
             raise PolarRequestValidationError(errors)
@@ -589,13 +539,15 @@ class ProductService:
 
         return product, added_benefits, deleted_benefits
 
-    async def _get_validated_prices(
+    async def get_validated_prices(
         self,
         session: AsyncSession,
         prices_schema: Sequence[ExistingProductPrice | ProductPriceCreate],
         recurring_interval: SubscriptionRecurringInterval | None,
         product: Product | None,
         auth_subject: AuthSubject[User | Organization],
+        source: ProductPriceSource = ProductPriceSource.catalog,
+        error_prefix: tuple[str, ...] = ("body", "prices"),
     ) -> tuple[
         builtins.list[ProductPrice],
         builtins.set[ProductPrice],
@@ -616,7 +568,7 @@ class ProductService:
                     errors.append(
                         {
                             "type": "value_error",
-                            "loc": ("body", "prices", index),
+                            "loc": (*error_prefix, index),
                             "msg": "Price does not exist.",
                             "input": price_schema.id,
                         }
@@ -625,7 +577,9 @@ class ProductService:
                 existing_prices.add(price)
             else:
                 model_class = price_schema.get_model_class()
-                price = model_class(product=product, **price_schema.model_dump())
+                price = model_class(
+                    product=product, source=source, **price_schema.model_dump()
+                )
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):
@@ -633,7 +587,7 @@ class ProductService:
                         errors.append(
                             {
                                 "type": "value_error",
-                                "loc": ("body", "prices", index),
+                                "loc": (*error_prefix, index),
                                 "msg": "Metered pricing is not supported on one-time products.",
                                 "input": price_schema,
                             }
@@ -644,7 +598,7 @@ class ProductService:
                         errors.append(
                             {
                                 "type": "value_error",
-                                "loc": ("body", "prices", index, "meter_id"),
+                                "loc": (*error_prefix, index, "meter_id"),
                                 "msg": "Meter is already used for another price.",
                                 "input": price_schema.meter_id,
                             }
@@ -658,7 +612,7 @@ class ProductService:
                         errors.append(
                             {
                                 "type": "value_error",
-                                "loc": ("body", "prices", index, "meter_id"),
+                                "loc": (*error_prefix, index, "meter_id"),
                                 "msg": "Meter does not exist.",
                                 "input": price_schema.meter_id,
                             }
@@ -672,7 +626,7 @@ class ProductService:
             errors.append(
                 {
                     "type": "too_short",
-                    "loc": ("body", "prices"),
+                    "loc": error_prefix,
                     "msg": "At least one price is required.",
                     "input": prices_schema,
                 }
@@ -685,7 +639,7 @@ class ProductService:
                 errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "prices"),
+                        "loc": error_prefix,
                         "msg": "Only one static price is allowed.",
                         "input": prices_schema,
                     }

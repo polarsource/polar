@@ -83,22 +83,49 @@ const CustomFieldTextProperties = () => {
 }
 
 const CustomFieldComparableProperties = () => {
-  const { control } = useFormContext<
+  const { control, watch } = useFormContext<
     (schemas['CustomFieldCreate'] | schemas['CustomFieldUpdate']) & {
       type: 'number' | 'datetime'
     }
   >()
+  const geValue = watch('properties.ge')
+  const leValue = watch('properties.le')
+
   return (
     <>
       <FormField
         control={control}
         name="properties.ge"
+        rules={{
+          validate: {
+            integer: (value) => {
+              if (!value && value !== 0) {
+                return true
+              }
+              const num = Number(value)
+              if (isNaN(num) || !Number.isInteger(num)) {
+                return 'Value must be a valid integer'
+              }
+              return true
+            },
+            leThanLe: (value) => {
+              if ((value || value === 0) && (leValue || leValue === 0)) {
+                const ge = Number(value)
+                const le = Number(leValue)
+                if (!isNaN(ge) && !isNaN(le) && ge > le) {
+                  return 'Must be less than or equal to "Less than or equal" value'
+                }
+              }
+              return true
+            },
+          },
+        }}
         render={({ field }) => {
           return (
             <FormItem>
               <FormLabel>Greater than or equal</FormLabel>
               <FormControl>
-                <Input {...field} type="number" />
+                <Input {...field} type="number" step="1" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -108,12 +135,36 @@ const CustomFieldComparableProperties = () => {
       <FormField
         control={control}
         name="properties.le"
+        rules={{
+          validate: {
+            integer: (value) => {
+              if (!value && value !== 0) {
+                return true
+              }
+              const num = Number(value)
+              if (isNaN(num) || !Number.isInteger(num)) {
+                return 'Value must be a valid integer'
+              }
+              return true
+            },
+            geThanGe: (value) => {
+              if ((value || value === 0) && (geValue || geValue === 0)) {
+                const le = Number(value)
+                const ge = Number(geValue)
+                if (!isNaN(le) && !isNaN(ge) && le < ge) {
+                  return 'Must be greater than or equal to "Greater than or equal" value'
+                }
+              }
+              return true
+            },
+          },
+        }}
         render={({ field }) => {
           return (
             <FormItem>
               <FormLabel>Less than or equal</FormLabel>
               <FormControl>
-                <Input {...field} type="number" />
+                <Input {...field} type="number" step="1" />
               </FormControl>
               <FormMessage />
             </FormItem>

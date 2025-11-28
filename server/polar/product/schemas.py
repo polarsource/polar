@@ -30,6 +30,7 @@ from polar.kit.schemas import (
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
 from polar.models.product_price import (
     ProductPriceAmountType,
+    ProductPriceSource,
     ProductPriceType,
 )
 from polar.models.product_price import (
@@ -74,6 +75,15 @@ PriceAmount = Annotated[
         ge=MINIMUM_PRICE_AMOUNT,
         le=MAXIMUM_PRICE_AMOUNT,
         description="The price in cents.",
+    ),
+]
+SeatPriceAmount = Annotated[
+    int,
+    Field(
+        ...,
+        ge=0,
+        le=MAXIMUM_PRICE_AMOUNT,
+        description="The price per seat in cents. Can be 0 for free tiers.",
     ),
 ]
 PriceCurrency = Annotated[
@@ -164,7 +174,7 @@ class ProductPriceSeatTier(Schema):
         ge=1,
         description="Maximum number of seats (inclusive). None for unlimited.",
     )
-    price_per_seat: PriceAmount = Field(
+    price_per_seat: SeatPriceAmount = Field(
         description="Price per seat in cents for this tier"
     )
 
@@ -441,6 +451,13 @@ class ProductBenefitsUpdate(Schema):
 
 class ProductPriceBase(TimestampedSchema):
     id: UUID4 = Field(description="The ID of the price.")
+    source: ProductPriceSource = Field(
+        description=(
+            "The source of the price . "
+            "`catalog` is a predefined price, "
+            "while `ad_hoc` is a price created dynamically on a Checkout session."
+        )
+    )
     amount_type: ProductPriceAmountType = Field(
         description="The type of amount, either fixed or custom."
     )

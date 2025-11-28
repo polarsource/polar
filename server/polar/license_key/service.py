@@ -425,7 +425,6 @@ class LicenseKeyService:
         *,
         pagination: PaginationParams,
         benefit_id: UUID | None = None,
-        organization_ids: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[LicenseKey], int]:
         query = (
             self._get_select_customer_base(auth_subject)
@@ -434,9 +433,6 @@ class LicenseKeyService:
                 joinedload(LicenseKey.benefit),
             )
         )
-
-        if organization_ids:
-            query = query.where(LicenseKey.organization_id.in_(organization_ids))
 
         if benefit_id:
             query = query.where(LicenseKey.benefit_id == benefit_id)

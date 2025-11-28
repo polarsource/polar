@@ -11,7 +11,11 @@ from sqlalchemy.orm import contains_eager, joinedload
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
+from polar.config import settings
 from polar.customer.schemas.state import CustomerState
+from polar.email.react import render_email_template
+from polar.email.schemas import EmailAdapter
+from polar.email.sender import enqueue_email
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.crypto import generate_token
@@ -24,6 +28,7 @@ from polar.models import (
     BenefitGrant,
     Checkout,
     Customer,
+    CustomerSeat,
     Order,
     Organization,
     Product,
@@ -43,6 +48,10 @@ from polar.oauth2.constants import WEBHOOK_SECRET_PREFIX
 from polar.organization.resolver import get_payload_organization
 from polar.user_organization.service import (
     user_organization as user_organization_service,
+)
+from polar.webhook.repository import (
+    WebhookEndpointRepository,
+    WebhookEventRepository,
 )
 from polar.webhook.schemas import (
     WebhookEndpointCreate,
@@ -266,6 +275,78 @@ class WebhookService:
                 {"status": checkout.status},
             )
 
+    async def on_event_failed(self, session: AsyncSession, id: UUID) -> None:
+        """
+        Helper to hook into the event failed event.
+
+        Detects consecutive failures and disables the endpoint if threshold is exceeded.
+        """
+        event = await self.get_event_by_id(session, id)
+        if event is None:
+            raise EventDoesNotExist(id)
+
+        if event.succeeded is not False:
+            return
+
+        endpoint = event.webhook_endpoint
+        if not endpoint.enabled:
+            return
+
+        # Get recent events to count the streak
+        webhook_event_repository = WebhookEventRepository.from_session(session)
+        recent_events = await webhook_event_repository.get_recent_by_endpoint(
+            endpoint.id, limit=settings.WEBHOOK_FAILURE_THRESHOLD
+        )
+
+        # Check if all recent events are failures
+        if len(recent_events) >= settings.WEBHOOK_FAILURE_THRESHOLD and all(
+            event.succeeded is False for event in recent_events
+        ):
+            log.warning(
+                "Disabling webhook endpoint due to consecutive failures",
+                webhook_endpoint_id=endpoint.id,
+                failure_count=len(recent_events),
+            )
+            webhook_endpoint_repository = WebhookEndpointRepository.from_session(
+                session
+            )
+            await webhook_endpoint_repository.update(
+                endpoint, update_dict={"enabled": False}, flush=True
+            )
+
+            # Send email to all organization members
+            organization_id = endpoint.organization_id
+            user_organizations = await user_organization_service.list_by_org(
+                session, organization_id
+            )
+
+            if user_organizations:
+                # User and Organization are eagerly loaded
+                organization = user_organizations[0].organization
+                dashboard_url = f"{settings.FRONTEND_BASE_URL}/dashboard/{organization.slug}/settings/webhooks"
+
+                for user_org in user_organizations:
+                    user = user_org.user
+                    email = EmailAdapter.validate_python(
+                        {
+                            "template": "webhook_endpoint_disabled",
+                            "props": {
+                                "email": user.email,
+                                "organization": organization,
+                                "webhook_endpoint_url": endpoint.url,
+                                "dashboard_url": dashboard_url,
+                            },
+                        }
+                    )
+
+                    body = render_email_template(email)
+
+                    enqueue_email(
+                        to_email_addr=user.email,
+                        subject=f"Webhook endpoint disabled for {organization.name}",
+                        html_content=body,
+                    )
+
     async def get_event_by_id(
         self, session: AsyncSession, id: UUID
     ) -> WebhookEvent | None:
@@ -353,6 +434,33 @@ class WebhookService:
         target: Organization,
         event: Literal[WebhookEventType.customer_state_changed],
         data: CustomerState,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.customer_seat_assigned],
+        data: CustomerSeat,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.customer_seat_claimed],
+        data: CustomerSeat,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.customer_seat_revoked],
+        data: CustomerSeat,
     ) -> list[WebhookEvent]: ...
 
     @overload
@@ -649,6 +757,7 @@ class WebhookService:
     ) -> Sequence[WebhookEndpoint]:
         statement = select(WebhookEndpoint).where(
             WebhookEndpoint.deleted_at.is_(None),
+            WebhookEndpoint.enabled.is_(True),
             WebhookEndpoint.events.bool_op("@>")(text(f"'[\"{event}\"]'")),
             WebhookEndpoint.organization_id == target.id,
         )

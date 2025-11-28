@@ -11,7 +11,7 @@ import React from 'react'
 import { subscriptionStatusDisplayNames } from './utils'
 
 interface SubscriptionStatusSelectProps {
-  statuses: ['active', 'canceled']
+  statuses: ('active' | 'canceled')[]
   value: string
   onChange: (value: string) => void
 }
@@ -34,10 +34,8 @@ const SubscriptionStatusSelect: React.FC<SubscriptionStatusSelectProps> = ({
         {statuses.map((status) => (
           <React.Fragment key={status}>
             <SelectGroup>
-              <SelectItem value={status} className="font-medium">
-                <div className="flex items-center gap-2 whitespace-normal">
-                  {subscriptionStatusDisplayNames[status]}
-                </div>
+              <SelectItem value={status}>
+                {subscriptionStatusDisplayNames[status]}
               </SelectItem>
             </SelectGroup>
           </React.Fragment>

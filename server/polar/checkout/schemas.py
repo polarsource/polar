@@ -19,6 +19,7 @@ from polar.custom_field.data import (
     CustomFieldDataOutputMixin,
 )
 from polar.custom_field.schemas import AttachedCustomField
+from polar.customer.schemas.customer import CustomerNameInput
 from polar.discount.schemas import (
     DiscountFixedBase,
     DiscountOnceForeverDurationBase,
@@ -53,12 +54,13 @@ from polar.models.checkout import (
     CheckoutStatus,
 )
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.organization.schemas import Organization
+from polar.organization.schemas import OrganizationPublicBase
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
     ProductMediaList,
     ProductPrice,
+    ProductPriceCreateList,
     ProductPriceList,
 )
 
@@ -76,10 +78,6 @@ Amount = Annotated[
     ),
     Ge(MINIMUM_PRICE_AMOUNT),
     Le(MAXIMUM_PRICE_AMOUNT),
-]
-CustomerName = Annotated[
-    str,
-    Field(description="Name of the customer."),
 ]
 CustomerEmail = Annotated[
     EmailStrDNS,
@@ -146,6 +144,11 @@ _require_billing_address_description = (
     "If you preset the billing address, this setting will be automatically set to "
     "`true`."
 )
+_allow_trial_description = (
+    "Whether to enable the trial period for the checkout session. "
+    "If `false`, the trial period will be disabled, even if the selected product "
+    "has a trial configured."
+)
 _is_business_customer_description = (
     "Whether the customer is a business or an individual. "
     "If `true`, the customer will be required to fill their full billing address "
@@ -185,6 +188,7 @@ class CheckoutCreateBase(
         le=1000,
         description="Number of seats for seat-based pricing. Required for seat-based products.",
     )
+    allow_trial: bool = Field(default=True, description=_allow_trial_description)
     customer_id: UUID4 | None = Field(
         default=None,
         description=(
@@ -201,7 +205,7 @@ class CheckoutCreateBase(
         description=_external_customer_id_description,
         validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
     )
-    customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
+    customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
@@ -269,6 +273,13 @@ class CheckoutProductsCreate(CheckoutCreateBase):
         ),
         min_length=1,
     )
+    prices: dict[UUID4, ProductPriceCreateList] | None = Field(
+        default=None,
+        description=(
+            "Optional mapping of product IDs to a list of ad-hoc prices to create for that product. "
+            "If not set, catalog prices of the product will be used."
+        ),
+    )
 
 
 CheckoutCreate = Annotated[
@@ -327,7 +338,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
         description="Number of seats for seat-based pricing.",
     )
     is_business_customer: bool | None = None
-    customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
+    customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_billing_address: CustomerBillingAddressInput | None = None
@@ -348,6 +359,7 @@ class CheckoutUpdate(
     require_billing_address: bool | None = Field(
         default=None, description=_require_billing_address_description
     )
+    allow_trial: bool | None = Field(default=None, description=_allow_trial_description)
     customer_ip_address: CustomerIPAddress | None = None
     customer_metadata: MetadataField | None = Field(
         default=None, description=_customer_metadata_description
@@ -362,6 +374,14 @@ class CheckoutUpdatePublic(CheckoutUpdateBase):
 
     discount_code: str | None = Field(
         default=None, description="Discount code to apply to the checkout."
+    )
+    allow_trial: Literal[False] | None = Field(
+        default=None,
+        description=(
+            "Disable the trial period for the checkout session. "
+            "It's mainly useful when the trial is blocked because the customer "
+            "already redeemed one."
+        ),
     )
 
 
@@ -450,6 +470,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
     currency: str = Field(description="Currency code of the checkout session.")
 
+    allow_trial: bool | None = Field(description=_allow_trial_description)
     active_trial_interval: TrialInterval | None = Field(
         description=(
             "Interval unit of the trial period, if any. "
@@ -468,8 +489,13 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         description="End date and time of the trial period, if any."
     )
 
-    product_id: UUID4 = Field(description="ID of the product to checkout.")
-    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    organization_id: UUID4 = Field(
+        description="ID of the organization owning the checkout session."
+    )
+    product_id: UUID4 | None = Field(description="ID of the product to checkout.")
+    product_price_id: UUID4 | None = Field(
+        description="ID of the product price to checkout.", deprecated=True
+    )
     discount_id: UUID4 | None = Field(
         description="ID of the discount applied to the checkout."
     )
@@ -533,6 +559,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     @computed_field(deprecated="Use `net_amount`.")
     def subtotal_amount(self) -> SkipJsonSchema[int | None]:
         return self.net_amount
+
+
+class CheckoutOrganization(OrganizationPublicBase): ...
 
 
 class CheckoutProduct(ProductBase):
@@ -620,11 +649,16 @@ class Checkout(MetadataOutputMixin, TrialConfigurationOutputMixin, CheckoutBase)
     products: list[CheckoutProduct] = Field(
         description="List of products available to select."
     )
-    product: CheckoutProduct = Field(description="Product selected to checkout.")
-    product_price: ProductPrice = Field(description="Price of the selected product.")
+    product: CheckoutProduct | None = Field(description="Product selected to checkout.")
+    product_price: ProductPrice | None = Field(
+        description="Price of the selected product.", deprecated=True
+    )
+    prices: dict[UUID4, ProductPriceList] | None = Field(
+        description=("Mapping of product IDs to their list of prices.")
+    )
     discount: CheckoutDiscount | None
     subscription_id: UUID4 | None
-    attached_custom_fields: list[AttachedCustomField]
+    attached_custom_fields: list[AttachedCustomField] | None
     customer_metadata: dict[str, str | int | bool]
 
 
@@ -634,11 +668,16 @@ class CheckoutPublic(CheckoutBase):
     products: list[CheckoutProduct] = Field(
         description="List of products available to select."
     )
-    product: CheckoutProduct = Field(description="Product selected to checkout.")
-    product_price: ProductPrice = Field(description="Price of the selected product.")
+    product: CheckoutProduct | None = Field(description="Product selected to checkout.")
+    product_price: ProductPrice | None = Field(
+        description="Price of the selected product.", deprecated=True
+    )
+    prices: dict[UUID4, ProductPriceList] | None = Field(
+        description=("Mapping of product IDs to their list of prices.")
+    )
     discount: CheckoutDiscount | None
-    organization: Organization
-    attached_custom_fields: list[AttachedCustomField]
+    organization: CheckoutOrganization
+    attached_custom_fields: list[AttachedCustomField] | None
 
 
 class CheckoutPublicConfirmed(CheckoutPublic):

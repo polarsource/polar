@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, or_, select
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.repository import (
@@ -49,6 +49,18 @@ class OrganizationRepository(
     async def get_by_slug(self, slug: str) -> Organization | None:
         statement = self.get_base_statement().where(Organization.slug == slug)
         return await self.get_one_or_none(statement)
+
+    async def slug_exists(self, slug: str) -> bool:
+        """Check if slug exists, including soft-deleted organizations.
+
+        Soft-deleted organizations are included to prevent slug reuse,
+        ensuring backoffice links continue to work.
+        """
+        statement = self.get_base_statement(include_deleted=True).where(
+            Organization.slug == slug
+        )
+        result = await self.get_one_or_none(statement)
+        return result is not None
 
     async def get_by_customer(self, customer_id: UUID) -> Organization:
         statement = (
@@ -145,6 +157,20 @@ class OrganizationRepository(
         )
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
+
+    async def enable_revops(self, organization_ids: set[UUID]) -> None:
+        statement = self.get_base_statement().where(
+            Organization.id.in_(organization_ids),
+            or_(
+                Organization.feature_settings["revops_enabled"].is_(None),
+                Organization.feature_settings["revops_enabled"].as_boolean().is_(False),
+            ),
+        )
+        orgs = await self.get_all(statement)
+        for org in orgs:
+            org.feature_settings = {**org.feature_settings, "revops_enabled": True}
+            self.session.add(org)
+        await self.session.flush()
 
 
 class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):

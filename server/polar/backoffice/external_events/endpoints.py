@@ -14,7 +14,7 @@ from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import ExternalEvent
 from polar.models.external_event import ExternalEventSource
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 
 from ..components import button, datatable, input, modal
 from ..layout import layout
@@ -30,7 +30,7 @@ async def list(
     sorting: sorting.ListSorting,
     query: str | None = Query(None),
     handled: Annotated[bool | None, BeforeValidator(empty_str_to_none), Query()] = None,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     repository = ExternalEventRepository.from_session(session)
     statement = repository.get_base_statement()

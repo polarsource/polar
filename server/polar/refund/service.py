@@ -10,6 +10,8 @@ from sqlalchemy.dialects import postgresql
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.customer.repository import CustomerRepository
+from polar.event.service import event as event_service
+from polar.event.system import OrderRefundedMetadata, SystemEvent, build_system_event
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
@@ -42,6 +44,7 @@ from polar.transaction.service.refund import (
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
+from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 
 from .schemas import InternalRefundCreate, RefundCreate
@@ -92,6 +95,13 @@ class RevokeSubscriptionBenefitsProhibited(RefundError):
     def __init__(self) -> None:
         message = "Subscription benefits can only be revoked upon cancellation"
         super().__init__(message, 400)
+
+
+class RefundsBlocked(RefundError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Refunds are blocked for order: {order.id}"
+        super().__init__(message, 403)
 
 
 class RefundService(ResourceServiceReader[Refund]):
@@ -173,6 +183,9 @@ class RefundService(ResourceServiceReader[Refund]):
         order: Order,
         create_schema: RefundCreate,
     ) -> Refund:
+        if order.refunds_blocked:
+            raise RefundsBlocked(order)
+
         if order.refunded:
             raise RefundedAlready(order)
 
@@ -225,10 +238,10 @@ class RefundService(ResourceServiceReader[Refund]):
             payment=payment,
             order=order,
         )
-        if not refund.revoke_benefits:
-            return refund
 
-        await self.enqueue_benefits_revokation(session, order)
+        if refund.revoke_benefits:
+            await self.enqueue_benefits_revokation(session, order)
+
         return refund
 
     async def upsert_from_stripe(
@@ -541,6 +554,11 @@ class RefundService(ResourceServiceReader[Refund]):
                 refunded_tax_amount=refund.tax_amount,
             )
 
+            # Send order.updated webhook
+            await order_service.send_webhook(
+                session, order, WebhookEventType.order_updated
+            )
+
             # Revert the tax transaction in the tax processor ledger
             if order.tax_transaction_processor_id and order.tax_amount > 0:
                 if refund.total_amount == order.total_amount:
@@ -601,6 +619,11 @@ class RefundService(ResourceServiceReader[Refund]):
                 refunded_tax_amount=-refund.tax_amount,
             )
 
+            # Send order.updated webhook
+            await order_service.send_webhook(
+                session, order, WebhookEventType.order_updated
+            )
+
     async def _on_created(
         self,
         session: AsyncSession,
@@ -617,6 +640,32 @@ class RefundService(ResourceServiceReader[Refund]):
         organization: Organization,
         order: Order,
     ) -> None:
+        # Reduce positive customer balance
+        customer_balance = await wallet_service.get_billing_wallet_balance(
+            session, order.customer, order.currency
+        )
+        if customer_balance > 0:
+            reduction_amount = min(
+                customer_balance, order.refunded_amount + order.refunded_tax_amount
+            )
+            await wallet_service.create_balance_transaction(
+                session, order.customer, -reduction_amount, order.currency, order=order
+            )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.order_refunded,
+                customer=order.customer,
+                organization=order.organization,
+                metadata=OrderRefundedMetadata(
+                    order_id=str(order.id),
+                    refunded_amount=order.refunded_amount,
+                    currency=order.currency,
+                ),
+            ),
+        )
+
         # Send order.refunded
         await webhook_service.send(
             session, organization, WebhookEventType.order_refunded, order

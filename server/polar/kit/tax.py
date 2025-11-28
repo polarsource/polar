@@ -8,17 +8,23 @@ from typing import Annotated, Any, Literal, LiteralString, Protocol, TypedDict
 import stdnum.ca.bn
 import stdnum.cl.rut
 import stdnum.exceptions
+import stdnum.in_.gstin
 import stdnum.tr.vkn
 import stripe as stripe_lib
+import structlog
 from pydantic import Field
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
 from stdnum import get_cc_module
 
+from polar.config import settings
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.address import Address
+from polar.logging import Logger
+
+log: Logger = structlog.get_logger()
 
 
 class TaxIDFormat(StrEnum):
@@ -261,6 +267,15 @@ class TRTINValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class INGSTValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.in_.gstin.compact(number)
+        try:
+            return stdnum.in_.gstin.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
     match tax_id_type:
         case TaxIDFormat.ca_gst_hst:
@@ -269,6 +284,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return CLTINValidator()
         case TaxIDFormat.tr_tin:
             return TRTINValidator()
+        case TaxIDFormat.in_gst:
+            return INGSTValidator()
         case _:
             return StdNumValidator(tax_id_type)
 
@@ -437,12 +454,12 @@ def from_stripe_tax_rate_details(
         return None
 
     basis_points = None
-    if tax_rate_details.percentage_decimal is not None:
-        basis_points = int(float(tax_rate_details.percentage_decimal) * 100)
-
     amount = None
     amount_currency = None
-    if tax_rate_details.flat_amount is not None:
+
+    if tax_rate_details.percentage_decimal is not None:
+        basis_points = int(float(tax_rate_details.percentage_decimal) * 100)
+    elif tax_rate_details.flat_amount is not None:
         amount = tax_rate_details.flat_amount.amount
         amount_currency = tax_rate_details.flat_amount.currency
 
@@ -520,6 +537,21 @@ async def calculate_tax(
             },
             idempotency_key=idempotency_key,
         )
+    except stripe_lib.RateLimitError as e:
+        if settings.is_sandbox():
+            log.warning(
+                "Stripe Tax API rate limit exceeded in sandbox mode, returning zero tax",
+                identifier=str(identifier),
+                currency=currency,
+                amount=amount,
+            )
+            return {
+                "processor_id": f"taxcalc_sandbox_{uuid.uuid4().hex}",
+                "amount": 0,
+                "taxability_reason": None,
+                "tax_rate": None,
+            }
+        raise
     except stripe_lib.InvalidRequestError as e:
         if (
             e.error is not None

@@ -32,6 +32,7 @@ from polar.models import (
     Discount,
     DiscountProduct,
     Event,
+    EventType,
     IssueReward,
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
@@ -56,8 +57,12 @@ from polar.models import (
     Subscription,
     SubscriptionProductPrice,
     Transaction,
+    TrialRedemption,
     User,
     UserOrganization,
+    Wallet,
+    WalletTransaction,
+    WebhookEndpoint,
 )
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import (
@@ -95,6 +100,8 @@ from polar.models.product_price import ProductPriceAmountType, ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.models.user import OAuthAccount, OAuthPlatform
+from polar.models.wallet import WalletType
+from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
 from tests.fixtures.database import SaveFixture
 
@@ -805,6 +812,7 @@ async def create_order(
     refunded_amount: int = 0,
     refunded_tax_amount: int = 0,
     applied_balance_amount: int = 0,
+    currency: str = "usd",
     order_items: list[OrderItem] | None = None,
     subscription: Subscription | None = None,
     stripe_invoice_id: str | None = "INVOICE_ID",
@@ -840,7 +848,7 @@ async def create_order(
         refunded_tax_amount=refunded_tax_amount,
         applied_balance_amount=applied_balance_amount,
         items=order_items,
-        currency="usd",
+        currency=currency,
         billing_reason=billing_reason,
         stripe_invoice_id=stripe_invoice_id,
         billing_name=billing_name,
@@ -867,6 +875,7 @@ async def create_order_and_payment(
     customer: Customer,
     subtotal_amount: int,
     tax_amount: int,
+    applied_balance_amount: int = 0,
 ) -> tuple[Order, Transaction]:
     order = await create_order(
         save_fixture,
@@ -874,9 +883,13 @@ async def create_order_and_payment(
         customer=customer,
         subtotal_amount=subtotal_amount,
         tax_amount=tax_amount,
+        applied_balance_amount=applied_balance_amount,
     )
     payment = await create_payment_transaction(
-        save_fixture, amount=subtotal_amount, tax_amount=tax_amount, order=order
+        save_fixture,
+        amount=subtotal_amount + applied_balance_amount,
+        tax_amount=tax_amount,
+        order=order,
     )
     return order, payment
 
@@ -1325,6 +1338,8 @@ async def create_checkout(
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
     seats: int | None = None,
+    require_billing_address: bool = False,
+    customer_billing_address: Address | None = None,
 ) -> Checkout:
     product = product or products[0]
     price = price or product.prices[0]
@@ -1362,10 +1377,12 @@ async def create_checkout(
         amount=amount,
         tax_amount=tax_amount,
         currency=currency,
+        organization=product.organization,
         product_price=price,
         product=product,
         checkout_products=[
-            CheckoutProduct(product=p, order=i) for i, p in enumerate(products)
+            CheckoutProduct(product=p, order=i, ad_hoc_prices=[])
+            for i, p in enumerate(products)
         ],
         customer=customer,
         subscription=subscription,
@@ -1374,6 +1391,8 @@ async def create_checkout(
         trial_interval_count=trial_interval_count,
         trial_end=trial_end,
         seats=seats,
+        require_billing_address=require_billing_address,
+        customer_billing_address=customer_billing_address,
     )
     await save_fixture(checkout)
     return checkout
@@ -1721,7 +1740,10 @@ async def create_event(
     timestamp: datetime | None = None,
     customer: Customer | None = None,
     external_customer_id: str | None = None,
-    metadata: dict[str, str | int | bool | float] | None = None,
+    external_id: str | None = None,
+    parent_id: uuid.UUID | None = None,
+    metadata: dict[str, str | int | bool | float | Any] | None = None,
+    event_type: EventType | None = None,
 ) -> Event:
     event = Event(
         timestamp=timestamp or utc_now(),
@@ -1729,8 +1751,11 @@ async def create_event(
         name=name,
         customer_id=customer.id if customer else None,
         external_customer_id=external_customer_id,
+        external_id=external_id,
+        parent_id=parent_id,
         organization=organization,
         user_metadata=metadata or {},
+        event_type_id=event_type.id if event_type else None,
     )
     await save_fixture(event)
     return event
@@ -2040,7 +2065,127 @@ async def create_subscription_with_seats(
         kwargs["status"] = SubscriptionStatus.active
     if "started_at" not in kwargs:
         kwargs["started_at"] = utc_now()
+    # Seat management is Polar-only, not Stripe-managed
+    if "stripe_subscription_id" not in kwargs:
+        kwargs["stripe_subscription_id"] = None
     subscription = await create_subscription(
         save_fixture, product=product, customer=customer, seats=seats, **kwargs
     )
     return subscription
+
+
+async def create_wallet(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    type: WalletType,
+    currency: str = "usd",
+) -> Wallet:
+    wallet = Wallet(
+        type=type,
+        customer=customer,
+        currency=currency,
+    )
+    await save_fixture(wallet)
+    return wallet
+
+
+async def create_wallet_transaction(
+    save_fixture: SaveFixture,
+    *,
+    wallet: Wallet,
+    amount: int,
+    tax_amount: int = 0,
+    tax_calculation_processor_id: str | None = None,
+) -> WalletTransaction:
+    wallet_transaction = WalletTransaction(
+        wallet=wallet,
+        amount=amount,
+        currency=wallet.currency,
+        tax_amount=tax_amount,
+        tax_calculation_processor_id=tax_calculation_processor_id,
+    )
+    await save_fixture(wallet_transaction)
+    return wallet_transaction
+
+
+async def create_wallet_billing(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    currency: str = "usd",
+    initial_balance: int = 0,
+) -> Wallet:
+    wallet = await create_wallet(
+        save_fixture,
+        type=WalletType.billing,
+        currency=currency,
+        customer=customer,
+    )
+    if initial_balance != 0:
+        await create_wallet_transaction(
+            save_fixture,
+            wallet=wallet,
+            amount=initial_balance,
+        )
+
+    return wallet
+
+
+async def create_trial_redemption(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    customer_email: str,
+    product: Product | None = None,
+    payment_method_fingerprint: str | None = None,
+) -> TrialRedemption:
+    trial_redemption = TrialRedemption(
+        customer_email=customer_email,
+        payment_method_fingerprint=payment_method_fingerprint,
+        customer=customer,
+        product=product,
+    )
+    await save_fixture(trial_redemption)
+    return trial_redemption
+
+
+async def create_event_type(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    name: str = "test.event",
+    label: str = "Test Event",
+) -> EventType:
+    event_type = EventType(
+        name=name,
+        label=label,
+        organization_id=organization.id,
+    )
+    await save_fixture(event_type)
+    return event_type
+
+
+@pytest_asyncio.fixture
+async def event_type(
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> EventType:
+    return await create_event_type(save_fixture, organization=organization)
+
+
+async def create_webhook_endpoint(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    events: list[WebhookEventType] | None = None,
+) -> WebhookEndpoint:
+    webhook_endpoint = WebhookEndpoint(
+        url="https://example.com/webhook",
+        format=WebhookFormat.raw,
+        secret="SECRET",
+        events=events or list(WebhookEventType),
+        organization=organization,
+    )
+    await save_fixture(webhook_endpoint)
+    return webhook_endpoint

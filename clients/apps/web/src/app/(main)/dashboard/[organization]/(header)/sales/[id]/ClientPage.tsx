@@ -45,7 +45,8 @@ const OrderStatusDisplayColor: Record<schemas['OrderStatus'], string> = {
   pending: 'bg-yellow-100 text-yellow-500 dark:bg-yellow-950',
   paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
   refunded: 'bg-blue-100 text-blue-400 dark:bg-blue-950',
-  partially_refunded: 'bg-purple-100 text-purple-500 dark:bg-purple-950',
+  partially_refunded:
+    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
 }
 
 interface ClientPageProps {
@@ -159,6 +160,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 />
               }
             />
+
+            <DetailRow
+              label="Discount Code"
+              value={order.discount ? order.discount.code : '—'}
+              valueClassName="font-mono capitalize"
+            />
+
             <DetailRow
               label="Billing Reason"
               value={order.billing_reason.split('_').join(' ')}
@@ -172,44 +180,59 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 <DetailRow
                   key={item.id}
                   label={item.label}
-                  value={formatCurrencyAndAmount(item.amount)}
+                  value={formatCurrencyAndAmount(item.amount, order.currency)}
                 />
               ))}
             </div>
 
             <DetailRow
               label="Subtotal"
-              value={formatCurrencyAndAmount(order.subtotal_amount)}
+              value={formatCurrencyAndAmount(
+                order.subtotal_amount,
+                order.currency,
+              )}
             />
             <DetailRow
               label="Discount"
               value={
                 order.discount_amount
-                  ? formatCurrencyAndAmount(-order.discount_amount)
+                  ? formatCurrencyAndAmount(
+                      -order.discount_amount,
+                      order.currency,
+                    )
                   : '—'
               }
             />
             <DetailRow
               label="Net amount"
-              value={formatCurrencyAndAmount(order.net_amount)}
+              value={formatCurrencyAndAmount(order.net_amount, order.currency)}
             />
             <DetailRow
               label="Tax"
-              value={formatCurrencyAndAmount(order.tax_amount)}
+              value={formatCurrencyAndAmount(order.tax_amount, order.currency)}
             />
             <DetailRow
               label="Total"
-              value={formatCurrencyAndAmount(order.total_amount)}
+              value={formatCurrencyAndAmount(
+                order.total_amount,
+                order.currency,
+              )}
             />
             {order.applied_balance_amount !== 0 && (
               <>
                 <DetailRow
                   label="Applied balance"
-                  value={formatCurrencyAndAmount(order.applied_balance_amount)}
+                  value={formatCurrencyAndAmount(
+                    order.applied_balance_amount,
+                    order.currency,
+                  )}
                 />
                 <DetailRow
                   label="To be paid"
-                  value={formatCurrencyAndAmount(order.due_amount)}
+                  value={formatCurrencyAndAmount(
+                    order.due_amount,
+                    order.currency,
+                  )}
                 />
               </>
             )}

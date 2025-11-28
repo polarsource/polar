@@ -110,6 +110,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     refunded_tax_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     platform_fee_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    platform_fee_currency: Mapped[str | None] = mapped_column(
+        String(3), nullable=True, default=None
+    )
 
     billing_name: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
@@ -143,6 +146,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     payment_lock_acquired_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+
+    refunds_blocked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
@@ -222,6 +229,13 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
                 return item.product_price
         return self.product.prices[0]
 
+    @property
+    def legacy_product_price_id(self) -> UUID | None:
+        price = self.legacy_product_price
+        if price is None:
+            return None
+        return price.id
+
     @hybrid_property
     def paid(self) -> bool:
         return self.status in {
@@ -282,8 +296,12 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return self.status == OrderStatus.refunded
 
     @property
+    def refunds_blocked(self) -> bool:
+        return self.refunds_blocked_at is not None
+
+    @property
     def refundable_amount(self) -> int:
-        return self.net_amount - self.refunded_amount
+        return self.net_amount + self.applied_balance_amount - self.refunded_amount
 
     @property
     def refundable_tax_amount(self) -> int:
@@ -298,7 +316,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         new_tax_amount = self.refunded_tax_amount + refunded_tax_amount
         exceeds_original_amount = (
             new_amount < 0
-            or new_amount > self.net_amount
+            or new_amount > (self.net_amount + self.applied_balance_amount)
             or new_tax_amount < 0
             or new_tax_amount > self.tax_amount
         )
@@ -307,7 +325,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
         if new_amount == 0:
             new_status = OrderStatus.paid
-        elif new_amount == self.net_amount:
+        elif new_amount == (self.net_amount + self.applied_balance_amount):
             new_status = OrderStatus.refunded
         else:
             new_status = OrderStatus.partially_refunded
@@ -337,4 +355,4 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def description(self) -> str:
         if self.product is not None:
             return self.product.name
-        return "TODO"
+        return self.items[0].label

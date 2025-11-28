@@ -1,0 +1,69 @@
+---
+title: "How to Switch Checkout Theme"
+sidebarTitle: "Switch checkout theme"
+description: "Learn how to switch the theme in a checkout session and a checkout link."
+---
+
+## Changing the Theme for a Checkout Session Created via the API
+
+<Steps>
+    <Step title="Create a Checkout Session">
+        Create a Checkout Session by following our [How to Create Checkout Session](/guides/create-checkout-session) guide and obtain the `url`.
+    </Step>
+    <Step title="Switch to dark theme">
+        To switch to the dark theme, append the query parameter <code>theme=dark</code> to your checkout session URL as obtained earlier. For example, if your checkout session URL is:  
+        <code>https://polar.sh/checkout/polar_c_ES7DwhlyvlYTPNaLiccKqiwJPda43FIzer</code>
+        
+
+        You should use:  
+        <code>https://polar.sh/checkout/polar_c_ES7DwhlyvlYTPNaLiccKqiwJPda43FIzer?theme=dark</code>  
+        
+        
+        The checkout session then looks like below:
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/dark-theme.png" />
+    </Step>
+
+    <Step title="Switch to light theme">
+        Similarly, to switch to the light theme, append the query parameter <code>theme=light</code> to your checkout session URL.
+        
+        For example:  
+        <code>https://polar.sh/checkout/polar_c_ES7DwhlyvlYTPNaLiccKqiwJPda43FIzer?theme=light</code>  
+        
+        The checkout session then looks like below:
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/light-theme.png" />
+    </Step>
+</Steps>
+
+
+## Switching Theme for a Checkout Link
+
+<Steps>
+    <Step title = "Create a checkout link">
+        Create a checkout link by referring to our [Create a checkout link](https://polar.sh/docs/features/checkout/links#create-a-checkout-link) guide.
+    </Step>
+    <Step title="Switch to dark theme">
+        To switch to the dark theme, append the query parameter <code>theme=dark</code> to your checkout link.
+        
+        For example, if your checkout link is:  
+        <code>https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_QHMjrDLsORxLIRfyQlfyqF1TWUR6Cy4afVcd/redirect</code>  
+        
+        
+        You should use:  
+        <code>https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_QHMjrDLsORxLIRfyQlfyqF1TWUR6Cy4afVcd/redirect?theme=dark</code>  
+        
+        
+        The checkout session then looks like below:
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/dark-theme.png" />
+    </Step>
+
+    <Step title="Switch to light theme">
+        Similarly, to switch to the light theme, append the query parameter <code>theme=light</code> to your checkout link.
+        
+        For example:  
+        <code>https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_QHMjrDLsORxLIRfyQlfyqF1TWUR6Cy4afVcd/redirect?theme=light</code>  
+        
+        
+        The checkout session then looks like below:
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/light-theme.png" />
+    </Step>
+</Steps>

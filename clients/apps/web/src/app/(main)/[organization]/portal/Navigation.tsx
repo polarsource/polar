@@ -11,12 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
-const links = (organization: schemas['Organization']) => [
+const links = (organization: schemas['CustomerOrganization']) => [
   {
     href: `/${organization.slug}/portal/overview`,
     label: 'Overview',
@@ -41,10 +40,8 @@ const links = (organization: schemas['Organization']) => [
 
 export const Navigation = ({
   organization,
-  themePreset,
 }: {
-  organization: schemas['Organization']
-  themePreset: ThemingPresetProps
+  organization: schemas['CustomerOrganization']
 }) => {
   const router = useRouter()
   const currentPath = usePathname()
@@ -87,10 +84,9 @@ export const Navigation = ({
             key={link.href}
             href={buildPath(link.href)}
             className={twMerge(
-              'dark:text-polar-500 dark:hover:bg-polar-800 border border-transparent px-4 py-2 font-medium text-gray-500 transition-colors duration-75 hover:bg-gray-100',
+              'dark:text-polar-500 dark:hover:bg-polar-800 rounded-xl border border-transparent px-4 py-2 font-medium text-gray-500 transition-colors duration-75 hover:bg-gray-100',
               link.isActive(currentPath) &&
-                themePreset.polar.customerPortalNavigationItemActive,
-              themePreset.polar.customerPortalNavigationItem,
+                'dark:bg-polar-800 dark:border-polar-700 bg-gray-100 text-black dark:text-white',
             )}
             prefetch
           >
@@ -99,9 +95,7 @@ export const Navigation = ({
         ))}
       </nav>
       <Select
-        defaultValue={
-          filteredLinks.find(({ href }) => href === currentPath)?.label
-        }
+        value={filteredLinks.find(({ href }) => href === currentPath)?.label}
         onValueChange={(value) => {
           router.push(
             buildPath(

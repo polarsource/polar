@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Annotated, Literal, NotRequired
 
 from fastapi import Path
@@ -16,11 +17,17 @@ from typing_extensions import TypedDict
 from polar.customer.schemas.customer import Customer
 from polar.event.system import (
     BenefitGrantMetadata,
+    CustomerCreatedMetadata,
+    CustomerDeletedMetadata,
+    CustomerUpdatedMetadata,
     MeterCreditedMetadata,
     MeterResetMetadata,
+    OrderPaidMetadata,
+    OrderRefundedMetadata,
     SubscriptionCycledMetadata,
     SubscriptionProductUpdatedMetadata,
     SubscriptionRevokedMetadata,
+    SubscriptionSeatsUpdatedMetadata,
 )
 from polar.event.system import SystemEvent as SystemEventEnum
 from polar.kit.metadata import METADATA_DESCRIPTION, MetadataValue
@@ -54,7 +61,14 @@ def is_past_timestamp(timestamp: datetime) -> datetime:
 
 
 class CostMetadata(TypedDict):
-    amount: Annotated[int, Field(description="The amount in cents.")]
+    amount: Annotated[
+        Decimal,
+        Field(
+            description="The amount in cents.",
+            max_digits=17,
+            decimal_places=12,
+        ),
+    ]
     currency: Annotated[
         str,
         Field(
@@ -124,6 +138,20 @@ class EventCreateBase(Schema):
             "**Required unless you use an organization token.**"
         ),
     )
+    external_id: str | None = Field(
+        default=None,
+        description=(
+            "Your unique identifier for this event. "
+            "Useful for deduplication and parent-child relationships."
+        ),
+    )
+    parent_id: str | None = Field(
+        default=None,
+        description=(
+            "The ID of the parent event. "
+            "Can be either a Polar event ID (UUID) or an external event ID."
+        ),
+    )
     metadata: EventMetadataInput = Field(
         description=METADATA_DESCRIPTION.format(
             heading=(
@@ -159,6 +187,9 @@ class EventsIngest(Schema):
 
 class EventsIngestResponse(Schema):
     inserted: int = Field(description="Number of events inserted.")
+    duplicates: int = Field(
+        default=0, description="Number of duplicate events skipped."
+    )
 
 
 class BaseEvent(IDSchema):
@@ -177,6 +208,14 @@ class BaseEvent(IDSchema):
     external_customer_id: str | None = Field(
         description="ID of the customer in your system associated with the event."
     )
+    child_count: int = Field(
+        default=0, description="Number of direct child events linked to this event."
+    )
+    parent_id: UUID4 | None = Field(
+        default=None,
+        description="The ID of the parent event.",
+    )
+    label: str = Field(description="Human readable label of the event type.")
 
 
 class SystemEventBase(BaseEvent):
@@ -278,6 +317,68 @@ class SubscriptionProductUpdatedEvent(SystemEventBase):
     )
 
 
+class SubscriptionSeatsUpdatedEvent(SystemEventBase):
+    """An event created by Polar when a the seats on a subscription is changed."""
+
+    name: Literal[SystemEventEnum.subscription_seats_updated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionSeatsUpdatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class OrderPaidEvent(SystemEventBase):
+    """An event created by Polar when an order is paid."""
+
+    name: Literal[SystemEventEnum.order_paid] = Field(description=_NAME_DESCRIPTION)
+    metadata: OrderPaidMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class CustomerCreatedEvent(SystemEventBase):
+    """An event created by Polar when a customer is created."""
+
+    name: Literal[SystemEventEnum.customer_created] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: CustomerCreatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class OrderRefundedEvent(SystemEventBase):
+    """An event created by Polar when an order is refunded."""
+
+    name: Literal[SystemEventEnum.order_refunded] = Field(description=_NAME_DESCRIPTION)
+    metadata: OrderRefundedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class CustomerUpdatedEvent(SystemEventBase):
+    """An event created by Polar when a customer is updated."""
+
+    name: Literal[SystemEventEnum.customer_updated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: CustomerUpdatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class CustomerDeletedEvent(SystemEventBase):
+    """An event created by Polar when a customer is deleted."""
+
+    name: Literal[SystemEventEnum.customer_deleted] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: CustomerDeletedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 SystemEvent = Annotated[
     MeterCreditEvent
     | MeterResetEvent
@@ -287,7 +388,13 @@ SystemEvent = Annotated[
     | BenefitRevokedEvent
     | SubscriptionCycledEvent
     | SubscriptionRevokedEvent
-    | SubscriptionProductUpdatedEvent,
+    | SubscriptionProductUpdatedEvent
+    | SubscriptionSeatsUpdatedEvent
+    | OrderPaidEvent
+    | OrderRefundedEvent
+    | CustomerCreatedEvent
+    | CustomerUpdatedEvent
+    | CustomerDeletedEvent,
     Discriminator("name"),
     SetSchemaReference("SystemEvent"),
     ClassName("SystemEvent"),
@@ -329,6 +436,81 @@ class EventName(Schema):
     occurrences: int = Field(description="Number of times the event has occurred.")
     first_seen: datetime = Field(description="The first time the event occurred.")
     last_seen: datetime = Field(description="The last time the event occurred.")
+
+
+class EventAggregations(Schema):
+    """Aggregated values from all descendant events."""
+
+    descendant_count: int = Field(
+        description="Total number of descendant events (not including the event itself)."
+    )
+    sums: dict[str, Decimal] = Field(
+        description="Aggregated sums for requested metadata fields. Keys are field paths (e.g., 'cost_amount'), values are the summed totals.",
+        default_factory=dict,
+    )
+
+
+class EventWithAggregations(Schema):
+    """An event with aggregated values from its descendants."""
+
+    event: Event = Field(description="The event.")
+    aggregations: EventAggregations = Field(
+        description="Aggregated values from all descendant events."
+    )
+
+
+class EventStatistics(Schema):
+    """Aggregate statistics for events grouped by root event name."""
+
+    name: str = Field(description="The name of the root event.")
+    label: str = Field(description="The label of the event type.")
+    event_type_id: UUID4 = Field(description="The ID of the event type")
+    occurrences: int = Field(
+        description="Number of root events with this name (i.e., number of traces)."
+    )
+    customers: int = Field(
+        description="Number of distinct customers associated with events."
+    )
+    totals: dict[str, Decimal] = Field(
+        description="Sum of each field across all events in all hierarchies.",
+        default_factory=dict,
+    )
+    averages: dict[str, Decimal] = Field(
+        description="Average of per-hierarchy totals (i.e., average cost per trace).",
+        default_factory=dict,
+    )
+    p50: dict[str, Decimal] = Field(
+        description="Median (50th percentile) of per-hierarchy totals.",
+        default_factory=dict,
+    )
+    p95: dict[str, Decimal] = Field(
+        description="95th percentile of per-hierarchy totals.",
+        default_factory=dict,
+    )
+    p99: dict[str, Decimal] = Field(
+        description="99th percentile of per-hierarchy totals.",
+        default_factory=dict,
+    )
+
+
+class StatisticsPeriod(Schema):
+    """Event statistics for a single time period."""
+
+    timestamp: AwareDatetime = Field(description="Period timestamp")
+    period_start: AwareDatetime = Field(description="Period start (inclusive)")
+    period_end: AwareDatetime = Field(description="Period end (exclusive)")
+    stats: list[EventStatistics] = Field(
+        description="Stats grouped by event name for this period"
+    )
+
+
+class ListStatisticsTimeseries(Schema):
+    """Event statistics timeseries."""
+
+    periods: list[StatisticsPeriod] = Field(description="Stats for each time period.")
+    totals: list[EventStatistics] = Field(
+        description="Overall stats across all periods."
+    )
 
 
 EventID = Annotated[UUID4, Path(description="The event ID.")]

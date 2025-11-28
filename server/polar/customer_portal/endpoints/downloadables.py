@@ -5,7 +5,6 @@ from polar.benefit.schemas import BenefitID
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.openapi import APITag
-from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -24,9 +23,6 @@ router = APIRouter(prefix="/downloadables", tags=["downloadables", APITag.public
 async def list(
     auth_subject: auth.CustomerPortalRead,
     pagination: PaginationParamsQuery,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
     benefit_id: MultipleQueryFilter[BenefitID] | None = Query(
         None, title="BenefitID Filter", description="Filter by benefit ID."
     ),
@@ -36,7 +32,6 @@ async def list(
         session,
         auth_subject,
         pagination=pagination,
-        organization_id=organization_id,
         benefit_id=benefit_id,
     )
 

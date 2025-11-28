@@ -51,8 +51,12 @@ export default async function Page(props: {
     const returnTo = `/oauth2/authorize?${serializedSearchParams}`
     const locationSearchParam = new URLSearchParams({
       return_to: returnTo,
-    }).toString()
-    const location = `/login?${locationSearchParam}`
+    })
+
+    if (searchParams.do_not_track) {
+      locationSearchParam.set('do_not_track', searchParams.do_not_track)
+    }
+    const location = `/login?${locationSearchParam.toString()}`
     redirect(location)
   }
 

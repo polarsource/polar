@@ -9,9 +9,9 @@ from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
-from polar.models import Customer
+from polar.member import member_service
+from polar.member.schemas import Member as MemberSchema
 from polar.openapi import APITag
-from polar.order.service import order as order_service
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -26,11 +26,11 @@ from . import auth, sorting
 from .repository import CustomerRepository
 from .schemas.customer import Customer as CustomerSchema
 from .schemas.customer import (
-    CustomerBalance,
     CustomerCreate,
     CustomerID,
     CustomerUpdate,
     CustomerUpdateExternalID,
+    CustomerWithMembers,
     ExternalCustomerID,
 )
 from .schemas.state import CustomerState
@@ -51,7 +51,7 @@ CustomerNotFound = {
 @router.get(
     "/",
     summary="List Customers",
-    response_model=ListResource[CustomerSchema],
+    response_model=ListResource[CustomerWithMembers],
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
@@ -66,8 +66,12 @@ async def list(
     query: str | None = Query(
         None, description="Filter by name, email, or external ID."
     ),
+    include_members: bool = Query(
+        False,
+        description="Include members in the response. Only populated when set to true.",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> ListResource[CustomerSchema]:
+) -> ListResource[CustomerWithMembers]:
     """List customers."""
     results, count = await customer_service.list(
         session,
@@ -80,8 +84,31 @@ async def list(
         sorting=sorting,
     )
 
+    customers_with_members = []
+    if include_members and results:
+        customer_ids = [result.id for result in results]
+        all_members = await member_service.list_by_customers(session, customer_ids)
+
+        members_by_customer = {}
+        for member in all_members:
+            member_schema = MemberSchema.model_validate(member)
+            if member.customer_id not in members_by_customer:
+                members_by_customer[member.customer_id] = [member_schema]
+            else:
+                members_by_customer[member.customer_id].append(member_schema)
+
+        for result in results:
+            customer_dict = CustomerSchema.model_validate(result).model_dump()
+            customer_dict["members"] = members_by_customer.get(result.id, [])
+            customers_with_members.append(CustomerWithMembers(**customer_dict))
+    else:
+        for r in results:
+            customer_dict = CustomerSchema.model_validate(r).model_dump()
+            customer_dict["members"] = []
+            customers_with_members.append(CustomerWithMembers(**customer_dict))
+
     return ListResource.from_paginated_results(
-        [CustomerSchema.model_validate(result) for result in results],
+        customers_with_members,
         count,
         pagination,
     )
@@ -155,41 +182,63 @@ async def export(
 @router.get(
     "/{id}",
     summary="Get Customer",
-    response_model=CustomerSchema,
+    response_model=CustomerWithMembers,
     responses={404: CustomerNotFound},
 )
 async def get(
     id: CustomerID,
     auth_subject: auth.CustomerRead,
+    include_members: bool = Query(
+        False,
+        description="Include members in the response. Only populated when set to true.",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> Customer:
+) -> CustomerWithMembers:
     """Get a customer by ID."""
     customer = await customer_service.get(session, auth_subject, id)
 
     if customer is None:
         raise ResourceNotFound()
 
-    return customer
+    customer_dict = CustomerSchema.model_validate(customer).model_dump()
+    if include_members:
+        customer_dict["members"] = await customer_service.load_members(
+            session, customer.id
+        )
+    else:
+        customer_dict["members"] = []
+    return CustomerWithMembers(**customer_dict)
 
 
 @router.get(
     "/external/{external_id}",
     summary="Get Customer by External ID",
-    response_model=CustomerSchema,
+    response_model=CustomerWithMembers,
     responses={404: CustomerNotFound},
 )
 async def get_external(
     external_id: ExternalCustomerID,
     auth_subject: auth.CustomerRead,
+    include_members: bool = Query(
+        False,
+        description="Include members in the response. Only populated when set to true.",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> Customer:
+) -> CustomerWithMembers:
     """Get a customer by external ID."""
     customer = await customer_service.get_external(session, auth_subject, external_id)
 
     if customer is None:
         raise ResourceNotFound()
 
-    return customer
+    customer_dict = CustomerSchema.model_validate(customer).model_dump()
+    if include_members:
+        customer_dict["members"] = await customer_service.load_members(
+            session, customer.id
+        )
+    else:
+        customer_dict["members"] = []
+    return CustomerWithMembers(**customer_dict)
 
 
 @router.get(
@@ -250,34 +299,9 @@ async def get_state_external(
     return await customer_service.get_state(session, redis, customer)
 
 
-@router.get(
-    "/{id}/balance",
-    summary="Get Customer Balance",
-    response_model=CustomerBalance,
-    responses={404: CustomerNotFound},
-)
-async def get_balance(
-    id: CustomerID,
-    auth_subject: auth.CustomerRead,
-    session: AsyncSession = Depends(get_db_session),
-) -> CustomerBalance:
-    """Get customer balance information."""
-    customer = await customer_service.get(session, auth_subject, id)
-
-    if customer is None:
-        raise ResourceNotFound()
-
-    balance_amount = await order_service.customer_balance(session, customer)
-
-    # Currency is always USD as specified by the user
-    currency = "USD"
-
-    return CustomerBalance(balance=balance_amount, currency=currency)
-
-
 @router.post(
     "/",
-    response_model=CustomerSchema,
+    response_model=CustomerWithMembers,
     status_code=201,
     summary="Create Customer",
     responses={201: {"description": "Customer created."}},
@@ -285,15 +309,34 @@ async def get_balance(
 async def create(
     customer_create: CustomerCreate,
     auth_subject: auth.CustomerWrite,
+    include_members: bool = Query(
+        False,
+        description="Include members in the response. Only populated when set to true.",
+    ),
     session: AsyncSession = Depends(get_db_session),
-) -> Customer:
+) -> CustomerWithMembers:
     """Create a customer."""
-    return await customer_service.create(session, customer_create, auth_subject)
+    created_customer = await customer_service.create(
+        session, customer_create, auth_subject
+    )
+
+    customer = await session.get(type(created_customer), created_customer.id)
+    if customer is None:
+        raise ResourceNotFound()
+
+    customer_dict = CustomerSchema.model_validate(customer).model_dump()
+    if include_members:
+        customer_dict["members"] = await customer_service.load_members(
+            session, customer.id
+        )
+    else:
+        customer_dict["members"] = []
+    return CustomerWithMembers(**customer_dict)
 
 
 @router.patch(
     "/{id}",
-    response_model=CustomerSchema,
+    response_model=CustomerWithMembers,
     summary="Update Customer",
     responses={
         200: {"description": "Customer updated."},
@@ -304,20 +347,33 @@ async def update(
     id: CustomerID,
     customer_update: CustomerUpdate,
     auth_subject: auth.CustomerWrite,
+    include_members: bool = Query(
+        False,
+        description="Include members in the response. Only populated when set to true.",
+    ),
     session: AsyncSession = Depends(get_db_session),
-) -> Customer:
+) -> CustomerWithMembers:
     """Update a customer."""
     customer = await customer_service.get(session, auth_subject, id)
 
     if customer is None:
         raise ResourceNotFound()
 
-    return await customer_service.update(session, customer, customer_update)
+    updated_customer = await customer_service.update(session, customer, customer_update)
+
+    customer_dict = CustomerSchema.model_validate(updated_customer).model_dump()
+    if include_members:
+        customer_dict["members"] = await customer_service.load_members(
+            session, updated_customer.id
+        )
+    else:
+        customer_dict["members"] = []
+    return CustomerWithMembers(**customer_dict)
 
 
 @router.patch(
     "/external/{external_id}",
-    response_model=CustomerSchema,
+    response_model=CustomerWithMembers,
     summary="Update Customer by External ID",
     responses={
         200: {"description": "Customer updated."},
@@ -328,15 +384,28 @@ async def update_external(
     external_id: ExternalCustomerID,
     customer_update: CustomerUpdateExternalID,
     auth_subject: auth.CustomerWrite,
+    include_members: bool = Query(
+        False,
+        description="Include members in the response. Only populated when set to true.",
+    ),
     session: AsyncSession = Depends(get_db_session),
-) -> Customer:
+) -> CustomerWithMembers:
     """Update a customer by external ID."""
     customer = await customer_service.get_external(session, auth_subject, external_id)
 
     if customer is None:
         raise ResourceNotFound()
 
-    return await customer_service.update(session, customer, customer_update)
+    updated_customer = await customer_service.update(session, customer, customer_update)
+
+    customer_dict = CustomerSchema.model_validate(updated_customer).model_dump()
+    if include_members:
+        customer_dict["members"] = await customer_service.load_members(
+            session, updated_customer.id
+        )
+    else:
+        customer_dict["members"] = []
+    return CustomerWithMembers(**customer_dict)
 
 
 @router.delete(

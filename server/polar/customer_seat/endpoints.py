@@ -1,7 +1,7 @@
 from typing import Annotated, cast
-from uuid import UUID
 
 from fastapi import Depends, Query, Request
+from pydantic import UUID4
 from sqlalchemy.orm import joinedload
 from sse_starlette import EventSourceResponse
 
@@ -11,7 +11,7 @@ from polar.checkout.repository import CheckoutRepository
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
-from polar.models import Order, Product, Subscription
+from polar.models import CustomerSeat, Order, Product, Subscription
 from polar.models.customer_seat import SeatStatus
 from polar.openapi import APITag
 from polar.order.repository import OrderRepository
@@ -57,6 +57,12 @@ async def assign_seat(
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatSchema:
+    # Prevent anonymous users from using immediate_claim
+    if isinstance(auth_subject.subject, Anonymous) and seat_assign.immediate_claim:
+        raise NotPermitted(
+            "Anonymous users cannot use immediate_claim. This feature is only available for authenticated API access."
+        )
+
     subscription: Subscription | None = None
     order: Order | None = None
 
@@ -140,6 +146,7 @@ async def assign_seat(
         external_customer_id=seat_assign.external_customer_id,
         customer_id=seat_assign.customer_id,
         metadata=seat_assign.metadata,
+        immediate_claim=seat_assign.immediate_claim,
     )
 
     return CustomerSeatSchema.model_validate(seat)
@@ -158,8 +165,8 @@ async def assign_seat(
 async def list_seats(
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    subscription_id: Annotated[str | None, Query()] = None,
-    order_id: Annotated[str | None, Query()] = None,
+    subscription_id: Annotated[UUID4 | None, Query()] = None,
+    order_id: Annotated[UUID4 | None, Query()] = None,
 ) -> SeatsList:
     if isinstance(auth_subject.subject, Anonymous):
         raise NotPermitted("Authentication required")
@@ -176,7 +183,7 @@ async def list_seats(
         statement = (
             subscription_repository.get_readable_statement(typed_auth_subject)
             .options(*subscription_repository.get_eager_options())
-            .where(Subscription.id == UUID(subscription_id))
+            .where(Subscription.id == subscription_id)
         )
         subscription = await subscription_repository.get_one_or_none(statement)
 
@@ -191,7 +198,7 @@ async def list_seats(
         order_statement = (
             order_repository.get_readable_statement(typed_auth_subject)
             .options(*order_repository.get_eager_options())
-            .where(Order.id == UUID(order_id))
+            .where(Order.id == order_id)
         )
         order = await order_repository.get_one_or_none(order_statement)
 
@@ -227,10 +234,10 @@ async def list_seats(
     },
 )
 async def revoke_seat(
-    seat_id: str,
+    seat_id: UUID4,
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-) -> CustomerSeatSchema:
+) -> CustomerSeat:
     if isinstance(auth_subject.subject, Anonymous):
         raise NotPermitted("Authentication required")
 
@@ -239,7 +246,7 @@ async def revoke_seat(
 
     seat = await seat_repository.get_by_id_and_auth_subject(
         typed_auth_subject,
-        UUID(seat_id),
+        seat_id,
         options=seat_repository.get_eager_options(),
     )
 
@@ -255,10 +262,7 @@ async def revoke_seat(
 
     await seat_service.check_seat_feature_enabled(session, organization_id)
 
-    revoked_seat = await seat_service.revoke_seat(session, seat)
-    await session.commit()
-
-    return CustomerSeatSchema.model_validate(revoked_seat)
+    return await seat_service.revoke_seat(session, seat)
 
 
 @router.post(
@@ -273,10 +277,10 @@ async def revoke_seat(
     },
 )
 async def resend_invitation(
-    seat_id: str,
+    seat_id: UUID4,
     auth_subject: SeatWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-) -> CustomerSeatSchema:
+) -> CustomerSeat:
     if isinstance(auth_subject.subject, Anonymous):
         raise NotPermitted("Authentication required")
 
@@ -285,7 +289,7 @@ async def resend_invitation(
 
     seat = await seat_repository.get_by_id_and_auth_subject(
         typed_auth_subject,
-        UUID(seat_id),
+        seat_id,
         options=seat_repository.get_eager_options(),
     )
 
@@ -301,10 +305,7 @@ async def resend_invitation(
 
     await seat_service.check_seat_feature_enabled(session, organization_id)
 
-    resent_seat = await seat_service.resend_invitation(session, seat)
-    await session.commit()
-
-    return CustomerSeatSchema.model_validate(resent_seat)
+    return await seat_service.resend_invitation(session, seat)
 
 
 @router.get(

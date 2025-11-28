@@ -11,10 +11,11 @@ from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
-from polar.kit.email import EmailStrDNS
-from polar.kit.metadata import MetadataOutputMixin
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
+    CUSTOMER_ID_EXAMPLE,
     METER_ID_EXAMPLE,
+    PRODUCT_ID_EXAMPLE,
     IDSchema,
     MergeJSONSchema,
     Schema,
@@ -113,13 +114,13 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     )
     checkout_id: UUID4 | None
 
+    seats: int | None = Field(
+        default=None,
+        description="The number of seats for seat-based subscriptions. None for non-seat subscriptions.",
+    )
+
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
-
-    seats: int | None = Field(
-        None,
-        description="Number of seats included in the subscription (for seat-based pricing).",
-    )
 
     price_id: SkipJsonSchema[UUID4] = Field(
         deprecated="Use `prices` instead.",
@@ -215,17 +216,48 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
     )
 
 
-class SubscriptionCreateEmail(Schema):
-    """Request schema for creating a subscription by email."""
-
-    email: EmailStrDNS = Field(description="The email address of the user.")
+class SubscriptionCreateBase(MetadataInputMixin, Schema):
     product_id: UUID4 = Field(
-        description="The ID of the product. **Must be the free subscription tier**."
+        description=(
+            "The ID of the recurring product to subscribe to. "
+            "Must be a free product, otherwise the customer should go through a checkout flow."
+        ),
+        examples=[PRODUCT_ID_EXAMPLE],
     )
 
 
+class SubscriptionCreateCustomer(SubscriptionCreateBase):
+    """
+    Create a subscription for an existing customer.
+    """
+
+    customer_id: UUID4 = Field(
+        description="The ID of the customer to create the subscription for.",
+        examples=[CUSTOMER_ID_EXAMPLE],
+    )
+
+
+class SubscriptionCreateExternalCustomer(SubscriptionCreateBase):
+    """
+    Create a subscription for an existing customer identified by an external ID.
+    """
+
+    external_customer_id: str = Field(
+        description=(
+            "The ID of the customer in your system to create the subscription for. "
+            "It must already exist in Polar."
+        )
+    )
+
+
+SubscriptionCreate = SubscriptionCreateCustomer | SubscriptionCreateExternalCustomer
+
+
 class SubscriptionUpdateProduct(Schema):
-    product_id: UUID4 = Field(description="Update subscription to another product.")
+    product_id: UUID4 = Field(
+        description="Update subscription to another product.",
+        examples=[PRODUCT_ID_EXAMPLE],
+    )
     proration_behavior: SubscriptionProrationBehavior | None = Field(
         default=None,
         description=(
@@ -251,6 +283,32 @@ class SubscriptionUpdateTrial(Schema):
             "Set or extend the trial period of the subscription. "
             "If set to `now`, the trial will end immediately."
         ),
+    )
+
+
+class SubscriptionUpdateSeats(Schema):
+    seats: int = Field(
+        description="Update the number of seats for this subscription.",
+        ge=1,
+    )
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
+
+
+class SubscriptionUpdateBillingPeriod(Schema):
+    current_billing_period_end: FutureDatetime = Field(
+        description=inspect.cleandoc(
+            """
+            Set a new date for the end of the current billing period. The subscription will renew on this date. Needs to be later than the current value.
+
+            It is not possible to update the current billing period on a canceled subscription.
+            """
+        )
     )
 
 
@@ -319,7 +377,26 @@ SubscriptionUpdate = Annotated[
     SubscriptionUpdateProduct
     | SubscriptionUpdateDiscount
     | SubscriptionUpdateTrial
+    | SubscriptionUpdateSeats
+    | SubscriptionUpdateBillingPeriod
     | SubscriptionCancel
     | SubscriptionRevoke,
     SetSchemaReference("SubscriptionUpdate"),
 ]
+
+
+class SubscriptionChargePreview(Schema):
+    """Preview of the next charge for a subscription."""
+
+    base_amount: int = Field(
+        description="Base subscription amount in cents (sum of product prices)"
+    )
+    metered_amount: int = Field(
+        description="Total metered usage charges in cents (sum of all meter charges)"
+    )
+    subtotal_amount: int = Field(
+        description="Subtotal amount in cents (base + metered, before discount and tax)"
+    )
+    discount_amount: int = Field(description="Discount amount in cents")
+    tax_amount: int = Field(description="Tax amount in cents")
+    total_amount: int = Field(description="Total amount in cents (final charge amount)")

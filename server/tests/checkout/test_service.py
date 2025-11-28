@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import ANY, AsyncMock, MagicMock
@@ -12,6 +12,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import Anonymous, AuthSubject
+from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutConfirmStripe,
@@ -26,6 +27,7 @@ from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
     NotConfirmedCheckout,
     NotOpenCheckout,
+    TrialAlreadyRedeemed,
 )
 from polar.checkout.service import checkout as checkout_service
 from polar.config import Environment, settings
@@ -44,6 +46,7 @@ from polar.kit.tax import (
     calculate_tax,
 )
 from polar.kit.trial import TrialInterval
+from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import (
     Account,
@@ -62,7 +65,9 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal
+from polar.models.organization import OrganizationStatus
 from polar.models.product_price import (
+    ProductPriceAmountType,
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceFree,
@@ -72,8 +77,10 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
 from polar.order.service import OrderService
 from polar.postgres import AsyncSession
-from polar.product.guard import is_fixed_price, is_metered_price
+from polar.product.guard import is_fixed_price, is_metered_price, is_seat_price
+from polar.product.schemas import ProductPriceFixedCreate
 from polar.subscription.service import SubscriptionService
+from polar.trial_redemption.repository import TrialRedemptionRepository
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -87,6 +94,7 @@ from tests.fixtures.random_objects import (
     create_product_price_fixed,
     create_product_price_seat_unit,
     create_subscription,
+    create_trial_redemption,
 )
 
 MINIMUM_AMOUNT = 2500
@@ -1645,6 +1653,79 @@ class TestCreate:
         assert checkout.seats == seats
         assert checkout.amount == price.calculate_amount(seats)
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_ad_hoc_prices(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product: Product,
+        product_one_time: Product,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductsCreate(
+                    products=[product.id],
+                    prices={
+                        product_one_time.id: [
+                            ProductPriceFixedCreate(
+                                amount_type=ProductPriceAmountType.fixed,
+                                price_amount=100_00,
+                                price_currency="usd",
+                            ),
+                        ]
+                    },
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_ad_hoc_prices(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product.id],
+                prices={
+                    product.id: [
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=100_00,
+                            price_currency="usd",
+                        ),
+                    ]
+                },
+            ),
+            auth_subject,
+        )
+
+        checkout_products = checkout.checkout_products
+        assert len(checkout_products) == 1
+        checkout_product = checkout_products[0]
+        assert checkout_product.product == product
+        assert len(checkout_product.ad_hoc_prices) == 1
+        ad_hoc_price = checkout_product.ad_hoc_prices[0]
+        assert isinstance(ad_hoc_price, ProductPriceFixed)
+        assert ad_hoc_price.price_amount == 100_00
+        assert ad_hoc_price.price_currency == "usd"
+
+        assert checkout.product == product
+        assert checkout.products == [product]
+        assert checkout.product_price == ad_hoc_price
+        assert checkout.currency == ad_hoc_price.price_currency
+
 
 @pytest.mark.asyncio
 class TestClientCreate:
@@ -2140,6 +2221,7 @@ class TestUpdate:
         locker: Locker,
         checkout_one_time_custom: Checkout,
     ) -> None:
+        assert has_product_checkout(checkout_one_time_custom)
         price = checkout_one_time_custom.product.prices[0]
         assert isinstance(price, ProductPriceCustom)
         price.minimum_amount = 1000
@@ -2823,6 +2905,7 @@ class TestUpdate:
         checkout_recurring_fixed: Checkout,
         customer: Customer,
     ) -> None:
+        assert has_product_checkout(checkout_recurring_fixed)
         organization.subscription_settings = {
             **organization.subscription_settings,
             "allow_multiple_subscriptions": True,
@@ -2859,6 +2942,7 @@ class TestUpdate:
         checkout_recurring_fixed: Checkout,
         customer: Customer,
     ) -> None:
+        assert has_product_checkout(checkout_recurring_fixed)
         organization.subscription_settings = {
             **organization.subscription_settings,
             "allow_multiple_subscriptions": False,
@@ -2968,6 +3052,116 @@ class TestUpdate:
                 checkout_seat_based,
                 CheckoutUpdate(seats=0),
             )
+
+    async def test_switching_to_seat_based_product_initializes_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_one_time: Product,
+        product_seat_based: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time, product_seat_based],
+        )
+
+        assert checkout.product == product_one_time
+        assert checkout.seats is None
+
+        updated_checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout,
+            CheckoutUpdate(product_id=product_seat_based.id),
+        )
+
+        assert updated_checkout.product == product_seat_based
+        assert updated_checkout.seats == 1
+        price = product_seat_based.prices[0]
+        assert is_seat_price(price)
+        assert updated_checkout.amount == price.calculate_amount(1)
+
+    async def test_switching_from_seat_based_to_fixed_clears_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_one_time: Product,
+        product_seat_based: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time, product_seat_based],
+            product=product_seat_based,
+            seats=5,
+        )
+
+        assert checkout.product == product_seat_based
+        assert checkout.seats == 5
+
+        updated_checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout,
+            CheckoutUpdate(product_id=product_one_time.id),
+        )
+
+        assert updated_checkout.product == product_one_time
+        assert updated_checkout.seats is None
+
+    async def test_trial_update(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+
+        previous_trial_end = checkout.trial_end
+        assert previous_trial_end is not None
+
+        updated_checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout,
+            CheckoutUpdate(trial_interval_count=14, trial_interval=TrialInterval.day),
+        )
+
+        assert updated_checkout.trial_end is not None
+        assert updated_checkout.trial_end > previous_trial_end
+        assert updated_checkout.active_trial_interval == TrialInterval.day
+        assert updated_checkout.active_trial_interval_count == 14
+
+    async def test_trial_disable(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_recurring_trial: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_recurring_trial],
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+
+        assert checkout.trial_end is not None
+
+        updated_checkout = await checkout_service.update(
+            session, locker, checkout, CheckoutUpdatePublic(allow_trial=False)
+        )
+
+        assert updated_checkout.trial_end is None
+        assert updated_checkout.active_trial_interval is None
+        assert updated_checkout.active_trial_interval_count is None
 
 
 @pytest.mark.asyncio
@@ -3091,6 +3285,7 @@ class TestConfirm:
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
+        assert has_product_checkout(checkout_one_time_fixed)
         archived_price = await create_product_price_fixed(
             save_fixture, product=checkout_one_time_fixed.product, is_archived=True
         )
@@ -3646,6 +3841,109 @@ class TestConfirm:
         assert checkout.customer is not None
         assert checkout.customer.billing_name == "Example Inc"
 
+    async def test_valid_trial(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        checkout_recurring_fixed: Checkout,
+    ) -> None:
+        organization.subscription_settings["prevent_trial_abuse"] = True
+        await save_fixture(organization)
+
+        checkout_recurring_fixed.trial_end = utc_now() + timedelta(days=14)
+        await save_fixture(checkout_recurring_fixed)
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded", payment_method={}
+        )
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout_recurring_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+
+    @pytest.mark.parametrize(
+        "email,fingerprint",
+        [
+            pytest.param("customer@example.com", None, id="same email"),
+            pytest.param("customer@bar.com", "FINGERPRINT", id="same fingerprint"),
+            pytest.param("customer+alias@example.com", None, id="email alias"),
+        ],
+    )
+    async def test_valid_trial_already_redeemed(
+        self,
+        email: str,
+        fingerprint: str | None,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        checkout_recurring_fixed: Checkout,
+    ) -> None:
+        organization.subscription_settings["prevent_trial_abuse"] = True
+        await save_fixture(organization)
+
+        checkout_recurring_fixed.trial_interval = TrialInterval.day
+        checkout_recurring_fixed.trial_interval_count = 7
+        await save_fixture(checkout_recurring_fixed)
+
+        existing_customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        await create_trial_redemption(
+            save_fixture,
+            customer=existing_customer,
+            customer_email=existing_customer.email,
+            payment_method_fingerprint="FINGERPRINT",
+        )
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            payment_method=SimpleNamespace(
+                card=SimpleNamespace(fingerprint=fingerprint)
+            ),
+        )
+
+        with pytest.raises(TrialAlreadyRedeemed):
+            await checkout_service.confirm(
+                session,
+                locker,
+                auth_subject,
+                checkout_recurring_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": email,
+                        "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
+
     async def test_existing_email_external_id_provided(
         self,
         save_fixture: SaveFixture,
@@ -3791,7 +4089,7 @@ class TestConfirm:
     ) -> None:
         # Make organization not payment ready (new org without account setup)
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.CREATED
+        organization.status = OrganizationStatus.CREATED
         organization.account_id = None
         await save_fixture(organization)
 
@@ -3805,6 +4103,7 @@ class TestConfirm:
                 CheckoutConfirm(
                     customer_email="test@example.com",
                     customer_name="Test Customer",
+                    confirmation_token_id=None,
                 ),
             )
 
@@ -3821,7 +4120,7 @@ class TestConfirm:
     ) -> None:
         # Make organization not payment ready (new org without account setup)
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.CREATED
+        organization.status = OrganizationStatus.CREATED
         organization.account_id = None
         await save_fixture(organization)
 
@@ -3879,7 +4178,7 @@ class TestConfirm:
     ) -> None:
         # Make organization not payment ready (new org without account setup)
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.CREATED
+        organization.status = OrganizationStatus.CREATED
         organization.account_id = None
         await save_fixture(organization)
 
@@ -3901,6 +4200,7 @@ class TestConfirm:
             CheckoutConfirm(
                 customer_email="test@example.com",
                 customer_name="Test Customer",
+                confirmation_token_id=None,
             ),
         )
 
@@ -3918,7 +4218,7 @@ class TestConfirm:
     ) -> None:
         # Make organization not payment ready
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.CREATED
+        organization.status = OrganizationStatus.CREATED
         organization.account_id = None
         await save_fixture(organization)
 
@@ -3957,7 +4257,7 @@ class TestConfirm:
     ) -> None:
         # Make organization grandfathered (created before cutoff)
         organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
-        organization.status = Organization.Status.CREATED
+        organization.status = OrganizationStatus.CREATED
         organization.account_id = None
         await save_fixture(organization)
 
@@ -4014,7 +4314,7 @@ class TestConfirm:
     ) -> None:
         # Make organization new (not grandfathered)
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
-        organization.status = Organization.Status.ACTIVE
+        organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore
 
@@ -4126,6 +4426,50 @@ class TestHandleSuccess:
             OrderBillingReasonInternal.subscription_create,
             payment,
         )
+
+    async def test_recurring_trial(
+        self,
+        save_fixture: SaveFixture,
+        order_service_mock: MagicMock,
+        subscription_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_recurring: Checkout,
+        customer: Customer,
+        payment: Payment,
+    ) -> None:
+        subscription_mock = MagicMock()
+        subscription_service_mock.create_or_update_from_checkout.return_value = (
+            subscription_mock,
+            True,
+        )
+
+        checkout_confirmed_recurring.trial_end = utc_now() + timedelta(days=14)
+        checkout_confirmed_recurring.customer = customer
+        await save_fixture(checkout_confirmed_recurring)
+
+        checkout = await checkout_service.handle_success(
+            session, checkout_confirmed_recurring, payment
+        )
+
+        assert checkout.status == CheckoutStatus.succeeded
+        subscription_service_mock.create_or_update_from_checkout.assert_called_once_with(
+            ANY, checkout, None
+        )
+        order_service_mock.create_from_checkout_subscription.assert_called_once_with(
+            ANY,
+            checkout,
+            subscription_mock,
+            OrderBillingReasonInternal.subscription_create,
+            payment,
+        )
+
+        trial_redemption_repository = TrialRedemptionRepository.from_session(session)
+        trial_redemptions = await trial_redemption_repository.get_all(
+            trial_redemption_repository.get_base_statement()
+        )
+        assert len(trial_redemptions) == 1
+        trial_redemption = trial_redemptions[0]
+        assert trial_redemption.customer_id == customer.id
 
 
 @pytest.mark.asyncio

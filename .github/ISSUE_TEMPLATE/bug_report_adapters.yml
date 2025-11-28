@@ -1,0 +1,59 @@
+name: Bug report (SDK Adapters)
+description: 'Issues related to our adapters, e.g Next.js, BetterAuth etc'
+type: 'Bug'
+labels: ['sdk/adapters']
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description (tl;dr)
+      value: '*Keep it short. More context below.*'
+
+  - type: textarea
+    id: expectation
+    attributes:
+      label: What is the expected behaviour?
+      value: '*Keep it short and clear.*'
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What errors or issues are you experiencing?
+      value: '*Share any relevant code and errors logs*'
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How can it be reproduced?
+      value: '*Appreciated by our team to be able to reproduce it*'
+
+  - type: checkboxes
+    id: affected-adapters
+    attributes:
+      label: Which adapter(s) does this relate to?
+      description: Select all that apply.
+      options:
+        - label: Next.js
+        - label: BetterAuth
+        - label: Nuxt
+        - label: Remix
+        - label: TanStack Start
+        - label: SvelteKit
+        - label: Supabase
+        - label: Astro
+        - label: Deno
+        - label: Elysia
+        - label: Express
+        - label: Fastify
+        - label: Hono
+        - label: Others (please specify in the description)
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: What environment are you running it in?
+      value: '*Detail the environment it happens in, e.g Vercel, Cloudflare Workers, Supabase?'
+  
+  - type: markdown
+    attributes:
+      value: '#### *Thank you* for your bug report – we appreciate it!'

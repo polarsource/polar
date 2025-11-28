@@ -16,7 +16,6 @@ from polar.order.service import (
     NotPaidOrder,
     PaymentAlreadyInProgress,
 )
-from polar.organization.schemas import OrganizationID
 from polar.payment.repository import PaymentRepository
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
@@ -50,9 +49,6 @@ async def list(
     auth_subject: auth.CustomerPortalRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
     product_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
@@ -78,7 +74,6 @@ async def list(
     results, count = await customer_order_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
         product_id=product_id,
         product_billing_type=product_billing_type,
         subscription_id=subscription_id,

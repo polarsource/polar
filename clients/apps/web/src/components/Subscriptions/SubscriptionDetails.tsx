@@ -134,7 +134,10 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
           label="Amount"
           value={
             subscription.amount
-              ? formatCurrencyAndAmount(subscription.amount)
+              ? formatCurrencyAndAmount(
+                  subscription.amount,
+                  subscription.currency,
+                )
               : '—'
           }
         />

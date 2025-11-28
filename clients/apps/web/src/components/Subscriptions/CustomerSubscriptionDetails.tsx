@@ -11,11 +11,12 @@ import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import CustomerPortalSubscription from '../CustomerPortal/CustomerPortalSubscription'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
@@ -40,8 +41,10 @@ const CustomerSubscriptionDetails = ({
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
 
-  const themePreset = useThemePreset(
-    subscription.product.organization.slug === 'midday' ? 'midday' : 'polar',
+  const theme = useTheme()
+  const themePreset = getThemePreset(
+    subscription.product.organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
   )
 
   const {
@@ -61,11 +64,13 @@ const CustomerSubscriptionDetails = ({
   const organization = subscription.product.organization
 
   const uncancelSubscription = useCustomerUncancelSubscription(api)
+  const router = useRouter()
 
   const primaryAction = useMemo(() => {
     if (
-      organization.subscription_settings.allow_customer_updates &&
-      !isCanceled
+      organization.allow_customer_updates &&
+      !isCanceled &&
+      subscription.status !== 'trialing'
     ) {
       return {
         label: 'Change Plan',
@@ -87,12 +92,13 @@ const CustomerSubscriptionDetails = ({
         onClick: async () => {
           await uncancelSubscription.mutateAsync({ id: subscription.id })
           await revalidate(`customer_portal`)
+          router.refresh()
         },
       }
     }
 
     return null
-  }, [subscription, isCanceled, organization, uncancelSubscription])
+  }, [subscription, isCanceled, organization, uncancelSubscription, router])
 
   const subscriptionBaseAmount = useMemo(() => {
     const price = subscription.product.prices.find(
@@ -116,12 +122,7 @@ const CustomerSubscriptionDetails = ({
   }
 
   return (
-    <ShadowBox
-      className={twMerge(
-        'flex w-full flex-col gap-y-6 dark:border-transparent',
-        themePreset.polar.well,
-      )}
-    >
+    <ShadowBox className="dark:bg-polar-900 flex w-full flex-col gap-y-6 bg-gray-50 dark:border-transparent">
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
           <h3 className="truncate text-2xl">{subscription.product.name}</h3>
@@ -147,7 +148,6 @@ const CustomerSubscriptionDetails = ({
                 currency={subscription.currency}
                 interval={subscription.recurring_interval}
                 intervalCount={subscription.recurring_interval_count}
-                minimumFractionDigits={subscription.amount % 100 === 0 ? 0 : 2}
               />
             </span>
           ) : (
@@ -242,16 +242,12 @@ const CustomerSubscriptionDetails = ({
           <Button
             onClick={primaryAction.onClick}
             loading={primaryAction.loading}
-            className={themePreset.polar.button}
           >
             {primaryAction.label}
           </Button>
         )}
         <Button
-          className={twMerge(
-            'hidden md:flex',
-            themePreset.polar.buttonSecondary,
-          )}
+          className="hidden md:flex"
           variant="secondary"
           onClick={showBenefitGrantsModal}
         >
@@ -261,19 +257,13 @@ const CustomerSubscriptionDetails = ({
           className="md:hidden"
           href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
         >
-          <Button
-            variant="secondary"
-            className={themePreset.polar.buttonSecondary}
-          >
-            View Subscription
-          </Button>
+          <Button variant="secondary">View Subscription</Button>
         </Link>
         <CustomerCancellationModal
           isShown={showCancelModal}
           hide={() => setShowCancelModal(false)}
           subscription={subscription}
           cancelSubscription={cancelSubscription}
-          themingPreset={themePreset}
         />
       </div>
 
@@ -288,7 +278,6 @@ const CustomerSubscriptionDetails = ({
             subscription={subscription}
             hide={() => setShowChangePlanModal(false)}
             onUserSubscriptionUpdate={onUserSubscriptionUpdate}
-            themingPreset={themePreset}
           />
         }
       />
@@ -302,7 +291,6 @@ const CustomerSubscriptionDetails = ({
               api={api}
               customerSessionToken={customerSessionToken}
               subscription={subscription}
-              themingPreset={themePreset}
             />
           </div>
         }

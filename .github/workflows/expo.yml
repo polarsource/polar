@@ -1,0 +1,56 @@
+name: preview
+on:
+  pull_request:
+    paths:
+      - clients/apps/app/**
+
+jobs:
+  update:
+    name: EAS Update
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/clients
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Check for EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "You must provide an EXPO_TOKEN secret linked to this project's Expo account in this repo's secrets. Learn more: https://docs.expo.dev/eas-update/github-actions"
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: clients/.node-version
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          working-directory: ${{ github.workspace }}/clients/apps/app
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Create preview
+        uses: expo/expo-github-action/preview@v8
+        with:
+          working-directory: ${{ github.workspace }}/clients/apps/app
+          command: eas update --auto

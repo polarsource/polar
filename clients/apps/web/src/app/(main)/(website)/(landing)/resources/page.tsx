@@ -56,21 +56,39 @@ const resourceLinks = [
   },
 ]
 
+const comparisonLinks = [
+  {
+    title: 'Polar vs. Stripe',
+    href: '/resources/comparison/stripe',
+    description: 'Compare Polar with Stripe',
+    target: '_blank',
+  },
+
+  {
+    title: 'Polar vs. Paddle',
+    href: '/resources/comparison/paddle',
+    description: 'Compare Polar with Paddle',
+    target: '_blank',
+  },
+  {
+    title: 'Polar vs. Lemon Squeezy',
+    href: '/resources/comparison/lemon-squeezy',
+    description: 'Compare Polar with Lemon Squeezy',
+    target: '_blank',
+  },
+]
 export default function Resources() {
   return (
     <div className="mx-auto flex h-full min-h-screen w-full max-w-6xl flex-col gap-y-8 md:gap-y-16">
       <div className="flex flex-col gap-y-8">
         <h3 className="text-3xl md:text-5xl">Resources</h3>
-        <p className="text-xl text-pretty">
-          Get a better understanding of our platform with these handy resources
-        </p>
       </div>
       <div className="flex flex-col gap-y-8">
         <h3 className="text-2xl">Platform</h3>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {resourceLinks.map((link) => (
             <Link
-              key={link.title}
+              key={link.title + link.description}
               className="dark:hover:bg-polar-900 dark:border-polar-700 flex w-full cursor-pointer flex-col gap-6 border border-gray-300 p-6 transition-colors duration-200 hover:bg-gray-100"
               href={link.href}
               target={link.target}
@@ -87,9 +105,24 @@ export default function Resources() {
         </div>
       </div>
       <div className="flex flex-col gap-y-8">
-        <h3 className="text-2xl">Guides & Tutorials</h3>
-        <div className="flex flex-col items-center justify-center gap-y-4 border border-gray-300 p-16 dark:border-gray-800">
-          <h3 className="font-mono">Coming Soon</h3>
+        <h3 className="text-2xl">Comparisons</h3>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          {comparisonLinks.map((link) => (
+            <Link
+              key={link.title + link.description}
+              className="dark:hover:bg-polar-900 dark:border-polar-700 flex w-full cursor-pointer flex-col gap-6 border border-gray-300 p-6 transition-colors duration-200 hover:bg-gray-100"
+              href={link.href}
+              target={link.target}
+            >
+              <ArrowOutwardOutlined fontSize="inherit" />
+              <div className="flex flex-col gap-2">
+                <h3 className="font-mono text-xl">{link.title}</h3>
+                <p className="dark:text-polar-500 font-sm text-gray-500">
+                  {link.description}
+                </p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </div>

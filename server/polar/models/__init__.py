@@ -20,7 +20,8 @@ from .discount_product import DiscountProduct
 from .discount_redemption import DiscountRedemption
 from .downloadable import Downloadable
 from .email_verification import EmailVerification
-from .event import Event
+from .event import Event, EventClosure
+from .event_type import EventType
 from .external_event import ExternalEvent
 from .file import File
 from .held_balance import HeldBalance
@@ -28,6 +29,7 @@ from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
 from .login_code import LoginCode
+from .member import Member, MemberRole
 from .meter import Meter
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
@@ -67,10 +69,13 @@ from .subscription import Subscription
 from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
 from .transaction import Transaction
+from .trial_redemption import TrialRedemption
 from .user import OAuthAccount, User
 from .user_notification import UserNotification
 from .user_organization import UserOrganization
 from .user_session import UserSession
+from .wallet import Wallet
+from .wallet_transaction import WalletTransaction
 from .webhook_delivery import WebhookDelivery
 from .webhook_endpoint import WebhookEndpoint
 from .webhook_event import WebhookEvent
@@ -99,6 +104,8 @@ __all__ = [
     "Downloadable",
     "EmailVerification",
     "Event",
+    "EventClosure",
+    "EventType",
     "ExternalEvent",
     "File",
     "HeldBalance",
@@ -106,6 +113,8 @@ __all__ = [
     "LicenseKey",
     "LicenseKeyActivation",
     "LoginCode",
+    "Member",
+    "MemberRole",
     "Meter",
     "Notification",
     "NotificationRecipient",
@@ -145,10 +154,13 @@ __all__ = [
     "SubscriptionMeter",
     "SubscriptionProductPrice",
     "Transaction",
+    "TrialRedemption",
     "User",
     "UserNotification",
     "UserOrganization",
     "UserSession",
+    "Wallet",
+    "WalletTransaction",
     "WebhookDelivery",
     "WebhookEndpoint",
     "WebhookEvent",

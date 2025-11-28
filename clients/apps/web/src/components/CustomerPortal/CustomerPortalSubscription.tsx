@@ -17,7 +17,6 @@ import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useState } from 'react'
 import { useModal } from '../Modal/useModal'
@@ -27,18 +26,17 @@ import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { toast } from '../Toast/use-toast'
+import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
 import { SeatManagementTable } from './SeatManagementTable'
 
 const CustomerPortalSubscription = ({
   api,
   customerSessionToken,
   subscription,
-  themingPreset,
 }: {
   api: Client
   customerSessionToken: string
   subscription: schemas['CustomerSubscription']
-  themingPreset: ThemingPresetProps
 }) => {
   const {
     show: showCancelModal,
@@ -152,6 +150,8 @@ const CustomerPortalSubscription = ({
     }
   }
 
+  console.log(seatsData)
+
   const totalSeats = seatsData?.total_seats || 0
   const availableSeats = seatsData?.available_seats || 0
   const seats = seatsData?.seats || []
@@ -237,7 +237,6 @@ const CustomerPortalSubscription = ({
           fullWidth
           onClick={showCancelModal}
           aria-label="Cancel subscription"
-          className={themingPreset.polar.buttonSecondary}
         >
           Cancel Subscription
         </Button>
@@ -245,10 +244,20 @@ const CustomerPortalSubscription = ({
 
       {hasSeatBasedPricing && (
         <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h3 className="text-lg">Seat Management</h3>
+            <CustomerSeatQuantityManager
+              api={api}
+              subscription={subscription}
+              totalSeats={totalSeats}
+              assignedSeats={totalSeats - availableSeats}
+            />
+          </div>
+
           <div className="flex flex-col gap-y-2">
-            <h3 className="text-lg">Seats</h3>
+            <h3 className="text-lg">Invite Members</h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">
-              {availableSeats} of {totalSeats} seats available
+              Send invitations to claim available seats
             </p>
           </div>
           <div className="flex flex-col gap-y-3">
@@ -302,7 +311,7 @@ const CustomerPortalSubscription = ({
         <h3 className="text-lg">Benefit Grants</h3>
         {(benefitGrants?.items.length ?? 0) > 0 ? (
           <div className="flex flex-col gap-4">
-            <List className={themingPreset.polar.list}>
+            <List>
               {benefitGrants?.items.map((benefitGrant) => (
                 <ListItem
                   key={benefitGrant.id}
@@ -327,8 +336,6 @@ const CustomerPortalSubscription = ({
           <div className="flex flex-col gap-y-4">
             <h3 className="text-lg">Invoices</h3>
             <DataTable
-              wrapperClassName={themingPreset.polar.table}
-              headerClassName={themingPreset.polar.tableHeader}
               data={orders.items ?? []}
               isLoading={false}
               columns={[
@@ -365,8 +372,7 @@ const CustomerPortalSubscription = ({
                         customerSessionToken={customerSessionToken}
                         order={row.original}
                         onInvoiceGenerated={refetchOrders}
-                        variant="secondary"
-                        className={themingPreset.polar.buttonSecondary}
+                        dropdown
                       />
                     </span>
                   ),
@@ -382,7 +388,6 @@ const CustomerPortalSubscription = ({
         isShown={cancelModalIsShown}
         hide={hideCancelModal}
         cancelSubscription={cancelSubscription}
-        themingPreset={themingPreset}
       />
     </div>
   )

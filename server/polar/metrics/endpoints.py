@@ -10,6 +10,7 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import (
     MAX_INTERVAL_DAYS,
     MIN_DATE,
+    MIN_INTERVAL_DAYS,
     TimeInterval,
     is_under_limits,
 )
@@ -102,8 +103,11 @@ async def limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
         {
             "min_date": MIN_DATE,
             "intervals": {
-                interval.value: {"max_days": days}
-                for interval, days in MAX_INTERVAL_DAYS.items()
+                interval.value: {
+                    "min_days": MIN_INTERVAL_DAYS[interval],
+                    "max_days": MAX_INTERVAL_DAYS[interval],
+                }
+                for interval in TimeInterval
             },
         }
     )

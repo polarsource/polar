@@ -6,7 +6,6 @@ import httpx
 import logfire
 from fastapi import FastAPI
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk.trace.sampling import (
     ALWAYS_OFF,
     ALWAYS_ON,
@@ -82,10 +81,12 @@ def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
 
 
 def configure_logfire(service_name: Literal["server", "worker"]) -> None:
+    resolved_service_name = os.environ.get("RENDER_SERVICE_NAME", service_name)
+
     logfire.configure(
         send_to_logfire="if-token-present",
         token=settings.LOGFIRE_TOKEN,
-        service_name=service_name,
+        service_name=resolved_service_name,
         service_version=os.environ.get("RELEASE_VERSION", "development"),
         console=False,
         sampling=logfire.SamplingOptions(
@@ -106,8 +107,8 @@ def instrument_fastapi(app: FastAPI) -> None:
     logfire.instrument_fastapi(app, capture_headers=True)
 
 
-def instrument_sqlalchemy(engine: Engine) -> None:
-    SQLAlchemyInstrumentor().instrument(engine=engine)
+def instrument_sqlalchemy(engines: Sequence[Engine]) -> None:
+    logfire.instrument_sqlalchemy(engines=engines)
 
 
 __all__ = [

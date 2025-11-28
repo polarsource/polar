@@ -4,10 +4,10 @@ from uuid import UUID
 import stripe as stripe_lib
 from sqlalchemy import select
 
-from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.models import Pledge, Transaction
+from polar.kit.math import polar_round
+from polar.models import Transaction
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
@@ -16,6 +16,12 @@ from .base import BaseTransactionService, BaseTransactionServiceError
 
 
 class PaymentTransactionError(BaseTransactionServiceError): ...
+
+
+class BalanceTransactionNotAvailableError(PaymentTransactionError):
+    def __init__(self, charge_id: str) -> None:
+        message = f"Balance transaction not available for charge {charge_id}"
+        super().__init__(message)
 
 
 class PaymentTransactionService(BaseTransactionService):
@@ -41,18 +47,23 @@ class PaymentTransactionService(BaseTransactionService):
     async def create_payment(
         self, session: AsyncSession, *, charge: stripe_lib.Charge
     ) -> Transaction:
-        pledge: Pledge | None = None
-
         # Make sure we don't already have this transaction
         existing_transaction = await self.get_by_charge_id(session, charge.id)
         if existing_transaction is not None:
             return existing_transaction
 
+        # We need the balance transaction to have the actual settlement amount
+        if charge.balance_transaction is None:
+            raise BalanceTransactionNotAvailableError(charge.id)
+
+        balance_transaction = await stripe_service.get_balance_transaction(
+            get_expandable_id(charge.balance_transaction)
+        )
+
         # Retrieve tax amount and country
         tax_amount = 0
         tax_country = None
         tax_state = None
-        pledge_invoice = False
         # Polar Custom Checkout sets tax info in metadata
         if "tax_amount" in charge.metadata:
             tax_amount = int(charge.metadata["tax_amount"])
@@ -70,32 +81,34 @@ class PaymentTransactionService(BaseTransactionService):
                 tax_country = tax_rate.country
                 tax_state = tax_rate.state
 
-            if (
-                stripe_invoice.metadata
-                and stripe_invoice.metadata.get("type") == ProductType.pledge
-            ):
-                pledge_invoice = True
+        settlement_amount = balance_transaction.amount
+        settlement_currency = balance_transaction.currency
+        exchange_rate = balance_transaction.exchange_rate or 1.0
+        settlement_tax_amount = polar_round(tax_amount * exchange_rate)
 
         risk = getattr(charge, "outcome", {})
         transaction = Transaction(
             type=TransactionType.payment,
             processor=Processor.stripe,
-            currency=charge.currency,
-            amount=charge.amount - tax_amount,
-            account_currency=charge.currency,
-            account_amount=charge.amount - tax_amount,
-            tax_amount=tax_amount,
+            currency=settlement_currency,
+            amount=settlement_amount - settlement_tax_amount,
+            account_currency=settlement_currency,
+            account_amount=settlement_amount - settlement_tax_amount,
+            tax_amount=settlement_tax_amount,
             tax_country=tax_country,
             tax_state=tax_state if tax_country in {"US", "CA"} else None,
+            presentment_currency=charge.currency,
+            presentment_amount=charge.amount - tax_amount,
+            presentment_tax_amount=tax_amount,
             customer_id=get_expandable_id(charge.customer) if charge.customer else None,
             charge_id=charge.id,
-            pledge=pledge,
             risk_level=risk.get("risk_level"),
             risk_score=risk.get("risk_score"),
             # Filled when we handle the invoice
             order=None,
             payment_customer=None,
             # Legacy fields for pledges
+            pledge=None,
             payment_organization=None,
             payment_user=None,
         )

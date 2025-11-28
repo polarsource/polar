@@ -10,6 +10,7 @@ class Scope(StrEnum):
     profile = "profile"
     email = "email"
     user_read = "user:read"
+    user_write = "user:write"
 
     web_read = "web:read"  # Read-only web access
     web_write = "web:write"  # Write web access
@@ -55,6 +56,12 @@ class Scope(StrEnum):
 
     customers_read = "customers:read"
     customers_write = "customers:write"
+
+    members_read = "members:read"
+    members_write = "members:write"
+
+    wallets_read = "wallets:read"
+    wallets_write = "wallets:write"
 
     customer_meters_read = "customer_meters:read"
 
@@ -114,6 +121,7 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.web_read: "Web Read Access",
     Scope.web_write: "Web Write Access",
     Scope.user_read: "User Read",
+    Scope.user_write: "Delete your user account",
     Scope.organizations_read: "Read your organizations",
     Scope.organizations_write: "Create or modify organizations",
     Scope.custom_fields_read: "Read custom fields",
@@ -144,6 +152,10 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     ),
     Scope.customers_read: "Read customers",
     Scope.customers_write: "Create or modify customers",
+    Scope.members_read: "Read members",
+    Scope.members_write: "Create or modify members",
+    Scope.wallets_read: "Read wallets",
+    Scope.wallets_write: "Create or modify wallets",
     Scope.customer_meters_read: "Read customer meters",
     Scope.customer_sessions_write: "Create or modify customer sessions",
     Scope.customer_seats_read: "Read customer seats",

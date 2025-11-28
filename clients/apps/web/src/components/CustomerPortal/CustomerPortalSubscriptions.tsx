@@ -4,7 +4,9 @@ import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
+import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
@@ -13,7 +15,7 @@ import CustomerPortalSubscription from './CustomerPortalSubscription'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
 
 interface SubscriptionsOverviewProps {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   subscriptions: schemas['CustomerSubscription'][]
   products: schemas['CustomerProduct'][]
   api: Client
@@ -56,7 +58,7 @@ export const ActiveSubscriptionsOverview = ({
 }
 
 interface SubscriptionsOverviewProps {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   subscriptions: schemas['CustomerSubscription'][]
 }
 
@@ -66,8 +68,11 @@ export const InactiveSubscriptionsOverview = ({
   api,
   customerSessionToken,
 }: SubscriptionsOverviewProps) => {
-  const themingPreset = useThemePreset(
-    organization.slug === 'midday' ? 'midday' : 'polar',
+  const router = useRouter()
+  const theme = useTheme()
+  const themingPreset = getThemePreset(
+    organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
   )
 
   const [selectedSubscription, setSelectedSubscription] = useState<
@@ -138,8 +143,6 @@ export const InactiveSubscriptionsOverview = ({
         <h3 className="text-xl">Inactive Subscriptions</h3>
       </div>
       <DataTable
-        wrapperClassName={themingPreset.polar.table}
-        headerClassName={themingPreset.polar.tableHeader}
         data={subscriptions ?? []}
         isLoading={false}
         columns={[
@@ -160,13 +163,16 @@ export const InactiveSubscriptionsOverview = ({
           {
             accessorKey: 'ended_at',
             header: 'Ended At',
-            cell: ({ row }) => (
-              <FormattedDateTime
-                datetime={row.original.ended_at ?? '—'}
-                dateStyle="medium"
-                resolution="day"
-              />
-            ),
+            cell: ({ row }) =>
+              row.original.ended_at ? (
+                <FormattedDateTime
+                  datetime={row.original.ended_at}
+                  dateStyle="medium"
+                  resolution="day"
+                />
+              ) : (
+                '—'
+              ),
           },
           {
             accessorKey: 'id',
@@ -206,7 +212,6 @@ export const InactiveSubscriptionsOverview = ({
                 api={api}
                 customerSessionToken={customerSessionToken}
                 subscription={selectedSubscription}
-                themingPreset={themingPreset}
               />
             </div>
           ) : (
@@ -224,6 +229,7 @@ export const InactiveSubscriptionsOverview = ({
           onSuccess={async () => {
             hideRetryPaymentModal()
             await revalidate(`customer_portal`)
+            router.refresh()
           }}
           themingPreset={themingPreset}
         />

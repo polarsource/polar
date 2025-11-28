@@ -6,9 +6,9 @@ import { type Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
-import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js'
+import { loadStripe } from '@stripe/stripe-js'
 import { useMemo, useState } from 'react'
-import { Modal, ModalHeader } from '../Modal'
+import { Modal } from '../Modal'
 import { OrderPaymentRetry } from './OrderPaymentRetry'
 import { SavedCardsSelector } from './SavedCardsSelector'
 
@@ -40,25 +40,10 @@ export const OrderPaymentRetryModal = ({
     (pm): pm is schemas['PaymentMethodCard'] => pm.type === 'card',
   )
 
-  const stripePromise = useMemo(() => {
-    const key = process.env.NEXT_PUBLIC_STRIPE_KEY
-    if (!key) {
-      console.error('NEXT_PUBLIC_STRIPE_KEY is not set')
-      return null
-    }
-    return loadStripe(key)
-  }, [])
-
-  const elementsOptions: StripeElementsOptions = useMemo(() => {
-    return {
-      mode: 'payment',
-      amount: order.total_amount,
-      currency: order.currency,
-      setupFutureUsage: 'off_session',
-      paymentMethodCreation: 'manual',
-      appearance: themingPreset.stripe,
-    }
-  }, [order.total_amount, order.currency])
+  const stripePromise = useMemo(
+    () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
+    [],
+  )
 
   const handleClose = () => {
     setError('')
@@ -91,13 +76,11 @@ export const OrderPaymentRetryModal = ({
 
   return (
     <Modal
+      title="Update Payment Method"
       isShown={isOpen}
       hide={handleClose}
       modalContent={
         <>
-          <ModalHeader hide={handleClose}>
-            <h3 className="text-lg font-semibold">Update Payment Method</h3>
-          </ModalHeader>
           <div className="space-y-4 p-6">
             {/* Error State */}
             {error && (
@@ -137,7 +120,18 @@ export const OrderPaymentRetryModal = ({
                 )}
 
                 {useNewCard && stripePromise && (
-                  <Elements stripe={stripePromise} options={elementsOptions}>
+                  <Elements
+                    stripe={stripePromise}
+                    options={{
+                      locale: 'en',
+                      mode: 'payment',
+                      amount: order.total_amount,
+                      currency: order.currency,
+                      setupFutureUsage: 'off_session',
+                      paymentMethodCreation: 'manual',
+                      appearance: themingPreset.stripe,
+                    }}
+                  >
                     <ElementsConsumer>
                       {({ stripe, elements }) => (
                         <OrderPaymentRetry

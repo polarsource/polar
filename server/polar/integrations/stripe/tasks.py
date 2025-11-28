@@ -37,6 +37,12 @@ from polar.transaction.service.dispute import (
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
+from polar.transaction.service.payment import (
+    BalanceTransactionNotAvailableError,
+)
+from polar.transaction.service.payment import (
+    payment_transaction as payment_transaction_service,
+)
 from polar.user.service import user as user_service
 from polar.worker import (
     AsyncSessionMaker,
@@ -124,8 +130,6 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
                         await subscription_service.update_payment_method_from_retry(
                             session, order.subscription, payment_method
                         )
-
-                    await session.commit()
                 return
 
 
@@ -170,6 +174,10 @@ async def setup_intent_succeeded(event_id: uuid.UUID) -> None:
                 # Raise the exception to be notified about it
                 else:
                     raise
+            except payment.OutdatedCheckoutIntent:
+                # Ignore outdated setup intents
+                # Expected flow after a a trial already redeemed error
+                pass
 
 
 @actor(
@@ -207,7 +215,7 @@ async def charge_pending(event_id: uuid.UUID) -> None:
                 else:
                     raise
             await payment_service.upsert_from_stripe_charge(
-                session, charge, checkout, order
+                session, charge, checkout, None, order
             )
 
 
@@ -243,6 +251,20 @@ async def charge_succeeded(event_id: uuid.UUID) -> None:
                 # Raise the exception to be notified about it
                 else:
                     raise
+
+
+@actor(actor_name="stripe.webhook.charge.updated", priority=TaskPriority.HIGH)
+@stripe_api_connection_error_retry
+async def charge_updated(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
+            if charge.status != "succeeded":
+                return
+            try:
+                await payment_transaction_service.create_payment(session, charge=charge)
+            except BalanceTransactionNotAvailableError:
+                return
 
 
 @actor(actor_name="stripe.webhook.refund.created", priority=TaskPriority.HIGH)

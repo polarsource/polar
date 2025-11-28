@@ -1,14 +1,17 @@
 import { api } from '@/utils/client'
-import { schemas } from '@polar-sh/client'
+import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import React, { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Modal } from '../Modal'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
 
 interface WithdrawModalProps {
   account: schemas['Account']
+  organization: schemas['Organization']
   isShown: boolean
   hide: () => void
   onSuccess?: (payoutId: string) => void
@@ -16,6 +19,7 @@ interface WithdrawModalProps {
 
 const WithdrawModal: React.FC<WithdrawModalProps> = ({
   account,
+  organization,
   isShown,
   hide,
   onSuccess,
@@ -24,29 +28,35 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [payoutEstimate, setPayoutEstimate] = useState<
     schemas['PayoutEstimate'] | null
   >(null)
+  const canWithdraw = useMemo(
+    () => organization.status === 'active',
+    [organization.status],
+  )
 
   const getPayoutEstimate = useCallback(async () => {
-    const { data, response } = await api.GET('/v1/payouts/estimate', {
+    if (!canWithdraw) {
+      return
+    }
+
+    const { data, error } = await api.GET('/v1/payouts/estimate', {
       params: { query: { account_id: account.id } },
     })
-    if (!response.ok) {
-      const errorBody = await response.json()
-      if (errorBody.error === 'InsufficientBalance') {
-        setErrorMessage(
-          'The balance of this account is insufficient to cover the processing fees.',
-        )
-      } else {
+    if (error) {
+      if (isValidationError(error.detail)) {
         setErrorMessage(
           'An error occurred while trying to compute the processing fees. Please try again later.',
         )
+      } else if (error.detail) {
+        setErrorMessage(error.detail)
       }
+
       return
     }
 
     if (data) {
       setPayoutEstimate(data)
     }
-  }, [account])
+  }, [account, canWithdraw])
 
   useEffect(() => {
     if (isShown) {
@@ -80,17 +90,44 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
   return (
     <Modal
+      title="Withdraw Balance"
       className="min-w-[400px]"
       isShown={isShown}
       hide={hide}
       modalContent={
         <>
-          <div className="overflow-scroll p-8">
+          <div className="overflow-scroll p-6">
+            {!canWithdraw && (
+              <div className="flex flex-col gap-6">
+                <p>
+                  Your organization is currently under review, as part of our
+                  compliance process. Withdrawals are disabled until the review
+                  is complete.
+                </p>
+                <p>
+                  <Link
+                    href="https://polar.sh/docs/merchant-of-record/account-reviews"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button
+                      variant="default"
+                      className="flex flex-row items-center"
+                    >
+                      <span>Learn more</span>
+                      <ArrowOutwardOutlined
+                        className="ml-2"
+                        fontSize="inherit"
+                      />
+                    </Button>
+                  </Link>
+                </p>
+              </div>
+            )}
+
             {errorMessage && (
               <div className="flex flex-col gap-8">
-                <div className="text-red-500 dark:text-red-400">
-                  {errorMessage}
-                </div>
+                <p className="text-black dark:text-white">{errorMessage}</p>
                 <div className="flex flex-row gap-x-4">
                   <Button variant="default" onClick={hide}>
                     Close
@@ -115,6 +152,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                       valueClassName="justify-end"
                       value={formatCurrencyAndAmount(
                         payoutEstimate.gross_amount,
+                        'usd',
                       )}
                     />
                     <DetailRow
@@ -122,12 +160,16 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                       valueClassName="justify-end"
                       value={formatCurrencyAndAmount(
                         payoutEstimate.fees_amount,
+                        'usd',
                       )}
                     />
                     <DetailRow
                       label="Net Amount"
                       valueClassName="justify-end"
-                      value={formatCurrencyAndAmount(payoutEstimate.net_amount)}
+                      value={formatCurrencyAndAmount(
+                        payoutEstimate.net_amount,
+                        'usd',
+                      )}
                     />
                   </div>
                 </div>

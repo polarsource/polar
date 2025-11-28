@@ -62,7 +62,7 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
           {subscriberMetrics.data?.periods.map((period, i) => {
             const activeClass =
               i === subscriberMetrics.data.periods.length - 1
-                ? 'bg-blue-500 dark:bg-blue-500'
+                ? 'bg-blue dark:bg-blue'
                 : 'hover:bg-blue-100 dark:hover:bg-blue-900'
 
             const tooltipContent = `${period.active_subscriptions} in ${period.timestamp.toLocaleDateString(

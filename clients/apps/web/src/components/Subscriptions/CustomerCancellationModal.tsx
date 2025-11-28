@@ -19,7 +19,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
+import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
@@ -42,20 +42,20 @@ const CancellationReasonRadio = ({
 }
 
 interface CustomerCancellationModalProps
-  extends Omit<ModalProps, 'modalContent'> {
+  extends Omit<ModalProps, 'title' | 'modalContent'> {
   subscription: schemas['CustomerSubscription']
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
   onAbort?: () => void
-  themingPreset: ThemingPresetProps
 }
 
 const CustomerCancellationModal = ({
   subscription,
   cancelSubscription,
   onAbort,
-  themingPreset,
   ...props
 }: CustomerCancellationModalProps) => {
+  const router = useRouter()
+
   const handleCancel = useCallback(() => {
     onAbort?.()
     props.hide()
@@ -91,9 +91,10 @@ const CustomerCancellationModal = ({
         title: 'Subscription Cancelled',
         description: `Subscription was cancelled successfully`,
       })
+      router.refresh()
       props.hide()
     },
-    [subscription.id, cancelSubscription, setError, props],
+    [subscription.id, cancelSubscription, setError, props, router],
   )
 
   const onReasonSelect = (value: schemas['CustomerCancellationReason']) => {
@@ -103,6 +104,7 @@ const CustomerCancellationModal = ({
   return (
     <Modal
       {...props}
+      title="Cancel Subscription"
       className="md:min-w-[600px]"
       modalContent={
         <div className="flex flex-col gap-y-6 p-6 sm:p-12">
@@ -185,15 +187,10 @@ const CustomerCancellationModal = ({
                   variant="destructive"
                   loading={cancelSubscription.isPending}
                   disabled={cancelSubscription.isPending}
-                  className={themingPreset.polar.button}
                 >
                   Cancel Subscription
                 </Button>
-                <Button
-                  variant="ghost"
-                  onClick={handleCancel}
-                  className={themingPreset.polar.buttonSecondary}
-                >
+                <Button variant="ghost" onClick={handleCancel}>
                   I&apos;ve changed my mind
                 </Button>
               </div>

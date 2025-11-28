@@ -37,7 +37,7 @@ export const CustomersPage = () => {
           description="Detailed customer profiles, subscription handling, and powerful analytics."
         >
           <GetStartedButton size="lg" text="Get Started" />
-          <Link href="/docs/features/customers">
+          <Link href="/docs/features/customer-management">
             <Button variant="secondary" className="rounded-full" size="lg">
               View Documentation
               <ArrowOutwardOutlined className="ml-2" />

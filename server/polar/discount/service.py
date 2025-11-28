@@ -290,7 +290,8 @@ class DiscountService(ResourceServiceReader[Discount]):
             discount.stripe_coupon_id = new_stripe_coupon.id
         elif "name" in updated_fields:
             await stripe_service.update_coupon(
-                discount.stripe_coupon_id, name=discount.name
+                discount.stripe_coupon_id,
+                name=discount.name[:40],  # Stripe coupon name max length is 40
             )
 
         session.add(discount)
@@ -365,12 +366,13 @@ class DiscountService(ResourceServiceReader[Discount]):
         self,
         session: AsyncSession,
         code: str,
+        organization: Organization,
         product: Product,
         *,
         redeemable: bool = True,
     ) -> Discount | None:
         discount = await self.get_by_code_and_organization(
-            session, code, product.organization, redeemable=redeemable
+            session, code, organization, redeemable=redeemable
         )
 
         if discount is None:

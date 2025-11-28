@@ -50,7 +50,7 @@ export const SubscriptionEventCard = ({
       {subscription ? (
         <Link
           href={`/dashboard/${organization.slug}/subscriptions?subscriptionId=${subscription.id}`}
-          className="flex flex-grow flex-row items-center justify-between gap-x-12"
+          className="flex grow flex-row items-center justify-between gap-x-12"
         >
           <div className="flex flex-row items-center gap-x-4 p-2">
             <div className="flex flex-row items-center gap-x-4">

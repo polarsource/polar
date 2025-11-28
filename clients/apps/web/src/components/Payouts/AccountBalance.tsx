@@ -23,10 +23,6 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     refetch: refetchBalance,
     isLoading,
   } = useTransactionsSummary(account.id)
-  const canWithdraw =
-    organization.status === 'active' &&
-    summary?.balance?.amount &&
-    summary.balance.amount > 1000
 
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const onWithdraw = useCallback(() => {
@@ -55,18 +51,17 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
                 <Skeleton />
               ) : (
                 <>
-                  {formatCurrencyAndAmount(
-                    summary?.balance.amount ?? 0,
-                    summary?.balance.currency,
-                  )}
+                  {summary &&
+                    formatCurrencyAndAmount(
+                      summary.balance.amount,
+                      summary.balance.currency,
+                    )}
                 </>
               )}
             </div>
           </div>
           <div className="flex flex-col items-center gap-2">
-            <Button onClick={onWithdraw} disabled={!canWithdraw}>
-              Withdraw
-            </Button>
+            <Button onClick={onWithdraw}>Withdraw</Button>
             <p className="dark:text-polar-500 text-xs text-gray-500">
               Minimum {formatCurrencyAndAmount(1000, 'usd', 0)}
             </p>
@@ -75,6 +70,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
       </ShadowBoxOnMd>
       <WithdrawModal
         account={account}
+        organization={organization}
         isShown={showConfirmModal}
         hide={() => setShowConfirmModal(false)}
         onSuccess={onWithdrawSuccess}

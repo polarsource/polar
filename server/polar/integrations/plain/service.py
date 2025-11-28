@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 import pycountry
 import pycountry.db
+import structlog
 from babel.numbers import format_currency
 from plain_client import (
     ComponentContainerContentInput,
@@ -27,12 +28,13 @@ from plain_client import (
     CreateThreadInput,
     CustomerIdentifierInput,
     EmailAddressInput,
-    OptionalStringInput,
     Plain,
+    ThreadsFilter,
     UpsertCustomerIdentifierInput,
     UpsertCustomerInput,
     UpsertCustomerOnCreateInput,
     UpsertCustomerOnUpdateInput,
+    UpsertCustomerUpsertCustomer,
 )
 from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager
@@ -47,6 +49,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
@@ -57,6 +60,8 @@ from .schemas import (
     CustomerCardsRequest,
     CustomerCardsResponse,
 )
+
+log = structlog.get_logger(__name__)
 
 
 class PlainServiceError(PolarError): ...
@@ -135,7 +140,7 @@ class PlainService:
         cards = [card for task in tasks if (card := task.result()) is not None]
         return CustomerCardsResponse(cards=cards)
 
-    async def create_account_review_thread(
+    async def create_organization_review_thread(
         self, session: AsyncSession, organization: Organization
     ) -> None:
         if not self.enabled:
@@ -162,7 +167,6 @@ class PlainService:
                         ),
                     ),
                     on_update=UpsertCustomerOnUpdateInput(
-                        external_id=OptionalStringInput(value=str(admin.id)),
                         email=EmailAddressInput(
                             email=admin.email, is_verified=admin.email_verified
                         ),
@@ -174,17 +178,25 @@ class PlainService:
                     organization.account.id, customer_result.error.message
                 )
 
+            match organization.status:
+                case OrganizationStatus.INITIAL_REVIEW:
+                    title = "Initial Account Review"
+                case OrganizationStatus.ONGOING_REVIEW:
+                    title = "Ongoing Account Review"
+                case _:
+                    raise ValueError("Organization is not under review")
+
             thread_result = await plain.create_thread(
                 CreateThreadInput(
-                    customer_identifier=CustomerIdentifierInput(
-                        external_id=str(admin.id)
+                    customer_identifier=self._get_customer_identifier(
+                        customer_result, admin.email
                     ),
-                    title="Account Review",
+                    title=title,
                     label_type_ids=["lt_01JFG7F4N67FN3MAWK06FJ8FPG"],
                     components=[
                         ComponentInput(
                             component_text=ComponentTextInput(
-                                text=f"The organization `{organization.slug}` should be reviewed, as it hit a threshold. It's used by the following organizations:"
+                                text=f"The organization `{organization.slug}` should be reviewed, as it hit a threshold."
                             )
                         ),
                         ComponentInput(
@@ -197,7 +209,7 @@ class PlainService:
                                 link_button_url=settings.generate_backoffice_url(
                                     f"/organizations/{organization.id}"
                                 ),
-                                link_button_label="Review account ↗",
+                                link_button_label="Review organization ↗",
                             )
                         ),
                     ],
@@ -237,7 +249,6 @@ class PlainService:
                         ),
                     ),
                     on_update=UpsertCustomerOnUpdateInput(
-                        external_id=OptionalStringInput(value=str(user.id)),
                         email=EmailAddressInput(
                             email=user.email, is_verified=user.email_verified
                         ),
@@ -253,8 +264,8 @@ class PlainService:
             # Create the thread with detailed appeal information
             thread_result = await plain.create_thread(
                 CreateThreadInput(
-                    customer_identifier=CustomerIdentifierInput(
-                        external_id=str(user.id)
+                    customer_identifier=self._get_customer_identifier(
+                        customer_result, user.email
                     ),
                     title=f"Organization Appeal - {organization.slug}",
                     label_type_ids=["lt_01K3QWYTDV7RSS7MM2RC584X41"],
@@ -325,6 +336,130 @@ class PlainService:
             if thread_result.error is not None:
                 raise AccountReviewThreadCreationError(
                     user.id, thread_result.error.message
+                )
+
+    async def create_organization_deletion_thread(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        requesting_user: User,
+        blocked_reasons: list[str],
+    ) -> None:
+        """Create Plain ticket for organization deletion request."""
+        if not self.enabled:
+            return
+
+        async with self._get_plain_client() as plain:
+            customer_result = await plain.upsert_customer(
+                UpsertCustomerInput(
+                    identifier=UpsertCustomerIdentifierInput(
+                        email_address=requesting_user.email
+                    ),
+                    on_create=UpsertCustomerOnCreateInput(
+                        external_id=str(requesting_user.id),
+                        full_name=requesting_user.email,
+                        email=EmailAddressInput(
+                            email=requesting_user.email,
+                            is_verified=requesting_user.email_verified,
+                        ),
+                    ),
+                    on_update=UpsertCustomerOnUpdateInput(
+                        email=EmailAddressInput(
+                            email=requesting_user.email,
+                            is_verified=requesting_user.email_verified,
+                        ),
+                    ),
+                )
+            )
+            if customer_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    organization.id, customer_result.error.message
+                )
+
+            reasons_text = ", ".join(blocked_reasons) if blocked_reasons else "unknown"
+
+            thread_result = await plain.create_thread(
+                CreateThreadInput(
+                    customer_identifier=self._get_customer_identifier(
+                        customer_result, requesting_user.email
+                    ),
+                    title=f"Organization Deletion Request - {organization.slug}",
+                    label_type_ids=["lt_01JKD9ASBPVX09YYXGHSXZRWSA"],
+                    components=[
+                        ComponentInput(
+                            component_text=ComponentTextInput(
+                                text=f"User has requested deletion of organization `{organization.slug}`."
+                            )
+                        ),
+                        ComponentInput(
+                            component_text=ComponentTextInput(
+                                text=f"Blocked reasons: {reasons_text}",
+                                text_color=ComponentTextColor.MUTED,
+                            )
+                        ),
+                        ComponentInput(
+                            component_spacer=ComponentSpacerInput(
+                                spacer_size=ComponentSpacerSize.M
+                            )
+                        ),
+                        ComponentInput(
+                            component_container=ComponentContainerInput(
+                                container_content=[
+                                    ComponentContainerContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=organization.name or organization.slug
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_divider=ComponentDividerInput(
+                                            divider_spacing_size=ComponentDividerSpacingSize.M
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_row=ComponentRowInput(
+                                            row_main_content=[
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text="Organization ID",
+                                                        text_size=ComponentTextSize.S,
+                                                        text_color=ComponentTextColor.MUTED,
+                                                    )
+                                                ),
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text=str(organization.id)
+                                                    )
+                                                ),
+                                            ],
+                                            row_aside_content=[
+                                                ComponentRowContentInput(
+                                                    component_copy_button=ComponentCopyButtonInput(
+                                                        copy_button_value=str(
+                                                            organization.id
+                                                        ),
+                                                        copy_button_tooltip_label="Copy Organization ID",
+                                                    )
+                                                )
+                                            ],
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_link_button=ComponentLinkButtonInput(
+                                            link_button_url=settings.generate_backoffice_url(
+                                                f"/organizations/{organization.id}"
+                                            ),
+                                            link_button_label="View in Backoffice",
+                                        )
+                                    ),
+                                ]
+                            )
+                        ),
+                    ],
+                )
+            )
+            if thread_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    organization.id, thread_result.error.message
                 )
 
     async def _get_user_card(
@@ -822,7 +957,7 @@ class PlainService:
             (
                 select(Order)
                 .join(Customer, onclause=Customer.id == Order.customer_id)
-                .join(Product, onclause=Product.id == Order.product_id)
+                .join(Product, onclause=Product.id == Order.product_id, isouter=True)
                 .where(func.lower(Customer.email) == email.lower())
             )
             .order_by(Order.created_at.desc())
@@ -1237,6 +1372,56 @@ class PlainService:
             ],
         )
 
+    def _get_customer_identifier(
+        self,
+        customer_result: UpsertCustomerUpsertCustomer,
+        email: str,
+    ) -> CustomerIdentifierInput:
+        """
+        Get customer identifier for Plain thread creation.
+
+        Prefers external_id if set on the customer result, otherwise falls back to email.
+        This handles cases where external_id might not be set on the Plain customer.
+        """
+        if customer_result.customer is None:
+            raise ValueError(
+                "Customer not found when creating thread", customer_result, email
+            )
+
+        if customer_result.customer.external_id:
+            return CustomerIdentifierInput(
+                external_id=customer_result.customer.external_id
+            )
+
+        return CustomerIdentifierInput(email_address=email)
+
+    async def check_thread_exists(self, customer_email: str, thread_title: str) -> bool:
+        """
+        Check if a thread with the given title exists for a customer.
+        Only considers threads that are not done/closed.
+        """
+        if not self.enabled:
+            log.warning("Plain integration is disabled, assuming no thread exists")
+            return False
+
+        log.info("Checking thread existence", customer_email=customer_email)
+
+        async with self._get_plain_client() as plain:
+            user = await plain.customer_by_email(email=customer_email)
+            log.info("User found", user_id=user)
+            if not user:
+                log.warning("User not found", email=customer_email)
+                return False
+            filters = ThreadsFilter(customer_ids=[user.id])
+            threads = await plain.threads(filters=filters)
+            nr_threads = 0
+            for edge in threads.edges:
+                thread = edge.node
+                if thread.title == thread_title:
+                    nr_threads += 1
+            log.info(f"There are {nr_threads} threads for user {customer_email}")
+            return nr_threads > 0
+
     @contextlib.asynccontextmanager
     async def _get_plain_client(self) -> AsyncIterator[Plain]:
         async with httpx.AsyncClient(
@@ -1277,7 +1462,6 @@ class PlainService:
                         ),
                     ),
                     on_update=UpsertCustomerOnUpdateInput(
-                        external_id=OptionalStringInput(value=str(admin.id)),
                         email=EmailAddressInput(
                             email=admin.email, is_verified=admin.email_verified
                         ),
@@ -1291,8 +1475,8 @@ class PlainService:
 
             thread_result = await plain.create_thread(
                 CreateThreadInput(
-                    customer_identifier=CustomerIdentifierInput(
-                        external_id=str(admin.id)
+                    customer_identifier=self._get_customer_identifier(
+                        customer_result, admin.email
                     ),
                     title=title,
                     components=[

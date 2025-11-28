@@ -19,8 +19,6 @@ import {
 } from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-
 export interface AddPaymentMethodModalProps {
   api: Client
   onPaymentMethodAdded: () => void
@@ -29,7 +27,7 @@ export interface AddPaymentMethodModalProps {
     setup_intent: string
   }
   hide: () => void
-  themingPreset: ThemingPresetProps
+  themePreset: ThemingPresetProps
 }
 
 export const AddPaymentMethodModal = ({
@@ -37,7 +35,7 @@ export const AddPaymentMethodModal = ({
   onPaymentMethodAdded,
   setupIntentParams,
   hide,
-  themingPreset,
+  themePreset,
 }: AddPaymentMethodModalProps) => {
   const stripePromise = useMemo(
     () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
@@ -185,7 +183,6 @@ export const AddPaymentMethodModal = ({
 
   return (
     <div className="flex flex-col gap-6 p-8">
-      <h3 className="text-xl">Add Payment Method</h3>
       <Elements
         stripe={stripePromise}
         options={{
@@ -194,7 +191,7 @@ export const AddPaymentMethodModal = ({
           paymentMethodCreation: 'manual',
           setupFutureUsage: 'off_session',
           currency: 'usd',
-          appearance: themingPreset.stripe,
+          appearance: themePreset.stripe,
         }}
       >
         <ElementsConsumer>
@@ -220,17 +217,13 @@ export const AddPaymentMethodModal = ({
               <div className="flex flex-row items-center gap-2">
                 <Button
                   type="submit"
-                  className={twMerge('self-start', themingPreset.polar.button)}
+                  className="self-start"
                   disabled={!stripe || loading}
                   loading={loading}
                 >
                   Add payment method
                 </Button>
-                <Button
-                  variant="ghost"
-                  onClick={hide}
-                  className={themingPreset.polar.buttonSecondary}
-                >
+                <Button variant="ghost" onClick={hide}>
                   Cancel
                 </Button>
               </div>

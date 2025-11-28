@@ -5,8 +5,6 @@ import re
 import pytest
 
 from polar.notifications.notification import (
-    MaintainerAccountReviewedNotificationPayload,
-    MaintainerAccountUnderReviewNotificationPayload,
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
@@ -110,14 +108,6 @@ async def test_all_notification_types() -> None:
             n = MaintainerCreateAccountNotificationPayload(
                 organization_name="John Doe",
                 url="https://example.com/url",
-            )
-        elif notification_type == NotificationType.maintainer_account_under_review:
-            n = MaintainerAccountUnderReviewNotificationPayload(
-                account_type="Stripe Connect Express",
-            )
-        elif notification_type == NotificationType.maintainer_account_reviewed:
-            n = MaintainerAccountReviewedNotificationPayload(
-                account_type="Stripe Connect Express",
             )
         elif notification_type == NotificationType.maintainer_new_product_sale:
             n = MaintainerNewProductSaleNotificationPayload(

@@ -1,9 +1,10 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, overload
 
 from sqlalchemy.orm import Mapped
 from sqlalchemy.util.typing import TypedDict
 
+from polar.kit.address import AddressDict
 from polar.models import Customer, Event, Organization
 from polar.models.benefit import BenefitType
 from polar.models.event import EventSource
@@ -19,6 +20,32 @@ class SystemEvent(StrEnum):
     subscription_cycled = "subscription.cycled"
     subscription_revoked = "subscription.revoked"
     subscription_product_updated = "subscription.product_updated"
+    subscription_seats_updated = "subscription.seats_updated"
+    subscription_billing_period_updated = "subscription.billing_period_updated"
+    order_paid = "order.paid"
+    order_refunded = "order.refunded"
+    customer_created = "customer.created"
+    customer_updated = "customer.updated"
+    customer_deleted = "customer.deleted"
+
+
+SYSTEM_EVENT_LABELS: dict[str, str] = {
+    "benefit.granted": "Benefit Granted",
+    "benefit.cycled": "Benefit Cycled",
+    "benefit.updated": "Benefit Updated",
+    "benefit.revoked": "Benefit Revoked",
+    "subscription.cycled": "Subscription Cycled",
+    "subscription.revoked": "Subscription Revoked",
+    "subscription.product_updated": "Subscription Product Updated",
+    "order.paid": "Order Paid",
+    "order.refunded": "Order Refunded",
+    "subscription.seats_updated": "Subscription Seats Updated",
+    "customer.created": "Customer Created",
+    "customer.updated": "Customer Updated",
+    "customer.deleted": "Customer Deleted",
+    "meter.credited": "Meter Credited",
+    "meter.reset": "Meter Reset",
+}
 
 
 class MeterCreditedMetadata(TypedDict):
@@ -79,6 +106,57 @@ class BenefitRevokedEvent(Event):
         user_metadata: Mapped[BenefitGrantMetadata]  # type: ignore[assignment]
 
 
+class CustomerCreatedMetadata(TypedDict):
+    customer_id: str
+    customer_email: str
+    customer_name: str | None
+    customer_external_id: str | None
+
+
+class CustomerCreatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.customer_created]]
+        user_metadata: Mapped[CustomerCreatedMetadata]  # type: ignore[assignment]
+
+
+class CustomerUpdatedFields(TypedDict):
+    name: NotRequired[str | None]
+    email: NotRequired[str | None]
+    billing_address: NotRequired[AddressDict | None]
+    tax_id: NotRequired[str | None]
+    metadata: NotRequired[dict[str, str | int | bool] | None]
+
+
+class CustomerUpdatedMetadata(TypedDict):
+    customer_id: str
+    customer_email: str
+    customer_name: str | None
+    customer_external_id: str | None
+    updated_fields: CustomerUpdatedFields
+
+
+class CustomerUpdatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.customer_updated]]
+        user_metadata: Mapped[CustomerUpdatedMetadata]  # type: ignore[assignment]
+
+
+class CustomerDeletedMetadata(TypedDict):
+    customer_id: str
+    customer_email: str
+    customer_name: str | None
+    customer_external_id: str | None
+
+
+class CustomerDeletedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.customer_deleted]]
+        user_metadata: Mapped[CustomerDeletedMetadata]  # type: ignore[assignment]
+
+
 class SubscriptionCycledMetadata(TypedDict):
     subscription_id: str
 
@@ -112,6 +190,61 @@ class SubscriptionProductUpdatedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_product_updated]]
         user_metadata: Mapped[SubscriptionProductUpdatedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionSeatsUpdatedMetadata(TypedDict):
+    subscription_id: str
+    old_seats: int
+    new_seats: int
+    proration_behavior: str
+
+
+class SubscriptionSeatsUpdatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_seats_updated]]
+        user_metadata: Mapped[SubscriptionSeatsUpdatedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionBillingPeriodUpdatedMetadata(TypedDict):
+    subscription_id: str
+    old_period_end: str
+    new_period_end: str
+
+
+class SubscriptionBillingPeriodUpdatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_billing_period_updated]]
+        user_metadata: Mapped[SubscriptionBillingPeriodUpdatedMetadata]  # type: ignore[assignment]
+
+
+class OrderPaidMetadata(TypedDict):
+    order_id: str
+    amount: int
+    currency: str
+    backfilled: NotRequired[bool]
+
+
+class OrderPaidEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.order_paid]]
+        user_metadata: Mapped[OrderPaidMetadata]  # type: ignore[assignment]
+
+
+class OrderRefundedMetadata(TypedDict):
+    order_id: str
+    refunded_amount: int
+    currency: str
+    backfilled: NotRequired[bool]
+
+
+class OrderRefundedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.order_refunded]]
+        user_metadata: Mapped[OrderRefundedMetadata]  # type: ignore[assignment]
 
 
 @overload
@@ -170,6 +303,33 @@ def build_system_event(
 
 @overload
 def build_system_event(
+    name: Literal[SystemEvent.customer_created],
+    customer: Customer,
+    organization: Organization,
+    metadata: CustomerCreatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.customer_updated],
+    customer: Customer,
+    organization: Organization,
+    metadata: CustomerUpdatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.customer_deleted],
+    customer: Customer,
+    organization: Organization,
+    metadata: CustomerDeletedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
     name: Literal[SystemEvent.subscription_cycled],
     customer: Customer,
     organization: Organization,
@@ -192,6 +352,42 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionProductUpdatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_seats_updated],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionSeatsUpdatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_billing_period_updated],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionBillingPeriodUpdatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.order_paid],
+    customer: Customer,
+    organization: Organization,
+    metadata: OrderPaidMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.order_refunded],
+    customer: Customer,
+    organization: Organization,
+    metadata: OrderRefundedMetadata,
 ) -> Event: ...
 
 

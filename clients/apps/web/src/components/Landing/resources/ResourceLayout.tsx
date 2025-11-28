@@ -26,17 +26,17 @@ export const ResourceLayout = ({
       <main>
         <div className="mx-auto flex w-full max-w-6xl flex-col px-2 md:px-0">
           {/* Content Card */}
-          <div className="dark:md:bg-polar-900 flex flex-col gap-y-8 rounded-lg border-gray-200 shadow-xs md:gap-y-12 md:border md:bg-white md:p-24 md:px-16 dark:border-gray-800">
+          <div className="dark:md:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-8 rounded-lg border-gray-200 shadow-xs md:gap-y-12 md:border md:bg-white md:p-24 md:px-16">
             {/* Top Section */}
             <div className="flex flex-col">
-              <div className={twMerge('flex flex-col gap-y-8')}>
-                <h1 className="text-5xl leading-tight! text-balance md:text-6xl lg:w-2/3">
+              <div className="flex flex-col gap-y-8 lg:items-center">
+                <h1 className="text-5xl leading-tight! text-balance md:text-6xl lg:w-2/3 lg:text-center">
                   {title}
                 </h1>
               </div>
             </div>
             {toc && (
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              <div className="dark:divide-polar-700 divide-y divide-gray-200">
                 {toc.map((item) => (
                   <button
                     key={item.id}
@@ -68,16 +68,13 @@ export const ResourceSection = ({
   className?: string
 }>) => {
   return (
-    <section
-      id={id}
-      className={twMerge('grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8')}
-    >
-      <div className="sticky top-0 col-span-1 flex h-fit flex-col border-gray-200 pt-4 text-lg md:border-t md:text-base dark:border-gray-700">
+    <section id={id} className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8">
+      <div className="dark:border-polar-700 sticky top-0 col-span-1 flex h-fit flex-col border-gray-200 pt-4 text-lg md:border-t md:text-base">
         <h2>{title}</h2>
       </div>
       <div
         className={twMerge(
-          'col-span-2 flex flex-col gap-y-4 border-t border-gray-200 pt-4 dark:border-gray-700',
+          'dark:border-polar-700 col-span-2 flex flex-col gap-y-4 border-t border-gray-200 pt-4',
           className,
         )}
       >

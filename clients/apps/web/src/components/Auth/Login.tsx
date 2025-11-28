@@ -4,9 +4,10 @@ import { usePostHog, type EventName } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
 import LabeledSeparator from '@polar-sh/ui/components/atoms/LabeledSeparator'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import LoginCodeForm from '../Auth/LoginCodeForm'
+import AppleLoginButton from './AppleLoginButton'
 import GoogleLoginButton from './GoogleLoginButton'
 
 const Login = ({
@@ -20,61 +21,66 @@ const Login = ({
 }) => {
   const posthog = usePostHog()
 
-  let loginProps = {}
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  let eventName: EventName = 'global:user:login:view'
+  const eventName: EventName = signup
+    ? 'global:user:signup:view'
+    : 'global:user:login:view'
 
-  if (!returnTo) {
-    returnTo = `/dashboard`
-  }
+  const resolvedReturnTo = useMemo(() => {
+    const path = returnTo ?? '/dashboard'
 
-  if (signup) {
-    eventName = 'global:user:signup:view'
-
-    signup.path = pathname
-
-    const host = typeof window !== 'undefined' ? window.location.host : ''
-    if (host) {
-      signup.host = host
+    if (returnParams) {
+      const returnToParams = new URLSearchParams(returnParams)
+      if (returnToParams.size) {
+        return `${path}?${returnToParams}`
+      }
     }
 
-    const campaign = searchParams.get('campaign') ?? ''
-    if (campaign) {
-      signup.campaign = campaign
+    return path
+  }, [returnTo, returnParams])
+
+  const loginProps = useMemo(() => {
+    let eventData = {}
+
+    if (signup) {
+      const signupEvent = { ...signup, path: pathname }
+
+      const host = typeof window !== 'undefined' ? window.location.host : ''
+      if (host) {
+        signupEvent.host = host
+      }
+
+      const campaign = searchParams.get('campaign') ?? ''
+      if (campaign) {
+        signupEvent.campaign = campaign
+      }
+
+      const utm = {
+        source: searchParams.get('utm_source') ?? '',
+        medium: searchParams.get('utm_medium') ?? '',
+        campaign: searchParams.get('utm_campaign') ?? '',
+      }
+      if (utm.source) {
+        signupEvent.utm_source = utm.source
+      }
+      if (utm.medium) {
+        signupEvent.utm_medium = utm.medium
+      }
+      if (utm.campaign) {
+        signupEvent.utm_campaign = utm.campaign
+      }
+
+      eventData = { signup: signupEvent }
     }
 
-    const utm = {
-      source: searchParams.get('utm_source') ?? '',
-      medium: searchParams.get('utm_medium') ?? '',
-      campaign: searchParams.get('utm_campaign') ?? '',
-    }
-    if (utm.source) {
-      signup.utm_source = utm.source
-    }
-    if (utm.medium) {
-      signup.utm_medium = utm.medium
-    }
-    if (utm.campaign) {
-      signup.utm_campaign = utm.campaign
-    }
-
-    loginProps = { signup }
-  }
-
-  if (returnTo && returnParams) {
-    const returnToParams = new URLSearchParams(returnParams)
-    if (returnToParams.size) {
-      returnTo = `${returnTo || ''}?${returnToParams}`
-    }
-
-    loginProps = { returnTo, ...loginProps }
-  }
+    return { returnTo: resolvedReturnTo, ...eventData }
+  }, [pathname, resolvedReturnTo, searchParams, signup])
 
   useEffect(() => {
     posthog.capture(eventName, loginProps)
-  }, [])
+  }, [eventName, loginProps, posthog])
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -86,6 +92,7 @@ const Login = ({
           {...loginProps}
         />
         <GoogleLoginButton {...loginProps} />
+        <AppleLoginButton {...loginProps} />
         <LabeledSeparator label="Or" />
         <LoginCodeForm {...loginProps} />
       </div>

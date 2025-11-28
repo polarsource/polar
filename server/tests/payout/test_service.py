@@ -57,10 +57,19 @@ create_balance_transaction = partial(ro.create_balance_transaction, amount=10000
 @pytest.mark.asyncio
 class TestCreate:
     @pytest.mark.parametrize(
-        "balance", [-1000, 0, settings.ACCOUNT_PAYOUT_MINIMUM_BALANCE - 1]
+        "currency,balance",
+        [
+            ("usd", -1000),
+            ("usd", 0),
+            ("usd", settings.get_minimum_payout_for_currency("usd") - 1),
+            ("eur", -1000),
+            ("eur", 0),
+            ("eur", settings.get_minimum_payout_for_currency("eur") - 1),
+        ],
     )
     async def test_insufficient_balance(
         self,
+        currency: str,
         balance: int,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -68,7 +77,9 @@ class TestCreate:
         organization: Organization,
         user: User,
     ) -> None:
-        account = await create_account(save_fixture, organization, user)
+        account = await create_account(
+            save_fixture, organization, user, currency=currency
+        )
         await create_balance_transaction(save_fixture, account=account, amount=balance)
 
         with pytest.raises(InsufficientBalance):
@@ -159,6 +170,41 @@ class TestCreate:
         assert payout.account_amount == 1000
 
         payout_transaction_service_mock.create.assert_called_once()
+
+    async def test_valid_conflicting_invoice_numbers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        user: User,
+        payout_transaction_service_mock: MagicMock,
+    ) -> None:
+        account = await create_account(save_fixture, organization, user)
+
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            # Set an invoice number that would conflict with the next one
+            invoice_number=f"{settings.PAYOUT_INVOICES_PREFIX}0002",
+        )
+
+        payment_transaction_1 = await create_payment_transaction(save_fixture)
+        balance_transaction_1 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_1
+        )
+
+        payment_transaction_2 = await create_payment_transaction(save_fixture)
+        balance_transaction_2 = await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_2
+        )
+
+        payout_transaction_service_mock.create.return_value = Transaction()
+
+        payout = await payout_service.create(session, locker, account=account)
+        await session.flush()
+
+        assert payout.invoice_number == f"{settings.PAYOUT_INVOICES_PREFIX}0003"
 
 
 @pytest.mark.asyncio

@@ -1,7 +1,7 @@
 import { useUpdateOrganization } from '@/hooks/queries'
+import { useAutoSave } from '@/hooks/useAutoSave'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   Form,
@@ -13,11 +13,7 @@ import {
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
-import {
-  SettingsGroup,
-  SettingsGroupActions,
-  SettingsGroupItem,
-} from './SettingsGroup'
+import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationCustomerEmailSettingsProps {
   organization: schemas['Organization']
@@ -79,10 +75,10 @@ const OrganizationCustomerEmailSettings: React.FC<
   const form = useForm<schemas['OrganizationCustomerEmailSettings']>({
     defaultValues: organization.customer_email_settings,
   })
-  const { control, handleSubmit, setError, reset, formState } = form
+  const { control, setError, reset } = form
 
   const updateOrganization = useUpdateOrganization()
-  const onSubmit = async (
+  const onSave = async (
     customer_email_settings: schemas['OrganizationCustomerEmailSettings'],
   ) => {
     const { data, error } = await updateOrganization.mutateAsync({
@@ -98,20 +94,31 @@ const OrganizationCustomerEmailSettings: React.FC<
       } else {
         setError('root', { message: error.detail })
       }
+
+      toast({
+        title: 'Customer Email Settings Update Failed',
+        description: `Error updating customer email settings: ${error.detail}`,
+      })
+
       return
     }
 
     reset(data.customer_email_settings)
-
-    toast({
-      title: 'Settings Updated',
-      description: `Settings were updated successfully`,
-    })
   }
+
+  useAutoSave({
+    form,
+    onSave,
+    delay: 1000,
+  })
 
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+        }}
+      >
         <SettingsGroup>
           {customerEmails.map(({ key, title, description }) => (
             <SettingsGroupItem
@@ -137,17 +144,6 @@ const OrganizationCustomerEmailSettings: React.FC<
               />
             </SettingsGroupItem>
           ))}
-          <SettingsGroupActions>
-            <Button
-              className="self-start"
-              type="submit"
-              size="sm"
-              disabled={!formState.isDirty}
-              loading={updateOrganization.isPending}
-            >
-              Save
-            </Button>
-          </SettingsGroupActions>
         </SettingsGroup>
       </form>
     </Form>

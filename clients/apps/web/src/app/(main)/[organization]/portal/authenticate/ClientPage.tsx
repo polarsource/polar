@@ -18,23 +18,23 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
-import { useForm } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
-
+import { useForm, useWatch } from 'react-hook-form'
 const ClientPage = ({
   organization,
 }: {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
 }) => {
   const router = useRouter()
   const form = useForm<{ code: string }>()
-  const { control, handleSubmit, setError, watch } = form
+  const { control, handleSubmit, setError } = form
   const sessionRequest = useCustomerPortalSessionAuthenticate(api)
 
-  const code = watch('code') || ''
+  const code = useWatch({ control, name: 'code', defaultValue: '' })
 
   const onSubmit = useCallback(
     async ({ code }: { code: string }) => {
@@ -61,17 +61,14 @@ const ClientPage = ({
     [sessionRequest, setError, router, organization],
   )
 
-  const themingPreset = useThemePreset(
-    organization.slug === 'midday' ? 'midday' : 'polar',
+  const theme = useTheme()
+  const themePreset = getThemePreset(
+    organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
   )
 
   return (
-    <ShadowBox
-      className={twMerge(
-        'flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24',
-        themingPreset.polar.wellSecondary,
-      )}
-    >
+    <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
       <div className="flex w-full flex-col gap-y-6 md:max-w-sm">
         <div className="flex flex-col gap-4">
           <h2 className="text-2xl text-black dark:text-white">
@@ -128,12 +125,20 @@ const ClientPage = ({
             <Button
               type="submit"
               size="lg"
-              className={twMerge('w-full', themingPreset.polar.button)}
+              className="w-full"
               loading={sessionRequest.isPending}
               disabled={sessionRequest.isPending || code.length !== 6}
             >
               Access my purchases
             </Button>
+
+            <p className="dark:text-polar-400 text-sm text-gray-500">
+              Don&apos;t have a code?{' '}
+              <Link href="request" className="underline hover:no-underline">
+                Request a new one
+              </Link>
+              .
+            </p>
           </form>
         </Form>
       </div>

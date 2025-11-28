@@ -12,7 +12,7 @@ import {
 } from './CustomerPortalSubscriptions'
 import { EmptyState } from './EmptyState'
 export interface CustomerPortalProps {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['CustomerSubscription'][]
   claimedSubscriptions: schemas['CustomerSubscription'][]

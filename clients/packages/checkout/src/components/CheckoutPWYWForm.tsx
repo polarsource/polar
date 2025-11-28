@@ -84,13 +84,13 @@ export const CheckoutPWYWForm = ({
 
   customAmountMinLabel = formatCurrencyNumber(
     productPrice.minimumAmount || 50,
-    checkout.currency || 'usd',
+    checkout.currency,
   )
 
   if (productPrice.maximumAmount) {
     customAmountMaxLabel = formatCurrencyNumber(
       productPrice.maximumAmount,
-      checkout.currency || 'usd',
+      checkout.currency,
     )
   }
 
@@ -126,7 +126,7 @@ export const CheckoutPWYWForm = ({
               return (
                 <FormItem className="w-full">
                   <MoneyInput
-                    className={themePreset.polar.input}
+                    className="bg-white shadow-xs"
                     name={field.name}
                     value={field.value || undefined}
                     onChange={field.onChange}

@@ -15,7 +15,9 @@ function isSeatBasedPrice(
   return price.amount_type === 'seat_based'
 }
 
-const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ product }) => {
+const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
+  product,
+}: ProductPriceLabelProps) => {
   const staticPrice = product.prices.find(({ amount_type }) =>
     ['fixed', 'custom', 'free', 'seat_based'].includes(amount_type),
   )

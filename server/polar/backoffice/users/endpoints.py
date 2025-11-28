@@ -15,7 +15,7 @@ from polar.models import Account, Organization, User, UserOrganization
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.organization.sorting import OrganizationSortProperty
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.user import sorting
 from polar.user.repository import UserRepository
 from polar.user.sorting import UserSortProperty
@@ -83,7 +83,7 @@ async def list(
     identity_verification_status: Annotated[
         IdentityVerificationStatus | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     repository = UserRepository.from_session(session)
     statement = repository.get_base_statement()

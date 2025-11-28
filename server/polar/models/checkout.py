@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -129,24 +130,39 @@ class Checkout(
         String, nullable=True, default=None
     )
 
+    # TODO: proper data migration to make it non-nullable
+    allow_trial: Mapped[bool | None] = mapped_column(
+        Boolean, nullable=True, default=True
+    )
     trial_end: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    product_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
     )
 
     @declared_attr
-    def product(cls) -> Mapped[Product]:
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
+
+    product_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=True
+    )
+
+    @declared_attr
+    def product(cls) -> Mapped[Product | None]:
         return relationship(Product, lazy="raise")
 
-    product_price_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=False
+    product_price_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=True
     )
 
     @declared_attr
-    def product_price(cls) -> Mapped[ProductPrice]:
+    def product_price(cls) -> Mapped[ProductPrice | None]:
         return relationship(ProductPrice, lazy="raise")
 
     checkout_products: Mapped[list["CheckoutProduct"]] = relationship(
@@ -159,10 +175,6 @@ class Checkout(
 
     products: AssociationProxy[list["Product"]] = association_proxy(
         "checkout_products", "product"
-    )
-
-    organization: AssociationProxy[Organization] = association_proxy(
-        "product", "organization"
     )
 
     discount_id: Mapped[UUID | None] = mapped_column(
@@ -271,15 +283,21 @@ class Checkout(
 
     @property
     def is_discount_applicable(self) -> bool:
-        return any(is_discount_applicable(price) for price in self.product.prices)
+        if self.product_prices is None:
+            return False
+        return any(is_discount_applicable(price) for price in self.product_prices)
 
     @property
     def is_free_product_price(self) -> bool:
-        return all(is_free_price(price) for price in self.product.prices)
+        if self.product_prices is None:
+            return False
+        return all(is_free_price(price) for price in self.product_prices)
 
     @property
     def has_metered_prices(self) -> bool:
-        return any(is_metered_price(price) for price in self.product.prices)
+        if self.product_prices is None:
+            return False
+        return any(is_metered_price(price) for price in self.product_prices)
 
     @property
     def is_payment_required(self) -> bool:
@@ -287,7 +305,13 @@ class Checkout(
 
     @property
     def is_payment_setup_required(self) -> bool:
+        if self.product is None:
+            return False
         return self.product.is_recurring and not self.is_free_product_price
+
+    @property
+    def should_save_payment_method(self) -> bool:
+        return self.product is not None and self.product.is_recurring
 
     @property
     def is_payment_form_required(self) -> bool:
@@ -305,9 +329,9 @@ class Checkout(
     def customer_session_token(self, value: str) -> None:
         self._customer_session_token = value
 
-    attached_custom_fields: AssociationProxy[Sequence["AttachedCustomFieldMixin"]] = (
-        association_proxy("product", "attached_custom_fields")
-    )
+    attached_custom_fields: AssociationProxy[
+        Sequence["AttachedCustomFieldMixin"] | None
+    ] = association_proxy("product", "attached_custom_fields")
 
     @property
     def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
@@ -319,7 +343,7 @@ class Checkout(
         )
         return {
             "country": True,
-            "state": require_billing_address or country in {"US", "CA"},
+            "state": country in {"US", "CA"},
             "line1": require_billing_address,
             "line2": False,
             "city": require_billing_address,
@@ -337,8 +361,12 @@ class Checkout(
         return {
             "country": BillingAddressFieldMode.required,
             "state": BillingAddressFieldMode.required
-            if require_billing_address or country in {"US", "CA"}
-            else BillingAddressFieldMode.disabled,
+            if country in {"US", "CA"}
+            else (
+                BillingAddressFieldMode.optional
+                if require_billing_address
+                else BillingAddressFieldMode.disabled
+            ),
             "line1": BillingAddressFieldMode.required
             if require_billing_address
             else BillingAddressFieldMode.disabled,
@@ -355,10 +383,18 @@ class Checkout(
 
     @property
     def active_trial_interval(self) -> TrialInterval | None:
+        if not self.allow_trial:
+            return None
+        if self.product is None:
+            return None
         return self.trial_interval or self.product.trial_interval
 
     @property
     def active_trial_interval_count(self) -> int | None:
+        if not self.allow_trial:
+            return None
+        if self.product is None:
+            return None
         return self.trial_interval_count or self.product.trial_interval_count
 
     @property
@@ -370,6 +406,28 @@ class Checkout(
             return None
 
         return self.product_price.get_price_per_seat(self.seats)
+
+    @property
+    def description(self) -> str:
+        if self.product is not None:
+            return f"{self.organization.name} — {self.product.name}"
+        raise NotImplementedError()
+
+    @property
+    def prices(self) -> dict[uuid.UUID, list[ProductPrice]]:
+        prices: dict[uuid.UUID, list[ProductPrice]] = {}
+        for checkout_product in self.checkout_products:
+            if checkout_product.ad_hoc_prices:
+                prices[checkout_product.product_id] = checkout_product.ad_hoc_prices
+            else:
+                prices[checkout_product.product_id] = checkout_product.product.prices
+        return prices
+
+    @property
+    def product_prices(self) -> list[ProductPrice] | None:
+        if self.product_id is None:
+            return None
+        return self.prices[self.product_id]
 
 
 @event.listens_for(Checkout, "before_update")

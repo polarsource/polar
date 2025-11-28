@@ -12,7 +12,7 @@ const ClientPage = ({
   benefitGrants,
   customerSessionToken,
 }: {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['ListResource_CustomerSubscription_']
   claimedSubscriptions: schemas['CustomerSubscription'][]

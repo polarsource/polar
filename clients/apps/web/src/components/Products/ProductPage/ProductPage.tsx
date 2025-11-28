@@ -27,7 +27,6 @@ import { DashboardBody } from '../../Layout/DashboardLayout'
 import { ProductThumbnail } from '../ProductThumbnail'
 import { ProductMetricsView } from './ProductMetricsView'
 import { ProductOverview } from './ProductOverview'
-import { ProductPageContextView } from './ProductPageContextView'
 
 const ProductTypeDisplayColor: Record<string, string> = {
   subscription: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
@@ -117,11 +116,12 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     <Tabs defaultValue="overview" className="h-full">
       <DashboardBody
         title={
-          <div className="flex flex-row items-center gap-6">
-            <div className="flex flex-row items-center gap-4">
+          <div className="flex min-w-0 flex-row items-center gap-4">
+            <div className="flex min-w-0 flex-row items-center gap-4">
               <ProductThumbnail product={product} />
-              <h1 className="text-2xl">{product.name}</h1>
+              <h1 className="truncate text-2xl">{product.name}</h1>
             </div>
+
             <div className="flex flex-row items-center gap-4">
               <Status
                 status={
@@ -143,65 +143,84 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
           </div>
         }
         header={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="secondary">
-                <MoreVert fontSize="small" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  if (typeof navigator !== 'undefined') {
-                    navigator.clipboard.writeText(product.id)
-
-                    toast({
-                      title: 'Product ID Copied',
-                      description: 'Product ID copied to clipboard',
-                    })
-                  }
-                }}
-              >
-                Copy Product ID
-              </DropdownMenuItem>
-              {!product.is_archived && (
-                <>
+          <div className="flex flex-row items-center justify-between gap-2">
+            {product.is_archived ? null : (
+              <div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    router.push(
+                      `/dashboard/${organization.slug}/products/${product.id}/edit`,
+                    )
+                  }}
+                >
+                  Edit Product
+                </Button>
+              </div>
+            )}
+            <div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="secondary">
+                    <MoreVert fontSize="small" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     onClick={() => {
-                      router.push(
-                        `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
-                      )
+                      if (typeof navigator !== 'undefined') {
+                        navigator.clipboard.writeText(product.id)
+
+                        toast({
+                          title: 'Product ID Copied',
+                          description: 'Product ID copied to clipboard',
+                        })
+                      }
                     }}
                   >
-                    Integrate Checkout
+                    Copy Product ID
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={showArchiveModal}>
-                    Archive Product
-                  </DropdownMenuItem>
-                </>
-              )}
-              {product.is_archived && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={showUnarchiveModal}>
-                    Unarchive Product
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  {!product.is_archived && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          router.push(
+                            `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
+                          )
+                        }}
+                      >
+                        Integrate Checkout
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => {
+                          router.push(
+                            `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
+                          )
+                        }}
+                      >
+                        Duplicate Product
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem destructive onClick={showArchiveModal}>
+                        Archive Product
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {product.is_archived && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={showUnarchiveModal}>
+                        Unarchive Product
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         }
-        contextViewClassName="hidden md:block"
-        contextView={
-          product.is_archived ? undefined : (
-            <ProductPageContextView
-              organization={organization}
-              product={product}
-            />
-          )
-        }
-        wide
       >
         <TabsList className="pb-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -220,6 +239,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
             data={metrics}
             interval={allTimeInterval}
             loading={metricsLoading}
+            product={product}
           />
         </TabsContent>
         <ConfirmModal

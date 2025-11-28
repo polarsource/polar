@@ -59,6 +59,11 @@ class SubscriptionProrationBehavior(StrEnum):
         raise ValueError(f"Invalid proration behavior: {self}")
 
 
+class InvoiceNumbering(StrEnum):
+    organization = "organization"
+    customer = "customer"
+
+
 class TokenType(StrEnum):
     client_secret = "polar_client_secret"
     client_registration_token = "polar_client_registration_token"
@@ -73,5 +78,6 @@ class TokenType(StrEnum):
 
 class RateLimitGroup(StrEnum):
     web = "web"
+    restricted = "restricted"
     default = "default"
     elevated = "elevated"

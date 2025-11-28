@@ -12,34 +12,37 @@ import { SubmitHandler, useForm } from 'react-hook-form'
 interface EmailUpdateformProps {
   returnTo?: string
   onEmailUpdateRequest?: () => void
-  onEmailUpdateExists?: () => void
-  onEmailUpdateForm?: () => void
-  setErr?: (value: string | null) => void
+  onCancel?: () => void
 }
 
 const EmailUpdateForm: React.FC<EmailUpdateformProps> = ({
   returnTo,
   onEmailUpdateRequest,
-  onEmailUpdateExists,
-  onEmailUpdateForm,
+  onCancel,
 }) => {
   const form = useForm<{ email: string }>()
   const { control, handleSubmit, setError } = form
   const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const sendEmailUpdate = useSendEmailUpdate()
 
   const onSubmit: SubmitHandler<{ email: string }> = async ({ email }) => {
+    setErrorMessage(null) // Clear previous errors
     setLoading(true)
     const { error } = await sendEmailUpdate(email, returnTo)
     setLoading(false)
     if (error) {
-      if (error.detail) {
+      let errMsg = 'An error occurred while updating your email.'
+      if (error.detail && Array.isArray(error.detail)) {
+        const emailError = error.detail.find(
+          (err) => Array.isArray(err.loc) && err.loc.includes('email'),
+        )
+        if (emailError?.msg) {
+          errMsg = emailError.msg
+        }
         setValidationErrors(error.detail, setError)
       }
-      onEmailUpdateExists?.()
-      setTimeout(() => {
-        onEmailUpdateForm?.()
-      }, 6000)
+      setErrorMessage(errMsg)
       return
     }
     onEmailUpdateRequest?.()
@@ -47,7 +50,10 @@ const EmailUpdateForm: React.FC<EmailUpdateformProps> = ({
 
   return (
     <Form {...form}>
-      <form className="flex w-full flex-col" onSubmit={handleSubmit(onSubmit)}>
+      <form
+        className="flex w-full flex-col gap-2"
+        onSubmit={handleSubmit(onSubmit)}
+      >
         <FormField
           control={control}
           name="email"
@@ -73,12 +79,28 @@ const EmailUpdateForm: React.FC<EmailUpdateformProps> = ({
                     >
                       Update
                     </Button>
+                    {onCancel && (
+                      <Button
+                        type="button"
+                        size="lg"
+                        variant="ghost"
+                        onClick={onCancel}
+                        disabled={loading}
+                      >
+                        Cancel
+                      </Button>
+                    )}
                   </div>
                 </FormControl>
               </FormItem>
             )
           }}
         />
+        {errorMessage && (
+          <div className="text-sm text-red-700 dark:text-red-500">
+            {errorMessage}
+          </div>
+        )}
       </form>
     </Form>
   )

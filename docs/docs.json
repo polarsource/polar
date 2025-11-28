@@ -57,6 +57,15 @@
                 ]
               },
               {
+                "group": "Cost Insights",
+                "tag": "Beta",
+                "pages": [
+                  "features/cost-insights/introduction",
+                  "features/cost-insights/cost-events",
+                  "features/cost-insights/cost-traces"
+                ]
+              },
+              {
                 "group": "Benefits",
                 "pages": [
                   "features/benefits/introduction",
@@ -237,6 +246,7 @@
                 "pages": [
                   "api-reference/subscriptions/get",
                   "api-reference/subscriptions/list",
+                  "api-reference/subscriptions/create",
                   "api-reference/subscriptions/update",
                   "api-reference/subscriptions/revoke"
                 ]
@@ -324,6 +334,17 @@
                   "api-reference/license-keys/validate",
                   "api-reference/license-keys/activate",
                   "api-reference/license-keys/deactivate"
+                ]
+              },
+              {
+                "group": "Customer Seats",
+                "pages": [
+                  "api-reference/customer-seats/assign",
+                  "api-reference/customer-seats/list",
+                  "api-reference/customer-seats/revoke",
+                  "api-reference/customer-seats/resend",
+                  "api-reference/customer-seats/get-claim-info",
+                  "api-reference/customer-seats/claim"
                 ]
               },
               {
@@ -454,6 +475,14 @@
                     ]
                   },
                   {
+                    "group": "Customer Seats",
+                    "pages": [
+                      "api-reference/webhooks/customer_seat.assigned",
+                      "api-reference/webhooks/customer_seat.claimed",
+                      "api-reference/webhooks/customer_seat.revoked"
+                    ]
+                  },
+                  {
                     "group": "Refunds",
                     "pages": [
                       "api-reference/webhooks/refund.created",
@@ -531,12 +560,19 @@
             "group": "Guides",
             "pages": [
               "guides/introduction",
-              "guides/seat-based-pricing",
-              "guides/create-variants",
-              "guides/disable-subscription-changes-in-customer-portal",
               "guides/allow-multiple-subscriptions-per-customer",
+              "guides/automate-post-purchase-link-sharing",
+              "guides/change-email-as-merchant",
+              "guides/create-checkout-session",
+              "guides/create-multiple-organizations",
+              "guides/create-variants",
+              "guides/customize-benefits-order-in-checkouts",
+              "guides/customize-products-order-in-checkouts",
+              "guides/disable-subscription-changes-in-customer-portal",
               "guides/subscription-downgrades",
-              "guides/subscription-upgrades"
+              "guides/subscription-upgrades",
+              "guides/seat-based-pricing",
+              "guides/theme-switch-in-checkout"
             ]
           }
         ]
@@ -961,6 +997,10 @@
     {
       "source": "/docs/benefits/custom",
       "destination": "/features/benefits/custom"
+    },
+    {
+      "source": "/docs/features/customers",
+      "destination": "/features/customer-management"
     }
   ]
 }

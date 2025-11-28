@@ -7,6 +7,7 @@ import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import {
   Select,
   SelectContent,
@@ -41,6 +42,18 @@ interface MetricChartBoxProps {
   compact?: boolean
   shareable?: boolean
   simple?: boolean
+  chartType?: 'line' | 'bar'
+}
+
+const EXPERIMENTAL_METRICS: Record<string, { tooltip: string }> = {
+  churn_rate: {
+    tooltip:
+      'Churn rate values vary based on the selected time interval. For best results, use monthly or longer intervals.',
+  },
+  ltv: {
+    tooltip:
+      'LTV is based on Churn Rate, and values vary based on the selected interval. For best results, use monthly or longer intervals.',
+  },
 }
 
 const MetricChartBox = ({
@@ -57,6 +70,7 @@ const MetricChartBox = ({
   compact = false,
   shareable = true,
   simple = false,
+  chartType = 'line',
 }: MetricChartBoxProps & {
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -125,7 +139,7 @@ const MetricChartBox = ({
     <ShadowBox
       ref={ref}
       className={twMerge(
-        'dark:bg-polar-800 flex w-full flex-col bg-gray-50 p-2 shadow-xs',
+        'dark:bg-polar-800 group flex w-full flex-col justify-between bg-gray-50 p-2 shadow-xs',
         className,
       )}
     >
@@ -144,23 +158,57 @@ const MetricChartBox = ({
           )}
         >
           {onMetricChange ? (
-            <Select value={metric} onValueChange={onMetricChange}>
-              <SelectTrigger className="dark:hover:bg-polar-700 -mt-2 -ml-3 h-fit w-fit rounded-lg border-0 border-none bg-transparent px-3 py-2 shadow-none ring-0 transition-colors hover:bg-gray-200 focus-visible:ring-0 focus-visible:ring-offset-0">
-                <SelectValue placeholder="Select a metric" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200">
-                {data &&
-                  Object.values(data.metrics).map((metric) => (
-                    <SelectItem key={metric.slug} value={metric.slug}>
-                      {metric.display_name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-row items-center gap-x-2">
+              <Select value={metric} onValueChange={onMetricChange}>
+                <SelectTrigger className="dark:hover:bg-polar-700 -mt-2 -ml-3 h-fit w-fit rounded-lg border-0 border-none bg-transparent px-3 py-2 shadow-none ring-0 transition-colors hover:bg-gray-200 focus-visible:ring-0 focus-visible:ring-offset-0">
+                  <SelectValue placeholder="Select a metric" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200">
+                  {data &&
+                    Object.values(data.metrics).map((metric) => (
+                      <SelectItem key={metric.slug} value={metric.slug}>
+                        {metric.display_name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {metric in EXPERIMENTAL_METRICS && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex cursor-help">
+                      <Status
+                        status="Experimental"
+                        className="bg-blue-100 text-xs text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    {EXPERIMENTAL_METRICS[metric]?.tooltip}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           ) : (
-            <h3 className={compact ? 'text-base' : 'text-lg'}>
-              {selectedMetric?.display_name}
-            </h3>
+            <div className="flex flex-row items-center gap-x-2">
+              <h3 className={compact ? 'text-base' : 'text-lg'}>
+                {selectedMetric?.display_name}
+              </h3>
+              {metric in EXPERIMENTAL_METRICS && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex cursor-help">
+                      <Status
+                        status="Experimental"
+                        className="bg-blue-100 text-xs text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    {EXPERIMENTAL_METRICS[metric]?.tooltip}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           )}
           <h2 className={compact ? 'text-base' : 'text-5xl font-light'}>
             {metricValue}
@@ -177,17 +225,11 @@ const MetricChartBox = ({
                 ) : (
                   <span className="dark:text-polar-500 text-gray-500">
                     {startDate && endDate && (
-                      <>
-                        <FormattedDateTime
-                          datetime={startDate}
-                          dateStyle="medium"
-                        />{' '}
-                        —{' '}
-                        <FormattedDateTime
-                          datetime={endDate}
-                          dateStyle="medium"
-                        />
-                      </>
+                      <FormattedInterval
+                        startDatetime={startDate}
+                        endDatetime={endDate}
+                        hideCurrentYear={false}
+                      />
                     )}
                   </span>
                 )}
@@ -203,17 +245,11 @@ const MetricChartBox = ({
                   ) : (
                     <span className="dark:text-polar-500 text-gray-500">
                       {previousStartDate && previousEndDate && (
-                        <>
-                          <FormattedDateTime
-                            datetime={previousStartDate}
-                            dateStyle="medium"
-                          />{' '}
-                          —{' '}
-                          <FormattedDateTime
-                            datetime={previousEndDate}
-                            dateStyle="medium"
-                          />
-                        </>
+                        <FormattedInterval
+                          startDatetime={previousStartDate}
+                          endDatetime={previousEndDate}
+                          hideCurrentYear={false}
+                        />
                       )}
                     </span>
                   )}
@@ -243,7 +279,7 @@ const MetricChartBox = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hidden rounded-full md:block"
+                  className="hidden rounded-full opacity-0 transition-opacity group-hover:opacity-100 md:block"
                   onClick={showModal}
                 >
                   <ArrowOutwardOutlined fontSize="small" />
@@ -276,9 +312,10 @@ const MetricChartBox = ({
             interval={interval}
             metric={selectedMetric}
             onDataIndexHover={(period) => {
-              setHoveredPeriodIndex(period as number)
+              setHoveredPeriodIndex(period)
             }}
             simple={simple}
+            chartType={chartType}
           />
         ) : (
           <div
@@ -291,6 +328,7 @@ const MetricChartBox = ({
       </div>
       {shareable && data && (
         <Modal
+          title={`Share ${selectedMetric?.display_name} Metric`}
           className="lg:w-fit!"
           isShown={isModalOpen}
           hide={hideModal}
@@ -300,7 +338,6 @@ const MetricChartBox = ({
               previousData={previousData}
               interval={interval}
               metric={selectedMetric?.slug as keyof schemas['Metrics']}
-              hide={hideModal}
             />
           }
         />

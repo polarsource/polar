@@ -356,7 +356,9 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                     <FormLabel>Starts at</FormLabel>
                     <DateTimePicker
                       value={field.value || undefined}
-                      onChange={field.onChange}
+                      onChange={(value) => {
+                        field.onChange(value || null)
+                      }}
                       disabled={[
                         { before: now },
                         ...(endsAt ? [{ after: new Date(endsAt) }] : []),
@@ -376,7 +378,9 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                     <FormLabel>Ends at</FormLabel>
                     <DateTimePicker
                       value={field.value || undefined}
-                      onChange={field.onChange}
+                      onChange={(value) => {
+                        field.onChange(value || null)
+                      }}
                       disabled={{
                         before: startsAt ? new Date(startsAt) : now,
                       }}

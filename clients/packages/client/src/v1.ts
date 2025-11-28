@@ -15,7 +15,24 @@ export interface paths {
     get: operations['users:get_authenticated']
     put?: never
     post?: never
-    delete?: never
+    /**
+     * Delete Authenticated User
+     * @description Delete the authenticated user account.
+     *
+     *     A user can only be deleted if all organizations they are members of have been
+     *     deleted first. If the user has active organizations, the response will include
+     *     the list of organizations that must be deleted before the user account can be
+     *     removed.
+     *
+     *     When deleted:
+     *     - User's email is anonymized
+     *     - User's avatar and metadata are cleared
+     *     - User's OAuth accounts are deleted (cascade)
+     *     - User's Account (payout account) is deleted if present
+     *
+     *     **Scopes**: `user:write`
+     */
+    delete: operations['users:delete_authenticated_user']
     options?: never
     head?: never
     patch?: never
@@ -50,6 +67,31 @@ export interface paths {
     /** Create Identity Verification */
     post: operations['users:create_identity_verification']
     delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/users/me/oauth-accounts/{platform}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Disconnect Oauth Account
+     * @description Disconnect an OAuth account (GitHub or Google) from the authenticated user.
+     *
+     *     This allows users to unlink their OAuth provider while keeping their Polar account.
+     *     They can still authenticate using other methods (email magic link or other OAuth providers).
+     *
+     *     Note: You cannot disconnect your last authentication method if your email is not verified.
+     */
+    delete: operations['users:disconnect_oauth_account']
     options?: never
     head?: never
     patch?: never
@@ -222,6 +264,40 @@ export interface paths {
     get: operations['integrations_discord:discord_guild_lookup']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/apple/authorize': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Integrations.Apple.Authorize */
+    get: operations['integrations_apple:integrations.apple.authorize']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/apple/callback': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Integrations.Apple.Callback */
+    post: operations['integrations_apple:integrations.apple.callback']
     delete?: never
     options?: never
     head?: never
@@ -525,7 +601,20 @@ export interface paths {
     get: operations['organizations:get']
     put?: never
     post?: never
-    delete?: never
+    /**
+     * Delete Organization
+     * @description Request deletion of an organization.
+     *
+     *     If the organization has no orders or active subscriptions, it will be
+     *     immediately soft-deleted. If it has an account, the Stripe account will
+     *     be deleted first.
+     *
+     *     If deletion cannot proceed immediately (has orders, subscriptions, or
+     *     Stripe deletion fails), a support ticket will be created for manual handling.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    delete: operations['organizations:delete']
     options?: never
     head?: never
     /**
@@ -704,7 +793,18 @@ export interface paths {
      */
     get: operations['subscriptions:list']
     put?: never
-    post?: never
+    /**
+     * Create Subscription
+     * @description Create a subscription programmatically.
+     *
+     *     This endpoint only allows to create subscription on free products.
+     *     For paid products, use the checkout flow.
+     *
+     *     No initial order will be created and no confirmation email will be sent.
+     *
+     *     **Scopes**: `subscriptions:write`
+     */
+    post: operations['subscriptions:create']
     delete?: never
     options?: never
     head?: never
@@ -765,6 +865,39 @@ export interface paths {
      *     **Scopes**: `subscriptions:write`
      */
     patch: operations['subscriptions:update']
+    trace?: never
+  }
+  '/v1/subscriptions/{id}/charge-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Next Charge For Subscription
+     * @description Get a preview of the next charge for an active or trialing subscription.
+     *
+     *     Returns a breakdown of:
+     *     - Base subscription amount
+     *     - Metered usage charges
+     *     - Applied discounts
+     *     - Calculated taxes
+     *     - Total amount
+     *
+     *     For trialing subscriptions, shows what the first charge will be when the trial ends.
+     *     For subscriptions set to cancel at period end, shows the final charge.
+     *     Only available for active or trialing subscriptions, including those set to cancel.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:get_charge_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   '/v1/transactions/search': {
@@ -1360,6 +1493,28 @@ export interface paths {
      *     **Scopes**: `orders:read`
      */
     get: operations['orders:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/orders/export': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Export Subscriptions
+     * @description Export orders as a CSV file.
+     *
+     *     **Scopes**: `orders:read`
+     */
+    get: operations['orders:export']
     put?: never
     post?: never
     delete?: never
@@ -2304,7 +2459,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/customers/{id}/balance': {
+  '/v1/members/': {
     parameters: {
       query?: never
       header?: never
@@ -2312,12 +2467,12 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Get Customer Balance
-     * @description Get customer balance information.
+     * List Members
+     * @description List members with optional customer ID filter.
      *
-     *     **Scopes**: `customers:read` `customers:write`
+     *     **Scopes**: `members:read` `members:write`
      */
-    get: operations['customers:get_balance']
+    get: operations['members:list_members']
     put?: never
     post?: never
     delete?: never
@@ -3076,6 +3231,50 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/wallets/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Wallets
+     * @description List wallets of the authenticated customer.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:wallets:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/wallets/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Wallet
+     * @description Get a wallet by ID for the authenticated customer.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:wallets:get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-seats': {
     parameters: {
       query?: never
@@ -3252,6 +3451,32 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/events/statistics/timeseries': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List statistics timeseries
+     * @description Get aggregate statistics grouped by root event name over time.
+     *
+     *     Returns time series data with periods and totals, similar to the metrics endpoint.
+     *     Each period contains stats grouped by event name, and totals show overall stats
+     *     across all periods.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['events:list_statistics_timeseries']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/events/names': {
     parameters: {
       query?: never
@@ -3316,6 +3541,48 @@ export interface paths {
     options?: never
     head?: never
     patch?: never
+    trace?: never
+  }
+  '/v1/event-types/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Event Types
+     * @description List event types with aggregated statistics.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['event-types:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/event-types/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update Event Type
+     * @description Update an event type's label.
+     */
+    patch: operations['event-types:update']
     trace?: never
   }
   '/v1/meters/': {
@@ -3617,6 +3884,74 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/wallets/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Wallets
+     * @description List wallets.
+     *
+     *     **Scopes**: `wallets:read`
+     */
+    get: operations['wallets:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/wallets/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Wallet
+     * @description Get a wallet by ID.
+     *
+     *     **Scopes**: `wallets:read`
+     */
+    get: operations['wallets:get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/wallets/{id}/top-up': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Top-Up Wallet
+     * @description Top-up a wallet by adding funds to its balance.
+     *
+     *     The customer should have a valid payment method on file.
+     *
+     *     **Scopes**: `wallets:write`
+     */
+    post: operations['wallets:top_up']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export interface webhooks {
   'checkout.created': {
@@ -3760,6 +4095,73 @@ export interface webhooks {
      *     **Discord & Slack support:** Basic
      */
     post: operations['_endpointcustomer_state_changed_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'customer_seat.assigned': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * customer_seat.assigned
+     * @description Sent when a new customer seat is assigned.
+     *
+     *     This event is triggered when a seat is assigned to a customer by the organization.
+     *     The customer will receive an invitation email to claim the seat.
+     */
+    post: operations['_endpointcustomer_seat_assigned_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'customer_seat.claimed': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * customer_seat.claimed
+     * @description Sent when a customer seat is claimed.
+     *
+     *     This event is triggered when a customer accepts the seat invitation and claims their access.
+     */
+    post: operations['_endpointcustomer_seat_claimed_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'customer_seat.revoked': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * customer_seat.revoked
+     * @description Sent when a customer seat is revoked.
+     *
+     *     This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
+     */
+    post: operations['_endpointcustomer_seat_revoked_post']
     delete?: never
     options?: never
     head?: never
@@ -4605,6 +5007,21 @@ export interface components {
         | 'ZM'
         | 'ZW'
     }
+    /** AddressDict */
+    AddressDict: {
+      /** Line1 */
+      line1?: string
+      /** Line2 */
+      line2?: string
+      /** Postal Code */
+      postal_code?: string
+      /** City */
+      city?: string
+      /** State */
+      state?: string
+      /** Country */
+      country: string
+    }
     /** AddressInput */
     AddressInput: {
       /** Line1 */
@@ -5010,6 +5427,7 @@ export interface components {
       | 'profile'
       | 'email'
       | 'user:read'
+      | 'user:write'
       | 'organizations:read'
       | 'organizations:write'
       | 'custom_fields:read'
@@ -5038,6 +5456,10 @@ export interface components {
       | 'subscriptions:write'
       | 'customers:read'
       | 'customers:write'
+      | 'members:read'
+      | 'members:write'
+      | 'wallets:read'
+      | 'wallets:write'
       | 'customer_meters:read'
       | 'customer_sessions:write'
       | 'customer_seats:read'
@@ -5237,7 +5659,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitCustomSubscriberProperties']
     }
     /**
@@ -5315,6 +5737,22 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -5510,7 +5948,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDiscordSubscriberProperties']
     }
     /**
@@ -5714,7 +6152,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDownloadablesSubscriberProperties']
     }
     /** BenefitDownloadablesSubscriberProperties */
@@ -5944,7 +6382,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitGitHubRepositorySubscriberProperties']
     }
     /**
@@ -6614,6 +7052,22 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -6812,7 +7266,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitLicenseKeysSubscriberProperties']
     }
     /** BenefitLicenseKeysSubscriberProperties */
@@ -7035,7 +7489,7 @@ export interface components {
       metadata: {
         [key: string]: string | number | boolean
       }
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitMeterCreditSubscriberProperties']
     }
     /**
@@ -7166,6 +7620,22 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -7189,6 +7659,48 @@ export interface components {
       | '-description'
       | 'type'
       | '-type'
+    /** BenefitSubscriberOrganization */
+    BenefitSubscriberOrganization: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Organization name shown in checkout, customer portal, emails etc.
+       */
+      name: string
+      /**
+       * Slug
+       * @description Unique organization slug in checkout, customer portal and credit card statements.
+       */
+      slug: string
+      /**
+       * Avatar Url
+       * @description Avatar URL shown in checkout, customer portal, emails etc.
+       */
+      avatar_url: string | null
+      /** @description Proration behavior applied when customer updates their subscription from the portal. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
+    }
     /**
      * BenefitType
      * @enum {string}
@@ -7237,6 +7749,22 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -7254,10 +7782,36 @@ export interface components {
      * @enum {string}
      */
     BillingAddressFieldMode: 'required' | 'optional' | 'disabled'
+    /**
+     * BlockingOrganization
+     * @description Organization that is blocking user deletion.
+     */
+    BlockingOrganization: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Slug */
+      slug: string
+      /** Name */
+      name: string
+    }
     /** Body_email-update:verify_email_update */
     'Body_email-update_verify_email_update': {
       /** Token */
       token: string
+    }
+    /** Body_integrations_apple:integrations.apple.callback */
+    'Body_integrations_apple_integrations.apple.callback': {
+      /** Code */
+      code?: string | null
+      /** Code Verifier */
+      code_verifier?: string | null
+      /** State */
+      state?: string | null
+      /** Error */
+      error?: string | null
     }
     /** Body_login_code:authenticate_login_code */
     Body_login_code_authenticate_login_code: {
@@ -7495,6 +8049,11 @@ export interface components {
        * @description Currency code of the checkout session.
        */
       currency: string
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       */
+      allow_trial: boolean | null
       /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
       active_trial_interval: components['schemas']['TrialInterval'] | null
       /**
@@ -7508,17 +8067,22 @@ export interface components {
        */
       trial_end: string | null
       /**
-       * Product Id
+       * Organization Id
        * Format: uuid4
+       * @description ID of the organization owning the checkout session.
+       */
+      organization_id: string
+      /**
+       * Product Id
        * @description ID of the product to checkout.
        */
-      product_id: string
+      product_id: string | null
       /**
        * Product Price Id
-       * Format: uuid4
+       * @deprecated
        * @description ID of the product price to checkout.
        */
-      product_price_id: string
+      product_price_id: string | null
       /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
@@ -7616,14 +8180,28 @@ export interface components {
        */
       products: components['schemas']['CheckoutProduct'][]
       /** @description Product selected to checkout. */
-      product: components['schemas']['CheckoutProduct']
+      product: components['schemas']['CheckoutProduct'] | null
       /**
        * Product Price
+       * @deprecated
        * @description Price of the selected product.
        */
       product_price:
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | (
+            | components['schemas']['LegacyRecurringProductPrice']
+            | components['schemas']['ProductPrice']
+          )
+        | null
+      /**
+       * Prices
+       * @description Mapping of product IDs to their list of prices.
+       */
+      prices: {
+        [key: string]: (
+          | components['schemas']['LegacyRecurringProductPrice']
+          | components['schemas']['ProductPrice']
+        )[]
+      } | null
       /** Discount */
       discount:
         | (
@@ -7636,7 +8214,9 @@ export interface components {
       /** Subscription Id */
       subscription_id: string | null
       /** Attached Custom Fields */
-      attached_custom_fields: components['schemas']['AttachedCustomField'][]
+      attached_custom_fields:
+        | components['schemas']['AttachedCustomField'][]
+        | null
       /** Customer Metadata */
       customer_metadata: {
         [key: string]: string | number | boolean
@@ -7697,6 +8277,11 @@ export interface components {
        * @description Discount code to apply to the checkout.
        */
       discount_code?: string | null
+      /**
+       * Allow Trial
+       * @description Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+       */
+      allow_trial?: false | null
       /**
        * Confirmation Token Id
        * @description ID of the Stripe confirmation token. Required for fixed prices and custom prices.
@@ -7860,6 +8445,7 @@ export interface components {
       | components['schemas']['AlreadyActiveSubscriptionError']
       | components['schemas']['NotOpenCheckout']
       | components['schemas']['PaymentNotReady']
+      | components['schemas']['TrialAlreadyRedeemed']
     /**
      * CheckoutLink
      * @description Checkout link data.
@@ -8207,7 +8793,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -8315,6 +8901,48 @@ export interface components {
        */
       success_url?: string | null
     }
+    /** CheckoutOrganization */
+    CheckoutOrganization: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Organization name shown in checkout, customer portal, emails etc.
+       */
+      name: string
+      /**
+       * Slug
+       * @description Unique organization slug in checkout, customer portal and credit card statements.
+       */
+      slug: string
+      /**
+       * Avatar Url
+       * @description Avatar URL shown in checkout, customer portal, emails etc.
+       */
+      avatar_url: string | null
+      /** @description Proration behavior applied when customer updates their subscription from the portal. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
+    }
     /**
      * CheckoutPriceCreate
      * @description Create a new checkout session from a product price.
@@ -8380,6 +9008,12 @@ export interface components {
        * @description Number of seats for seat-based pricing. Required for seat-based products.
        */
       seats?: number | null
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       * @default true
+       */
+      allow_trial: boolean
       /**
        * Customer Id
        * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
@@ -8496,7 +9130,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -8599,6 +9233,12 @@ export interface components {
        * @description Number of seats for seat-based pricing. Required for seat-based products.
        */
       seats?: number | null
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       * @default true
+       */
+      allow_trial: boolean
       /**
        * Customer Id
        * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
@@ -8735,6 +9375,12 @@ export interface components {
        */
       seats?: number | null
       /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       * @default true
+       */
+      allow_trial: boolean
+      /**
        * Customer Id
        * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
        */
@@ -8803,6 +9449,19 @@ export interface components {
        * @description List of product IDs available to select at that checkout. The first one will be selected by default.
        */
       products: string[]
+      /**
+       * Prices
+       * @description Optional mapping of product IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
+       */
+      prices?: {
+        [key: string]: (
+          | components['schemas']['ProductPriceFixedCreate']
+          | components['schemas']['ProductPriceCustomCreate']
+          | components['schemas']['ProductPriceFreeCreate']
+          | components['schemas']['ProductPriceSeatBasedCreate']
+          | components['schemas']['ProductPriceMeteredUnitCreate']
+        )[]
+      } | null
     }
     /**
      * CheckoutPublic
@@ -8916,6 +9575,11 @@ export interface components {
        * @description Currency code of the checkout session.
        */
       currency: string
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       */
+      allow_trial: boolean | null
       /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
       active_trial_interval: components['schemas']['TrialInterval'] | null
       /**
@@ -8929,17 +9593,22 @@ export interface components {
        */
       trial_end: string | null
       /**
-       * Product Id
+       * Organization Id
        * Format: uuid4
+       * @description ID of the organization owning the checkout session.
+       */
+      organization_id: string
+      /**
+       * Product Id
        * @description ID of the product to checkout.
        */
-      product_id: string
+      product_id: string | null
       /**
        * Product Price Id
-       * Format: uuid4
+       * @deprecated
        * @description ID of the product price to checkout.
        */
-      product_price_id: string
+      product_price_id: string | null
       /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
@@ -9016,14 +9685,28 @@ export interface components {
        */
       products: components['schemas']['CheckoutProduct'][]
       /** @description Product selected to checkout. */
-      product: components['schemas']['CheckoutProduct']
+      product: components['schemas']['CheckoutProduct'] | null
       /**
        * Product Price
+       * @deprecated
        * @description Price of the selected product.
        */
       product_price:
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | (
+            | components['schemas']['LegacyRecurringProductPrice']
+            | components['schemas']['ProductPrice']
+          )
+        | null
+      /**
+       * Prices
+       * @description Mapping of product IDs to their list of prices.
+       */
+      prices: {
+        [key: string]: (
+          | components['schemas']['LegacyRecurringProductPrice']
+          | components['schemas']['ProductPrice']
+        )[]
+      } | null
       /** Discount */
       discount:
         | (
@@ -9033,9 +9716,11 @@ export interface components {
             | components['schemas']['CheckoutDiscountPercentageRepeatDuration']
           )
         | null
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['CheckoutOrganization']
       /** Attached Custom Fields */
-      attached_custom_fields: components['schemas']['AttachedCustomField'][]
+      attached_custom_fields:
+        | components['schemas']['AttachedCustomField'][]
+        | null
     }
     /**
      * CheckoutPublicConfirmed
@@ -9147,6 +9832,11 @@ export interface components {
        * @description Currency code of the checkout session.
        */
       currency: string
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       */
+      allow_trial: boolean | null
       /** @description Interval unit of the trial period, if any. This value is either set from the checkout, if `trial_interval` is set, or from the selected product. */
       active_trial_interval: components['schemas']['TrialInterval'] | null
       /**
@@ -9160,17 +9850,22 @@ export interface components {
        */
       trial_end: string | null
       /**
-       * Product Id
+       * Organization Id
        * Format: uuid4
+       * @description ID of the organization owning the checkout session.
+       */
+      organization_id: string
+      /**
+       * Product Id
        * @description ID of the product to checkout.
        */
-      product_id: string
+      product_id: string | null
       /**
        * Product Price Id
-       * Format: uuid4
+       * @deprecated
        * @description ID of the product price to checkout.
        */
-      product_price_id: string
+      product_price_id: string | null
       /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
@@ -9247,14 +9942,28 @@ export interface components {
        */
       products: components['schemas']['CheckoutProduct'][]
       /** @description Product selected to checkout. */
-      product: components['schemas']['CheckoutProduct']
+      product: components['schemas']['CheckoutProduct'] | null
       /**
        * Product Price
+       * @deprecated
        * @description Price of the selected product.
        */
       product_price:
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
+        | (
+            | components['schemas']['LegacyRecurringProductPrice']
+            | components['schemas']['ProductPrice']
+          )
+        | null
+      /**
+       * Prices
+       * @description Mapping of product IDs to their list of prices.
+       */
+      prices: {
+        [key: string]: (
+          | components['schemas']['LegacyRecurringProductPrice']
+          | components['schemas']['ProductPrice']
+        )[]
+      } | null
       /** Discount */
       discount:
         | (
@@ -9264,9 +9973,11 @@ export interface components {
             | components['schemas']['CheckoutDiscountPercentageRepeatDuration']
           )
         | null
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['CheckoutOrganization']
       /** Attached Custom Fields */
-      attached_custom_fields: components['schemas']['AttachedCustomField'][]
+      attached_custom_fields:
+        | components['schemas']['AttachedCustomField'][]
+        | null
       /** Customer Session Token */
       customer_session_token: string
     }
@@ -9366,6 +10077,11 @@ export interface components {
        * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
        */
       require_billing_address?: boolean | null
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       */
+      allow_trial?: boolean | null
       /** Customer Ip Address */
       customer_ip_address?: string | null
       /**
@@ -9447,14 +10163,32 @@ export interface components {
        * @description Discount code to apply to the checkout.
        */
       discount_code?: string | null
+      /**
+       * Allow Trial
+       * @description Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+       */
+      allow_trial?: false | null
     }
     /** CostMetadata */
-    CostMetadata: {
+    'CostMetadata-Input': {
       /**
        * Amount
        * @description The amount in cents.
        */
-      amount: number
+      amount: number | string
+      /**
+       * Currency
+       * @description The currency. Currently, only `usd` is supported.
+       */
+      currency: string
+    }
+    /** CostMetadata */
+    'CostMetadata-Output': {
+      /**
+       * Amount
+       * @description The amount in cents.
+       */
+      amount: string
       /**
        * Currency
        * @description The currency. Currently, only `usd` is supported.
@@ -9686,6 +10420,255 @@ export interface components {
       | 'SV'
       | 'SX'
       | 'SY'
+      | 'SZ'
+      | 'TC'
+      | 'TD'
+      | 'TF'
+      | 'TG'
+      | 'TH'
+      | 'TJ'
+      | 'TK'
+      | 'TL'
+      | 'TM'
+      | 'TN'
+      | 'TO'
+      | 'TR'
+      | 'TT'
+      | 'TV'
+      | 'TW'
+      | 'TZ'
+      | 'UA'
+      | 'UG'
+      | 'UM'
+      | 'US'
+      | 'UY'
+      | 'UZ'
+      | 'VA'
+      | 'VC'
+      | 'VE'
+      | 'VG'
+      | 'VI'
+      | 'VN'
+      | 'VU'
+      | 'WF'
+      | 'WS'
+      | 'YE'
+      | 'YT'
+      | 'ZA'
+      | 'ZM'
+      | 'ZW'
+    /**
+     * CountryAlpha2Input
+     * @enum {string}
+     */
+    CountryAlpha2Input:
+      | 'AD'
+      | 'AE'
+      | 'AF'
+      | 'AG'
+      | 'AI'
+      | 'AL'
+      | 'AM'
+      | 'AO'
+      | 'AQ'
+      | 'AR'
+      | 'AS'
+      | 'AT'
+      | 'AU'
+      | 'AW'
+      | 'AX'
+      | 'AZ'
+      | 'BA'
+      | 'BB'
+      | 'BD'
+      | 'BE'
+      | 'BF'
+      | 'BG'
+      | 'BH'
+      | 'BI'
+      | 'BJ'
+      | 'BL'
+      | 'BM'
+      | 'BN'
+      | 'BO'
+      | 'BQ'
+      | 'BR'
+      | 'BS'
+      | 'BT'
+      | 'BV'
+      | 'BW'
+      | 'BY'
+      | 'BZ'
+      | 'CA'
+      | 'CC'
+      | 'CD'
+      | 'CF'
+      | 'CG'
+      | 'CH'
+      | 'CI'
+      | 'CK'
+      | 'CL'
+      | 'CM'
+      | 'CN'
+      | 'CO'
+      | 'CR'
+      | 'CV'
+      | 'CW'
+      | 'CX'
+      | 'CY'
+      | 'CZ'
+      | 'DE'
+      | 'DJ'
+      | 'DK'
+      | 'DM'
+      | 'DO'
+      | 'DZ'
+      | 'EC'
+      | 'EE'
+      | 'EG'
+      | 'EH'
+      | 'ER'
+      | 'ES'
+      | 'ET'
+      | 'FI'
+      | 'FJ'
+      | 'FK'
+      | 'FM'
+      | 'FO'
+      | 'FR'
+      | 'GA'
+      | 'GB'
+      | 'GD'
+      | 'GE'
+      | 'GF'
+      | 'GG'
+      | 'GH'
+      | 'GI'
+      | 'GL'
+      | 'GM'
+      | 'GN'
+      | 'GP'
+      | 'GQ'
+      | 'GR'
+      | 'GS'
+      | 'GT'
+      | 'GU'
+      | 'GW'
+      | 'GY'
+      | 'HK'
+      | 'HM'
+      | 'HN'
+      | 'HR'
+      | 'HT'
+      | 'HU'
+      | 'ID'
+      | 'IE'
+      | 'IL'
+      | 'IM'
+      | 'IN'
+      | 'IO'
+      | 'IQ'
+      | 'IS'
+      | 'IT'
+      | 'JE'
+      | 'JM'
+      | 'JO'
+      | 'JP'
+      | 'KE'
+      | 'KG'
+      | 'KH'
+      | 'KI'
+      | 'KM'
+      | 'KN'
+      | 'KR'
+      | 'KW'
+      | 'KY'
+      | 'KZ'
+      | 'LA'
+      | 'LB'
+      | 'LC'
+      | 'LI'
+      | 'LK'
+      | 'LR'
+      | 'LS'
+      | 'LT'
+      | 'LU'
+      | 'LV'
+      | 'LY'
+      | 'MA'
+      | 'MC'
+      | 'MD'
+      | 'ME'
+      | 'MF'
+      | 'MG'
+      | 'MH'
+      | 'MK'
+      | 'ML'
+      | 'MM'
+      | 'MN'
+      | 'MO'
+      | 'MP'
+      | 'MQ'
+      | 'MR'
+      | 'MS'
+      | 'MT'
+      | 'MU'
+      | 'MV'
+      | 'MW'
+      | 'MX'
+      | 'MY'
+      | 'MZ'
+      | 'NA'
+      | 'NC'
+      | 'NE'
+      | 'NF'
+      | 'NG'
+      | 'NI'
+      | 'NL'
+      | 'NO'
+      | 'NP'
+      | 'NR'
+      | 'NU'
+      | 'NZ'
+      | 'OM'
+      | 'PA'
+      | 'PE'
+      | 'PF'
+      | 'PG'
+      | 'PH'
+      | 'PK'
+      | 'PL'
+      | 'PM'
+      | 'PN'
+      | 'PR'
+      | 'PS'
+      | 'PT'
+      | 'PW'
+      | 'PY'
+      | 'QA'
+      | 'RE'
+      | 'RO'
+      | 'RS'
+      | 'RW'
+      | 'SA'
+      | 'SB'
+      | 'SC'
+      | 'SD'
+      | 'SE'
+      | 'SG'
+      | 'SH'
+      | 'SI'
+      | 'SJ'
+      | 'SK'
+      | 'SL'
+      | 'SM'
+      | 'SN'
+      | 'SO'
+      | 'SR'
+      | 'SS'
+      | 'ST'
+      | 'SV'
+      | 'SX'
       | 'SZ'
       | 'TC'
       | 'TD'
@@ -10534,23 +11517,6 @@ export interface components {
        */
       readonly avatar_url: string
     }
-    /**
-     * CustomerBalance
-     * @description Customer balance information.
-     */
-    CustomerBalance: {
-      /**
-       * Balance
-       * @description Customer balance in cents. Positive values represent credit (customer is owed money), negative values represent debit (customer owes money).
-       */
-      balance: number
-      /**
-       * Currency
-       * @description The currency code (ISO 4217) for the balance amount.
-       * @example USD
-       */
-      currency: string
-    }
     CustomerBenefitGrant:
       | components['schemas']['CustomerBenefitGrantDiscord']
       | components['schemas']['CustomerBenefitGrantGitHubRepository']
@@ -10899,6 +11865,8 @@ export interface components {
       | '-type'
       | 'organization'
       | '-organization'
+      | 'product_benefit'
+      | '-product_benefit'
     CustomerBenefitGrantUpdate:
       | components['schemas']['CustomerBenefitGrantDiscordUpdate']
       | components['schemas']['CustomerBenefitGrantGitHubRepositoryUpdate']
@@ -10951,11 +11919,7 @@ export interface components {
        * @example customer@example.com
        */
       email: string
-      /**
-       * Name
-       * @description The name of the customer.
-       * @example John Doe
-       */
+      /** Name */
       name?: string | null
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
@@ -10965,6 +11929,84 @@ export interface components {
        * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /** @description Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name. */
+      owner?: components['schemas']['OwnerCreate'] | null
+    }
+    /**
+     * CustomerCreatedEvent
+     * @description An event created by Polar when a customer is created.
+     */
+    CustomerCreatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'customer.created'
+      metadata: components['schemas']['CustomerCreatedMetadata']
+    }
+    /** CustomerCreatedMetadata */
+    CustomerCreatedMetadata: {
+      /** Customer Id */
+      customer_id: string
+      /** Customer Email */
+      customer_email: string
+      /** Customer Name */
+      customer_name: string | null
+      /** Customer External Id */
+      customer_external_id: string | null
     }
     /** CustomerCustomerMeter */
     CustomerCustomerMeter: {
@@ -11072,6 +12114,82 @@ export interface components {
       expires_at: string
       /** Return Url */
       return_url: string | null
+    }
+    /**
+     * CustomerDeletedEvent
+     * @description An event created by Polar when a customer is deleted.
+     */
+    CustomerDeletedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'customer.deleted'
+      metadata: components['schemas']['CustomerDeletedMetadata']
+    }
+    /** CustomerDeletedMetadata */
+    CustomerDeletedMetadata: {
+      /** Customer Id */
+      customer_id: string
+      /** Customer Email */
+      customer_email: string
+      /** Customer Name */
+      customer_name: string | null
+      /** Customer External Id */
+      customer_external_id: string | null
     }
     /**
      * CustomerMeter
@@ -11428,7 +12546,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -11465,7 +12583,7 @@ export interface components {
        * @description List of medias associated to the product.
        */
       medias: components['schemas']['ProductMediaFileRead'][]
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['CustomerOrganization']
     }
     /**
      * CustomerOrderSortProperty
@@ -11520,7 +12638,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -11593,16 +12711,16 @@ export interface components {
       discount_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Seats
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       */
+      seats?: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
-      /**
-       * Seats
-       * @description Number of seats included in the subscription (for seat-based pricing).
-       */
-      seats?: number | null
     }
     /**
      * CustomerOrderUpdate
@@ -11617,12 +12735,54 @@ export interface components {
       /** @description The address of the customer that should appear on the invoice. Can't be updated after the invoice is generated. */
       billing_address: components['schemas']['AddressInput'] | null
     }
+    /** CustomerOrganization */
+    CustomerOrganization: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Organization name shown in checkout, customer portal, emails etc.
+       */
+      name: string
+      /**
+       * Slug
+       * @description Unique organization slug in checkout, customer portal and credit card statements.
+       */
+      slug: string
+      /**
+       * Avatar Url
+       * @description Avatar URL shown in checkout, customer portal, emails etc.
+       */
+      avatar_url: string | null
+      /** @description Proration behavior applied when customer updates their subscription from the portal. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
+    }
     /**
-     * CustomerOrganization
+     * CustomerOrganizationData
      * @description Schema of an organization and related data for customer portal.
      */
-    CustomerOrganization: {
-      organization: components['schemas']['Organization']
+    CustomerOrganizationData: {
+      organization: components['schemas']['CustomerOrganization']
       /** Products */
       products: components['schemas']['CustomerProduct'][]
     }
@@ -11765,7 +12925,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -12408,7 +13568,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -12481,16 +13641,16 @@ export interface components {
       discount_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Seats
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       */
+      seats?: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
-      /**
-       * Seats
-       * @description Number of seats included in the subscription (for seat-based pricing).
-       */
-      seats?: number | null
       product: components['schemas']['CustomerSubscriptionProduct']
       /**
        * Prices
@@ -12654,7 +13814,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -12691,7 +13851,7 @@ export interface components {
        * @description List of medias associated to the product.
        */
       medias: components['schemas']['ProductMediaFileRead'][]
-      organization: components['schemas']['Organization']
+      organization: components['schemas']['CustomerOrganization']
     }
     /**
      * CustomerSubscriptionSortProperty
@@ -12710,6 +13870,7 @@ export interface components {
       | '-product'
     CustomerSubscriptionUpdate:
       | components['schemas']['CustomerSubscriptionUpdateProduct']
+      | components['schemas']['CustomerSubscriptionUpdateSeats']
       | components['schemas']['CustomerSubscriptionCancel']
     /** CustomerSubscriptionUpdateProduct */
     CustomerSubscriptionUpdateProduct: {
@@ -12719,6 +13880,18 @@ export interface components {
        * @description Update subscription to another product.
        */
       product_id: string
+    }
+    /** CustomerSubscriptionUpdateSeats */
+    CustomerSubscriptionUpdateSeats: {
+      /**
+       * Seats
+       * @description Update the number of seats for this subscription.
+       */
+      seats: number
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
     }
     /** CustomerUpdate */
     CustomerUpdate: {
@@ -12745,11 +13918,7 @@ export interface components {
        * @example customer@example.com
        */
       email?: string | null
-      /**
-       * Name
-       * @description The name of the customer.
-       * @example John Doe
-       */
+      /** Name */
       name?: string | null
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
@@ -12786,15 +13955,232 @@ export interface components {
        * @example customer@example.com
        */
       email?: string | null
+      /** Name */
+      name?: string | null
+      billing_address?: components['schemas']['AddressInput'] | null
+      /** Tax Id */
+      tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+    }
+    /**
+     * CustomerUpdatedEvent
+     * @description An event created by Polar when a customer is updated.
+     */
+    CustomerUpdatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'customer.updated'
+      metadata: components['schemas']['CustomerUpdatedMetadata']
+    }
+    /** CustomerUpdatedFields */
+    CustomerUpdatedFields: {
+      /** Name */
+      name?: string | null
+      /** Email */
+      email?: string | null
+      billing_address?: components['schemas']['AddressDict'] | null
+      /** Tax Id */
+      tax_id?: string | null
+      /** Metadata */
+      metadata?: {
+        [key: string]: string | number | boolean
+      } | null
+    }
+    /** CustomerUpdatedMetadata */
+    CustomerUpdatedMetadata: {
+      /** Customer Id */
+      customer_id: string
+      /** Customer Email */
+      customer_email: string
+      /** Customer Name */
+      customer_name: string | null
+      /** Customer External Id */
+      customer_external_id: string | null
+      updated_fields: components['schemas']['CustomerUpdatedFields']
+    }
+    /**
+     * CustomerWallet
+     * @description A wallet represents your balance with an organization.
+     *
+     *     You can top-up your wallet and use the balance to pay for usage.
+     */
+    CustomerWallet: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer that owns the wallet.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      customer_id: string
+      /**
+       * Balance
+       * @description The current balance of the wallet, in cents.
+       * @example 5000
+       */
+      balance: number
+      /**
+       * Currency
+       * @description The currency of the wallet.
+       * @example usd
+       */
+      currency: string
+    }
+    /**
+     * CustomerWalletSortProperty
+     * @enum {string}
+     */
+    CustomerWalletSortProperty:
+      | 'created_at'
+      | '-created_at'
+      | 'balance'
+      | '-balance'
+    /**
+     * CustomerWithMembers
+     * @description A customer in an organization with their members loaded.
+     */
+    CustomerWithMembers: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /** Metadata */
+      metadata: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Id
+       * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+       * @example usr_1337
+       */
+      external_id: string | null
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email: string
+      /**
+       * Email Verified
+       * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+       * @example true
+       */
+      email_verified: boolean
       /**
        * Name
        * @description The name of the customer.
        * @example John Doe
        */
-      name?: string | null
-      billing_address?: components['schemas']['AddressInput'] | null
+      name: string | null
+      billing_address: components['schemas']['Address'] | null
       /** Tax Id */
-      tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the customer.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Deleted At
+       * @description Timestamp for when the customer was soft deleted.
+       */
+      deleted_at: string | null
+      /**
+       * Members
+       * @description List of members belonging to this customer.
+       */
+      members?: components['schemas']['Member'][]
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      readonly avatar_url: string
     }
     /** DiscordGuild */
     DiscordGuild: {
@@ -13769,7 +15155,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -13985,6 +15371,16 @@ export interface components {
        */
       organization_id?: string | null
       /**
+       * External Id
+       * @description Your unique identifier for this event. Useful for deduplication and parent-child relationships.
+       */
+      external_id?: string | null
+      /**
+       * Parent Id
+       * @description The ID of the parent event. Can be either a Polar event ID (UUID) or an external event ID.
+       */
+      parent_id?: string | null
+      /**
        * @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
        *
        *     The key must be a string with a maximum length of **40 characters**.
@@ -14024,6 +15420,16 @@ export interface components {
        */
       organization_id?: string | null
       /**
+       * External Id
+       * @description Your unique identifier for this event. Useful for deduplication and parent-child relationships.
+       */
+      external_id?: string | null
+      /**
+       * Parent Id
+       * @description The ID of the parent event. Can be either a Polar event ID (UUID) or an external event ID.
+       */
+      parent_id?: string | null
+      /**
        * @description Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.
        *
        *     The key must be a string with a maximum length of **40 characters**.
@@ -14045,14 +15451,14 @@ export interface components {
     }
     /** EventMetadataInput */
     EventMetadataInput: {
-      _cost?: components['schemas']['CostMetadata']
+      _cost?: components['schemas']['CostMetadata-Input']
       _llm?: components['schemas']['LLMMetadata']
     } & {
       [key: string]: string | number | boolean
     }
     /** EventMetadataOutput */
     EventMetadataOutput: {
-      _cost?: components['schemas']['CostMetadata']
+      _cost?: components['schemas']['CostMetadata-Output']
       _llm?: components['schemas']['LLMMetadata']
     } & {
       [key: string]: string | number | boolean
@@ -14107,6 +15513,219 @@ export interface components {
      * @enum {string}
      */
     EventSource: 'system' | 'user'
+    /**
+     * EventStatistics
+     * @description Aggregate statistics for events grouped by root event name.
+     */
+    EventStatistics: {
+      /**
+       * Name
+       * @description The name of the root event.
+       */
+      name: string
+      /**
+       * Label
+       * @description The label of the event type.
+       */
+      label: string
+      /**
+       * Event Type Id
+       * Format: uuid4
+       * @description The ID of the event type
+       */
+      event_type_id: string
+      /**
+       * Occurrences
+       * @description Number of root events with this name (i.e., number of traces).
+       */
+      occurrences: number
+      /**
+       * Customers
+       * @description Number of distinct customers associated with events.
+       */
+      customers: number
+      /**
+       * Totals
+       * @description Sum of each field across all events in all hierarchies.
+       */
+      totals?: {
+        [key: string]: string
+      }
+      /**
+       * Averages
+       * @description Average of per-hierarchy totals (i.e., average cost per trace).
+       */
+      averages?: {
+        [key: string]: string
+      }
+      /**
+       * P50
+       * @description Median (50th percentile) of per-hierarchy totals.
+       */
+      p50?: {
+        [key: string]: string
+      }
+      /**
+       * P95
+       * @description 95th percentile of per-hierarchy totals.
+       */
+      p95?: {
+        [key: string]: string
+      }
+      /**
+       * P99
+       * @description 99th percentile of per-hierarchy totals.
+       */
+      p99?: {
+        [key: string]: string
+      }
+    }
+    /**
+     * EventStatisticsSortProperty
+     * @enum {string}
+     */
+    EventStatisticsSortProperty:
+      | 'name'
+      | '-name'
+      | 'occurrences'
+      | '-occurrences'
+      | 'total'
+      | '-total'
+      | 'average'
+      | '-average'
+      | 'p95'
+      | '-p95'
+      | 'p99'
+      | '-p99'
+    /** EventType */
+    EventType: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description The name of the event type.
+       */
+      name: string
+      /**
+       * Label
+       * @description The label for the event type.
+       */
+      label: string
+      /**
+       * Label Property Selector
+       * @description Property path to extract dynamic label from event metadata.
+       */
+      label_property_selector?: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event type.
+       */
+      organization_id: string
+    }
+    /** EventTypeUpdate */
+    EventTypeUpdate: {
+      /**
+       * Label
+       * @description The label for the event type.
+       */
+      label: string
+      /**
+       * Label Property Selector
+       * @description Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject').
+       */
+      label_property_selector?: string | null
+    }
+    /** EventTypeWithStats */
+    EventTypeWithStats: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description The name of the event type.
+       */
+      name: string
+      /**
+       * Label
+       * @description The label for the event type.
+       */
+      label: string
+      /**
+       * Label Property Selector
+       * @description Property path to extract dynamic label from event metadata.
+       */
+      label_property_selector?: string | null
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event type.
+       */
+      organization_id: string
+      /** @description The source of the events (system or user). */
+      source: components['schemas']['EventSource']
+      /**
+       * Occurrences
+       * @description Number of times the event has occurred.
+       */
+      occurrences: number
+      /**
+       * First Seen
+       * Format: date-time
+       * @description The first time the event occurred.
+       */
+      first_seen: string
+      /**
+       * Last Seen
+       * Format: date-time
+       * @description The last time the event occurred.
+       */
+      last_seen: string
+    }
+    /**
+     * EventTypesSortProperty
+     * @enum {string}
+     */
+    EventTypesSortProperty:
+      | 'name'
+      | '-name'
+      | 'label'
+      | '-label'
+      | 'occurrences'
+      | '-occurrences'
+      | 'first_seen'
+      | '-first_seen'
+      | 'last_seen'
+      | '-last_seen'
     /** EventsIngest */
     EventsIngest: {
       /**
@@ -14125,6 +15744,12 @@ export interface components {
        * @description Number of events inserted.
        */
       inserted: number
+      /**
+       * Duplicates
+       * @description Number of duplicate events skipped.
+       * @default 0
+       */
+      duplicates: number
     }
     /**
      * ExistingProductPrice
@@ -14417,6 +16042,17 @@ export interface components {
      * @enum {string}
      */
     IdentityVerificationStatus: 'unverified' | 'pending' | 'verified' | 'failed'
+    /** InsufficientBalance */
+    InsufficientBalance: {
+      /**
+       * Error
+       * @example InsufficientBalance
+       * @constant
+       */
+      error: 'InsufficientBalance'
+      /** Detail */
+      detail: string
+    }
     /** IntrospectTokenResponse */
     IntrospectTokenResponse: {
       /** Active */
@@ -14485,6 +16121,18 @@ export interface components {
        */
       total_tokens: number
     }
+    /**
+     * LegacyOrganizationStatus
+     * @description Legacy organization status values kept for backward compatibility in schemas
+     *     using OrganizationPublicBase.
+     * @enum {string}
+     */
+    LegacyOrganizationStatus:
+      | 'created'
+      | 'onboarding_started'
+      | 'under_review'
+      | 'denied'
+      | 'active'
     LegacyRecurringProductPrice:
       | components['schemas']['LegacyRecurringProductPriceFixed']
       | components['schemas']['LegacyRecurringProductPriceCustom']
@@ -14513,6 +16161,8 @@ export interface components {
        * @description The ID of the price.
        */
       id: string
+      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
+      source: components['schemas']['ProductPriceSource']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -14587,6 +16237,8 @@ export interface components {
        * @description The ID of the price.
        */
       id: string
+      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
+      source: components['schemas']['ProductPriceSource']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -14651,6 +16303,8 @@ export interface components {
        * @description The ID of the price.
        */
       id: string
+      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
+      source: components['schemas']['ProductPriceSource']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -15115,10 +16769,16 @@ export interface components {
       items: components['schemas']['CustomerSubscription'][]
       pagination: components['schemas']['Pagination']
     }
-    /** ListResource[Customer] */
-    ListResource_Customer_: {
+    /** ListResource[CustomerWallet] */
+    ListResource_CustomerWallet_: {
       /** Items */
-      items: components['schemas']['Customer'][]
+      items: components['schemas']['CustomerWallet'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[CustomerWithMembers] */
+    ListResource_CustomerWithMembers_: {
+      /** Items */
+      items: components['schemas']['CustomerWithMembers'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Discount] */
@@ -15137,6 +16797,12 @@ export interface components {
     ListResource_EventName_: {
       /** Items */
       items: components['schemas']['EventName'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[EventTypeWithStats] */
+    ListResource_EventTypeWithStats_: {
+      /** Items */
+      items: components['schemas']['EventTypeWithStats'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Event] */
@@ -15159,6 +16825,12 @@ export interface components {
     ListResource_LicenseKeyRead_: {
       /** Items */
       items: components['schemas']['LicenseKeyRead'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[Member] */
+    ListResource_Member_: {
+      /** Items */
+      items: components['schemas']['Member'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Meter] */
@@ -15239,6 +16911,12 @@ export interface components {
       items: components['schemas']['Transaction'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[Wallet] */
+    ListResource_Wallet_: {
+      /** Items */
+      items: components['schemas']['Wallet'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[WebhookDelivery] */
     ListResource_WebhookDelivery_: {
       /** Items */
@@ -15257,6 +16935,22 @@ export interface components {
       items: components['schemas']['Payment'][]
       pagination: components['schemas']['Pagination']
     }
+    /**
+     * ListStatisticsTimeseries
+     * @description Event statistics timeseries.
+     */
+    ListStatisticsTimeseries: {
+      /**
+       * Periods
+       * @description Stats for each time period.
+       */
+      periods: components['schemas']['StatisticsPeriod'][]
+      /**
+       * Totals
+       * @description Overall stats across all periods.
+       */
+      totals: components['schemas']['EventStatistics'][]
+    }
     /** LoginCodeRequest */
     LoginCodeRequest: {
       /**
@@ -15267,54 +16961,6 @@ export interface components {
       /** Return To */
       return_to?: string | null
       attribution?: components['schemas']['UserSignupAttribution'] | null
-    }
-    /** MaintainerAccountReviewedNotification */
-    MaintainerAccountReviewedNotification: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'MaintainerAccountReviewedNotification'
-      payload: components['schemas']['MaintainerAccountReviewedNotificationPayload']
-    }
-    /** MaintainerAccountReviewedNotificationPayload */
-    MaintainerAccountReviewedNotificationPayload: {
-      /** Account Type */
-      account_type: string
-    }
-    /** MaintainerAccountUnderReviewNotification */
-    MaintainerAccountUnderReviewNotification: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'MaintainerAccountUnderReviewNotification'
-      payload: components['schemas']['MaintainerAccountUnderReviewNotificationPayload']
-    }
-    /** MaintainerAccountUnderReviewNotificationPayload */
-    MaintainerAccountUnderReviewNotificationPayload: {
-      /** Account Type */
-      account_type: string
     }
     /** MaintainerCreateAccountNotification */
     MaintainerCreateAccountNotification: {
@@ -15408,6 +17054,68 @@ export interface components {
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
     }
+    /**
+     * Member
+     * @description A member of a customer.
+     */
+    Member: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the member.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer this member belongs to.
+       */
+      customer_id: string
+      /**
+       * Email
+       * @description The email address of the member.
+       * @example member@example.com
+       */
+      email: string
+      /**
+       * Name
+       * @description The name of the member.
+       * @example Jane Doe
+       */
+      name: string | null
+      /**
+       * External Id
+       * @description The ID of the member in your system. This must be unique within the customer.
+       * @example usr_1337
+       */
+      external_id: string | null
+      /**
+       * @description The role of the member within the customer.
+       * @example owner
+       */
+      role: components['schemas']['MemberRole']
+    }
+    /**
+     * MemberRole
+     * @enum {string}
+     */
+    MemberRole: 'owner' | 'billing_manager' | 'member'
+    /**
+     * MemberSortProperty
+     * @enum {string}
+     */
+    MemberSortProperty: 'created_at' | '-created_at'
     /** Meter */
     Meter: {
       /** Metadata */
@@ -15535,6 +17243,22 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -15618,6 +17342,22 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -15728,6 +17468,12 @@ export interface components {
       average_order_value: number
       /** Net Average Order Value */
       net_average_order_value: number
+      /** Average Revenue Per User */
+      average_revenue_per_user: number
+      /** Cost Per User */
+      cost_per_user: number
+      /** Active User By Event */
+      active_user_by_event: number
       /** One Time Products */
       one_time_products: number
       /** One Time Products Revenue */
@@ -15776,12 +17522,24 @@ export interface components {
       canceled_subscriptions_unused: number
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other: number
+      /** Churned Subscriptions */
+      churned_subscriptions: number
+      /** Churn Rate */
+      churn_rate: number
+      /** Ltv */
+      ltv: number
+      /** Gross Margin */
+      gross_margin: number
+      /** Gross Margin Percentage */
+      gross_margin_percentage: number
+      /** Cashflow */
+      cashflow: number
     }
     /**
      * MetricType
      * @enum {string}
      */
-    MetricType: 'scalar' | 'currency' | 'percentage'
+    MetricType: 'scalar' | 'currency' | 'currency_sub_cent' | 'percentage'
     /** Metrics */
     Metrics: {
       orders: components['schemas']['Metric']
@@ -15793,6 +17551,9 @@ export interface components {
       cumulative_costs: components['schemas']['Metric']
       average_order_value: components['schemas']['Metric']
       net_average_order_value: components['schemas']['Metric']
+      average_revenue_per_user: components['schemas']['Metric']
+      cost_per_user: components['schemas']['Metric']
+      active_user_by_event: components['schemas']['Metric']
       one_time_products: components['schemas']['Metric']
       one_time_products_revenue: components['schemas']['Metric']
       one_time_products_net_revenue: components['schemas']['Metric']
@@ -15817,12 +17578,23 @@ export interface components {
       canceled_subscriptions_too_expensive: components['schemas']['Metric']
       canceled_subscriptions_unused: components['schemas']['Metric']
       canceled_subscriptions_other: components['schemas']['Metric']
+      churned_subscriptions: components['schemas']['Metric']
+      churn_rate: components['schemas']['Metric']
+      ltv: components['schemas']['Metric']
+      gross_margin: components['schemas']['Metric']
+      gross_margin_percentage: components['schemas']['Metric']
+      cashflow: components['schemas']['Metric']
     }
     /**
      * MetricsIntervalLimit
      * @description Date interval limit to get metrics for a given interval.
      */
     MetricsIntervalLimit: {
+      /**
+       * Min Days
+       * @description Minimum number of days for this interval.
+       */
+      min_days: number
       /**
        * Max Days
        * @description Maximum number of days for this interval.
@@ -15894,6 +17666,12 @@ export interface components {
       average_order_value: number
       /** Net Average Order Value */
       net_average_order_value: number
+      /** Average Revenue Per User */
+      average_revenue_per_user: number
+      /** Cost Per User */
+      cost_per_user: number
+      /** Active User By Event */
+      active_user_by_event: number
       /** One Time Products */
       one_time_products: number
       /** One Time Products Revenue */
@@ -15942,6 +17720,18 @@ export interface components {
       canceled_subscriptions_unused: number
       /** Canceled Subscriptions Other */
       canceled_subscriptions_other: number
+      /** Churned Subscriptions */
+      churned_subscriptions: number
+      /** Churn Rate */
+      churn_rate: number
+      /** Ltv */
+      ltv: number
+      /** Gross Margin */
+      gross_margin: number
+      /** Gross Margin Percentage */
+      gross_margin_percentage: number
+      /** Cashflow */
+      cashflow: number
     }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {
@@ -15951,6 +17741,17 @@ export interface components {
        * @constant
        */
       error: 'MissingInvoiceBillingDetails'
+      /** Detail */
+      detail: string
+    }
+    /** MissingPaymentMethodError */
+    MissingPaymentMethodError: {
+      /**
+       * Error
+       * @example MissingPaymentMethodError
+       * @constant
+       */
+      error: 'MissingPaymentMethodError'
       /** Detail */
       detail: string
     }
@@ -16038,8 +17839,6 @@ export interface components {
     NotificationsList: {
       /** Notifications */
       notifications: (
-        | components['schemas']['MaintainerAccountUnderReviewNotification']
-        | components['schemas']['MaintainerAccountReviewedNotification']
         | components['schemas']['MaintainerNewPaidSubscriptionNotification']
         | components['schemas']['MaintainerNewProductSaleNotification']
         | components['schemas']['MaintainerCreateAccountNotification']
@@ -16085,7 +17884,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -16150,7 +17949,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -16196,7 +17995,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -16265,7 +18064,7 @@ export interface components {
      * OAuthPlatform
      * @enum {string}
      */
-    OAuthPlatform: 'github' | 'github_repository_benefit' | 'google'
+    OAuthPlatform: 'github' | 'github_repository_benefit' | 'google' | 'apple'
     /** Order */
     Order: {
       /**
@@ -16404,6 +18203,12 @@ export interface components {
        * @example 500
        */
       platform_fee_amount: number
+      /**
+       * Platform Fee Currency
+       * @description Currency of the platform fee.
+       * @example usd
+       */
+      platform_fee_currency: string | null
       customer: components['schemas']['OrderCustomer']
       /**
        * User Id
@@ -16597,6 +18402,82 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * OrderPaidEvent
+     * @description An event created by Polar when an order is paid.
+     */
+    OrderPaidEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'order.paid'
+      metadata: components['schemas']['OrderPaidMetadata']
+    }
+    /** OrderPaidMetadata */
+    OrderPaidMetadata: {
+      /** Order Id */
+      order_id: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+      /** Backfilled */
+      backfilled?: boolean
+    }
     /** OrderProduct */
     OrderProduct: {
       /** Metadata */
@@ -16643,7 +18524,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -16662,6 +18543,82 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
+    }
+    /**
+     * OrderRefundedEvent
+     * @description An event created by Polar when an order is refunded.
+     */
+    OrderRefundedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'order.refunded'
+      metadata: components['schemas']['OrderRefundedMetadata']
+    }
+    /** OrderRefundedMetadata */
+    OrderRefundedMetadata: {
+      /** Order Id */
+      order_id: string
+      /** Refunded Amount */
+      refunded_amount: number
+      /** Currency */
+      currency: string
+      /** Backfilled */
+      backfilled?: boolean
     }
     /**
      * OrderSortProperty
@@ -16733,7 +18690,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -16806,16 +18763,16 @@ export interface components {
       discount_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Seats
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       */
+      seats?: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
-      /**
-       * Seats
-       * @description Number of seats included in the subscription (for seat-based pricing).
-       */
-      seats?: number | null
     }
     /**
      * OrderUpdate
@@ -16862,8 +18819,7 @@ export interface components {
       /**
        * Id
        * Format: uuid4
-       * @description The organization ID.
-       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       * @description The ID of the object.
        */
       id: string
       /**
@@ -16881,6 +18837,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
+      /** @description Proration behavior applied when customer updates their subscription from the portal. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
       /**
        * Email
        * @description Public support email.
@@ -16897,7 +18860,7 @@ export interface components {
        */
       socials: components['schemas']['OrganizationSocialLink'][]
       /** @description Current organization status */
-      status: components['schemas']['Status']
+      status: components['schemas']['OrganizationStatus']
       /**
        * Details Submitted At
        * @description When the business details were submitted.
@@ -17155,6 +19118,36 @@ export interface components {
       /** Subscription Updated */
       subscription_updated: boolean
     }
+    /**
+     * OrganizationDeletionBlockedReason
+     * @description Reasons why an organization cannot be immediately deleted.
+     * @enum {string}
+     */
+    OrganizationDeletionBlockedReason:
+      | 'has_orders'
+      | 'has_active_subscriptions'
+      | 'stripe_account_deletion_failed'
+    /**
+     * OrganizationDeletionResponse
+     * @description Response for organization deletion request.
+     */
+    OrganizationDeletionResponse: {
+      /**
+       * Deleted
+       * @description Whether the organization was immediately deleted
+       */
+      deleted: boolean
+      /**
+       * Requires Support
+       * @description Whether a support ticket was created for manual handling
+       */
+      requires_support: boolean
+      /**
+       * Blocked Reasons
+       * @description Reasons why immediate deletion is blocked
+       */
+      blocked_reasons?: components['schemas']['OrganizationDeletionBlockedReason'][]
+    }
     /** OrganizationDetails */
     OrganizationDetails: {
       /**
@@ -17222,6 +19215,18 @@ export interface components {
        * @default false
        */
       revops_enabled: boolean
+      /**
+       * Wallets Enabled
+       * @description If this organization has Wallets enabled
+       * @default false
+       */
+      wallets_enabled: boolean
+      /**
+       * Member Model Enabled
+       * @description If this organization has the Member model enabled
+       * @default false
+       */
+      member_model_enabled: boolean
     }
     /** OrganizationMember */
     OrganizationMember: {
@@ -17265,7 +19270,7 @@ export interface components {
        */
       steps: components['schemas']['OrganizationPaymentStep'][]
       /** @description Current organization status */
-      organization_status: components['schemas']['Status']
+      organization_status: components['schemas']['OrganizationStatus']
     }
     /** OrganizationPaymentStep */
     OrganizationPaymentStep: {
@@ -17289,6 +19294,50 @@ export interface components {
        * @description Whether the step is completed
        */
       completed: boolean
+    }
+    /** OrganizationProfileSettings */
+    OrganizationProfileSettings: {
+      /**
+       * Enabled
+       * @description If this organization has a profile enabled
+       */
+      enabled?: boolean | null
+      /**
+       * Description
+       * @description A description of the organization
+       */
+      description?: string | null
+      /**
+       * Featured Projects
+       * @description A list of featured projects
+       */
+      featured_projects?: string[] | null
+      /**
+       * Featured Organizations
+       * @description A list of featured organizations
+       */
+      featured_organizations?: string[] | null
+      /**
+       * Links
+       * @description A list of links associated with the organization
+       */
+      links?: string[] | null
+      /**
+       * @description Subscription promotion settings
+       * @default {
+       *       "promote": true,
+       *       "show_count": true,
+       *       "count_free": true
+       *     }
+       */
+      subscribe:
+        | components['schemas']['OrganizationSubscribePromoteSettings']
+        | null
+      /**
+       * Accent Color
+       * @description Accent color for the organization
+       */
+      accent_color?: string | null
     }
     /** OrganizationReviewStatus */
     OrganizationReviewStatus: {
@@ -17370,6 +19419,38 @@ export interface components {
       | '-next_review_threshold'
       | 'days_in_status'
       | '-days_in_status'
+    /**
+     * OrganizationStatus
+     * @enum {string}
+     */
+    OrganizationStatus:
+      | 'created'
+      | 'onboarding_started'
+      | 'initial_review'
+      | 'ongoing_review'
+      | 'denied'
+      | 'active'
+    /** OrganizationSubscribePromoteSettings */
+    OrganizationSubscribePromoteSettings: {
+      /**
+       * Promote
+       * @description Promote email subscription (free)
+       * @default true
+       */
+      promote: boolean
+      /**
+       * Show Count
+       * @description Show subscription count publicly
+       * @default true
+       */
+      show_count: boolean
+      /**
+       * Count Free
+       * @description Include free subscribers in total count
+       * @default true
+       */
+      count_free: boolean
+    }
     /** OrganizationSubscriptionSettings */
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
@@ -17377,6 +19458,10 @@ export interface components {
       /** Allow Customer Updates */
       allow_customer_updates: boolean
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /** Benefit Revocation Grace Period */
+      benefit_revocation_grace_period: number
+      /** Prevent Trial Abuse */
+      prevent_trial_abuse: boolean
     }
     /** OrganizationUpdate */
     OrganizationUpdate: {
@@ -17414,6 +19499,26 @@ export interface components {
         | components['schemas']['OrganizationCustomerEmailSettings']
         | null
     }
+    /**
+     * OwnerCreate
+     * @description Schema for creating an owner member during customer creation.
+     */
+    OwnerCreate: {
+      /**
+       * Email
+       * @description The email address of the member.
+       * @example member@example.com
+       */
+      email?: string | null
+      /** Name */
+      name?: string | null
+      /**
+       * External Id
+       * @description The ID of the member in your system. This must be unique within the customer.
+       * @example usr_1337
+       */
+      external_id?: string | null
+    }
     /** Pagination */
     Pagination: {
       /** Total Count */
@@ -17443,6 +19548,17 @@ export interface components {
        * @constant
        */
       error: 'PaymentError'
+      /** Detail */
+      detail: string
+    }
+    /** PaymentIntentFailedError */
+    PaymentIntentFailedError: {
+      /**
+       * Error
+       * @example PaymentIntentFailedError
+       * @constant
+       */
+      error: 'PaymentIntentFailedError'
       /** Detail */
       detail: string
     }
@@ -17775,7 +19891,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -17973,7 +20089,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        * @default 1
        */
       recurring_interval_count: number
@@ -18089,6 +20205,8 @@ export interface components {
        * @description The ID of the price.
        */
       id: string
+      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
+      source: components['schemas']['ProductPriceSource']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -18186,6 +20304,8 @@ export interface components {
        * @description The ID of the price.
        */
       id: string
+      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
+      source: components['schemas']['ProductPriceSource']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -18263,6 +20383,8 @@ export interface components {
        * @description The ID of the price.
        */
       id: string
+      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
+      source: components['schemas']['ProductPriceSource']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -18336,6 +20458,8 @@ export interface components {
        * @description The ID of the price.
        */
       id: string
+      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
+      source: components['schemas']['ProductPriceSource']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -18437,6 +20561,8 @@ export interface components {
        * @description The ID of the price.
        */
       id: string
+      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
+      source: components['schemas']['ProductPriceSource']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -18519,6 +20645,11 @@ export interface components {
       tiers: components['schemas']['ProductPriceSeatTier'][]
     }
     /**
+     * ProductPriceSource
+     * @enum {string}
+     */
+    ProductPriceSource: 'catalog' | 'ad_hoc'
+    /**
      * ProductPriceType
      * @enum {string}
      */
@@ -18581,7 +20712,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on. None for one-time products.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
       /**
@@ -18661,7 +20792,7 @@ export interface components {
         | null
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
        */
       recurring_interval_count?: number | null
       /**
@@ -18944,6 +21075,7 @@ export interface components {
       | 'profile'
       | 'email'
       | 'user:read'
+      | 'user:write'
       | 'web:read'
       | 'web:write'
       | 'organizations:read'
@@ -18974,6 +21106,10 @@ export interface components {
       | 'subscriptions:write'
       | 'customers:read'
       | 'customers:write'
+      | 'members:read'
+      | 'members:write'
+      | 'wallets:read'
+      | 'wallets:write'
       | 'customer_meters:read'
       | 'customer_sessions:write'
       | 'customer_seats:read'
@@ -19038,6 +21174,12 @@ export interface components {
       metadata?: {
         [key: string]: unknown
       } | null
+      /**
+       * Immediate Claim
+       * @description If true, the seat will be immediately claimed without sending an invitation email. API-only feature.
+       * @default false
+       */
+      immediate_claim: boolean
     }
     /** SeatClaim */
     SeatClaim: {
@@ -19107,6 +21249,35 @@ export interface components {
        * @description Total number of seats for the subscription
        */
       total_seats: number
+    }
+    /**
+     * StatisticsPeriod
+     * @description Event statistics for a single time period.
+     */
+    StatisticsPeriod: {
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description Period timestamp
+       */
+      timestamp: string
+      /**
+       * Period Start
+       * Format: date-time
+       * @description Period start (inclusive)
+       */
+      period_start: string
+      /**
+       * Period End
+       * Format: date-time
+       * @description Period end (exclusive)
+       */
+      period_end: string
+      /**
+       * Stats
+       * @description Stats grouped by event name for this period
+       */
+      stats: components['schemas']['EventStatistics'][]
     }
     /**
      * Status
@@ -19308,7 +21479,7 @@ export interface components {
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
-       * @description Number of interval units of the subscription.If this is set to 1 the charge will happen every interval (e.g. every month),if set to 2 it will be every other month, and so on.
+       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
        */
       recurring_interval_count: number
       /**
@@ -19381,16 +21552,16 @@ export interface components {
       discount_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Seats
+       * @description The number of seats for seat-based subscriptions. None for non-seat subscriptions.
+       */
+      seats?: number | null
       customer_cancellation_reason:
         | components['schemas']['CustomerCancellationReason']
         | null
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
-      /**
-       * Seats
-       * @description Number of seats included in the subscription (for seat-based pricing).
-       */
-      seats?: number | null
       /** Metadata */
       metadata: {
         [key: string]: string | number | boolean
@@ -19472,20 +21643,113 @@ export interface components {
        */
       cancel_at_period_end: boolean
     }
-    /** SubscriptionChargePreviewResponse */
-    SubscriptionChargePreviewResponse: {
-      /** Base Amount */
+    /**
+     * SubscriptionChargePreview
+     * @description Preview of the next charge for a subscription.
+     */
+    SubscriptionChargePreview: {
+      /**
+       * Base Amount
+       * @description Base subscription amount in cents (sum of product prices)
+       */
       base_amount: number
-      /** Metered Amount */
+      /**
+       * Metered Amount
+       * @description Total metered usage charges in cents (sum of all meter charges)
+       */
       metered_amount: number
-      /** Subtotal Amount */
+      /**
+       * Subtotal Amount
+       * @description Subtotal amount in cents (base + metered, before discount and tax)
+       */
       subtotal_amount: number
-      /** Discount Amount */
+      /**
+       * Discount Amount
+       * @description Discount amount in cents
+       */
       discount_amount: number
-      /** Tax Amount */
+      /**
+       * Tax Amount
+       * @description Tax amount in cents
+       */
       tax_amount: number
-      /** Total Amount */
+      /**
+       * Total Amount
+       * @description Total amount in cents (final charge amount)
+       */
       total_amount: number
+    }
+    /**
+     * SubscriptionCreateCustomer
+     * @description Create a subscription for an existing customer.
+     */
+    SubscriptionCreateCustomer: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      product_id: string
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer to create the subscription for.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      customer_id: string
+    }
+    /**
+     * SubscriptionCreateExternalCustomer
+     * @description Create a subscription for an existing customer identified by an external ID.
+     */
+    SubscriptionCreateExternalCustomer: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      product_id: string
+      /**
+       * External Customer Id
+       * @description The ID of the customer in your system to create the subscription for. It must already exist in Polar.
+       */
+      external_customer_id: string
     }
     /** SubscriptionCustomer */
     SubscriptionCustomer: {
@@ -19592,6 +21856,22 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
       /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
@@ -19708,6 +21988,22 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -19820,6 +22116,22 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
        * Source
        * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
        * @constant
@@ -19836,6 +22148,82 @@ export interface components {
     SubscriptionRevokedMetadata: {
       /** Subscription Id */
       subscription_id: string
+    }
+    /**
+     * SubscriptionSeatsUpdatedEvent
+     * @description An event created by Polar when a the seats on a subscription is changed.
+     */
+    SubscriptionSeatsUpdatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.seats_updated'
+      metadata: components['schemas']['SubscriptionSeatsUpdatedMetadata']
+    }
+    /** SubscriptionSeatsUpdatedMetadata */
+    SubscriptionSeatsUpdatedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Old Seats */
+      old_seats: number
+      /** New Seats */
+      new_seats: number
+      /** Proration Behavior */
+      proration_behavior: string
     }
     /**
      * SubscriptionSortProperty
@@ -19872,8 +22260,21 @@ export interface components {
       | components['schemas']['SubscriptionUpdateProduct']
       | components['schemas']['SubscriptionUpdateDiscount']
       | components['schemas']['SubscriptionUpdateTrial']
+      | components['schemas']['SubscriptionUpdateSeats']
+      | components['schemas']['SubscriptionUpdateBillingPeriod']
       | components['schemas']['SubscriptionCancel']
       | components['schemas']['SubscriptionRevoke']
+    /** SubscriptionUpdateBillingPeriod */
+    SubscriptionUpdateBillingPeriod: {
+      /**
+       * Current Billing Period End
+       * Format: date-time
+       * @description Set a new date for the end of the current billing period. The subscription will renew on this date. Needs to be later than the current value.
+       *
+       *     It is not possible to update the current billing period on a canceled subscription.
+       */
+      current_billing_period_end: string
+    }
     /** SubscriptionUpdateDiscount */
     SubscriptionUpdateDiscount: {
       /**
@@ -19888,8 +22289,21 @@ export interface components {
        * Product Id
        * Format: uuid4
        * @description Update subscription to another product.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
+    }
+    /** SubscriptionUpdateSeats */
+    SubscriptionUpdateSeats: {
+      /**
+       * Seats
+       * @description Update the number of seats for this subscription.
+       */
+      seats: number
       /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
@@ -19929,6 +22343,12 @@ export interface components {
       | components['schemas']['SubscriptionCycledEvent']
       | components['schemas']['SubscriptionRevokedEvent']
       | components['schemas']['SubscriptionProductUpdatedEvent']
+      | components['schemas']['SubscriptionSeatsUpdatedEvent']
+      | components['schemas']['OrderPaidEvent']
+      | components['schemas']['OrderRefundedEvent']
+      | components['schemas']['CustomerCreatedEvent']
+      | components['schemas']['CustomerUpdatedEvent']
+      | components['schemas']['CustomerDeletedEvent']
     /**
      * TaxIDFormat
      * @description List of supported tax ID formats.
@@ -20224,7 +22644,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      product: components['schemas']['TransactionProduct']
+      product: components['schemas']['TransactionProduct'] | null
       /** Subscription Id */
       subscription_id: string | null
     }
@@ -20340,6 +22760,17 @@ export interface components {
       balance: components['schemas']['TransactionsBalance']
       payout: components['schemas']['TransactionsBalance']
     }
+    /** TrialAlreadyRedeemed */
+    TrialAlreadyRedeemed: {
+      /**
+       * Error
+       * @example TrialAlreadyRedeemed
+       * @constant
+       */
+      error: 'TrialAlreadyRedeemed'
+      /** Detail */
+      detail: string
+    }
     /**
      * TrialInterval
      * @enum {string}
@@ -20353,6 +22784,17 @@ export interface components {
        * @constant
        */
       error: 'Unauthorized'
+      /** Detail */
+      detail: string
+    }
+    /** UnderReviewAccount */
+    UnderReviewAccount: {
+      /**
+       * Error
+       * @example UnderReviewAccount
+       * @constant
+       */
+      error: 'UnderReviewAccount'
       /** Detail */
       detail: string
     }
@@ -20377,6 +22819,33 @@ export interface components {
       avatar_url: string | null
       /** Account Id */
       account_id: string | null
+    }
+    /**
+     * UserDeletionBlockedReason
+     * @description Reasons why a user account cannot be immediately deleted.
+     * @enum {string}
+     */
+    UserDeletionBlockedReason: 'has_active_organizations'
+    /**
+     * UserDeletionResponse
+     * @description Response for user deletion request.
+     */
+    UserDeletionResponse: {
+      /**
+       * Deleted
+       * @description Whether the user account was immediately deleted
+       */
+      deleted: boolean
+      /**
+       * Blocked Reasons
+       * @description Reasons why immediate deletion is blocked
+       */
+      blocked_reasons?: components['schemas']['UserDeletionBlockedReason'][]
+      /**
+       * Blocking Organizations
+       * @description Organizations that must be deleted first
+       */
+      blocking_organizations?: components['schemas']['BlockingOrganization'][]
     }
     /**
      * UserEvent
@@ -20414,6 +22883,22 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
       /**
        * Name
        * @description The name of the event.
@@ -20592,6 +23077,77 @@ export interface components {
       /** Error Type */
       type: string
     }
+    /**
+     * Wallet
+     * @description A wallet represents a customer's balance in your organization.
+     *
+     *     They can top-up their wallet, and use the balance to pay for usage.
+     */
+    Wallet: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer that owns the wallet.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      customer_id: string
+      /**
+       * Balance
+       * @description The current balance of the wallet, in cents.
+       * @example 5000
+       */
+      balance: number
+      /**
+       * Currency
+       * @description The currency of the wallet.
+       * @example usd
+       */
+      currency: string
+    }
+    /**
+     * WalletSortProperty
+     * @enum {string}
+     */
+    WalletSortProperty: 'created_at' | '-created_at' | 'balance' | '-balance'
+    /**
+     * WalletTopUpCreate
+     * @description Request schema to top-up a wallet.
+     */
+    WalletTopUpCreate: {
+      /**
+       * Amount
+       * @description The amount to top-up the wallet by, in cents.
+       * @example 2000
+       */
+      amount: number
+      /**
+       * Currency
+       * @description The currency. Currently, only `usd` is supported. It should match the wallet's currency.
+       */
+      currency: string
+    }
+    /**
+     * WalletType
+     * @enum {string}
+     */
+    WalletType: 'usage' | 'billing'
     /**
      * WebhookBenefitCreatedPayload
      * @description Sent when a new benefit is created.
@@ -20805,6 +23361,67 @@ export interface components {
       data: components['schemas']['Customer']
     }
     /**
+     * WebhookCustomerSeatAssignedPayload
+     * @description Sent when a new customer seat is assigned.
+     *
+     *     This event is triggered when a seat is assigned to a customer by the organization.
+     *     The customer will receive an invitation email to claim the seat.
+     */
+    WebhookCustomerSeatAssignedPayload: {
+      /**
+       * Type
+       * @example customer_seat.assigned
+       * @constant
+       */
+      type: 'customer_seat.assigned'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['CustomerSeat']
+    }
+    /**
+     * WebhookCustomerSeatClaimedPayload
+     * @description Sent when a customer seat is claimed.
+     *
+     *     This event is triggered when a customer accepts the seat invitation and claims their access.
+     */
+    WebhookCustomerSeatClaimedPayload: {
+      /**
+       * Type
+       * @example customer_seat.claimed
+       * @constant
+       */
+      type: 'customer_seat.claimed'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['CustomerSeat']
+    }
+    /**
+     * WebhookCustomerSeatRevokedPayload
+     * @description Sent when a customer seat is revoked.
+     *
+     *     This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
+     */
+    WebhookCustomerSeatRevokedPayload: {
+      /**
+       * Type
+       * @example customer_seat.revoked
+       * @constant
+       */
+      type: 'customer_seat.revoked'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['CustomerSeat']
+    }
+    /**
      * WebhookCustomerStateChangedPayload
      * @description Sent when a customer state has changed.
      *
@@ -20942,6 +23559,11 @@ export interface components {
        * @description The events that will trigger the webhook.
        */
       events: components['schemas']['WebhookEventType'][]
+      /**
+       * Enabled
+       * @description Whether the webhook endpoint is enabled and will receive events.
+       */
+      enabled: boolean
     }
     /**
      * WebhookEndpointCreate
@@ -20988,6 +23610,11 @@ export interface components {
       format?: components['schemas']['WebhookFormat'] | null
       /** Events */
       events?: components['schemas']['WebhookEventType'][] | null
+      /**
+       * Enabled
+       * @description Whether the webhook endpoint is enabled.
+       */
+      enabled?: boolean | null
     }
     /**
      * WebhookEvent
@@ -21028,6 +23655,11 @@ export interface components {
        */
       succeeded?: boolean | null
       /**
+       * Skipped
+       * @description Whether this event was skipped because the webhook endpoint was disabled.
+       */
+      skipped: boolean
+      /**
        * Payload
        * @description The payload of the webhook event.
        */
@@ -21051,6 +23683,9 @@ export interface components {
       | 'customer.updated'
       | 'customer.deleted'
       | 'customer.state_changed'
+      | 'customer_seat.assigned'
+      | 'customer_seat.claimed'
+      | 'customer_seat.revoked'
       | 'order.created'
       | 'order.updated'
       | 'order.paid'
@@ -21526,6 +24161,26 @@ export interface operations {
       }
     }
   }
+  'users:delete_authenticated_user': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Deletion result */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserDeletionResponse']
+        }
+      }
+    }
+  }
   'users:scopes': {
     parameters: {
       query?: never
@@ -21562,6 +24217,49 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['UserIdentityVerification']
+        }
+      }
+    }
+  }
+  'users:disconnect_oauth_account': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        platform: components['schemas']['OAuthPlatform']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Cannot disconnect last authentication method */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description OAuth account not found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }
@@ -21841,6 +24539,71 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['DiscordGuild']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_apple:integrations.apple.authorize': {
+    parameters: {
+      query?: {
+        return_to?: string | null
+        attribution?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_apple:integrations.apple.callback': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/x-www-form-urlencoded': components['schemas']['Body_integrations_apple_integrations.apple.callback']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -22455,6 +25218,55 @@ export interface operations {
       }
     }
   }
+  'organizations:delete': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Organization deleted or deletion request submitted. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDeletionResponse']
+        }
+      }
+      /** @description You don't have the permission to delete this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'organizations:update': {
     parameters: {
       query?: never
@@ -22812,6 +25624,8 @@ export interface operations {
         discount_id?: string | string[] | null
         /** @description Filter by active or inactive subscription. */
         active?: boolean | null
+        /** @description Filter by subscriptions that are set to cancel at period end. */
+        cancel_at_period_end?: boolean | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -22834,6 +25648,41 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_Subscription_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['SubscriptionCreateCustomer']
+          | components['schemas']['SubscriptionCreateExternalCustomer']
+      }
+    }
+    responses: {
+      /** @description Subscription created. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Subscription']
         }
       }
       /** @description Validation Error */
@@ -23029,6 +25878,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionLocked']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:get_charge_preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -24375,6 +27265,40 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_Order_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'orders:export': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by product ID. */
+        product_id?: string | string[] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -27084,6 +30008,8 @@ export interface operations {
         email?: string | null
         /** @description Filter by name, email, or external ID. */
         query?: string | null
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -27105,7 +30031,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_Customer_']
+          'application/json': components['schemas']['ListResource_CustomerWithMembers_']
         }
       }
       /** @description Validation Error */
@@ -27121,7 +30047,10 @@ export interface operations {
   }
   'customers:create': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
+      }
       header?: never
       path?: never
       cookie?: never
@@ -27138,7 +30067,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerWithMembers']
         }
       }
       /** @description Validation Error */
@@ -27186,7 +30115,10 @@ export interface operations {
   }
   'customers:get': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
+      }
       header?: never
       path: {
         /** @description The customer ID. */
@@ -27202,7 +30134,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerWithMembers']
         }
       }
       /** @description Customer not found. */
@@ -27266,7 +30198,10 @@ export interface operations {
   }
   'customers:update': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
+      }
       header?: never
       path: {
         /** @description The customer ID. */
@@ -27286,7 +30221,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerWithMembers']
         }
       }
       /** @description Customer not found. */
@@ -27311,7 +30246,10 @@ export interface operations {
   }
   'customers:get_external': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
+      }
       header?: never
       path: {
         /** @description The customer external ID. */
@@ -27327,7 +30265,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerWithMembers']
         }
       }
       /** @description Customer not found. */
@@ -27391,7 +30329,10 @@ export interface operations {
   }
   'customers:update_external': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Include members in the response. Only populated when set to true. */
+        include_members?: boolean
+      }
       header?: never
       path: {
         /** @description The customer external ID. */
@@ -27411,7 +30352,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Customer']
+          'application/json': components['schemas']['CustomerWithMembers']
         }
       }
       /** @description Customer not found. */
@@ -27516,14 +30457,20 @@ export interface operations {
       }
     }
   }
-  'customers:get_balance': {
+  'members:list_members': {
     parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The customer ID. */
-        id: string
+      query?: {
+        /** @description Filter by customer ID. */
+        customer_id?: string | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['MemberSortProperty'][] | null
       }
+      header?: never
+      path?: never
       cookie?: never
     }
     requestBody?: never
@@ -27534,16 +30481,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerBalance']
-        }
-      }
-      /** @description Customer not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['ListResource_Member_']
         }
       }
       /** @description Validation Error */
@@ -27567,8 +30505,6 @@ export interface operations {
           | null
         /** @description Filter by benefit ID. */
         benefit_id?: string | string[] | null
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by checkout ID. */
         checkout_id?: string | string[] | null
         /** @description Filter by order ID. */
@@ -28349,8 +31285,6 @@ export interface operations {
   'customer_portal:downloadables:list': {
     parameters: {
       query?: {
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by benefit ID. */
         benefit_id?: string | string[] | null
         /** @description Page number, defaults to 1. */
@@ -28446,8 +31380,6 @@ export interface operations {
   'customer_portal:license_keys:list': {
     parameters: {
       query?: {
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by a specific benefit */
         benefit_id?: string | null
         /** @description Page number, defaults to 1. */
@@ -28741,8 +31673,6 @@ export interface operations {
   'customer_portal:orders:list': {
     parameters: {
       query?: {
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
         /** @description Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
@@ -29061,7 +31991,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerOrganization']
+          'application/json': components['schemas']['CustomerOrganizationData']
         }
       }
       /** @description Organization not found. */
@@ -29087,8 +32017,6 @@ export interface operations {
   'customer_portal:subscriptions:list': {
     parameters: {
       query?: {
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
         /** @description Filter by active or cancelled subscription. */
@@ -29293,10 +32221,87 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SubscriptionChargePreviewResponse']
+          'application/json': components['schemas']['SubscriptionChargePreview']
         }
       }
       /** @description Customer subscription was not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:wallets:list': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['CustomerWalletSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_CustomerWallet_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:wallets:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The wallet ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerWallet']
+        }
+      }
+      /** @description Wallet not found. */
       404: {
         headers: {
           [name: string]: unknown
@@ -29769,6 +32774,10 @@ export interface operations {
           | null
         /** @description Query to filter events. */
         query?: string | null
+        /** @description Filter events by parent event ID when hierarchical is set to true. When not specified or null, returns root events only. */
+        parent_id?: string | null
+        /** @description When true, filters by parent_id (root events if not specified). When false, returns all events regardless of hierarchy. */
+        hierarchical?: boolean
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -29791,6 +32800,669 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_Event_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'events:list_statistics_timeseries': {
+    parameters: {
+      query: {
+        /** @description Start date. */
+        start_date: string
+        /** @description End date. */
+        end_date: string
+        /** @description Timezone to use for the dates. Default is UTC. */
+        timezone?:
+          | 'Africa/Abidjan'
+          | 'Africa/Accra'
+          | 'Africa/Addis_Ababa'
+          | 'Africa/Algiers'
+          | 'Africa/Asmara'
+          | 'Africa/Asmera'
+          | 'Africa/Bamako'
+          | 'Africa/Bangui'
+          | 'Africa/Banjul'
+          | 'Africa/Bissau'
+          | 'Africa/Blantyre'
+          | 'Africa/Brazzaville'
+          | 'Africa/Bujumbura'
+          | 'Africa/Cairo'
+          | 'Africa/Casablanca'
+          | 'Africa/Ceuta'
+          | 'Africa/Conakry'
+          | 'Africa/Dakar'
+          | 'Africa/Dar_es_Salaam'
+          | 'Africa/Djibouti'
+          | 'Africa/Douala'
+          | 'Africa/El_Aaiun'
+          | 'Africa/Freetown'
+          | 'Africa/Gaborone'
+          | 'Africa/Harare'
+          | 'Africa/Johannesburg'
+          | 'Africa/Juba'
+          | 'Africa/Kampala'
+          | 'Africa/Khartoum'
+          | 'Africa/Kigali'
+          | 'Africa/Kinshasa'
+          | 'Africa/Lagos'
+          | 'Africa/Libreville'
+          | 'Africa/Lome'
+          | 'Africa/Luanda'
+          | 'Africa/Lubumbashi'
+          | 'Africa/Lusaka'
+          | 'Africa/Malabo'
+          | 'Africa/Maputo'
+          | 'Africa/Maseru'
+          | 'Africa/Mbabane'
+          | 'Africa/Mogadishu'
+          | 'Africa/Monrovia'
+          | 'Africa/Nairobi'
+          | 'Africa/Ndjamena'
+          | 'Africa/Niamey'
+          | 'Africa/Nouakchott'
+          | 'Africa/Ouagadougou'
+          | 'Africa/Porto-Novo'
+          | 'Africa/Sao_Tome'
+          | 'Africa/Timbuktu'
+          | 'Africa/Tripoli'
+          | 'Africa/Tunis'
+          | 'Africa/Windhoek'
+          | 'America/Adak'
+          | 'America/Anchorage'
+          | 'America/Anguilla'
+          | 'America/Antigua'
+          | 'America/Araguaina'
+          | 'America/Argentina/Buenos_Aires'
+          | 'America/Argentina/Catamarca'
+          | 'America/Argentina/ComodRivadavia'
+          | 'America/Argentina/Cordoba'
+          | 'America/Argentina/Jujuy'
+          | 'America/Argentina/La_Rioja'
+          | 'America/Argentina/Mendoza'
+          | 'America/Argentina/Rio_Gallegos'
+          | 'America/Argentina/Salta'
+          | 'America/Argentina/San_Juan'
+          | 'America/Argentina/San_Luis'
+          | 'America/Argentina/Tucuman'
+          | 'America/Argentina/Ushuaia'
+          | 'America/Aruba'
+          | 'America/Asuncion'
+          | 'America/Atikokan'
+          | 'America/Atka'
+          | 'America/Bahia'
+          | 'America/Bahia_Banderas'
+          | 'America/Barbados'
+          | 'America/Belem'
+          | 'America/Belize'
+          | 'America/Blanc-Sablon'
+          | 'America/Boa_Vista'
+          | 'America/Bogota'
+          | 'America/Boise'
+          | 'America/Buenos_Aires'
+          | 'America/Cambridge_Bay'
+          | 'America/Campo_Grande'
+          | 'America/Cancun'
+          | 'America/Caracas'
+          | 'America/Catamarca'
+          | 'America/Cayenne'
+          | 'America/Cayman'
+          | 'America/Chicago'
+          | 'America/Chihuahua'
+          | 'America/Ciudad_Juarez'
+          | 'America/Coral_Harbour'
+          | 'America/Cordoba'
+          | 'America/Costa_Rica'
+          | 'America/Coyhaique'
+          | 'America/Creston'
+          | 'America/Cuiaba'
+          | 'America/Curacao'
+          | 'America/Danmarkshavn'
+          | 'America/Dawson'
+          | 'America/Dawson_Creek'
+          | 'America/Denver'
+          | 'America/Detroit'
+          | 'America/Dominica'
+          | 'America/Edmonton'
+          | 'America/Eirunepe'
+          | 'America/El_Salvador'
+          | 'America/Ensenada'
+          | 'America/Fort_Nelson'
+          | 'America/Fort_Wayne'
+          | 'America/Fortaleza'
+          | 'America/Glace_Bay'
+          | 'America/Godthab'
+          | 'America/Goose_Bay'
+          | 'America/Grand_Turk'
+          | 'America/Grenada'
+          | 'America/Guadeloupe'
+          | 'America/Guatemala'
+          | 'America/Guayaquil'
+          | 'America/Guyana'
+          | 'America/Halifax'
+          | 'America/Havana'
+          | 'America/Hermosillo'
+          | 'America/Indiana/Indianapolis'
+          | 'America/Indiana/Knox'
+          | 'America/Indiana/Marengo'
+          | 'America/Indiana/Petersburg'
+          | 'America/Indiana/Tell_City'
+          | 'America/Indiana/Vevay'
+          | 'America/Indiana/Vincennes'
+          | 'America/Indiana/Winamac'
+          | 'America/Indianapolis'
+          | 'America/Inuvik'
+          | 'America/Iqaluit'
+          | 'America/Jamaica'
+          | 'America/Jujuy'
+          | 'America/Juneau'
+          | 'America/Kentucky/Louisville'
+          | 'America/Kentucky/Monticello'
+          | 'America/Knox_IN'
+          | 'America/Kralendijk'
+          | 'America/La_Paz'
+          | 'America/Lima'
+          | 'America/Los_Angeles'
+          | 'America/Louisville'
+          | 'America/Lower_Princes'
+          | 'America/Maceio'
+          | 'America/Managua'
+          | 'America/Manaus'
+          | 'America/Marigot'
+          | 'America/Martinique'
+          | 'America/Matamoros'
+          | 'America/Mazatlan'
+          | 'America/Mendoza'
+          | 'America/Menominee'
+          | 'America/Merida'
+          | 'America/Metlakatla'
+          | 'America/Mexico_City'
+          | 'America/Miquelon'
+          | 'America/Moncton'
+          | 'America/Monterrey'
+          | 'America/Montevideo'
+          | 'America/Montreal'
+          | 'America/Montserrat'
+          | 'America/Nassau'
+          | 'America/New_York'
+          | 'America/Nipigon'
+          | 'America/Nome'
+          | 'America/Noronha'
+          | 'America/North_Dakota/Beulah'
+          | 'America/North_Dakota/Center'
+          | 'America/North_Dakota/New_Salem'
+          | 'America/Nuuk'
+          | 'America/Ojinaga'
+          | 'America/Panama'
+          | 'America/Pangnirtung'
+          | 'America/Paramaribo'
+          | 'America/Phoenix'
+          | 'America/Port-au-Prince'
+          | 'America/Port_of_Spain'
+          | 'America/Porto_Acre'
+          | 'America/Porto_Velho'
+          | 'America/Puerto_Rico'
+          | 'America/Punta_Arenas'
+          | 'America/Rainy_River'
+          | 'America/Rankin_Inlet'
+          | 'America/Recife'
+          | 'America/Regina'
+          | 'America/Resolute'
+          | 'America/Rio_Branco'
+          | 'America/Rosario'
+          | 'America/Santa_Isabel'
+          | 'America/Santarem'
+          | 'America/Santiago'
+          | 'America/Santo_Domingo'
+          | 'America/Sao_Paulo'
+          | 'America/Scoresbysund'
+          | 'America/Shiprock'
+          | 'America/Sitka'
+          | 'America/St_Barthelemy'
+          | 'America/St_Johns'
+          | 'America/St_Kitts'
+          | 'America/St_Lucia'
+          | 'America/St_Thomas'
+          | 'America/St_Vincent'
+          | 'America/Swift_Current'
+          | 'America/Tegucigalpa'
+          | 'America/Thule'
+          | 'America/Thunder_Bay'
+          | 'America/Tijuana'
+          | 'America/Toronto'
+          | 'America/Tortola'
+          | 'America/Vancouver'
+          | 'America/Virgin'
+          | 'America/Whitehorse'
+          | 'America/Winnipeg'
+          | 'America/Yakutat'
+          | 'America/Yellowknife'
+          | 'Antarctica/Casey'
+          | 'Antarctica/Davis'
+          | 'Antarctica/DumontDUrville'
+          | 'Antarctica/Macquarie'
+          | 'Antarctica/Mawson'
+          | 'Antarctica/McMurdo'
+          | 'Antarctica/Palmer'
+          | 'Antarctica/Rothera'
+          | 'Antarctica/South_Pole'
+          | 'Antarctica/Syowa'
+          | 'Antarctica/Troll'
+          | 'Antarctica/Vostok'
+          | 'Arctic/Longyearbyen'
+          | 'Asia/Aden'
+          | 'Asia/Almaty'
+          | 'Asia/Amman'
+          | 'Asia/Anadyr'
+          | 'Asia/Aqtau'
+          | 'Asia/Aqtobe'
+          | 'Asia/Ashgabat'
+          | 'Asia/Ashkhabad'
+          | 'Asia/Atyrau'
+          | 'Asia/Baghdad'
+          | 'Asia/Bahrain'
+          | 'Asia/Baku'
+          | 'Asia/Bangkok'
+          | 'Asia/Barnaul'
+          | 'Asia/Beirut'
+          | 'Asia/Bishkek'
+          | 'Asia/Brunei'
+          | 'Asia/Calcutta'
+          | 'Asia/Chita'
+          | 'Asia/Choibalsan'
+          | 'Asia/Chongqing'
+          | 'Asia/Chungking'
+          | 'Asia/Colombo'
+          | 'Asia/Dacca'
+          | 'Asia/Damascus'
+          | 'Asia/Dhaka'
+          | 'Asia/Dili'
+          | 'Asia/Dubai'
+          | 'Asia/Dushanbe'
+          | 'Asia/Famagusta'
+          | 'Asia/Gaza'
+          | 'Asia/Harbin'
+          | 'Asia/Hebron'
+          | 'Asia/Ho_Chi_Minh'
+          | 'Asia/Hong_Kong'
+          | 'Asia/Hovd'
+          | 'Asia/Irkutsk'
+          | 'Asia/Istanbul'
+          | 'Asia/Jakarta'
+          | 'Asia/Jayapura'
+          | 'Asia/Jerusalem'
+          | 'Asia/Kabul'
+          | 'Asia/Kamchatka'
+          | 'Asia/Karachi'
+          | 'Asia/Kashgar'
+          | 'Asia/Kathmandu'
+          | 'Asia/Katmandu'
+          | 'Asia/Khandyga'
+          | 'Asia/Kolkata'
+          | 'Asia/Krasnoyarsk'
+          | 'Asia/Kuala_Lumpur'
+          | 'Asia/Kuching'
+          | 'Asia/Kuwait'
+          | 'Asia/Macao'
+          | 'Asia/Macau'
+          | 'Asia/Magadan'
+          | 'Asia/Makassar'
+          | 'Asia/Manila'
+          | 'Asia/Muscat'
+          | 'Asia/Nicosia'
+          | 'Asia/Novokuznetsk'
+          | 'Asia/Novosibirsk'
+          | 'Asia/Omsk'
+          | 'Asia/Oral'
+          | 'Asia/Phnom_Penh'
+          | 'Asia/Pontianak'
+          | 'Asia/Pyongyang'
+          | 'Asia/Qatar'
+          | 'Asia/Qostanay'
+          | 'Asia/Qyzylorda'
+          | 'Asia/Rangoon'
+          | 'Asia/Riyadh'
+          | 'Asia/Saigon'
+          | 'Asia/Sakhalin'
+          | 'Asia/Samarkand'
+          | 'Asia/Seoul'
+          | 'Asia/Shanghai'
+          | 'Asia/Singapore'
+          | 'Asia/Srednekolymsk'
+          | 'Asia/Taipei'
+          | 'Asia/Tashkent'
+          | 'Asia/Tbilisi'
+          | 'Asia/Tehran'
+          | 'Asia/Tel_Aviv'
+          | 'Asia/Thimbu'
+          | 'Asia/Thimphu'
+          | 'Asia/Tokyo'
+          | 'Asia/Tomsk'
+          | 'Asia/Ujung_Pandang'
+          | 'Asia/Ulaanbaatar'
+          | 'Asia/Ulan_Bator'
+          | 'Asia/Urumqi'
+          | 'Asia/Ust-Nera'
+          | 'Asia/Vientiane'
+          | 'Asia/Vladivostok'
+          | 'Asia/Yakutsk'
+          | 'Asia/Yangon'
+          | 'Asia/Yekaterinburg'
+          | 'Asia/Yerevan'
+          | 'Atlantic/Azores'
+          | 'Atlantic/Bermuda'
+          | 'Atlantic/Canary'
+          | 'Atlantic/Cape_Verde'
+          | 'Atlantic/Faeroe'
+          | 'Atlantic/Faroe'
+          | 'Atlantic/Jan_Mayen'
+          | 'Atlantic/Madeira'
+          | 'Atlantic/Reykjavik'
+          | 'Atlantic/South_Georgia'
+          | 'Atlantic/St_Helena'
+          | 'Atlantic/Stanley'
+          | 'Australia/ACT'
+          | 'Australia/Adelaide'
+          | 'Australia/Brisbane'
+          | 'Australia/Broken_Hill'
+          | 'Australia/Canberra'
+          | 'Australia/Currie'
+          | 'Australia/Darwin'
+          | 'Australia/Eucla'
+          | 'Australia/Hobart'
+          | 'Australia/LHI'
+          | 'Australia/Lindeman'
+          | 'Australia/Lord_Howe'
+          | 'Australia/Melbourne'
+          | 'Australia/NSW'
+          | 'Australia/North'
+          | 'Australia/Perth'
+          | 'Australia/Queensland'
+          | 'Australia/South'
+          | 'Australia/Sydney'
+          | 'Australia/Tasmania'
+          | 'Australia/Victoria'
+          | 'Australia/West'
+          | 'Australia/Yancowinna'
+          | 'Brazil/Acre'
+          | 'Brazil/DeNoronha'
+          | 'Brazil/East'
+          | 'Brazil/West'
+          | 'CET'
+          | 'CST6CDT'
+          | 'Canada/Atlantic'
+          | 'Canada/Central'
+          | 'Canada/Eastern'
+          | 'Canada/Mountain'
+          | 'Canada/Newfoundland'
+          | 'Canada/Pacific'
+          | 'Canada/Saskatchewan'
+          | 'Canada/Yukon'
+          | 'Chile/Continental'
+          | 'Chile/EasterIsland'
+          | 'Cuba'
+          | 'EET'
+          | 'EST'
+          | 'EST5EDT'
+          | 'Egypt'
+          | 'Eire'
+          | 'Etc/GMT'
+          | 'Etc/GMT+0'
+          | 'Etc/GMT+1'
+          | 'Etc/GMT+10'
+          | 'Etc/GMT+11'
+          | 'Etc/GMT+12'
+          | 'Etc/GMT+2'
+          | 'Etc/GMT+3'
+          | 'Etc/GMT+4'
+          | 'Etc/GMT+5'
+          | 'Etc/GMT+6'
+          | 'Etc/GMT+7'
+          | 'Etc/GMT+8'
+          | 'Etc/GMT+9'
+          | 'Etc/GMT-0'
+          | 'Etc/GMT-1'
+          | 'Etc/GMT-10'
+          | 'Etc/GMT-11'
+          | 'Etc/GMT-12'
+          | 'Etc/GMT-13'
+          | 'Etc/GMT-14'
+          | 'Etc/GMT-2'
+          | 'Etc/GMT-3'
+          | 'Etc/GMT-4'
+          | 'Etc/GMT-5'
+          | 'Etc/GMT-6'
+          | 'Etc/GMT-7'
+          | 'Etc/GMT-8'
+          | 'Etc/GMT-9'
+          | 'Etc/GMT0'
+          | 'Etc/Greenwich'
+          | 'Etc/UCT'
+          | 'Etc/UTC'
+          | 'Etc/Universal'
+          | 'Etc/Zulu'
+          | 'Europe/Amsterdam'
+          | 'Europe/Andorra'
+          | 'Europe/Astrakhan'
+          | 'Europe/Athens'
+          | 'Europe/Belfast'
+          | 'Europe/Belgrade'
+          | 'Europe/Berlin'
+          | 'Europe/Bratislava'
+          | 'Europe/Brussels'
+          | 'Europe/Bucharest'
+          | 'Europe/Budapest'
+          | 'Europe/Busingen'
+          | 'Europe/Chisinau'
+          | 'Europe/Copenhagen'
+          | 'Europe/Dublin'
+          | 'Europe/Gibraltar'
+          | 'Europe/Guernsey'
+          | 'Europe/Helsinki'
+          | 'Europe/Isle_of_Man'
+          | 'Europe/Istanbul'
+          | 'Europe/Jersey'
+          | 'Europe/Kaliningrad'
+          | 'Europe/Kiev'
+          | 'Europe/Kirov'
+          | 'Europe/Kyiv'
+          | 'Europe/Lisbon'
+          | 'Europe/Ljubljana'
+          | 'Europe/London'
+          | 'Europe/Luxembourg'
+          | 'Europe/Madrid'
+          | 'Europe/Malta'
+          | 'Europe/Mariehamn'
+          | 'Europe/Minsk'
+          | 'Europe/Monaco'
+          | 'Europe/Moscow'
+          | 'Europe/Nicosia'
+          | 'Europe/Oslo'
+          | 'Europe/Paris'
+          | 'Europe/Podgorica'
+          | 'Europe/Prague'
+          | 'Europe/Riga'
+          | 'Europe/Rome'
+          | 'Europe/Samara'
+          | 'Europe/San_Marino'
+          | 'Europe/Sarajevo'
+          | 'Europe/Saratov'
+          | 'Europe/Simferopol'
+          | 'Europe/Skopje'
+          | 'Europe/Sofia'
+          | 'Europe/Stockholm'
+          | 'Europe/Tallinn'
+          | 'Europe/Tirane'
+          | 'Europe/Tiraspol'
+          | 'Europe/Ulyanovsk'
+          | 'Europe/Uzhgorod'
+          | 'Europe/Vaduz'
+          | 'Europe/Vatican'
+          | 'Europe/Vienna'
+          | 'Europe/Vilnius'
+          | 'Europe/Volgograd'
+          | 'Europe/Warsaw'
+          | 'Europe/Zagreb'
+          | 'Europe/Zaporozhye'
+          | 'Europe/Zurich'
+          | 'Factory'
+          | 'GB'
+          | 'GB-Eire'
+          | 'GMT'
+          | 'GMT+0'
+          | 'GMT-0'
+          | 'GMT0'
+          | 'Greenwich'
+          | 'HST'
+          | 'Hongkong'
+          | 'Iceland'
+          | 'Indian/Antananarivo'
+          | 'Indian/Chagos'
+          | 'Indian/Christmas'
+          | 'Indian/Cocos'
+          | 'Indian/Comoro'
+          | 'Indian/Kerguelen'
+          | 'Indian/Mahe'
+          | 'Indian/Maldives'
+          | 'Indian/Mauritius'
+          | 'Indian/Mayotte'
+          | 'Indian/Reunion'
+          | 'Iran'
+          | 'Israel'
+          | 'Jamaica'
+          | 'Japan'
+          | 'Kwajalein'
+          | 'Libya'
+          | 'MET'
+          | 'MST'
+          | 'MST7MDT'
+          | 'Mexico/BajaNorte'
+          | 'Mexico/BajaSur'
+          | 'Mexico/General'
+          | 'NZ'
+          | 'NZ-CHAT'
+          | 'Navajo'
+          | 'PRC'
+          | 'PST8PDT'
+          | 'Pacific/Apia'
+          | 'Pacific/Auckland'
+          | 'Pacific/Bougainville'
+          | 'Pacific/Chatham'
+          | 'Pacific/Chuuk'
+          | 'Pacific/Easter'
+          | 'Pacific/Efate'
+          | 'Pacific/Enderbury'
+          | 'Pacific/Fakaofo'
+          | 'Pacific/Fiji'
+          | 'Pacific/Funafuti'
+          | 'Pacific/Galapagos'
+          | 'Pacific/Gambier'
+          | 'Pacific/Guadalcanal'
+          | 'Pacific/Guam'
+          | 'Pacific/Honolulu'
+          | 'Pacific/Johnston'
+          | 'Pacific/Kanton'
+          | 'Pacific/Kiritimati'
+          | 'Pacific/Kosrae'
+          | 'Pacific/Kwajalein'
+          | 'Pacific/Majuro'
+          | 'Pacific/Marquesas'
+          | 'Pacific/Midway'
+          | 'Pacific/Nauru'
+          | 'Pacific/Niue'
+          | 'Pacific/Norfolk'
+          | 'Pacific/Noumea'
+          | 'Pacific/Pago_Pago'
+          | 'Pacific/Palau'
+          | 'Pacific/Pitcairn'
+          | 'Pacific/Pohnpei'
+          | 'Pacific/Ponape'
+          | 'Pacific/Port_Moresby'
+          | 'Pacific/Rarotonga'
+          | 'Pacific/Saipan'
+          | 'Pacific/Samoa'
+          | 'Pacific/Tahiti'
+          | 'Pacific/Tarawa'
+          | 'Pacific/Tongatapu'
+          | 'Pacific/Truk'
+          | 'Pacific/Wake'
+          | 'Pacific/Wallis'
+          | 'Pacific/Yap'
+          | 'Poland'
+          | 'Portugal'
+          | 'ROC'
+          | 'ROK'
+          | 'Singapore'
+          | 'Turkey'
+          | 'UCT'
+          | 'US/Alaska'
+          | 'US/Aleutian'
+          | 'US/Arizona'
+          | 'US/Central'
+          | 'US/East-Indiana'
+          | 'US/Eastern'
+          | 'US/Hawaii'
+          | 'US/Indiana-Starke'
+          | 'US/Michigan'
+          | 'US/Mountain'
+          | 'US/Pacific'
+          | 'US/Samoa'
+          | 'UTC'
+          | 'Universal'
+          | 'W-SU'
+          | 'WET'
+          | 'Zulu'
+        /** @description Interval between two dates. */
+        interval: components['schemas']['TimeInterval']
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        filter?: string | null
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Filter by a meter filter clause. */
+        meter_id?: string | null
+        /** @description Filter by event name. */
+        name?: string | string[] | null
+        /** @description Filter by event source. */
+        source?:
+          | components['schemas']['EventSource']
+          | components['schemas']['EventSource'][]
+          | null
+        /** @description Filter by event type ID. */
+        event_type_id?: string | null
+        /** @description Query to filter events. */
+        query?: string | null
+        /** @description Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields. */
+        aggregate_fields?: string[]
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['EventStatisticsSortProperty'][] | null
+        /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+        metadata?: components['schemas']['MetadataQuery']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListStatisticsTimeseries']
         }
       }
       /** @description Validation Error */
@@ -29915,6 +33587,99 @@ export interface operations {
         content: {
           'application/json': components['schemas']['EventsIngestResponse']
         }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'event-types:list': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Query to filter event types by name or label. */
+        query?: string | null
+        /** @description When true, only return event types with root events (parent_id IS NULL). */
+        root_events?: boolean
+        /** @description Filter by specific parent event ID. */
+        parent_id?: string | null
+        /** @description Filter by event source (system or user). */
+        source?: components['schemas']['EventSource'] | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['EventTypesSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_EventTypeWithStats_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'event-types:update': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The event type ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EventTypeUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['EventType']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -30549,13 +34314,40 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Successful Response */
+      /** @description Payout estimate computed successfully. */
       200: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': components['schemas']['PayoutEstimate']
+        }
+      }
+      /** @description The balance is insufficient to create a payout. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['InsufficientBalance']
+        }
+      }
+      /** @description The account is under review or not ready. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UnderReviewAccount']
+        }
+      }
+      /** @description Account not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -30653,6 +34445,162 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'wallets:list': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by wallet type. */
+        type?:
+          | components['schemas']['WalletType']
+          | components['schemas']['WalletType'][]
+          | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['WalletSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_Wallet_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'wallets:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The wallet ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Wallet']
+        }
+      }
+      /** @description Wallet not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'wallets:top_up': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The wallet ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WalletTopUpCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Wallet']
+        }
+      }
+      /** @description Wallet topped up successfully. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description The payment request failed. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PaymentIntentFailedError']
+        }
+      }
+      /** @description No payment method available. */
+      402: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MissingPaymentMethodError']
+        }
+      }
+      /** @description Wallet not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -30841,6 +34789,105 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['WebhookCustomerStateChangedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointcustomer_seat_assigned_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookCustomerSeatAssignedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointcustomer_seat_claimed_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookCustomerSeatClaimedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointcustomer_seat_revoked_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookCustomerSeatRevokedPayload']
       }
     }
     responses: {
@@ -32163,6 +36210,608 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'WET',
   'Zulu',
 ]
+export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
+  paths['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
+> = [
+  'Africa/Abidjan',
+  'Africa/Accra',
+  'Africa/Addis_Ababa',
+  'Africa/Algiers',
+  'Africa/Asmara',
+  'Africa/Asmera',
+  'Africa/Bamako',
+  'Africa/Bangui',
+  'Africa/Banjul',
+  'Africa/Bissau',
+  'Africa/Blantyre',
+  'Africa/Brazzaville',
+  'Africa/Bujumbura',
+  'Africa/Cairo',
+  'Africa/Casablanca',
+  'Africa/Ceuta',
+  'Africa/Conakry',
+  'Africa/Dakar',
+  'Africa/Dar_es_Salaam',
+  'Africa/Djibouti',
+  'Africa/Douala',
+  'Africa/El_Aaiun',
+  'Africa/Freetown',
+  'Africa/Gaborone',
+  'Africa/Harare',
+  'Africa/Johannesburg',
+  'Africa/Juba',
+  'Africa/Kampala',
+  'Africa/Khartoum',
+  'Africa/Kigali',
+  'Africa/Kinshasa',
+  'Africa/Lagos',
+  'Africa/Libreville',
+  'Africa/Lome',
+  'Africa/Luanda',
+  'Africa/Lubumbashi',
+  'Africa/Lusaka',
+  'Africa/Malabo',
+  'Africa/Maputo',
+  'Africa/Maseru',
+  'Africa/Mbabane',
+  'Africa/Mogadishu',
+  'Africa/Monrovia',
+  'Africa/Nairobi',
+  'Africa/Ndjamena',
+  'Africa/Niamey',
+  'Africa/Nouakchott',
+  'Africa/Ouagadougou',
+  'Africa/Porto-Novo',
+  'Africa/Sao_Tome',
+  'Africa/Timbuktu',
+  'Africa/Tripoli',
+  'Africa/Tunis',
+  'Africa/Windhoek',
+  'America/Adak',
+  'America/Anchorage',
+  'America/Anguilla',
+  'America/Antigua',
+  'America/Araguaina',
+  'America/Argentina/Buenos_Aires',
+  'America/Argentina/Catamarca',
+  'America/Argentina/ComodRivadavia',
+  'America/Argentina/Cordoba',
+  'America/Argentina/Jujuy',
+  'America/Argentina/La_Rioja',
+  'America/Argentina/Mendoza',
+  'America/Argentina/Rio_Gallegos',
+  'America/Argentina/Salta',
+  'America/Argentina/San_Juan',
+  'America/Argentina/San_Luis',
+  'America/Argentina/Tucuman',
+  'America/Argentina/Ushuaia',
+  'America/Aruba',
+  'America/Asuncion',
+  'America/Atikokan',
+  'America/Atka',
+  'America/Bahia',
+  'America/Bahia_Banderas',
+  'America/Barbados',
+  'America/Belem',
+  'America/Belize',
+  'America/Blanc-Sablon',
+  'America/Boa_Vista',
+  'America/Bogota',
+  'America/Boise',
+  'America/Buenos_Aires',
+  'America/Cambridge_Bay',
+  'America/Campo_Grande',
+  'America/Cancun',
+  'America/Caracas',
+  'America/Catamarca',
+  'America/Cayenne',
+  'America/Cayman',
+  'America/Chicago',
+  'America/Chihuahua',
+  'America/Ciudad_Juarez',
+  'America/Coral_Harbour',
+  'America/Cordoba',
+  'America/Costa_Rica',
+  'America/Coyhaique',
+  'America/Creston',
+  'America/Cuiaba',
+  'America/Curacao',
+  'America/Danmarkshavn',
+  'America/Dawson',
+  'America/Dawson_Creek',
+  'America/Denver',
+  'America/Detroit',
+  'America/Dominica',
+  'America/Edmonton',
+  'America/Eirunepe',
+  'America/El_Salvador',
+  'America/Ensenada',
+  'America/Fort_Nelson',
+  'America/Fort_Wayne',
+  'America/Fortaleza',
+  'America/Glace_Bay',
+  'America/Godthab',
+  'America/Goose_Bay',
+  'America/Grand_Turk',
+  'America/Grenada',
+  'America/Guadeloupe',
+  'America/Guatemala',
+  'America/Guayaquil',
+  'America/Guyana',
+  'America/Halifax',
+  'America/Havana',
+  'America/Hermosillo',
+  'America/Indiana/Indianapolis',
+  'America/Indiana/Knox',
+  'America/Indiana/Marengo',
+  'America/Indiana/Petersburg',
+  'America/Indiana/Tell_City',
+  'America/Indiana/Vevay',
+  'America/Indiana/Vincennes',
+  'America/Indiana/Winamac',
+  'America/Indianapolis',
+  'America/Inuvik',
+  'America/Iqaluit',
+  'America/Jamaica',
+  'America/Jujuy',
+  'America/Juneau',
+  'America/Kentucky/Louisville',
+  'America/Kentucky/Monticello',
+  'America/Knox_IN',
+  'America/Kralendijk',
+  'America/La_Paz',
+  'America/Lima',
+  'America/Los_Angeles',
+  'America/Louisville',
+  'America/Lower_Princes',
+  'America/Maceio',
+  'America/Managua',
+  'America/Manaus',
+  'America/Marigot',
+  'America/Martinique',
+  'America/Matamoros',
+  'America/Mazatlan',
+  'America/Mendoza',
+  'America/Menominee',
+  'America/Merida',
+  'America/Metlakatla',
+  'America/Mexico_City',
+  'America/Miquelon',
+  'America/Moncton',
+  'America/Monterrey',
+  'America/Montevideo',
+  'America/Montreal',
+  'America/Montserrat',
+  'America/Nassau',
+  'America/New_York',
+  'America/Nipigon',
+  'America/Nome',
+  'America/Noronha',
+  'America/North_Dakota/Beulah',
+  'America/North_Dakota/Center',
+  'America/North_Dakota/New_Salem',
+  'America/Nuuk',
+  'America/Ojinaga',
+  'America/Panama',
+  'America/Pangnirtung',
+  'America/Paramaribo',
+  'America/Phoenix',
+  'America/Port-au-Prince',
+  'America/Port_of_Spain',
+  'America/Porto_Acre',
+  'America/Porto_Velho',
+  'America/Puerto_Rico',
+  'America/Punta_Arenas',
+  'America/Rainy_River',
+  'America/Rankin_Inlet',
+  'America/Recife',
+  'America/Regina',
+  'America/Resolute',
+  'America/Rio_Branco',
+  'America/Rosario',
+  'America/Santa_Isabel',
+  'America/Santarem',
+  'America/Santiago',
+  'America/Santo_Domingo',
+  'America/Sao_Paulo',
+  'America/Scoresbysund',
+  'America/Shiprock',
+  'America/Sitka',
+  'America/St_Barthelemy',
+  'America/St_Johns',
+  'America/St_Kitts',
+  'America/St_Lucia',
+  'America/St_Thomas',
+  'America/St_Vincent',
+  'America/Swift_Current',
+  'America/Tegucigalpa',
+  'America/Thule',
+  'America/Thunder_Bay',
+  'America/Tijuana',
+  'America/Toronto',
+  'America/Tortola',
+  'America/Vancouver',
+  'America/Virgin',
+  'America/Whitehorse',
+  'America/Winnipeg',
+  'America/Yakutat',
+  'America/Yellowknife',
+  'Antarctica/Casey',
+  'Antarctica/Davis',
+  'Antarctica/DumontDUrville',
+  'Antarctica/Macquarie',
+  'Antarctica/Mawson',
+  'Antarctica/McMurdo',
+  'Antarctica/Palmer',
+  'Antarctica/Rothera',
+  'Antarctica/South_Pole',
+  'Antarctica/Syowa',
+  'Antarctica/Troll',
+  'Antarctica/Vostok',
+  'Arctic/Longyearbyen',
+  'Asia/Aden',
+  'Asia/Almaty',
+  'Asia/Amman',
+  'Asia/Anadyr',
+  'Asia/Aqtau',
+  'Asia/Aqtobe',
+  'Asia/Ashgabat',
+  'Asia/Ashkhabad',
+  'Asia/Atyrau',
+  'Asia/Baghdad',
+  'Asia/Bahrain',
+  'Asia/Baku',
+  'Asia/Bangkok',
+  'Asia/Barnaul',
+  'Asia/Beirut',
+  'Asia/Bishkek',
+  'Asia/Brunei',
+  'Asia/Calcutta',
+  'Asia/Chita',
+  'Asia/Choibalsan',
+  'Asia/Chongqing',
+  'Asia/Chungking',
+  'Asia/Colombo',
+  'Asia/Dacca',
+  'Asia/Damascus',
+  'Asia/Dhaka',
+  'Asia/Dili',
+  'Asia/Dubai',
+  'Asia/Dushanbe',
+  'Asia/Famagusta',
+  'Asia/Gaza',
+  'Asia/Harbin',
+  'Asia/Hebron',
+  'Asia/Ho_Chi_Minh',
+  'Asia/Hong_Kong',
+  'Asia/Hovd',
+  'Asia/Irkutsk',
+  'Asia/Istanbul',
+  'Asia/Jakarta',
+  'Asia/Jayapura',
+  'Asia/Jerusalem',
+  'Asia/Kabul',
+  'Asia/Kamchatka',
+  'Asia/Karachi',
+  'Asia/Kashgar',
+  'Asia/Kathmandu',
+  'Asia/Katmandu',
+  'Asia/Khandyga',
+  'Asia/Kolkata',
+  'Asia/Krasnoyarsk',
+  'Asia/Kuala_Lumpur',
+  'Asia/Kuching',
+  'Asia/Kuwait',
+  'Asia/Macao',
+  'Asia/Macau',
+  'Asia/Magadan',
+  'Asia/Makassar',
+  'Asia/Manila',
+  'Asia/Muscat',
+  'Asia/Nicosia',
+  'Asia/Novokuznetsk',
+  'Asia/Novosibirsk',
+  'Asia/Omsk',
+  'Asia/Oral',
+  'Asia/Phnom_Penh',
+  'Asia/Pontianak',
+  'Asia/Pyongyang',
+  'Asia/Qatar',
+  'Asia/Qostanay',
+  'Asia/Qyzylorda',
+  'Asia/Rangoon',
+  'Asia/Riyadh',
+  'Asia/Saigon',
+  'Asia/Sakhalin',
+  'Asia/Samarkand',
+  'Asia/Seoul',
+  'Asia/Shanghai',
+  'Asia/Singapore',
+  'Asia/Srednekolymsk',
+  'Asia/Taipei',
+  'Asia/Tashkent',
+  'Asia/Tbilisi',
+  'Asia/Tehran',
+  'Asia/Tel_Aviv',
+  'Asia/Thimbu',
+  'Asia/Thimphu',
+  'Asia/Tokyo',
+  'Asia/Tomsk',
+  'Asia/Ujung_Pandang',
+  'Asia/Ulaanbaatar',
+  'Asia/Ulan_Bator',
+  'Asia/Urumqi',
+  'Asia/Ust-Nera',
+  'Asia/Vientiane',
+  'Asia/Vladivostok',
+  'Asia/Yakutsk',
+  'Asia/Yangon',
+  'Asia/Yekaterinburg',
+  'Asia/Yerevan',
+  'Atlantic/Azores',
+  'Atlantic/Bermuda',
+  'Atlantic/Canary',
+  'Atlantic/Cape_Verde',
+  'Atlantic/Faeroe',
+  'Atlantic/Faroe',
+  'Atlantic/Jan_Mayen',
+  'Atlantic/Madeira',
+  'Atlantic/Reykjavik',
+  'Atlantic/South_Georgia',
+  'Atlantic/St_Helena',
+  'Atlantic/Stanley',
+  'Australia/ACT',
+  'Australia/Adelaide',
+  'Australia/Brisbane',
+  'Australia/Broken_Hill',
+  'Australia/Canberra',
+  'Australia/Currie',
+  'Australia/Darwin',
+  'Australia/Eucla',
+  'Australia/Hobart',
+  'Australia/LHI',
+  'Australia/Lindeman',
+  'Australia/Lord_Howe',
+  'Australia/Melbourne',
+  'Australia/NSW',
+  'Australia/North',
+  'Australia/Perth',
+  'Australia/Queensland',
+  'Australia/South',
+  'Australia/Sydney',
+  'Australia/Tasmania',
+  'Australia/Victoria',
+  'Australia/West',
+  'Australia/Yancowinna',
+  'Brazil/Acre',
+  'Brazil/DeNoronha',
+  'Brazil/East',
+  'Brazil/West',
+  'CET',
+  'CST6CDT',
+  'Canada/Atlantic',
+  'Canada/Central',
+  'Canada/Eastern',
+  'Canada/Mountain',
+  'Canada/Newfoundland',
+  'Canada/Pacific',
+  'Canada/Saskatchewan',
+  'Canada/Yukon',
+  'Chile/Continental',
+  'Chile/EasterIsland',
+  'Cuba',
+  'EET',
+  'EST',
+  'EST5EDT',
+  'Egypt',
+  'Eire',
+  'Etc/GMT',
+  'Etc/GMT+0',
+  'Etc/GMT+1',
+  'Etc/GMT+10',
+  'Etc/GMT+11',
+  'Etc/GMT+12',
+  'Etc/GMT+2',
+  'Etc/GMT+3',
+  'Etc/GMT+4',
+  'Etc/GMT+5',
+  'Etc/GMT+6',
+  'Etc/GMT+7',
+  'Etc/GMT+8',
+  'Etc/GMT+9',
+  'Etc/GMT-0',
+  'Etc/GMT-1',
+  'Etc/GMT-10',
+  'Etc/GMT-11',
+  'Etc/GMT-12',
+  'Etc/GMT-13',
+  'Etc/GMT-14',
+  'Etc/GMT-2',
+  'Etc/GMT-3',
+  'Etc/GMT-4',
+  'Etc/GMT-5',
+  'Etc/GMT-6',
+  'Etc/GMT-7',
+  'Etc/GMT-8',
+  'Etc/GMT-9',
+  'Etc/GMT0',
+  'Etc/Greenwich',
+  'Etc/UCT',
+  'Etc/UTC',
+  'Etc/Universal',
+  'Etc/Zulu',
+  'Europe/Amsterdam',
+  'Europe/Andorra',
+  'Europe/Astrakhan',
+  'Europe/Athens',
+  'Europe/Belfast',
+  'Europe/Belgrade',
+  'Europe/Berlin',
+  'Europe/Bratislava',
+  'Europe/Brussels',
+  'Europe/Bucharest',
+  'Europe/Budapest',
+  'Europe/Busingen',
+  'Europe/Chisinau',
+  'Europe/Copenhagen',
+  'Europe/Dublin',
+  'Europe/Gibraltar',
+  'Europe/Guernsey',
+  'Europe/Helsinki',
+  'Europe/Isle_of_Man',
+  'Europe/Istanbul',
+  'Europe/Jersey',
+  'Europe/Kaliningrad',
+  'Europe/Kiev',
+  'Europe/Kirov',
+  'Europe/Kyiv',
+  'Europe/Lisbon',
+  'Europe/Ljubljana',
+  'Europe/London',
+  'Europe/Luxembourg',
+  'Europe/Madrid',
+  'Europe/Malta',
+  'Europe/Mariehamn',
+  'Europe/Minsk',
+  'Europe/Monaco',
+  'Europe/Moscow',
+  'Europe/Nicosia',
+  'Europe/Oslo',
+  'Europe/Paris',
+  'Europe/Podgorica',
+  'Europe/Prague',
+  'Europe/Riga',
+  'Europe/Rome',
+  'Europe/Samara',
+  'Europe/San_Marino',
+  'Europe/Sarajevo',
+  'Europe/Saratov',
+  'Europe/Simferopol',
+  'Europe/Skopje',
+  'Europe/Sofia',
+  'Europe/Stockholm',
+  'Europe/Tallinn',
+  'Europe/Tirane',
+  'Europe/Tiraspol',
+  'Europe/Ulyanovsk',
+  'Europe/Uzhgorod',
+  'Europe/Vaduz',
+  'Europe/Vatican',
+  'Europe/Vienna',
+  'Europe/Vilnius',
+  'Europe/Volgograd',
+  'Europe/Warsaw',
+  'Europe/Zagreb',
+  'Europe/Zaporozhye',
+  'Europe/Zurich',
+  'Factory',
+  'GB',
+  'GB-Eire',
+  'GMT',
+  'GMT+0',
+  'GMT-0',
+  'GMT0',
+  'Greenwich',
+  'HST',
+  'Hongkong',
+  'Iceland',
+  'Indian/Antananarivo',
+  'Indian/Chagos',
+  'Indian/Christmas',
+  'Indian/Cocos',
+  'Indian/Comoro',
+  'Indian/Kerguelen',
+  'Indian/Mahe',
+  'Indian/Maldives',
+  'Indian/Mauritius',
+  'Indian/Mayotte',
+  'Indian/Reunion',
+  'Iran',
+  'Israel',
+  'Jamaica',
+  'Japan',
+  'Kwajalein',
+  'Libya',
+  'MET',
+  'MST',
+  'MST7MDT',
+  'Mexico/BajaNorte',
+  'Mexico/BajaSur',
+  'Mexico/General',
+  'NZ',
+  'NZ-CHAT',
+  'Navajo',
+  'PRC',
+  'PST8PDT',
+  'Pacific/Apia',
+  'Pacific/Auckland',
+  'Pacific/Bougainville',
+  'Pacific/Chatham',
+  'Pacific/Chuuk',
+  'Pacific/Easter',
+  'Pacific/Efate',
+  'Pacific/Enderbury',
+  'Pacific/Fakaofo',
+  'Pacific/Fiji',
+  'Pacific/Funafuti',
+  'Pacific/Galapagos',
+  'Pacific/Gambier',
+  'Pacific/Guadalcanal',
+  'Pacific/Guam',
+  'Pacific/Honolulu',
+  'Pacific/Johnston',
+  'Pacific/Kanton',
+  'Pacific/Kiritimati',
+  'Pacific/Kosrae',
+  'Pacific/Kwajalein',
+  'Pacific/Majuro',
+  'Pacific/Marquesas',
+  'Pacific/Midway',
+  'Pacific/Nauru',
+  'Pacific/Niue',
+  'Pacific/Norfolk',
+  'Pacific/Noumea',
+  'Pacific/Pago_Pago',
+  'Pacific/Palau',
+  'Pacific/Pitcairn',
+  'Pacific/Pohnpei',
+  'Pacific/Ponape',
+  'Pacific/Port_Moresby',
+  'Pacific/Rarotonga',
+  'Pacific/Saipan',
+  'Pacific/Samoa',
+  'Pacific/Tahiti',
+  'Pacific/Tarawa',
+  'Pacific/Tongatapu',
+  'Pacific/Truk',
+  'Pacific/Wake',
+  'Pacific/Wallis',
+  'Pacific/Yap',
+  'Poland',
+  'Portugal',
+  'ROC',
+  'ROK',
+  'Singapore',
+  'Turkey',
+  'UCT',
+  'US/Alaska',
+  'US/Aleutian',
+  'US/Arizona',
+  'US/Central',
+  'US/East-Indiana',
+  'US/Eastern',
+  'US/Hawaii',
+  'US/Indiana-Starke',
+  'US/Michigan',
+  'US/Mountain',
+  'US/Pacific',
+  'US/Samoa',
+  'UTC',
+  'Universal',
+  'W-SU',
+  'WET',
+  'Zulu',
+]
 export const accountTypeValues: ReadonlyArray<
   components['schemas']['AccountType']
 > = ['stripe', 'manual', 'open_collective']
@@ -32686,6 +37335,7 @@ export const availableScopeValues: ReadonlyArray<
   'profile',
   'email',
   'user:read',
+  'user:write',
   'organizations:read',
   'organizations:write',
   'custom_fields:read',
@@ -32714,6 +37364,10 @@ export const availableScopeValues: ReadonlyArray<
   'subscriptions:write',
   'customers:read',
   'customers:write',
+  'members:read',
+  'members:write',
+  'wallets:read',
+  'wallets:write',
   'customer_meters:read',
   'customer_sessions:write',
   'customer_seats:read',
@@ -33099,6 +37753,254 @@ export const countryAlpha2Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const countryAlpha2InputValues: ReadonlyArray<
+  components['schemas']['CountryAlpha2Input']
+> = [
+  'AD',
+  'AE',
+  'AF',
+  'AG',
+  'AI',
+  'AL',
+  'AM',
+  'AO',
+  'AQ',
+  'AR',
+  'AS',
+  'AT',
+  'AU',
+  'AW',
+  'AX',
+  'AZ',
+  'BA',
+  'BB',
+  'BD',
+  'BE',
+  'BF',
+  'BG',
+  'BH',
+  'BI',
+  'BJ',
+  'BL',
+  'BM',
+  'BN',
+  'BO',
+  'BQ',
+  'BR',
+  'BS',
+  'BT',
+  'BV',
+  'BW',
+  'BY',
+  'BZ',
+  'CA',
+  'CC',
+  'CD',
+  'CF',
+  'CG',
+  'CH',
+  'CI',
+  'CK',
+  'CL',
+  'CM',
+  'CN',
+  'CO',
+  'CR',
+  'CV',
+  'CW',
+  'CX',
+  'CY',
+  'CZ',
+  'DE',
+  'DJ',
+  'DK',
+  'DM',
+  'DO',
+  'DZ',
+  'EC',
+  'EE',
+  'EG',
+  'EH',
+  'ER',
+  'ES',
+  'ET',
+  'FI',
+  'FJ',
+  'FK',
+  'FM',
+  'FO',
+  'FR',
+  'GA',
+  'GB',
+  'GD',
+  'GE',
+  'GF',
+  'GG',
+  'GH',
+  'GI',
+  'GL',
+  'GM',
+  'GN',
+  'GP',
+  'GQ',
+  'GR',
+  'GS',
+  'GT',
+  'GU',
+  'GW',
+  'GY',
+  'HK',
+  'HM',
+  'HN',
+  'HR',
+  'HT',
+  'HU',
+  'ID',
+  'IE',
+  'IL',
+  'IM',
+  'IN',
+  'IO',
+  'IQ',
+  'IS',
+  'IT',
+  'JE',
+  'JM',
+  'JO',
+  'JP',
+  'KE',
+  'KG',
+  'KH',
+  'KI',
+  'KM',
+  'KN',
+  'KR',
+  'KW',
+  'KY',
+  'KZ',
+  'LA',
+  'LB',
+  'LC',
+  'LI',
+  'LK',
+  'LR',
+  'LS',
+  'LT',
+  'LU',
+  'LV',
+  'LY',
+  'MA',
+  'MC',
+  'MD',
+  'ME',
+  'MF',
+  'MG',
+  'MH',
+  'MK',
+  'ML',
+  'MM',
+  'MN',
+  'MO',
+  'MP',
+  'MQ',
+  'MR',
+  'MS',
+  'MT',
+  'MU',
+  'MV',
+  'MW',
+  'MX',
+  'MY',
+  'MZ',
+  'NA',
+  'NC',
+  'NE',
+  'NF',
+  'NG',
+  'NI',
+  'NL',
+  'NO',
+  'NP',
+  'NR',
+  'NU',
+  'NZ',
+  'OM',
+  'PA',
+  'PE',
+  'PF',
+  'PG',
+  'PH',
+  'PK',
+  'PL',
+  'PM',
+  'PN',
+  'PR',
+  'PS',
+  'PT',
+  'PW',
+  'PY',
+  'QA',
+  'RE',
+  'RO',
+  'RS',
+  'RW',
+  'SA',
+  'SB',
+  'SC',
+  'SD',
+  'SE',
+  'SG',
+  'SH',
+  'SI',
+  'SJ',
+  'SK',
+  'SL',
+  'SM',
+  'SN',
+  'SO',
+  'SR',
+  'SS',
+  'ST',
+  'SV',
+  'SX',
+  'SZ',
+  'TC',
+  'TD',
+  'TF',
+  'TG',
+  'TH',
+  'TJ',
+  'TK',
+  'TL',
+  'TM',
+  'TN',
+  'TO',
+  'TR',
+  'TT',
+  'TV',
+  'TW',
+  'TZ',
+  'UA',
+  'UG',
+  'UM',
+  'US',
+  'UY',
+  'UZ',
+  'VA',
+  'VC',
+  'VE',
+  'VG',
+  'VI',
+  'VN',
+  'VU',
+  'WF',
+  'WS',
+  'YE',
+  'YT',
+  'ZA',
+  'ZM',
+  'ZW',
+]
 export const customFieldCheckboxTypeValues: ReadonlyArray<
   components['schemas']['CustomFieldCheckbox']['type']
 > = ['checkbox']
@@ -33186,6 +38088,8 @@ export const customerBenefitGrantSortPropertyValues: ReadonlyArray<
   '-type',
   'organization',
   '-organization',
+  'product_benefit',
+  '-product_benefit',
 ]
 export const customerCancellationReasonValues: ReadonlyArray<
   components['schemas']['CustomerCancellationReason']
@@ -33199,6 +38103,9 @@ export const customerCancellationReasonValues: ReadonlyArray<
   'unused',
   'other',
 ]
+export const customerCreatedEventNameValues: ReadonlyArray<
+  components['schemas']['CustomerCreatedEvent']['name']
+> = ['customer.created']
 export const customerCustomerMeterSortPropertyValues: ReadonlyArray<
   components['schemas']['CustomerCustomerMeterSortProperty']
 > = [
@@ -33217,6 +38124,9 @@ export const customerCustomerMeterSortPropertyValues: ReadonlyArray<
   'balance',
   '-balance',
 ]
+export const customerDeletedEventNameValues: ReadonlyArray<
+  components['schemas']['CustomerDeletedEvent']['name']
+> = ['customer.deleted']
 export const customerMeterSortPropertyValues: ReadonlyArray<
   components['schemas']['CustomerMeterSortProperty']
 > = [
@@ -33282,6 +38192,12 @@ export const customerSubscriptionSortPropertyValues: ReadonlyArray<
   'product',
   '-product',
 ]
+export const customerUpdatedEventNameValues: ReadonlyArray<
+  components['schemas']['CustomerUpdatedEvent']['name']
+> = ['customer.updated']
+export const customerWalletSortPropertyValues: ReadonlyArray<
+  components['schemas']['CustomerWalletSortProperty']
+> = ['created_at', '-created_at', 'balance', '-balance']
 export const discountDurationValues: ReadonlyArray<
   components['schemas']['DiscountDuration']
 > = ['once', 'forever', 'repeating']
@@ -33324,6 +38240,36 @@ export const eventSortPropertyValues: ReadonlyArray<
 export const eventSourceValues: ReadonlyArray<
   components['schemas']['EventSource']
 > = ['system', 'user']
+export const eventStatisticsSortPropertyValues: ReadonlyArray<
+  components['schemas']['EventStatisticsSortProperty']
+> = [
+  'name',
+  '-name',
+  'occurrences',
+  '-occurrences',
+  'total',
+  '-total',
+  'average',
+  '-average',
+  'p95',
+  '-p95',
+  'p99',
+  '-p99',
+]
+export const eventTypesSortPropertyValues: ReadonlyArray<
+  components['schemas']['EventTypesSortProperty']
+> = [
+  'name',
+  '-name',
+  'label',
+  '-label',
+  'occurrences',
+  '-occurrences',
+  'first_seen',
+  '-first_seen',
+  'last_seen',
+  '-last_seen',
+]
 export const fileServiceTypesValues: ReadonlyArray<
   components['schemas']['FileServiceTypes']
 > = ['downloadable', 'product_media', 'organization_avatar']
@@ -33339,6 +38285,9 @@ export const identityVerificationStatusValues: ReadonlyArray<
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   components['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
+export const legacyOrganizationStatusValues: ReadonlyArray<
+  components['schemas']['LegacyOrganizationStatus']
+> = ['created', 'onboarding_started', 'under_review', 'denied', 'active']
 export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
   components['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
 > = ['custom']
@@ -33351,12 +38300,6 @@ export const legacyRecurringProductPriceFreeAmount_typeValues: ReadonlyArray<
 export const licenseKeyStatusValues: ReadonlyArray<
   components['schemas']['LicenseKeyStatus']
 > = ['granted', 'revoked', 'disabled']
-export const maintainerAccountReviewedNotificationTypeValues: ReadonlyArray<
-  components['schemas']['MaintainerAccountReviewedNotification']['type']
-> = ['MaintainerAccountReviewedNotification']
-export const maintainerAccountUnderReviewNotificationTypeValues: ReadonlyArray<
-  components['schemas']['MaintainerAccountUnderReviewNotification']['type']
-> = ['MaintainerAccountUnderReviewNotification']
 export const maintainerCreateAccountNotificationTypeValues: ReadonlyArray<
   components['schemas']['MaintainerCreateAccountNotification']['type']
 > = ['MaintainerCreateAccountNotification']
@@ -33366,6 +38309,12 @@ export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<
 export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
   components['schemas']['MaintainerNewProductSaleNotification']['type']
 > = ['MaintainerNewProductSaleNotification']
+export const memberRoleValues: ReadonlyArray<
+  components['schemas']['MemberRole']
+> = ['owner', 'billing_manager', 'member']
+export const memberSortPropertyValues: ReadonlyArray<
+  components['schemas']['MemberSortProperty']
+> = ['created_at', '-created_at']
 export const meterCreditEventNameValues: ReadonlyArray<
   components['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']
@@ -33377,7 +38326,7 @@ export const meterSortPropertyValues: ReadonlyArray<
 > = ['created_at', '-created_at', 'name', '-name']
 export const metricTypeValues: ReadonlyArray<
   components['schemas']['MetricType']
-> = ['scalar', 'currency', 'percentage']
+> = ['scalar', 'currency', 'currency_sub_cent', 'percentage']
 export const notificationRecipientPlatformValues: ReadonlyArray<
   components['schemas']['NotificationRecipientPlatform']
 > = ['ios', 'android']
@@ -33401,7 +38350,7 @@ export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<
 > = ['authorization_code', 'refresh_token']
 export const oAuthPlatformValues: ReadonlyArray<
   components['schemas']['OAuthPlatform']
-> = ['github', 'github_repository_benefit', 'google']
+> = ['github', 'github_repository_benefit', 'google', 'apple']
 export const orderBillingReasonValues: ReadonlyArray<
   components['schemas']['OrderBillingReason']
 > = [
@@ -33419,6 +38368,12 @@ export const orderBillingReasonInternalValues: ReadonlyArray<
   'subscription_cycle_after_trial',
   'subscription_update',
 ]
+export const orderPaidEventNameValues: ReadonlyArray<
+  components['schemas']['OrderPaidEvent']['name']
+> = ['order.paid']
+export const orderRefundedEventNameValues: ReadonlyArray<
+  components['schemas']['OrderRefundedEvent']['name']
+> = ['order.refunded']
 export const orderSortPropertyValues: ReadonlyArray<
   components['schemas']['OrderSortProperty']
 > = [
@@ -33462,6 +38417,9 @@ export const organizationAvatarFileCreateServiceValues: ReadonlyArray<
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<
   components['schemas']['OrganizationAvatarFileRead']['service']
 > = ['organization_avatar']
+export const organizationDeletionBlockedReasonValues: ReadonlyArray<
+  components['schemas']['OrganizationDeletionBlockedReason']
+> = ['has_orders', 'has_active_subscriptions', 'stripe_account_deletion_failed']
 export const organizationDetailsSwitching_fromValues: ReadonlyArray<
   components['schemas']['OrganizationDetails']['switching_from']
 > = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']
@@ -33493,6 +38451,16 @@ export const organizationSortPropertyValues: ReadonlyArray<
   '-next_review_threshold',
   'days_in_status',
   '-days_in_status',
+]
+export const organizationStatusValues: ReadonlyArray<
+  components['schemas']['OrganizationStatus']
+> = [
+  'created',
+  'onboarding_started',
+  'initial_review',
+  'ongoing_review',
+  'denied',
+  'active',
 ]
 export const paymentProcessorValues: ReadonlyArray<
   components['schemas']['PaymentProcessor']
@@ -33597,6 +38565,9 @@ export const productPriceSeatBasedAmount_typeValues: ReadonlyArray<
 export const productPriceSeatBasedCreateAmount_typeValues: ReadonlyArray<
   components['schemas']['ProductPriceSeatBasedCreate']['amount_type']
 > = ['seat_based']
+export const productPriceSourceValues: ReadonlyArray<
+  components['schemas']['ProductPriceSource']
+> = ['catalog', 'ad_hoc']
 export const productPriceTypeValues: ReadonlyArray<
   components['schemas']['ProductPriceType']
 > = ['one_time', 'recurring']
@@ -33636,6 +38607,7 @@ export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'profile',
   'email',
   'user:read',
+  'user:write',
   'web:read',
   'web:write',
   'organizations:read',
@@ -33666,6 +38638,10 @@ export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'subscriptions:write',
   'customers:read',
   'customers:write',
+  'members:read',
+  'members:write',
+  'wallets:read',
+  'wallets:write',
   'customer_meters:read',
   'customer_sessions:write',
   'customer_seats:read',
@@ -33844,6 +38820,9 @@ export const subscriptionRecurringIntervalValues: ReadonlyArray<
 export const subscriptionRevokedEventNameValues: ReadonlyArray<
   components['schemas']['SubscriptionRevokedEvent']['name']
 > = ['subscription.revoked']
+export const subscriptionSeatsUpdatedEventNameValues: ReadonlyArray<
+  components['schemas']['SubscriptionSeatsUpdatedEvent']['name']
+> = ['subscription.seats_updated']
 export const subscriptionSortPropertyValues: ReadonlyArray<
   components['schemas']['SubscriptionSortProperty']
 > = [
@@ -33975,12 +38954,21 @@ export const trialIntervalValues: ReadonlyArray<
 export const uniqueAggregationFuncValues: ReadonlyArray<
   components['schemas']['UniqueAggregation']['func']
 > = ['unique']
+export const userDeletionBlockedReasonValues: ReadonlyArray<
+  components['schemas']['UserDeletionBlockedReason']
+> = ['has_active_organizations']
 export const userEventSourceValues: ReadonlyArray<
   components['schemas']['UserEvent']['source']
 > = ['user']
 export const userSignupAttributionIntentValues: ReadonlyArray<
   components['schemas']['UserSignupAttribution']['intent']
 > = ['creator', 'pledge', 'purchase', 'subscription', 'newsletter_subscription']
+export const walletSortPropertyValues: ReadonlyArray<
+  components['schemas']['WalletSortProperty']
+> = ['created_at', '-created_at', 'balance', '-balance']
+export const walletTypeValues: ReadonlyArray<
+  components['schemas']['WalletType']
+> = ['usage', 'billing']
 export const webhookEventTypeValues: ReadonlyArray<
   components['schemas']['WebhookEventType']
 > = [
@@ -33990,6 +38978,9 @@ export const webhookEventTypeValues: ReadonlyArray<
   'customer.updated',
   'customer.deleted',
   'customer.state_changed',
+  'customer_seat.assigned',
+  'customer_seat.claimed',
+  'customer_seat.revoked',
   'order.created',
   'order.updated',
   'order.paid',

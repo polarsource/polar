@@ -4,6 +4,7 @@
   "globalEnv": [
     "CODESPACES",
     "CODESPACE_NAME",
+    "EXPO_PUBLIC_POLAR_SERVER_URL",
     "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN",
     "GITHUB_TOKEN",
     "NODE_ENV",
@@ -49,12 +50,14 @@
     "MCP_OAUTH2_CLIENT_SECRET"
   ],
   "tasks": {
+    "test": {},
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
-    "lint": {},
-    "test": {},
+    "lint": {
+      "dependsOn": ["^build"]
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },

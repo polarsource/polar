@@ -87,7 +87,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
                     ? 'Appeal Denied'
                     : 'Appeal Under Review'}
               </h3>
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              <p className="dark:text-polar-400 mt-1 text-sm text-gray-600">
                 {decision === 'approved'
                   ? 'Your appeal has been approved. Payment access has been restored.'
                   : decision === 'rejected'
@@ -95,7 +95,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
                     : 'Thank you for submitting your appeal. Our team will review your case and get back to you as soon as possible.'}
               </p>
               {submissionDate && (
-                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <p className="dark:text-polar-400 mt-2 text-xs text-gray-500">
                   Submitted: {new Date(submissionDate).toLocaleDateString()}
                   {reviewedAt &&
                     ` • Reviewed: ${new Date(reviewedAt).toLocaleDateString()}`}
@@ -124,11 +124,11 @@ const AppealForm: React.FC<AppealFormProps> = ({
           {/* Show the appeal reason */}
           {appealReason && (
             <div className="border-t pt-4">
-              <h4 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <h4 className="dark:text-polar-300 mb-2 text-sm font-medium text-gray-700">
                 Your Appeal:
               </h4>
-              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
-                <p className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+              <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-3">
+                <p className="dark:text-polar-300 text-sm whitespace-pre-wrap text-gray-700">
                   {appealReason}
                 </p>
               </div>
@@ -144,7 +144,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
       <Card className={`p-6 ${disabled ? 'opacity-60' : ''}`}>
         <div className="space-y-4 text-center">
           <h3 className="text-lg font-medium">Submit an Appeal</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="dark:text-polar-400 text-sm text-gray-600">
             {disabled
               ? 'Appeal functionality is currently disabled. Please contact support if you believe this decision is incorrect.'
               : 'If you believe your organization was incorrectly flagged, you can submit an appeal for manual review.'}
@@ -182,7 +182,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
           <label className="text-sm font-medium">
             Why should your organization be approved? *
           </label>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="dark:text-polar-400 text-xs text-gray-500">
             {disabled
               ? 'Appeal submission is currently disabled. Please contact support for assistance.'
               : "Please provide a detailed explanation of your business model and why it complies with our acceptable use policy. Be specific about what you're selling and how it fits within our guidelines."}

@@ -2,9 +2,10 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import EmailStr, Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from sqlalchemy import inspect
 
+from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.customer_seat import SeatStatus
 
@@ -22,7 +23,7 @@ class SeatAssign(Schema):
         None,
         description="Order ID for one-time purchases. Required if subscription_id and checkout_id are not provided.",
     )
-    email: EmailStr | None = Field(
+    email: EmailStrDNS | None = Field(
         None, description="Email of the customer to assign the seat to"
     )
     external_customer_id: str | None = Field(
@@ -33,6 +34,10 @@ class SeatAssign(Schema):
     )
     metadata: dict[str, Any] | None = Field(
         None, description="Additional metadata for the seat (max 10 keys, 1KB total)"
+    )
+    immediate_claim: bool = Field(
+        default=False,
+        description="If true, the seat will be immediately claimed without sending an invitation email. API-only feature.",
     )
 
     @field_validator("metadata")
@@ -120,9 +125,6 @@ class CustomerSeat(TimestampedSchema):
                     # Add customer_email as a temporary attribute
                     object.__setattr__(data, "customer_email", data.customer.email)
         return data
-
-    class Config:
-        from_attributes = True
 
 
 class SeatsList(Schema):

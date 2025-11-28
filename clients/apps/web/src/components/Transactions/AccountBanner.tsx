@@ -9,13 +9,8 @@ import Icon from '../Icons/Icon'
 
 const GenericAccountBanner: React.FC<{
   account: schemas['Account'] | undefined
-  organization: schemas['Organization'] | undefined
   setupLink: string
-}> = ({ account, organization, setupLink }) => {
-  const isActive =
-    organization?.status === 'active' && account?.stripe_id !== null
-  const isUnderReview = organization?.status === 'under_review'
-
+}> = ({ account, setupLink }) => {
   if (!account) {
     return (
       <>
@@ -37,24 +32,7 @@ const GenericAccountBanner: React.FC<{
     )
   }
 
-  if (account && isUnderReview) {
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[account.account_type]
-    return (
-      <Banner
-        color="default"
-        right={
-          <Link href={setupLink}>
-            <Button size="sm">Read more</Button>
-          </Link>
-        }
-      >
-        <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
-        <span className="text-sm">Your payout account is under review</span>
-      </Banner>
-    )
-  }
-
-  if (account && !isActive && !isUnderReview) {
+  if (account && account.status === 'onboarding_started') {
     const AccountTypeIcon = ACCOUNT_TYPE_ICON[account.account_type]
     return (
       <Banner
@@ -65,7 +43,7 @@ const GenericAccountBanner: React.FC<{
           </Link>
         }
       >
-        <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
+        <Icon classes="bg-blue p-1" icon={<AccountTypeIcon />} />
         <span className="text-sm">
           Continue the setup of your{' '}
           <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}</strong>{' '}
@@ -75,43 +53,14 @@ const GenericAccountBanner: React.FC<{
     )
   }
 
-  if (account && isActive) {
-    const accountType = account.account_type
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[accountType]
-    return (
-      <>
-        <Banner
-          color="muted"
-          right={
-            <>
-              {accountType !== 'manual' && (
-                <Link href={setupLink}>
-                  <Button size="sm">Manage</Button>
-                </Link>
-              )}
-            </>
-          }
-        >
-          <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
-          <span className="dark:text-polar-400 text-sm">
-            {accountType === 'stripe' &&
-              'Payouts will be made to the connected Stripe account'}
-            {accountType === 'open_collective' &&
-              'Payouts will be made in bulk once per month to the connected Open Collective account'}
-            {accountType === 'manual' &&
-              'Payouts will be made manually via bank transfers. Reach out to support@polar.sh to follow-up.'}
-          </span>
-        </Banner>
-      </>
-    )
-  }
-
   return null
 }
 
-const OrganizationAccountBanner: React.FC<{
+interface AccountBannerProps {
   organization: schemas['Organization']
-}> = ({ organization }) => {
+}
+
+const AccountBanner: React.FC<AccountBannerProps> = ({ organization }) => {
   const {
     data: organizationAccount,
     isLoading: organizationAccountIsLoading,
@@ -127,35 +76,11 @@ const OrganizationAccountBanner: React.FC<{
     accountError && (accountError as any)?.response?.status === 403
 
   if (isNotAdmin) {
-    return (
-      <Banner color="default">
-        <CircleAlertIcon className="h-6 w-6 text-red-500" />
-        <span className="text-sm">
-          You are not the admin of the account. Only the admin can manage payout
-          settings.
-        </span>
-      </Banner>
-    )
+    return null
   }
 
   return (
-    <GenericAccountBanner
-      account={organizationAccount}
-      organization={organization}
-      setupLink={setupLink}
-    />
-  )
-}
-
-interface AccountBannerProps {
-  organization: schemas['Organization']
-}
-
-const AccountBanner: React.FC<AccountBannerProps> = ({ organization }) => {
-  return (
-    <>
-      <OrganizationAccountBanner organization={organization} />
-    </>
+    <GenericAccountBanner account={organizationAccount} setupLink={setupLink} />
   )
 }
 

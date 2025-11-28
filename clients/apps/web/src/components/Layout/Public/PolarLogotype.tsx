@@ -50,8 +50,8 @@ export const PolarLogotype = ({
   return (
     <div className={twMerge('relative flex flex-row items-center', className)}>
       <DropdownMenu open={PolarLogotypeOpen}>
-        <DropdownMenuTrigger asChild onContextMenu={handleTriggerClick}>
-          <Link href="/">
+        <DropdownMenuTrigger onContextMenu={handleTriggerClick}>
+          <div>
             {logoVariant === 'logotype' ? (
               <LogoType
                 className={twMerge(
@@ -66,7 +66,7 @@ export const PolarLogotype = ({
                 size={size ?? 42}
               />
             )}
-          </Link>
+          </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent ref={PolarLogotypeRef} align="start">
           <DropdownMenuItem

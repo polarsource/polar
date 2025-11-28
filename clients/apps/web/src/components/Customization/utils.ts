@@ -47,6 +47,7 @@ const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
   prices: [
     {
       id: '123',
+      source: 'catalog',
       amount_type: 'fixed',
       price_amount: 10000,
       price_currency: 'usd',
@@ -78,13 +79,16 @@ const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
   trial_interval_count: null,
 }
 
-const ORGANIZATION: schemas['Organization'] = {
+const ORGANIZATION: schemas['CustomerOrganization'] = {
   id: '123',
   name: 'My Organization',
   slug: 'my-organization',
   created_at: new Date().toISOString(),
   modified_at: null,
   avatar_url: '/assets/acme.jpg',
+  allow_customer_updates: true,
+  proration_behavior: 'prorate',
+  // @ts-expect-error - deprecated hidden fields
   website: null,
   socials: [],
   status: 'active',
@@ -95,6 +99,7 @@ const ORGANIZATION: schemas['Organization'] = {
     allow_multiple_subscriptions: true,
     allow_customer_updates: true,
     proration_behavior: 'invoice',
+    benefit_revocation_grace_period: 0,
   },
   notification_settings: {
     new_order: true,
@@ -114,7 +119,7 @@ const ORGANIZATION: schemas['Organization'] = {
 
 export const createCheckoutPreview = (
   product: schemas['CheckoutProduct'],
-  organization: schemas['Organization'],
+  organization: schemas['CustomerOrganization'],
 ): CheckoutPublic => {
   const prices = product.prices.map((price, index) => ({
     ...price,
@@ -149,6 +154,9 @@ export const createCheckoutPreview = (
     product_id: productWithPrices.id,
     product_price: price,
     product_price_id: price.id,
+    prices: {
+      [productWithPrices.id]: prices,
+    },
     amount,
     tax_amount: null,
     discount_amount: 0,
@@ -199,6 +207,8 @@ export const createCheckoutPreview = (
     active_trial_interval_count: null,
     trial_end: null,
     return_url: null,
+    organization_id: organization.id,
+    allow_trial: true,
   })
 
   return {

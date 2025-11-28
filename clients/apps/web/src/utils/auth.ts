@@ -31,6 +31,21 @@ export const getGoogleAuthorizeURL = (
   return `${getServerURL()}/v1/integrations/google/authorize?${searchParams}`
 }
 
+export const getAppleAuthorizeURL = (
+  params: NonNullable<
+    operations['integrations_apple:integrations.apple.authorize']['parameters']['query']
+  >,
+): string => {
+  const searchParams = new URLSearchParams()
+  if (params.return_to) {
+    searchParams.set('return_to', params.return_to)
+  }
+  if (params.attribution) {
+    searchParams.set('attribution', params.attribution)
+  }
+  return `${getServerURL()}/v1/integrations/apple/authorize?${searchParams}`
+}
+
 export const getBotDiscordAuthorizeURL = (
   params: NonNullable<
     operations['integrations_discord:integrations.discord.bot_authorize']['parameters']['query']

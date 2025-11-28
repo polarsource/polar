@@ -1,5 +1,6 @@
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { useMeterQuantities } from '@/hooks/queries/meters'
+import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
 import { TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import { useMemo } from 'react'
@@ -7,30 +8,60 @@ import { CustomerMeter } from './CustomerMeter'
 
 export const CustomerUsageView = ({
   customer,
+  dateRange,
+  interval,
 }: {
   customer: schemas['Customer']
+  dateRange: { startDate: Date; endDate: Date }
+  interval: schemas['TimeInterval']
 }) => {
-  const { data, isLoading } = useCustomerMeters(customer.organization_id, {
-    customer_id: customer.id,
-    sorting: ['meter_name'],
-  })
-  const customerMeters = useMemo(() => data?.items || [], [data])
-
-  const startDate = useMemo(
-    () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    [],
+  const { data: customerMetersData, isLoading } = useCustomerMeters(
+    customer.organization_id,
+    {
+      customer_id: customer.id,
+      sorting: ['meter_name'],
+    },
   )
-  const endDate = useMemo(() => new Date(), [])
+
+  const { data: subscriptionsData } = useSubscriptions(
+    customer.organization_id,
+    {
+      customer_id: customer.id,
+      active: true,
+    },
+  )
+
+  const customerMeters = useMemo(() => {
+    if (!customerMetersData) {
+      return []
+    }
+
+    const getSubscriptionForMeter = (meterId: string) => {
+      return (subscriptionsData?.items || []).find((subscription) =>
+        subscription.meters.some((meter) => meter.meter_id === meterId),
+      )
+    }
+
+    return customerMetersData.items.map((customerMeter) => {
+      const subscription = getSubscriptionForMeter(customerMeter.meter_id)
+
+      return {
+        ...customerMeter,
+        subscription: subscription || null,
+      }
+    })
+  }, [customerMetersData, subscriptionsData])
 
   return (
-    <TabsContent value="usage" className="flex flex-col gap-y-12">
+    <TabsContent value="usage" className="flex flex-col gap-y-8">
       <div className="flex flex-col gap-y-8">
         {customerMeters.map((customerMeter) => (
           <CustomerMeterItem
             key={customerMeter.id}
             customerMeter={customerMeter}
-            startDate={startDate}
-            endDate={endDate}
+            startDate={dateRange.startDate}
+            endDate={dateRange.endDate}
+            interval={interval}
           />
         ))}
         {!isLoading && customerMeters.length === 0 && (
@@ -52,19 +83,25 @@ const CustomerMeterItem = ({
   customerMeter,
   startDate,
   endDate,
+  interval,
 }: {
-  customerMeter: schemas['CustomerMeter']
+  customerMeter: schemas['CustomerMeter'] & {
+    subscription: schemas['Subscription'] | null
+  }
   startDate: Date
   endDate: Date
+  interval: schemas['TimeInterval']
 }) => {
   const { data } = useMeterQuantities(customerMeter.meter_id, {
     start_timestamp: startDate.toISOString(),
     end_timestamp: endDate.toISOString(),
-    interval: 'day',
+    interval,
     customer_id: customerMeter.customer_id,
   })
 
-  if (!data) return null
+  if (!data) {
+    return null
+  }
 
   return <CustomerMeter customerMeter={customerMeter} data={data} />
 }

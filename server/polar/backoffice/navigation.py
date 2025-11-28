@@ -12,6 +12,9 @@ NAVIGATION = [
         "Benefits", "benefits:list", active_route_name_prefix="benefits:"
     ),
     navigation.NavigationItem(
+        "Products", "products:list", active_route_name_prefix="products:"
+    ),
+    navigation.NavigationItem(
         "Subscriptions", "subscriptions:list", active_route_name_prefix="subscriptions:"
     ),
     navigation.NavigationItem(
@@ -25,5 +28,8 @@ NAVIGATION = [
     navigation.NavigationItem("Tasks", "tasks:list", active_route_name_prefix="tasks:"),
     navigation.NavigationItem(
         "Pledges", "pledges:list", active_route_name_prefix="pledges:"
+    ),
+    navigation.NavigationItem(
+        "Webhooks", "webhooks:list", active_route_name_prefix="webhooks:"
     ),
 ]

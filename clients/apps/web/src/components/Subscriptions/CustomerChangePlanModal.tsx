@@ -10,10 +10,8 @@ import { Client, schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
@@ -23,20 +21,15 @@ const ProductPriceListItem = ({
   product,
   selected,
   onSelect,
-  themingPreset,
 }: {
   product: schemas['ProductStorefront']
   selected: boolean
   onSelect?: () => void
-  themingPreset: ThemingPresetProps
 }) => {
   return (
     <ListItem
       selected={selected}
-      className={twMerge(
-        'flex flex-row items-center justify-between text-sm',
-        themingPreset.polar.listItem,
-      )}
+      className="flex flex-row items-center justify-between text-sm"
       onSelect={onSelect}
       size="small"
     >
@@ -53,17 +46,15 @@ const CustomerChangePlanModal = ({
   subscription,
   hide,
   onUserSubscriptionUpdate,
-  themingPreset,
 }: {
   api: Client
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   products: schemas['CustomerProduct'][]
   subscription: schemas['CustomerSubscription']
   hide: () => void
   onUserSubscriptionUpdate: (
     subscription: schemas['CustomerSubscription'],
   ) => void
-  themingPreset: ThemingPresetProps
 }) => {
   const router = useRouter()
   const products = useMemo(
@@ -109,7 +100,7 @@ const CustomerChangePlanModal = ({
   }, [selectedProduct, subscription])
 
   const prorationBehavior = useMemo(
-    () => organization.subscription_settings.proration_behavior,
+    () => organization.proration_behavior,
     [organization],
   )
 
@@ -227,6 +218,7 @@ const CustomerChangePlanModal = ({
         description: `Subscription was updated successfully`,
       })
       onUserSubscriptionUpdate(data)
+      router.refresh()
       hide()
     }
   }, [
@@ -249,15 +241,11 @@ const CustomerChangePlanModal = ({
       </InlineModalHeader>
       <div className="flex flex-col gap-y-8 p-8">
         <h3 className="font-medium">Current Plan</h3>
-        <List size="small" className={themingPreset.polar.list}>
-          <ProductPriceListItem
-            product={subscription.product}
-            selected
-            themingPreset={themingPreset}
-          />
+        <List size="small">
+          <ProductPriceListItem product={subscription.product} selected />
         </List>
         <h3 className="font-medium">Available Plans</h3>
-        <List size="small" className={themingPreset.polar.list}>
+        <List size="small">
           {products
             .filter((product) => product.id !== subscription.product_id)
             .map((product) => (
@@ -266,7 +254,6 @@ const CustomerChangePlanModal = ({
                 product={product}
                 selected={selectedProduct?.id === product.id}
                 onSelect={() => setSelectedProduct(product)}
-                themingPreset={themingPreset}
               />
             ))}
         </List>
@@ -333,7 +320,6 @@ const CustomerChangePlanModal = ({
           loading={updateSubscription.isPending}
           onClick={onConfirm}
           size="lg"
-          className={themingPreset.polar.button}
         >
           Change Plan
         </Button>

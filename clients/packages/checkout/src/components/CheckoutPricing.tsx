@@ -2,10 +2,10 @@
 
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { useMemo } from 'react'
+import { ProductCheckoutPublic } from '../guards'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
-import { hasRecurringIntervals, isLegacyRecurringPrice } from '../utils/product'
+import { isLegacyRecurringPrice } from '../utils/product'
 import AmountLabel from './AmountLabel'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 import ProductPriceLabel from './ProductPriceLabel'
@@ -13,7 +13,7 @@ import ProductPriceLabel from './ProductPriceLabel'
 const CheckoutProductAmountLabel = ({
   checkout,
 }: {
-  checkout: CheckoutPublic
+  checkout: ProductCheckoutPublic
 }) => {
   const { product, productPrice, discount } = checkout
   if (!discount || productPrice.amountType !== 'fixed') {
@@ -24,7 +24,7 @@ const CheckoutProductAmountLabel = ({
     <div className="flex flex-row justify-between">
       <AmountLabel
         amount={checkout.netAmount}
-        currency={checkout.currency || 'usd'}
+        currency={checkout.currency}
         interval={
           isLegacyRecurringPrice(productPrice)
             ? productPrice.recurringInterval
@@ -49,7 +49,7 @@ const CheckoutProductAmountLabel = ({
 }
 
 interface CheckoutPricingProps {
-  checkout: CheckoutPublic
+  checkout: ProductCheckoutPublic
   update?: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   disabled?: boolean
 }
@@ -60,10 +60,6 @@ const CheckoutPricing = ({
   disabled,
 }: CheckoutPricingProps) => {
   const { product, productPrice, amount } = checkout
-  const [, , hasBothIntervals] = useMemo(
-    () => hasRecurringIntervals(product),
-    [product],
-  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -72,11 +68,7 @@ const CheckoutPricing = ({
           {productPrice.amountType !== 'custom' ? (
             <CheckoutProductAmountLabel checkout={checkout} />
           ) : (
-            formatCurrencyNumber(
-              amount || 0,
-              productPrice.priceCurrency || 'usd',
-              0,
-            )
+            formatCurrencyNumber(amount, productPrice.priceCurrency, 0)
           )}
         </h1>
 

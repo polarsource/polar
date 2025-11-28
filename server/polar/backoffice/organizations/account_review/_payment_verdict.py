@@ -165,11 +165,7 @@ class PaymentVerdict:
                         # Review Actions (context-sensitive based on organization status)
                         if self.show_actions and self.request:
                             with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
-                                if (
-                                    hasattr(self.organization.status, "UNDER_REVIEW")
-                                    and self.organization.status
-                                    == self.organization.status.UNDER_REVIEW
-                                ):
+                                if self.organization.is_under_review:
                                     with tag.div(classes="text-center mb-3"):
                                         with tag.h4(
                                             classes="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1"

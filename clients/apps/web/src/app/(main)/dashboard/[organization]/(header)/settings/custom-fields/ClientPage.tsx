@@ -98,6 +98,19 @@ const ClientPage: React.FC<ClientPageProps> = ({
     )
   }
 
+  const [showNewModal, setShowNewModal] = useState(false)
+  const [showUpdateModal, setShowUpdateModal] = useState(false)
+  const [selectedCustomField, setSelectedCustomField] =
+    useState<schemas['CustomField']>()
+  const onCustomFieldSelected = useCallback(
+    (customField: schemas['CustomField']) => {
+      setSelectedCustomField(customField)
+      setShowUpdateModal(true)
+    },
+    [],
+  )
+  const deleteCustomField = useDeleteCustomField()
+
   const handleDeleteCustomField = useCallback(
     (customField: schemas['CustomField']) => () => {
       deleteCustomField.mutateAsync(customField).then(({ error }) => {
@@ -113,7 +126,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         })
       })
     },
-    [toast],
+    [deleteCustomField],
   )
 
   const customFieldsHook = useCustomFields(organization.id, {
@@ -200,19 +213,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
     },
   ]
-
-  const [showNewModal, setShowNewModal] = useState(false)
-  const [showUpdateModal, setShowUpdateModal] = useState(false)
-  const [selectedCustomField, setSelectedCustomField] =
-    useState<schemas['CustomField']>()
-  const onCustomFieldSelected = useCallback(
-    (customField: schemas['CustomField']) => {
-      setSelectedCustomField(customField)
-      setShowUpdateModal(true)
-    },
-    [],
-  )
-  const deleteCustomField = useDeleteCustomField()
 
   return (
     <DashboardBody

@@ -159,6 +159,34 @@ class TestOAuth2Register:
         for value in json.values():
             assert value is not None
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
+    async def test_valid_public_client(self, client: AsyncClient) -> None:
+        """Test that public clients (token_endpoint_auth_method='none') don't receive client_secret."""
+        response = await client.post(
+            "/v1/oauth2/register",
+            json={
+                "client_name": "Test Public Client",
+                "redirect_uris": ["https://example.com/callback"],
+                "token_endpoint_auth_method": "none",
+                "scope": "openid email",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+
+        # Verify the client was registered as public
+        assert json["token_endpoint_auth_method"] == "none"
+
+        # Temporary workaround: client_secret should NOT be in the response
+        assert "client_secret" not in json
+        assert "client_secret_expires_at" not in json
+
+        # Other fields should still be present
+        assert "client_id" in json
+        assert "registration_access_token" in json
+        assert json["scope"] == "openid email"
+
 
 @pytest.mark.asyncio
 class TestOAuth2ConfigureGet:
@@ -222,6 +250,31 @@ class TestOAuth2ConfigureGet:
         assert json["client_id"] == oauth2_client.client_id
         for value in json.values():
             assert value is not None
+
+    async def test_public_client_no_secret(
+        self, client: AsyncClient, public_oauth2_client: OAuth2Client
+    ) -> None:
+        """Test that public clients don't receive client_secret when retrieving config."""
+        response = await client.get(
+            f"/v1/oauth2/register/{public_oauth2_client.client_id}",
+            headers={
+                "Authorization": f"Bearer {public_oauth2_client.registration_access_token}"
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+
+        # Verify the client is public
+        assert json["token_endpoint_auth_method"] == "none"
+
+        # Temporary workaround: client_secret should NOT be in the response
+        assert "client_secret" not in json
+        assert "client_secret_expires_at" not in json
+
+        # Other fields should still be present
+        assert json["client_id"] == public_oauth2_client.client_id
+        assert "registration_access_token" in json
 
 
 @pytest.mark.asyncio

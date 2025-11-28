@@ -38,6 +38,14 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
+@pytest.fixture(autouse=True)
+def refund_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
+    mock = mocker.patch(
+        "polar.refund.service.refund_transaction_service", autospec=True
+    )
+    return mock
+
+
 async def create_order_and_payment(
     save_fixture: SaveFixture,
     *,
@@ -346,7 +354,6 @@ class TestCreateRefunds(StripeRefund):
             tax=278,
         )
         assert order.status == OrderStatus.partially_refunded
-        await self.assert_transaction_amounts_from_response(session, response)
 
         # 8_880 remaining
         order, response = await self.create_order_refund(
@@ -360,7 +367,6 @@ class TestCreateRefunds(StripeRefund):
             tax=248,
         )
         assert order.status == OrderStatus.partially_refunded
-        await self.assert_transaction_amounts_from_response(session, response)
 
         # 7_887 remaining
         order, response = await self.create_order_refund(
@@ -374,7 +380,6 @@ class TestCreateRefunds(StripeRefund):
             tax=1472,
         )
         assert order.status == OrderStatus.partially_refunded
-        await self.assert_transaction_amounts_from_response(session, response)
 
         # 2_000 remaining
         amount_before_exceed_attempt = order.refunded_amount
@@ -414,7 +419,6 @@ class TestCreateRefunds(StripeRefund):
             amount=2000,
             tax=order.tax_amount - order.refunded_tax_amount,
         )
-        await self.assert_transaction_amounts_from_response(session, response)
         assert order.status == OrderStatus.refunded
         assert order.refunded
 
@@ -455,7 +459,6 @@ class TestCreateRefunds(StripeRefund):
             amount=order_amount,
             tax=order_tax_amount,
         )
-        await self.assert_transaction_amounts_from_response(session, response)
         assert order.status == OrderStatus.refunded
         assert order.refunded_amount == order_amount
         assert order.refunded_tax_amount == order_tax_amount

@@ -316,6 +316,9 @@ export const useCustomerUpdateSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_seats'],
+      })
     },
   })
 
@@ -450,17 +453,16 @@ export const useCustomerSeats = (
 
 export const useAssignSeat = (api: Client) =>
   useMutation({
-    mutationFn: async (variables: {
-      subscription_id?: string
-      order_id?: string
-      checkout_id?: string
-      email?: string
-      external_customer_id?: string
-      customer_id?: string
-      metadata?: Record<string, any>
-    }) =>
+    mutationFn: async (
+      variables: Omit<schemas['SeatAssign'], 'immediate_claim'> & {
+        immediate_claim?: boolean
+      },
+    ) =>
       api.POST('/v1/customer-portal/seats', {
-        body: variables,
+        body: {
+          ...variables,
+          immediate_claim: variables.immediate_claim ?? false,
+        },
       }),
     onSuccess: async (result, _variables, _ctx) => {
       if (result.error) {
@@ -518,5 +520,12 @@ export const useCustomerClaimedSubscriptions = (api: Client) =>
   useQuery({
     queryKey: ['customer_claimed_subscriptions'],
     queryFn: () => unwrap(api.GET('/v1/customer-portal/seats/subscriptions')),
+    retry: defaultRetry,
+  })
+
+export const useCustomerWallets = (api: Client) =>
+  useQuery({
+    queryKey: ['customer_wallets'],
+    queryFn: () => unwrap(api.GET('/v1/customer-portal/wallets/')),
     retry: defaultRetry,
   })

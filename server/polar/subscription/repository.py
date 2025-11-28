@@ -229,6 +229,16 @@ class SubscriptionRepository(
                         == SubscriptionRecurringInterval.month,
                         Subscription.amount,
                     ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.week,
+                        Subscription.amount * 4,
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.day,
+                        Subscription.amount * 30,
+                    ),
                 )
             case SubscriptionSortProperty.product:
                 return Product.name
@@ -334,10 +344,15 @@ class SubscriptionProductPriceRepository(
                 CustomerSeat.status == SeatStatus.claimed,
             )
             .options(
-                joinedload(CustomerSeat.subscription).joinedload(Subscription.customer),
-                joinedload(CustomerSeat.subscription)
-                .joinedload(Subscription.subscription_product_prices)
-                .joinedload(SubscriptionProductPrice.product_price),
+                joinedload(CustomerSeat.subscription).options(
+                    joinedload(Subscription.customer),
+                    joinedload(Subscription.subscription_product_prices).options(
+                        joinedload(SubscriptionProductPrice.product_price),
+                        # Load the back-reference to satisfy lazy='raise_on_sql'
+                        # This points to the same Subscription already being loaded above
+                        joinedload(SubscriptionProductPrice.subscription),
+                    ),
+                )
             )
             .limit(1)
         )

@@ -26,8 +26,10 @@ from polar.models import (
 )
 from polar.models.customer_seat import SeatStatus
 from polar.models.order import OrderStatus
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
+from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .repository import CustomerSeatRepository
@@ -106,6 +108,58 @@ class SeatService:
     def _is_subscription(self, container: SeatContainer) -> bool:
         return isinstance(container, Subscription)
 
+    async def _enqueue_benefit_grant(
+        self, seat: CustomerSeat, product_id: uuid.UUID
+    ) -> None:
+        """Enqueue benefit grant job for a claimed seat."""
+        if seat.subscription_id:
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                customer_id=seat.customer_id,
+                product_id=product_id,
+                subscription_id=seat.subscription_id,
+            )
+        else:
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                customer_id=seat.customer_id,
+                product_id=product_id,
+                order_id=seat.order_id,
+            )
+
+    async def _publish_seat_claimed_event(
+        self, seat: CustomerSeat, product_id: uuid.UUID
+    ) -> None:
+        """Publish eventstream event for seat claimed."""
+        await eventstream_publish(
+            "customer_seat.claimed",
+            {
+                "seat_id": str(seat.id),
+                "subscription_id": str(seat.subscription_id)
+                if seat.subscription_id
+                else None,
+                "order_id": str(seat.order_id) if seat.order_id else None,
+                "product_id": str(product_id),
+            },
+            customer_id=seat.customer_id,
+        )
+
+    async def _send_seat_claimed_webhook(
+        self, session: AsyncSession, organization_id: uuid.UUID, seat: CustomerSeat
+    ) -> None:
+        """Send webhook for seat claimed."""
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
+        if organization:
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.customer_seat_claimed,
+                seat,
+            )
+
     async def check_seat_feature_enabled(
         self, session: AsyncReadSession, organization_id: uuid.UUID
     ) -> None:
@@ -143,6 +197,14 @@ class SeatService:
         repository = CustomerSeatRepository.from_session(session)
         return await repository.get_available_seats_count_for_container(container)
 
+    async def count_assigned_seats_for_subscription(
+        self,
+        session: AsyncReadSession,
+        subscription: Subscription,
+    ) -> int:
+        repository = CustomerSeatRepository.from_session(session)
+        return await repository.count_assigned_seats_for_subscription(subscription.id)
+
     async def assign_seat(
         self,
         session: AsyncSession,
@@ -152,6 +214,7 @@ class SeatService:
         external_customer_id: str | None = None,
         customer_id: uuid.UUID | None = None,
         metadata: dict[str, Any] | None = None,
+        immediate_claim: bool = False,
     ) -> CustomerSeat:
         product = self._get_product(container)
         source_id = self._get_container_id(container)
@@ -200,27 +263,33 @@ class SeatService:
             identifier = email or external_customer_id or str(customer_id)
             raise SeatAlreadyAssigned(identifier)
 
-        invitation_token = secrets.token_urlsafe(32)
-        token_expires_at = datetime.now(UTC) + timedelta(days=1)
+        # Only generate invitation token for standard (non-immediate) claims
+        if immediate_claim:
+            invitation_token = None
+            token_expires_at = None
+        else:
+            invitation_token = secrets.token_urlsafe(32)
+            token_expires_at = datetime.now(UTC) + timedelta(days=1)
 
         revoked_seat = await repository.get_revoked_seat_by_container(container)
 
         if revoked_seat:
             seat = revoked_seat
-            seat.status = SeatStatus.pending
+            seat.status = SeatStatus.claimed if immediate_claim else SeatStatus.pending
             seat.invitation_token = invitation_token
             seat.invitation_token_expires_at = token_expires_at
             seat.customer_id = customer.id
             seat.seat_metadata = metadata or {}
             seat.revoked_at = None
-            seat.claimed_at = None
+            seat.claimed_at = datetime.now(UTC) if immediate_claim else None
         else:
             seat_data = {
-                "status": SeatStatus.pending,
+                "status": SeatStatus.claimed if immediate_claim else SeatStatus.pending,
                 "invitation_token": invitation_token,
                 "invitation_token_expires_at": token_expires_at,
                 "customer_id": customer.id,
                 "seat_metadata": metadata or {},
+                "claimed_at": datetime.now(UTC) if immediate_claim else None,
             }
             if is_subscription:
                 seat_data["subscription_id"] = source_id
@@ -232,25 +301,47 @@ class SeatService:
 
         await session.flush()
 
-        log.info(
-            "Seat assigned",
-            subscription_id=seat.subscription_id,
-            order_id=seat.order_id,
-            email=email,
-            customer_id=customer.id,
-            invitation_token=invitation_token,
-        )
-
-        organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(organization_id)
-        if organization:
-            send_seat_invitation_email(
-                customer_email=customer.email,
-                seat=seat,
-                organization=organization,
-                product_name=product.name,
-                billing_manager_email=billing_manager_customer.email,
+        if immediate_claim:
+            # Immediate claim flow: grant benefits and trigger claimed webhook
+            log.info(
+                "Seat immediately claimed",
+                subscription_id=seat.subscription_id,
+                order_id=seat.order_id,
+                email=email,
+                customer_id=customer.id,
             )
+
+            await self._publish_seat_claimed_event(seat, product.id)
+            await self._enqueue_benefit_grant(seat, product.id)
+            await self._send_seat_claimed_webhook(session, organization_id, seat)
+        else:
+            # Standard flow: send invitation email and trigger assigned webhook
+            log.info(
+                "Seat assigned",
+                subscription_id=seat.subscription_id,
+                order_id=seat.order_id,
+                email=email,
+                customer_id=customer.id,
+                invitation_token=invitation_token or "none",
+            )
+
+            organization_repository = OrganizationRepository.from_session(session)
+            organization = await organization_repository.get_by_id(organization_id)
+            if organization:
+                send_seat_invitation_email(
+                    customer_email=customer.email,
+                    seat=seat,
+                    organization=organization,
+                    product_name=product.name,
+                    billing_manager_email=billing_manager_customer.email,
+                )
+
+                await webhook_service.send(
+                    session,
+                    organization,
+                    WebhookEventType.customer_seat_assigned,
+                    seat,
+                )
 
         return seat
 
@@ -326,37 +417,8 @@ class SeatService:
 
         await session.flush()
 
-        await eventstream_publish(
-            "customer_seat.claimed",
-            {
-                "seat_id": str(seat.id),
-                "subscription_id": str(seat.subscription_id)
-                if seat.subscription_id
-                else None,
-                "order_id": str(seat.order_id) if seat.order_id else None,
-                "product_id": str(product_id),
-            },
-            customer_id=seat.customer_id,
-        )
-
-        # Grant benefits to the assigned customer
-        if seat.subscription_id:
-            enqueue_job(
-                "benefit.enqueue_benefits_grants",
-                task="grant",
-                customer_id=seat.customer_id,
-                product_id=product_id,
-                subscription_id=seat.subscription_id,
-            )
-        else:
-            enqueue_job(
-                "benefit.enqueue_benefits_grants",
-                task="grant",
-                customer_id=seat.customer_id,
-                product_id=product_id,
-                order_id=seat.order_id,
-            )
-
+        await self._publish_seat_claimed_event(seat, product_id)
+        await self._enqueue_benefit_grant(seat, product_id)
         session_token, _ = await customer_session_service.create_customer_session(
             session, seat.customer
         )
@@ -368,6 +430,8 @@ class SeatService:
             subscription_id=seat.subscription_id,
             **(request_metadata or {}),
         )
+
+        await self._send_seat_claimed_webhook(session, organization_id, seat)
 
         return seat, session_token
 
@@ -415,12 +479,24 @@ class SeatService:
         seat.customer_id = None
         seat.invitation_token = None
 
+        await session.flush()
+
         log.info(
             "Seat revoked",
             seat_id=seat.id,
             subscription_id=seat.subscription_id,
             order_id=seat.order_id,
         )
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
+        if organization:
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.customer_seat_revoked,
+                seat,
+            )
 
         return seat
 

@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Uuid
+from sqlalchemy import Boolean, ForeignKey, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -19,6 +19,9 @@ class WebhookEventType(StrEnum):
     customer_updated = "customer.updated"
     customer_deleted = "customer.deleted"
     customer_state_changed = "customer.state_changed"
+    customer_seat_assigned = "customer_seat.assigned"
+    customer_seat_claimed = "customer_seat.claimed"
+    customer_seat_revoked = "customer_seat.revoked"
     order_created = "order.created"
     order_updated = "order.updated"
     order_paid = "order.paid"
@@ -65,6 +68,7 @@ class WebhookEndpoint(RecordModel):
     events: Mapped[list[WebhookEventType]] = mapped_column(
         JSONB, nullable=False, default=[]
     )
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,

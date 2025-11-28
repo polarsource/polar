@@ -5,6 +5,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from polar.exceptions import PolarTaskError
+from polar.kit.utils import utc_now
+from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
     Customer,
@@ -15,7 +17,13 @@ from polar.models import (
 )
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
+from polar.worker import (
+    AsyncSessionMaker,
+    RedisMiddleware,
+    TaskPriority,
+    actor,
+    enqueue_job,
+)
 
 from .service import SubscriptionNotReadyForMigration
 from .service import subscription as subscription_service
@@ -43,16 +51,42 @@ class SubscriptionTierDoesNotExist(SubscriptionTaskError):
 
 
 @actor(actor_name="subscription.cycle", priority=TaskPriority.LOW)
-async def subscription_cycle(subscription_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        repository = SubscriptionRepository.from_session(session)
-        subscription = await repository.get_by_id(
-            subscription_id, options=repository.get_eager_options()
-        )
-        if subscription is None:
-            raise SubscriptionDoesNotExist(subscription_id)
+async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) -> None:
+    redis = RedisMiddleware.get()
+    locker = Locker(redis)
+    lock_name = f"subscription:cycle:{subscription_id}"
 
-        await subscription_service.cycle(session, subscription)
+    if await locker.is_locked(lock_name):
+        log.info(
+            "Subscription is already being cycled by another worker",
+            subscription_id=subscription_id,
+        )
+        return
+
+    async with locker.lock(lock_name, timeout=1.0, blocking_timeout=0.1):
+        async with AsyncSessionMaker() as session:
+            repository = SubscriptionRepository.from_session(session)
+            subscription = await repository.get_by_id(
+                subscription_id, options=repository.get_eager_options()
+            )
+            if subscription is None:
+                raise SubscriptionDoesNotExist(subscription_id)
+
+            if (
+                not force
+                and subscription.current_period_end
+                and subscription.current_period_end > utc_now()
+            ):
+                log.info(
+                    "Subscription has already been cycled",
+                    subscription_id=subscription_id,
+                )
+                subscription = await repository.update(
+                    subscription, update_dict={"scheduler_locked_at": None}
+                )
+                return
+
+            await subscription_service.cycle(session, subscription)
 
 
 @actor(

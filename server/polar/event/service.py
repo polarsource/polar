@@ -1,27 +1,59 @@
 import uuid
+from collections import defaultdict
 from collections.abc import Callable, Sequence
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import structlog
-from sqlalchemy import String, UnaryExpression, asc, cast, desc, func, or_, select, text
+from sqlalchemy import (
+    Select,
+    String,
+    UnaryExpression,
+    asc,
+    cast,
+    desc,
+    func,
+    or_,
+    select,
+    text,
+)
+from sqlalchemy.dialects.postgresql import insert
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.customer.repository import CustomerRepository
+from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
+from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.logging import Logger
 from polar.meter.filter import Filter
 from polar.meter.repository import MeterRepository
-from polar.models import Customer, Event, Organization, User, UserOrganization
+from polar.models import (
+    Customer,
+    Event,
+    EventClosure,
+    Organization,
+    User,
+    UserOrganization,
+)
 from polar.models.event import EventSource
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_events
 
 from .repository import EventRepository
-from .schemas import EventCreateCustomer, EventName, EventsIngest, EventsIngestResponse
+from .schemas import (
+    EventCreateCustomer,
+    EventName,
+    EventsIngest,
+    EventsIngestResponse,
+    EventStatistics,
+    ListStatisticsTimeseries,
+    StatisticsPeriod,
+)
 from .sorting import EventNamesSortProperty, EventSortProperty
 
 log: Logger = structlog.get_logger()
@@ -36,11 +68,61 @@ class EventIngestValidationError(EventError):
         super().__init__("Event ingest validation failed.")
 
 
+def _topological_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Sort events by dependency order so parents come before children.
+    Events without parents come first, followed by their children in order.
+
+    Handles parent_id references that can be either Polar IDs or external_id strings.
+    Uses Kahn's algorithm for topological sorting.
+    """
+    if not events:
+        return []
+
+    id_to_index: dict[uuid.UUID | str, int] = {}
+    for idx, event in enumerate(events):
+        if "id" in event:
+            id_to_index[event["id"]] = idx
+        if "external_id" in event and event["external_id"] is not None:
+            id_to_index[event["external_id"]] = idx
+
+    graph: dict[int, list[int]] = defaultdict(list)
+    in_degree: dict[int, int] = {}
+
+    for idx in range(len(events)):
+        in_degree[idx] = 0
+
+    for idx, event in enumerate(events):
+        parent_id = event.get("parent_id")
+        if parent_id and parent_id in id_to_index:
+            parent_idx = id_to_index[parent_id]
+            graph[parent_idx].append(idx)
+            in_degree[idx] += 1
+
+    queue = [idx for idx in range(len(events)) if in_degree[idx] == 0]
+    sorted_indices = []
+
+    while queue:
+        current_idx = queue.pop(0)
+        sorted_indices.append(current_idx)
+
+        for child_idx in graph[current_idx]:
+            in_degree[child_idx] -= 1
+            if in_degree[child_idx] == 0:
+                queue.append(child_idx)
+
+    if len(sorted_indices) != len(events):
+        raise EventError("Circular dependency detected in event parent relationships")
+
+    return [events[idx] for idx in sorted_indices]
+
+
 class EventService:
-    async def list(
+    async def _build_filtered_statement(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
+        repository: EventRepository,
         *,
         filter: Filter | None = None,
         start_timestamp: datetime | None = None,
@@ -51,14 +133,13 @@ class EventService:
         meter_id: uuid.UUID | None = None,
         name: Sequence[str] | None = None,
         source: Sequence[EventSource] | None = None,
+        event_type_id: uuid.UUID | None = None,
         metadata: MetadataQuery | None = None,
-        pagination: PaginationParams,
-        sorting: list[Sorting[EventSortProperty]] = [
-            (EventSortProperty.timestamp, True)
-        ],
+        sorting: Sequence[Sorting[EventSortProperty]] = (
+            (EventSortProperty.timestamp, True),
+        ),
         query: str | None = None,
-    ) -> tuple[Sequence[Event], int]:
-        repository = EventRepository.from_session(session)
+    ) -> Select[tuple[Event]]:
         statement = repository.get_readable_statement(auth_subject).options(
             *repository.get_eager_options()
         )
@@ -107,6 +188,9 @@ class EventService:
         if source is not None:
             statement = statement.where(Event.source.in_(source))
 
+        if event_type_id is not None:
+            statement = statement.where(Event.event_type_id == event_type_id)
+
         if query is not None:
             statement = statement.where(
                 or_(
@@ -139,8 +223,64 @@ class EventService:
                 order_by_clauses.append(clause_function(Event.timestamp))
         statement = statement.order_by(*order_by_clauses)
 
-        return await repository.paginate(
-            statement, limit=pagination.limit, page=pagination.page
+        return statement
+
+    async def list(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        filter: Filter | None = None,
+        start_timestamp: datetime | None = None,
+        end_timestamp: datetime | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        meter_id: uuid.UUID | None = None,
+        name: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        event_type_id: uuid.UUID | None = None,
+        metadata: MetadataQuery | None = None,
+        pagination: PaginationParams,
+        sorting: Sequence[Sorting[EventSortProperty]] = (
+            (EventSortProperty.timestamp, True),
+        ),
+        query: str | None = None,
+        parent_id: uuid.UUID | None = None,
+        hierarchical: bool = False,
+        aggregate_fields: Sequence[str] = (),
+    ) -> tuple[Sequence[Event], int]:
+        repository = EventRepository.from_session(session)
+        statement = await self._build_filtered_statement(
+            session,
+            auth_subject,
+            repository,
+            filter=filter,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            organization_id=organization_id,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            meter_id=meter_id,
+            name=name,
+            source=source,
+            event_type_id=event_type_id,
+            metadata=metadata,
+            sorting=sorting,
+            query=query,
+        )
+
+        if hierarchical:
+            if parent_id is not None:
+                statement = statement.where(Event.parent_id == parent_id)
+            else:
+                statement = statement.where(Event.parent_id.is_(None))
+
+        return await repository.list_with_closure_table(
+            statement,
+            limit=pagination.limit,
+            page=pagination.page,
+            aggregate_fields=aggregate_fields,
         )
 
     async def get(
@@ -156,6 +296,142 @@ class EventService:
             .options(*repository.get_eager_options())
         )
         return await repository.get_one_or_none(statement)
+
+    async def list_statistics_timeseries(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        start_date: date,
+        end_date: date,
+        timezone: ZoneInfo,
+        interval: TimeInterval,
+        filter: Filter | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        meter_id: uuid.UUID | None = None,
+        name: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        event_type_id: uuid.UUID | None = None,
+        metadata: MetadataQuery | None = None,
+        sorting: Sequence[Sorting[EventSortProperty]] = (
+            (EventSortProperty.timestamp, True),
+        ),
+        query: str | None = None,
+        aggregate_fields: Sequence[str] = ("_cost.amount",),
+        hierarchy_stats_sorting: Sequence[tuple[str, bool]] = (("total", True),),
+    ) -> ListStatisticsTimeseries:
+        start_timestamp = datetime(
+            start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
+        )
+        end_timestamp = datetime(
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
+        )
+
+        timestamp_series_cte = get_timestamp_series_cte(
+            start_timestamp, end_timestamp, interval
+        )
+
+        repository = EventRepository.from_session(session)
+        statement = await self._build_filtered_statement(
+            session,
+            auth_subject,
+            repository,
+            filter=filter,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            organization_id=organization_id,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            meter_id=meter_id,
+            name=name,
+            source=source,
+            event_type_id=event_type_id,
+            metadata=metadata,
+            sorting=sorting,
+            query=query,
+        )
+
+        timeseries_stats = await repository.get_hierarchy_stats(
+            statement,
+            aggregate_fields,
+            hierarchy_stats_sorting,
+            timestamp_series=timestamp_series_cte,
+        )
+
+        result = await session.execute(select(timestamp_series_cte.c.timestamp))
+        timestamps = [row[0] for row in result.all()]
+
+        stats_by_timestamp: dict[datetime, list[dict[str, Any]]] = {}
+        all_event_types: dict[tuple[str, str, uuid.UUID], dict[str, Any]] = {}
+
+        for stat in timeseries_stats:
+            ts = stat.pop("timestamp")
+            if stat["name"] is None:
+                continue
+            if ts not in stats_by_timestamp:
+                stats_by_timestamp[ts] = []
+            stats_by_timestamp[ts].append(stat)
+
+            # Track all unique event types
+            event_key = (stat["name"], stat["label"], stat["event_type_id"])
+            if event_key not in all_event_types:
+                all_event_types[event_key] = {
+                    "name": stat["name"],
+                    "label": stat["label"],
+                    "event_type_id": stat["event_type_id"],
+                }
+
+        # Convert field names from dot notation to underscore (e.g., "_cost.amount" -> "_cost_amount")
+        zero_values = {field.replace(".", "_"): "0" for field in aggregate_fields}
+
+        periods = []
+        for i, period_start in enumerate(timestamps):
+            if i + 1 < len(timestamps):
+                period_end = timestamps[i + 1]
+            else:
+                period_end = end_timestamp
+
+            period_stats = stats_by_timestamp.get(period_start, [])
+
+            # Fill in missing event types with zeros
+            stats_by_name = {s["name"]: s for s in period_stats}
+            complete_stats = []
+            for event_type_info in all_event_types.values():
+                if event_type_info["name"] in stats_by_name:
+                    complete_stats.append(stats_by_name[event_type_info["name"]])
+                else:
+                    complete_stats.append(
+                        {
+                            **event_type_info,
+                            "occurrences": 0,
+                            "customers": 0,
+                            "totals": zero_values,
+                            "averages": zero_values,
+                            "p50": zero_values,
+                            "p95": zero_values,
+                            "p99": zero_values,
+                        }
+                    )
+
+            periods.append(
+                StatisticsPeriod(
+                    timestamp=period_start,
+                    period_start=period_start,
+                    period_end=period_end,
+                    stats=[EventStatistics(**s) for s in complete_stats],
+                )
+            )
+
+        totals = await repository.get_hierarchy_stats(
+            statement, aggregate_fields, hierarchy_stats_sorting
+        )
+
+        return ListStatisticsTimeseries(
+            periods=periods,
+            totals=[EventStatistics(**s) for s in totals],
+        )
 
     async def list_names(
         self,
@@ -237,42 +513,109 @@ class EventService:
             session, auth_subject
         )
 
+        event_type_repository = EventTypeRepository.from_session(session)
+        event_types_cache: dict[tuple[str, uuid.UUID], uuid.UUID] = {}
+
+        batch_external_id_map: dict[str, uuid.UUID] = {}
+        for event_create in ingest.events:
+            if event_create.external_id is not None:
+                batch_external_id_map[event_create.external_id] = uuid.uuid4()
+
+        # Build lightweight event metadata for sorting
+        event_metadata: list[dict[str, Any]] = []
+        for index, event_create in enumerate(ingest.events):
+            metadata: dict[str, Any] = {
+                "index": index,
+                "external_id": event_create.external_id,
+                "parent_id": event_create.parent_id,
+            }
+            if event_create.external_id:
+                metadata["id"] = batch_external_id_map[event_create.external_id]
+            event_metadata.append(metadata)
+
+        sorted_metadata = _topological_sort_events(event_metadata)
+
+        # Process events in sorted order
         events: list[dict[str, Any]] = []
         errors: list[ValidationError] = []
-        for index, event_create in enumerate(ingest.events):
+        processed_events: dict[uuid.UUID, dict[str, Any]] = {}
+
+        for metadata in sorted_metadata:
+            index = metadata["index"]
+            event_create = ingest.events[index]
+
             try:
                 organization_id = validate_organization_id(
                     index, event_create.organization_id
                 )
                 if isinstance(event_create, EventCreateCustomer):
                     validate_customer_id(index, event_create.customer_id)
+
+                parent_event: Event | None = None
+                parent_id_in_batch: uuid.UUID | None = None
+                if event_create.parent_id is not None:
+                    parent_event, parent_id_in_batch = await self._resolve_parent(
+                        session,
+                        index,
+                        event_create.parent_id,
+                        organization_id,
+                        batch_external_id_map,
+                    )
+
+                event_label_cache_key = (event_create.name, organization_id)
+                if event_label_cache_key not in event_types_cache:
+                    event_type = await event_type_repository.get_or_create(
+                        event_create.name, organization_id
+                    )
+                    event_types_cache[event_label_cache_key] = event_type.id
+                event_type_id = event_types_cache[event_label_cache_key]
             except EventIngestValidationError as e:
                 errors.extend(e.errors)
                 continue
             else:
-                events.append(
-                    {
-                        "source": EventSource.user,
-                        "organization_id": organization_id,
-                        **event_create.model_dump(
-                            exclude={"organization_id"}, by_alias=True
-                        ),
-                    }
+                event_dict = event_create.model_dump(
+                    exclude={"organization_id", "parent_id"}, by_alias=True
                 )
+                event_dict["source"] = EventSource.user
+                event_dict["organization_id"] = organization_id
+                event_dict["event_type_id"] = event_type_id
+
+                if event_create.external_id is not None:
+                    event_dict["id"] = batch_external_id_map[event_create.external_id]
+
+                if parent_event is not None:
+                    event_dict["parent_id"] = parent_event.id
+                    event_dict["root_id"] = parent_event.root_id or parent_event.id
+                elif parent_id_in_batch is not None:
+                    event_dict["parent_id"] = parent_id_in_batch
+                    # Parent was already processed, look it up
+                    parent_dict = processed_events.get(parent_id_in_batch)
+                    if parent_dict:
+                        event_dict["root_id"] = parent_dict.get(
+                            "root_id", parent_id_in_batch
+                        )
+
+                events.append(event_dict)
+                if event_dict.get("id"):
+                    processed_events[event_dict["id"]] = event_dict
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
 
         repository = EventRepository.from_session(session)
-        event_ids = await repository.insert_batch(events)
+        event_ids, duplicates_count = await repository.insert_batch(events)
+
         enqueue_events(*event_ids)
 
-        return EventsIngestResponse(inserted=len(events))
+        return EventsIngestResponse(
+            inserted=len(event_ids), duplicates=duplicates_count
+        )
 
     async def create_event(self, session: AsyncSession, event: Event) -> Event:
         repository = EventRepository.from_session(session)
         event = await repository.create(event, flush=True)
         enqueue_events(event.id)
+
         log.debug(
             "Event created",
             id=event.id,
@@ -282,23 +625,106 @@ class EventService:
         )
         return event
 
+    async def populate_event_closures_batch(
+        self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
+    ) -> None:
+        if not event_ids:
+            return
+
+        result = await session.execute(
+            select(Event.id, Event.parent_id).where(Event.id.in_(event_ids))
+        )
+        events_data = result.all()
+
+        events_list = [
+            {"id": event_id, "parent_id": parent_id}
+            for event_id, parent_id in events_data
+        ]
+        sorted_events = _topological_sort_events(events_list)
+
+        all_closure_entries = []
+        # Map event_id -> list of its ancestor closures (including self)
+        event_closures: dict[uuid.UUID, list[tuple[uuid.UUID, int]]] = {}
+
+        for event in sorted_events:
+            event_id = event["id"]
+            parent_id = event.get("parent_id")
+
+            # Self-reference
+            event_closures[event_id] = [(event_id, 0)]
+            all_closure_entries.append(
+                {
+                    "ancestor_id": event_id,
+                    "descendant_id": event_id,
+                    "depth": 0,
+                }
+            )
+
+            if parent_id is not None:
+                # Check if parent is in current batch
+                if parent_id in event_closures:
+                    # Parent is in current batch, use in-memory closures
+                    for ancestor_id, depth in event_closures[parent_id]:
+                        event_closures[event_id].append((ancestor_id, depth + 1))
+                        all_closure_entries.append(
+                            {
+                                "ancestor_id": ancestor_id,
+                                "descendant_id": event_id,
+                                "depth": depth + 1,
+                            }
+                        )
+                else:
+                    # Parent is from previous batch, query database
+                    parent_closures_result = await session.execute(
+                        select(
+                            EventClosure.ancestor_id,
+                            EventClosure.depth,
+                        ).where(EventClosure.descendant_id == parent_id)
+                    )
+
+                    for ancestor_id, depth in parent_closures_result:
+                        event_closures[event_id].append((ancestor_id, depth + 1))
+                        all_closure_entries.append(
+                            {
+                                "ancestor_id": ancestor_id,
+                                "descendant_id": event_id,
+                                "depth": depth + 1,
+                            }
+                        )
+
+        # Single bulk insert
+        if all_closure_entries:
+            await session.execute(
+                insert(EventClosure)
+                .values(all_closure_entries)
+                .on_conflict_do_nothing(index_elements=["ancestor_id", "descendant_id"])
+            )
+
     async def ingested(
         self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
     ) -> None:
+        await self.populate_event_closures_batch(session, event_ids)
         repository = EventRepository.from_session(session)
         statement = (
             repository.get_base_statement()
-            .where(Event.id.in_(event_ids), Event.customer.is_not(None))
+            .where(Event.id.in_(event_ids))
             .options(*repository.get_eager_options())
         )
         events = await repository.get_all(statement)
         customers: set[Customer] = set()
+        organization_ids_for_revops: set[uuid.UUID] = set()
         for event in events:
-            assert event.customer is not None
-            customers.add(event.customer)
+            if event.customer:
+                customers.add(event.customer)
+            if "_cost" in event.user_metadata:
+                organization_ids_for_revops.add(event.organization_id)
 
         customer_repository = CustomerRepository.from_session(session)
         await customer_repository.touch_meters(customers)
+
+        if organization_ids_for_revops:
+            organization_repository = OrganizationRepository.from_session(session)
+            await organization_repository.enable_revops(organization_ids_for_revops)
 
     async def _get_organization_validation_function(
         self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]
@@ -403,6 +829,58 @@ class EventService:
             return customer_id
 
         return _validate_customer_id
+
+    async def _resolve_parent(
+        self,
+        session: AsyncSession,
+        index: int,
+        parent_id: str,
+        organization_id: uuid.UUID,
+        batch_external_id_map: dict[str, uuid.UUID],
+    ) -> tuple[Event | None, uuid.UUID | None]:
+        """
+        Resolve and return the parent event.
+        Returns a tuple of (parent_event_from_db, parent_id_from_batch).
+        Only one of these will be set - if the parent is in the current batch,
+        parent_id_from_batch will be set. Otherwise, parent_event_from_db will be set.
+        """
+        # Check if parent is in current batch
+        if parent_id in batch_external_id_map:
+            return None, batch_external_id_map[parent_id]
+
+        # Look up parent in database by ID or external_id
+        try:
+            parent_uuid = uuid.UUID(parent_id)
+        except ValueError:
+            parent_uuid = None
+
+        if parent_uuid:
+            statement = select(Event).where(
+                Event.organization_id == organization_id,
+                or_(Event.id == parent_uuid, Event.external_id == parent_id),
+            )
+        else:
+            statement = select(Event).where(
+                Event.organization_id == organization_id,
+                Event.external_id == parent_id,
+            )
+
+        result = await session.execute(statement)
+        parent_event = result.scalar_one_or_none()
+
+        if parent_event is not None:
+            return parent_event, None
+
+        raise EventIngestValidationError(
+            [
+                {
+                    "type": "parent_id",
+                    "msg": "Parent event not found.",
+                    "loc": ("body", "events", index, "parent_id"),
+                    "input": parent_id,
+                }
+            ]
+        )
 
 
 event = EventService()

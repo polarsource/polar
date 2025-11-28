@@ -5,5 +5,18 @@ info:
 actions:
   - target: "$.components.schemas['EventMetadataInput'].properties"
     remove: true
+  - target: "$.components.schemas['EventMetadataInput'].additionalProperties.anyOf"
+    update:
+      - $ref: "#/components/schemas/CostMetadata-Input"
+  - target: "$.components.schemas['EventMetadataInput'].additionalProperties.anyOf"
+    update:
+      - $ref: "#/components/schemas/LLMMetadata"
+
   - target: "$.components.schemas['EventMetadataOutput'].properties"
     remove: true
+  - target: "$.components.schemas['EventMetadataOutput'].additionalProperties.anyOf"
+    update:
+      - $ref: "#/components/schemas/CostMetadata-Output"
+  - target: "$.components.schemas['EventMetadataOutput'].additionalProperties.anyOf"
+    update:
+      - $ref: "#/components/schemas/LLMMetadata"

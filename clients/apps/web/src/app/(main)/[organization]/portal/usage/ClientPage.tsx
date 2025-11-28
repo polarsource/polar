@@ -5,14 +5,13 @@ import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 
 const ClientPage = ({
-  organization,
   customerSessionToken,
 }: {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   customerSessionToken?: string
 }) => {
   const api = createClientSideAPI(customerSessionToken)
-  return <CustomerUsage api={api} organization={organization} />
+  return <CustomerUsage api={api} />
 }
 
 export default ClientPage

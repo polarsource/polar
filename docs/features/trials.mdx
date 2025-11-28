@@ -48,7 +48,7 @@ Once the trial period ends, the customer will be automatically charged for the s
 
 ## Adding, extending or canceling a trial
 
-For existing subscriptions, youu can add, extend or cancel a customer's trial period at any time through the dashboard, from the subscription details page. Click on **Update Subscription**, then click on the **Trial** tab.
+For existing subscriptions, you can add, extend or cancel a customer's trial period at any time through the dashboard, from the subscription details page. Click on **Update Subscription**, then click on the **Trial** tab.
 
 To add or extend a trial, set a new trial end date in the future. If the subscription was active, its status will be changed to **trialing**, and the billing will be postponed until the end of the trial.
 
@@ -62,3 +62,36 @@ To cancel a trial, click on the **End trial** button. The subscription will beco
   className="hidden dark:block"
   src="/assets/features/trials/update.dark.png"
 />
+
+## Preventing trial abuse
+
+To protect your business from customers repeatedly signing up for trials, you can enable the **Prevent trial abuse** feature from your organization's subscription settings.
+
+### How it works
+
+When this feature is enabled, Polar tracks trial redemptions using:
+
+- **Email addresses**: We automatically detect and normalize email aliases (e.g., `user+alias@example.com` is treated as `user@example.com`) to prevent abuse through simple email variations.
+- **Payment method fingerprints**: We track the unique fingerprint of payment methods (credit cards) used during checkout to identify returning customers even if they use a different email address.
+
+A customer will be blocked from starting a new trial if they have previously redeemed a trial for any of your products and match either:
+- The same unaliased email address, OR
+- The same payment method fingerprint
+
+### Enabling the feature
+
+1. Go to your organization's **Settings** page
+2. Navigate to the **Subscription** section
+3. Toggle on **Prevent trial abuse**
+
+Once enabled, the feature will apply to all future trial checkout attempts across all your products.
+
+### Customer experience
+
+When a customer who has already used a trial attempts to check out again:
+
+1. They will see an error message: "You have already used a trial for this product. Trials can only be used once per customer."
+2. The checkout will automatically refresh without the trial period
+3. The customer can still complete their purchase and subscribe at the regular price
+
+This approach ensures a smooth experience while protecting your business from trial abuse.

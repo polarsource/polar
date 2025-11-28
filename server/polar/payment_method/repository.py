@@ -44,9 +44,10 @@ class PaymentMethodRepository(
         processor_id: str,
         *,
         options: Options = (),
+        include_deleted: bool = False,
     ) -> PaymentMethod | None:
         statement = (
-            self.get_base_statement()
+            self.get_base_statement(include_deleted=include_deleted)
             .where(
                 PaymentMethod.customer_id == customer,
                 PaymentMethod.processor == processor,

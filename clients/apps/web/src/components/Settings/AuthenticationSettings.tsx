@@ -1,6 +1,11 @@
 'use client'
 
-import { useAuth, useGitHubAccount, useGoogleAccount } from '@/hooks'
+import {
+  useAuth,
+  useDisconnectOAuthAccount,
+  useGitHubAccount,
+  useGoogleAccount,
+} from '@/hooks'
 import { getGitHubAuthorizeURL, getGoogleAuthorizeURL } from '@/utils/auth'
 import AlternateEmailOutlined from '@mui/icons-material/AlternateEmailOutlined'
 import GitHub from '@mui/icons-material/GitHub'
@@ -41,11 +46,15 @@ const AuthenticationMethod: React.FC<AuthenticationMethodProps> = ({
 interface GitHubAuthenticationMethodProps {
   oauthAccount: schemas['OAuthAccountRead'] | undefined
   returnTo: string
+  onDisconnect: () => void
+  isDisconnecting: boolean
 }
 
 const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
   oauthAccount,
   returnTo,
+  onDisconnect,
+  isDisconnecting,
 }) => {
   const authorizeURL = getGitHubAuthorizeURL({ return_to: returnTo })
 
@@ -74,7 +83,15 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
       }
       action={
         <>
-          {!oauthAccount && (
+          {oauthAccount ? (
+            <Button
+              variant="secondary"
+              onClick={onDisconnect}
+              loading={isDisconnecting}
+            >
+              Disconnect
+            </Button>
+          ) : (
             <Button asChild>
               <a href={authorizeURL}>Connect</a>
             </Button>
@@ -88,11 +105,15 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
 interface GoogleAuthenticationMethodProps {
   oauthAccount: schemas['OAuthAccountRead'] | undefined
   returnTo: string
+  onDisconnect: () => void
+  isDisconnecting: boolean
 }
 
 const GoogleAuthenticationMethod: React.FC<GoogleAuthenticationMethodProps> = ({
   oauthAccount,
   returnTo,
+  onDisconnect,
+  isDisconnecting,
 }) => {
   const authorizeURL = getGoogleAuthorizeURL({ return_to: returnTo })
 
@@ -107,7 +128,15 @@ const GoogleAuthenticationMethod: React.FC<GoogleAuthenticationMethodProps> = ({
       }
       action={
         <>
-          {!oauthAccount && (
+          {oauthAccount ? (
+            <Button
+              variant="secondary"
+              onClick={onDisconnect}
+              loading={isDisconnecting}
+            >
+              Disconnect
+            </Button>
+          ) : (
             <Button asChild>
               <a href={authorizeURL}>Connect</a>
             </Button>
@@ -123,13 +152,13 @@ const AuthenticationSettings = () => {
   const pathname = usePathname()
   const githubAccount = useGitHubAccount()
   const googleAccount = useGoogleAccount()
+  const disconnectOAuth = useDisconnectOAuthAccount()
 
   const searchParams = useSearchParams()
   const [updateEmailStage, setUpdateEmailStage] = useState<
-    'off' | 'form' | 'request' | 'verified' | 'exists'
+    'off' | 'form' | 'request' | 'verified'
   >((searchParams.get('update_email') as 'verified' | null) || 'off')
   const [userReloaded, setUserReloaded] = useState(false)
-  const [errMsg, setErrMsg] = useState<string | null>(null)
 
   useEffect(() => {
     if (!userReloaded && updateEmailStage === 'verified') {
@@ -139,7 +168,7 @@ const AuthenticationSettings = () => {
   }, [updateEmailStage, reloadUser, userReloaded])
 
   const updateEmailContent: Record<
-    'off' | 'form' | 'request' | 'verified' | 'exists',
+    'off' | 'form' | 'request' | 'verified',
     React.ReactNode
   > = {
     off: (
@@ -154,9 +183,7 @@ const AuthenticationSettings = () => {
     form: (
       <EmailUpdateForm
         onEmailUpdateRequest={() => setUpdateEmailStage('request')}
-        onEmailUpdateExists={() => setUpdateEmailStage('exists')}
-        onEmailUpdateForm={() => setUpdateEmailStage('form')}
-        setErr={setErrMsg}
+        onCancel={() => setUpdateEmailStage('off')}
         returnTo={`${pathname}?update_email=verified`}
       />
     ),
@@ -170,11 +197,6 @@ const AuthenticationSettings = () => {
         Your email has been updated!
       </div>
     ),
-    exists: (
-      <div className="text-center text-sm text-red-700 dark:text-red-500">
-        {errMsg}
-      </div>
-    ),
   }
 
   return (
@@ -183,6 +205,8 @@ const AuthenticationSettings = () => {
         <GitHubAuthenticationMethod
           oauthAccount={githubAccount}
           returnTo={pathname || '/start'}
+          onDisconnect={() => disconnectOAuth.mutate('github')}
+          isDisconnecting={disconnectOAuth.isPending}
         />
       </ShadowListGroup.Item>
 
@@ -190,6 +214,8 @@ const AuthenticationSettings = () => {
         <GoogleAuthenticationMethod
           oauthAccount={googleAccount}
           returnTo={pathname || '/start'}
+          onDisconnect={() => disconnectOAuth.mutate('google')}
+          isDisconnecting={disconnectOAuth.isPending}
         />
       </ShadowListGroup.Item>
 

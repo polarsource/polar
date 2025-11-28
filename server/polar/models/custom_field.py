@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, TypedDic
 from uuid import UUID
 
 from annotated_types import Ge, Len, MinLen
-from pydantic import Field
+from pydantic import AfterValidator, Field, ValidationInfo
 from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -37,6 +37,17 @@ PositiveInt = Annotated[int, Ge(0)]
 NonEmptyString = Annotated[str, Len(min_length=1)]
 
 
+def validate_ge_le(v: int, info: ValidationInfo) -> int:
+    """Validate that le is greater than or equal to ge when both are provided."""
+    ge = info.data.get("ge")
+    if ge is not None and v is not None and ge > v:
+        raise ValueError(
+            "Greater than or equal (ge) must be less than or equal to "
+            "Less than or equal (le)"
+        )
+    return v
+
+
 class CustomFieldProperties(TypedDict):
     form_label: NotRequired[NonEmptyString]
     form_help_text: NotRequired[NonEmptyString]
@@ -51,7 +62,7 @@ class CustomFieldTextProperties(CustomFieldProperties):
 
 class ComparableProperties(TypedDict):
     ge: NotRequired[int]
-    le: NotRequired[int]
+    le: NotRequired[Annotated[int, AfterValidator(validate_ge_le)]]
 
 
 class CustomFieldNumberProperties(CustomFieldProperties, ComparableProperties):

@@ -61,12 +61,17 @@ class CustomerMeterRepository(
             )
         )
 
-        return self.get_base_statement().where(
-            CustomerMeter.customer_id == customer_id,
-            or_(
-                CustomerMeter.meter_id.in_(subscription_meters),
-                CustomerMeter.meter_id.in_(benefit_meters),
-            ),
+        return (
+            self.get_base_statement()
+            .join(CustomerMeter.meter)
+            .where(
+                CustomerMeter.customer_id == customer_id,
+                or_(
+                    CustomerMeter.meter_id.in_(subscription_meters),
+                    CustomerMeter.meter_id.in_(benefit_meters),
+                ),
+                Meter.archived_at.is_(None),
+            )
         )
 
     def get_sorting_clause(

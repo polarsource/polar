@@ -7,11 +7,11 @@ import {
 import { schemas } from '@polar-sh/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
   ChartContainer,
   ChartTooltip,
+  Line,
+  LineChart,
   XAxis,
   YAxis,
 } from '@polar-sh/ui/components/ui/chart'
@@ -59,17 +59,13 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
           className,
         )}
       >
-        <div
-          className={twMerge(
-            'flex flex-col gap-6 p-6 md:flex-row md:items-start md:justify-between',
-          )}
-        >
+        <div className="flex flex-col gap-6 p-6 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col gap-y-4">
             <h3 className="text-xl">Profit</h3>
             <h3 className="text-5xl font-light">
               {formatCurrencyAndAmount(
                 data ? data.totals.revenue - data.totals.costs : 0,
-                'USD',
+                'usd',
               )}
             </h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -77,11 +73,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
             </p>
           </div>
         </div>
-        <div
-          className={twMerge(
-            'dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white py-4 pr-4',
-          )}
-        >
+        <div className="dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white py-4 pr-4">
           {loading ? (
             <div
               style={{ height: _height }}
@@ -106,12 +98,13 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                   label: 'Profit',
                   color: '#0062FF',
                 },
+
                 metric: {
                   label: 'Revenue vs. Cost',
                 },
               }}
             >
-              <BarChart
+              <LineChart
                 accessibilityLayer
                 data={data?.periods.map((period) => ({
                   timestamp: period.timestamp,
@@ -152,10 +145,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                           >
                             <div className="flex flex-row items-center gap-x-2">
                               <span
-                                className={twMerge(
-                                  'h-2 w-2 rounded-full',
-                                  index === array.length - 1 && 'hidden',
-                                )}
+                                className="h-2 w-2 rounded-full"
                                 style={{
                                   backgroundColor: item?.color,
                                 }}
@@ -164,7 +154,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                                 {item.name?.toString().split('_').join(' ')}
                               </span>
                             </div>
-                            <span className="">
+                            <span>
                               {getFormattedMetricValue(
                                 {
                                   slug: 'revenue_vs_cost',
@@ -209,25 +199,31 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                   interval="equidistantPreserveStart"
                   tickFormatter={timestampFormatter}
                 />
-                <Bar
+                <Line
                   dataKey="cost"
-                  fill="var(--color-cost)"
+                  stroke="var(--color-cost)"
+                  strokeWidth={2}
+                  activeDot={false}
+                  dot={false}
                   type="linear"
-                  maxBarSize={10}
                 />
-                <Bar
+                <Line
                   dataKey="revenue"
-                  fill="var(--color-revenue)"
+                  stroke="var(--color-revenue)"
+                  strokeWidth={2}
+                  activeDot={false}
+                  dot={false}
                   type="linear"
-                  maxBarSize={10}
                 />
-                <Bar
+                <Line
                   dataKey="profit"
-                  fill="var(--color-profit)"
+                  stroke="var(--color-profit)"
                   type="linear"
-                  maxBarSize={10}
+                  strokeWidth={2}
+                  activeDot={false}
+                  dot={false}
                 />
-              </BarChart>
+              </LineChart>
             </ChartContainer>
           )}
         </div>

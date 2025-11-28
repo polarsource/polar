@@ -15,7 +15,7 @@ interface OrganizationContextType {
 }
 
 export const OrganizationContext =
-  // @ts-ignore
+  // @ts-expect-error because of stub
   React.createContext<OrganizationContextType>(stub)
 
 export const OrganizationContextProvider = ({

@@ -2,6 +2,7 @@ import hashlib
 from datetime import datetime
 from typing import Annotated
 
+from annotated_types import MaxLen
 from fastapi import Path
 from pydantic import UUID4, Field, computed_field
 
@@ -20,6 +21,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.tax import TaxID
+from polar.member import Member, OwnerCreate
 from polar.organization.schemas import OrganizationID
 
 CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
@@ -38,6 +40,13 @@ _email_example = "customer@example.com"
 _name_description = "The name of the customer."
 _name_example = "John Doe"
 
+CustomerNameInput = Annotated[
+    str,
+    MaxLen(256),
+    Field(description=_name_description, examples=[_name_example]),
+    EmptyStrToNoneValidator,
+]
+
 
 class CustomerCreate(MetadataInputMixin, Schema):
     external_id: Annotated[str | None, EmptyStrToNoneValidator] = Field(
@@ -48,9 +57,7 @@ class CustomerCreate(MetadataInputMixin, Schema):
     email: EmailStrDNS = Field(
         description=_email_description, examples=[_email_example]
     )
-    name: str | None = Field(
-        default=None, description=_name_description, examples=[_name_example]
-    )
+    name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
     organization_id: OrganizationID | None = Field(
@@ -60,15 +67,21 @@ class CustomerCreate(MetadataInputMixin, Schema):
             "**Required unless you use an organization token.**"
         ),
     )
+    owner: OwnerCreate | None = Field(
+        default=None,
+        description=(
+            "Optional owner member to create with the customer. "
+            "If not provided, an owner member will be automatically created "
+            "using the customer's email and name."
+        ),
+    )
 
 
 class CustomerUpdateBase(MetadataInputMixin, Schema):
     email: EmailStrDNS | None = Field(
         default=None, description=_email_description, examples=[_email_example]
     )
-    name: str | None = Field(
-        default=None, description=_name_description, examples=[_name_example]
-    )
+    name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
 
@@ -118,17 +131,14 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
 
 
-class CustomerBalance(Schema):
-    """Customer balance information."""
-
-    balance: int = Field(
-        description="Customer balance in cents. Positive values represent credit (customer is owed money), negative values represent debit (customer owes money)."
-    )
-    currency: str = Field(
-        description="The currency code (ISO 4217) for the balance amount.",
-        examples=["USD"],
-    )
-
-
 class Customer(CustomerBase):
     """A customer in an organization."""
+
+
+class CustomerWithMembers(Customer):
+    """A customer in an organization with their members loaded."""
+
+    members: list[Member] = Field(
+        default_factory=list,
+        description="List of members belonging to this customer.",
+    )

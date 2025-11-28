@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
+import logfire
 from sqlalchemy import ColumnElement, FromClause, select, text
 
 from polar.auth.models import AuthSubject
@@ -12,7 +13,7 @@ from polar.models import Organization, User
 from polar.models.product import ProductBillingType
 from polar.postgres import AsyncReadSession, AsyncSession
 
-from .metrics import METRICS
+from .metrics import METRICS, METRICS_POST_COMPUTE, METRICS_SQL
 from .queries import QUERIES
 from .schemas import MetricsPeriod, MetricsResponse
 
@@ -41,6 +42,17 @@ class MetricsService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
+        # Store original bounds before truncation for filtering queries
+        original_start_timestamp = start_timestamp
+        original_end_timestamp = end_timestamp
+
+        # Truncate start_timestamp to the beginning of the interval period
+        # This ensures the timestamp series aligns with how daily metrics are grouped
+        if interval == TimeInterval.month:
+            start_timestamp = start_timestamp.replace(day=1)
+        elif interval == TimeInterval.year:
+            start_timestamp = start_timestamp.replace(month=1, day=1)
+
         timestamp_series = get_timestamp_series_cte(
             start_timestamp, end_timestamp, interval
         )
@@ -51,8 +63,9 @@ class MetricsService:
                 timestamp_series,
                 interval,
                 auth_subject,
-                METRICS,
+                METRICS_SQL,
                 now or datetime.now(tz=timezone),
+                bounds=(original_start_timestamp, original_end_timestamp),
                 organization_id=organization_id,
                 product_id=product_id,
                 billing_type=billing_type,
@@ -77,17 +90,51 @@ class MetricsService:
             .order_by(timestamp_column.asc())
         )
 
-        result = await session.stream(
-            statement,
-            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
-        )
         periods: list[MetricsPeriod] = []
-        async for row in result:
-            periods.append(MetricsPeriod(**row._asdict()))
+        with logfire.span(
+            "Stream and process metrics query",
+            start_date=str(start_date),
+            end_date=str(end_date),
+        ):
+            result = await session.stream(
+                statement,
+                execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+            )
+
+            row_count = 0
+            with logfire.span("Fetch and process rows"):
+                async for row in result:
+                    row_count += 1
+                    period_dict = row._asdict()
+
+                    # Compute meta metrics with cascading dependencies
+                    # Each metric can depend on previously computed metrics
+                    temp_period_dict = dict(period_dict)
+
+                    # Initialize all computed metrics to 0 first to satisfy Pydantic schema
+                    for meta_metric in METRICS_POST_COMPUTE:
+                        temp_period_dict[meta_metric.slug] = 0
+
+                    # Now compute each metric, updating the dict as we go
+                    # This allows later metrics to depend on earlier computed metrics
+                    for meta_metric in METRICS_POST_COMPUTE:
+                        temp_period = MetricsPeriod(**temp_period_dict)
+                        computed_value = meta_metric.compute_from_period(temp_period)
+                        temp_period_dict[meta_metric.slug] = computed_value
+                        period_dict[meta_metric.slug] = computed_value
+
+                    periods.append(MetricsPeriod(**period_dict))
+
+            logfire.info("Processed {row_count} rows", row_count=row_count)
 
         totals: dict[str, int | float] = {}
-        for metric in METRICS:
-            totals[metric.slug] = metric.get_cumulative(periods)
+        with logfire.span(
+            "Get cumulative metrics",
+            start_date=str(start_date),
+            end_date=str(end_date),
+        ):
+            for metric in METRICS:
+                totals[metric.slug] = metric.get_cumulative(periods)
 
         return MetricsResponse.model_validate(
             {

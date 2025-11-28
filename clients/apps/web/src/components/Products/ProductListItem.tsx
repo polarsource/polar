@@ -20,6 +20,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import {
@@ -176,7 +177,31 @@ export const ProductListItem = ({
                 >
                   Integrate Checkout
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {product.is_archived ? null : (
+                  <DropdownMenuItem
+                    onClick={handleContextMenuCallback(() => {
+                      router.push(
+                        `/dashboard/${organization.slug}/products/${product.id}/edit`,
+                      )
+                    })}
+                  >
+                    Edit Product
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuItem
+                  onClick={handleContextMenuCallback(() => {
+                    router.push(
+                      `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
+                    )
+                  })}
+                >
+                  Duplicate Product
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  destructive
                   onClick={handleContextMenuCallback(showModal)}
                 >
                   Archive Product
@@ -189,11 +214,11 @@ export const ProductListItem = ({
       <ConfirmModal
         isShown={isConfirmModalShown}
         hide={hideModal}
-        title="Archive Product"
+        title={`Archive "${product.name}"`}
         description="Are you sure you want to archive this product? This action cannot be undone."
         onConfirm={onArchiveProduct}
         destructive
-        destructiveText="Archive"
+        destructiveText="Yes, archive"
       />
     </ListItem>
   )

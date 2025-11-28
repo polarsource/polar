@@ -41,6 +41,7 @@ from tests.transaction.conftest import create_transaction
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.refund.service.stripe_service", new=mock)
+    mocker.patch("polar.transaction.service.refund.stripe_service", new=mock)
     return mock
 
 
@@ -126,7 +127,7 @@ class TestCreate:
             customer=customer,
             subtotal_amount=charge.amount,
         )
-        balance_transaction = build_stripe_balance_transaction()
+        balance_transaction = build_stripe_balance_transaction(amount=-charge.amount)
         stripe_service_mock.get_balance_transaction.return_value = balance_transaction
 
         account = Account(
@@ -256,6 +257,168 @@ class TestCreate:
 
         create_refund_fees_mock.assert_awaited_once()
 
+    async def test_valid_different_settlement_currency(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+        balance_transaction_service_mock: MagicMock,
+        create_refund_fees_mock: AsyncMock,
+    ) -> None:
+        charge = build_stripe_charge(amount=1200, currency="eur")
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=200,
+            currency="eur",
+        )
+
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="usd",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        payment_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=1000 * 1.5,
+            tax_amount=200 * 1.5,
+            account_currency="usd",
+            account_amount=1000 * 1.5,
+            presentment_currency="eur",
+            presentment_amount=1000,
+            presentment_tax_amount=200,
+            charge_id=charge.id,
+            order=order,
+        )
+        await save_fixture(payment_transaction)
+
+        outgoing_balance_1 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=-payment_transaction.amount * 0.75,
+            account_currency="usd",
+            account_amount=-payment_transaction.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        incoming_balance_1 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency="usd",
+            amount=payment_transaction.amount * 0.75,
+            account_currency="usd",
+            account_amount=payment_transaction.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        await save_fixture(outgoing_balance_1)
+        await save_fixture(incoming_balance_1)
+
+        outgoing_balance_2 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=-payment_transaction.amount * 0.25,
+            account_currency="usd",
+            account_amount=-payment_transaction.amount * 0.25,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_2",
+        )
+        incoming_balance_2 = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency="usd",
+            amount=-payment_transaction.amount * 0.25,
+            account_currency="usd",
+            account_amount=-payment_transaction.amount * 0.25,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_2",
+        )
+        await save_fixture(outgoing_balance_2)
+        await save_fixture(incoming_balance_2)
+
+        balance_transaction = build_stripe_balance_transaction(
+            amount=-1800, currency="usd", exchange_rate=1.5
+        )
+        stripe_service_mock.get_balance_transaction.return_value = balance_transaction
+        new_refund = refund_service.build_instance_from_stripe(
+            build_stripe_refund(
+                id="NEW_REFUND",
+                charge_id=charge.id,
+                amount=1200,
+                currency="eur",
+                balance_transaction=balance_transaction.id,
+            ),
+            order=order,
+        )
+
+        refund_transaction = await refund_transaction_service.create(
+            session,
+            charge_id=charge.id,
+            payment_transaction=payment_transaction,
+            refund=new_refund,
+        )
+
+        assert refund_transaction.type == TransactionType.refund
+        assert refund_transaction.processor == Processor.stripe
+        assert refund_transaction.currency == "usd"
+        assert refund_transaction.amount == -1500
+        assert refund_transaction.tax_amount == -300
+        assert refund_transaction.presentment_currency == "eur"
+        assert refund_transaction.presentment_amount == -1000
+        assert refund_transaction.presentment_tax_amount == -200
+
+        assert balance_transaction_service_mock.create_reversal_balance.call_count == 2
+
+        first_call = (
+            balance_transaction_service_mock.create_reversal_balance.call_args_list[0]
+        )
+        assert [t.id for t in first_call[1]["balance_transactions"]] == [
+            outgoing_balance_1.id,
+            incoming_balance_1.id,
+        ]
+        assert first_call[1]["amount"] == payment_transaction.amount * 0.75
+
+        second_call = (
+            balance_transaction_service_mock.create_reversal_balance.call_args_list[1]
+        )
+        assert [t.id for t in second_call[1]["balance_transactions"]] == [
+            outgoing_balance_2.id,
+            incoming_balance_2.id,
+        ]
+        assert second_call[1]["amount"] == payment_transaction.amount * 0.25
+
+        create_refund_fees_mock.assert_awaited_once()
+
 
 @pytest.mark.asyncio
 class TestRevert:
@@ -329,7 +492,7 @@ class TestRevert:
             customer=customer,
             subtotal_amount=charge.amount,
         )
-        balance_transaction = build_stripe_balance_transaction()
+        balance_transaction = build_stripe_balance_transaction(amount=-charge.amount)
         stripe_service_mock.get_balance_transaction.return_value = balance_transaction
 
         # Create the payment transaction
@@ -435,6 +598,201 @@ class TestRevert:
         assert refund_reversal_transaction.type == TransactionType.refund_reversal
         assert refund_reversal_transaction.processor == Processor.stripe
         assert refund_reversal_transaction.amount == refund.amount
+
+        balance_transaction_repository = BalanceTransactionRepository.from_session(
+            session
+        )
+        balance_transactions = await balance_transaction_repository.get_all(
+            balance_transaction_repository.get_base_statement()
+            .order_by(Transaction.created_at.asc())
+            .options(
+                joinedload(Transaction.balance_reversal_transaction),
+                joinedload(Transaction.account),
+                joinedload(Transaction.payment_transaction),
+            )
+        )
+        assert len(balance_transactions) == 6
+
+        assert balance_transactions[0] == outgoing_balance  # From Polar...
+        assert balance_transactions[1] == incoming_balance  # ... to Account
+        assert balance_transactions[2] == refund_outgoing_balance  # From Account...
+        assert balance_transactions[3] == refund_incoming_balance  # ... to Polar
+
+        reverse_balance_account = balance_transactions[4]  # From Polar...
+        assert reverse_balance_account.account is None
+        assert reverse_balance_account.balance_reversal_transaction is not None
+        assert reverse_balance_account.balance_reversal_transaction == outgoing_balance
+        assert (
+            reverse_balance_account.balance_reversal_transaction.amount
+            == reverse_balance_account.amount
+        )
+        assert reverse_balance_account.amount < 0
+        assert reverse_balance_account.amount == -refund_incoming_balance.amount
+        assert reverse_balance_account.payment_transaction is None
+
+        reverse_balance_polar = balance_transactions[5]  # ... to Account
+        assert reverse_balance_polar.account is not None
+        assert reverse_balance_polar.balance_reversal_transaction is not None
+        assert reverse_balance_polar.balance_reversal_transaction == incoming_balance
+        assert (
+            reverse_balance_polar.balance_reversal_transaction.amount
+            == reverse_balance_polar.amount
+        )
+        assert reverse_balance_polar.amount == -refund_outgoing_balance.amount
+        assert reverse_balance_polar.payment_transaction is None
+
+    async def test_valid_different_settlement_currency(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        # Create a charge and order
+        charge = build_stripe_charge(amount=1200, currency="eur")
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=200,
+            currency="eur",
+        )
+
+        # Create the payment transaction
+        payment_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=1000 * 1.5,
+            tax_amount=200 * 1.5,
+            account_currency="usd",
+            account_amount=1000 * 1.5,
+            presentment_currency="eur",
+            presentment_amount=1000,
+            presentment_tax_amount=200,
+            charge_id=charge.id,
+            order=order,
+        )
+        await save_fixture(payment_transaction)
+
+        # Balance the money to the organization account
+        outgoing_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=-payment_transaction.amount * 0.75,
+            account_currency="usd",
+            account_amount=-payment_transaction.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        incoming_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency="usd",
+            amount=payment_transaction.amount * 0.75,
+            account_currency="usd",
+            account_amount=payment_transaction.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            transfer_id="STRIPE_TRANSFER_ID",
+            balance_correlation_key="BALANCE_1",
+        )
+        await save_fixture(outgoing_balance)
+        await save_fixture(incoming_balance)
+
+        # Refund this transaction
+        balance_transaction = build_stripe_balance_transaction(
+            amount=-1800, currency="usd", exchange_rate=1.5
+        )
+        stripe_service_mock.get_balance_transaction.return_value = balance_transaction
+
+        refund = refund_service.build_instance_from_stripe(
+            build_stripe_refund(
+                id="REFUND_ID",
+                charge_id=charge.id,
+                amount=1200,
+                currency="eur",
+                balance_transaction=balance_transaction.id,
+            ),
+            order=order,
+        )
+        refund_transaction = await create_transaction(
+            save_fixture,
+            type=TransactionType.refund,
+            refund_id="REFUND_ID",
+            currency="usd",
+            amount=-1500,
+            tax_amount=-300,
+            presentment_currency="eur",
+            presentment_amount=-1000,
+            presentment_tax_amount=-200,
+        )
+
+        refund_outgoing_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency="usd",
+            amount=-payment_transaction.amount * 0.75,
+            account_currency="usd",
+            account_amount=-payment_transaction.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            balance_correlation_key="REFUND_BALANCE",
+            balance_reversal_transaction=incoming_balance,
+        )
+        refund_incoming_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=payment_transaction.amount * 0.75,
+            account_currency="usd",
+            account_amount=payment_transaction.amount * 0.75,
+            tax_amount=0,
+            order=order,
+            balance_correlation_key="REFUND_BALANCE",
+            balance_reversal_transaction=outgoing_balance,
+        )
+        await save_fixture(refund_outgoing_balance)
+        await save_fixture(refund_incoming_balance)
+
+        refund.status = RefundStatus.canceled
+        refund_reversal_transaction = await refund_transaction_service.revert(
+            session,
+            charge_id=charge.id,
+            payment_transaction=payment_transaction,
+            refund=refund,
+        )
+
+        assert refund_reversal_transaction.type == TransactionType.refund_reversal
+        assert refund_reversal_transaction.processor == Processor.stripe
+        assert refund_reversal_transaction.currency == "usd"
+        assert refund_reversal_transaction.amount == 1500
+        assert refund_reversal_transaction.tax_amount == 300
+        assert refund_reversal_transaction.presentment_currency == "eur"
+        assert refund_reversal_transaction.presentment_amount == 1000
+        assert refund_reversal_transaction.presentment_tax_amount == 200
 
         balance_transaction_repository = BalanceTransactionRepository.from_session(
             session

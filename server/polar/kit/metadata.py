@@ -156,3 +156,32 @@ def apply_metadata_clause[M: MetadataMixin](
 ) -> Select[tuple[M]]:
     clause = get_metadata_clause(model, query)
     return statement.where(clause)
+
+
+def extract_metadata_value(
+    metadata: dict[str, Any], property_selector: str
+) -> str | None:
+    """
+    Extract a value from metadata using a property selector.
+
+    Supports:
+    - Simple keys: "subject" -> metadata["subject"]
+    - Nested keys: "metadata.subject" -> metadata["metadata"]["subject"]
+    - Dot-separated paths of any depth
+
+    Returns the value as a string if found, None otherwise.
+    """
+    if not property_selector:
+        return None
+
+    keys = property_selector.split(".")
+    current: Any = metadata
+
+    for key in keys:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(key)
+        if current is None:
+            return None
+
+    return str(current) if current is not None else None

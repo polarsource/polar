@@ -1,10 +1,13 @@
+import {
+  formatHumanFriendlyCurrency,
+  formatHumanFriendlyScalar,
+} from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import {
   Card,
   CardContent,
   CardHeader,
 } from '@polar-sh/ui/components/atoms/Card'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 
 export interface MiniMetricBoxProps {
   title?: string
@@ -28,10 +31,8 @@ export const MiniMetricChartBox = ({
         <h3 className="text-2xl">
           {metric &&
             (metric.type === 'scalar'
-              ? Intl.NumberFormat('en-US', {
-                  notation: 'compact',
-                }).format(value ?? 0)
-              : formatCurrencyAndAmount(value ?? 0, 'USD', 0))}
+              ? formatHumanFriendlyScalar(value ?? 0)
+              : formatHumanFriendlyCurrency(value ?? 0, 'usd'))}
         </h3>
       </CardContent>
     </Card>

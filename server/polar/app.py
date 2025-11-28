@@ -112,16 +112,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     async_sessionmaker = async_read_sessionmaker = create_async_sessionmaker(
         async_engine
     )
-    instrument_sqlalchemy(async_engine.sync_engine)
+    instrument_engines = [async_engine.sync_engine]
 
     if settings.is_read_replica_configured():
         async_read_engine = create_async_read_engine("app")
         async_read_sessionmaker = create_async_sessionmaker(async_read_engine)
-        instrument_sqlalchemy(async_read_engine.sync_engine)
+        instrument_engines.append(async_read_engine.sync_engine)
 
     sync_engine = create_sync_engine("app")
     sync_sessionmaker = create_sync_sessionmaker(sync_engine)
-    instrument_sqlalchemy(sync_engine)
+    instrument_engines.append(sync_engine)
+    instrument_sqlalchemy(instrument_engines)
 
     redis = create_redis("app")
 

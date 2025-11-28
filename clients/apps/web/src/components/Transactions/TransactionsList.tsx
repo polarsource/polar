@@ -4,7 +4,6 @@ import {
   DataTableSortingState,
 } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   DataTable,
   DataTableColumnDef,
@@ -13,7 +12,6 @@ import {
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import Link from 'next/link'
 import { useMemo } from 'react'
 import ProductPill from '../Products/ProductPill'
 
@@ -21,7 +19,6 @@ const getTransactionMeta = (transaction: schemas['Transaction']) => {
   if (transaction.order) {
     return {
       type: transaction.order.subscription_id ? 'Subscription' : 'Purchase',
-      organization: transaction.order.product.organization,
       meta: {
         product: transaction.order.product,
       },
@@ -60,31 +57,19 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
 
   return (
     <div className="flex items-start gap-2">
-      {transactionMeta.organization && (
-        <Avatar
-          className="h-6 w-6"
-          name={transactionMeta.organization.name}
-          avatar_url={transactionMeta.organization.avatar_url}
-        />
-      )}
-
       <div className="flex flex-row gap-2">
         <div className="text-sm">{transactionMeta.type}</div>
         {transactionMeta.meta && (
           <>
             <div>—</div>
-            {'product' in transactionMeta.meta && (
-              <>
-                <div>
-                  <Link
-                    className="text-blue-500 dark:text-blue-400"
-                    href={`/dashboard/${transactionMeta.organization?.slug}/products/${transactionMeta.meta.product.id}`}
-                  >
+            {'product' in transactionMeta.meta &&
+              transactionMeta.meta.product && (
+                <>
+                  <div>
                     <ProductPill product={transactionMeta.meta.product} />
-                  </Link>
-                </div>
-              </>
-            )}
+                  </div>
+                </>
+              )}
             {'issue_reference' in transactionMeta.meta && (
               <div>{transactionMeta.meta.issue_reference}</div>
             )}

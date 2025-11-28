@@ -3,19 +3,22 @@
 import CustomerPortalOrder from '@/components/CustomerPortal/CustomerPortalOrder'
 import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 
 const ClientPage = ({
   organization,
   order,
   customerSessionToken,
 }: {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   order: schemas['CustomerOrder']
   customerSessionToken: string
 }) => {
-  const themingPreset = useThemePreset(
-    organization.slug === 'midday' ? 'midday' : 'polar',
+  const theme = useTheme()
+  const themingPreset = getThemePreset(
+    organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
   )
   const api = createClientSideAPI(customerSessionToken)
 

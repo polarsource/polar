@@ -58,6 +58,9 @@ class CustomerMeterService:
 
         if meter_id is not None:
             statement = statement.where(Meter.id.in_(meter_id))
+        else:
+            # Only filter archived meters when not querying for specific meter IDs
+            statement = statement.where(Meter.archived_at.is_(None))
 
         statement = repository.apply_sorting(statement, sorting)
 
@@ -138,7 +141,7 @@ class CustomerMeterService:
             if customer_meter.last_balanced_event_id == last_event.id:
                 return customer_meter, False
 
-            usage_events_statement = events_statement.with_only_columns(Event.id).where(
+            usage_events_statement = events_statement.where(
                 Event.source == EventSource.user
             )
             usage_units = await meter_service.get_quantity(
@@ -175,7 +178,7 @@ class CustomerMeterService:
         if last_event is None:
             return 0
 
-        usage_events_statement = events_statement.with_only_columns(Event.id).where(
+        usage_events_statement = events_statement.where(
             Event.source == EventSource.user
         )
         usage_units = await meter_service.get_quantity(

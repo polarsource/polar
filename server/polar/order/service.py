@@ -3,16 +3,18 @@ from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any, Literal
+from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import and_, or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
+from polar.checkout.guard import has_product_checkout
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -28,6 +30,8 @@ from polar.email.schemas import (
 )
 from polar.email.sender import Attachment, enqueue_email
 from polar.enums import PaymentProcessor
+from polar.event.service import event as event_service
+from polar.event.system import OrderPaidMetadata, SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
@@ -63,6 +67,7 @@ from polar.models import (
     Subscription,
     Transaction,
     User,
+    WalletTransaction,
 )
 from polar.models.held_balance import HeldBalance
 from polar.models.order import (
@@ -70,7 +75,6 @@ from polar.models.order import (
     OrderBillingReasonInternal,
     OrderStatus,
 )
-from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
@@ -97,6 +101,8 @@ from polar.transaction.service.balance import (
 from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
+from polar.wallet.repository import WalletTransactionRepository
+from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -359,7 +365,7 @@ class OrderService:
 
         statement = (
             statement.join(Order.discount, isouter=True)
-            .join(Order.product)
+            .join(Order.product, isouter=True)
             .options(
                 *repository.get_eager_options(
                     customer_load=contains_eager(Order.customer),
@@ -433,6 +439,27 @@ class OrderService:
 
         return order
 
+    async def set_refunds_blocked(
+        self,
+        session: AsyncSession,
+        order: Order,
+        blocked: bool,
+    ) -> Order:
+        repository = OrderRepository.from_session(session)
+        refunds_blocked_at = utc_now() if blocked else None
+        order = await repository.update(
+            order, update_dict={"refunds_blocked_at": refunds_blocked_at}
+        )
+
+        log.info(
+            "order.refunds_blocked_changed",
+            order_id=order.id,
+            refunds_blocked=blocked,
+            refunds_blocked_at=refunds_blocked_at,
+        )
+
+        return order
+
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order
     ) -> None:
@@ -472,6 +499,8 @@ class OrderService:
     async def create_from_checkout_one_time(
         self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None
     ) -> Order:
+        assert has_product_checkout(checkout)
+
         product = checkout.product
         if product.is_recurring:
             raise RecurringProduct(checkout, product)
@@ -482,8 +511,9 @@ class OrderService:
 
         # For seat-based orders, benefits are granted when seats are claimed
         # For non-seat orders, grant benefits immediately
-        price = checkout.product_price
-        if not is_seat_price(price):
+        prices = checkout.prices[product.id]
+        has_seat_price = any(is_seat_price(price) for price in prices)
+        if not has_seat_price:
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
                 task="grant",
@@ -509,6 +539,8 @@ class OrderService:
         ],
         payment: Payment | None = None,
     ) -> Order:
+        assert has_product_checkout(checkout)
+
         product = checkout.product
         if not product.is_recurring:
             raise NotRecurringProduct(checkout, product)
@@ -534,19 +566,18 @@ class OrderService:
         if customer is None:
             raise MissingCheckoutCustomer(checkout)
 
-        product = checkout.product
-        prices = product.prices
-
         items: list[OrderItem] = []
-        for price in prices:
-            # Don't create an item for metered prices
-            if not is_static_price(price):
-                continue
-            if is_custom_price(price):
-                item = OrderItem.from_price(price, 0, checkout.amount)
-            else:
-                item = OrderItem.from_price(price, 0, seats=checkout.seats)
-            items.append(item)
+        if has_product_checkout(checkout):
+            prices = checkout.prices[checkout.product_id]
+            for price in prices:
+                # Don't create an item for metered prices
+                if not is_static_price(price):
+                    continue
+                if is_custom_price(price):
+                    item = OrderItem.from_price(price, 0, checkout.amount)
+                else:
+                    item = OrderItem.from_price(price, 0, seats=checkout.seats)
+                items.append(item)
 
         discount_amount = checkout.discount_amount
 
@@ -575,7 +606,7 @@ class OrderService:
 
         organization = checkout.organization
         invoice_number = await organization_service.get_next_invoice_number(
-            session, organization
+            session, organization, customer
         )
 
         repository = OrderRepository.from_session(session)
@@ -594,7 +625,7 @@ class OrderService:
                 tax_rate=tax_rate,
                 invoice_number=invoice_number,
                 customer=customer,
-                product=product,
+                product=checkout.product,
                 discount=checkout.discount,
                 subscription=subscription,
                 checkout=checkout,
@@ -696,17 +727,27 @@ class OrderService:
             tax_rate = tax_calculation["tax_rate"]
 
         invoice_number = await organization_service.get_next_invoice_number(
-            session, subscription.organization
+            session, subscription.organization, customer
         )
 
         total_amount = subtotal_amount - discount_amount + tax_amount
-        customer_balance = await self.customer_balance(session, customer)
-        applied_balance_amount = 0
-        if total_amount < 0:
-            if customer_balance < 0:
-                applied_balance_amount = -max(total_amount, customer_balance)
+        customer_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, subscription.currency
+        )
+
+        # Calculate balance change and applied amount
+        if total_amount >= 0:
+            # Order is a charge: use customer balance if available
+            balance_change = -min(total_amount, customer_balance)
+            applied_balance_amount = balance_change
         else:
-            applied_balance_amount = -min(total_amount, customer_balance)
+            # Order is a credit: always add to balance
+            balance_change = -total_amount
+            # Track how much existing debt was cleared
+            if customer_balance < 0:
+                applied_balance_amount = min(-total_amount, -customer_balance)
+            else:
+                applied_balance_amount = 0
 
         repository = OrderRepository.from_session(session)
         order = await repository.create(
@@ -737,6 +778,12 @@ class OrderService:
             ),
             flush=True,
         )
+
+        # Impact customer's balance
+        if balance_change != 0:
+            await wallet_service.create_balance_transaction(
+                session, customer, balance_change, subscription.currency, order=order
+            )
 
         # Reset the associated meters, if any
         if billing_reason in {
@@ -788,7 +835,7 @@ class OrderService:
 
         organization = subscription.organization
         invoice_number = await organization_service.get_next_invoice_number(
-            session, organization
+            session, organization, customer
         )
 
         repository = OrderRepository.from_session(session)
@@ -822,6 +869,99 @@ class OrderService:
 
         return order
 
+    async def create_wallet_order(
+        self,
+        session: AsyncSession,
+        wallet_transaction: WalletTransaction,
+        payment: Payment | None,
+    ) -> Order:
+        wallet = wallet_transaction.wallet
+        items: list[OrderItem] = [
+            OrderItem.from_wallet(wallet, wallet_transaction.amount)
+        ]
+
+        customer = wallet.customer
+        billing_address = customer.billing_address
+
+        subtotal_amount = sum(item.amount for item in items)
+
+        # Retrieve tax data
+        tax_amount = wallet_transaction.tax_amount or 0
+        taxability_reason = None
+        tax_rate: TaxRate | None = None
+        tax_id = customer.tax_id
+        if wallet_transaction.tax_calculation_processor_id is not None:
+            calculation = await stripe_service.get_tax_calculation(
+                wallet_transaction.tax_calculation_processor_id
+            )
+            assert tax_amount == calculation.tax_amount_exclusive
+            assert len(calculation.tax_breakdown) > 0
+            breakdown = calculation.tax_breakdown[0]
+            taxability_reason = TaxabilityReason.from_stripe(
+                breakdown.taxability_reason, tax_amount
+            )
+            tax_rate = from_stripe_tax_rate_details(breakdown.tax_rate_details)
+
+        invoice_number = await organization_service.get_next_invoice_number(
+            session, wallet.organization, wallet.customer
+        )
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.create(
+            Order(
+                status=OrderStatus.paid,
+                subtotal_amount=subtotal_amount,
+                discount_amount=0,
+                tax_amount=tax_amount,
+                applied_balance_amount=0,
+                currency=wallet.currency,
+                billing_reason=OrderBillingReasonInternal.purchase,
+                billing_name=customer.billing_name,
+                billing_address=billing_address,
+                taxability_reason=taxability_reason,
+                tax_id=tax_id,
+                tax_rate=tax_rate,
+                invoice_number=invoice_number,
+                customer=customer,
+                items=items,
+                product=None,
+                discount=None,
+                subscription=None,
+                checkout=None,
+            ),
+            flush=True,
+        )
+
+        # Link payment and balance transaction to the order
+        if payment is not None:
+            payment_repository = PaymentRepository.from_session(session)
+            assert payment.amount == order.total_amount
+            await payment_repository.update(payment, update_dict={"order": order})
+            enqueue_job(
+                "order.balance", order_id=order.id, charge_id=payment.processor_id
+            )
+
+        # Link wallet transaction to the order
+        wallet_transaction_repository = WalletTransactionRepository.from_session(
+            session
+        )
+        await wallet_transaction_repository.update(
+            wallet_transaction, update_dict={"order": order}
+        )
+
+        # Record tax transaction
+        if wallet_transaction.tax_calculation_processor_id is not None:
+            transaction = await stripe_service.create_tax_transaction(
+                wallet_transaction.tax_calculation_processor_id, str(order.id)
+            )
+            await repository.update(
+                order, update_dict={"tax_transaction_processor_id": transaction.id}
+            )
+
+        await self._on_order_created(session, order)
+
+        return order
+
     async def trigger_payment(
         self, session: AsyncSession, order: Order, payment_method: PaymentMethod
     ) -> None:
@@ -837,12 +977,21 @@ class OrderService:
             and order.due_amount < 50
         ):
             # Stripe requires a minimum amount of 50 cents, mark it as paid
-            # The amount will be added on the customer's balance
             repository = OrderRepository.from_session(session)
             previous_status = order.status
             order = await repository.update(
                 order, update_dict={"status": OrderStatus.paid}
             )
+
+            # Add to the customer's balance
+            await wallet_service.create_balance_transaction(
+                session,
+                order.customer,
+                -order.due_amount,
+                order.currency,
+                order=order,
+            )
+
             await self._on_order_updated(session, order, previous_status)
             return
 
@@ -1341,7 +1490,7 @@ class OrderService:
         )
 
         invoice_number = await organization_service.get_next_invoice_number(
-            session, subscription.organization
+            session, subscription.organization, customer
         )
 
         repository = OrderRepository.from_session(session)
@@ -1452,22 +1601,42 @@ class OrderService:
             case OrderBillingReasonInternal.purchase:
                 template_name = "order_confirmation"
                 subject_template = "Your {description} order confirmation"
-                url_path_template = "/{organization}/portal?customer_session_token={token}&id={order}&email={email}"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{order}",
+                    "email": "{email}",
+                }
             case OrderBillingReasonInternal.subscription_create:
                 template_name = "subscription_confirmation"
                 subject_template = "Your {description} subscription"
-                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
             case (
                 OrderBillingReasonInternal.subscription_cycle
                 | OrderBillingReasonInternal.subscription_cycle_after_trial
             ):
                 template_name = "subscription_cycled"
                 subject_template = "Your {description} subscription has been renewed"
-                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
             case OrderBillingReasonInternal.subscription_update:
                 template_name = "subscription_updated"
                 subject_template = "Your subscription has changed to {description}"
-                url_path_template = "/{organization}/portal?customer_session_token={token}&id={subscription}&email={email}"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
 
         if not organization.customer_email_settings[template_name]:
             return
@@ -1478,15 +1647,20 @@ class OrderService:
         token, _ = await customer_session_service.create_customer_session(
             session, customer
         )
-        url = settings.generate_frontend_url(
-            url_path_template.format(
-                organization=organization.slug,
+
+        # Build query parameters with proper URL encoding
+        params = {
+            key: value.format(
                 token=token,
                 order=order.id,
                 subscription=subscription.id if subscription else "",
                 email=customer.email,
             )
-        )
+            for key, value in url_params.items()
+        }
+        query_string = urlencode(params)
+        url_path = url_path_template.format(organization=organization.slug)
+        url = settings.generate_frontend_url(f"{url_path}?{query_string}")
         subject = subject_template.format(description=order.description)
         email = EmailAdapter.validate_python(
             {
@@ -1640,6 +1814,7 @@ class OrderService:
         order.platform_fee_amount = sum(
             incoming.amount for _, incoming in platform_fee_transactions
         )
+        order.platform_fee_currency = platform_fee_transactions[0][0].currency
         session.add(order)
 
     async def send_webhook(
@@ -1653,7 +1828,8 @@ class OrderService:
         ],
     ) -> None:
         await session.refresh(order.customer, {"organization"})
-        await session.refresh(order.product, {"prices"})
+        if order.product is not None:
+            await session.refresh(order.product, {"prices"})
 
         # Refresh order items with their product_price.product relationship loaded
         # This is needed for webhook serialization which accesses `legacy_product_price.product`
@@ -1696,6 +1872,20 @@ class OrderService:
         assert order.paid
 
         await self.send_webhook(session, order, WebhookEventType.order_paid)
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.order_paid,
+                customer=order.customer,
+                organization=order.organization,
+                metadata=OrderPaidMetadata(
+                    order_id=str(order.id),
+                    amount=order.total_amount,
+                    currency=order.currency,
+                ),
+            ),
+        )
 
         if order.subscription_id is not None and order.billing_reason in (
             OrderBillingReasonInternal.subscription_cycle,
@@ -1789,6 +1979,11 @@ class OrderService:
             order, update_dict={"next_payment_attempt_at": next_retry_date}
         )
 
+        # Re-enqueue benefit revocation to check if grace period has expired
+        subscription = order.subscription
+        if subscription is not None:
+            await subscription_service.enqueue_benefits_grants(session, subscription)
+
         return order
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
@@ -1834,98 +2029,6 @@ class OrderService:
         )
 
         return order
-
-    async def customer_balance(self, session: AsyncSession, customer: Customer) -> int:
-        """
-        Returns what the customer is "owed".
-
-        The returned integer is positive if the customer is owed, and negative
-        if the customer owes the selling organization.
-
-        This can happen if the customer switches from e.g. a yearly plan at $100/yr to
-        a monthly plan at $15/mo. In that case the customer has $85 in "credit" or balance
-        on their account (depending on when they changed the plan).
-        """
-        order_repository = OrderRepository.from_session(session)
-        paid_orders = await order_repository.get_all(
-            order_repository.get_base_statement()
-            .join(Customer, Order.customer_id == Customer.id)
-            .where(
-                Customer.id == customer.id,
-                Order.deleted_at.is_(None),
-                Order.status.in_(
-                    [
-                        OrderStatus.paid,
-                        OrderStatus.partially_refunded,
-                    ]
-                ),
-            )
-        )
-
-        payment_repository = PaymentRepository.from_session(session)
-        payments = await payment_repository.get_all(
-            payment_repository.get_base_statement()
-            .join(Order, Payment.order_id == Order.id, isouter=True)
-            .join(Checkout, Payment.checkout_id == Checkout.id, isouter=True)
-            .where(
-                or_(
-                    and_(
-                        Order.customer_id == customer.id,
-                        Order.deleted_at.is_(None),
-                        Order.status.in_(
-                            [
-                                OrderStatus.paid,
-                                OrderStatus.partially_refunded,
-                            ]
-                        ),
-                    ),
-                    and_(
-                        Checkout.customer_id == customer.id,
-                        Checkout.deleted_at.is_(None),
-                    ),
-                ),
-                Payment.status == PaymentStatus.succeeded,
-            )
-        )
-
-        # Calculate positive and negative order amounts separately
-        positive_order_total = 0
-        negative_order_total = 0  # Absolute value of negative orders (customer credits)
-        refunds_on_positive_orders = 0
-
-        for order in paid_orders:
-            if order.total_amount >= 0:
-                # Positive order: track gross amount and refunds separately
-                positive_order_total += order.total_amount
-                refunds_on_positive_orders += (
-                    order.refunded_amount + order.refunded_tax_amount
-                )
-            else:
-                # Negative order (credit): use absolute value
-                # Refunds on negative orders don't make sense, so we ignore them
-                negative_order_total += abs(order.total_amount)
-
-        total_paid = sum(payment.amount for payment in payments)
-
-        # When there are negative orders (customer credits), refunds can settle them
-        # Otherwise, refunds just reduce the customer's debt
-        if negative_order_total > 0:
-            # Refunds first settle negative orders (customer credits)
-            settled_amount = min(refunds_on_positive_orders, negative_order_total)
-            remaining_refunds = refunds_on_positive_orders - settled_amount
-            remaining_credits = negative_order_total - settled_amount
-
-            # Balance = paid - positive orders + remaining refunds + remaining credits
-            return (
-                total_paid
-                - positive_order_total
-                + remaining_refunds
-                + remaining_credits
-            )
-        else:
-            # No negative orders: standard calculation
-            # The refunds cancel out in the formula
-            return total_paid - positive_order_total
 
 
 order = OrderService()

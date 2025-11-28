@@ -9,6 +9,7 @@ export const useInfiniteEvents = (
     NonNullable<operations['events:list']['parameters']['query']>,
     'organization_id' | 'page'
   >,
+  enabled: boolean = true,
 ) => {
   return useInfiniteQuery({
     queryKey: ['events', 'infinite', { organizationId, ...(parameters || {}) }],
@@ -36,6 +37,7 @@ export const useInfiniteEvents = (
       return lastPageParam + 1
     },
     retry: defaultRetry,
+    enabled,
   })
 }
 
@@ -62,17 +64,66 @@ export const useEvents = (
   })
 }
 
+export const useEvent = (organizationId: string, eventId: string) => {
+  return useQuery({
+    queryKey: ['event', organizationId, eventId],
+    queryFn: () =>
+      unwrap(api.GET('/v1/events/{id}', { params: { path: { id: eventId } } })),
+    retry: defaultRetry,
+    enabled: !!eventId,
+  })
+}
+
+export const useEventHierarchyStats = (
+  organizationId: string,
+  parameters: Omit<
+    NonNullable<
+      operations['events:list_statistics_timeseries']['parameters']['query']
+    >,
+    'organization_id' | 'timezone'
+  >,
+  enabled: boolean = true,
+) => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['events:list_statistics_timeseries']['parameters']['query']['timezone']
+  return useQuery({
+    queryKey: [
+      'eventHierarchyStats',
+      organizationId,
+      { timezone, ...(parameters || {}) },
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/statistics/timeseries', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              timezone,
+              ...(parameters || {}),
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+}
+
 export const useEventNames = (
   organizationId: string,
-  parameters?: operations['events:list_names']['parameters']['query'],
+  parameters?: operations['event-types:list']['parameters']['query'],
 ) => {
   return useInfiniteQuery({
     queryKey: ['eventNames', organizationId, { ...(parameters || {}) }],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       unwrap(
-        api.GET('/v1/events/names', {
+        api.GET('/v1/event-types/', {
           params: {
-            query: { organization_id: organizationId, ...(parameters || {}) },
+            query: {
+              organization_id: organizationId,
+              ...(parameters || {}),
+              page: pageParam,
+            },
           },
         }),
       ),

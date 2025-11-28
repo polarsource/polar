@@ -1,11 +1,9 @@
 import { schemas } from '@polar-sh/client'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import {
   differenceInDays,
   differenceInMonths,
   differenceInWeeks,
   differenceInYears,
-  format,
   parse,
   startOfDay,
   startOfMonth,
@@ -15,40 +13,47 @@ import {
   subMonths,
   subYears,
 } from 'date-fns'
+import {
+  formatAccountingFriendlyCurrency,
+  formatHumanFriendlyCurrency,
+  formatHumanFriendlyScalar,
+  formatPercentage,
+  formatScalar,
+  formatSubCentCurrency,
+} from './formatters'
 
-export const toISODate = (date: Date) => format(date, 'yyyy-MM-dd')
+/**
+ * Converts a Date object to an ISO date string (YYYY-MM-DD) in local timezone.
+ * Adjusts for timezone offset to ensure the local date is preserved.
+ */
+export const toISODate = (date: Date) => {
+  // Offset the date by the timezone offset so that when converted to UTC,
+  // we get the correct local date values
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  return offsetDate.toISOString().split('T')[0]
+}
 
+/**
+ * Parses an ISO date string (YYYY-MM-DD) to a Date object at midnight local time.
+ * Uses a local reference date to avoid timezone issues.
+ */
 export const fromISODate = (date: string) =>
-  parse(date, 'yyyy-MM-dd', new Date('1970-01-01T12:00:00Z'))
-
-const scalarTickFormatter = Intl.NumberFormat('en-US', {
-  notation: 'compact',
-  maximumFractionDigits: 2,
-})
-
-const percentageTickFormatter = Intl.NumberFormat('en-US', {
-  style: 'percent',
-  maximumFractionDigits: 2,
-})
+  parse(date, 'yyyy-MM-dd', new Date(1970, 0, 1, 0, 0, 0))
 
 export const getTickFormatter = (
   metric: schemas['Metric'],
 ): ((value: number) => string) => {
   switch (metric.type) {
     case 'scalar':
-      return scalarTickFormatter.format
+      return formatHumanFriendlyScalar
     case 'currency':
-      return (value: number) =>
-        formatCurrencyAndAmount(value, 'usd', 0, 'compact')
+      return (value: number) => formatHumanFriendlyCurrency(value, 'usd')
     case 'percentage':
-      return percentageTickFormatter.format
+      return formatPercentage
+    case 'currency_sub_cent':
+      return (value: number) => formatSubCentCurrency(value, 'usd')
   }
 }
-
-const scalarFormatter = Intl.NumberFormat('en-US', {})
-const percentageFormatter = Intl.NumberFormat('en-US', {
-  style: 'percent',
-})
 
 export const getFormattedMetricValue = (
   metric: schemas['Metric'],
@@ -56,11 +61,13 @@ export const getFormattedMetricValue = (
 ): string => {
   switch (metric.type) {
     case 'scalar':
-      return scalarFormatter.format(value)
+      return formatScalar(value)
     case 'currency':
-      return formatCurrencyAndAmount(value, 'usd', 0)
+      return formatAccountingFriendlyCurrency(value, 'usd')
     case 'percentage':
-      return percentageFormatter.format(value)
+      return formatPercentage(value)
+    case 'currency_sub_cent':
+      return formatSubCentCurrency(value, 'usd')
   }
 }
 
@@ -174,4 +181,14 @@ export const getPreviousParams = (
     case 'today':
       return [startOfYesterday(), startDate]
   }
+}
+
+export const getPreviousDateRange = (
+  startDate: Date,
+  endDate: Date,
+): [Date, Date] => {
+  const delta = endDate.getTime() - startDate.getTime()
+  const previousEndDate = new Date(startDate.getTime())
+  const previousStartDate = new Date(startDate.getTime() - delta)
+  return [previousStartDate, previousEndDate]
 }

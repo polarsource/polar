@@ -31,6 +31,8 @@ class BillingEntryType(StrEnum):
     cycle = "cycle"
     proration = "proration"
     metered = "metered"
+    subscription_seats_increase = "subscription_seats_increase"
+    subscription_seats_decrease = "subscription_seats_decrease"
 
 
 class BillingEntry(RecordModel):

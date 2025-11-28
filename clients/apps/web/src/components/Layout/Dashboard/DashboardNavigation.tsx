@@ -78,7 +78,7 @@ export const OrganizationNavigation = ({
                       href={subRoute.link}
                       prefetch={true}
                       className={twMerge(
-                        'dark:text-polar-500 ml-4 text-sm font-medium text-gray-500',
+                        'dark:text-polar-500 ml-4 text-sm font-medium text-gray-500 transition-colors hover:text-black dark:hover:text-white',
                         subRoute.isActive && 'text-blue-500 dark:text-white',
                       )}
                     >

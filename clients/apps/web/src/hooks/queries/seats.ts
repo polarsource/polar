@@ -1,6 +1,6 @@
 import { getServerURL } from '@/utils/api'
 import { api } from '@/utils/client'
-import { unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -8,22 +8,23 @@ export const useAssignSeatFromCheckout = (checkoutId: string) => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({
-      email,
-      metadata,
-    }: {
-      email: string
-      metadata?: Record<string, any>
-    }) => {
+    mutationFn: async (
+      variables: Omit<
+        schemas['SeatAssign'],
+        'checkout_id' | 'immediate_claim'
+      > & {
+        immediate_claim?: boolean
+      },
+    ) => {
       const response = await fetch(`${getServerURL()}/v1/customer-seats`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          ...variables,
           checkout_id: checkoutId,
-          email,
-          metadata,
+          immediate_claim: variables.immediate_claim ?? false,
         }),
       })
 

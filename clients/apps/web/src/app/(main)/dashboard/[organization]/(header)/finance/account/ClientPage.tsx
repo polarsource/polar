@@ -204,7 +204,7 @@ export default function ClientPage({
       )
       window.location.href = link.url
     }
-  }, [organizationAccount, showSetupModal])
+  }, [organization.slug, organizationAccount, showSetupModal])
 
   const handleStartIdentityVerification = useCallback(async () => {
     await startIdentityVerification()
@@ -243,7 +243,7 @@ export default function ClientPage({
   const handleAppealSubmitted = useCallback(() => {
     setStep('account')
     return
-  }, [organizationAccount, identityVerified])
+  }, [])
 
   const handleNavigateToStep = useCallback(
     (targetStep: Step) => {
@@ -315,6 +315,7 @@ export default function ClientPage({
         ) : null}
 
         <Modal
+          title="Create Payout Account"
           isShown={isShownSetupModal}
           className="min-w-[400px]"
           hide={hideSetupModal}

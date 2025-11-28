@@ -21,7 +21,7 @@ interface LoginCodeFormProps {
   signup?: schemas['UserSignupAttribution']
 }
 
-const LoginCodeForm: React.FC<LoginCodeFormProps> = ({ returnTo, signup }) => {
+const LoginCodeForm = ({ returnTo, signup }: LoginCodeFormProps) => {
   const form = useForm<{ email: string }>()
   const { control, handleSubmit, setError } = form
   const [loading, setLoading] = useState(false)

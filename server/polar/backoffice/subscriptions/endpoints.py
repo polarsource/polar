@@ -14,7 +14,7 @@ from polar.kit.schemas import empty_str_to_none
 from polar.models import Customer, Order, Organization, Product, Subscription
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.subscription import sorting
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
@@ -89,7 +89,7 @@ async def list(
     status: Annotated[
         SubscriptionStatus | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     repository = SubscriptionRepository.from_session(session)
     statement = (
@@ -195,7 +195,7 @@ async def list(
 async def get(
     request: Request,
     id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
     subscription_repository = SubscriptionRepository.from_session(session)
     subscription = await subscription_repository.get_by_id(

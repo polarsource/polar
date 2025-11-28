@@ -1,4 +1,5 @@
 import { useUpdateOrganization } from '@/hooks/queries'
+import { useAutoSave } from '@/hooks/useAutoSave'
 import { setValidationErrors } from '@/utils/api/errors'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
@@ -31,6 +32,7 @@ import {
   FormField,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useForm, useFormContext } from 'react-hook-form'
@@ -116,7 +118,11 @@ const OrganizationSocialLinks = () => {
 
   const handleChange = (index: number, value: string) => {
     const currentFieldValue = socials[index]?.url
-    if (currentFieldValue === '') {
+    if (
+      currentFieldValue === '' &&
+      !value.startsWith('https://') &&
+      !value.startsWith('http://')
+    ) {
       value = 'https://' + value
     }
 
@@ -238,23 +244,32 @@ export const OrganizationDetailsForm: React.FC<
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-12">
           <div className="sm:col-span-2">
             <label className="mb-2 block text-sm font-medium">Logo</label>
-            <div
-              {...getRootProps()}
-              className={twMerge(
-                'relative cursor-pointer',
-                isDragActive && 'opacity-50',
+            <FormField
+              control={control}
+              name="avatar_url"
+              render={() => (
+                <div>
+                  <div
+                    {...getRootProps()}
+                    className={twMerge(
+                      'relative cursor-pointer',
+                      isDragActive && 'opacity-50',
+                    )}
+                  >
+                    <input {...getInputProps()} />
+                    <Avatar
+                      avatar_url={avatarURL ?? ''}
+                      name={name ?? ''}
+                      className="h-16 w-16 transition-opacity hover:opacity-75"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
+                      <AddPhotoAlternateOutlined className="text-gray-600" />
+                    </div>
+                  </div>
+                  <FormMessage className="mt-2 text-xs/snug" />
+                </div>
               )}
-            >
-              <input {...getInputProps()} />
-              <Avatar
-                avatar_url={avatarURL ?? ''}
-                name={name ?? ''}
-                className="h-16 w-16 transition-opacity hover:opacity-75"
-              />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
-                <AddPhotoAlternateOutlined className="text-gray-600" />
-              </div>
-            </div>
+            />
           </div>
 
           <div className="space-y-4 sm:col-span-10">
@@ -324,8 +339,12 @@ export const OrganizationDetailsForm: React.FC<
 
         {/* Social Links - Progressive Disclosure */}
         <div>
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-4 flex flex-col items-start">
             <label className="block text-sm font-medium">Social Media</label>
+            <p className="mt-2 text-xs text-gray-600">
+              Social media links help with your account review. They will not be
+              shown publicly.
+            </p>
           </div>
           <OrganizationSocialLinks />
         </div>
@@ -582,6 +601,7 @@ interface OrganizationProfileSettingsProps {
 const OrganizationProfileSettings: React.FC<
   OrganizationProfileSettingsProps
 > = ({ organization, kyc, onSubmitted }) => {
+  const router = useRouter()
   const form = useForm<schemas['OrganizationUpdate']>({
     defaultValues: organization,
   })
@@ -590,26 +610,52 @@ const OrganizationProfileSettings: React.FC<
 
   const updateOrganization = useUpdateOrganization()
 
-  const onSubmit = async (body: schemas['OrganizationUpdate']) => {
+  const onSave = async (body: schemas['OrganizationUpdate']) => {
+    const emptySocials =
+      body.socials?.filter(
+        (social) => !social.url || social.url.trim() === '',
+      ) || []
+    const cleanedBody = {
+      ...body,
+      socials: body.socials?.filter(
+        (social) => social.url && social.url.trim() !== '',
+      ),
+    }
+
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
-      body,
+      body: cleanedBody,
     })
 
     if (error) {
+      const errorMessage = Array.isArray(error.detail)
+        ? error.detail[0]?.msg ||
+          'An error occurred while updating the organization'
+        : typeof error.detail === 'string'
+          ? error.detail
+          : 'An error occurred while updating the organization'
+
       if (isValidationError(error.detail)) {
         setValidationErrors(error.detail, setError)
       } else {
-        setError('root', { message: error.detail })
+        setError('root', { message: errorMessage })
       }
+
+      toast({
+        title: 'Organization Update Failed',
+        description: errorMessage,
+      })
+
       return
     }
 
-    reset(data)
-    toast({
-      title: 'Organization Updated',
-      description: `Organization was updated successfully`,
+    reset({
+      ...data,
+      socials: [...(data.socials || []), ...emptySocials],
     })
+
+    // Refresh the router to get the updated organization data from the server
+    router.refresh()
 
     if (onSubmitted) {
       onSubmitted()
@@ -617,8 +663,15 @@ const OrganizationProfileSettings: React.FC<
   }
 
   const handleFormSubmit = () => {
-    handleSubmit(onSubmit)()
+    handleSubmit(onSave)()
   }
+
+  useAutoSave({
+    form,
+    onSave,
+    delay: 1000,
+    enabled: !inKYCMode,
+  })
 
   return (
     <Form {...form}>
@@ -672,18 +725,20 @@ const OrganizationProfileSettings: React.FC<
             />
           </div>
 
-          <SettingsGroupActions>
-            <ConfirmationButton
-              onConfirm={handleFormSubmit}
-              warningMessage="This information cannot be changed once submitted. Are you sure?"
-              buttonText={inKYCMode ? 'Submit for Review' : 'Save'}
-              size={inKYCMode ? 'default' : 'sm'}
-              confirmText="Submit"
-              disabled={!formState.isDirty}
-              loading={updateOrganization.isPending}
-              requireConfirmation={inKYCMode}
-            />
-          </SettingsGroupActions>
+          {inKYCMode && (
+            <SettingsGroupActions>
+              <ConfirmationButton
+                onConfirm={handleFormSubmit}
+                warningMessage="This information cannot be changed once submitted. Are you sure?"
+                buttonText="Submit for Review"
+                size="default"
+                confirmText="Submit"
+                disabled={!formState.isDirty}
+                loading={updateOrganization.isPending}
+                requireConfirmation={true}
+              />
+            </SettingsGroupActions>
+          )}
         </SettingsGroup>
       </form>
     </Form>

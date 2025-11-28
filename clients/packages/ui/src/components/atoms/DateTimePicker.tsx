@@ -40,7 +40,7 @@ const DatePicker: React.FC<DatePickerProps> = (props) => {
           <Button
             variant={'outline'}
             className={twMerge(
-              'h-10 w-full justify-start rounded-xl text-left font-normal',
+              'dark:bg-polar-800 h-10 w-full justify-start rounded-xl bg-white text-left font-normal',
               !value && 'text-muted-foreground',
             )}
           >
@@ -59,7 +59,7 @@ const DatePicker: React.FC<DatePickerProps> = (props) => {
           selected={internalValue}
           onSelect={onChange}
           disabled={disabled}
-          initialFocus
+          autoFocus
         />
       </PopoverContent>
     </Popover>

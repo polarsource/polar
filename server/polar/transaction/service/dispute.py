@@ -5,6 +5,7 @@ import structlog
 from sqlalchemy import select
 
 from polar.integrations.stripe.utils import get_expandable_id
+from polar.kit.math import polar_round
 from polar.logging import Logger
 from polar.models import Transaction
 from polar.models.transaction import Processor, TransactionType
@@ -48,6 +49,12 @@ class DisputeUnknownPaymentTransaction(DisputeTransactionError):
         super().__init__(message)
 
 
+class BalanceTransactionNotAvailableError(DisputeTransactionError):
+    def __init__(self, dispute_id: str) -> None:
+        message = f"Balance transaction not available for dispute {dispute_id}"
+        super().__init__(message)
+
+
 class NotBalancedPaymentTransaction(DisputeTransactionError):
     def __init__(self, payment_transaction: Transaction) -> None:
         self.payment_transaction = payment_transaction
@@ -75,26 +82,39 @@ class DisputeTransactionService(BaseTransactionService):
         if payment_transaction is None:
             raise DisputeUnknownPaymentTransaction(dispute.id, charge_id)
 
-        dispute_amount = dispute.amount
-        total_amount = payment_transaction.amount + payment_transaction.tax_amount
-        tax_refund_amount = abs(
-            int(
-                math.floor(payment_transaction.tax_amount * dispute_amount)
-                / total_amount
+        try:
+            balance_transaction = next(
+                bt
+                for bt in dispute.balance_transactions
+                if bt.reporting_category == "dispute"
             )
+        except StopIteration as e:
+            raise BalanceTransactionNotAvailableError(dispute.id) from e
+
+        settlement_amount = balance_transaction.amount
+        settlement_currency = balance_transaction.currency
+        settlement_tax_amount = int(
+            math.floor(payment_transaction.tax_amount * settlement_amount)
+            / (payment_transaction.amount + payment_transaction.tax_amount)
         )
+
+        exchange_rate = abs(dispute.amount) / abs(settlement_amount)
+        dispute_tax_amount = -polar_round(settlement_tax_amount * exchange_rate)
 
         # Create the dispute, i.e. the transaction withdrawing the amount
         dispute_transaction = Transaction(
             type=TransactionType.dispute,
             processor=Processor.stripe,
-            currency=dispute.currency,
-            amount=-dispute.amount + tax_refund_amount,
-            account_currency=dispute.currency,
-            account_amount=-dispute.amount + tax_refund_amount,
-            tax_amount=-tax_refund_amount,
+            currency=settlement_currency,
+            amount=settlement_amount - settlement_tax_amount,
+            account_currency=settlement_currency,
+            account_amount=settlement_amount - settlement_tax_amount,
+            tax_amount=settlement_tax_amount,
             tax_country=payment_transaction.tax_country,
             tax_state=payment_transaction.tax_state,
+            presentment_currency=dispute.currency,
+            presentment_amount=-dispute.amount + dispute_tax_amount,
+            presentment_tax_amount=-dispute_tax_amount,
             customer_id=payment_transaction.customer_id,
             charge_id=charge_id,
             dispute_id=dispute.id,
@@ -118,13 +138,16 @@ class DisputeTransactionService(BaseTransactionService):
             dispute_reversal_transaction = Transaction(
                 type=TransactionType.dispute_reversal,
                 processor=Processor.stripe,
-                currency=dispute.currency,
-                amount=dispute.amount - tax_refund_amount,
-                account_currency=dispute.currency,
-                account_amount=dispute.amount - tax_refund_amount,
-                tax_amount=tax_refund_amount,
+                currency=settlement_currency,
+                amount=-settlement_amount + settlement_tax_amount,
+                account_currency=settlement_currency,
+                account_amount=-settlement_amount + settlement_tax_amount,
+                tax_amount=-settlement_tax_amount,
                 tax_country=payment_transaction.tax_country,
                 tax_state=payment_transaction.tax_state,
+                presentment_currency=dispute.currency,
+                presentment_amount=dispute.amount - dispute_tax_amount,
+                presentment_tax_amount=dispute_tax_amount,
                 customer_id=payment_transaction.customer_id,
                 charge_id=charge_id,
                 dispute_id=dispute.id,
@@ -150,7 +173,7 @@ class DisputeTransactionService(BaseTransactionService):
             await self._create_reversal_balances(
                 session,
                 payment_transaction=payment_transaction,
-                dispute_amount=dispute_amount,
+                dispute_amount=-dispute_transaction.amount,
             )
 
         # Balance the (crazy high) dispute fees on the organization's account
@@ -204,7 +227,7 @@ class DisputeTransactionService(BaseTransactionService):
             reversal_balances += await self._create_reversal_balances(
                 session,
                 payment_transaction=payment_transaction,
-                dispute_amount=dispute.amount,
+                dispute_amount=-dispute.amount,
             )
 
         return reversal_balances
@@ -216,7 +239,7 @@ class DisputeTransactionService(BaseTransactionService):
         payment_transaction: Transaction,
         dispute_amount: int,
     ) -> list[tuple[Transaction, Transaction]]:
-        total_amount = payment_transaction.amount + payment_transaction.tax_amount
+        payment_amount = payment_transaction.amount
 
         reversal_balances: list[tuple[Transaction, Transaction]] = []
         balance_transactions_couples = await self._get_balance_transactions_for_payment(
@@ -226,7 +249,7 @@ class DisputeTransactionService(BaseTransactionService):
             outgoing, _ = balance_transactions_couple
             # Refund each balance proportionally
             balance_refund_amount = abs(
-                int(math.floor(outgoing.amount * dispute_amount) / total_amount)
+                int(math.floor(outgoing.amount * dispute_amount) / payment_amount)
             )
             reversal_balances.append(
                 await balance_transaction_service.create_reversal_balance(

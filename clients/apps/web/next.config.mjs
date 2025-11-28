@@ -1,3 +1,4 @@
+/* global process */
 import bundleAnalyzer from '@next/bundle-analyzer'
 import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
@@ -20,8 +21,8 @@ const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env
 const baseCSP = `
     default-src 'self';
     connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL} ${process.env.S3_UPLOAD_ORIGINS} https://api.stripe.com https://maps.googleapis.com https://*.google-analytics.com https://chat.uk.plain.com https://prod-uk-services-attachm-attachmentsuploadbucket2-1l2e4906o2asm.s3.eu-west-2.amazonaws.com;
-    frame-src 'self' https://*.js.stripe.com https://js.stripe.com https://hooks.stripe.com;
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.js.stripe.com https://js.stripe.com https://maps.googleapis.com https://www.googletagmanager.com https://chat.cdn-plain.com;
+    frame-src 'self' https://*.js.stripe.com https://js.stripe.com https://hooks.stripe.com https://customer-wl21dabnj6qtvcai.cloudflarestream.com videodelivery.net *.cloudflarestream.com;
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.js.stripe.com https://js.stripe.com https://maps.googleapis.com https://www.googletagmanager.com https://chat.cdn-plain.com https://embed.cloudflarestream.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' blob: data: https://www.gravatar.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com ${S3_PUBLIC_IMAGES_BUCKET_ORIGIN} https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com https://prod-uk-services-attachm-attachmentsbucket28b3ccf-uwfssb4vt2us.s3.eu-west-2.amazonaws.com https://i0.wp.com;
     font-src 'self';
@@ -50,12 +51,15 @@ const oauth2CSP = `
 // Ref: https://www.mintlify.com/docs/guides/csp-configuration#content-security-policy-csp-configuration
 const docsCSP = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com;
-  style-src 'self' 'unsafe-inline' d4tuoctqmanu0.cloudfront.net;
-  font-src 'self' d4tuoctqmanu0.cloudfront.net cdn.jsdelivr.net fonts.cdnfonts.com;
-  img-src 'self' data: blob: d3gk2c5xim1je2.cloudfront.net mintcdn.com mintlify.s3.us-west-1.amazonaws.com;
-  connect-src 'self' *.mintlify.dev *.mintlify.com https://*.google-analytics.com;
-  frame-src 'self' *.mintlify.dev *.mintlify.com;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net www.googletagmanager.com cdn.segment.com plausible.io
+  us.posthog.com tag.clearbitscripts.com cdn.heapanalytics.com chat.cdn-plain.com chat-assets.frontapp.com
+  browser.sentry-cdn.com js.sentry-cdn.com;
+  style-src 'self' 'unsafe-inline' d4tuoctqmanu0.cloudfront.net fonts.googleapis.com;
+  font-src 'self' d4tuoctqmanu0.cloudfront.net fonts.googleapis.com;
+  img-src 'self' data: blob: d3gk2c5xim1je2.cloudfront.net mintcdn.com *.mintcdn.com cdn.jsdelivr.net mintlify.s3.us-west-1.amazonaws.com;
+  connect-src 'self' *.mintlify.dev *.mintlify.com d1ctpt7j8wusba.cloudfront.net mintcdn.com *.mintcdn.com
+  api.mintlifytrieve.com www.googletagmanager.com cdn.segment.com plausible.io us.posthog.com browser.sentry-cdn.com;
+  frame-src 'self' *.mintlify.dev https://polar-public-assets.s3.us-east-2.amazonaws.com;
 `
 
 /** @type {import('next').NextConfig} */
@@ -261,8 +265,8 @@ const nextConfig = {
         permanent: true,
       },
       {
-        source: '/dashboard/:organization/products/benefits',
-        destination: '/dashboard/:organization/benefits',
+        source: '/dashboard/:organization/benefits',
+        destination: '/dashboard/:organization/products/benefits',
         permanent: true,
       },
       {
@@ -289,6 +293,26 @@ const nextConfig = {
         source: '/dashboard/:organization/finance',
         destination: '/dashboard/:organization/finance/income',
         permanent: false,
+      },
+      {
+        source: '/dashboard/:organization/usage-billing',
+        destination: '/dashboard/:organization/products/meters',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/:organization/usage-billing/meters',
+        destination: '/dashboard/:organization/products/meters',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/:organization/usage-billing/events',
+        destination: '/dashboard/:organization/analytics/events',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/:organization/usage-billing/spans',
+        destination: '/dashboard/:organization/analytics/costs',
+        permanent: true,
       },
 
       // Account Settings Redirects

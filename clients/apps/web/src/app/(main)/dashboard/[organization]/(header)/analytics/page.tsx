@@ -2,7 +2,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas, unwrap } from '@polar-sh/client'
-import { addDays, max, min, subMonths } from 'date-fns'
+import { endOfDay, max, subMonths } from 'date-fns'
 import { RedirectType, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -49,22 +49,66 @@ export default async function Page(props: {
     )
   }
 
-  const startDate = searchParams.start_date
-    ? fromISODate(searchParams.start_date)
+  const startDateISOString = searchParams.start_date ?? undefined
+  const endDateISOString = searchParams.end_date ?? undefined
+
+  const startDate = startDateISOString
+    ? fromISODate(startDateISOString)
     : defaultStartDate
   const endDate = searchParams.end_date
-    ? fromISODate(searchParams.end_date)
+    ? endOfDay(fromISODate(searchParams.end_date))
     : defaultEndDate
 
   const limits = await unwrap(api.GET('/v1/metrics/limits'))
   const minDate = fromISODate(limits.min_date)
-  const maxDate = addDays(startDate, limits.intervals[interval].max_days - 1)
 
-  if (startDate < minDate || endDate > maxDate) {
+  const findValidInterval = (
+    start: Date,
+    end: Date,
+    currentInterval: schemas['TimeInterval'],
+  ): schemas['TimeInterval'] => {
+    // Match backend logic: check both min and max constraints
+    const daysDifference = Math.floor(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+    )
+    if (
+      daysDifference >= limits.intervals[currentInterval].min_days &&
+      daysDifference <= limits.intervals[currentInterval].max_days
+    ) {
+      return currentInterval
+    }
+
+    const intervals: schemas['TimeInterval'][] = [
+      'year',
+      'month',
+      'week',
+      'day',
+      'hour',
+    ]
+
+    // If current interval is too wide for the range, pick the widest matching one
+    // If it's too narrow, pick the narrowest matching one
+    if (daysDifference > limits.intervals[currentInterval].max_days) {
+      intervals.reverse()
+    }
+
+    return (
+      intervals.find(
+        (interval) =>
+          daysDifference >= limits.intervals[interval].min_days &&
+          daysDifference <= limits.intervals[interval].max_days,
+      ) || 'day'
+    )
+  }
+
+  const validInterval = findValidInterval(startDate, endDate, interval)
+
+  if (startDate < minDate || validInterval !== interval) {
     const urlSearchParams = new URLSearchParams({
       ...restSearchParams,
       start_date: toISODate(max([minDate, startDate])),
-      end_date: toISODate(min([endDate, maxDate])),
+      end_date: toISODate(endDate),
+      interval: validInterval,
     })
     productId?.forEach((id) => urlSearchParams.append('product_id', id))
     redirect(
@@ -76,10 +120,10 @@ export default async function Page(props: {
   return (
     <ClientPage
       organization={organization}
-      limits={limits}
-      startDate={startDate}
-      endDate={endDate}
-      interval={interval}
+      earliestDateISOString={limits.min_date}
+      startDateISOString={startDateISOString}
+      endDateISOString={endDateISOString}
+      interval={validInterval}
       productId={productId}
     />
   )

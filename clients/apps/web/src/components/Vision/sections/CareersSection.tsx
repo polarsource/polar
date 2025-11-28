@@ -8,7 +8,7 @@ export const CareersSection = ({ active }: { active: boolean }) => {
       header={{ index: '02', name: 'Careers' }}
       title="Help us shape the future"
       context={
-        <div className="group flex flex-col gap-16">
+        <div className="group flex flex-col gap-8 lg:gap-16">
           <JobSection
             title="Product & Engineering"
             jobs={[
@@ -34,6 +34,22 @@ export const CareersSection = ({ active }: { active: boolean }) => {
                   'Design and ship growth-focused features, enhancements and experiments end-to-end.',
                 location: 'Remote — Europe',
                 link: 'https://jobs.ashbyhq.com/polar/1496592e-16ff-47e7-b11e-a993c887fc1f',
+                experience: '7+ Years Experience',
+              },
+              {
+                role: 'Senior Product Designer',
+                description:
+                  'Design the future platform for developers to turn their software into a business.',
+                location: 'Stockholm, Sweden',
+                link: 'https://jobs.ashbyhq.com/polar/1fee39f0-897c-4bdc-8ec0-a055f5d94a6c',
+                experience: '7+ Years Experience',
+              },
+              {
+                role: 'Senior Data Engineer',
+                description:
+                  'Design, ship and optimize our internal data warehouse to Metric APIs for developers using Polar.',
+                location: 'Remote - Europe',
+                link: 'https://jobs.ashbyhq.com/polar/0ba77853-a18b-4d38-8516-4b0ab960ea00',
                 experience: '7+ Years Experience',
               },
             ]}

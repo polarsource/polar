@@ -52,7 +52,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
         : updaterOrValue
 
     router.push(
-      `/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}&${getSearchParams(
+      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
         updatedPagination,
         sorting,
       )}`,
@@ -70,7 +70,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
         : updaterOrValue
 
     router.push(
-      `/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}&${getSearchParams(
+      `/dashboard/${organization.slug}/products/benefits/${benefit.id}?${getSearchParams(
         pagination,
         updatedSorting,
       )}`,
@@ -94,21 +94,25 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
             accessorKey: 'customer',
             header: 'Customer',
             cell: ({ row: { original: grant } }) => (
-              <div className="flex items-center gap-3">
-                <Avatar
-                  className="h-10 w-10"
-                  avatar_url={grant.customer.avatar_url}
-                  name={grant.customer.name || grant.customer.email}
-                />
-                <div className="flex min-w-0 flex-col">
-                  <div className="w-full truncate text-sm">
-                    {grant.customer.name ?? '—'}
-                  </div>
-                  <div className="w-full truncate text-xs text-gray-500 dark:text-gray-500">
-                    {grant.customer.email}
+              <Link
+                href={`/dashboard/${organization.slug}/customers/${grant.customer.id}`}
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar
+                    className="h-10 w-10"
+                    avatar_url={grant.customer.avatar_url}
+                    name={grant.customer.name || grant.customer.email}
+                  />
+                  <div className="flex min-w-0 flex-col">
+                    <div className="w-full truncate text-sm">
+                      {grant.customer.name ?? '—'}
+                    </div>
+                    <div className="dark:text-polar-500 w-full truncate text-xs text-gray-500">
+                      {grant.customer.email}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ),
           },
           {
@@ -128,18 +132,37 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
           {
             accessorKey: 'order',
             header: 'Order',
-            cell: ({ row: { original: grant } }) =>
-              grant.order_id ? (
-                <Link
-                  href={`/dashboard/${organization.slug}/sales/${grant.order_id}`}
-                >
-                  <Button size="sm" variant="secondary">
-                    View Order
-                  </Button>
-                </Link>
-              ) : (
-                <></>
-              ),
+            cell: ({ row: { original: grant } }) => {
+              const hasOrder = grant.order_id
+              const hasSubscription = grant.subscription_id
+
+              if (!hasOrder && !hasSubscription) {
+                return <></>
+              }
+
+              return (
+                <div className="flex gap-2">
+                  {hasOrder && (
+                    <Link
+                      href={`/dashboard/${organization.slug}/sales/${grant.order_id}`}
+                    >
+                      <Button size="sm" variant="secondary">
+                        View Order
+                      </Button>
+                    </Link>
+                  )}
+                  {hasSubscription && (
+                    <Link
+                      href={`/dashboard/${organization.slug}/sales/subscriptions/${grant.subscription_id}`}
+                    >
+                      <Button size="sm" variant="secondary">
+                        View Subscription
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              )
+            },
           },
         ]}
       />

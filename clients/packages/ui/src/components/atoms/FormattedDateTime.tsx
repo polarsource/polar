@@ -15,9 +15,17 @@ const FormattedDateTime: React.FC<FormattedDateTimeProps> = ({
   timeStyle = 'short',
   resolution = 'day',
 }) => {
+  const parsedDate = useMemo(() => new Date(datetime), [datetime])
+  const isValidDate = useMemo(
+    () => !Number.isNaN(parsedDate.getTime()),
+    [parsedDate],
+  )
   const formatted = useMemo(() => {
     try {
-      const parsedDate = new Date(datetime)
+      if (!isValidDate) {
+        return 'Invalid date'
+      }
+
       if (resolution === 'time') {
         return parsedDate.toLocaleString(locale, { dateStyle, timeStyle })
       }
@@ -35,9 +43,16 @@ const FormattedDateTime: React.FC<FormattedDateTimeProps> = ({
     } catch {
       return 'Invalid date or locale'
     }
-  }, [datetime, locale, resolution, dateStyle, timeStyle])
+  }, [parsedDate, isValidDate, locale, resolution, dateStyle, timeStyle])
 
-  return <>{formatted}</>
+  return (
+    <time
+      suppressHydrationWarning
+      dateTime={isValidDate ? parsedDate.toISOString() : undefined}
+    >
+      {formatted}
+    </time>
+  )
 }
 
 export default FormattedDateTime

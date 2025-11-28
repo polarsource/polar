@@ -55,7 +55,22 @@ OrganizationStatusFormAdapter: TypeAdapter[OrganizationStatusForm] = TypeAdapter
 )
 
 
+class UpdateOrganizationBasicForm(forms.BaseForm):
+    """Form for editing basic organization settings (name, slug, invoice prefix)."""
+
+    name: NameInput
+    slug: SlugInput
+    customer_invoice_prefix: Annotated[
+        str,
+        StringConstraints(
+            to_upper=True, min_length=3, pattern=r"^[a-zA-Z0-9\-]+[a-zA-Z0-9]$"
+        ),
+    ]
+
+
 class UpdateOrganizationForm(forms.BaseForm):
+    """Form for editing organization settings including feature flags."""
+
     name: NameInput
     slug: SlugInput
     customer_invoice_prefix: Annotated[
@@ -112,3 +127,15 @@ class UpdateOrganizationDetailsForm(forms.BaseForm):
         ),
     ]
     details: Annotated[UpdateOrganizationDetailsDataForm, Field(title="Details")]
+
+
+class UpdateOrganizationInternalNotesForm(forms.BaseForm):
+    internal_notes: Annotated[
+        str | None,
+        forms.TextAreaField(rows=10),
+        Field(
+            None,
+            title="Internal Notes",
+            description="Internal notes about this organization (admin only)",
+        ),
+    ]

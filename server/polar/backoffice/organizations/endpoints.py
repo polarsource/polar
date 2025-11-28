@@ -2,8 +2,8 @@ import builtins
 import contextlib
 import uuid
 from collections.abc import Generator
-from datetime import UTC
-from typing import Annotated, Any, override
+from datetime import UTC, datetime
+from typing import Annotated, Any, Literal, override
 
 import structlog
 from babel.numbers import format_currency
@@ -36,6 +36,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.file import FileServiceTypes
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -44,7 +45,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user.repository import UserRepository
 from polar.user_organization.service import (
@@ -74,6 +75,7 @@ from .forms import (
     OrganizationStatusFormAdapter,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationForm,
+    UpdateOrganizationInternalNotesForm,
 )
 from .schemas import PaymentStatistics, SetupVerdictData
 
@@ -104,11 +106,11 @@ def empty_str_to_none_before_bool(value: Any) -> Any:
 @contextlib.contextmanager
 def organization_badge(organization: Organization) -> Generator[None]:
     with tag.div(classes="badge"):
-        if organization.status == Organization.Status.ACTIVE:
+        if organization.status == OrganizationStatus.ACTIVE:
             classes("badge-success")
         elif (
-            organization.status == Organization.Status.UNDER_REVIEW
-            or organization.status == Organization.Status.DENIED
+            organization.is_under_review
+            or organization.status == OrganizationStatus.DENIED
         ):
             classes("badge-warning")
         else:
@@ -140,8 +142,6 @@ class DaysInStatusColumn(
     datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
 ):
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
-        from datetime import datetime
-
         if item.status_updated_at:
             delta = datetime.now(UTC) - item.status_updated_at
             days = delta.days
@@ -149,7 +149,7 @@ class DaysInStatusColumn(
             delta = datetime.now(UTC) - item.created_at
             days = delta.days
 
-        if item.status == Organization.Status.UNDER_REVIEW:
+        if item.is_under_review:
             text(f"{days} days in review")
         else:
             text(f"{days} days since review")
@@ -298,12 +298,12 @@ async def get_setup_verdict_data(
 async def list(
     request: Request,
     sorting: sorting.ListSorting,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_read_session),
     page: int = Query(1, description="Page number, defaults to 1.", gt=0),
     limit: int = Query(100, description="Size of a page, defaults to 100.", gt=0),
     query: str | None = Query(None),
     organization_status: Annotated[
-        Organization.Status | None,
+        OrganizationStatus | None,
         BeforeValidator(empty_str_to_none_before_enum),
         Query(),
     ] = None,
@@ -311,8 +311,10 @@ async def list(
         bool | None, BeforeValidator(empty_str_to_none_before_bool), Query()
     ] = None,
     review_cycle: Annotated[
-        str | None, BeforeValidator(empty_str_to_none), Query()
-    ] = None,  # "first" or "subsequent"
+        Literal["first", "subsequent"] | None,
+        BeforeValidator(empty_str_to_none),
+        Query(),
+    ] = None,
 ) -> None:
     # Create custom pagination with default limit of 100
     pagination = PaginationParams(page, min(100, limit))
@@ -358,16 +360,12 @@ async def list(
 
     # Add review cycle filter
     if review_cycle:
-        if review_cycle == "first":
-            statement = statement.where(
-                Organization.status == Organization.Status.UNDER_REVIEW,
-                Organization.next_review_threshold == 0,
-            )
-        elif review_cycle == "subsequent":
-            statement = statement.where(
-                Organization.status == Organization.Status.UNDER_REVIEW,
-                Organization.next_review_threshold > 0,
-            )
+        match review_cycle:
+            case "first":
+                status = OrganizationStatus.INITIAL_REVIEW
+            case "subsequent":
+                status = OrganizationStatus.ONGOING_REVIEW
+        statement = statement.where(Organization.status == status)
 
     statement = repository.apply_sorting(statement, sorting)
     items, count = await repository.paginate(
@@ -393,7 +391,7 @@ async def list(
                             ("All Organization Statuses", ""),
                             *[
                                 (status.get_display_name(), status.value)
-                                for status in Organization.Status
+                                for status in OrganizationStatus
                             ],
                         ],
                         organization_status.value if organization_status else "",
@@ -626,6 +624,60 @@ async def update_details(
                     variant="primary",
                 ):
                     text("Update Details")
+
+
+@router.api_route(
+    "/{id}/update_internal_notes",
+    name="organizations:update_internal_notes",
+    methods=["GET", "POST"],
+)
+async def update_internal_notes(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(id)
+    if not organization:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = UpdateOrganizationInternalNotesForm.model_validate_form(data)
+            organization = await org_repo.update(
+                organization, update_dict=form.model_dump(exclude_none=True)
+            )
+            return HXRedirectResponse(
+                request, str(request.url_for("organizations:get", id=id)), 303
+            )
+
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Edit Internal Notes", open=True):
+        with tag.p(classes="text-sm text-base-content-secondary"):
+            text("Add or update internal notes about this organization (admin only)")
+
+        with UpdateOrganizationInternalNotesForm.render(
+            data=organization,
+            validation_error=validation_error,
+            hx_post=str(request.url_for("organizations:update_internal_notes", id=id)),
+            hx_target="#modal",
+            classes="space-y-4",
+        ):
+            # Action buttons
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Save Notes")
 
 
 @router.api_route("/{id}/delete", name="organizations:delete", methods=["GET", "POST"])
@@ -1369,6 +1421,17 @@ async def get(
                         hx_target="#modal",
                     ):
                         text("Edit")
+                    with tag.a(
+                        classes="btn",
+                        href=str(
+                            request.url_for(
+                                "organizations-v2:detail",
+                                organization_id=organization.id,
+                            )
+                        ),
+                        title="Switch to new view",
+                    ):
+                        text("View V2")
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with description_list.DescriptionList[Organization](
                     description_list.DescriptionListAttrItem(
@@ -1672,6 +1735,33 @@ async def get(
                                     text(
                                         f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'USD', locale='en_US')})"
                                     )
+
+            # Internal Notes Section
+            with tag.div(classes="card card-border w-full shadow-sm"):
+                with tag.div(classes="card-body"):
+                    with tag.div(classes="flex justify-between items-center mb-4"):
+                        with tag.h2(classes="card-title"):
+                            text("Internal Notes")
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "organizations:update_internal_notes",
+                                    id=organization.id,
+                                )
+                            ),
+                            hx_target="#modal",
+                            variant="secondary",
+                        ):
+                            text("Edit Notes")
+
+                    if organization.internal_notes:
+                        with tag.div(classes="prose max-w-none"):
+                            with tag.p(classes="whitespace-pre-line text-sm"):
+                                text(organization.internal_notes)
+                    else:
+                        with tag.div(classes="text-center py-4"):
+                            with tag.p(classes="text-gray-400"):
+                                text("No internal notes yet")
 
             # Organization Review Section
             with tag.div(classes="mt-8"):

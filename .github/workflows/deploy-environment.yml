@@ -48,13 +48,16 @@ on:
 jobs:
   build-frontend:
     name: "Frontend: Build"
+    concurrency:
+      group: deploy-frontend-build-${inputs.environment}
+      cancel-in-progress: true
     if: inputs.skip-frontend != true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     outputs:
       deployment-url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
@@ -73,12 +76,15 @@ jobs:
 
   deploy-backend:
     name: "Backend: Deploy to ${{ inputs.environment }}"
+    concurrency:
+      group: deploy-backend-${inputs.environment}
+      cancel-in-progress: false
     needs: build-frontend
     if: always() && inputs.skip-backend != true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Deploy Backend to Render
         run: |
@@ -88,7 +94,7 @@ jobs:
           RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
 
       - name: Sentry Release
-        uses: getsentry/action-release@v3.3.0
+        uses: getsentry/action-release@v3.4.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
@@ -101,12 +107,15 @@ jobs:
 
   promote-frontend:
     name: "Frontend: Promote to Production"
+    concurrency:
+      group: deploy-frontend-promotion-${inputs.environment}
+      cancel-in-progress: true
     needs: [build-frontend, deploy-backend]
     if: always() && !failure() && !cancelled() && inputs.skip-frontend != true
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest

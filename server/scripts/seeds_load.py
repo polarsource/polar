@@ -30,7 +30,7 @@ from polar.meter.service import meter as meter_service
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.file import File, FileServiceTypes
-from polar.models.organization import Organization, OrganizationDetails
+from polar.models.organization import OrganizationDetails, OrganizationStatus
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate
@@ -58,7 +58,7 @@ class OrganizationDict(TypedDict):
     email: str
     website: str
     bio: str
-    status: NotRequired[Organization.Status]
+    status: NotRequired[OrganizationStatus]
     subscriptions_billing_engine: NotRequired[bool]
     details: NotRequired[OrganizationDetails]
     products: NotRequired[list["ProductDict"]]
@@ -143,7 +143,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "contact@acme-corp.com",
             "website": "https://acme-corp.com",
             "bio": "Leading provider of innovative solutions for modern businesses.",
-            "status": Organization.Status.ACTIVE,
+            "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "We provide business intelligence dashboard",
                 "intended_use": "Well have a checkout on our website granting.",
@@ -226,7 +226,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "support@meltedsql.com",
             "website": "https://meltedsql.com",
             "bio": "Your go-to solution for SQL database management and optimization.",
-            "status": Organization.Status.ACTIVE,
+            "status": OrganizationStatus.ACTIVE,
             "subscriptions_billing_engine": True,
             "details": {
                 "about": "We make beautiful SQL management products for macOS.",
@@ -313,7 +313,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "hello@coldmail.com",
             "website": "https://coldmail.com",
             "bio": "Online mail services like it's 1999!",
-            "status": Organization.Status.ACTIVE,
+            "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "We're a hottest cloud provider since sliced bread",
                 "intended_use": "We'll be selling various plans allowing access to our cloud storage and cloud document services.",
@@ -401,7 +401,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "hello@examplenewsinc.com",
             "website": "https://examplenewsinc.com",
             "bio": "Your source of news",
-            "status": Organization.Status.ACTIVE,
+            "status": OrganizationStatus.ACTIVE,
             "details": {
                 "about": "We provide news in various formats",
                 "intended_use": "We'll have a checkout on our website where you buy subscriptions to our various news products.",
@@ -515,7 +515,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.bio = org_data["bio"]
         organization.details = org_data.get("details", {})  # type: ignore
         organization.details_submitted_at = utc_now()
-        organization.status = org_data.get("status", Organization.Status.CREATED)
+        organization.status = org_data.get("status", OrganizationStatus.CREATED)
         organization.subscriptions_billing_engine = org_data.get(
             "subscriptions_billing_engine", False
         )

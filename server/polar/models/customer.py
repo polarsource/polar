@@ -1,4 +1,5 @@
 import dataclasses
+import string
 import time
 from collections.abc import Sequence
 from datetime import datetime
@@ -6,6 +7,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
+import sqlalchemy as sa
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
@@ -13,6 +15,7 @@ from sqlalchemy import (
     ColumnElement,
     ForeignKey,
     Index,
+    Integer,
     String,
     UniqueConstraint,
     Uuid,
@@ -31,9 +34,25 @@ from polar.kit.utils import utc_now
 if TYPE_CHECKING:
     from .benefit_grant import BenefitGrant
     from .customer_meter import CustomerMeter
+    from .member import Member
     from .organization import Organization
     from .payment_method import PaymentMethod
     from .subscription import Subscription
+
+
+def short_id_to_base26(short_id: int) -> str:
+    """Convert a numeric short_id to an 8-character base-26 string (A-Z)."""
+    chars = string.ascii_uppercase
+    result = ""
+    num = short_id
+
+    # Convert to base-26
+    while num > 0:
+        result = chars[num % 26] + result
+        num = num // 26
+
+    # Pad with 'A' to ensure 8 characters
+    return result.rjust(8, "A")
 
 
 class CustomerOAuthPlatform(StrEnum):
@@ -91,9 +110,16 @@ class Customer(MetadataMixin, RecordModel):
             postgresql_nulls_not_distinct=True,
         ),
         UniqueConstraint("organization_id", "external_id"),
+        UniqueConstraint("organization_id", "short_id"),
     )
 
     external_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    short_id: Mapped[int] = mapped_column(
+        sa.BigInteger,
+        nullable=False,
+        index=True,
+        server_default=sa.text("generate_customer_short_id()"),
+    )
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     stripe_customer_id: Mapped[str | None] = mapped_column(
@@ -136,6 +162,8 @@ class Customer(MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
 
+    invoice_next_number: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
@@ -155,6 +183,15 @@ class Customer(MetadataMixin, RecordModel):
             back_populates="customer",
             cascade="all, delete-orphan",
             foreign_keys="[PaymentMethod.customer_id]",
+        )
+
+    @declared_attr
+    def members(cls) -> Mapped[Sequence["Member"]]:
+        return relationship(
+            "Member",
+            lazy="raise",
+            back_populates="customer",
+            cascade="all, delete-orphan",
         )
 
     default_payment_method_id: Mapped[UUID | None] = mapped_column(
@@ -215,6 +252,11 @@ class Customer(MetadataMixin, RecordModel):
         return self._oauth_accounts
 
     @property
+    def short_id_str(self) -> str:
+        """Get the base-26 string representation of the short_id."""
+        return short_id_to_base26(self.short_id)
+
+    @property
     def legacy_user_id(self) -> UUID:
         return self._legacy_user_id or self.id
 
@@ -255,6 +297,10 @@ class Customer(MetadataMixin, RecordModel):
     @billing_name.setter
     def billing_name(self, value: str | None) -> None:
         self._billing_name = value
+
+    @property
+    def actual_billing_name(self) -> str | None:
+        return self._billing_name
 
     def touch_meters_dirtied_at(self) -> None:
         self.meters_dirtied_at = utc_now()

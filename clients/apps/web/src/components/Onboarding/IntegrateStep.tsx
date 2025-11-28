@@ -141,7 +141,7 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
 
   return (
     <div className="flex h-full flex-col md:flex-row">
-      <div className="flex h-full min-h-0 w-full flex-col gap-8 overflow-y-auto p-12 md:max-w-lg">
+      <div className="dark:bg-polar-900 flex h-full min-h-0 w-full flex-col gap-8 overflow-y-auto p-12 md:max-w-lg">
         <div className="flex flex-col gap-y-12">
           <LogoIcon size={50} />
           <div className="flex flex-col gap-y-4">
@@ -260,9 +260,9 @@ const FrameworkCard = ({
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-4 rounded-xl border border-transparent bg-gray-100 p-4',
+        'dark:bg-polar-800 dark:border-polar-700 flex cursor-pointer flex-col gap-y-4 rounded-xl border border-transparent bg-gray-100 p-4',
         active
-          ? 'shadow-3xl border-gray-100 bg-blue-500 text-white dark:bg-blue-500'
+          ? 'shadow-3xl border-gray-100 bg-black text-white dark:bg-white dark:text-black'
           : 'transition-opacity hover:opacity-70',
       )}
       role="button"

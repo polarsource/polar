@@ -25,13 +25,6 @@ class NoPaymentMethodOnIntent(PaymentMethodError):
         super().__init__(message)
 
 
-class NotRecurringProduct(PaymentMethodError):
-    def __init__(self, product_id: uuid.UUID) -> None:
-        self.product_id = product_id
-        message = f"Product with ID {product_id} is not a recurring product."
-        super().__init__(message)
-
-
 class PaymentMethodInUseByActiveSubscription(PaymentMethodError):
     def __init__(self, subscription_ids: list[uuid.UUID]) -> None:
         self.subscription_ids = subscription_ids
@@ -57,6 +50,7 @@ class PaymentMethodService:
             customer.id,
             PaymentProcessor.stripe,
             stripe_payment_method.id,
+            include_deleted=True,
             options=repository.get_eager_options(),
         )
         if payment_method is None:
@@ -70,6 +64,7 @@ class PaymentMethodService:
         payment_method.method_metadata = stripe_payment_method[
             stripe_payment_method.type
         ]
+        payment_method.deleted_at = None  # Restore if it was soft-deleted
 
         return await repository.update(payment_method, flush=flush)
 
@@ -81,9 +76,6 @@ class PaymentMethodService:
     ) -> PaymentMethod:
         if intent.payment_method is None:
             raise NoPaymentMethodOnIntent(intent.id)
-
-        if not checkout.product.is_recurring:
-            raise NotRecurringProduct(checkout.product.id)
 
         stripe_payment_method = await stripe_service.get_payment_method(
             get_expandable_id(intent.payment_method)
@@ -121,6 +113,24 @@ class PaymentMethodService:
         assert customer is not None
 
         return await self.upsert_from_stripe(session, customer, stripe_payment_method)
+
+    async def get_customer_payment_method(
+        self, session: AsyncSession, customer: Customer
+    ) -> PaymentMethod | None:
+        repository = PaymentMethodRepository.from_session(session)
+        if customer.default_payment_method_id is not None:
+            return await repository.get_by_id(
+                customer.default_payment_method_id,
+                options=repository.get_eager_options(),
+            )
+
+        payment_methods = await repository.list_by_customer(
+            customer.id, options=repository.get_eager_options()
+        )
+        if len(payment_methods) > 0:
+            return payment_methods[0]
+
+        return None
 
     async def _get_active_subscription_ids(
         self,

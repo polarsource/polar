@@ -103,7 +103,7 @@ const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
   return (
     <Input
       {...field}
-      className={themePreset.polar.input}
+      className="bg-white shadow-xs"
       type="text"
       placeholder={customField.properties.formPlaceholder}
       required={required}
@@ -130,7 +130,7 @@ const CustomFieldNumberInput: React.FC<CustomFieldNumberInputProps> = ({
     <Input
       {...field}
       type="number"
-      className={themePreset.polar.input}
+      className="bg-white shadow-xs"
       placeholder={customField.properties.formPlaceholder}
       required={required}
       min={customField.properties.ge}
@@ -160,7 +160,7 @@ const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
     <Input
       {...field}
       type={'date'}
-      className={themePreset.polar.input}
+      className="bg-white shadow-xs"
       placeholder={customField.properties.formPlaceholder}
       required={required}
       min={min}
@@ -190,7 +190,6 @@ const CustomFieldCheckboxInput: React.FC<CustomFieldCheckboxInputProps> = ({
             defaultChecked={field.value}
             onCheckedChange={field.onChange}
             required={required}
-            className={themePreset.polar.checkbox}
           />
         </FormControl>
         {/* @ts-ignore */}

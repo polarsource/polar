@@ -106,7 +106,7 @@ class OrderBase(TimestampedSchema, IDSchema):
             # Validate from stored webhook payload
             "product_price_id",
             # Validate from ORM model
-            AliasPath("legacy_product_price", "id"),
+            "legacy_product_price_id",
         ),
     )
     discount_id: UUID4 | None
@@ -202,6 +202,9 @@ class OrderItemSchema(IDSchema, TimestampedSchema):
 class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
     platform_fee_amount: int = Field(
         description="Platform fee amount in cents.", examples=[500]
+    )
+    platform_fee_currency: str | None = Field(
+        description="Currency of the platform fee.", examples=["usd"]
     )
     customer: OrderCustomer
     user_id: UUID4 = Field(

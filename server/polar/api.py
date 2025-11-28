@@ -15,8 +15,10 @@ from polar.customer_session.endpoints import router as customer_session_router
 from polar.discount.endpoints import router as discount_router
 from polar.email_update.endpoints import router as email_update_router
 from polar.event.endpoints import router as event_router
+from polar.event_type.endpoints import router as event_type_router
 from polar.eventstream.endpoints import router as stream_router
 from polar.file.endpoints import router as files_router
+from polar.integrations.apple.endpoints import router as apple_router
 from polar.integrations.discord.endpoints import router as discord_router
 from polar.integrations.github.endpoints import router as github_router
 from polar.integrations.github_repository_benefit.endpoints import (
@@ -27,6 +29,7 @@ from polar.integrations.plain.endpoints import router as plain_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
 from polar.login_code.endpoints import router as login_code_router
+from polar.member.endpoints import router as member_router
 from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
 from polar.notifications.endpoints import router as notifications_router
@@ -45,6 +48,7 @@ from polar.storefront.endpoints import router as storefront_router
 from polar.subscription.endpoints import router as subscription_router
 from polar.transaction.endpoints import router as transaction_router
 from polar.user.endpoints import router as user_router
+from polar.wallet.endpoints import router as wallet_router
 from polar.webhook.endpoints import router as webhook_router
 
 router = APIRouter(prefix="/v1")
@@ -59,6 +63,8 @@ router.include_router(github_repository_benefit_router)
 router.include_router(stripe_router)
 # /integrations/discord
 router.include_router(discord_router)
+# /integrations/apple
+router.include_router(apple_router)
 # /login-code
 router.include_router(login_code_router)
 # /notifications
@@ -111,6 +117,8 @@ router.include_router(custom_field_router)
 router.include_router(discount_router)
 # /customers
 router.include_router(customer_router)
+# /members
+router.include_router(member_router)
 # /customer-portal
 router.include_router(customer_portal_router)
 # /seats
@@ -123,6 +131,8 @@ router.include_router(customer_session_router)
 router.include_router(plain_router)
 # /events
 router.include_router(event_router)
+# /event-types
+router.include_router(event_type_router)
 # /meters
 router.include_router(meter_router)
 # /organization-access-tokens
@@ -133,3 +143,5 @@ router.include_router(customer_meter_router)
 router.include_router(payment_router)
 # /payouts
 router.include_router(payout_router)
+# /wallets
+router.include_router(wallet_router)

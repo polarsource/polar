@@ -1,16 +1,16 @@
 'use client'
 
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useState } from 'react'
+import type { ProductCheckoutPublic } from '../guards'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 
 export interface CheckoutSeatSelectorProps {
-  checkout: CheckoutPublic
-  update: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
+  checkout: ProductCheckoutPublic
+  update: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
 }
 
 const CheckoutSeatSelector = ({
@@ -31,7 +31,7 @@ const CheckoutSeatSelector = ({
 
   const seats = checkout.seats || 1
   const netAmount = checkout.netAmount || 0
-  const currency = productPrice.priceCurrency || 'usd'
+  const currency = productPrice.priceCurrency
   const pricePerSeat = checkout.pricePerSeat || 0
 
   const handleUpdateSeats = async (newSeats: number) => {

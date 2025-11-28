@@ -30,9 +30,9 @@ const statusColors = {
   pending:
     'bg-yellow-100 text-yellow-500 dark:bg-yellow-950 dark:text-yellow-500',
   refunded:
-    'bg-purple-100 text-purple-500 dark:bg-purple-950 dark:text-purple-500',
+    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
   partially_refunded:
-    'bg-purple-100 text-purple-500 dark:bg-purple-950 dark:text-purple-500',
+    'bg-violet-100 text-violet-500 dark:bg-violet-950 dark:text-violet-400',
 }
 
 const CustomerPortalOrder = ({
@@ -53,7 +53,6 @@ const CustomerPortalOrder = ({
       ? { subscription_id: order.subscription_id }
       : { order_id: order.id }),
     limit: 100,
-    sorting: ['type'],
   })
 
   const isPartiallyOrFullyRefunded = useMemo(() => {
@@ -164,7 +163,6 @@ const CustomerPortalOrder = ({
               variant="default"
               size="sm"
               onClick={() => setIsPaymentModalOpen(true)}
-              className={twMerge(themingPreset?.polar.buttonSecondary)}
             >
               Retry payment
             </Button>
@@ -196,7 +194,11 @@ const CustomerPortalOrder = ({
                   <DetailRow
                     key={item.id}
                     label={item.label}
-                    value={<span>{formatCurrencyAndAmount(item.amount)}</span>}
+                    value={
+                      <span>
+                        {formatCurrencyAndAmount(item.amount, order.currency)}
+                      </span>
+                    }
                     valueClassName="justify-end"
                   />
                 ))}
@@ -208,7 +210,12 @@ const CustomerPortalOrder = ({
             <DetailRow
               label="Subtotal"
               value={
-                <span>{formatCurrencyAndAmount(order.subtotal_amount)}</span>
+                <span>
+                  {formatCurrencyAndAmount(
+                    order.subtotal_amount,
+                    order.currency,
+                  )}
+                </span>
               }
               valueClassName="justify-end"
             />
@@ -217,7 +224,10 @@ const CustomerPortalOrder = ({
               value={
                 <span>
                   {order.discount_amount
-                    ? formatCurrencyAndAmount(-order.discount_amount)
+                    ? formatCurrencyAndAmount(
+                        -order.discount_amount,
+                        order.currency,
+                      )
                     : '—'}
                 </span>
               }
@@ -225,17 +235,29 @@ const CustomerPortalOrder = ({
             />
             <DetailRow
               label="Net amount"
-              value={<span>{formatCurrencyAndAmount(order.net_amount)}</span>}
+              value={
+                <span>
+                  {formatCurrencyAndAmount(order.net_amount, order.currency)}
+                </span>
+              }
               valueClassName="justify-end"
             />
             <DetailRow
               label="Tax"
-              value={<span>{formatCurrencyAndAmount(order.tax_amount)}</span>}
+              value={
+                <span>
+                  {formatCurrencyAndAmount(order.tax_amount, order.currency)}
+                </span>
+              }
               valueClassName="justify-end"
             />
             <DetailRow
               label="Total"
-              value={<span>{formatCurrencyAndAmount(order.total_amount)}</span>}
+              value={
+                <span>
+                  {formatCurrencyAndAmount(order.total_amount, order.currency)}
+                </span>
+              }
               valueClassName="justify-end"
             />
             {order.applied_balance_amount !== 0 && (
@@ -244,7 +266,10 @@ const CustomerPortalOrder = ({
                   label="Applied balance"
                   value={
                     <span>
-                      {formatCurrencyAndAmount(order.applied_balance_amount)}
+                      {formatCurrencyAndAmount(
+                        order.applied_balance_amount,
+                        order.currency,
+                      )}
                     </span>
                   }
                   valueClassName="justify-end"
@@ -252,7 +277,12 @@ const CustomerPortalOrder = ({
                 <DetailRow
                   label="To be paid"
                   value={
-                    <span>{formatCurrencyAndAmount(order.due_amount)}</span>
+                    <span>
+                      {formatCurrencyAndAmount(
+                        order.due_amount,
+                        order.currency,
+                      )}
+                    </span>
                   }
                   valueClassName="justify-end"
                 />
@@ -263,7 +293,12 @@ const CustomerPortalOrder = ({
               <DetailRow
                 label="Refunded amount"
                 value={
-                  <span>{formatCurrencyAndAmount(order.refunded_amount)}</span>
+                  <span>
+                    {formatCurrencyAndAmount(
+                      order.refunded_amount,
+                      order.currency,
+                    )}
+                  </span>
                 }
                 valueClassName="justify-end"
               />
@@ -339,7 +374,7 @@ const CustomerPortalOrder = ({
           <h3 className="text-lg">Benefit Grants</h3>
           {(benefitGrants?.items.length ?? 0) > 0 ? (
             <div className="flex flex-col gap-4">
-              <List className={themingPreset.polar.list}>
+              <List>
                 {benefitGrants?.items.map((benefitGrant) => (
                   <ListItem
                     key={benefitGrant.id}

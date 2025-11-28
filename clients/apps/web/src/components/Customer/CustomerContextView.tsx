@@ -1,6 +1,9 @@
+'use client'
+
 import { useMetrics } from '@/hooks/queries/metrics'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
+import { formatAccountingFriendlyCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -12,7 +15,6 @@ import Link from 'next/link'
 import { useCallback, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
-import AmountLabel from '../Shared/AmountLabel'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
 import { CustomerStatBox } from './CustomerStatBox'
@@ -63,7 +65,7 @@ export const CustomerContextView = ({
     <div className="flex h-full flex-col gap-2 overflow-y-auto">
       <ShadowBox className="dark:border-polar-800 flex flex-col gap-6 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
         <Link
-          href={`/dashboard/${organization.slug}/customers?customerId=${customer.id}&query=${customer.email}`}
+          href={`/dashboard/${organization.slug}/customers/${customer.id}?query=${customer.email}`}
           className="flex flex-row items-center gap-4"
         >
           <Avatar
@@ -87,13 +89,11 @@ export const CustomerContextView = ({
         </Link>
         <div className="flex flex-row justify-between gap-4">
           <CustomerStatBox title="Cumulative Revenue">
-            <AmountLabel
-              amount={
-                metrics.data?.periods[metrics.data.periods.length - 1]
-                  .cumulative_revenue ?? 0
-              }
-              currency="USD"
-            />
+            {formatAccountingFriendlyCurrency(
+              metrics.data?.periods[metrics.data.periods.length - 1]
+                .cumulative_revenue ?? 0,
+              'usd',
+            )}
           </CustomerStatBox>
           <CustomerStatBox title="First Seen">
             <FormattedDateTime datetime={customer.created_at} />
@@ -172,7 +172,18 @@ export const CustomerContextView = ({
         <DetailRow
           labelClassName="flex-none md:basis-24"
           label="Tax ID"
-          value={customer.tax_id}
+          value={
+            customer.tax_id ? (
+              <span className="flex flex-row items-center gap-1.5">
+                <span>{customer.tax_id[0]}</span>
+                <span className="font-mono text-xs opacity-70">
+                  {customer.tax_id[1].toLocaleUpperCase().replace('_', ' ')}
+                </span>
+              </span>
+            ) : (
+              '—'
+            )
+          }
         />
         <DetailRow
           labelClassName="flex-none md:basis-24"

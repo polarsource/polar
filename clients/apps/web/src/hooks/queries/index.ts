@@ -23,6 +23,7 @@ export * from './seats'
 export * from './subscriptions'
 export * from './transactions'
 export * from './user'
+export * from './wallets'
 export * from './webhooks'
 
 export const useAccount = (id?: string | null) =>

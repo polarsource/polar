@@ -2,14 +2,18 @@ import uuid
 
 import sentry_sdk
 import stripe as stripe_lib
+import structlog
 
 from polar.enums import AccountType
 from polar.exceptions import PolarTaskError
+from polar.logging import Logger
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .repository import PayoutRepository
 from .service import PayoutAlreadyTriggered
 from .service import payout as payout_service
+
+log: Logger = structlog.get_logger()
 
 
 class PayoutTaskError(PolarTaskError): ...
@@ -66,7 +70,7 @@ async def trigger_payout(payout_id: uuid.UUID) -> None:
             # Capture exception in Sentry for debugging purposes
             sentry_sdk.capture_exception(
                 e,
-                extra={"payout_id": str(payout_id)},
+                extras={"payout_id": str(payout_id)},
             )
             # Do not raise an error here: we know it happens often, because Stripe
             # has many hidden rules on payout creation that we cannot control.

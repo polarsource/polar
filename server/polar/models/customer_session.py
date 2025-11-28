@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import urlencode
 from uuid import UUID
 
 from sqlalchemy import CHAR, TIMESTAMP, ForeignKey, String, Uuid
@@ -42,6 +43,9 @@ class CustomerSession(RecordModel):
 
     @property
     def customer_portal_url(self) -> str:
+        query_string = urlencode(
+            {"customer_session_token": self.raw_token, "email": self.customer.email}
+        )
         return settings.generate_frontend_url(
-            f"/{self.customer.organization.slug}/portal?customer_session_token={self.raw_token}&email={self.customer.email}"
+            f"/{self.customer.organization.slug}/portal?{query_string}"
         )

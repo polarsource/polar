@@ -29,9 +29,7 @@ export const StorefrontNav = ({
   const currentTab = routeSegment ?? 'products'
   const router = useRouter()
 
-  const { data: orders } = useCustomerOrders(api, {
-    organization_id: organization.id,
-  })
+  const { data: orders } = useCustomerOrders(api)
 
   return (
     <>
@@ -45,12 +43,6 @@ export const StorefrontNav = ({
           <Link href={organizationPageLink(organization)}>
             <TabsTrigger value="products">Products</TabsTrigger>
           </Link>
-
-          {organization.feature_settings?.issue_funding_enabled && (
-            <Link href={organizationPageLink(organization, 'issues')}>
-              <TabsTrigger value="issues">Issue Funding</TabsTrigger>
-            </Link>
-          )}
 
           {(orders?.items.length ?? 0) > 0 && (
             <Link href={organizationPageLink(organization, 'portal')}>
@@ -79,11 +71,6 @@ export const StorefrontNav = ({
           <SelectItem value="products">
             <span className="whitespace-nowrap">Products</span>
           </SelectItem>
-          {organization.feature_settings?.issue_funding_enabled && (
-            <SelectItem value="issues">
-              <span className="whitespace-nowrap">Issue Funding</span>
-            </SelectItem>
-          )}
           {(orders?.items.length ?? 0) > 0 && (
             <SelectItem value="portal">
               <span className="whitespace-nowrap">My Orders</span>

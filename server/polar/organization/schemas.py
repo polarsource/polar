@@ -5,7 +5,7 @@ from typing import Annotated, Any, Literal
 from pydantic import (
     UUID4,
     AfterValidator,
-    EmailStr,
+    BeforeValidator,
     Field,
     StringConstraints,
     model_validator,
@@ -14,6 +14,7 @@ from pydantic.json_schema import SkipJsonSchema
 from pydantic.networks import HttpUrl
 
 from polar.config import settings
+from polar.enums import SubscriptionProrationBehavior
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
     ORGANIZATION_ID_EXAMPLE,
@@ -26,10 +27,10 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.models.organization import Organization as OrganizationModel
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationNotificationSettings,
+    OrganizationStatus,
     OrganizationSubscriptionSettings,
 )
 from polar.models.organization_review import OrganizationReview
@@ -67,6 +68,12 @@ class OrganizationFeatureSettings(Schema):
     )
     revops_enabled: bool = Field(
         False, description="If this organization has RevOps enabled"
+    )
+    wallets_enabled: bool = Field(
+        False, description="If this organization has Wallets enabled"
+    )
+    member_model_enabled: bool = Field(
+        False, description="If this organization has the Member model enabled"
     )
 
 
@@ -184,8 +191,7 @@ class OrganizationProfileSettings(Schema):
     )
 
 
-class Organization(IDSchema, TimestampedSchema):
-    id: OrganizationID
+class OrganizationBase(IDSchema, TimestampedSchema):
     name: str = Field(
         description="Organization name shown in checkout, customer portal, emails etc.",
     )
@@ -195,28 +201,11 @@ class Organization(IDSchema, TimestampedSchema):
     avatar_url: str | None = Field(
         description="Avatar URL shown in checkout, customer portal, emails etc."
     )
-
-    email: str | None = Field(description="Public support email.")
-    website: str | None = Field(description="Official website of the organization.")
-    socials: list[OrganizationSocialLink] = Field(
-        description="Links to social profiles.",
+    proration_behavior: SubscriptionProrationBehavior = Field(
+        description="Proration behavior applied when customer updates their subscription from the portal.",
     )
-    status: OrganizationModel.Status = Field(description="Current organization status")
-    details_submitted_at: datetime | None = Field(
-        description="When the business details were submitted.",
-    )
-
-    feature_settings: OrganizationFeatureSettings | None = Field(
-        description="Organization feature settings",
-    )
-    subscription_settings: OrganizationSubscriptionSettings = Field(
-        description="Settings related to subscriptions management",
-    )
-    notification_settings: OrganizationNotificationSettings = Field(
-        description="Settings related to notifications",
-    )
-    customer_email_settings: OrganizationCustomerEmailSettings = Field(
-        description="Settings related to customer emails",
+    allow_customer_updates: bool = Field(
+        description="Whether customers can update their subscriptions from the customer portal.",
     )
 
     # Deprecated attributes
@@ -248,11 +237,85 @@ class Organization(IDSchema, TimestampedSchema):
     )
 
 
+class LegacyOrganizationStatus(StrEnum):
+    """
+    Legacy organization status values kept for backward compatibility in schemas
+    using OrganizationPublicBase.
+    """
+
+    CREATED = "created"
+    ONBOARDING_STARTED = "onboarding_started"
+    UNDER_REVIEW = "under_review"
+    DENIED = "denied"
+    ACTIVE = "active"
+
+    @classmethod
+    def from_status(cls, status: OrganizationStatus) -> "LegacyOrganizationStatus":
+        mapping = {
+            OrganizationStatus.CREATED: LegacyOrganizationStatus.CREATED,
+            OrganizationStatus.ONBOARDING_STARTED: (
+                LegacyOrganizationStatus.ONBOARDING_STARTED
+            ),
+            OrganizationStatus.INITIAL_REVIEW: LegacyOrganizationStatus.UNDER_REVIEW,
+            OrganizationStatus.ONGOING_REVIEW: LegacyOrganizationStatus.UNDER_REVIEW,
+            OrganizationStatus.DENIED: LegacyOrganizationStatus.DENIED,
+            OrganizationStatus.ACTIVE: LegacyOrganizationStatus.ACTIVE,
+        }
+        try:
+            return mapping[status]
+        except KeyError as e:
+            raise ValueError("Unknown OrganizationStatus") from e
+
+
+class OrganizationPublicBase(OrganizationBase):
+    # Attributes that we used to have publicly, but now want to hide from
+    # the public schema.
+    # Keep it for now for backward compatibility in the SDK
+    email: SkipJsonSchema[str | None]
+    website: SkipJsonSchema[str | None]
+    socials: SkipJsonSchema[list[OrganizationSocialLink]]
+    status: Annotated[
+        SkipJsonSchema[LegacyOrganizationStatus],
+        BeforeValidator(LegacyOrganizationStatus.from_status),
+    ]
+    details_submitted_at: SkipJsonSchema[datetime | None]
+
+    feature_settings: SkipJsonSchema[OrganizationFeatureSettings | None]
+    subscription_settings: SkipJsonSchema[OrganizationSubscriptionSettings]
+    notification_settings: SkipJsonSchema[OrganizationNotificationSettings]
+    customer_email_settings: SkipJsonSchema[OrganizationCustomerEmailSettings]
+
+
+class Organization(OrganizationBase):
+    email: str | None = Field(description="Public support email.")
+    website: str | None = Field(description="Official website of the organization.")
+    socials: list[OrganizationSocialLink] = Field(
+        description="Links to social profiles.",
+    )
+    status: OrganizationStatus = Field(description="Current organization status")
+    details_submitted_at: datetime | None = Field(
+        description="When the business details were submitted.",
+    )
+
+    feature_settings: OrganizationFeatureSettings | None = Field(
+        description="Organization feature settings",
+    )
+    subscription_settings: OrganizationSubscriptionSettings = Field(
+        description="Settings related to subscriptions management",
+    )
+    notification_settings: OrganizationNotificationSettings = Field(
+        description="Settings related to notifications",
+    )
+    customer_email_settings: OrganizationCustomerEmailSettings = Field(
+        description="Settings related to customer emails",
+    )
+
+
 class OrganizationCreate(Schema):
     name: NameInput
     slug: SlugInput
     avatar_url: HttpUrlToStr | None = None
-    email: EmailStr | None = Field(None, description="Public support email.")
+    email: EmailStrDNS | None = Field(None, description="Public support email.")
     website: HttpUrlToStr | None = Field(
         None, description="Official website of the organization."
     )
@@ -304,7 +367,7 @@ class OrganizationPaymentStatus(Schema):
         description="Whether the organization is ready to accept payments"
     )
     steps: list[OrganizationPaymentStep] = Field(description="List of onboarding steps")
-    organization_status: OrganizationModel.Status = Field(
+    organization_status: OrganizationStatus = Field(
         description="Current organization status"
     )
 
@@ -339,4 +402,27 @@ class OrganizationReviewStatus(Schema):
     )
     appeal_reviewed_at: datetime | None = Field(
         default=None, description="When appeal was reviewed"
+    )
+
+
+class OrganizationDeletionBlockedReason(StrEnum):
+    """Reasons why an organization cannot be immediately deleted."""
+
+    HAS_ORDERS = "has_orders"
+    HAS_ACTIVE_SUBSCRIPTIONS = "has_active_subscriptions"
+    STRIPE_ACCOUNT_DELETION_FAILED = "stripe_account_deletion_failed"
+
+
+class OrganizationDeletionResponse(Schema):
+    """Response for organization deletion request."""
+
+    deleted: bool = Field(
+        description="Whether the organization was immediately deleted"
+    )
+    requires_support: bool = Field(
+        description="Whether a support ticket was created for manual handling"
+    )
+    blocked_reasons: list[OrganizationDeletionBlockedReason] = Field(
+        default_factory=list,
+        description="Reasons why immediate deletion is blocked",
     )

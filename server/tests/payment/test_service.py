@@ -3,11 +3,12 @@ import pytest
 from polar.enums import PaymentProcessor
 from polar.models import Customer, Product
 from polar.models.payment import PaymentStatus
+from polar.models.wallet import WalletType
 from polar.payment.service import UnlinkedPaymentError
 from polar.payment.service import payment as payment_service
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout, create_order
+from tests.fixtures.random_objects import create_checkout, create_order, create_wallet
 from tests.fixtures.stripe import build_stripe_charge, build_stripe_payment_intent
 
 
@@ -38,7 +39,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, checkout, None
+            session, charge, checkout, None, None
         )
 
         # Verify payment was created correctly
@@ -81,7 +82,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, None, order
+            session, charge, None, None, order
         )
 
         # Verify payment was created correctly
@@ -128,7 +129,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, checkout, order
+            session, charge, checkout, None, order
         )
 
         # Verify payment was created correctly
@@ -143,6 +144,49 @@ class TestUpsertFromStripeCharge:
         assert payment.checkout == checkout
         assert payment.order == order
         assert payment.organization == checkout.organization
+
+    async def test_new_payment_with_wallet(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        wallet = await create_wallet(
+            save_fixture, type=WalletType.usage, customer=customer
+        )
+
+        # Create a charge with wallet_id in metadata
+        charge = build_stripe_charge(
+            amount=1000,
+            status="succeeded",
+            metadata={"wallet_id": str(wallet.id)},
+            payment_method_details={"card": {"brand": "visa"}, "type": "card"},
+            billing_details={"email": "test@example.com"},
+            outcome={
+                "risk_level": "normal",
+                "risk_score": 10,
+            },
+        )
+
+        # Test upsert_from_stripe_charge
+        payment = await payment_service.upsert_from_stripe_charge(
+            session, charge, None, wallet, None
+        )
+
+        # Verify payment was created correctly
+        assert payment.processor == PaymentProcessor.stripe
+        assert payment.processor_id == charge.id
+        assert payment.status == PaymentStatus.succeeded
+        assert payment.amount == 1000
+        assert payment.currency == "usd"
+        assert payment.method == "card"
+        assert payment.method_metadata == {"brand": "visa"}
+        assert payment.customer_email == "test@example.com"
+        assert payment.wallet == wallet
+        assert payment.organization == customer.organization
+        assert payment.risk_level == "normal"
+        assert payment.risk_score == 10
 
     async def test_failed_payment(
         self, session: AsyncSession, save_fixture: SaveFixture, product: Product
@@ -170,7 +214,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, checkout, None
+            session, charge, checkout, None, None
         )
 
         # Verify payment was created correctly
@@ -203,7 +247,9 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge should raise UnlinkedPaymentError
         with pytest.raises(UnlinkedPaymentError) as excinfo:
-            await payment_service.upsert_from_stripe_charge(session, charge, None, None)
+            await payment_service.upsert_from_stripe_charge(
+                session, charge, None, None, None
+            )
 
 
 @pytest.mark.asyncio

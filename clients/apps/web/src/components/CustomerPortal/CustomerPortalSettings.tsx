@@ -9,9 +9,9 @@ import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'
-import { twMerge } from 'tailwind-merge'
+import { useRouter } from 'next/navigation'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
@@ -20,7 +20,7 @@ import EditBillingDetails from './EditBillingDetails'
 import PaymentMethod from './PaymentMethod'
 
 interface CustomerPortalSettingsProps {
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   customerSessionToken?: string
   setupIntentParams?: {
     setup_intent_client_secret: string
@@ -29,11 +29,18 @@ interface CustomerPortalSettingsProps {
 }
 
 export const CustomerPortalSettings = ({
-  organization,
   customerSessionToken,
   setupIntentParams,
+  organization,
 }: CustomerPortalSettingsProps) => {
   const api = createClientSideAPI(customerSessionToken)
+  const router = useRouter()
+
+  const theme = useTheme()
+  const themePreset = getThemePreset(
+    organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
+  )
 
   const {
     isShown: isAddPaymentMethodModalOpen,
@@ -43,12 +50,6 @@ export const CustomerPortalSettings = ({
   const { data: customer } = useAuthenticatedCustomer(api)
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
-  const theme = useTheme()
-  const themingPreset = useThemePreset(
-    organization.slug === 'midday' ? 'midday' : 'polar',
-    theme.resolvedTheme as 'light' | 'dark',
-  )
-
   if (!customer) {
     return null
   }
@@ -56,9 +57,7 @@ export const CustomerPortalSettings = ({
   return (
     <div className="flex flex-col gap-y-8">
       <h3 className="text-2xl">Settings</h3>
-      <Well
-        className={twMerge('flex flex-col gap-y-6', themingPreset.polar.well)}
-      >
+      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-start justify-between">
           <div className="flex flex-col gap-y-2">
             <h3 className="text-xl">Payment Methods</h3>
@@ -66,14 +65,10 @@ export const CustomerPortalSettings = ({
               Methods used for subscriptions & one-time purchases
             </p>
           </div>
-          <Button
-            onClick={showAddPaymentMethodModal}
-            className={themingPreset.polar.button}
-          >
+          <Button onClick={showAddPaymentMethodModal}>
             Add Payment Method
           </Button>
         </WellHeader>
-        <Separator className="dark:bg-polar-700" />
         <WellContent className="gap-y-4">
           {paymentMethods?.items.map((pm) => (
             <PaymentMethod
@@ -86,9 +81,7 @@ export const CustomerPortalSettings = ({
           ))}
         </WellContent>
       </Well>
-      <Well
-        className={twMerge('flex flex-col gap-y-6', themingPreset.polar.well)}
-      >
+      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">
             <h3 className="text-xl">Billing Details</h3>
@@ -104,13 +97,14 @@ export const CustomerPortalSettings = ({
             customer={customer}
             onSuccess={() => {
               revalidate(`customer_portal`)
+              router.refresh()
             }}
-            themingPreset={themingPreset}
           />
         </WellContent>
       </Well>
 
       <Modal
+        title="Add Payment Method"
         isShown={isAddPaymentMethodModalOpen}
         hide={hideAddPaymentMethodModal}
         modalContent={
@@ -118,11 +112,12 @@ export const CustomerPortalSettings = ({
             api={api}
             onPaymentMethodAdded={() => {
               revalidate(`customer_portal`)
+              router.refresh()
               hideAddPaymentMethodModal()
             }}
             setupIntentParams={setupIntentParams}
             hide={hideAddPaymentMethodModal}
-            themingPreset={themingPreset}
+            themePreset={themePreset}
           />
         }
       />

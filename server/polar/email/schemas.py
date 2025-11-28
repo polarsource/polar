@@ -6,8 +6,6 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Discriminator, TypeAdapter
 
 from polar.notifications.notification import (
-    MaintainerAccountReviewedNotificationPayload,
-    MaintainerAccountUnderReviewNotificationPayload,
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
@@ -27,6 +25,9 @@ class EmailTemplate(StrEnum):
     order_confirmation = "order_confirmation"
     organization_access_token_leaked = "organization_access_token_leaked"
     organization_invite = "organization_invite"
+    organization_account_unlink = "organization_account_unlink"
+    organization_under_review = "organization_under_review"
+    organization_reviewed = "organization_reviewed"
     personal_access_token_leaked = "personal_access_token_leaked"
     seat_invitation = "seat_invitation"
     subscription_cancellation = "subscription_cancellation"
@@ -36,8 +37,7 @@ class EmailTemplate(StrEnum):
     subscription_revoked = "subscription_revoked"
     subscription_uncanceled = "subscription_uncanceled"
     subscription_updated = "subscription_updated"
-    notification_account_under_review = "notification_account_under_review"
-    notification_account_reviewed = "notification_account_reviewed"
+    webhook_endpoint_disabled = "webhook_endpoint_disabled"
     notification_new_sale = "notification_new_sale"
     notification_new_subscription = "notification_new_subscription"
     notification_create_account = "notification_create_account"
@@ -51,6 +51,7 @@ class ProductEmail(ProductBase):
 
 
 class OrderEmail(OrderBase):
+    description: str
     items: list[OrderItemSchema]
 
 
@@ -121,7 +122,7 @@ class OAuth2LeakedTokenEmail(BaseModel):
 
 class OrderConfirmationProps(EmailProps):
     organization: Organization
-    product: ProductEmail
+    product: ProductEmail | None
     order: OrderEmail
     url: str
 
@@ -157,6 +158,28 @@ class OrganizationInviteEmail(BaseModel):
         EmailTemplate.organization_invite
     )
     props: OrganizationInviteProps
+
+
+class OrganizationUnderReviewProps(EmailProps):
+    organization: Organization
+
+
+class OrganizationUnderReviewEmail(BaseModel):
+    template: Literal[EmailTemplate.organization_under_review] = (
+        EmailTemplate.organization_under_review
+    )
+    props: OrganizationUnderReviewProps
+
+
+class OrganizationReviewedProps(EmailProps):
+    organization: Organization
+
+
+class OrganizationReviewedEmail(BaseModel):
+    template: Literal[EmailTemplate.organization_reviewed] = (
+        EmailTemplate.organization_reviewed
+    )
+    props: OrganizationReviewedProps
 
 
 class PersonalAccessTokenLeakedProps(EmailProps):
@@ -265,18 +288,17 @@ class SubscriptionUpdatedEmail(BaseModel):
     props: SubscriptionUpdatedProps
 
 
-class NotificationAccountUnderReviewEmail(BaseModel):
-    template: Literal[EmailTemplate.notification_account_under_review] = (
-        EmailTemplate.notification_account_under_review
-    )
-    props: MaintainerAccountUnderReviewNotificationPayload
+class WebhookEndpointDisabledProps(EmailProps):
+    organization: Organization
+    webhook_endpoint_url: str
+    dashboard_url: str
 
 
-class NotificationAccountReviewedEmail(BaseModel):
-    template: Literal[EmailTemplate.notification_account_reviewed] = (
-        EmailTemplate.notification_account_reviewed
+class WebhookEndpointDisabledEmail(BaseModel):
+    template: Literal[EmailTemplate.webhook_endpoint_disabled] = (
+        EmailTemplate.webhook_endpoint_disabled
     )
-    props: MaintainerAccountReviewedNotificationPayload
+    props: WebhookEndpointDisabledProps
 
 
 class NotificationNewSaleEmail(BaseModel):
@@ -300,6 +322,18 @@ class NotificationCreateAccountEmail(BaseModel):
     props: MaintainerCreateAccountNotificationPayload
 
 
+class OrganizationAccountUnlinkProps(EmailProps):
+    organization_kept_name: str
+    organizations_unlinked: list[str]
+
+
+class OrganizationAccountUnlinkEmail(BaseModel):
+    template: Literal[EmailTemplate.organization_account_unlink] = (
+        EmailTemplate.organization_account_unlink
+    )
+    props: OrganizationAccountUnlinkProps
+
+
 Email = Annotated[
     LoginCodeEmail
     | CustomerSessionCodeEmail
@@ -309,6 +343,9 @@ Email = Annotated[
     | OrderConfirmationEmail
     | OrganizationAccessTokenLeakedEmail
     | OrganizationInviteEmail
+    | OrganizationAccountUnlinkEmail
+    | OrganizationUnderReviewEmail
+    | OrganizationReviewedEmail
     | PersonalAccessTokenLeakedEmail
     | SeatInvitationEmail
     | SubscriptionCancellationEmail
@@ -318,8 +355,7 @@ Email = Annotated[
     | SubscriptionRevokedEmail
     | SubscriptionUncanceledEmail
     | SubscriptionUpdatedEmail
-    | NotificationAccountUnderReviewEmail
-    | NotificationAccountReviewedEmail
+    | WebhookEndpointDisabledEmail
     | NotificationNewSaleEmail
     | NotificationNewSubscriptionEmail
     | NotificationCreateAccountEmail,

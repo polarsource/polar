@@ -1,6 +1,6 @@
 export const formatCurrencyNumber = (
   cents: number,
-  currency: string = 'usd',
+  currency: string,
   minimumFractionDigits?: number,
   maximumFractionDigits?: number,
 ): string => {
@@ -14,7 +14,5 @@ export const formatCurrencyNumber = (
   return currencyNumberFormat.format(cents / 100)
 }
 
-export const formatUnitAmount = (
-  cents: number,
-  currency: string = 'usd',
-): string => formatCurrencyNumber(cents, currency, 2, 14)
+export const formatUnitAmount = (cents: number, currency: string): string =>
+  formatCurrencyNumber(cents, currency, 2, 14)

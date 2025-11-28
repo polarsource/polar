@@ -77,7 +77,7 @@ export default function Index() {
               </MiniButton>
             </View>
             <View style={SettingsStyle.organizationsContainer}>
-              {organizationData?.items?.map((organization) => (
+              {organizationData?.items.map((organization) => (
                 <TouchableOpacity
                   key={organization?.id}
                   style={[
@@ -87,10 +87,8 @@ export default function Index() {
                     },
                   ]}
                   onPress={() => {
-                    if (organization) {
-                      setOrganization(organization)
-                      router.back()
-                    }
+                    setOrganization(organization)
+                    router.back()
                   }}
                   activeOpacity={0.6}
                 >
@@ -119,9 +117,7 @@ export default function Index() {
           </View>
           <View style={{ gap: 16 }}>
             <View>
-              <ThemedText style={[SettingsStyle.title]}>
-                !!!! Danger zone {user?.email}
-              </ThemedText>
+              <ThemedText style={[SettingsStyle.title]}>Danger zone</ThemedText>
               <ThemedText style={{ color: colors.subtext }}>
                 Irreversible actions for this account
               </ThemedText>

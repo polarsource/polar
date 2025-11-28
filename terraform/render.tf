@@ -482,6 +482,12 @@ resource "render_postgres" "db" {
     { name = "polar-read" },
     { name = "polar-replica" }
   ]
+
+  lifecycle {
+    ignore_changes = [
+      ip_allow_list,
+    ]
+  }
 }
 
 # =============================================================================
@@ -765,6 +771,13 @@ resource "render_web_service" "api" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
+  }
+
   autoscaling = {
     enabled = true
     min     = 1
@@ -829,6 +842,13 @@ resource "render_web_service" "worker" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
+  }
+
   env_vars = {
     dramatiq_prom_port           = { value = "10000" }
     POLAR_POSTGRES_DATABASE      = { value = "polar_cpit" }
@@ -864,6 +884,13 @@ resource "render_web_service" "worker_medium_priority" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
+  }
+
   env_vars = {
     dramatiq_prom_port           = { value = "10001" }
     POLAR_POSTGRES_DATABASE      = { value = "polar_cpit" }
@@ -897,6 +924,13 @@ resource "render_web_service" "worker_high_priority" {
       tag                    = "latest"
       registry_credential_id = render_registry_credential.ghcr.id
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
   }
 
   env_vars = {
@@ -973,6 +1007,13 @@ resource "render_web_service" "api_sandbox" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
+  }
+
   custom_domains = [
     { name = "sandbox-api.polar.sh" }
   ]
@@ -1013,6 +1054,13 @@ resource "render_web_service" "worker_sandbox" {
       tag                    = "latest"
       registry_credential_id = render_registry_credential.ghcr.id
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
   }
 
   env_vars = {

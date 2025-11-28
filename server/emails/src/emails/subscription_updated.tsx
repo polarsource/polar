@@ -23,6 +23,7 @@ export function SubscriptionUpdated({
   subscription,
   order,
   url,
+  has_static_prices,
 }: schemas['SubscriptionUpdatedProps']) {
   return (
     <Wrapper>
@@ -52,11 +53,17 @@ export function SubscriptionUpdated({
           </Section>
           <OrderSummary order={order} />
         </>
-      ) : (
+      ) : has_static_prices ? (
         <Section>
           <BodyText>
             The changes take effect immediately. The pro-rated amount will be
             reflected on your next billing cycle.
+          </BodyText>
+        </Section>
+      ) : (
+        <Section>
+          <BodyText>
+            The changes take effect immediately.
           </BodyText>
         </Section>
       )}
@@ -87,6 +94,7 @@ SubscriptionUpdated.PreviewProps = {
   },
   order,
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
+  has_static_prices: true,
 }
 
 export default SubscriptionUpdated

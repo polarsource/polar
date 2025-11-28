@@ -2563,6 +2563,9 @@ class SubscriptionService:
 
         subject = f"Your subscription has changed to {new_product.name}"
 
+        # Check if subscription has any static prices
+        has_static_prices = any(is_static_price(price) for price in subscription.prices)
+
         return await self._send_customer_email(
             session,
             subscription,
@@ -2570,6 +2573,7 @@ class SubscriptionService:
             template_name="subscription_updated",
             extra_context={
                 "order": None,
+                "has_static_prices": has_static_prices,
             },
         )
 

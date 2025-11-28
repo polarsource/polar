@@ -8,8 +8,8 @@ const Header = () => (
       <Column className="w-[80%]">
         <Img
           alt="Polar Logo"
-          height="42"
-          src="https://polar-public-assets.s3.us-east-2.amazonaws.com/emails/polar-logo-blue.png"
+          height="34"
+          src="https://polar-public-assets.s3.us-east-2.amazonaws.com/emails/polar-logo-blue-combination.png"
         />
       </Column>
       <Column align="right">

@@ -141,7 +141,7 @@ class CustomerMeterService:
             if customer_meter.last_balanced_event_id == last_event.id:
                 return customer_meter, False
 
-            usage_events_statement = events_statement.with_only_columns(Event.id).where(
+            usage_events_statement = events_statement.where(
                 Event.source == EventSource.user
             )
             usage_units = await meter_service.get_quantity(
@@ -178,7 +178,7 @@ class CustomerMeterService:
         if last_event is None:
             return 0
 
-        usage_events_statement = events_statement.with_only_columns(Event.id).where(
+        usage_events_statement = events_statement.where(
             Event.source == EventSource.user
         )
         usage_units = await meter_service.get_quantity(

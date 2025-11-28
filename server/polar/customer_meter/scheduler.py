@@ -7,7 +7,7 @@ import structlog
 from apscheduler.job import Job
 from apscheduler.jobstores.base import BaseJobStore
 from apscheduler.triggers.date import DateTrigger
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, case, func, select, update
 from sqlalchemy.orm import Session
 
 from polar.config import settings
@@ -20,6 +20,10 @@ from polar.postgres import create_sync_engine
 def enqueue_update_customer(customer_id: uuid.UUID) -> None:
     actor = dramatiq.get_broker().get_actor("customer_meter.update_customer")
     actor.send(customer_id=customer_id)
+
+
+ORG_ID = "b3caa8b6-a64b-4c7c-94ad-03f70cc06841"
+ORG_TIMEDELTA = datetime.timedelta(seconds=30)
 
 
 class CustomerMeterJobStore(BaseJobStore):
@@ -47,7 +51,11 @@ class CustomerMeterJobStore(BaseJobStore):
                 Customer.meters_dirtied_at.is_not(None),
                 or_(
                     Customer.meters_dirtied_at
-                    < now - settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD,
+                    < case(
+                        (Customer.organization_id == ORG_ID, now - ORG_TIMEDELTA),
+                        else_=now
+                        - settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD,
+                    ),
                     Customer.meters_dirtied_at
                     > func.coalesce(Customer.meters_updated_at, Customer.created_at)
                     + settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD,
@@ -88,7 +96,11 @@ class CustomerMeterJobStore(BaseJobStore):
             .where(
                 or_(
                     Customer.meters_dirtied_at
-                    < now - settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD,
+                    < case(
+                        (Customer.organization_id == ORG_ID, now - ORG_TIMEDELTA),
+                        else_=now
+                        - settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD,
+                    ),
                     Customer.meters_dirtied_at
                     > func.coalesce(Customer.meters_updated_at, Customer.created_at)
                     + settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD,

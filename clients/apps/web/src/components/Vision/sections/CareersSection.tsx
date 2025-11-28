@@ -29,14 +29,6 @@ export const CareersSection = ({ active }: { active: boolean }) => {
                 experience: '7+ Years Experience',
               },
               {
-                role: 'Product Engineer',
-                description:
-                  'Ship features, APIs and SDKs that empowers the next generation of developers to build businesses.',
-                location: 'Remote — Europe',
-                link: 'https://jobs.ashbyhq.com/polar/b2b48ba9-0b10-41a2-81b6-145c06fc5dcd',
-                experience: '5+ Years Experience',
-              },
-              {
                 role: 'Senior Growth Engineer',
                 description:
                   'Design and ship growth-focused features, enhancements and experiments end-to-end.',
@@ -59,20 +51,6 @@ export const CareersSection = ({ active }: { active: boolean }) => {
                 location: 'Remote - Europe',
                 link: 'https://jobs.ashbyhq.com/polar/0ba77853-a18b-4d38-8516-4b0ab960ea00',
                 experience: '7+ Years Experience',
-              },
-            ]}
-          />
-
-          <JobSection
-            title="Community"
-            jobs={[
-              {
-                role: 'Community Manager',
-                description:
-                  'Nurture and scale our thriving developer community around Polar.',
-                location: 'Europe - Remote',
-                link: 'https://jobs.ashbyhq.com/polar/67fa55c0-af67-4f90-a88e-db6eab4daac0',
-                experience: '3+ Years Experience',
               },
             ]}
           />

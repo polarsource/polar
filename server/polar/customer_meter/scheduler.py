@@ -1,8 +1,10 @@
 import datetime
 import uuid
 from operator import or_
+from typing import TYPE_CHECKING
 
 import dramatiq
+import redis
 import structlog
 from apscheduler.job import Job
 from apscheduler.jobstores.base import BaseJobStore
@@ -16,10 +18,39 @@ from polar.logging import Logger
 from polar.models import Customer
 from polar.postgres import create_sync_engine
 
+if TYPE_CHECKING:
+    from polar.redis import Redis
+
+ENQUEUED_KEY_PREFIX = "customer_meter:enqueued:"
+
+
+def _get_enqueued_key(customer_id: uuid.UUID) -> str:
+    return f"{ENQUEUED_KEY_PREFIX}{customer_id}"
+
+
+def create_sync_redis() -> redis.Redis[str]:
+    return redis.Redis.from_url(settings.redis_url, decode_responses=True)
+
 
 def enqueue_update_customer(customer_id: uuid.UUID) -> None:
+    key = _get_enqueued_key(customer_id)
+    with create_sync_redis() as redis_client:
+        redis_client.set(key, "1", ex=3600)
     actor = dramatiq.get_broker().get_actor("customer_meter.update_customer")
     actor.send(customer_id=customer_id)
+
+
+def is_customer_enqueued(customer_id: uuid.UUID) -> bool:
+    key = _get_enqueued_key(customer_id)
+    with create_sync_redis() as redis_client:
+        return redis_client.exists(key) > 0
+
+
+async def clear_customer_enqueued(
+    customer_id: uuid.UUID, *, redis_client: "Redis"
+) -> None:
+    key = _get_enqueued_key(customer_id)
+    await redis_client.delete(key)
 
 
 class CustomerMeterJobStore(BaseJobStore):
@@ -131,6 +162,11 @@ class CustomerMeterJobStore(BaseJobStore):
             )
             for result in results.yield_per(250):
                 customer_id, meters_dirtied_at = result._tuple()
+                if is_customer_enqueued(customer_id):
+                    self.log.debug(
+                        "Skipping already enqueued customer", customer_id=customer_id
+                    )
+                    continue
                 trigger = DateTrigger(meters_dirtied_at, datetime.UTC)
                 job_kwargs = {
                     **(self._scheduler._job_defaults if self._scheduler else {}),

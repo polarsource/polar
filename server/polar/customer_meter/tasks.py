@@ -7,6 +7,7 @@ from polar.exceptions import PolarTaskError
 from polar.locker import Locker
 from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
 
+from .scheduler import clear_customer_enqueued
 from .service import customer_meter as customer_meter_service
 
 
@@ -27,6 +28,9 @@ class CustomerDoesNotExist(CustomerMeterTaskError):
     min_backoff=30_000,
 )
 async def update_customer(customer_id: uuid.UUID) -> None:
+    redis = RedisMiddleware.get()
+    await clear_customer_enqueued(customer_id, redis_client=redis)
+
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
         customer = await repository.get_by_id(customer_id)

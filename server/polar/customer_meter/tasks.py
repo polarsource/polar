@@ -1,6 +1,6 @@
 import uuid
 
-import logfire
+from opentelemetry import trace
 
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
@@ -33,8 +33,10 @@ async def update_customer(customer_id: uuid.UUID) -> None:
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
-        with logfire.set_baggage(organization_id=str(customer.organization_id)):
-            redis = RedisMiddleware.get()
-            locker = Locker(redis)
+        span = trace.get_current_span()
+        span.set_attribute("organization_id", str(customer.organization_id))
 
-            await customer_meter_service.update_customer(session, locker, customer)
+        redis = RedisMiddleware.get()
+        locker = Locker(redis)
+
+        await customer_meter_service.update_customer(session, locker, customer)

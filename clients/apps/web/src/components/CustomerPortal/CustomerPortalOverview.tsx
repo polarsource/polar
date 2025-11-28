@@ -2,7 +2,6 @@
 
 import { createClientSideAPI } from '@/utils/client'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
-import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
 import { schemas } from '@polar-sh/client'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
@@ -104,13 +103,7 @@ export const CustomerPortalOverview = ({
           benefitGrants={benefitGrants}
           api={api}
         />
-      ) : (
-        <EmptyState
-          icon={<DiamondOutlined />}
-          title="No Benefits Available"
-          description="You don't have any benefit grants available right now."
-        />
-      )}
+      ) : null}
 
       {inactiveOwnedSubscriptions.length > 0 && (
         <InactiveSubscriptionsOverview

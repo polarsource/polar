@@ -35,7 +35,7 @@ export const CareersSection = ({ active }: { active: boolean }) => {
                 location: 'Remote — Europe',
                 link: 'https://jobs.ashbyhq.com/polar/1496592e-16ff-47e7-b11e-a993c887fc1f',
                 experience: '7+ Years Experience',
-              }
+              },
             ]}
           />
           <JobSection

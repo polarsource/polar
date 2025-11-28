@@ -14,7 +14,14 @@ import { fromISODate, getTimestampFormatter, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { endOfToday, format, subMonths } from 'date-fns'
+import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
+import {
+  eachDayOfInterval,
+  endOfToday,
+  format,
+  startOfDay,
+  subMonths,
+} from 'date-fns'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { SpansHeader } from '../SpansHeader'
@@ -22,6 +29,83 @@ import { SpansTitle } from '../SpansTitle'
 import { EditEventTypeModal } from './EditEventTypeModal'
 
 const PAGE_SIZE = 50
+
+type DayGroup =
+  | { type: 'empty-range'; startDate: Date; endDate: Date }
+  | { type: 'day'; date: Date; events: schemas['Event'][] }
+
+function groupEventsByDay(
+  events: schemas['Event'][],
+): Map<string, schemas['Event'][]> {
+  const grouped = new Map<string, schemas['Event'][]>()
+
+  events.forEach((event) => {
+    const eventDate = startOfDay(new Date(event.timestamp))
+    const dateKey = eventDate.toISOString().split('T')[0]
+
+    if (!grouped.has(dateKey)) {
+      grouped.set(dateKey, [])
+    }
+    grouped.get(dateKey)!.push(event)
+  })
+
+  return grouped
+}
+
+function generateDateRange(startDate: Date, endDate: Date): Date[] {
+  const dates = eachDayOfInterval({
+    start: startOfDay(startDate),
+    end: startOfDay(endDate),
+  })
+  return dates.reverse()
+}
+
+function groupEmptyDates(
+  dates: Date[],
+  eventsMap: Map<string, schemas['Event'][]>,
+): DayGroup[] {
+  const groups: DayGroup[] = []
+  let emptyRangeStart: Date | null = null
+  let emptyRangeEnd: Date | null = null
+
+  dates.forEach((date, index) => {
+    const dateKey = date.toISOString().split('T')[0]
+    const events = eventsMap.get(dateKey) || []
+
+    if (events.length === 0) {
+      if (emptyRangeStart === null) {
+        emptyRangeStart = date
+      }
+      emptyRangeEnd = date
+
+      if (index === dates.length - 1) {
+        groups.push({
+          type: 'empty-range',
+          startDate: emptyRangeStart,
+          endDate: emptyRangeEnd,
+        })
+      }
+    } else {
+      if (emptyRangeStart !== null && emptyRangeEnd !== null) {
+        groups.push({
+          type: 'empty-range',
+          startDate: emptyRangeStart,
+          endDate: emptyRangeEnd,
+        })
+        emptyRangeStart = null
+        emptyRangeEnd = null
+      }
+
+      groups.push({
+        type: 'day',
+        date,
+        events,
+      })
+    }
+  })
+
+  return groups
+}
 
 interface SpanDetailPageProps {
   organization: schemas['Organization']
@@ -100,6 +184,19 @@ export default function SpanDetailPage({
     if (!eventsData) return []
     return eventsData.pages.flatMap((page) => page.items)
   }, [eventsData])
+
+  const dayGroups = useMemo(() => {
+    const eventsMap = groupEventsByDay(events)
+    const dateRange = generateDateRange(startDate, endDate)
+    const groups = groupEmptyDates(dateRange, eventsMap)
+
+    // Remove the last group if it's an empty range (looks odd at the bottom)
+    if (groups.length > 1 && groups[groups.length - 1].type === 'empty-range') {
+      return groups.slice(0, -1)
+    }
+
+    return groups
+  }, [events, startDate, endDate])
 
   const costMetrics = useMemo(() => {
     if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
@@ -356,17 +453,64 @@ export default function SpanDetailPage({
                     <th></th>
                   </tr>
                 </thead>
-                <tbody className="dark:divide-polar-700 divide-y divide-gray-200">
-                  {events.map((event) => (
-                    <EventRow
-                      key={event.id}
-                      event={event}
-                      organization={organization}
-                      averageCost={costMetrics.averageCost}
-                      p99Cost={costMetrics.p99Cost}
-                    />
-                  ))}
-                </tbody>
+                {dayGroups.map((group, groupIndex) => {
+                  if (group.type === 'empty-range') {
+                    return (
+                      <tbody
+                        key={`empty-${groupIndex}`}
+                        className="dark:divide-polar-700 group divide-y divide-gray-200"
+                      >
+                        <tr className="dark:bg-polar-800 bg-gray-50 not-group-first-of-type:border-t">
+                          <th
+                            colSpan={4}
+                            className="dark:text-polar-400 p-2 text-left text-sm font-medium text-gray-600"
+                          >
+                            <FormattedInterval
+                              startDatetime={group.endDate}
+                              endDatetime={group.startDate}
+                            />
+                          </th>
+                        </tr>
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="dark:text-polar-600 p-2 text-center text-sm text-gray-400 italic"
+                          >
+                            No events
+                          </td>
+                        </tr>
+                      </tbody>
+                    )
+                  }
+
+                  return (
+                    <tbody
+                      key={`day-${group.date.toISOString()}`}
+                      className="dark:divide-polar-700 group divide-y divide-gray-200"
+                    >
+                      <tr className="dark:bg-polar-800 bg-gray-50 not-group-first-of-type:border-t">
+                        <th
+                          colSpan={4}
+                          className="dark:text-polar-400 p-2 text-left text-sm font-medium text-gray-600"
+                        >
+                          <FormattedInterval
+                            startDatetime={group.date}
+                            endDatetime={group.date}
+                          />
+                        </th>
+                      </tr>
+                      {group.events.map((event) => (
+                        <EventRow
+                          key={event.id}
+                          event={event}
+                          organization={organization}
+                          averageCost={costMetrics.averageCost}
+                          p99Cost={costMetrics.p99Cost}
+                        />
+                      ))}
+                    </tbody>
+                  )
+                })}
                 <tfoot>
                   <tr>
                     <td

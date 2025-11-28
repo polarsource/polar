@@ -824,7 +824,7 @@ resource "render_web_service" "worker" {
   runtime_source = {
     image = {
       image_url              = "ghcr.io/polarsource/polar"
-      tag                    = "latest"
+      digest                 = "sha256:d55ecc35d8a51bcf7dde0d4d865c96b9de8d2c3469b12d1a719fef2ae39a4825"
       registry_credential_id = render_registry_credential.ghcr.id
     }
   }

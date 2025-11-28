@@ -1,7 +1,6 @@
 'use client'
 
 import { Chart } from '@/components/Chart/Chart'
-import { CustomerStatBox } from '@/components/Customer/CustomerStatBox'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -205,8 +204,6 @@ export default function SpanDetailPage({
   return (
     <DashboardBody
       title={<SpansTitle organization={organization} />}
-      className="flex flex-col gap-y-12"
-      wide
       header={
         <SpansHeader
           dateRange={dateRange}
@@ -218,7 +215,7 @@ export default function SpanDetailPage({
         />
       }
     >
-      <div className="flex flex-row items-center justify-between gap-y-4">
+      <div className="mb-12 flex flex-row items-center justify-between gap-y-4">
         <h3 className="text-4xl">{eventType?.label ?? ''}</h3>
         <Button variant="secondary" onClick={showEditEventTypeModal}>
           Edit
@@ -226,89 +223,122 @@ export default function SpanDetailPage({
       </div>
 
       {events.length > 0 && chartData.length > 0 && (
-        <div className="flex flex-col gap-y-6">
+        <div className="mb-12 flex flex-col gap-y-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <CustomerStatBox title="Total occurrences" size="lg">
-              {costMetrics.totalOccurrences.toLocaleString()}
-            </CustomerStatBox>
-            <CustomerStatBox title="Total cost" size="lg">
-              {formatSubCentCurrency(costMetrics.totalCost, 'usd')}
-            </CustomerStatBox>
-            <CustomerStatBox title="Average cost" size="lg">
-              {formatSubCentCurrency(costMetrics.averageCost, 'usd')}
-            </CustomerStatBox>
+            <div className="col-span-1">
+              <div className="rounded-3xl bg-gray-50 p-2">
+                <div className="flex flex-row items-center justify-between px-3 pt-2 pb-4">
+                  <h3 className="text-lg font-medium">Occurrences</h3>
+                  <span className="tabular-nums">
+                    {costMetrics.totalOccurrences}
+                  </span>
+                </div>
+                <div>
+                  <Chart
+                    data={chartData}
+                    series={[
+                      {
+                        key: 'occurrences',
+                        label: 'Occurrences',
+                        color: '#2563eb',
+                      },
+                    ]}
+                    xAxisKey="timestamp"
+                    xAxisFormatter={(value) =>
+                      value instanceof Date
+                        ? timestampFormatter(value)
+                        : String(value)
+                    }
+                    labelFormatter={(value) =>
+                      value instanceof Date
+                        ? value.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: '2-digit',
+                            year: 'numeric',
+                          })
+                        : String(value)
+                    }
+                    showYAxis={true}
+                    yAxisFormatter={(value) => value.toLocaleString()}
+                    loading={isFetching}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="col-span-1 md:col-span-2">
+              <div className="rounded-3xl bg-gray-50 p-2">
+                <div className="flex flex-row items-center justify-between px-3 pt-2 pb-4">
+                  <h3 className="text-lg font-medium">Cost</h3>
+                  <dl className="flex flex-row gap-x-6">
+                    <div className="flex flex-row gap-x-2">
+                      <dt className="dark:text-polar-500 text-gray-500">
+                        Total
+                      </dt>
+                      <dd className="tabular-nums">
+                        {formatSubCentCurrency(costMetrics.totalCost, 'usd')}
+                      </dd>
+                    </div>
+                    <div className="flex flex-row gap-x-2">
+                      <dt className="dark:text-polar-500 text-gray-500">
+                        Average
+                      </dt>
+                      <dd className="tabular-nums">
+                        {formatSubCentCurrency(costMetrics.averageCost, 'usd')}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+                <div>
+                  <Chart
+                    data={chartData}
+                    series={[
+                      {
+                        key: 'average',
+                        label: 'Avg',
+                        color: '#10b981',
+                      },
+                      {
+                        key: 'p50',
+                        label: 'P50',
+                        color: '#3b82f6',
+                      },
+                      {
+                        key: 'p95',
+                        label: 'P95',
+                        color: '#eab308',
+                      },
+                      {
+                        key: 'p99',
+                        label: 'P99',
+                        color: '#ef4444',
+                      },
+                    ]}
+                    xAxisKey="timestamp"
+                    xAxisFormatter={(value) =>
+                      value instanceof Date
+                        ? timestampFormatter(value)
+                        : String(value)
+                    }
+                    labelFormatter={(value) =>
+                      value instanceof Date
+                        ? value.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: '2-digit',
+                            year: 'numeric',
+                          })
+                        : String(value)
+                    }
+                    showYAxis={true}
+                    yAxisFormatter={(value) =>
+                      formatSubCentCurrency(value, 'usd')
+                    }
+                    loading={isFetching}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-
-          <Chart
-            data={chartData}
-            series={[
-              {
-                key: 'occurrences',
-                label: 'Occurrences',
-                color: '#2563eb',
-              },
-            ]}
-            xAxisKey="timestamp"
-            xAxisFormatter={(value) =>
-              value instanceof Date ? timestampFormatter(value) : String(value)
-            }
-            labelFormatter={(value) =>
-              value instanceof Date
-                ? value.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: '2-digit',
-                    year: 'numeric',
-                  })
-                : String(value)
-            }
-            title="Occurrences"
-            showYAxis={true}
-            yAxisFormatter={(value) => value.toLocaleString()}
-            loading={isFetching}
-          />
-
-          <Chart
-            data={chartData}
-            series={[
-              {
-                key: 'average',
-                label: 'Avg',
-                color: '#10b981',
-              },
-              {
-                key: 'p50',
-                label: 'P50',
-                color: '#3b82f6',
-              },
-              {
-                key: 'p95',
-                label: 'P95',
-                color: '#eab308',
-              },
-              {
-                key: 'p99',
-                label: 'P99',
-                color: '#ef4444',
-              },
-            ]}
-            xAxisKey="timestamp"
-            xAxisFormatter={(value) =>
-              value instanceof Date ? timestampFormatter(value) : String(value)
-            }
-            labelFormatter={(value) =>
-              value instanceof Date
-                ? value.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: '2-digit',
-                    year: 'numeric',
-                  })
-                : String(value)
-            }
-            title="Costs"
-            showYAxis={true}
-            yAxisFormatter={(value) => formatSubCentCurrency(value, 'usd')}
-            loading={isFetching}
-          />
         </div>
       )}
 

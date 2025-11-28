@@ -14,7 +14,6 @@ import {
   MousePointerClickIcon,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { SpansHeader } from './SpansHeader'
@@ -47,8 +46,6 @@ const getTimeSeriesValues = (
 }
 
 export default function ClientPage({ organization }: ClientPageProps) {
-  const router = useRouter()
-
   const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
     parseAsString.withDefault(toISODate(subMonths(endOfToday(), 1))),
@@ -112,7 +109,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
   return (
     <DashboardBody
       title={<SpansTitle organization={organization} />}
-      wide
       header={
         <SpansHeader
           dateRange={dateRange}

@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from decimal import Decimal
 
-from sqlalchemy import Select, or_
+from sqlalchemy import Select, or_, select, union_all
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
@@ -120,14 +120,8 @@ class CustomerMeterService:
                 customer.id, meter.id
             )
 
-            event_repository = EventRepository.from_session(session)
-            events_statement = await self._get_current_window_events_statement(
+            last_event = await self._get_latest_current_window_event(
                 session, customer, meter
-            )
-            last_event = await event_repository.get_one_or_none(
-                events_statement.order_by(None)
-                .order_by(Event.ingested_at.desc())
-                .limit(1)
             )
 
             if last_event is None:
@@ -140,6 +134,12 @@ class CustomerMeterService:
 
             if customer_meter.last_balanced_event_id == last_event.id:
                 return customer_meter, False
+
+            # Get chainable statement for filtering
+            event_repository = EventRepository.from_session(session)
+            events_statement = await self._get_current_window_events_statement(
+                session, customer, meter
+            )
 
             usage_events_statement = events_statement.where(
                 Event.source == EventSource.user
@@ -167,16 +167,18 @@ class CustomerMeterService:
     async def get_rollover_units(
         self, session: AsyncSession, customer: Customer, meter: Meter
     ) -> int:
-        event_repository = EventRepository.from_session(session)
-        events_statement = await self._get_current_window_events_statement(
+        last_event = await self._get_latest_current_window_event(
             session, customer, meter
-        )
-        last_event = await event_repository.get_one_or_none(
-            events_statement.order_by(None).order_by(Event.ingested_at.desc()).limit(1)
         )
 
         if last_event is None:
             return 0
+
+        # Get chainable statement for filtering
+        event_repository = EventRepository.from_session(session)
+        events_statement = await self._get_current_window_events_statement(
+            session, customer, meter
+        )
 
         usage_events_statement = events_statement.where(
             Event.source == EventSource.user
@@ -203,33 +205,137 @@ class CustomerMeterService:
 
         return max(0, min(int(balance), rollover_units))
 
-    async def _get_current_window_events_statement(
+    async def _get_latest_current_window_event(
         self, session: AsyncSession, customer: Customer, meter: Meter
-    ) -> Select[tuple[Event]]:
+    ) -> Event | None:
+        """
+        Get the most recent event in the current meter window.
+        """
         event_repository = EventRepository.from_session(session)
         meter_reset_event = await event_repository.get_latest_meter_reset(
             customer, meter.id
         )
-        statement = (
-            event_repository.get_base_statement()
-            .where(
-                Event.organization_id == meter.organization_id,
-                Event.customer == customer,
-                or_(
-                    # Events matching meter definitions
-                    event_repository.get_meter_clause(meter),
-                    # System events impacting the meter balance
-                    event_repository.get_meter_system_clause(meter),
-                ),
-            )
-            .order_by(Event.ingested_at.asc())
+
+        by_customer_id = self._build_latest_event_statement(
+            event_repository, customer, meter, meter_reset_event, by_external_id=False
         )
+
+        # No union required when no external_id
+        if customer.external_id is None:
+            return await event_repository.get_one_or_none(by_customer_id)
+
+        # Union optimization: query by customer_id and external_id separately,
+        # then merge results. This avoids slow BitmapOr scans that Postgres
+        # uses for OR clauses on different indexed columns.
+        by_external_id = self._build_latest_event_statement(
+            event_repository, customer, meter, meter_reset_event, by_external_id=True
+        )
+        union_statement = union_all(by_customer_id, by_external_id)
+        union_statement = union_statement.order_by(Event.ingested_at.desc()).limit(1)
+
+        # Execute directly - FromStatement works fine for execution
+        result = await session.execute(select(Event).from_statement(union_statement))
+        return result.scalar_one_or_none()
+
+    async def _get_current_window_events_statement(
+        self, session: AsyncSession, customer: Customer, meter: Meter
+    ) -> Select[tuple[Event]]:
+        """
+        Get a chainable statement for all events in the current meter window.
+
+        Uses UNION optimization to get event IDs, then returns a Select
+        that filters by those IDs. This avoids slow BitmapOr scans while
+        returning a proper Select that supports .where() chaining.
+        """
+        event_ids = await self._get_current_window_event_ids(session, customer, meter)
+
+        if not event_ids:
+            # Return empty result
+            return select(Event).where(Event.id.in_([]))
+
+        event_repository = EventRepository.from_session(session)
+        return event_repository.get_base_statement().where(Event.id.in_(event_ids))
+
+    async def _get_current_window_event_ids(
+        self, session: AsyncSession, customer: Customer, meter: Meter
+    ) -> Sequence[uuid.UUID]:
+        """Get IDs of all events in the current window using UNION optimization."""
+        event_repository = EventRepository.from_session(session)
+        meter_reset_event = await event_repository.get_latest_meter_reset(
+            customer, meter.id
+        )
+
+        by_customer_id = self._build_events_statement(
+            event_repository, customer, meter, meter_reset_event, by_external_id=False
+        )
+
+        if customer.external_id is None:
+            result = await session.execute(by_customer_id.with_only_columns(Event.id))
+            return [row[0] for row in result.all()]
+
+        by_external_id = self._build_events_statement(
+            event_repository, customer, meter, meter_reset_event, by_external_id=True
+        )
+
+        # UNION to avoid BitmapOr
+        union_statement = union_all(
+            by_customer_id.with_only_columns(Event.id),
+            by_external_id.with_only_columns(Event.id),
+        )
+
+        result = await session.execute(union_statement)
+        return list(set(row[0] for row in result.all()))  # Dedupe
+
+    def _build_events_statement(
+        self,
+        event_repository: EventRepository,
+        customer: Customer,
+        meter: Meter,
+        meter_reset_event: Event | None,
+        by_external_id: bool = False,
+    ) -> Select[tuple[Event]]:
+        """Build statement for events by customer_id or external_id (no LIMIT)."""
+        statement = event_repository.get_base_statement().where(
+            Event.organization_id == meter.organization_id,
+        )
+
+        if by_external_id:
+            statement = statement.where(
+                Event.external_customer_id == customer.external_id
+            )
+        else:
+            statement = statement.where(Event.customer_id == customer.id)
+
         if meter_reset_event is not None:
             statement = statement.where(
                 Event.ingested_at >= meter_reset_event.ingested_at
             )
 
+        statement = statement.where(
+            or_(
+                event_repository.get_meter_clause(meter),
+                event_repository.get_meter_system_clause(meter),
+            ),
+        )
+
         return statement
+
+    def _build_latest_event_statement(
+        self,
+        event_repository: EventRepository,
+        customer: Customer,
+        meter: Meter,
+        meter_reset_event: Event | None,
+        by_external_id: bool = False,
+    ) -> Select[tuple[Event]]:
+        """Build a LIMIT 1 statement for getting the latest event."""
+        return (
+            self._build_events_statement(
+                event_repository, customer, meter, meter_reset_event, by_external_id
+            )
+            .order_by(Event.ingested_at.desc())
+            .limit(1)
+        )
 
 
 customer_meter = CustomerMeterService()

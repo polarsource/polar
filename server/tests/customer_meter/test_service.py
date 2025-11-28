@@ -30,6 +30,25 @@ from tests.fixtures.random_objects import (
 )
 
 
+def lstr(s: str) -> str:
+    """Generate a unique string by appending a random suffix."""
+    return f"{s}_{uuid.uuid4().hex[:8]}"
+
+
+@pytest_asyncio.fixture
+async def customer_with_external_id(
+    save_fixture: SaveFixture, organization: Organization
+) -> Customer:
+    """Customer with external_id set - triggers UNION code path."""
+    customer = Customer(
+        organization=organization,
+        email=lstr("customer-external@example.com"),
+        external_id=lstr("ext_customer"),
+    )
+    await save_fixture(customer)
+    return customer
+
+
 @pytest_asyncio.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(
@@ -116,6 +135,39 @@ async def events(
             source=EventSource.system,
             name=SystemEvent.meter_credited,
             metadata={"units": 10, "meter_id": str(uuid.uuid4())},
+        ),
+    ]
+
+
+@pytest_asyncio.fixture
+async def events_for_external_customer(
+    save_fixture: SaveFixture, customer_with_external_id: Customer, meter: Meter
+) -> list[Event]:
+    """Events for a customer with external_id - tests the UNION code path."""
+    timestamp = utc_now()
+    return [
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer_with_external_id.organization,
+            customer=customer_with_external_id,
+            metadata={"tokens": 15, "model": "lite"},
+        ),
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=customer_with_external_id.organization,
+            customer=customer_with_external_id,
+            metadata={"tokens": 25, "model": "lite"},
+        ),
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=customer_with_external_id.organization,
+            customer=customer_with_external_id,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 50, "meter_id": str(meter.id)},
         ),
     ]
 
@@ -303,5 +355,36 @@ class TestUpdateCustomerMeter:
         assert customer_meter.credited_units == Decimal(0)
         assert customer_meter.balance == Decimal(0)
         assert updated_customer_meter.last_balanced_event == events[-1]
+
+        assert updated is True
+
+    async def test_customer_with_external_id(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        customer_with_external_id: Customer,
+        events_for_external_customer: list[Event],
+        meter: Meter,
+    ) -> None:
+        """
+        Test that customers with external_id work correctly.
+        """
+        # Verify the customer has external_id (this is the key condition)
+        assert customer_with_external_id.external_id is not None
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, locker, customer_with_external_id, meter
+        )
+
+        assert customer_meter is not None
+        assert customer_meter.customer == customer_with_external_id
+        assert customer_meter.meter == meter
+        # 15 + 25 = 40 tokens consumed
+        assert customer_meter.consumed_units == Decimal(40)
+        # 50 units credited
+        assert customer_meter.credited_units == Decimal(50)
+        # balance = credited - consumed = 50 - 40 = 10
+        assert customer_meter.balance == Decimal(10)
+        assert customer_meter.last_balanced_event == events_for_external_customer[-1]
 
         assert updated is True

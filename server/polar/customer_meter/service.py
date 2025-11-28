@@ -237,9 +237,9 @@ class CustomerMeterService:
         )
 
         if by_external_id:
-            statement = statement.where(Customer.external_id = customer.external_id)
+            statement = statement.where(Customer.external_id == customer.external_id)
         else:
-            statement = statement.where(Customer.id = customer.id)
+            statement = statement.where(Customer.id == customer.id)
 
 
         if meter_reset_event is not None:

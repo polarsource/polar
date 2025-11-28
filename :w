@@ -105,6 +105,9 @@ export const Navigation = ({
             </Link>
           ))}
         </div>
+        <div className="dark:border-polar-700 border-t border-gray-200 px-4 py-6 text-sm">
+          <p className="dark:text-polar-600 text-gray-400">Powered by Polar</p>
+        </div>
       </nav>
       <Select
         value={filteredLinks.find(({ href }) => href === currentPath)?.label}

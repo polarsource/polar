@@ -124,36 +124,35 @@ const CustomerSubscriptionDetails = ({
   return (
     <ShadowBox className="dark:bg-polar-900 flex w-full flex-col gap-y-6 bg-gray-50 dark:border-transparent">
       <div className="flex flex-row items-start justify-between">
-        <div className="flex flex-col gap-y-4">
-          <h3 className="truncate text-2xl">{subscription.product.name}</h3>
+        <div className="flex flex-row items-baseline gap-x-6">
+          <h3 className="truncate text-xl">{subscription.product.name}</h3>
+          <div className="dark:text-polar-500 text-xl text-gray-500">
+            {subscription.amount && subscription.currency ? (
+              <span className="flex flex-row justify-end gap-x-1">
+                {subscriptionBaseAmount &&
+                  subscription.amount !== subscriptionBaseAmount && (
+                    <span className="text-gray-500 line-through">
+                      {formatCurrencyAndAmount(
+                        subscriptionBaseAmount,
+                        subscription.currency,
+                        subscriptionBaseAmount % 100 === 0 ? 0 : 2,
+                      )}
+                    </span>
+                  )}
+                <AmountLabel
+                  amount={subscription.amount}
+                  currency={subscription.currency}
+                  interval={subscription.recurring_interval}
+                  intervalCount={subscription.recurring_interval_count}
+                />
+              </span>
+            ) : (
+              <span>Free</span>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex flex-col gap-y-2 text-sm">
-        <div className="flex flex-row items-center justify-between">
-          <span className="dark:text-polar-500 text-gray-500">Amount</span>
-          {subscription.amount && subscription.currency ? (
-            <span className="flex flex-row items-center justify-end gap-x-1">
-              {subscriptionBaseAmount &&
-                subscription.amount !== subscriptionBaseAmount && (
-                  <span className="text-gray-500 line-through">
-                    {formatCurrencyAndAmount(
-                      subscriptionBaseAmount,
-                      subscription.currency,
-                      subscriptionBaseAmount % 100 === 0 ? 0 : 2,
-                    )}
-                  </span>
-                )}
-              <AmountLabel
-                amount={subscription.amount}
-                currency={subscription.currency}
-                interval={subscription.recurring_interval}
-                intervalCount={subscription.recurring_interval_count}
-              />
-            </span>
-          ) : (
-            'Free'
-          )}
-        </div>
         <div className="flex flex-row items-center justify-between">
           <span className="dark:text-polar-500 text-gray-500">Status</span>
           <SubscriptionStatusLabel subscription={subscription} />

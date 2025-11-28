@@ -67,7 +67,7 @@ export const CurrentPeriodOverview = ({
     <div className="dark:border-polar-700 flex flex-col gap-4 rounded-3xl border border-gray-200 p-8">
       <div className="items-center justify-between space-y-1.5 sm:flex sm:space-y-0">
         <h4 className="text-lg font-medium">{headerTitle}</h4>
-        <span className="text-sm text-gray-500">
+        <span className="dark:text-polar-500 text-sm text-gray-500">
           {dateLabel} —{' '}
           {chargeDate
             ? new Date(chargeDate).toLocaleDateString('en-US', {

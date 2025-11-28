@@ -88,8 +88,6 @@ worker = { cmd = "dramatiq -p 1 -t 1 --queues high_priority default --watch pola
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
 loadtest = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000", help = "run load tests (interactive)" }
-loadtest_headless = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000 --headless --users 100 --spawn-rate 10 --run-time 5m", help = "run load tests (headless)" }
-loadtest_regression = { cmd = "POLAR_ENV=testing python -m pytest load_tests/regression/ -v", help = "run performance regression tests" }
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
 lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
 lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }

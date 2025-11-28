@@ -48,11 +48,9 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                     self.checkout_id = data.get("id")
                     response.success()
                 else:
-                    print(f"Failed to create checkout: {response.text}")
                     response.failure(f"Failed to create checkout: {response.text}")
                     self.interrupt()  # Stop this flow on failure
         except Exception as e:
-            print(f"Error in create_checkout: {e}")
             self.interrupt()
 
     @task(2)
@@ -73,10 +71,9 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                 if response.status_code == 200:
                     response.success()
                 else:
-                    print(f"Failed to update: {response.text}")
                     response.failure(f"Failed to update: {response.text}")
         except Exception as e:
-            print(f"Error in update_customer_details: {e}")
+            pass
 
     @task
     def get_checkout_status(self):
@@ -96,7 +93,7 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                 else:
                     response.failure(f"Failed to get status: {response.status_code}")
         except Exception as e:
-            print(f"Error in get_checkout_status: {e}")
+            pass
 
     @task
     def confirm_checkout(self):
@@ -127,7 +124,6 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                     data = response.json()
                     if data.get("status") == "confirmed":
                         response.success()
-                        print(f"✓ Checkout confirmed: {self.checkout_id}")
                     else:
                         response.failure(
                             f"Checkout status: {data.get('status')} (expected: confirmed)"
@@ -138,14 +134,14 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                         error_data = response.json()
                         error_msg = error_data.get("detail", response.text)
                         response.failure(f"Validation error: {error_msg}")
-                    except:
+                    except Exception as e:
                         response.failure(f"Validation error: {response.text}")
                 else:
                     response.failure(
                         f"Failed to confirm (HTTP {response.status_code}): {response.text}"
                     )
         except Exception as e:
-            print(f"Error in confirm_checkout: {e}")
+            pass
 
 
 class CheckoutUser(HttpUser):
@@ -161,5 +157,4 @@ class CheckoutUser(HttpUser):
     def on_start(self):
         """Initialize user session."""
         if not config.product_id:
-            print("\n⚠️  WARNING: LOAD_TEST_PRODUCT_ID not set!")
-            print("   Checkout tests will not run without a product ID.\n")
+            pass

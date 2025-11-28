@@ -168,14 +168,10 @@ Polar includes a comprehensive load testing infrastructure for validating paymen
 
 - **Location**: `server/load_tests/`
 - **Framework**: Locust (Python-based HTTP load testing)
-- **Quick Start**: See `server/load_tests/QUICKSTART.md`
-- **Full Documentation**: See `server/load_tests/README.md`
+- **Documentation**: See `server/load_tests/README.md`
 
 **Test Scenarios:**
 - Checkout flow (creation, update, confirmation)
-- Stripe webhook processing
-- Background job queue monitoring
-- Subscription lifecycle
 
 **Running Load Tests:**
 ```bash
@@ -185,17 +181,7 @@ cd server
 uv run task loadtest
 # Open http://localhost:8089, configure users, and start
 
-# Headless mode (CI/CD)
-uv run task loadtest_headless
-
-# Performance regression tests (for PRs)
-uv run task loadtest_regression
 ```
-
-**CI/CD Integration:**
-- Performance regression tests run on every PR (`performance_regression.yml`)
-- Comprehensive load tests run weekly or on-demand (`load_tests.yml`)
-- Results available as GitHub Actions artifacts
 
 **Configuration:**
 Create `server/.env.loadtest` with:
@@ -205,12 +191,6 @@ LOAD_TEST_PRODUCT_ID=<test-product-uuid>
 LOAD_TEST_API_TOKEN=<personal-access-token>
 LOAD_TEST_CUSTOMER_EMAIL=loadtest@polar.sh  # Optional, defaults to loadtest@polar.sh
 ```
-
-**Key Performance Targets:**
-- Checkout creation: p95 < 2s
-- Checkout confirmation: p95 < 3s
-- Webhook processing: p95 < 500ms
-- Error rate: < 0.1%
 
 ## Environment Setup
 

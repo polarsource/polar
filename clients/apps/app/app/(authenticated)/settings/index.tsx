@@ -77,7 +77,7 @@ export default function Index() {
               </MiniButton>
             </View>
             <View style={SettingsStyle.organizationsContainer}>
-              {organizationData?.items.map((organization) => (
+              {organizationData?.items?.map((organization) => (
                 <TouchableOpacity
                   key={organization?.id}
                   style={[
@@ -87,8 +87,10 @@ export default function Index() {
                     },
                   ]}
                   onPress={() => {
-                    setOrganization(organization)
-                    router.back()
+                    if (organization) {
+                      setOrganization(organization)
+                      router.back()
+                    }
                   }}
                   activeOpacity={0.6}
                 >

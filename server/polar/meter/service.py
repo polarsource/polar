@@ -462,11 +462,11 @@ class MeterService:
         self,
         session: AsyncSession,
         meter: Meter,
-        events_statement: Select[tuple[uuid.UUID]],
+        events_statement: Select[tuple[Event]],
     ) -> float:
-        statement = select(
+        statement = events_statement.with_only_columns(
             func.coalesce(meter.aggregation.get_sql_column(Event), 0)
-        ).where(Event.id.in_(events_statement))
+        ).order_by(None)
         result = await session.scalar(statement)
         return result or 0.0
 

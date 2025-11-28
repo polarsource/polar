@@ -70,8 +70,8 @@ export const useListNotificationRecipients = (): UseQueryResult<
 }
 
 export const useGetNotificationRecipient = (
-  expoPushToken: string,
-): UseQueryResult<NotificationRecipient, Error> => {
+  expoPushToken: string | undefined,
+): UseQueryResult<NotificationRecipient | null, Error> => {
   const { session } = useSession()
 
   return useQuery({
@@ -87,9 +87,10 @@ export const useGetNotificationRecipient = (
         },
       )
 
-      return response.json().then((data) => data.items[0])
+      const data = await response.json()
+      return data.items?.[0] ?? null
     },
-    enabled: !!expoPushToken,
+    enabled: !!expoPushToken && !!session,
   })
 }
 

@@ -27,7 +27,7 @@ export const useLogout = () => {
 
   const signOut = useCallback(async () => {
     try {
-      if (notificationRecipient) {
+      if (notificationRecipient?.id) {
         deleteNotificationRecipient
           .mutateAsync(notificationRecipient.id)
           .catch(() => {})

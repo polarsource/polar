@@ -67,6 +67,8 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
         return ProcessorFeeType.payment
     if "card dispute countered fee" in description:
         return ProcessorFeeType.dispute
+    if "smart disputes" in description:
+        return ProcessorFeeType.dispute
     raise UnsupportedStripeFeeType(description)
 
 

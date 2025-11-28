@@ -1,3 +1,5 @@
+import { FadeInAndUp } from '@/components/Animations/FadeInAndUp'
+import { KenBurns } from '@/components/Animations/KenBurns'
 import LogoIcon from '@/components/Shared/PolarLogo'
 import { ThemedText } from '@/components/Shared/ThemedText'
 import { useOAuth } from '@/hooks/oauth'
@@ -11,7 +13,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
 } from 'react-native'
 
 export default function App() {
@@ -28,14 +29,19 @@ export default function App() {
       style={[LoginStyle.container, { backgroundColor: colors.background }]}
     >
       <StatusBar barStyle="light-content" />
-      <Image
-        source={require('@/assets/images/login-background.jpg')}
-        style={LoginStyle.background}
-      />
-      <View>
+
+      <KenBurns>
+        <Image
+          source={require('@/assets/images/login-background.jpg')}
+          style={LoginStyle.background}
+        />
+      </KenBurns>
+
+      <FadeInAndUp delay={300}>
         <LogoIcon size={80} />
-      </View>
-      <View>
+      </FadeInAndUp>
+
+      <FadeInAndUp delay={600}>
         <ThemedText
           style={[
             LoginStyle.title,
@@ -46,8 +52,9 @@ export default function App() {
         >
           Monetize your software
         </ThemedText>
-      </View>
-      <View>
+      </FadeInAndUp>
+
+      <FadeInAndUp delay={900}>
         <TouchableOpacity
           activeOpacity={0.6}
           disabled={!authRequest}
@@ -61,7 +68,7 @@ export default function App() {
             Get Started
           </Text>
         </TouchableOpacity>
-      </View>
+      </FadeInAndUp>
     </SafeAreaView>
   )
 }
@@ -74,11 +81,8 @@ const LoginStyle = StyleSheet.create({
     gap: 54,
   },
   background: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   title: {
     fontSize: 58,

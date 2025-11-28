@@ -55,7 +55,6 @@ export const CareersSection = ({ active }: { active: boolean }) => {
             ]}
           />
 
-
           <JobSection
             title="Customer Success"
             jobs={[

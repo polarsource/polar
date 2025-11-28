@@ -77,6 +77,7 @@ dev = [
   "sqlalchemy-utils>=0.41.2",
   "minio>=7.2.9",
   "polar-sdk==0.27.3",
+  "locust>=2.20.0",
 ]
 
 [tool.taskipy.tasks]
@@ -86,6 +87,7 @@ api = { cmd = "env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reloa
 worker = { cmd = "dramatiq -p 1 -t 1 --queues high_priority medium_priority low_priority default --watch polar -f polar.worker.scheduler:start polar.worker.run", help = "run worker" }
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
+loadtest = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000", help = "run load tests (interactive)" }
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
 lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
 lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }

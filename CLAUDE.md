@@ -45,6 +45,9 @@ uv run task lint_types    # type checking with mypy
 uv run task db_recreate   # drop and recreate database
 uv run task seeds_load    # load sample data
 
+# Load testing
+uv run task loadtest               # interactive mode with web UI
+
 # Generate Alembic migration
 uv run alembic revision --autogenerate -m "<description>"
 ```
@@ -159,6 +162,36 @@ If you need to ensure that data is flushed to the database, to run constraints o
 - Frontend: Jest with React Testing Library
 - Use existing fixtures and avoid redundant setup
 - Mock external services appropriately
+
+### Load Testing
+
+Polar includes a comprehensive load testing infrastructure for validating payment processing performance and capacity:
+
+- **Location**: `server/load_tests/`
+- **Framework**: Locust (Python-based HTTP load testing)
+- **Documentation**: See `server/load_tests/README.md`
+
+**Test Scenarios:**
+- Checkout flow (creation, update, confirmation)
+
+**Running Load Tests:**
+```bash
+cd server
+
+# Interactive mode (recommended for exploration)
+uv run task loadtest
+# Open http://localhost:8089, configure users, and start
+
+```
+
+**Configuration:**
+Create `server/.env.loadtest` with:
+```bash
+LOAD_TEST_HOST=http://127.0.0.1:8000
+LOAD_TEST_PRODUCT_ID=<test-product-uuid>
+LOAD_TEST_API_TOKEN=<personal-access-token>
+LOAD_TEST_CUSTOMER_EMAIL=loadtest@polar.sh  # Optional, defaults to loadtest@polar.sh
+```
 
 ## Environment Setup
 

@@ -22,19 +22,13 @@ export default async function Layout(props: {
 
   return (
     <div className="flex min-h-screen grow flex-col">
-      <div className="dark:bg-polar-900 flex w-full flex-col bg-gray-50">
-        <div className="mx-auto flex w-full max-w-5xl flex-col justify-center gap-y-12 px-4 py-12 lg:px-0">
-          <div className="flex flex-row items-center gap-x-4">
-            <Avatar
-              className="h-10 w-10"
-              avatar_url={organization.avatar_url}
-              name={organization.name}
-            />
-            <h3 className="text-lg">{organization.name}</h3>
-          </div>
-          <div>
-            <h2 className="text-4xl">Customer Portal</h2>
-          </div>
+      <div className="flex w-full flex-col">
+        <div className="flex flex-col justify-center gap-y-12 px-4 py-4 lg:px-8 lg:py-8">
+          <Avatar
+            className="h-8 w-8"
+            avatar_url={organization.avatar_url}
+            name={organization.name}
+          />
         </div>
       </div>
       <div className="flex w-full flex-col items-stretch gap-6 px-4 py-8 md:mx-auto md:max-w-5xl md:flex-row md:gap-12 lg:px-0">

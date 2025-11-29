@@ -30,7 +30,10 @@ from polar.meter.service import meter as meter_service
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.file import File, FileServiceTypes
-from polar.models.organization import OrganizationDetails, OrganizationStatus
+from polar.models.organization import (
+    OrganizationDetails,
+    OrganizationStatus,
+)
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate
@@ -48,6 +51,7 @@ from polar.redis import Redis, create_redis
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
+from scripts.seeds_full_analytics import create_full_seed_analytics
 
 cli = typer.Typer()
 
@@ -434,6 +438,99 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             ],
         },
         {
+            "name": "Polar Demo",
+            "slug": "polar-demo",
+            "email": "demo@polar.sh",
+            "website": "https://polar.sh",
+            "bio": "A comprehensive demo organization with full analytics data.",
+            "status": OrganizationStatus.ACTIVE,
+            "details": {
+                "about": "Demo organization showcasing all Polar features with realistic data.",
+                "intended_use": "Full demo with products, subscriptions, orders, and analytics.",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "Various SaaS products with monthly and yearly subscriptions plus one-time purchases.",
+                "customer_acquisition": ["website", "api"],
+                "future_annual_revenue": 5000000,
+                "previous_annual_revenue": 1000000,
+            },
+            "benefits": {
+                "priority-support": {
+                    "type": BenefitType.custom,
+                    "description": "Priority customer support",
+                },
+                "demo-download": {
+                    "type": BenefitType.downloadables,
+                    "description": "Demo app download",
+                    "properties": {
+                        "files": [
+                            {
+                                "name": "polar-demo-app.zip",
+                                "mime_type": "application/zip",
+                                "url": "https://example.com/polar-demo-app.zip",
+                                "path": "/demo/polar-demo-app.zip",
+                                "size": 1024000,
+                            },
+                        ],
+                    },
+                },
+                "demo-license": {
+                    "type": BenefitType.license_keys,
+                    "description": "Demo license key",
+                },
+            },
+            "products": [
+                {
+                    "name": "Starter Plan",
+                    "description": "Perfect for individuals and small teams getting started",
+                    "price": 1900,
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "benefits": ["priority-support"],
+                },
+                {
+                    "name": "Starter Plan (Yearly)",
+                    "description": "Perfect for individuals and small teams - save 20% with yearly billing",
+                    "price": 18000,
+                    "recurring": SubscriptionRecurringInterval.year,
+                    "benefits": ["priority-support"],
+                },
+                {
+                    "name": "Pro Plan",
+                    "description": "For growing teams that need more power and flexibility",
+                    "price": 4900,
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "benefits": ["priority-support", "demo-download", "demo-license"],
+                },
+                {
+                    "name": "Pro Plan (Yearly)",
+                    "description": "For growing teams - save 20% with yearly billing",
+                    "price": 47000,
+                    "recurring": SubscriptionRecurringInterval.year,
+                    "benefits": ["priority-support", "demo-download", "demo-license"],
+                },
+                {
+                    "name": "Enterprise Plan",
+                    "description": "For large organizations with advanced needs",
+                    "price": 19900,
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "benefits": ["priority-support", "demo-download", "demo-license"],
+                },
+                {
+                    "name": "Lifetime License",
+                    "description": "One-time purchase for lifetime access",
+                    "price": 29900,
+                    "recurring": None,
+                    "benefits": ["demo-download", "demo-license"],
+                },
+                {
+                    "name": "Add-on Pack",
+                    "description": "Additional features pack - one-time purchase",
+                    "price": 4900,
+                    "recurring": None,
+                },
+            ],
+        },
+        {
             "name": "Admin Org",
             "slug": "admin-org",
             "email": "admin@polar.sh",
@@ -728,6 +825,12 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             # This would require more complex checkout creation logic
             pass
 
+        # Create comprehensive analytics data for Polar Demo organization
+        if org_data["slug"] == "polar-demo":
+            await create_full_seed_analytics(
+                session, organization, org_products, auth_subject
+            )
+
         # Downgrade user from admin (for non-admin users)
         await user_repository.update(
             user, update_dict={"is_admin": org_data.get("is_admin", False)}
@@ -735,7 +838,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
 
     await session.commit()
     print("✅ Sample data created successfully!")
-    print("Created 3 organizations with users, products, benefits, and customers")
+    print("Created organizations with users, products, benefits, and customers")
 
 
 @cli.command()

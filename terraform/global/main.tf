@@ -39,3 +39,19 @@ resource "tfe_variable" "apple_key_value" {
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
 }
+
+resource "tfe_variable" "ghcr_auth_token" {
+  key             = "ghcr_auth_token"
+  category        = "terraform"
+  description     = "GitHub Container Registry auth token"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}
+
+resource "tfe_variable" "ghcr_username" {
+  key             = "ghcr_username"
+  category        = "terraform"
+  description     = "GitHub username for GHCR authentication"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}

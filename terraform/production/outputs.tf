@@ -3,6 +3,11 @@ output "render_project_id" {
   value       = render_project.polar.id
 }
 
+output "sandbox_environment_id" {
+  description = "The Sandbox environment ID within the Polar project."
+  value       = render_project.polar.environments["Sandbox"].id
+}
+
 output "postgres_id" {
   description = "The postgres ID. Used for the render_postgres data source."
   value       = render_postgres.db.id

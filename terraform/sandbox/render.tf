@@ -19,11 +19,6 @@ data "tfe_outputs" "production" {
   workspace    = "polar"
 }
 
-# The render project is owned by the production environment.
-data "render_project" "polar" {
-  id = data.tfe_outputs.production.values.render_project_id
-}
-
 data "render_postgres" "db" {
   id = data.tfe_outputs.production.values.postgres_id
 }
@@ -60,7 +55,7 @@ locals {
 # =============================================================================
 
 resource "render_env_group" "google_sandbox" {
-  environment_id = data.render_project.polar.environments["Sandbox"].id
+  environment_id = data.tfe_outputs.production.values.sandbox_environment_id
   name           = "google-sandbox"
   env_vars = {
     POLAR_GOOGLE_CLIENT_ID     = { value = var.google_client_id_sandbox }
@@ -69,7 +64,7 @@ resource "render_env_group" "google_sandbox" {
 }
 
 resource "render_env_group" "openai_sandbox" {
-  environment_id = data.render_project.polar.environments["Sandbox"].id
+  environment_id = data.tfe_outputs.production.values.sandbox_environment_id
   name           = "openai-sandbox"
   env_vars = {
     POLAR_OPENAI_API_KEY = { value = var.openai_api_key_sandbox }
@@ -77,7 +72,7 @@ resource "render_env_group" "openai_sandbox" {
 }
 
 resource "render_env_group" "backend_sandbox" {
-  environment_id = data.render_project.polar.environments["Sandbox"].id
+  environment_id = data.tfe_outputs.production.values.sandbox_environment_id
   name           = "backend-sandbox"
   env_vars = {
     POLAR_USER_SESSION_COOKIE_KEY              = { value = "polar_sandbox_session" }
@@ -114,7 +109,7 @@ resource "render_env_group" "backend_sandbox" {
 }
 
 resource "render_env_group" "aws_s3_sandbox" {
-  environment_id = data.render_project.polar.environments["Sandbox"].id
+  environment_id = data.tfe_outputs.production.values.sandbox_environment_id
   name           = "aws-s3-sandbox"
   env_vars = {
     POLAR_AWS_REGION                       = { value = "us-east-2" }
@@ -132,7 +127,7 @@ resource "render_env_group" "aws_s3_sandbox" {
 }
 
 resource "render_env_group" "github_sandbox" {
-  environment_id = data.render_project.polar.environments["Sandbox"].id
+  environment_id = data.tfe_outputs.production.values.sandbox_environment_id
   name           = "github-sandbox"
   env_vars = {
     POLAR_GITHUB_CLIENT_ID                           = { value = var.github_client_id_sandbox }
@@ -146,7 +141,7 @@ resource "render_env_group" "github_sandbox" {
 }
 
 resource "render_env_group" "stripe_sandbox" {
-  environment_id = data.render_project.polar.environments["Sandbox"].id
+  environment_id = data.tfe_outputs.production.values.sandbox_environment_id
   name           = "stripe-sandbox"
   env_vars = {
     POLAR_STRIPE_CONNECT_WEBHOOK_SECRET = { value = var.stripe_connect_webhook_secret_sandbox }
@@ -156,7 +151,7 @@ resource "render_env_group" "stripe_sandbox" {
 }
 
 resource "render_env_group" "apple_sandbox" {
-  environment_id = data.render_project.polar.environments["Sandbox"].id
+  environment_id = data.tfe_outputs.production.values.sandbox_environment_id
   name           = "apple-sandbox"
   env_vars = {
     POLAR_APPLE_CLIENT_ID = { value = var.apple_client_id }
@@ -171,7 +166,7 @@ resource "render_env_group" "apple_sandbox" {
 # =============================================================================
 
 resource "render_web_service" "api_sandbox" {
-  environment_id     = data.render_project.polar.environments["Sandbox"].id
+  environment_id     = data.tfe_outputs.production.values.sandbox_environment_id
   name               = "api-sandbox"
   plan               = "standard"
   region             = "ohio"
@@ -220,7 +215,7 @@ resource "render_web_service" "api_sandbox" {
 }
 
 resource "render_web_service" "worker_sandbox" {
-  environment_id    = data.render_project.polar.environments["Sandbox"].id
+  environment_id    = data.tfe_outputs.production.values.sandbox_environment_id
   name              = "worker-sandbox"
   plan              = "pro"
   region            = "ohio"

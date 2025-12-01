@@ -7,13 +7,10 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
-import KeyboardArrowUpOutlined from '@mui/icons-material/KeyboardArrowUpOutlined'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { ArrowLeftIcon } from 'lucide-react'
-import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
+import { SpansTitle } from '../../SpansTitle'
 
 const PAGE_SIZE = 50
 
@@ -89,60 +86,13 @@ export default function EventDetailPage({
 
   return (
     <DashboardBody
-      title={
-        <div className="flex flex-col gap-y-6">
-          {event.parent_id ? (
-            <Link
-              href={`/dashboard/${organization.slug}/analytics/events/${event.parent_id}`}
-              className="flex w-fit flex-row items-center gap-x-4 text-sm"
-            >
-              <Button
-                variant="secondary"
-                size="sm"
-                className="aspect-square size-6 rounded-md"
-              >
-                <KeyboardArrowUpOutlined className="h-2 w-2" />
-              </Button>
-              <span>Parent Event</span>
-            </Link>
-          ) : eventType ? (
-            <Link
-              href={`/dashboard/${organization.slug}/analytics/costs/${eventType.id}`}
-              className="group -my-2 -ml-3 rounded-xl py-2 pr-3.5 pl-3 transition-colors duration-200 hover:bg-gray-50"
-            >
-              <span className="flex items-center gap-x-2 overflow-hidden">
-                <span className="-translate-x-4 opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100">
-                  <ArrowLeftIcon strokeWidth={2} className="size-4" />
-                </span>
-                <span className="-translate-x-6 transition-all duration-200 group-hover:translate-x-0">
-                  {eventType.label}
-                </span>
-              </span>
-            </Link>
-          ) : (
-            <span>Event</span>
-          )}
-        </div>
-      }
+      title={<SpansTitle organization={organization} eventType={eventType} />}
+      header={<div className="h-10" />}
       className="flex flex-col gap-y-12"
-      contextViewPlacement="right"
-      contextView={
-        event.customer ? (
-          <CustomerContextView
-            organization={organization}
-            customer={event.customer as schemas['Customer']}
-          />
-        ) : event.external_customer_id ? (
-          <AnonymousCustomerContextView
-            externalCustomerId={event.external_customer_id}
-          />
-        ) : undefined
-      }
-      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
     >
       <div className="flex flex-col gap-y-4">
         <div className="flex flex-row items-center justify-between gap-x-4">
-          <h3 className="text-4xl">{event.label}</h3>
+          <h3 className="text-3xl font-medium">{event.label}</h3>
           {'_cost' in event.metadata && event.metadata._cost && (
             <h3 className="dark:text-polar-500 font-mono text-4xl text-gray-400">
               {formatSubCentCurrency(
@@ -152,6 +102,20 @@ export default function EventDetailPage({
             </h3>
           )}
         </div>
+
+        <div>
+          {event.customer ? (
+            <CustomerContextView
+              organization={organization}
+              customer={event.customer as schemas['Customer']}
+            />
+          ) : event.external_customer_id ? (
+            <AnonymousCustomerContextView
+              externalCustomerId={event.external_customer_id}
+            />
+          ) : undefined}
+        </div>
+
         <span className="dark:text-polar-500 font-mono text-gray-500 capitalize">
           {new Date(event.timestamp).toLocaleDateString('en-US', {
             hour: '2-digit',

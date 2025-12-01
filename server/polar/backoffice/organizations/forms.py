@@ -139,3 +139,35 @@ class UpdateOrganizationInternalNotesForm(forms.BaseForm):
             description="Internal notes about this organization (admin only)",
         ),
     ]
+
+
+class UpdateOrganizationSocialsForm(forms.BaseForm):
+    """Form for editing organization social media links."""
+
+    youtube_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://youtube.com/@channel"),
+        Field(
+            None,
+            title="YouTube",
+            description="YouTube channel URL",
+        ),
+    ]
+    instagram_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://instagram.com/username"),
+        Field(
+            None,
+            title="Instagram",
+            description="Instagram profile URL",
+        ),
+    ]
+    linkedin_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://linkedin.com/company/name"),
+        Field(
+            None,
+            title="LinkedIn",
+            description="LinkedIn profile or company page URL",
+        ),
+    ]

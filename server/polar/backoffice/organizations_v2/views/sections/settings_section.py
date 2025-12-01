@@ -221,6 +221,52 @@ class SettingsSection:
                         ):
                             text("No details provided")
 
+            # Social media links card
+            with card(bordered=True):
+                with tag.div(classes="flex items-center justify-between mb-4"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Social Media Links")
+                    with button(
+                        variant="secondary",
+                        size="sm",
+                        ghost=True,
+                        hx_get=str(
+                            request.url_for(
+                                "organizations-v2:edit_socials",
+                                organization_id=self.org.id,
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Edit")
+
+                socials = self.org.socials or []
+                if socials:
+                    with tag.div(classes="space-y-3"):
+                        for social in socials:
+                            platform = social.get("platform", "").title()
+                            url = social.get("url", "")
+                            if platform and url:
+                                with tag.div(
+                                    classes="flex items-center justify-between py-1.5"
+                                ):
+                                    with tag.span(
+                                        classes="text-sm font-medium capitalize"
+                                    ):
+                                        text(platform)
+                                    with tag.a(
+                                        href=url,
+                                        target="_blank",
+                                        rel="noopener noreferrer",
+                                        classes="text-sm link link-primary truncate max-w-xs",
+                                    ):
+                                        text(url)
+                else:
+                    with tag.div(
+                        classes="text-sm text-base-content/60 text-center py-4"
+                    ):
+                        text("No social media links configured")
+
             # Danger zone card
             with card(bordered=True, classes="border-error/20 bg-error/5"):
                 with tag.h2(classes="text-lg font-bold mb-4 text-error"):

@@ -26,6 +26,7 @@ from polar.backoffice.organizations.forms import (
     UpdateOrganizationBasicForm,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationInternalNotesForm,
+    UpdateOrganizationSocialsForm,
 )
 from polar.models import Organization, User, UserOrganization
 from polar.models.organization import OrganizationStatus
@@ -1097,6 +1098,106 @@ async def edit_order_settings(
                     with button(ghost=True):
                         text("Cancel")
                 with button(type="submit", variant="primary"):
+                    text("Save Changes")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/edit-socials",
+    name="organizations-v2:edit_socials",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit_socials(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Edit organization social media links."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    validation_error = None
+
+    if request.method == "POST":
+        try:
+            data = await request.form()
+            form = UpdateOrganizationSocialsForm.model_validate_form(data)
+
+            # Build socials list from form data
+            socials: list[dict[str, str]] = []
+            if form.youtube_url:
+                socials.append({"platform": "youtube", "url": str(form.youtube_url)})
+            if form.instagram_url:
+                socials.append(
+                    {"platform": "instagram", "url": str(form.instagram_url)}
+                )
+            if form.linkedin_url:
+                socials.append({"platform": "linkedin", "url": str(form.linkedin_url)})
+
+            # Update organization with new socials
+            organization = await repository.update(
+                organization,
+                update_dict={"socials": socials},
+            )
+            redirect_url = (
+                str(
+                    request.url_for(
+                        "organizations-v2:detail", organization_id=organization_id
+                    )
+                )
+                + "?section=settings"
+            )
+            return HXRedirectResponse(request, redirect_url, 303)
+
+        except ValidationError as e:
+            validation_error = e
+
+    # Prepare data for form rendering - extract URLs from existing socials
+    existing_socials = organization.socials or []
+    form_data: dict[str, str | None] = {
+        "youtube_url": None,
+        "instagram_url": None,
+        "linkedin_url": None,
+    }
+    for social in existing_socials:
+        platform = social.get("platform", "").lower()
+        url = social.get("url", "")
+        if platform == "youtube":
+            form_data["youtube_url"] = url
+        elif platform == "instagram":
+            form_data["instagram_url"] = url
+        elif platform == "linkedin":
+            form_data["linkedin_url"] = url
+
+    with modal("Edit Social Media Links", open=True):
+        with tag.p(classes="text-sm text-base-content/60 mb-4"):
+            text("Update organization social media links for creator outreach")
+
+        with UpdateOrganizationSocialsForm.render(
+            data=form_data,
+            validation_error=validation_error,
+            hx_post=str(
+                request.url_for(
+                    "organizations-v2:edit_socials", organization_id=organization_id
+                )
+            ),
+            hx_target="#modal",
+            classes="space-y-4",
+        ):
+            # Action buttons
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
                     text("Save Changes")
 
     return None

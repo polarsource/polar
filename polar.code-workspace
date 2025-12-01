@@ -9,6 +9,10 @@
       "name": "server"
     },
     {
+      "path": "terraform",
+      "name": "terraform"
+    },
+    {
       "path": ".",
       "name": "root"
     },

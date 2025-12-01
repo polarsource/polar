@@ -4,7 +4,6 @@ import re
 
 import pytest
 
-from polar.models.order import OrderBillingReasonInternal
 from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
@@ -51,19 +50,10 @@ async def test_MaintainerNewPaidSubscriptionNotification() -> None:
 @pytest.mark.asyncio
 async def test_MaintainerNewProductSaleNotification() -> None:
     n = MaintainerNewProductSaleNotificationPayload(
-        customer_email="birk@polar.sh",
-        customer_name="Birk",
-        billing_address_country="US",
-        billing_address_city="San Francisco",
-        billing_address_line1="123 Main St",
+        customer_name="birk@polar.sh",
         product_name="My Awesome Digital Product",
         product_price_amount=500,
-        product_image_url=None,
-        order_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-        order_date="2024-11-05T20:41:00Z",
         organization_name="myorg",
-        organization_slug="myorg",
-        billing_reason=OrderBillingReasonInternal.purchase,
     )
 
     await check_diff(n.render())
@@ -84,15 +74,10 @@ async def test_MaintainerCreateAccountNotificationPayload() -> None:
     "payload",
     [
         MaintainerNewProductSaleNotificationPayload(
-            customer_email="{{ 123456 * 9 }}",
             customer_name="{{ 123456 * 9 }}",
             product_name="{{ 123456 * 9 }}",
             product_price_amount=500,
-            order_id="{{ 123456 * 9 }}",
-            order_date="2024-11-05T20:41:00Z",
             organization_name="{{ 123456 * 9 }}",
-            organization_slug="{{ 123456 * 9 }}",
-            billing_reason=OrderBillingReasonInternal.purchase,
         ),
         MaintainerCreateAccountNotificationPayload(
             organization_name="{{ 123456 * 9 }}",
@@ -126,15 +111,10 @@ async def test_all_notification_types() -> None:
             )
         elif notification_type == NotificationType.maintainer_new_product_sale:
             n = MaintainerNewProductSaleNotificationPayload(
-                customer_email="john@example.com",
                 customer_name="John Doe",
                 product_name="Ice cream sandwich",
                 product_price_amount=500,
-                order_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                order_date="2024-11-05T20:41:00Z",
                 organization_name="Ice Cream Van",
-                organization_slug="ice-cream-van",
-                billing_reason=OrderBillingReasonInternal.purchase,
             )
         elif notification_type == NotificationType.maintainer_new_paid_subscription:
             n = MaintainerNewPaidSubscriptionNotificationPayload(

@@ -3,14 +3,11 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Literal
 
-import pycountry
 from babel.numbers import format_currency
 from pydantic import UUID4, BaseModel, Discriminator, computed_field
 
-from polar.config import settings
 from polar.email.react import render_email_template
 from polar.kit.schemas import Schema
-from polar.models.order import OrderBillingReasonInternal
 
 
 class NotificationType(StrEnum):
@@ -92,48 +89,14 @@ class MaintainerNewPaidSubscriptionNotification(NotificationBase):
 
 
 class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
-    customer_email: str
-    customer_name: str | None = None
-    billing_address_country: str | None = None
-    billing_address_city: str | None = None
-    billing_address_line1: str | None = None
+    customer_name: str
     product_name: str
     product_price_amount: int
-    product_image_url: str | None = None
-    order_id: str
-    order_date: str
     organization_name: str
-    organization_slug: str
-    billing_reason: OrderBillingReasonInternal
 
     @computed_field
     def formatted_price_amount(self) -> str:
         return format_currency(self.product_price_amount / 100, "USD", locale="en_US")
-
-    @computed_field
-    def formatted_billing_reason(self) -> str:
-        match self.billing_reason:
-            case OrderBillingReasonInternal.purchase:
-                return "One-time purchase"
-            case OrderBillingReasonInternal.subscription_create:
-                return "New subscription"
-            case OrderBillingReasonInternal.subscription_cycle:
-                return "Subscription renewal"
-            case OrderBillingReasonInternal.subscription_cycle_after_trial:
-                return "Subscription started after trial"
-            case OrderBillingReasonInternal.subscription_update:
-                return "Subscription update"
-
-    @computed_field
-    def formatted_address_country(self) -> str | None:
-        if not self.billing_address_country:
-            return None
-        country = pycountry.countries.get(alpha_2=self.billing_address_country)
-        return country.name if country else self.billing_address_country
-
-    @computed_field
-    def order_url(self) -> str:
-        return f"{settings.FRONTEND_BASE_URL}/dashboard/{self.organization_slug}/sales/{self.order_id}"
 
     def subject(self) -> str:
         return f"You've made a new sale ({self.formatted_price_amount})!"

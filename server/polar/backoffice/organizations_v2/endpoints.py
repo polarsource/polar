@@ -1115,6 +1115,11 @@ async def edit_socials(
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
     """Edit organization social media links."""
+    # Platform name constants for consistency
+    PLATFORM_YOUTUBE = "youtube"
+    PLATFORM_INSTAGRAM = "instagram"
+    PLATFORM_LINKEDIN = "linkedin"
+
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -1131,13 +1136,17 @@ async def edit_socials(
             # Build socials list from form data
             socials: list[dict[str, str]] = []
             if form.youtube_url:
-                socials.append({"platform": "youtube", "url": str(form.youtube_url)})
+                socials.append(
+                    {"platform": PLATFORM_YOUTUBE, "url": str(form.youtube_url)}
+                )
             if form.instagram_url:
                 socials.append(
-                    {"platform": "instagram", "url": str(form.instagram_url)}
+                    {"platform": PLATFORM_INSTAGRAM, "url": str(form.instagram_url)}
                 )
             if form.linkedin_url:
-                socials.append({"platform": "linkedin", "url": str(form.linkedin_url)})
+                socials.append(
+                    {"platform": PLATFORM_LINKEDIN, "url": str(form.linkedin_url)}
+                )
 
             # Update organization with new socials
             organization = await repository.update(
@@ -1167,11 +1176,11 @@ async def edit_socials(
     for social in existing_socials:
         platform = social.get("platform", "").lower()
         url = social.get("url", "")
-        if platform == "youtube":
+        if platform == PLATFORM_YOUTUBE:
             form_data["youtube_url"] = url
-        elif platform == "instagram":
+        elif platform == PLATFORM_INSTAGRAM:
             form_data["instagram_url"] = url
-        elif platform == "linkedin":
+        elif platform == PLATFORM_LINKEDIN:
             form_data["linkedin_url"] = url
 
     with modal("Edit Social Media Links", open=True):

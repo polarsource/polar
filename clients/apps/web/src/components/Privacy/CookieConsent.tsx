@@ -70,7 +70,7 @@ export function CookieConsent({ countryCode }: { countryCode: string | null }) {
     declineCookies()
   }
 
-  if (isEU) {
+  if (!isEU || doNotTrackParameter) {
     return null
   }
 

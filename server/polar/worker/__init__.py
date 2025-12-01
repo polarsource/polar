@@ -140,6 +140,23 @@ class LogfireMiddleware(dramatiq.Middleware):
         return self.after_process_message(broker, message)
 
 
+class AsyncIOMiddleware(middleware.AsyncIO):
+    """
+    See: https://github.com/Bogdanp/dramatiq/pull/802
+    """
+
+    def after_process_message(
+        self,
+        broker: dramatiq.Broker,
+        message: dramatiq.Message[Any],
+        *,
+        result: Any | None = None,
+        exception: Exception | None = None,
+    ) -> None:
+        if exception is not None:
+            exception.__traceback__ = None
+
+
 broker = RedisBroker(
     connection_pool=redis.ConnectionPool.from_url(
         settings.redis_url,
@@ -163,7 +180,7 @@ broker.add_middleware(
     )
 )
 broker.add_middleware(HealthMiddleware())
-broker.add_middleware(middleware.AsyncIO())
+broker.add_middleware(AsyncIOMiddleware())
 broker.add_middleware(middleware.CurrentMessage())
 broker.add_middleware(MaxRetriesMiddleware())
 broker.add_middleware(SQLAlchemyMiddleware())

@@ -18,12 +18,14 @@ export function NotificationNewSale({
   order_date,
   order_url,
 }: schemas['MaintainerNewProductSaleNotificationPayload']) {
-  const displayName = customer_name || customer_email
+  const displayName = customer_name || customer_email || 'A customer'
 
-  const formattedDate = new Date(order_date).toLocaleDateString('en-US', {
-    month: "long",
-    day: 'numeric',
-  })
+  const formattedDate = order_date
+    ? new Date(order_date).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+      })
+    : null
 
   const addressParts = [billing_address_line1, billing_address_city].filter(
     Boolean,
@@ -40,18 +42,20 @@ export function NotificationNewSale({
 
       <Section className="pt-8">
         <Text className="m-0 text-lg text-gray-900">
-          <strong>{displayName}</strong> placed an order on {formattedDate}!
+          <strong>{displayName}</strong> placed an order{formattedDate ? ` on ${formattedDate}` : ''}!
         </Text>
       </Section>
 
-      <Section className="mt-6 mb-8">
-        <Button href={order_url}>View order</Button>
-      </Section>
+      {order_url && (
+        <Section className="mt-6 mb-8">
+          <Button href={order_url}>View order</Button>
+        </Section>
+      )}
 
       <Hr className="my-6 border-gray-200" />
 
       <Section>
-        <Text className="my-0 mb-4 text-base font-semibold text-gray-900">
+        <Text className="my-0 mb-2 text-base font-semibold text-gray-900">
           Order Summary
         </Text>
         <table className="w-full">
@@ -82,21 +86,25 @@ export function NotificationNewSale({
 
       <Hr className="my-6 border-gray-200" />
 
-      <Section>
-        <Text className="m-0 text-sm font-semibold text-gray-900">
-          Order Type
-        </Text>
-        <Text className="m-0 text-sm text-gray-600">
-          {formatted_billing_reason}
-        </Text>
-      </Section>
+      {formatted_billing_reason && (
+        <Section>
+          <Text className="m-0 text-sm font-semibold text-gray-900">
+            Order Type
+          </Text>
+          <Text className="m-0 text-sm text-gray-600">
+            {formatted_billing_reason}
+          </Text>
+        </Section>
+      )}
 
       <Section className="mt-4 mb-6">
         <Text className="m-0 text-sm font-semibold text-gray-900">
           Customer
         </Text>
         <Text className="m-0 text-sm text-gray-600">{displayName}</Text>
-        <Text className="m-0 text-sm text-gray-600">{customer_email}</Text>
+        {customer_email && (
+          <Text className="m-0 text-sm text-gray-600">{customer_email}</Text>
+        )}
         {formattedAddress && (
           <Text className="m-0 text-sm text-gray-600">{formattedAddress}</Text>
         )}

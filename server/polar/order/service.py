@@ -1563,7 +1563,9 @@ class OrderService:
                     type=NotificationType.maintainer_new_product_sale,
                     payload=MaintainerNewProductSaleNotificationPayload(
                         customer_email=customer.email,
-                        customer_name=customer.name or order.billing_name,
+                        customer_name=customer.name
+                        or order.billing_name
+                        or customer.email,
                         billing_address_country=billing_address.country
                         if billing_address
                         else None,

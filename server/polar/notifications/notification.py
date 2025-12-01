@@ -92,26 +92,29 @@ class MaintainerNewPaidSubscriptionNotification(NotificationBase):
 
 
 class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
-    customer_email: str
-    customer_name: str | None = None
+    product_name: str
+    product_price_amount: int
+    customer_name: str = ""
+    organization_name: str = ""
+
+    customer_email: str | None = None
     billing_address_country: str | None = None
     billing_address_city: str | None = None
     billing_address_line1: str | None = None
-    product_name: str
-    product_price_amount: int
     product_image_url: str | None = None
-    order_id: str
-    order_date: str
-    organization_name: str
-    organization_slug: str
-    billing_reason: OrderBillingReasonInternal
+    order_id: str | None = None
+    order_date: str | None = None
+    organization_slug: str | None = None
+    billing_reason: OrderBillingReasonInternal | None = None
 
     @computed_field
     def formatted_price_amount(self) -> str:
         return format_currency(self.product_price_amount / 100, "USD", locale="en_US")
 
     @computed_field
-    def formatted_billing_reason(self) -> str:
+    def formatted_billing_reason(self) -> str | None:
+        if self.billing_reason is None:
+            return None
         match self.billing_reason:
             case OrderBillingReasonInternal.purchase:
                 return "One-time purchase"
@@ -132,7 +135,9 @@ class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
         return country.name if country else self.billing_address_country
 
     @computed_field
-    def order_url(self) -> str:
+    def order_url(self) -> str | None:
+        if not self.organization_slug or not self.order_id:
+            return None
         return f"{settings.FRONTEND_BASE_URL}/dashboard/{self.organization_slug}/sales/{self.order_id}"
 
     def subject(self) -> str:

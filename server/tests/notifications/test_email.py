@@ -116,6 +116,31 @@ async def test_injection_payloads(payload: NotificationPayloadBase) -> None:
 
 
 @pytest.mark.asyncio
+async def test_MaintainerNewProductSaleNotification_backwards_compatibility() -> None:
+    old_notification_data = {
+        "product_name": "Old Product",
+        "product_price_amount": 1000,
+    }
+
+    n = MaintainerNewProductSaleNotificationPayload.model_validate(
+        old_notification_data
+    )
+
+    assert n.product_name == "Old Product"
+    assert n.product_price_amount == 1000
+    assert n.customer_name == ""
+    assert n.organization_name == ""
+    assert n.customer_email is None
+    assert n.order_id is None
+    assert n.order_date is None
+    assert n.billing_reason is None
+
+    subject, body = n.render()
+    assert "Old Product" in body
+    assert "$10.00" in subject
+
+
+@pytest.mark.asyncio
 async def test_all_notification_types() -> None:
     n: NotificationPayload
     for notification_type in NotificationType:

@@ -831,13 +831,25 @@ export interface components {
     }
     /** MaintainerNewProductSaleNotificationPayload */
     MaintainerNewProductSaleNotificationPayload: {
-      /** Customer Email */
-      customer_email: string
+      /** Product Name */
+      product_name: string
+      /** Product Price Amount */
+      product_price_amount: number
       /**
        * Customer Name
+       * @default A customer
+       */
+      customer_name: string
+      /**
+       * Organization Name
+       * @default
+       */
+      organization_name: string
+      /**
+       * Customer Email
        * @default null
        */
-      customer_name: string | null
+      customer_email: string | null
       /**
        * Billing Address Country
        * @default null
@@ -853,32 +865,45 @@ export interface components {
        * @default null
        */
       billing_address_line1: string | null
-      /** Product Name */
-      product_name: string
-      /** Product Price Amount */
-      product_price_amount: number
       /**
        * Product Image Url
        * @default null
        */
       product_image_url: string | null
-      /** Order Id */
-      order_id: string
-      /** Order Date */
-      order_date: string
-      /** Organization Name */
-      organization_name: string
-      /** Organization Slug */
-      organization_slug: string
-      billing_reason: components['schemas']['OrderBillingReasonInternal']
+      /**
+       * Order Id
+       * @default null
+       */
+      order_id: string | null
+      /**
+       * Order Date
+       * @default null
+       */
+      order_date: string | null
+      /**
+       * Organization Slug
+       * @default null
+       */
+      organization_slug: string | null
+      /**
+       * Billing Reason
+       * @default null
+       */
+      billing_reason: components['schemas']['OrderBillingReasonInternal'] | null
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
-      /** Formatted Billing Reason */
-      readonly formatted_billing_reason: string
+      /**
+       * Formatted Billing Reason
+       * @default null
+       */
+      readonly formatted_billing_reason: string | null
       /** Formatted Address Country */
       readonly formatted_address_country: string | null
-      /** Order Url */
-      readonly order_url: string
+      /**
+       * Order Url
+       * @default null
+       */
+      readonly order_url: string | null
     }
     /** NotificationCreateAccountEmail */
     NotificationCreateAccountEmail: {

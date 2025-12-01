@@ -6,6 +6,8 @@ import { useModal } from '@/components/Modal/useModal'
 import { schemas } from '@polar-sh/client'
 import { CircleQuestionMarkIcon } from 'lucide-react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { getCostsSearchParams, DEFAULT_INTERVAL, getDefaultStartDate, getDefaultEndDate } from './utils'
 
 export function SpansTitle({
   organization,
@@ -18,10 +20,18 @@ export function SpansTitle({
     hide: hideEventCostCreationGuide,
   } = useModal()
 
+  const searchParams = useSearchParams()
+  const startDate = searchParams.get('startDate') ?? getDefaultStartDate()
+  const endDate = searchParams.get('endDate') ?? getDefaultEndDate()
+  const interval = searchParams.get('interval') ?? DEFAULT_INTERVAL
+  const searchString = getCostsSearchParams(startDate, endDate, interval)
+
   return (
     <div className="flex flex-row items-center justify-between gap-1.5">
       <h2 className="text-2xl font-medium whitespace-nowrap dark:text-white">
-        <Link href={`/dashboard/${organization.slug}/analytics/costs`}>
+        <Link
+          href={`/dashboard/${organization.slug}/analytics/costs${searchString ? `?${searchString}` : ''}`}
+        >
           Costs
         </Link>
       </h2>

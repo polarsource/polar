@@ -10,22 +10,21 @@ import {
   useInfiniteEvents,
 } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
-import { fromISODate, getTimestampFormatter, toISODate } from '@/utils/metrics'
+import { fromISODate, getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
-import {
-  eachDayOfInterval,
-  endOfToday,
-  format,
-  startOfDay,
-  subMonths,
-} from 'date-fns'
+import { eachDayOfInterval, format, startOfDay, subMonths } from 'date-fns'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { SpansHeader } from '../SpansHeader'
 import { SpansTitle } from '../SpansTitle'
+import {
+  DEFAULT_INTERVAL,
+  getDefaultEndDate,
+  getDefaultStartDate,
+} from '../utils'
 import { EditEventTypeModal } from './EditEventTypeModal'
 
 const PAGE_SIZE = 50
@@ -118,11 +117,11 @@ export default function SpanDetailPage({
 }: SpanDetailPageProps) {
   const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
-    parseAsString.withDefault(toISODate(subMonths(endOfToday(), 1))),
+    parseAsString.withDefault(getDefaultStartDate()),
   )
   const [endDateISOString, setEndDateISOString] = useQueryState(
     'endDate',
-    parseAsString.withDefault(toISODate(endOfToday())),
+    parseAsString.withDefault(getDefaultEndDate()),
   )
 
   const [startDate, endDate] = useMemo(() => {
@@ -142,7 +141,7 @@ export default function SpanDetailPage({
       'week',
       'month',
       'year',
-    ] as const).withDefault('day'),
+    ] as const).withDefault(DEFAULT_INTERVAL),
   )
 
   const {
@@ -321,7 +320,7 @@ export default function SpanDetailPage({
 
       {events.length > 0 && chartData.length > 0 && (
         <div className="mb-8 flex flex-col gap-y-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
             <div className="col-span-1">
               <div className="dark:bg-polar-700 rounded-3xl bg-gray-50 p-2">
                 <div className="flex flex-row items-center justify-between px-3 pt-2 pb-4">
@@ -363,7 +362,7 @@ export default function SpanDetailPage({
               </div>
             </div>
 
-            <div className="col-span-1 md:col-span-2">
+            <div className="col-span-1 2xl:col-span-2">
               <div className="dark:bg-polar-700 rounded-3xl bg-gray-50 p-2">
                 <div className="flex flex-row items-center justify-between px-3 pt-2 pb-4">
                   <h3 className="text-lg font-medium">Cost</h3>

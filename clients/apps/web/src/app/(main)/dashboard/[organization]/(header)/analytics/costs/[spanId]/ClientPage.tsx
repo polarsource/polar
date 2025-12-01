@@ -510,6 +510,7 @@ export default function SpanDetailPage({
                           key={event.id}
                           event={event}
                           organization={organization}
+                          eventType={eventType}
                           averageCost={costMetrics.averageCost}
                           p99Cost={costMetrics.p99Cost}
                         />
@@ -622,11 +623,13 @@ function getEventCostDeviation(
 }
 
 function EventRow({
+  eventType,
   event,
   organization,
   averageCost,
   p99Cost,
 }: {
+  eventType: schemas['EventType']
   event: schemas['Event']
   organization: schemas['Organization']
   averageCost: number
@@ -642,7 +645,7 @@ function EventRow({
     <tr>
       <td className="p-2">
         <Link
-          href={`/dashboard/${organization.slug}/analytics/events/${event.id}`}
+          href={`/dashboard/${organization.slug}/analytics/costs/${eventType.id}/${event.id}`}
           className="text-sm font-medium"
         >
           {event.label}

@@ -1,19 +1,14 @@
 'use client'
 
-import { AnonymousCustomerContextView } from '@/components/Customer/AnonymousCustomerContextView'
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
-import { LLMInferenceEventCard } from '@/components/Events/EventCard/LLMInferenceEventCard'
-import { TreeView } from '@/components/Events/TreeView'
+import { EventRow } from '@/components/Events/EventRow'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import KeyboardArrowUpOutlined from '@mui/icons-material/KeyboardArrowUpOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { ArrowLeftIcon } from 'lucide-react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
 
 const PAGE_SIZE = 50
@@ -28,7 +23,6 @@ export default function EventDetailPage({
   eventId,
 }: EventDetailPageProps) {
   const { data: event } = useEvent(organization.id, eventId)
-  const searchParams = useSearchParams()
 
   const {
     data: childrenData,
@@ -42,47 +36,10 @@ export default function EventDetailPage({
     hierarchical: true,
   })
 
-  const { data: eventTypes } = useEventTypes(organization.id)
-
-  const eventType = useMemo(() => {
-    if (!event || !eventTypes) {
-      return null
-    }
-
-    return (
-      eventTypes.items.find((eventType) => eventType.name === event.name) ||
-      null
-    )
-  }, [event, eventTypes])
-
-  const childEvents = useMemo(() => {
+  const children = useMemo(() => {
     if (!childrenData) return []
     return childrenData.pages.flatMap((page) => page.items)
   }, [childrenData])
-
-  const expandedEvent = useMemo(() => {
-    const expandedEventId = searchParams.get('event')
-    if (!expandedEventId || !event) {
-      return event
-    }
-
-    const findEventById = (
-      events: schemas['Event'][],
-    ): schemas['Event'] | undefined => {
-      for (const e of events) {
-        if (e.id === expandedEventId) {
-          return e
-        }
-        if (e.children && e.children.length > 0) {
-          const found = findEventById(e.children)
-          if (found) return found
-        }
-      }
-      return undefined
-    }
-
-    return findEventById(childEvents) || event
-  }, [searchParams, event, childEvents])
 
   if (!event) {
     return null
@@ -106,20 +63,6 @@ export default function EventDetailPage({
               </Button>
               <span>Parent Event</span>
             </Link>
-          ) : eventType ? (
-            <Link
-              href={`/dashboard/${organization.slug}/analytics/costs/${eventType.id}`}
-              className="group -my-2 -ml-3 rounded-xl py-2 pr-3.5 pl-3 transition-colors duration-200 hover:bg-gray-50"
-            >
-              <span className="flex items-center gap-x-2 overflow-hidden">
-                <span className="-translate-x-4 opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100">
-                  <ArrowLeftIcon strokeWidth={2} className="size-4" />
-                </span>
-                <span className="-translate-x-6 transition-all duration-200 group-hover:translate-x-0">
-                  {eventType.label}
-                </span>
-              </span>
-            </Link>
           ) : (
             <span>Event</span>
           )}
@@ -132,10 +75,6 @@ export default function EventDetailPage({
           <CustomerContextView
             organization={organization}
             customer={event.customer as schemas['Customer']}
-          />
-        ) : event.external_customer_id ? (
-          <AnonymousCustomerContextView
-            externalCustomerId={event.external_customer_id}
           />
         ) : undefined
       }
@@ -164,27 +103,47 @@ export default function EventDetailPage({
           })}
         </span>
       </div>
-      <div className="flex flex-col gap-y-3"></div>
-      <div className="flex w-full items-start justify-between gap-8">
-        <div className="w-96 flex-none">
-          {childEvents.length > 0 && (
-            <TreeView
-              rootEvent={event}
-              childEvents={childEvents}
-              organization={organization}
-            />
-          )}
-        </div>
-        <div className="flex-1">
-          {expandedEvent && (
-            <div className="flex-1">
-              {expandedEvent.source === 'user' && (
-                <LLMInferenceEventCard event={expandedEvent} />
-              )}
-            </div>
-          )}
-        </div>
+      <div className="flex flex-col gap-y-3">
+        <EventRow
+          event={event}
+          organization={organization}
+          expanded={true}
+          depth={0}
+          renderChildren={false}
+          renderEventLink={false}
+        />
       </div>
+      {children.length > 0 ? (
+        <div className="flex flex-col gap-y-8">
+          <div className="flex flex-row justify-between">
+            <h3 className="text-2xl">Child Events</h3>
+            <h3 className="dark:text-polar-500 text-2xl text-gray-400">
+              {children.length} {children.length === 1 ? 'Event' : 'Events'}
+            </h3>
+          </div>
+          <div className="flex flex-col gap-y-3">
+            {children.map((child) => (
+              <EventRow
+                key={child.id}
+                event={child}
+                organization={organization}
+                expanded
+                renderChildren={false}
+              />
+            ))}
+            {hasNextPage && (
+              <Button
+                className="self-start"
+                variant="secondary"
+                onClick={() => fetchNextPage()}
+                loading={isFetching}
+              >
+                Load More
+              </Button>
+            )}
+          </div>
+        </div>
+      ) : null}
     </DashboardBody>
   )
 }

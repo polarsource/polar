@@ -65,6 +65,7 @@ load_tests/
 ├── scenarios/               # Load test scenarios
 │   ├── __init__.py
 │   ├── checkout.py          # Checkout flow scenarios
+│   ├── event_ingestion.py   # Event ingestion scenarios
 └── regression/              # Performance regression tests (pytest)
     ├── __init__.py
     ├── conftest.py
@@ -89,6 +90,50 @@ load_tests/
 - Get checkout status (weight: 3)
 - Confirm checkout
 
+### 2. Event Ingestion (`scenarios/event_ingestion.py`)
+
+**EventIngestionUser**: Simulates production event ingestion patterns
+
+Based on observed production traffic for a specific merchant:
+- Peak: 750 events/minute
+- Power-law customer distribution (top 1 customer = 35%, top 5 = 78%, top 10 = 90%)
+- Event types: `generate.text` (70%), `generate.image` (30%)
+- Meter slugs: `v1:meter:pack` (60%), `v1:meter:tier` (40%)
+
+**Scaling Guide:**
+
+| Target Events/Min | Users | Description |
+|-------------------|-------|-------------|
+| ~750              | 5     | 1x production peak |
+| ~1500             | 10    | 2x production peak |
+| ~3750             | 25    | 5x production peak |
+| ~7500             | 50    | 10x production peak |
+
+**Required Environment Variables:**
+```bash
+LOAD_TEST_API_TOKEN=polar_pat_...                    # Required
+LOAD_TEST_EVENT_CUSTOMER_IDS=uuid1,uuid2,uuid3,...   # Required (comma-separated)
+LOAD_TEST_EVENT_ORGANIZATION_ID=uuid                 # Required
+LOAD_TEST_EVENT_BATCH_SIZE=10                        # Optional (default: 10)
+```
+
+**Running Event Ingestion Tests:**
+```bash
+# Pre-provision test customers in your organization first, then:
+
+# Interactive mode
+LOAD_TEST_EVENT_CUSTOMER_IDS="uuid1,uuid2,uuid3" \
+LOAD_TEST_EVENT_ORGANIZATION_ID="org-uuid" \
+LOAD_TEST_API_TOKEN="polar_pat_..." \
+uv run task loadtest
+
+# Select "EventIngestionUser" in the web UI
+
+# Headless mode (5 users = ~750 events/min)
+locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000 \
+       --users 5 --spawn-rate 1 --run-time 5m EventIngestionUser
+```
+
 
 ## Configuration
 
@@ -102,5 +147,12 @@ All configuration is managed via environment variables. See `load_tests/config.p
 LOAD_TEST_HOST=https://staging.polar.sh
 LOAD_TEST_API_TOKEN=polar_pat_...          # Personal access token
 LOAD_TEST_PRODUCT_ID=uuid-here             # Product for checkout tests
-LOAD_TEST_ORG_ID=uuid-here                 # Organization ID
+```
+
+#### Required (for event ingestion tests)
+
+```bash
+LOAD_TEST_EVENT_CUSTOMER_IDS=uuid1,uuid2,uuid3  # Comma-separated customer UUIDs
+LOAD_TEST_EVENT_ORGANIZATION_ID=uuid-here       # Organization UUID
+LOAD_TEST_EVENT_BATCH_SIZE=10                   # Events per batch (default: 10)
 ```

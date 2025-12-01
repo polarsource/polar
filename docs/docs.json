@@ -175,6 +175,7 @@
             "group": "Merchant of Record (MoR)",
             "pages": [
               "merchant-of-record/introduction",
+              "merchant-of-record/tax",
               "merchant-of-record/fees",
               "merchant-of-record/supported-countries",
               "merchant-of-record/acceptable-use",

@@ -92,29 +92,28 @@ load_tests/
 
 ### 2. Event Ingestion (`scenarios/event_ingestion.py`)
 
-**EventIngestionUser**: Simulates production event ingestion patterns
+**EventIngestionUser**: Simulates event ingestion patterns
 
-Based on observed production traffic for a specific merchant:
-- Peak: 750 events/minute
-- Power-law customer distribution (top 1 customer = 35%, top 5 = 78%, top 10 = 90%)
-- Event types: `generate.text` (70%), `generate.image` (30%)
-- Meter slugs: `v1:meter:pack` (60%), `v1:meter:tier` (40%)
+**Understanding RPS vs Events:**
+
+Each HTTP request sends a batch of events (default: 7 events per request).
+- 1 HTTP RPS = 1 × 7 = 7 events/sec = 420 events/min
+- 5 HTTP RPS = 5 × 7 = 35 events/sec = 2,100 events/min
 
 **Scaling Guide:**
 
-| Target Events/Min | Users | Description |
-|-------------------|-------|-------------|
-| ~750              | 5     | 1x production peak |
-| ~1500             | 10    | 2x production peak |
-| ~3750             | 25    | 5x production peak |
-| ~7500             | 50    | 10x production peak |
+| Target Events/Min | Users | HTTP RPS |
+|-------------------|-------|----------|
+| ~420              | 1     | ~1       |
+| ~840              | 2     | ~2       |
+| ~1680             | 4     | ~4       |
+| ~2940             | 7     | ~7       |
 
 **Required Environment Variables:**
 ```bash
-LOAD_TEST_API_TOKEN=polar_pat_...                    # Required
-LOAD_TEST_EVENT_CUSTOMER_IDS=uuid1,uuid2,uuid3,...   # Required (comma-separated)
-LOAD_TEST_EVENT_ORGANIZATION_ID=uuid                 # Required
-LOAD_TEST_EVENT_BATCH_SIZE=10                        # Optional (default: 10)
+LOAD_TEST_API_TOKEN=polar_oat_...                           # Organization access token (required)
+LOAD_TEST_EVENT_EXTERNAL_CUSTOMER_IDS=id1,id2,id3,...       # External customer IDs (required, comma-separated)
+LOAD_TEST_EVENT_BATCH_SIZE=7                                # Events per batch (optional, default: 7)
 ```
 
 **Running Event Ingestion Tests:**
@@ -122,16 +121,15 @@ LOAD_TEST_EVENT_BATCH_SIZE=10                        # Optional (default: 10)
 # Pre-provision test customers in your organization first, then:
 
 # Interactive mode
-LOAD_TEST_EVENT_CUSTOMER_IDS="uuid1,uuid2,uuid3" \
-LOAD_TEST_EVENT_ORGANIZATION_ID="org-uuid" \
-LOAD_TEST_API_TOKEN="polar_pat_..." \
+LOAD_TEST_EVENT_EXTERNAL_CUSTOMER_IDS="id1,id2,id3" \
+LOAD_TEST_API_TOKEN="polar_oat_..." \
 uv run task loadtest
 
 # Select "EventIngestionUser" in the web UI
 
-# Headless mode (5 users = ~750 events/min)
+# Headless mode
 locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000 \
-       --users 5 --spawn-rate 1 --run-time 5m EventIngestionUser
+       --users 2 --spawn-rate 1 --run-time 5m EventIngestionUser
 ```
 
 
@@ -152,7 +150,6 @@ LOAD_TEST_PRODUCT_ID=uuid-here             # Product for checkout tests
 #### Required (for event ingestion tests)
 
 ```bash
-LOAD_TEST_EVENT_CUSTOMER_IDS=uuid1,uuid2,uuid3  # Comma-separated customer UUIDs
-LOAD_TEST_EVENT_ORGANIZATION_ID=uuid-here       # Organization UUID
-LOAD_TEST_EVENT_BATCH_SIZE=10                   # Events per batch (default: 10)
+LOAD_TEST_EVENT_EXTERNAL_CUSTOMER_IDS=id1,id2,id3  # Comma-separated external customer IDs
+LOAD_TEST_EVENT_BATCH_SIZE=7                       # Events per batch (default: 7)
 ```

@@ -388,3 +388,573 @@ class TestUpdateCustomerMeter:
         assert customer_meter.last_balanced_event == events_for_external_customer[-1]
 
         assert updated is True
+
+    async def test_credit_for_different_meter_ignored(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        different_meter_id = uuid.uuid4()
+        # Usage event
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 30, "model": "lite"},
+        )
+        # Credit for our meter
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 50, "meter_id": str(meter.id)},
+        )
+        # Credit for different meter - should be ignored
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 200, "meter_id": str(different_meter_id)},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, locker, customer, meter
+        )
+
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(30)
+        assert customer_meter.credited_units == Decimal(50)
+        assert customer_meter.balance == Decimal(20)
+        assert updated is True
+
+    async def test_multiple_credit_events(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        # Multiple credit events should sum correctly
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 30, "meter_id": str(meter.id)},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 40, "meter_id": str(meter.id)},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 30, "meter_id": str(meter.id)},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, locker, customer, meter
+        )
+
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(0)
+        assert customer_meter.credited_units == Decimal(100)
+        assert customer_meter.balance == Decimal(100)
+        assert updated is True
+
+    async def test_non_negative_running_sum_behavior(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        # Credits sequence: [100, -150, 50] should yield 50 (not -100)
+        # The running sum goes: 100 -> max(0, 100-150)=0 -> 0+50=50
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 100, "meter_id": str(meter.id)},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": -150, "meter_id": str(meter.id)},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 50, "meter_id": str(meter.id)},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, locker, customer, meter
+        )
+
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(0)
+        assert customer_meter.credited_units == Decimal(50)
+        assert customer_meter.balance == Decimal(50)
+        assert updated is True
+
+    async def test_zero_token_events_counted(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        # Events with tokens=0 should be counted in aggregation (sum is still 0)
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 0, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 0, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 10, "meter_id": str(meter.id)},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, locker, customer, meter
+        )
+
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(0)
+        assert customer_meter.credited_units == Decimal(10)
+        assert customer_meter.balance == Decimal(10)
+        assert updated is True
+
+    async def test_multiple_meter_resets(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        # First reset
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 100, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(meter.id)},
+        )
+        # Second reset
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 50, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=4),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(meter.id)},
+        )
+        # Events after latest reset
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=5),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=6),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 30, "meter_id": str(meter.id)},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, locker, customer, meter
+        )
+
+        assert customer_meter is not None
+        # Only usage after the latest reset should be counted
+        assert customer_meter.consumed_units == Decimal(20)
+        assert customer_meter.credited_units == Decimal(30)
+        assert customer_meter.balance == Decimal(10)
+        assert updated is True
+
+
+@pytest.mark.asyncio
+class TestGetRolloverUnits:
+    @pytest.mark.parametrize(
+        "credits,usage_tokens,expected_rollover",
+        [
+            pytest.param([], 0, 0, id="no_events"),
+            pytest.param(
+                [{"units": 100, "rollover": False}],
+                0,
+                0,
+                id="only_non_rollover_credits",
+            ),
+            pytest.param(
+                [{"units": 100, "rollover": True}],
+                0,
+                100,
+                id="only_rollover_credits_no_usage",
+            ),
+            pytest.param(
+                [{"units": 100, "rollover": True}],
+                50,
+                50,
+                id="rollover_partial_usage",
+            ),
+            pytest.param(
+                [{"units": 100, "rollover": True}],
+                100,
+                0,
+                id="rollover_full_usage",
+            ),
+            pytest.param(
+                [{"units": 100, "rollover": True}],
+                150,
+                0,
+                id="usage_exceeds_credits",
+            ),
+            pytest.param(
+                [{"units": 80, "rollover": False}, {"units": 60, "rollover": True}],
+                80,
+                60,
+                id="mixed_credits_exact_non_rollover_consumption",
+            ),
+            pytest.param(
+                [{"units": 80, "rollover": False}, {"units": 60, "rollover": True}],
+                100,
+                40,
+                id="mixed_credits_partial_rollover_consumption",
+            ),
+            pytest.param(
+                [{"units": 80, "rollover": False}, {"units": 60, "rollover": True}],
+                150,
+                0,
+                id="mixed_credits_usage_exceeds_total",
+            ),
+        ],
+    )
+    async def test_rollover_calculation(
+        self,
+        credits: list[dict],
+        usage_tokens: int,
+        expected_rollover: int,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        # Create usage event if needed
+        if usage_tokens > 0:
+            await create_event(
+                save_fixture,
+                timestamp=timestamp + timedelta(seconds=1),
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": usage_tokens, "model": "lite"},
+            )
+
+        # Create credit events
+        for i, credit in enumerate(credits):
+            await create_event(
+                save_fixture,
+                timestamp=timestamp + timedelta(seconds=i + 2),
+                organization=customer.organization,
+                customer=customer,
+                source=EventSource.system,
+                name=SystemEvent.meter_credited,
+                metadata={
+                    "units": credit["units"],
+                    "meter_id": str(meter.id),
+                    "rollover": credit["rollover"],
+                },
+            )
+
+        rollover_units = await customer_meter_service.get_rollover_units(
+            session, customer, meter
+        )
+
+        assert rollover_units == expected_rollover
+
+    async def test_no_events(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        rollover_units = await customer_meter_service.get_rollover_units(
+            session, customer, meter
+        )
+
+        assert rollover_units == 0
+
+    async def test_only_usage_events(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=timestamp,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 50, "model": "lite"},
+        )
+
+        rollover_units = await customer_meter_service.get_rollover_units(
+            session, customer, meter
+        )
+
+        assert rollover_units == 0
+
+    async def test_after_meter_reset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        # Credit before reset - should be ignored
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 100, "meter_id": str(meter.id), "rollover": True},
+        )
+        # Reset event
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(meter.id)},
+        )
+        # Credit after reset - should be counted
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 50, "meter_id": str(meter.id), "rollover": True},
+        )
+
+        rollover_units = await customer_meter_service.get_rollover_units(
+            session, customer, meter
+        )
+
+        # Only the 50 rollover credit after reset should be counted
+        assert rollover_units == 50
+
+    async def test_credit_for_different_meter_ignored(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        different_meter_id = uuid.uuid4()
+        # Credit for our meter
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 50, "meter_id": str(meter.id), "rollover": True},
+        )
+        # Credit for different meter - should be ignored
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={
+                "units": 200,
+                "meter_id": str(different_meter_id),
+                "rollover": True,
+            },
+        )
+
+        rollover_units = await customer_meter_service.get_rollover_units(
+            session, customer, meter
+        )
+
+        # Only the 50 for our meter should be counted
+        assert rollover_units == 50
+
+    async def test_non_negative_running_sum_with_negative_credits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        # Credits sequence: [100, -150, 50] should yield 50 (not -100)
+        # The running sum goes: 100 -> max(0, 100-150)=0 -> 0+50=50
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 100, "meter_id": str(meter.id), "rollover": True},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": -150, "meter_id": str(meter.id), "rollover": True},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 50, "meter_id": str(meter.id), "rollover": True},
+        )
+
+        rollover_units = await customer_meter_service.get_rollover_units(
+            session, customer, meter
+        )
+
+        assert rollover_units == 50
+
+    async def test_multiple_rollover_credits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        # Multiple rollover credits should sum
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 30, "meter_id": str(meter.id), "rollover": True},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 40, "meter_id": str(meter.id), "rollover": True},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 30, "meter_id": str(meter.id), "rollover": True},
+        )
+
+        rollover_units = await customer_meter_service.get_rollover_units(
+            session, customer, meter
+        )
+
+        assert rollover_units == 100

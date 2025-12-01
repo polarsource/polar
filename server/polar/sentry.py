@@ -28,6 +28,7 @@ class DramatiqIntegration(_DramatiqIntegration):
 
 
 def configure_sentry() -> None:
+    return None
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
         traces_sample_rate=0,

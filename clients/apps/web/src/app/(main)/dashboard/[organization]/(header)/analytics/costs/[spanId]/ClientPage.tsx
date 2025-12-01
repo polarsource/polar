@@ -320,10 +320,10 @@ export default function SpanDetailPage({
       </div>
 
       {events.length > 0 && chartData.length > 0 && (
-        <div className="mb-12 flex flex-col gap-y-6">
+        <div className="mb-8 flex flex-col gap-y-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="col-span-1">
-              <div className="rounded-3xl bg-gray-50 p-2">
+              <div className="dark:bg-polar-700 rounded-3xl bg-gray-50 p-2">
                 <div className="flex flex-row items-center justify-between px-3 pt-2 pb-4">
                   <h3 className="text-lg font-medium">Occurrences</h3>
                   <span className="tabular-nums">
@@ -364,7 +364,7 @@ export default function SpanDetailPage({
             </div>
 
             <div className="col-span-1 md:col-span-2">
-              <div className="rounded-3xl bg-gray-50 p-2">
+              <div className="dark:bg-polar-700 rounded-3xl bg-gray-50 p-2">
                 <div className="flex flex-row items-center justify-between px-3 pt-2 pb-4">
                   <h3 className="text-lg font-medium">Cost</h3>
                   <dl className="flex flex-row gap-x-6">
@@ -441,16 +441,23 @@ export default function SpanDetailPage({
 
       {events.length > 0 ? (
         <div className="flex flex-col gap-y-8">
-          <h3 className="text-2xl">Spans</h3>
           <div className="flex flex-col gap-y-3">
             <div className="dark:border-polar-700 w-full border-collapse overflow-hidden rounded-xl border border-gray-200">
               <table className="w-full table-auto border-collapse rounded-lg">
                 <thead>
                   <tr>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
+                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
+                      Span
+                    </th>
+                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
+                      Customer
+                    </th>
+                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
+                      Timestamp
+                    </th>
+                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
+                      Cost
+                    </th>
                   </tr>
                 </thead>
                 {dayGroups.map((group, groupIndex) => {

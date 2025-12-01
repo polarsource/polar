@@ -111,18 +111,36 @@ For sandbox:
 
 Add the following to your `~/.codex/config.toml`:
 
-```sh
+```toml
+[features]
+rmcp_client = true
+
 [mcp_servers.polar]
-command = "npx"
-args = ["-y", "mcp-remote", "https://mcp.polar.sh/mcp/polar-mcp"]
+type = "http"
+url = "https://mcp.polar.sh/mcp/polar-mcp"
+```
+
+Then run:
+
+```sh
+codex mcp login polar
 ```
 
 For sandbox:
 
-```sh
+```toml
+[features]
+rmcp_client = true
+
 [mcp_servers.polar_sandbox]
-command = "npx"
-args = ["-y", "mcp-remote", "https://mcp.polar.sh/mcp/polar-sandbox"]
+type = "http"
+url = "https://mcp.polar.sh/mcp/polar-sandbox"
+```
+
+Then run:
+
+```sh
+codex mcp login polar_sandbox
 ```
 
 ### Claude Code

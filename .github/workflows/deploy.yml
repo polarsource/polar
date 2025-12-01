@@ -122,7 +122,7 @@ jobs:
     with:
       environment: production
       docker-digest: ${{ needs.build.outputs.digest }}
-      render-service-ids: "srv-ci4r87h8g3ne0dmvvl60,srv-d089jj7diees73934ka0,srv-d3hrh1j3fgac73a1t4r0,srv-d4k62svpm1nc73af5e3g"
+      render-service-ids: "srv-ci4r87h8g3ne0dmvvl60,srv-d4k6otfgi27c73cicnpg,srv-d4k62svpm1nc73af5e3g,srv-d3hrh1j3fgac73a1t4r0"
       skip-backend: ${{ needs.changes.outputs.backend != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend != 'true' && github.event_name != 'workflow_dispatch' }}
     secrets:

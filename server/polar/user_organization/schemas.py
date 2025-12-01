@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from pydantic import AliasPath, EmailStr, Field
+from pydantic import AliasPath, Field
 
+from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import Schema
 
 
@@ -14,4 +15,4 @@ class OrganizationMember(Schema):
 
 
 class OrganizationMemberInvite(Schema):
-    email: EmailStr = Field(description="Email address of the user to invite")
+    email: EmailStrDNS = Field(description="Email address of the user to invite")

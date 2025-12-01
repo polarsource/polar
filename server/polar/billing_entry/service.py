@@ -239,9 +239,7 @@ class BillingEntryService:
         units = await meter_service.get_quantity(
             session,
             meter,
-            events_statement.with_only_columns(Event.id)
-            .where(Event.source == EventSource.user)
-            .order_by(None),
+            events_statement.where(Event.source == EventSource.user),
         )
         credit_events_statement = events_statement.where(
             Event.is_meter_credit.is_(True)
@@ -288,9 +286,7 @@ class BillingEntryService:
         units = await meter_service.get_quantity(
             session,
             meter,
-            events_statement.with_only_columns(Event.id)
-            .where(Event.source == EventSource.user)
-            .order_by(None),
+            events_statement.where(Event.source == EventSource.user),
         )
         credit_events_statement = events_statement.where(
             Event.is_meter_credit.is_(True)

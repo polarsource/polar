@@ -29,14 +29,6 @@ export const CareersSection = ({ active }: { active: boolean }) => {
                 experience: '7+ Years Experience',
               },
               {
-                role: 'Product Engineer',
-                description:
-                  'Ship features, APIs and SDKs that empowers the next generation of developers to build businesses.',
-                location: 'Remote — Europe',
-                link: 'https://jobs.ashbyhq.com/polar/b2b48ba9-0b10-41a2-81b6-145c06fc5dcd',
-                experience: '5+ Years Experience',
-              },
-              {
                 role: 'Senior Growth Engineer',
                 description:
                   'Design and ship growth-focused features, enhancements and experiments end-to-end.',
@@ -44,39 +36,8 @@ export const CareersSection = ({ active }: { active: boolean }) => {
                 link: 'https://jobs.ashbyhq.com/polar/1496592e-16ff-47e7-b11e-a993c887fc1f',
                 experience: '7+ Years Experience',
               },
-              {
-                role: 'Senior Product Designer',
-                description:
-                  'Design the future platform for developers to turn their software into a business.',
-                location: 'Stockholm, Sweden',
-                link: 'https://jobs.ashbyhq.com/polar/1fee39f0-897c-4bdc-8ec0-a055f5d94a6c',
-                experience: '7+ Years Experience',
-              },
-              {
-                role: 'Senior Data Engineer',
-                description:
-                  'Design, ship and optimize our internal data warehouse to Metric APIs for developers using Polar.',
-                location: 'Remote - Europe',
-                link: 'https://jobs.ashbyhq.com/polar/0ba77853-a18b-4d38-8516-4b0ab960ea00',
-                experience: '7+ Years Experience',
-              },
             ]}
           />
-
-          <JobSection
-            title="Community"
-            jobs={[
-              {
-                role: 'Community Manager',
-                description:
-                  'Nurture and scale our thriving developer community around Polar.',
-                location: 'Europe - Remote',
-                link: 'https://jobs.ashbyhq.com/polar/67fa55c0-af67-4f90-a88e-db6eab4daac0',
-                experience: '3+ Years Experience',
-              },
-            ]}
-          />
-
           <JobSection
             title="Customer Success"
             jobs={[

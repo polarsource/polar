@@ -48,7 +48,7 @@ export default function Index() {
         <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
       }
       contentInset={{ bottom: 16 }}
-      contentContainerStyle={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
     >
       <Stack.Screen options={{ title: 'Settings' }} />
       <SafeAreaView style={SettingsStyle.container}>

@@ -6,7 +6,6 @@ from pydantic import (
     UUID4,
     AfterValidator,
     BeforeValidator,
-    EmailStr,
     Field,
     StringConstraints,
     model_validator,
@@ -316,7 +315,7 @@ class OrganizationCreate(Schema):
     name: NameInput
     slug: SlugInput
     avatar_url: HttpUrlToStr | None = None
-    email: EmailStr | None = Field(None, description="Public support email.")
+    email: EmailStrDNS | None = Field(None, description="Public support email.")
     website: HttpUrlToStr | None = Field(
         None, description="Official website of the organization."
     )

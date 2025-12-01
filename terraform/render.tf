@@ -482,6 +482,12 @@ resource "render_postgres" "db" {
     { name = "polar-read" },
     { name = "polar-replica" }
   ]
+
+  lifecycle {
+    ignore_changes = [
+      ip_allow_list,
+    ]
+  }
 }
 
 # =============================================================================
@@ -765,6 +771,13 @@ resource "render_web_service" "api" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
+  }
+
   autoscaling = {
     enabled = true
     min     = 1
@@ -824,9 +837,16 @@ resource "render_web_service" "worker" {
   runtime_source = {
     image = {
       image_url              = "ghcr.io/polarsource/polar"
-      digest                 = "sha256:d55ecc35d8a51bcf7dde0d4d865c96b9de8d2c3469b12d1a719fef2ae39a4825"
+      tag                    = "latest"
       registry_credential_id = render_registry_credential.ghcr.id
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
   }
 
   env_vars = {
@@ -864,6 +884,13 @@ resource "render_web_service" "worker_medium_priority" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
+  }
+
   env_vars = {
     dramatiq_prom_port           = { value = "10001" }
     POLAR_POSTGRES_DATABASE      = { value = "polar_cpit" }
@@ -899,6 +926,13 @@ resource "render_web_service" "worker_high_priority" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
+  }
+
   env_vars = {
     dramatiq_prom_port           = { value = "10001" }
     POLAR_POSTGRES_DATABASE      = { value = "polar_cpit" }
@@ -929,7 +963,7 @@ resource "render_web_service" "worker_default" {
   runtime_source = {
     image = {
       image_url              = "ghcr.io/polarsource/polar"
-      tag                    = "latest"
+      digest                 = "sha256:d55ecc35d8a51bcf7dde0d4d865c96b9de8d2c3469b12d1a719fef2ae39a4825"
       registry_credential_id = render_registry_credential.ghcr.id
     }
   }
@@ -973,6 +1007,13 @@ resource "render_web_service" "api_sandbox" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
+  }
+
   custom_domains = [
     { name = "sandbox-api.polar.sh" }
   ]
@@ -1013,6 +1054,13 @@ resource "render_web_service" "worker_sandbox" {
       tag                    = "latest"
       registry_credential_id = render_registry_credential.ghcr.id
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.digest,
+      runtime_source.image.tag,
+    ]
   }
 
   env_vars = {

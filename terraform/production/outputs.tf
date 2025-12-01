@@ -10,5 +10,5 @@ output "postgres_id" {
 
 output "redis_id" {
   description = "The Redis ID. Used for the render_redis data source."
-  value       = render_redis.db.id
+  value       = render_redis.redis.id
 }

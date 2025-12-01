@@ -1,6 +1,42 @@
 provider "tfe" {
 }
 
+# tflint-ignore: terraform_unused_declarations
+variable "apple_client_id" {
+  type    = string
+  default = null
+}
+
+# tflint-ignore: terraform_unused_declarations
+variable "apple_team_id" {
+  type    = string
+  default = null
+}
+
+# tflint-ignore: terraform_unused_declarations
+variable "apple_key_id" {
+  type    = string
+  default = null
+}
+
+# tflint-ignore: terraform_unused_declarations
+variable "apple_key_value" {
+  type    = string
+  default = null
+}
+
+# tflint-ignore: terraform_unused_declarations
+variable "ghcr_auth_token" {
+  type    = string
+  default = null
+}
+
+# tflint-ignore: terraform_unused_declarations
+variable "ghcr_username" {
+  type    = string
+  default = null
+}
+
 resource "tfe_variable_set" "global" {
   name         = "Global Settings"
   description  = "For variables that are used in multiple or all environments"

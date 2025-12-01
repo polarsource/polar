@@ -112,6 +112,10 @@ class Settings(BaseSettings):
     LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
     LOGIN_CODE_LENGTH: int = 6
 
+    # App Review bypass (for testing login flow during Apple/Google app reviews)
+    APP_REVIEW_EMAIL: str | None = None
+    APP_REVIEW_OTP_CODE: str | None = None
+
     # Email verification
     EMAIL_VERIFICATION_TTL_SECONDS: int = 60 * 30  # 30 minutes
 

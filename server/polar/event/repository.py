@@ -383,6 +383,21 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
         return events, total_count
 
+    async def get_with_aggregation(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        id: UUID,
+        aggregate_fields: Sequence[str],
+    ) -> Event | None:
+        """Get a single event with aggregated metadata from descendants."""
+        statement = self.get_readable_statement(auth_subject).where(Event.id == id)
+
+        events, _ = await self.list_with_closure_table(
+            statement, limit=1, page=1, aggregate_fields=aggregate_fields
+        )
+
+        return events[0] if events else None
+
     async def get_hierarchy_stats(
         self,
         statement: Select[tuple[Event]],

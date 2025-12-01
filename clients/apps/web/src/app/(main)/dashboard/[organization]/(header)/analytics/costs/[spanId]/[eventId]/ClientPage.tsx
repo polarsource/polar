@@ -23,7 +23,9 @@ export default function EventDetailPage({
   organization,
   eventId,
 }: EventDetailPageProps) {
-  const { data: event } = useEvent(organization.id, eventId)
+  const { data: event } = useEvent(organization.id, eventId, {
+    aggregate_fields: ['_cost.amount'],
+  })
   const searchParams = useSearchParams()
 
   const {

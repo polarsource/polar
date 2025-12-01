@@ -64,11 +64,19 @@ export const useEvents = (
   })
 }
 
-export const useEvent = (organizationId: string, eventId: string) => {
+export const useEvent = (
+  organizationId: string,
+  eventId: string,
+  parameters?: NonNullable<operations['events:get']['parameters']['query']>,
+) => {
   return useQuery({
-    queryKey: ['event', organizationId, eventId],
+    queryKey: ['event', organizationId, eventId, { ...(parameters || {}) }],
     queryFn: () =>
-      unwrap(api.GET('/v1/events/{id}', { params: { path: { id: eventId } } })),
+      unwrap(
+        api.GET('/v1/events/{id}', {
+          params: { path: { id: eventId }, query: parameters },
+        }),
+      ),
     retry: defaultRetry,
     enabled: !!eventId,
   })

@@ -404,7 +404,13 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                       <Input
                         {...field}
                         type="number"
-                        value={field.value || undefined}
+                        value={field.value ?? ''}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          field.onChange(
+                            value === '' ? null : parseInt(value, 10),
+                          )
+                        }}
                         min={1}
                       />
                     </FormControl>

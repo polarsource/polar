@@ -8,6 +8,16 @@ State, Secrets and Runs are directly managed on [HCP Terraform Cloud](https://ap
 
 Currently, most of our infrastructure is hosted on Render. We also have AWS S3 buckets to store uploaded files.
 
+## HCP Terraform Cloud
+
+The infrastructure is divided up into a project per environment:
+
+Projects:
+├── prod
+├── sandbox
+└── test (For load testing, etc. This environment is fully destructed when needed)
+
+
 ## Adding environment variables
 
 If you need to add an environment variable to a backend service, do the following:

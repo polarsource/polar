@@ -1,0 +1,244 @@
+---
+title: "How to Grant Meter Credits After Purchase"
+sidebarTitle: "Grant meter credits after purchase"
+description: "Learn how to automatically grant meter credits to users after purchase using the Meter Credits benefits or Webhooks."
+---
+
+## Overview
+
+When building usage-based billing systems, you may want to give new customers an initial credit balance (e.g., 10 free units) when they purchase a product. This is useful for:
+
+- Offering free trials with credits
+- Onboarding bonuses
+- Promotional credits for new signups or purchases
+
+There are two ways to grant initial meter credits in Polar:
+
+1. **Meter Credits Benefit (Recommended)** - Automatically grant credits when a customer purchases a product
+2. **Webhook + Events API** - Programmatically grant credits for advanced use cases
+
+### Which Method Should I Use?
+
+| Feature | Meter Credits Benefit | Webhook + Events API |
+|---------|----------------------|---------------------|
+| **Setup Complexity** | ✅ Simple - No code required | ⚙️ Advanced - Requires coding |
+| **Automatic Credits** | ✅ Yes | ❌ No - Manual implementation |
+| **Custom Logic** | ❌ No | ✅ Yes - Full control |
+| **One-time Products** | ✅ Credits granted at purchase | ✅ Credits granted at purchase |
+| **Recurring Products** | ❌ No | ✅ Can be credited every cycle (with code) |
+| **Best For** | Most use cases | Complex crediting rules |
+
+<Tip>
+  **Start with Method 1** (Meter Credits Benefit) unless you need custom logic or complex crediting rules. It's simpler and requires no code.
+</Tip>
+
+---
+
+## Method 1: Using Meter Credits Benefit (Recommended)
+
+The simplest way to grant initial credits is to use the built-in **Meter Credits** benefit. This automatically grants credits (once) to customers when they purchase a product.
+
+
+### Step 1: Create a Meter with Sum Aggregation
+
+First, [create a meter](/features/usage-based-billing/meters) that will track your customers usage.
+
+### Step 2: Create a Meter Credits Benefit
+
+Now [create a Meter Credits benefit](/features/benefits/credits) that will grant the initial credits.
+
+
+### Step 3: Create a Product with the Benefit
+
+Create a product and attach the Meter Credits benefit to it.
+
+<Steps>
+  <Step title="Create a product">
+    Navigate to **Products** > **Catalogue** and click **New Product**.
+  </Step>
+  <Step title="Configure the product">
+    - Set a name and description
+    - Choose your product type (Recurring)
+    - Set the price (can be $0 for free signup, or any amount)
+    - Click "Add Additional Price"
+      - Attach your meter to the product and set the per unit cost
+  </Step>
+  <Step title="Add the Meter Credits benefit">
+    Scroll to the **Automated Benefits** section and toggle ON the Meter Credits benefit you created.
+  </Step>
+  <Step title="Save the product">
+    Click **Create Product** to save.
+  </Step>
+</Steps>
+
+That's it! Now when a customer purchases this product, they will automatically receive the specified amount of meter credits.
+
+---
+
+## Method 2: Using Webhooks + Events API (Advanced)
+
+For more complex scenarios where you need custom logic or want to grant credits outside the purchase flow, you can use webhooks and the Events API.
+
+### When to Use This Method
+
+- You need custom logic to determine credit amounts
+- You want to grant credits based on external events
+- You need to grant credits to existing customers programmatically
+- You want to implement complex crediting rules
+
+### How It Works
+
+This approach involves:
+1. Creating a product with a meter attached (using sum aggregation)
+2. Setting up webhooks to listen for purchases
+3. When a purchase is made, ingesting a negative event value to grant credits
+
+<Info>
+  **Why negative values?**
+  
+  When you ingest an event with a negative value (e.g., `-10`) to a meter using **Sum** aggregation, it effectively grants the customer 10 units of credit, reducing their usage meter balance.
+</Info>
+
+### Prerequisites
+
+- A Polar account with an organization
+- A meter created with **Sum** aggregation
+- A product with the meter attached
+- Webhooks enabled
+- A Polar access token for API calls
+
+### Step 1: Create Meter and Product
+
+Follow the same steps as Method 1 to create your meter and product (you don't need to create the Meter Credits benefit for this approach).
+
+### Step 2: Set Up Webhooks
+
+Configure webhooks to receive notifications when users make purchases.
+
+<Steps>
+  <Step title="Add webhook endpoint">
+    Follow our [Setup Webhooks](/integrate/webhooks/endpoints) guide to create a new webhook endpoint.
+  </Step>
+  <Step title="Subscribe to order.paid event">
+    When configuring your webhook, make sure to subscribe to the `order.paid` event. This event is triggered when a customer successfully completes a purchase.
+  </Step>
+  <Step title="Save webhook secret">
+    Store your webhook secret securely in your environment variables.
+    
+    ```bash
+    POLAR_ACCESS_TOKEN="polar_pat_..."
+    POLAR_WEBHOOK_SECRET="whsec_..."
+    PRODUCT_ID="prod_..." # The product ID to grant credits for
+    ```
+  </Step>
+</Steps>
+
+### Step 3: Implement the Webhook Handler
+
+Create a webhook handler that listens for `order.paid` events and grants initial credits by ingesting negative event values.
+
+#### Next.js Example
+
+```typescript title="app/api/webhook/polar/route.ts"
+import { Polar } from "@polar-sh/sdk";
+import { Webhooks } from "@polar-sh/nextjs";
+
+const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN });
+
+export const POST = Webhooks({
+  webhookSecret: process.env.POLAR_WEBHOOK_SECRET,
+  onOrderPaid: async (order) => {
+    // Check if this is the product we want to grant credits for
+    const targetProductId = process.env.PRODUCT_ID;
+    if (order.data.product_id === targetProductId) {
+      // Grant 10 credits by ingesting a negative event
+      await polar.events.ingest({
+        events: [
+          {
+            name: "meter-name",
+            customerId: order.data.customer_id,
+            metadata: {
+              units: -10, // Negative value grants credits
+              reason: "initial_signup_bonus",
+            },
+          },
+        ],
+      });
+      console.log(`Granted 10 credits to customer ${order.data.customer_id}`);
+    }
+  },
+});
+```
+
+### Step 4: Test Your Integration
+
+Test that credits are properly granted when a customer makes a purchase.
+
+<Steps>
+  <Step title="Use the sandbox environment">
+    Test your integration in Polar's [sandbox environment](/integrate/sandbox) to avoid affecting production data.
+  </Step>
+  <Step title="Make a test purchase">
+    Create a checkout session and complete a test purchase.
+  </Step>
+  <Step title="Verify webhook receipt">
+    Check your server logs to confirm the `order.paid` webhook was received.
+  </Step>
+  <Step title="Check customer balance">
+    Use the [Customer Meters API](/api-reference/customer-meters/list) to verify the credits were applied:
+    
+    ```typescript
+    const meters = await polar.customerMeters.list({
+      customerId: "cus_...",
+    });
+    
+    console.log(meters.items[0].balance); // Should show -10 (or your credit amount)
+    ```
+  </Step>
+</Steps>
+
+### Important Considerations for Webhook Method
+
+#### Negative Balance vs. Positive Usage
+
+When using negative events to grant credits:
+- A **negative balance** (e.g., `-10`) means the customer has 10 credits available
+- As the customer uses your service, positive events reduce this negative balance
+- When the balance reaches `0`, the customer has used all their credits
+- Positive balances indicate usage beyond the granted credits
+
+#### Example Flow
+
+```typescript
+// Initial state: Customer has 0 balance
+// You grant 10 credits: balance = -10
+
+// Customer uses 3 units: balance = -7 (7 credits remaining)
+// Customer uses 5 more units: balance = -2 (2 credits remaining)
+// Customer uses 3 more units: balance = 1 (1 unit of overage, if metered pricing is enabled)
+```
+
+#### Preventing Double Credits
+
+To avoid granting credits multiple times, consider:
+
+1. **Check order status** - Only grant credits for new orders
+2. **Use idempotency** - Track which orders you've already processed
+3. **Database records** - Store a record of credit grants
+
+```typescript
+// Example with idempotency check
+const hasGrantedCredits = await checkIfAlreadyGranted(order.id);
+
+if (!hasGrantedCredits) {
+  await polar.events.ingest({
+    events: [{
+      name: "meter-name",
+      customerId: order.data.customer_id,
+      metadata: { units: -10 },
+    }],
+  });
+  
+  await recordCreditGrant(order.id);
+}
+```

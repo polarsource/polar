@@ -1,0 +1,230 @@
+---
+title: "How to Grant Meter Credits Before Purchase"
+sidebarTitle: "Grant meter credits before purchase"
+description: "Learn how to grant meter credits to customers before they make any purchase using the Polar API."
+---
+
+## Overview
+
+You may want to grant usage credits to customers even before they make a purchase. This is useful for:
+
+- **Free trial credits** - Give new signups free credits to try your service
+- **Promotional campaigns** - Grant credits as part of marketing initiatives
+- **Testing and demos** - Provide credits for product demonstrations
+
+This guide shows you how to grant credits to customers who don't have an active subscription or purchase yet.
+
+## How It Works
+
+To grant credits before a purchase, you need to:
+1. Create a customer in Polar (if they don't exist)
+2. Create a meter with **Sum** aggregation to track usage
+3. Ingest an event with a **negative value** to grant credits
+
+<Info>
+  **Why negative values?**
+  
+  When you ingest an event with a negative value (e.g., `-10`) to a meter using **Sum** aggregation, it grants the customer credits. A negative balance means available credits, which get reduced as they use your service.
+</Info>
+
+## Step 1: Create a Meter
+
+First, create a meter that will track your customers' usage.
+
+<Steps>
+  <Step title="Navigate to Meters">
+    In the Polar dashboard sidebar, click on **Products** > **Meters**.
+  </Step>
+  <Step title="Create a new meter">
+    Click **Create Meter** and configure:
+    - **Name**: Give your meter a descriptive name (e.g., "API Calls" or "Storage Usage")
+    - **Filter**: Add filters to match your usage events (e.g., name equals "api_usage")
+    - **Aggregation**: Select **Sum** and enter the property to sum (e.g., `units`)
+    
+    <Warning>
+      The meter **must use Sum aggregation** for this approach to work.
+    </Warning>
+  </Step>
+  <Step title="Save the meter">
+    Save your meter and note down the meter name - you'll need this when ingesting events.
+  </Step>
+</Steps>
+
+Learn more about [creating meters](/features/usage-based-billing/meters).
+
+## Step 2: Create a Customer
+
+If your customer doesn't already exist in Polar, you need to create them first.
+
+### Option A: Create via Dashboard
+
+<Steps>
+  <Step title="Navigate to Customers">
+    In the Polar dashboard sidebar, click on **Customers**.
+  </Step>
+  <Step title="Add new customer">
+    Click **Add Customer** and fill in:
+    - **Email**: Customer's email address (required)
+    - **Name**: Customer's full name (optional)
+    - **External ID**: Your internal user ID for easy reference (optional but recommended)
+  </Step>
+  <Step title="Save customer">
+    Click **Save** and note down the Customer ID.
+  </Step>
+</Steps>
+
+### Option B: Create via API
+
+Use the Polar SDK or API to create a customer programmatically:
+
+```typescript title="create-customer.ts"
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+});
+
+// Create a new customer
+await polar.customers.create({
+  email: "user@example.com",
+  name: "John Doe",
+  externalId: "user_123", // Your internal user ID (optional)
+});
+```
+
+<Tip>
+  Use the `externalId` field to link Polar customers with your internal user system. This allows you to reference customers without storing Polar's internal ID.
+</Tip>
+
+### Using External ID
+
+If you set an `externalId` when creating the customer, you can use it in event ingestion instead of the Polar customer ID:
+
+```typescript
+// Instead of using customerId, use externalCustomerId
+await polar.events.ingest({
+  events: [{
+    name: "api_usage",
+    externalCustomerId: "user_123", // Your internal ID
+    metadata: { units: -10 }
+  }]
+});
+```
+
+Learn more about [customer management](/features/customer-management).
+
+## Step 3: Grant Credits by Ingesting a Negative Event
+
+Now that you have a customer and a meter, grant credits by ingesting an event with a negative value.
+
+### Using the Polar SDK
+
+```typescript title="grant-credits.ts"
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+});
+
+async function grantCredits(customerId: string, credits: number) {
+  await polar.events.ingest({
+    events: [
+      {
+        customerId,
+        name: "api_usage", // Must match your meter's filter name
+        metadata: {
+          units: -credits, // Negative value grants credits
+        },
+      },
+    ],
+  });
+  
+  console.log(`Granted ${credits} credits to customer ${customerId}`);
+}
+
+// Grant 10 credits to a customer
+await grantCredits("cus_abc123", 10);
+```
+
+### Using External Customer ID
+
+If you're using `externalId` for customer management:
+
+```typescript title="grant-credits-external.ts"
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+});
+
+async function grantCreditsToExternalUser(externalUserId: string, credits: number) {
+  await polar.events.ingest({
+    events: [
+      {
+        name: "api_usage", // Must match your meter's filter name
+        externalCustomerId: externalUserId, // Use your internal ID
+        metadata: {
+          units: -credits, // Negative value grants credits
+        },
+      },
+    ],
+  });
+  
+  console.log(`Granted ${credits} credits to user ${externalUserId}`);
+}
+
+// Grant 10 credits using your internal user ID
+await grantCreditsToExternalUser("user_123", 10);
+```
+
+## Step 4: Verify Credits Were Granted
+
+Check that the credits were successfully granted to the customer.
+
+### Using Customer Meters API
+
+```typescript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+});
+
+// Check customer's meter balance
+const meters = await polar.customerMeters.list({
+  customerId: "cus_abc123",
+});
+
+meters.items.filter((balance) => balance > 0).forEach((meter) => {
+  console.log(`${Math.abs(meter.balance)} credits available for ${meter.meter_id}.`);
+});
+```
+
+### Example Usage Flow
+
+```typescript
+// Initial state: Customer created, 0 balance
+// Grant 10 credits: balance = 10
+
+// Customer uses 3 units
+await polar.events.ingest({
+  events: [{
+    name: "api_usage",
+    customerId: "cus_abc123",
+    metadata: { units: 3 } // Positive value for usage
+  }]
+});
+
+// Balance is now 7 (7 credits remaining)
+
+// Customer uses 8 more units
+await polar.events.ingest({
+  events: [{
+    name: "api_usage",
+    customerId: "cus_abc123",
+    metadata: { units: 8 }
+  }]
+});
+
+// Balance is now -1 (used 1 unit beyond credits)
+```

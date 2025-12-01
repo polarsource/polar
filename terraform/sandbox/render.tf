@@ -15,8 +15,8 @@ resource "render_registry_credential" "ghcr" {
 # ============================================================================
 
 data "tfe_outputs" "production" {
-  organization = "polar"
-  workspace    = "production"
+  organization = "polar-sh"
+  workspace    = "polar"
 }
 
 # The render project is owned by the production environment.

@@ -17,23 +17,3 @@ module "s3_buckets" {
   environment     = "sandbox"
   allowed_origins = ["https://sandbox.polar.sh"]
 }
-
-import {
-  to = module.s3_buckets.aws_s3_bucket.customer_invoices
-  id = "polar-sandbox-customer-invoices"
-}
-
-import {
-  to = module.s3_buckets.aws_s3_bucket.files
-  id = "polar-sandbox-files"
-}
-
-import {
-  to = module.s3_buckets.aws_s3_bucket.payout_invoices
-  id = "polar-sandbox-payout-invoices"
-}
-
-import {
-  to = module.s3_buckets.aws_s3_bucket_cors_configuration.files
-  id = "polar-sandbox-files"
-}

@@ -91,3 +91,35 @@ resource "tfe_variable" "ghcr_username" {
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
 }
+
+resource "tfe_variable" "render_api_key" {
+  key             = "RENDER_API_KEY"
+  category        = "env"
+  description     = "Render API Key"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}
+
+resource "tfe_variable" "render_owner_id" {
+  key             = "RENDER_OWNER_ID"
+  value           = "tea-ch0f74hjvhtkjjvvhnr0"
+  category        = "env"
+  description     = "Render Owner ID"
+  variable_set_id = tfe_variable_set.global.id
+}
+
+resource "tfe_variable" "tfc_aws_provider_auth" {
+  key             = "TFC_AWS_PROVIDER_AUTH"
+  value           = "true"
+  category        = "env"
+  description     = "Enable AWS provider authentication via OIDC"
+  variable_set_id = tfe_variable_set.global.id
+}
+
+resource "tfe_variable" "tfc_aws_run_role_arn" {
+  key             = "TFC_AWS_RUN_ROLE_ARN"
+  value           = "arn:aws:iam::975049931254:role/terraform-cloud"
+  category        = "env"
+  description     = "AWS IAM Role ARN for Terraform Cloud runs"
+  variable_set_id = tfe_variable_set.global.id
+}

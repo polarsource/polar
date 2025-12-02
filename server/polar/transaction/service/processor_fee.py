@@ -124,9 +124,6 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         if not (is_stripe_refund and is_stripe_refund_trx):
             return fee_transactions
 
-        if refund_transaction.refund_id is None:
-            return fee_transactions
-
         if refund.processor_balance_transaction_id is None:
             return fee_transactions
 

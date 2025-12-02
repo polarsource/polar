@@ -148,34 +148,6 @@ class TestCreateRefundFees:
         )
         assert len(fee_transactions) == 0
 
-    async def test_stripe_no_refund_id(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        customer: Customer,
-        product: Product,
-    ) -> None:
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-        )
-        refund = await create_refund(
-            save_fixture,
-            order,
-        )
-        refund_transaction = await create_refund_transaction(
-            save_fixture, refund_id=None
-        )
-
-        # then
-        session.expunge_all()
-
-        fee_transactions = await processor_fee_transaction_service.create_refund_fees(
-            session, refund=refund, refund_transaction=refund_transaction
-        )
-        assert len(fee_transactions) == 0
-
     async def test_stripe_refund(
         self,
         session: AsyncSession,

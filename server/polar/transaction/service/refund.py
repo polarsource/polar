@@ -60,7 +60,7 @@ class RefundTransactionService(BaseTransactionService):
             raise NotSucceededRefundError(refund)
 
         repository = RefundTransactionRepository.from_session(session)
-        if await repository.get_by_refund_id(refund.processor_id) is not None:
+        if await repository.get_by_refund_id(refund.id) is not None:
             raise RefundTransactionAlreadyExistsError(refund)
 
         if refund.processor == PaymentProcessor.stripe:
@@ -88,10 +88,9 @@ class RefundTransactionService(BaseTransactionService):
             presentment_currency=refund.currency,
             presentment_amount=-refund.amount,
             presentment_tax_amount=-refund.tax_amount,
+            refund=refund,
             customer_id=payment_transaction.customer_id,
             charge_id=charge_id,
-            refund_id=refund.processor_id,
-            polar_refund_id=refund.id,
             payment_customer_id=payment_transaction.payment_customer_id,
             payment_organization_id=payment_transaction.payment_organization_id,
             payment_user_id=payment_transaction.payment_user_id,
@@ -127,7 +126,7 @@ class RefundTransactionService(BaseTransactionService):
             raise NotCanceledRefundError(refund)
 
         repository = RefundTransactionRepository.from_session(session)
-        refund_transaction = await repository.get_by_refund_id(refund.processor_id)
+        refund_transaction = await repository.get_by_refund_id(refund.id)
         if refund_transaction is None:
             raise RefundTransactionDoesNotExistError(refund)
 
@@ -150,8 +149,7 @@ class RefundTransactionService(BaseTransactionService):
             else None,
             customer_id=payment_transaction.customer_id,
             charge_id=charge_id,
-            refund_id=refund.processor_id,
-            polar_refund_id=refund.id,
+            refund=refund,
             payment_customer_id=payment_transaction.payment_customer_id,
             payment_organization_id=payment_transaction.payment_organization_id,
             payment_user_id=payment_transaction.payment_user_id,

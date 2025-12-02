@@ -115,19 +115,9 @@ module "test" {
 
   workers = {
     worker = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues low_priority"
+      start_command      = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
       tag                = "test"
       dramatiq_prom_port = "10000"
-    }
-    worker-medium-priority = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues default medium_priority"
-      tag                = "test"
-      dramatiq_prom_port = "10001"
-    }
-    worker-high-priority = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues high_priority -f polar.worker.scheduler:start"
-      tag                = "test"
-      dramatiq_prom_port = "10001"
     }
   }
 

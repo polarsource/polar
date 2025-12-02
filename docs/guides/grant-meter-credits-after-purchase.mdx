@@ -107,11 +107,36 @@ This approach involves:
 - Webhooks enabled
 - A Polar access token for API calls
 
-### Step 1: Create Meter and Product
+### Step 1: Create a Meter
 
-Follow the same steps as Method 1 to create your meter and product (you don't need to create the Meter Credits benefit for this approach).
+First, create a meter that will track your customers' usage.
 
-### Step 2: Set Up Webhooks
+<Steps>
+  <Step title="Navigate to Meters">
+    In the Polar dashboard sidebar, click on **Products** > **Meters**.
+  </Step>
+  <Step title="Create a new meter">
+    Click **Create Meter** and configure:
+    - **Name**: Give your meter a descriptive name (e.g., "API Calls" or "Storage Usage")
+    - **Filter**: Add filters to match your usage events (e.g., name equals "api_usage")
+    - **Aggregation**: Select **Sum** and enter the property to sum (e.g., `units`)
+    
+    <Warning>
+      The meter **must use Sum aggregation** for this approach to work.
+    </Warning>
+  </Step>
+  <Step title="Save the meter">
+    Save your meter and note down the meter name - you'll need this when ingesting events.
+  </Step>
+</Steps>
+
+Learn more about [creating meters](/features/usage-based-billing/meters).
+
+### Step 2. Create a Product
+
+Follow the same steps as Method 1 to create your product (you don't need to create or attach the Meter Credits benefit for this approach).
+
+### Step 3: Set Up Webhooks
 
 Configure webhooks to receive notifications when users make purchases.
 
@@ -133,7 +158,7 @@ Configure webhooks to receive notifications when users make purchases.
   </Step>
 </Steps>
 
-### Step 3: Implement the Webhook Handler
+### Step 4: Implement the Webhook Handler
 
 Create a webhook handler that listens for `order.paid` events and grants initial credits by ingesting negative event values.
 
@@ -170,7 +195,7 @@ export const POST = Webhooks({
 });
 ```
 
-### Step 4: Test Your Integration
+### Step 5: Test Your Integration
 
 Test that credits are properly granted when a customer makes a purchase.
 

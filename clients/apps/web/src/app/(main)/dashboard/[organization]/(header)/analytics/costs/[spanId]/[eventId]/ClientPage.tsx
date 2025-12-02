@@ -254,8 +254,7 @@ export const SpanEventDetailsCard = ({ event }: LLMInferenceEventCardProps) => {
   const llmMetadata = '_llm' in event.metadata && event.metadata._llm
   const costMetadata = '_cost' in event.metadata && event.metadata._cost
 
-  const hasMetadata =
-    metadataToRender && Object.keys(metadataToRender).length === 0
+  const hasMetadata = metadataToRender
 
   return (
     <div className="@container flex flex-col gap-2">
@@ -277,6 +276,20 @@ export const SpanEventDetailsCard = ({ event }: LLMInferenceEventCardProps) => {
 
       {(llmMetadata || costMetadata) && (
         <div className="grid gap-2 @xl:grid-cols-2">
+          {costMetadata && (
+            <DataCard title="Costs" Icon={BadgeDollarSignIcon}>
+              <dl className="flex flex-col gap-y-2">
+                <DataRow
+                  label="Cost"
+                  value={formatSubCentCurrency(
+                    Number(costMetadata.amount),
+                    costMetadata.currency ?? 'usd',
+                  )}
+                />
+              </dl>
+            </DataCard>
+          )}
+
           {llmMetadata && (
             <DataCard title="LLM" Icon={BotIcon}>
               <dl className="flex flex-col gap-y-2">
@@ -299,20 +312,6 @@ export const SpanEventDetailsCard = ({ event }: LLMInferenceEventCardProps) => {
                 <DataRow
                   label="Total Tokens"
                   value={llmMetadata.total_tokens}
-                />
-              </dl>
-            </DataCard>
-          )}
-
-          {costMetadata && (
-            <DataCard title="Costs" Icon={BadgeDollarSignIcon}>
-              <dl className="flex flex-col gap-y-2">
-                <DataRow
-                  label="Cost"
-                  value={formatSubCentCurrency(
-                    Number(costMetadata.amount),
-                    costMetadata.currency ?? 'usd',
-                  )}
                 />
               </dl>
             </DataCard>

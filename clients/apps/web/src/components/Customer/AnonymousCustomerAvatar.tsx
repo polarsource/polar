@@ -14,7 +14,7 @@ export const AnonymousCustomerAvatar = ({
   externalId,
   className,
 }: AnonymousCustomerAvatarProps) => {
-  const [color, animal] = useAnonymousCustomerName(externalId)
+  const [, color, animal] = useAnonymousCustomerName(externalId)
   const colorClasses = getAnonymousCustomerColorClasses(color)
 
   return (

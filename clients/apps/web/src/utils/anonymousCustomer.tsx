@@ -1,13 +1,35 @@
 import {
+  bearFace,
+  bee,
+  beetleScarab,
+  bullHead,
+  butterfly,
+  catBig,
+  chameleon,
+  cowHead,
+  crab,
+  elephant,
+  foxFaceTail,
+  frogFace,
+  hedgehog,
+  horseHead,
+  owl,
+  penguin,
+  pig,
+  shark,
+  spider,
+  whale,
+} from '@lucide/lab'
+import {
   BirdIcon,
   BugIcon,
   CatIcon,
   DogIcon,
   FishIcon,
-  LucideIcon,
-  MouseIcon,
+  Icon,
   PandaIcon,
   RabbitIcon,
+  RatIcon,
   ShrimpIcon,
   SnailIcon,
   SquirrelIcon,
@@ -16,7 +38,29 @@ import {
 } from 'lucide-react'
 import { useMemo } from 'react'
 
-export const colors = [
+const adjectives = [
+  'Happy',
+  'Witty',
+  'Lucky',
+  'Brave',
+  'Clever',
+  'Mighty',
+  'Nimble',
+  'Swift',
+  'Wise',
+  'Gentle',
+  'Curious',
+  'Daring',
+  'Savvy',
+  'Crafty',
+  'Gritty',
+  'Quick',
+  'Bold',
+  'Jolly',
+  'Lively',
+] as const
+
+const colors = [
   'Red',
   'Blue',
   'Green',
@@ -31,45 +75,77 @@ export const colors = [
   'Crimson',
 ] as const
 
-export const animals = [
+const animals = [
+  'Bear',
+  'Bee',
+  'Beetle',
   'Bird',
   'Bug',
+  'Bull',
+  'Butterfly',
   'Cat',
+  'Chameleon',
+  'Cow',
+  'Crab',
   'Dog',
+  'Elephant',
   'Fish',
-  'Panda',
-  'Rabbit',
+  'Fox',
+  'Frog',
+  'Hedgehog',
+  'Horse',
   'Mouse',
+  'Owl',
+  'Panda',
+  'Penguin',
+  'Pig',
+  'Rabbit',
+  'Shark',
   'Shrimp',
   'Snail',
+  'Spider',
   'Squirrel',
+  'Tiger',
   'Turtle',
+  'Whale',
   'Worm',
 ] as const
 
+export type AnonymousCustomerAdjective = (typeof adjectives)[number]
 export type AnonymousCustomerColor = (typeof colors)[number]
 export type AnonymousCustomerAnimal = (typeof animals)[number]
 
+export type AnonymousCustomerName =
+  `${AnonymousCustomerAdjective} ${AnonymousCustomerColor} ${AnonymousCustomerAnimal}`
+
 export function getAnonymousCustomerName(
   externalId: string,
-): [AnonymousCustomerColor, AnonymousCustomerAnimal] {
-  const sample = btoa(`${externalId.slice(0, 8)}${externalId.slice(-8)}`)
-
-  let hash = 0
-  for (let i = 0; i < sample.length; i++) {
-    hash = (hash << 5) - hash + sample.charCodeAt(i)
-    hash = hash & hash
+): [AnonymousCustomerName, AnonymousCustomerColor, AnonymousCustomerAnimal] {
+  const getHash = (str: string, seed: number) => {
+    let hash = seed
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i)
+      hash = hash & hash
+    }
+    return Math.abs(hash)
   }
 
-  const colorIndex = Math.abs(hash) % colors.length
-  const animalIndex = Math.abs(hash >> 8) % animals.length
+  const colorIndex = getHash(externalId, 0) % colors.length
+  const animalIndex = getHash(externalId, 3) % animals.length
+  const adjectiveIndex = getHash(externalId, 5) % adjectives.length
 
-  return [colors[colorIndex], animals[animalIndex]]
+  const adjective = adjectives[adjectiveIndex]
+  const color = colors[colorIndex]
+  const animal = animals[animalIndex]
+
+  const name: AnonymousCustomerName = `${adjective} ${color} ${animal}`
+
+  return [name, color, animal]
 }
 
 export function useAnonymousCustomerName(
   externalId: string,
-): [AnonymousCustomerColor, AnonymousCustomerAnimal] {
+): [AnonymousCustomerName, AnonymousCustomerColor, AnonymousCustomerAnimal] {
   return useMemo(() => getAnonymousCustomerName(externalId), [externalId])
 }
 
@@ -110,69 +186,76 @@ export function useAnonymousCustomerColorClasses(
   return useMemo(() => getAnonymousCustomerColorClasses(color), [color])
 }
 
-export function getAnonymousCustomerAnimalIcon(
-  animal: AnonymousCustomerAnimal,
-): LucideIcon {
-  switch (animal) {
-    case 'Bird':
-      return BirdIcon
-    case 'Bug':
-      return BugIcon
-    case 'Cat':
-      return CatIcon
-    case 'Dog':
-      return DogIcon
-    case 'Fish':
-      return FishIcon
-    case 'Panda':
-      return PandaIcon
-    case 'Rabbit':
-      return RabbitIcon
-    case 'Mouse':
-      return MouseIcon
-    case 'Shrimp':
-      return ShrimpIcon
-    case 'Snail':
-      return SnailIcon
-    case 'Squirrel':
-      return SquirrelIcon
-    case 'Turtle':
-      return TurtleIcon
-    case 'Worm':
-      return WormIcon
-  }
-}
-
 export function renderAnonymousCustomerAnimalIcon(
   animal: AnonymousCustomerAnimal,
   className?: string,
 ): React.ReactElement {
   const props = { className, strokeWidth: 1.5 }
   switch (animal) {
+    case 'Bear':
+      return <Icon iconNode={bearFace} {...props} />
+    case 'Bee':
+      return <Icon iconNode={bee} {...props} />
+    case 'Beetle':
+      return <Icon iconNode={beetleScarab} {...props} />
     case 'Bird':
       return <BirdIcon {...props} />
     case 'Bug':
       return <BugIcon {...props} />
+    case 'Bull':
+      return <Icon iconNode={bullHead} {...props} />
+    case 'Butterfly':
+      return <Icon iconNode={butterfly} {...props} />
     case 'Cat':
       return <CatIcon {...props} />
+    case 'Chameleon':
+      return <Icon iconNode={chameleon} {...props} />
+    case 'Cow':
+      return <Icon iconNode={cowHead} {...props} />
+    case 'Crab':
+      return <Icon iconNode={crab} {...props} />
     case 'Dog':
       return <DogIcon {...props} />
+    case 'Elephant':
+      return <Icon iconNode={elephant} {...props} />
     case 'Fish':
       return <FishIcon {...props} />
+    case 'Fox':
+      return <Icon iconNode={foxFaceTail} {...props} />
+    case 'Frog':
+      return <Icon iconNode={frogFace} {...props} />
+    case 'Hedgehog':
+      return <Icon iconNode={hedgehog} {...props} />
+    case 'Horse':
+      return <Icon iconNode={horseHead} {...props} />
+    case 'Mouse':
+      return <RatIcon {...props} />
+    case 'Owl':
+      return <Icon iconNode={owl} {...props} />
     case 'Panda':
       return <PandaIcon {...props} />
+    case 'Penguin':
+      return <Icon iconNode={penguin} {...props} />
+    case 'Pig':
+      return <Icon iconNode={pig} {...props} />
     case 'Rabbit':
       return <RabbitIcon {...props} />
-    case 'Mouse':
-      return <MouseIcon {...props} />
+    case 'Shark':
+      return <Icon iconNode={shark} {...props} />
     case 'Shrimp':
       return <ShrimpIcon {...props} />
     case 'Snail':
       return <SnailIcon {...props} />
+    case 'Spider':
+      return <Icon iconNode={spider} {...props} />
     case 'Squirrel':
       return <SquirrelIcon {...props} />
+    case 'Tiger':
+      return <Icon iconNode={catBig} {...props} />
     case 'Turtle':
       return <TurtleIcon {...props} />
+    case 'Whale':
+      return <Icon iconNode={whale} {...props} />
     case 'Worm':
       return <WormIcon {...props} />
   }

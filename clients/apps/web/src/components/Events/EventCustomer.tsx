@@ -32,7 +32,7 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
   const { organization } = useContext(OrganizationContext)
 
   if (isAnonymousCustomerEvent(event)) {
-    const [color, animal] = getAnonymousCustomerName(event.external_customer_id)
+    const [name] = getAnonymousCustomerName(event.external_customer_id)
 
     return (
       <div className="flex flex-row items-center gap-x-2">
@@ -43,7 +43,7 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
           />
           <div className="flex flex-row items-baseline gap-x-2">
             <span className="dark:text-polar-500 text-sm text-gray-500">
-              {color} {animal}
+              {name}
             </span>
           </div>
         </div>

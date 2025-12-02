@@ -1,6 +1,6 @@
 'use client'
 
-import { getAnonymousCustomerName } from '@/utils/anonymousCustomer'
+import { useAnonymousCustomerName } from '@/utils/anonymousCustomer'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { DetailRow } from '../Shared/DetailRow'
 import { AnonymousCustomerAvatar } from './AnonymousCustomerAvatar'
@@ -12,7 +12,7 @@ interface AnonymousCustomerContextViewProps {
 export const AnonymousCustomerContextView = ({
   externalCustomerId,
 }: AnonymousCustomerContextViewProps) => {
-  const [color, animal] = getAnonymousCustomerName(externalCustomerId)
+  const [name] = useAnonymousCustomerName(externalCustomerId)
 
   return (
     <div className="flex h-full flex-col gap-2 overflow-y-auto">
@@ -23,9 +23,7 @@ export const AnonymousCustomerContextView = ({
             className="size-12"
           />
           <div className="flex flex-col">
-            <p className="text-base">
-              {color} {animal}
-            </p>
+            <p className="text-base">{name}</p>
           </div>
         </div>
       </ShadowBox>

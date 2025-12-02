@@ -69,7 +69,42 @@ services:
         "chmod +x /tmp/config/local.sh && chmod +x /tmp/config/configure.sh && /tmp/config/local.sh /tmp/config/configure.sh",
       ]
 
+  prometheus:
+    image: prom/prometheus:v3.7.3
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=1d"
+      - "--web.enable-lifecycle"
+      - "--web.enable-remote-write-receiver"
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:12.3.0
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=polar
+      - GF_SECURITY_ADMIN_PASSWORD=polar
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
 volumes:
   postgres_data:
   minio_data:
     driver: local
+  prometheus_data:
+  grafana_data:

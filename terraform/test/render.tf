@@ -105,6 +105,7 @@ module "test" {
   api_service_config = {
     allowed_hosts          = "[\"test.polar.sh\", \"backoffice.test.polar.sh\"]"
     cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
+    custom_domains         = [{ name = "test-api.polar.sh" }]
     web_concurrency        = "2"
     forwarded_allow_ips    = "*"
     database_pool_size     = "20"

@@ -247,7 +247,7 @@ class EventService:
         ),
         query: str | None = None,
         parent_id: uuid.UUID | None = None,
-        hierarchical: bool = False,
+        depth: int = 0,
         aggregate_fields: Sequence[str] = (),
     ) -> tuple[Sequence[Event], int]:
         repository = EventRepository.from_session(session)
@@ -270,17 +270,13 @@ class EventService:
             query=query,
         )
 
-        if hierarchical:
-            if parent_id is not None:
-                statement = statement.where(Event.parent_id == parent_id)
-            else:
-                statement = statement.where(Event.parent_id.is_(None))
-
         return await repository.list_with_closure_table(
             statement,
             limit=pagination.limit,
             page=pagination.page,
             aggregate_fields=aggregate_fields,
+            depth=depth,
+            parent_id=parent_id,
         )
 
     async def get(

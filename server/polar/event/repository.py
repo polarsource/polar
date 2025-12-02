@@ -245,11 +245,46 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         limit: int,
         page: int,
         aggregate_fields: Sequence[str] = (),
+        depth: int = 0,
+        parent_id: UUID | None = None,
     ) -> tuple[Sequence[Event], int]:
         """
         List events using closure table to get a correct children_count.
         Optionally aggregates fields from descendants's metadata.
+
+        Returns events up to the specified depth from anchor events:
+        - depth=0: anchor events only (default)
+        - depth=1: anchor + direct children (or just children if parent_id specified)
+        - depth=N: anchor + descendants up to N levels
+
+        Anchor events are determined by parent_id:
+        - If parent_id is set: returns descendants of that event (excludes the parent itself)
+        - If parent_id is None: root events (parent_id IS NULL) are anchors (included in results)
         """
+        # Apply depth filtering using closure table
+        if parent_id is not None:
+            # Single anchor: the specified parent
+            # Exclude the anchor itself (depth > 0) for backwards compatibility
+            anchor_ids = select(Event.id).where(Event.id == parent_id)
+            descendants_subquery = select(EventClosure.descendant_id).where(
+                EventClosure.ancestor_id.in_(anchor_ids),
+                EventClosure.depth > 0,
+                EventClosure.depth <= depth,
+            )
+        else:
+            # Anchor: root events (those without parents)
+            # Include the anchors themselves (depth >= 0)
+            anchor_ids = statement.with_only_columns(Event.id).where(
+                Event.parent_id.is_(None)
+            )
+            descendants_subquery = select(EventClosure.descendant_id).where(
+                EventClosure.ancestor_id.in_(anchor_ids),
+                EventClosure.depth <= depth,
+            )
+
+        # Filter main statement to only include these events
+        statement = statement.where(Event.id.in_(descendants_subquery))
+
         descendant_event = aliased(Event, name="descendant_event")
 
         # Step 1: Get paginated event IDs with total count

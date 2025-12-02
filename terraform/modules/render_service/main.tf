@@ -54,6 +54,8 @@ resource "render_env_group" "backend" {
     POLAR_PLAIN_REQUEST_SIGNING_SECRET         = { value = var.backend_secrets.plain_request_signing_secret }
     POLAR_PLAIN_TOKEN                          = { value = var.backend_secrets.plain_token }
     POLAR_PLAIN_CHAT_SECRET                    = { value = var.backend_secrets.plain_chat_secret }
+    POLAR_APP_REVIEW_EMAIL                     = { value = var.backend_secrets.app_review_email }
+    POLAR_APP_REVIEW_OTP_CODE                  = { value = var.backend_secrets.app_review_otp_code }
   }
 
   secret_files = {

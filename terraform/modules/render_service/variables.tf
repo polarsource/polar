@@ -136,6 +136,8 @@ variable "backend_secrets" {
     plain_token                  = string
     plain_chat_secret            = string
     jwks                         = string
+    app_review_email             = string
+    app_review_otp_code          = string
   })
   sensitive = true
 }

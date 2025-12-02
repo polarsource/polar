@@ -197,6 +197,8 @@ module "production" {
     plain_token                  = var.backend_plain_token_production
     plain_chat_secret            = var.backend_plain_chat_secret_production
     jwks                         = var.backend_jwks_production
+    app_review_email             = var.backend_app_review_email
+    app_review_otp_code          = var.backend_app_review_otp_code
   }
 
   aws_s3_config = {

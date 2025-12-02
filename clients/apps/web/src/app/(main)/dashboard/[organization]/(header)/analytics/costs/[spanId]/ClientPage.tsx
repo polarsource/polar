@@ -445,16 +445,16 @@ export default function SpanDetailPage({
               <table className="w-full table-auto border-collapse rounded-lg">
                 <thead>
                   <tr>
-                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
+                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
                       Span
                     </th>
-                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
+                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
                       Customer
                     </th>
-                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
+                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
                       Timestamp
                     </th>
-                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
+                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
                       Cost
                     </th>
                   </tr>

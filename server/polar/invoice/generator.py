@@ -53,6 +53,12 @@ class InvoiceHeadingItem(BaseModel):
         return self.value
 
 
+class InvoiceTotalsItem(BaseModel):
+    label: str
+    amount: int
+    currency: str
+
+
 class Invoice(BaseModel):
     number: str
     date: datetime
@@ -72,38 +78,15 @@ class Invoice(BaseModel):
     items: list[InvoiceItem]
     notes: str | None = None
     extra_heading_items: list[InvoiceHeadingItem] | None = None
+    extra_totals_items: list[InvoiceTotalsItem] | None = None
 
     @property
-    def formatted_subtotal_amount(self) -> str:
-        return format_currency(self.subtotal_amount, self.currency)
-
-    @property
-    def formatted_discount_amount(self) -> str:
-        return format_currency(-self.discount_amount, self.currency)
-
-    @property
-    def formatted_tax_amount(self) -> str:
-        return format_currency(self.tax_amount, self.currency)
-
-    @property
-    def formatted_total_amount(self) -> str:
-        total = self.subtotal_amount - self.discount_amount + self.tax_amount
-        return format_currency(total, self.currency)
-
-    @property
-    def formatted_applied_balance_amount(self) -> str | None:
-        if self.applied_balance_amount:
-            return format_currency(self.applied_balance_amount, self.currency)
-        else:
-            return None
-
-    @property
-    def formatted_due_amount(self) -> str | None:
-        total = self.subtotal_amount - self.discount_amount + self.tax_amount
-        if self.applied_balance_amount:
-            return format_currency(total + self.applied_balance_amount, self.currency)
-        else:
-            return None
+    def heading_items(self) -> list[InvoiceHeadingItem]:
+        return [
+            InvoiceHeadingItem(label="Invoice number", value=self.number),
+            InvoiceHeadingItem(label="Date of issue", value=self.date),
+            *(self.extra_heading_items or []),
+        ]
 
     @property
     def tax_displayed(self) -> bool:
@@ -133,12 +116,60 @@ class Invoice(BaseModel):
         return label
 
     @property
-    def heading_items(self) -> list[InvoiceHeadingItem]:
-        return [
-            InvoiceHeadingItem(label="Invoice number", value=self.number),
-            InvoiceHeadingItem(label="Date of issue", value=self.date),
-            *(self.extra_heading_items or []),
+    def totals_items(self) -> list[InvoiceTotalsItem]:
+        items: list[InvoiceTotalsItem] = [
+            InvoiceTotalsItem(
+                label="Subtotal",
+                amount=self.subtotal_amount,
+                currency=self.currency,
+            )
         ]
+
+        if self.discount_amount > 0:
+            items.append(
+                InvoiceTotalsItem(
+                    label="Discount",
+                    amount=-self.discount_amount,
+                    currency=self.currency,
+                )
+            )
+
+        if self.tax_displayed:
+            items.append(
+                InvoiceTotalsItem(
+                    label=self.tax_label,
+                    amount=self.tax_amount,
+                    currency=self.currency,
+                )
+            )
+
+        total = self.subtotal_amount - self.discount_amount + self.tax_amount
+        items.append(
+            InvoiceTotalsItem(
+                label="Total",
+                amount=total,
+                currency=self.currency,
+            )
+        )
+
+        if self.applied_balance_amount:
+            items.append(
+                InvoiceTotalsItem(
+                    label="Applied balance",
+                    amount=self.applied_balance_amount,
+                    currency=self.currency,
+                )
+            )
+            items.append(
+                InvoiceTotalsItem(
+                    label="To be paid",
+                    amount=total + self.applied_balance_amount,
+                    currency=self.currency,
+                )
+            )
+
+        items.extend(self.extra_totals_items or [])
+        return items
 
     @classmethod
     def from_order(cls, order: Order) -> Self:
@@ -389,50 +420,12 @@ class InvoiceGenerator(FPDF):
             line_height=self.totals_table_row_height,
             borders_layout=TableBordersLayout.NONE,
         ) as totals_table:
-            # Subtotal row
-            self.set_font(style="B")
-            subtotal_row = totals_table.row()
-            subtotal_row.cell("Subtotal")
-            self.set_font(style="")
-            subtotal_row.cell(self.data.formatted_subtotal_amount)
-
-            # Discount row (only if discount amount > 0)
-            if self.data.discount_amount > 0:
+            for total_item in self.data.totals_items:
                 self.set_font(style="B")
-                discount_row = totals_table.row()
-                discount_row.cell("Discount")
+                row = totals_table.row()
+                row.cell(total_item.label)
                 self.set_font(style="")
-                discount_row.cell(self.data.formatted_discount_amount)
-
-            # Tax row
-            if self.data.tax_displayed:
-                self.set_font(style="B")
-                tax_row = totals_table.row()
-                tax_row.cell(self.data.tax_label)
-                self.set_font(style="")
-                tax_row.cell(self.data.formatted_tax_amount)
-
-            # Total row
-            self.set_font(style="B")
-            total_row = totals_table.row()
-            total_row.cell("Total")
-            total_row.cell(self.data.formatted_total_amount)
-
-            if (
-                self.data.formatted_applied_balance_amount
-                and self.data.formatted_due_amount
-            ):
-                # Applied balance row
-                self.set_font(style="B")
-                total_row = totals_table.row()
-                total_row.cell("Applied balance")
-                total_row.cell(self.data.formatted_applied_balance_amount)
-
-                # To be paid row
-                self.set_font(style="B")
-                total_row = totals_table.row()
-                total_row.cell("To be paid")
-                total_row.cell(self.data.formatted_due_amount)
+                row.cell(format_currency(total_item.amount, total_item.currency))
 
         # Add notes section
         self.set_font(style="")

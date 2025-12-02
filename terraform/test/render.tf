@@ -42,7 +42,7 @@ locals {
 
 resource "render_postgres" "db" {
   environment_id = local.environment_id
-  name           = "db"
+  name           = "db-test"
   database_name  = "polar_cpit"
   database_user  = "polar_cpit_user"
   plan           = "pro_16gb"
@@ -66,7 +66,7 @@ resource "render_postgres" "db" {
 
 resource "render_redis" "redis" {
   environment_id    = local.environment_id
-  name              = "redis"
+  name              = "redis-test"
   plan              = "standard"
   region            = "ohio"
   max_memory_policy = "noeviction"

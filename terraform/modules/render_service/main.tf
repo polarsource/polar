@@ -120,7 +120,7 @@ resource "render_env_group" "stripe" {
 resource "render_env_group" "logfire_server" {
   count          = var.logfire_config != null ? 1 : 0
   environment_id = var.render_environment_id
-  name           = "logfire-server"
+  name           = "logfire-server${local.env_suffix}"
   env_vars = {
     POLAR_LOGFIRE_PROJECT_NAME = { value = var.logfire_config.server_project_name }
     POLAR_LOGFIRE_TOKEN        = { value = var.logfire_config.server_token }
@@ -130,7 +130,7 @@ resource "render_env_group" "logfire_server" {
 resource "render_env_group" "logfire_worker" {
   count          = var.logfire_config != null ? 1 : 0
   environment_id = var.render_environment_id
-  name           = "logfire-worker"
+  name           = "logfire-worker${local.env_suffix}"
   env_vars = {
     POLAR_LOGFIRE_PROJECT_NAME = { value = var.logfire_config.worker_project_name }
     POLAR_LOGFIRE_TOKEN        = { value = var.logfire_config.worker_token }
@@ -165,7 +165,7 @@ resource "render_env_group" "prometheus" {
 
 resource "render_web_service" "api" {
   environment_id     = var.render_environment_id
-  name               = var.environment == "production" ? "api" : "api-${var.environment}"
+  name               = "api${local.env_suffix}"
   plan               = "standard"
   region             = "ohio"
   health_check_path  = "/healthz"
@@ -276,6 +276,7 @@ resource "render_web_service" "worker" {
 }
 
 locals {
+  env_suffix      = var.environment == "production" ? "" : "-${var.environment}"
   worker_ids      = [for w in render_web_service.worker : w.id]
   all_service_ids = concat([render_web_service.api.id], local.worker_ids)
 }

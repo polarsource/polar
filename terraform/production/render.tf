@@ -246,6 +246,12 @@ module "production" {
     key_id    = var.apple_key_id
     key_value = var.apple_key_value
   }
+
+  prometheus_config = {
+    url      = var.prometheus_remote_write_url
+    username = var.prometheus_remote_write_username
+    password = var.prometheus_remote_write_password
+  }
 }
 
 # =============================================================================
@@ -356,6 +362,16 @@ resource "render_env_group" "apple_sandbox" {
     POLAR_APPLE_TEAM_ID   = { value = var.apple_team_id }
     POLAR_APPLE_KEY_ID    = { value = var.apple_key_id }
     POLAR_APPLE_KEY_VALUE = { value = var.apple_key_value }
+  }
+}
+
+resource "render_env_group" "prometheus_sandbox" {
+  environment_id = render_project.polar.environments["Sandbox"].id
+  name           = "prometheus-sandbox"
+  env_vars = {
+    POLAR_PROMETHEUS_REMOTE_WRITE_URL      = { value = var.prometheus_remote_write_url }
+    POLAR_PROMETHEUS_REMOTE_WRITE_USERNAME = { value = var.prometheus_remote_write_username }
+    POLAR_PROMETHEUS_REMOTE_WRITE_PASSWORD = { value = var.prometheus_remote_write_password }
   }
 }
 
@@ -492,4 +508,9 @@ resource "render_env_group_link" "openai_sandbox" {
 resource "render_env_group_link" "apple_sandbox" {
   env_group_id = render_env_group.apple_sandbox.id
   service_ids  = [render_web_service.api_sandbox.id]
+}
+
+resource "render_env_group_link" "prometheus_sandbox" {
+  env_group_id = render_env_group.prometheus_sandbox.id
+  service_ids  = [render_web_service.api_sandbox.id, render_web_service.worker_sandbox.id]
 }

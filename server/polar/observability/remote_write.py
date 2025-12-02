@@ -99,11 +99,13 @@ def _collect_metrics() -> Generator[tuple[list[tuple[str, str]], float], None, N
     registry = CollectorRegistry()
     multiprocess.MultiProcessCollector(registry)
 
+    env_label = settings.ENV.value if settings.ENV else "unknown"
+
     metric: Metric
     for metric in registry.collect():
         sample: Sample
         for sample in metric.samples:
-            labels = [("__name__", sample.name)]
+            labels = [("__name__", sample.name), ("env", env_label)]
             labels.extend(sample.labels.items())
             yield labels, sample.value
 

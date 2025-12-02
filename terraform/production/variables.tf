@@ -422,3 +422,22 @@ variable "backend_app_review_otp_code" {
   type        = string
   sensitive   = true
 }
+
+# Prometheus Remote Write (shared across environments)
+variable "prometheus_remote_write_url" {
+  description = "Prometheus Remote Write URL"
+  type        = string
+  sensitive   = true
+}
+
+variable "prometheus_remote_write_username" {
+  description = "Prometheus Remote Write Username"
+  type        = string
+  sensitive   = true
+}
+
+variable "prometheus_remote_write_password" {
+  description = "Prometheus Remote Write Password"
+  type        = string
+  sensitive   = true
+}

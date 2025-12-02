@@ -97,11 +97,11 @@ async def list(
         None,
         description="When combined with depth, use this event as the anchor instead of root events.",
     ),
-    depth: int = Query(
-        0,
+    depth: int | None = Query(
+        None,
         ge=0,
         le=5,
-        description="Fetch descendants up to this depth. 0=anchor only (default), 1=anchor+children, etc. Max 5.",
+        description="Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events.",
     ),
     aggregate_fields: Sequence[str] = Query(
         default=[],

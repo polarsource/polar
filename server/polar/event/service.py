@@ -247,7 +247,7 @@ class EventService:
         ),
         query: str | None = None,
         parent_id: uuid.UUID | None = None,
-        depth: int = 0,
+        depth: int | None = None,
         aggregate_fields: Sequence[str] = (),
     ) -> tuple[Sequence[Event], int]:
         repository = EventRepository.from_session(session)

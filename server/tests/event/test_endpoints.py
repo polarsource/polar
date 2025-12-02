@@ -131,13 +131,12 @@ class TestListEvents:
             timestamp=base_time - timedelta(hours=2),
         )
 
-        # Test descending sort (newest first) with depth=5 to get all events
+        # Test descending sort (newest first) - no depth returns all events
         response = await client.get(
             "/v1/events/",
             params={
                 "organization_id": str(organization.id),
                 "sorting": "-timestamp",
-                "depth": "5",
             },
         )
 
@@ -174,13 +173,12 @@ class TestListEvents:
         assert items[1]["id"] == str(child3.id)  # 2 hours ago
         assert items[2]["id"] == str(child1.id)  # 3 hours ago
 
-        # Test ascending sort (oldest first) with depth=5 to get all events
+        # Test ascending sort (oldest first) - no depth returns all events
         response = await client.get(
             "/v1/events/",
             params={
                 "organization_id": str(organization.id),
                 "sorting": "timestamp",
-                "depth": "5",
             },
         )
 

@@ -395,7 +395,10 @@ class DatatableActionLink[M](DatatableAction[M]):
     """
 
     def __init__(
-        self, label: str, href: str | URL | Callable[[Request, M], str]
+        self,
+        label: str,
+        href: str | URL | Callable[[Request, M], str],
+        target: str | None = None,
     ) -> None:
         """Initialize the action link.
 
@@ -403,9 +406,11 @@ class DatatableActionLink[M](DatatableAction[M]):
             label: The text to display for the link.
             href: The URL to link to. Can be a static string/URL or a callable
                 that generates the URL from request and item.
+            target: Optional target attribute for the link (e.g., "_blank").
         """
         self.label = label
         self.href = href
+        self.target = target
 
     @contextlib.contextmanager
     def render(self, request: Request, item: M) -> Generator[None]:
@@ -420,7 +425,7 @@ class DatatableActionLink[M](DatatableAction[M]):
             href = self.href(request, item)
         else:
             href = str(self.href)
-        with tag.a(href=href):
+        with tag.a(href=href, target=self.target if self.target else None):
             text(self.label)
         yield
 

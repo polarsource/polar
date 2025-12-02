@@ -111,8 +111,17 @@ class TestDelete:
         await session.refresh(payment_method)
         assert payment_method.deleted_at is not None
 
-    async def test_delete_payment_method_with_active_subscription_raises_exception(
+    @pytest.mark.parametrize(
+        "status",
+        [
+            SubscriptionStatus.trialing,
+            SubscriptionStatus.active,
+            SubscriptionStatus.past_due,
+        ],
+    )
+    async def test_delete_payment_method_with_billable_subscription_raises_exception(
         self,
+        status: SubscriptionStatus,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
@@ -127,8 +136,9 @@ class TestDelete:
         )
         await save_fixture(payment_method)
 
-        subscription = await create_active_subscription(
+        subscription = await create_subscription(
             save_fixture,
+            status=status,
             product=product,
             customer=customer,
         )

@@ -165,7 +165,7 @@ resource "render_env_group" "prometheus" {
 
 resource "render_web_service" "api" {
   environment_id     = var.render_environment_id
-  name               = "api"
+  name               = "api-${var.environment}"
   plan               = "standard"
   region             = "ohio"
   health_check_path  = "/healthz"

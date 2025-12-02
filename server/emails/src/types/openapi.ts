@@ -831,16 +831,79 @@ export interface components {
     }
     /** MaintainerNewProductSaleNotificationPayload */
     MaintainerNewProductSaleNotificationPayload: {
-      /** Customer Name */
-      customer_name: string
       /** Product Name */
       product_name: string
       /** Product Price Amount */
       product_price_amount: number
-      /** Organization Name */
+      /**
+       * Customer Name
+       * @default A customer
+       */
+      customer_name: string
+      /**
+       * Organization Name
+       * @default
+       */
       organization_name: string
+      /**
+       * Customer Email
+       * @default null
+       */
+      customer_email: string | null
+      /**
+       * Billing Address Country
+       * @default null
+       */
+      billing_address_country: string | null
+      /**
+       * Billing Address City
+       * @default null
+       */
+      billing_address_city: string | null
+      /**
+       * Billing Address Line1
+       * @default null
+       */
+      billing_address_line1: string | null
+      /**
+       * Product Image Url
+       * @default null
+       */
+      product_image_url: string | null
+      /**
+       * Order Id
+       * @default null
+       */
+      order_id: string | null
+      /**
+       * Order Date
+       * @default null
+       */
+      order_date: string | null
+      /**
+       * Organization Slug
+       * @default null
+       */
+      organization_slug: string | null
+      /**
+       * Billing Reason
+       * @default null
+       */
+      billing_reason: components['schemas']['OrderBillingReasonInternal'] | null
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
+      /**
+       * Formatted Billing Reason
+       * @default null
+       */
+      readonly formatted_billing_reason: string | null
+      /** Formatted Address Country */
+      readonly formatted_address_country: string | null
+      /**
+       * Order Url
+       * @default null
+       */
+      readonly order_url: string | null
     }
     /** NotificationCreateAccountEmail */
     NotificationCreateAccountEmail: {
@@ -924,6 +987,17 @@ export interface components {
       | 'purchase'
       | 'subscription_create'
       | 'subscription_cycle'
+      | 'subscription_update'
+    /**
+     * OrderBillingReasonInternal
+     * @description Internal billing reasons with additional granularity.
+     * @enum {string}
+     */
+    OrderBillingReasonInternal:
+      | 'purchase'
+      | 'subscription_create'
+      | 'subscription_cycle'
+      | 'subscription_cycle_after_trial'
       | 'subscription_update'
     /** OrderConfirmationEmail */
     OrderConfirmationEmail: {
@@ -1224,6 +1298,25 @@ export interface components {
       /** Url */
       url: string
     }
+    /** OrganizationAccountUnlinkEmail */
+    OrganizationAccountUnlinkEmail: {
+      /**
+       * Template
+       * @default organization_account_unlink
+       * @constant
+       */
+      template: 'organization_account_unlink'
+      props: components['schemas']['OrganizationAccountUnlinkProps']
+    }
+    /** OrganizationAccountUnlinkProps */
+    OrganizationAccountUnlinkProps: {
+      /** Email */
+      email: string
+      /** Organization Kept Name */
+      organization_kept_name: string
+      /** Organizations Unlinked */
+      organizations_unlinked: string[]
+    }
     /** OrganizationCustomerEmailSettings */
     OrganizationCustomerEmailSettings: {
       /** Order Confirmation */
@@ -1269,6 +1362,12 @@ export interface components {
        * @default false
        */
       wallets_enabled: boolean
+      /**
+       * Member Model Enabled
+       * @description If this organization has the Member model enabled
+       * @default false
+       */
+      member_model_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {
@@ -1358,6 +1457,8 @@ export interface components {
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
+      /** Prevent Trial Abuse */
+      prevent_trial_abuse: boolean
     }
     /** OrganizationUnderReviewEmail */
     OrganizationUnderReviewEmail: {

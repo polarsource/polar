@@ -283,19 +283,3 @@ resource "tfe_variable" "logfire_token_worker" {
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 }
-
-resource "tfe_variable" "backend_app_review_email" {
-  key             = "backend_app_review_email"
-  category        = "terraform"
-  description     = "App review email for app store review login bypass"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-}
-
-resource "tfe_variable" "backend_app_review_otp_code" {
-  key             = "backend_app_review_otp_code"
-  category        = "terraform"
-  description     = "App review OTP code for app store review login bypass"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
-}

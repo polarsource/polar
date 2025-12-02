@@ -17,3 +17,83 @@ module "s3_buckets" {
   environment     = "sandbox"
   allowed_origins = ["https://sandbox.polar.sh"]
 }
+
+import {
+  to = module.sandbox.render_env_group.apple
+  id = "evg-d4ecbqn5r7bs73fn1se0"
+}
+
+import {
+  to = module.sandbox.render_env_group.aws_s3
+  id = "evg-crkocfrtq21c73ddsc30"
+}
+
+import {
+  to = module.sandbox.render_env_group.backend
+  id = "evg-crkocfrtq21c73ddsbvg"
+}
+
+import {
+  to = module.sandbox.render_env_group.github
+  id = "evg-crkocfrtq21c73ddsc90"
+}
+
+import {
+  to = module.sandbox.render_env_group.google
+  id = "evg-crkocfrtq21c73ddsbv0"
+}
+
+import {
+  to = module.sandbox.render_env_group.openai
+  id = "evg-d2at9pje5dus73c0lun0"
+}
+
+import {
+  to = module.sandbox.render_env_group.stripe
+  id = "evg-crkocfrtq21c73ddsc9g"
+}
+
+import {
+  to = module.sandbox.render_env_group_link.apple
+  id = "evg-d4ecbqn5r7bs73fn1se0"
+}
+
+import {
+  to = module.sandbox.render_env_group_link.aws_s3
+  id = "evg-crkocfrtq21c73ddsc30"
+}
+
+import {
+  to = module.sandbox.render_env_group_link.backend
+  id = "evg-crkocfrtq21c73ddsbvg"
+}
+
+import {
+  to = module.sandbox.render_env_group_link.github
+  id = "evg-crkocfrtq21c73ddsc90"
+}
+
+import {
+  to = module.sandbox.render_env_group_link.google
+  id = "evg-crkocfrtq21c73ddsbv0"
+}
+
+import {
+  to = module.sandbox.render_env_group_link.openai
+  id = "evg-d2at9pje5dus73c0lun0"
+}
+
+import {
+  to = module.sandbox.render_env_group_link.stripe
+  id = "evg-crkocfrtq21c73ddsc9g"
+}
+
+import {
+  to = module.sandbox.render_web_service.api
+  id = "srv-crkocgbtq21c73ddsdbg"
+}
+
+import {
+  to = module.sandbox.render_web_service.worker["worker-sandbox"]
+  id = "srv-d089jj7diees73934kgg"
+}

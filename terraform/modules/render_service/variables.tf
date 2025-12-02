@@ -209,3 +209,13 @@ variable "apple_secrets" {
   })
   sensitive = true
 }
+
+variable "prometheus_config" {
+  description = "Prometheus Remote Write configuration"
+  type = object({
+    url      = string
+    username = string
+    password = string
+  })
+  sensitive = true
+}

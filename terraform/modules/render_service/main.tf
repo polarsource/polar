@@ -137,6 +137,16 @@ resource "render_env_group" "apple" {
   }
 }
 
+resource "render_env_group" "prometheus" {
+  environment_id = var.render_environment_id
+  name           = "prometheus-${var.environment}"
+  env_vars = {
+    POLAR_PROMETHEUS_REMOTE_WRITE_URL      = { value = var.prometheus_config.url }
+    POLAR_PROMETHEUS_REMOTE_WRITE_USERNAME = { value = var.prometheus_config.username }
+    POLAR_PROMETHEUS_REMOTE_WRITE_PASSWORD = { value = var.prometheus_config.password }
+  }
+}
+
 # Services
 
 
@@ -296,4 +306,9 @@ resource "render_env_group_link" "openai" {
 resource "render_env_group_link" "apple" {
   env_group_id = render_env_group.apple.id
   service_ids  = [render_web_service.api.id]
+}
+
+resource "render_env_group_link" "prometheus" {
+  env_group_id = render_env_group.prometheus.id
+  service_ids  = local.all_service_ids
 }

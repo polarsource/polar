@@ -140,6 +140,7 @@ resource "render_env_group" "apple" {
 }
 
 resource "render_env_group" "prometheus" {
+  count          = var.prometheus_config != null ? 1 : 0
   environment_id = var.render_environment_id
   name           = "prometheus-${var.environment}"
   env_vars = {
@@ -319,6 +320,7 @@ resource "render_env_group_link" "apple" {
 }
 
 resource "render_env_group_link" "prometheus" {
-  env_group_id = render_env_group.prometheus.id
+  count        = var.prometheus_config != null ? 1 : 0
+  env_group_id = render_env_group.prometheus[0].id
   service_ids  = local.all_service_ids
 }

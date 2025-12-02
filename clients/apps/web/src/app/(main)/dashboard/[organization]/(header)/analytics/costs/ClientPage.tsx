@@ -17,7 +17,12 @@ import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { SpansHeader } from './SpansHeader'
 import { SpansTitle } from './SpansTitle'
-import { getCostsSearchParams, getDefaultStartDate, getDefaultEndDate, DEFAULT_INTERVAL } from './utils'
+import {
+  DEFAULT_INTERVAL,
+  getCostsSearchParams,
+  getDefaultEndDate,
+  getDefaultStartDate,
+} from './utils'
 
 type TimeSeriesField = 'average' | 'p95' | 'p99'
 

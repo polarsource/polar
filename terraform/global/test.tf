@@ -225,7 +225,7 @@ resource "tfe_variable" "logfire_token_server_test" {
   category        = "terraform"
   description     = "Logfire Token for server"
   sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
+  variable_set_id = tfe_variable_set.test.id
 }
 
 resource "tfe_variable" "logfire_token_worker_test" {
@@ -233,5 +233,5 @@ resource "tfe_variable" "logfire_token_worker_test" {
   category        = "terraform"
   description     = "Logfire Token for worker"
   sensitive       = true
-  variable_set_id = tfe_variable_set.production.id
+  variable_set_id = tfe_variable_set.test.id
 }

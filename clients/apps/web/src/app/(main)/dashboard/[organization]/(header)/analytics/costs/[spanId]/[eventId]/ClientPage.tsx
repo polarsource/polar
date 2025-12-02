@@ -1,13 +1,12 @@
 'use client'
 
-import { AnonymousCustomerContextView } from '@/components/Customer/AnonymousCustomerContextView'
-import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { TreeView } from '@/components/Events/TreeView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
 import { SpansTitle } from '../../SpansTitle'
@@ -105,29 +104,53 @@ export default function EventDetailPage({
           )}
         </div>
 
-        <div>
-          {event.customer ? (
-            <CustomerContextView
-              organization={organization}
-              customer={event.customer as schemas['Customer']}
-            />
-          ) : event.external_customer_id ? (
-            <AnonymousCustomerContextView
-              externalCustomerId={event.external_customer_id}
-            />
-          ) : undefined}
-        </div>
+        <div className="flex flex-row items-start justify-between gap-x-4">
+          <div>
+            {event.customer ? (
+              <div className="flex flex-row items-center gap-3">
+                <Avatar
+                  className="size-11"
+                  name={event.customer.name ?? event.customer.email}
+                  avatar_url={event.customer.avatar_url ?? null}
+                />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm">
+                    {event.customer.name ?? event.customer.email}
+                  </span>
+                  <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
+                    {event.external_customer_id ?? ''}
+                  </span>
+                </div>
+              </div>
+            ) : event.external_customer_id ? (
+              <div className="flex flex-row items-center gap-3">
+                <AnonymousCustomerAvatar
+                  externalId={event.external_customer_id}
+                  className="size-11"
+                />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm">
+                    {getAnonymousCustomerName(event.external_customer_id)[0]}
+                  </span>
+                  <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
+                    {event.external_customer_id}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+          </div>
 
-        <span className="dark:text-polar-500 font-mono text-gray-500 capitalize">
-          {new Date(event.timestamp).toLocaleDateString('en-US', {
-            hour: '2-digit',
-            minute: 'numeric',
-            second: 'numeric',
-            month: 'short',
-            day: '2-digit',
-            year: 'numeric',
-          })}
-        </span>
+          <span className="dark:text-polar-500 pt-[3px] text-sm text-gray-500 capitalize">
+            {new Date(event.timestamp).toLocaleDateString('en-US', {
+              hour: '2-digit',
+              minute: 'numeric',
+              second: 'numeric',
+              month: 'short',
+              day: '2-digit',
+              year: 'numeric',
+            })}
+          </span>
+        </div>
       </div>
       <div className="flex flex-col gap-y-3"></div>
       <div className="flex w-full items-start justify-between gap-8">
@@ -154,8 +177,10 @@ export default function EventDetailPage({
   )
 }
 
+import { AnonymousCustomerAvatar } from '@/components/Customer/AnonymousCustomerAvatar'
 import { EventCardBase } from '@/components/Events/EventCard/EventCardBase'
 import { useMetadata } from '@/components/Events/EventCard/UserEventCard'
+import { getAnonymousCustomerName } from '@/utils/anonymousCustomer'
 import { BadgeDollarSignIcon, BotIcon, BracesIcon } from 'lucide-react'
 
 const DataRow = ({

@@ -90,7 +90,7 @@ module "sandbox" {
   workers = {
     worker-sandbox = {
       start_command      = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
-      tag                = "sandbox"
+      tag                = "latest"
       dramatiq_prom_port = "10000"
     }
   }

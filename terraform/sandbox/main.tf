@@ -37,4 +37,3 @@ import {
   to = module.s3_buckets.aws_s3_bucket_cors_configuration.files
   id = "polar-sandbox-files"
 }
-

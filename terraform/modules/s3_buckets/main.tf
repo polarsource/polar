@@ -32,9 +32,9 @@ variable "public_files_bucket_name" {
 }
 
 locals {
-  name_prefix             = (var.environment == "production" ? "polar" : "polar-${var.environment}")
-  full_name_prefix        = "polar-${var.environment}"
-  public_files_bucket     = coalesce(var.public_files_bucket_name, "${local.name_prefix}-public-files")
+  name_prefix         = (var.environment == "production" ? "polar" : "polar-${var.environment}")
+  full_name_prefix    = "polar-${var.environment}"
+  public_files_bucket = coalesce(var.public_files_bucket_name, "${local.name_prefix}-public-files")
 }
 
 

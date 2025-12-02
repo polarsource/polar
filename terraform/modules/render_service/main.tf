@@ -20,54 +20,58 @@ resource "render_env_group" "openai" {
   }
 }
 
-locals {
-  backend_env_vars_all = {
-    POLAR_USER_SESSION_COOKIE_DOMAIN           = var.backend_config.user_session_cookie_domain
-    POLAR_BASE_URL                             = var.backend_config.base_url
-    POLAR_BACKOFFICE_HOST                      = var.backend_config.backoffice_host
-    POLAR_DEBUG                                = var.backend_config.debug
-    POLAR_EMAIL_SENDER                         = var.backend_config.email_sender
-    POLAR_EMAIL_FROM_NAME                      = var.backend_config.email_from_name
-    POLAR_EMAIL_FROM_DOMAIN                    = var.backend_config.email_from_domain
-    POLAR_ENV                                  = var.environment
-    POLAR_FRONTEND_BASE_URL                    = var.backend_config.frontend_base_url
-    POLAR_CHECKOUT_BASE_URL                    = var.backend_config.checkout_base_url
-    POLAR_JWKS                                 = var.backend_config.jwks_path
-    POLAR_LOG_LEVEL                            = var.backend_config.log_level
-    POLAR_TESTING                              = var.backend_config.testing
-    POLAR_ORGANIZATIONS_BILLING_ENGINE_DEFAULT = var.backend_config.organizations_billing_engine_default
-    POLAR_AUTH_COOKIE_DOMAIN                   = var.backend_config.auth_cookie_domain
-    POLAR_INVOICES_ADDITIONAL_INFO             = var.backend_config.invoices_additional_info
-    POLAR_STRIPE_PUBLISHABLE_KEY               = var.backend_secrets.stripe_publishable_key
-    POLAR_CURRENT_JWK_KID                      = var.backend_secrets.current_jwk_kid
-    POLAR_DISCORD_BOT_TOKEN                    = var.backend_secrets.discord_bot_token
-    POLAR_DISCORD_CLIENT_ID                    = var.backend_secrets.discord_client_id
-    POLAR_DISCORD_CLIENT_SECRET                = var.backend_secrets.discord_client_secret
-    POLAR_DISCORD_WEBHOOK_URL                  = var.backend_secrets.discord_webhook_url
-    POLAR_LOOPS_API_KEY                        = var.backend_secrets.loops_api_key
-    POLAR_POSTHOG_PROJECT_API_KEY              = var.backend_secrets.posthog_project_api_key
-    POLAR_RESEND_API_KEY                       = var.backend_secrets.resend_api_key
-    POLAR_SECRET                               = var.backend_secrets.secret
-    POLAR_SENTRY_DSN                           = var.backend_secrets.sentry_dsn
-    POLAR_PLAIN_REQUEST_SIGNING_SECRET         = var.backend_secrets.plain_request_signing_secret
-    POLAR_PLAIN_TOKEN                          = var.backend_secrets.plain_token
-    POLAR_PLAIN_CHAT_SECRET                    = var.backend_secrets.plain_chat_secret
-    POLAR_APP_REVIEW_EMAIL                     = var.backend_secrets.app_review_email
-    POLAR_APP_REVIEW_OTP_CODE                  = var.backend_secrets.app_review_otp_code
-  }
-}
-
 resource "render_env_group" "backend" {
   environment_id = var.render_environment_id
   name           = "backend-${var.environment}"
   env_vars = {
-    for k, v in local.backend_env_vars_all : k => { value = v } if v != ""
+    POLAR_USER_SESSION_COOKIE_DOMAIN           = { value = var.backend_config.user_session_cookie_domain }
+    POLAR_USER_SESSION_COOKIE_KEY              = { value = var.backend_config.user_session_cookie_key }
+    POLAR_BASE_URL                             = { value = var.backend_config.base_url }
+    POLAR_BACKOFFICE_HOST                      = { value = var.backend_config.backoffice_host }
+    POLAR_DEBUG                                = { value = var.backend_config.debug }
+    POLAR_EMAIL_SENDER                         = { value = var.backend_config.email_sender }
+    POLAR_EMAIL_FROM_NAME                      = { value = var.backend_config.email_from_name }
+    POLAR_EMAIL_FROM_DOMAIN                    = { value = var.backend_config.email_from_domain }
+    POLAR_ENV                                  = { value = var.environment }
+    POLAR_FRONTEND_BASE_URL                    = { value = var.backend_config.frontend_base_url }
+    POLAR_CHECKOUT_BASE_URL                    = { value = var.backend_config.checkout_base_url }
+    POLAR_JWKS                                 = { value = var.backend_config.jwks_path }
+    POLAR_LOG_LEVEL                            = { value = var.backend_config.log_level }
+    POLAR_TESTING                              = { value = var.backend_config.testing }
+    POLAR_ORGANIZATIONS_BILLING_ENGINE_DEFAULT = { value = var.backend_config.organizations_billing_engine_default }
+    POLAR_AUTH_COOKIE_DOMAIN                   = { value = var.backend_config.auth_cookie_domain }
+    POLAR_AUTH_COOKIE_KEY                      = { value = var.backend_config.auth_cookie_key }
+    POLAR_INVOICES_ADDITIONAL_INFO             = { value = var.backend_config.invoices_additional_info }
+    POLAR_STRIPE_PUBLISHABLE_KEY               = { value = var.backend_secrets.stripe_publishable_key }
+    POLAR_CURRENT_JWK_KID                      = { value = var.backend_secrets.current_jwk_kid }
+    POLAR_DISCORD_BOT_TOKEN                    = { value = var.backend_secrets.discord_bot_token }
+    POLAR_DISCORD_CLIENT_ID                    = { value = var.backend_secrets.discord_client_id }
+    POLAR_DISCORD_CLIENT_SECRET                = { value = var.backend_secrets.discord_client_secret }
+    POLAR_RESEND_API_KEY                       = { value = var.backend_secrets.resend_api_key }
+    POLAR_SECRET                               = { value = var.backend_secrets.secret }
+    POLAR_SENTRY_DSN                           = { value = var.backend_secrets.sentry_dsn }
   }
 
   secret_files = {
     "jwks.json" = {
       content = var.backend_secrets.jwks
     }
+  }
+}
+
+resource "render_env_group" "backend_production" {
+  count          = var.environment == "production" ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "backend-production-only"
+  env_vars = {
+    POLAR_DISCORD_WEBHOOK_URL          = { value = var.backend_secrets.discord_webhook_url }
+    POLAR_LOOPS_API_KEY                = { value = var.backend_secrets.loops_api_key }
+    POLAR_POSTHOG_PROJECT_API_KEY      = { value = var.backend_secrets.posthog_project_api_key }
+    POLAR_PLAIN_REQUEST_SIGNING_SECRET = { value = var.backend_secrets.plain_request_signing_secret }
+    POLAR_PLAIN_TOKEN                  = { value = var.backend_secrets.plain_token }
+    POLAR_PLAIN_CHAT_SECRET            = { value = var.backend_secrets.plain_chat_secret }
+    POLAR_APP_REVIEW_EMAIL             = { value = var.backend_secrets.app_review_email }
+    POLAR_APP_REVIEW_OTP_CODE          = { value = var.backend_secrets.app_review_otp_code }
   }
 }
 
@@ -292,6 +296,12 @@ resource "render_env_group_link" "github" {
 
 resource "render_env_group_link" "backend" {
   env_group_id = render_env_group.backend.id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "backend_production" {
+  count        = var.environment == "production" ? 1 : 0
+  env_group_id = render_env_group.backend_production[0].id
   service_ids  = local.all_service_ids
 }
 

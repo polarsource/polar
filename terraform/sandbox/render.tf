@@ -76,14 +76,14 @@ module "sandbox" {
   }
 
   api_service_config = {
-    allowed_hosts          = "[\"sandbox.polar.sh\", \"backoffice.sandbox.polar.sh\"]"
+    allowed_hosts          = "[\"sandbox.polar.sh\"]"
     cors_origins           = "[\"https://sandbox.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "sandbox-api.polar.sh" }]
     web_concurrency        = "2"
     forwarded_allow_ips    = "*"
     database_pool_size     = "20"
-    postgres_database      = "polar_cpit"
-    postgres_read_database = "polar_cpit"
+    postgres_database      = "polar_sandbox"
+    postgres_read_database = "polar_sandbox"
     redis_db               = "1"
   }
 
@@ -105,21 +105,23 @@ module "sandbox" {
   }
 
   backend_config = {
-    base_url                             = "https://api.sandbox.polar.sh"
-    backoffice_host                      = "backoffice.sandbox.polar.sh"
-    user_session_cookie_domain           = "sandbox.polar.sh"
+    base_url                             = "https://sandbox-api.polar.sh"
+    backoffice_host                      = "sandbox-api.polar.sh"
+    user_session_cookie_domain           = "polar.sh"
+    user_session_cookie_key              = "polar_sandbox_session"
     debug                                = "0"
     email_sender                         = "resend"
-    email_from_name                      = "Polar"
-    email_from_domain                    = "notifications.polar.sh"
+    email_from_name                      = "[SANDBOX] Polar"
+    email_from_domain                    = "notifications.sandbox.polar.sh"
     frontend_base_url                    = "https://sandbox.polar.sh"
-    checkout_base_url                    = "https://buy.sandbox.polar.sh/{client_secret}"
+    checkout_base_url                    = "https://sandbox-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
     jwks_path                            = "/etc/secrets/jwks.json"
     log_level                            = "INFO"
     testing                              = "0"
     organizations_billing_engine_default = "1"
-    auth_cookie_domain                   = "sandbox.polar.sh"
-    invoices_additional_info             = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
+    auth_cookie_domain                   = "polar.sh"
+    auth_cookie_key                      = "polar_sandbox_session"
+    invoices_additional_info             = ""
   }
 
   backend_secrets = {
@@ -138,7 +140,7 @@ module "sandbox" {
     region                        = "us-east-2"
     signature_version             = "v4"
     files_presign_ttl             = "600"
-    files_public_bucket_name      = "polar-sandbox-public-files"
+    files_public_bucket_name      = "polar-public-sandbox-files"
     customer_invoices_bucket_name = "polar-sandbox-customer-invoices"
     payout_invoices_bucket_name   = "polar-sandbox-payout-invoices"
   }

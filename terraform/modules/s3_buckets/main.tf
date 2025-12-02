@@ -97,6 +97,7 @@ resource "aws_s3_bucket_policy" "public_assets" {
       }
     ]
   })
+  depends_on = [aws_s3_bucket_public_access_block.public_assets]
 }
 
 resource "aws_s3_bucket" "public_files" {
@@ -125,6 +126,7 @@ resource "aws_s3_bucket_policy" "public_files" {
       }
     ]
   })
+  depends_on = [aws_s3_bucket_public_access_block.public_files]
 }
 
 resource "aws_s3_bucket_cors_configuration" "public_files" {

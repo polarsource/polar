@@ -11,6 +11,8 @@ import { useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
 import { SpansTitle } from '../../SpansTitle'
 
+import type { LucideIcon } from 'lucide-react'
+
 const PAGE_SIZE = 50
 
 interface EventDetailPageProps {
@@ -178,7 +180,6 @@ export default function EventDetailPage({
 }
 
 import { AnonymousCustomerAvatar } from '@/components/Customer/AnonymousCustomerAvatar'
-import { EventCardBase } from '@/components/Events/EventCard/EventCardBase'
 import { useMetadata } from '@/components/Events/EventCard/UserEventCard'
 import { getAnonymousCustomerName } from '@/utils/anonymousCustomer'
 import { BadgeDollarSignIcon, BotIcon, BracesIcon } from 'lucide-react'
@@ -192,10 +193,30 @@ const DataRow = ({
 }) => {
   return (
     <div className="flex flex-row items-center gap-x-4">
-      <div className="flex w-48 flex-row items-center gap-x-4">
-        <span>{label}</span>
-      </div>
-      <span className="dark:text-polar-500 text-gray-500">{value}</span>
+      <dt className="flex w-32 flex-row items-center gap-x-4">{label}</dt>
+      <dd className="dark:text-polar-500 text-gray-500 tabular-nums">
+        {value}
+      </dd>
+    </div>
+  )
+}
+
+function DataCard({
+  Icon,
+  title,
+  children,
+}: {
+  Icon: LucideIcon
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="dark:border-polar-700 flex flex-col gap-4 rounded-2xl border border-gray-200 px-4 pt-3.5 pb-4 text-sm">
+      <span className="flex flex-row items-center font-mono text-[11px] font-medium tracking-wider text-gray-500 uppercase">
+        <Icon className="mr-1.5 inline-block size-4" />
+        {title}
+      </span>
+      <div>{children}</div>
     </div>
   )
 }
@@ -211,52 +232,56 @@ export const SpanEventDetailsCard = ({ event }: LLMInferenceEventCardProps) => {
   const costMetadata = '_cost' in event.metadata && event.metadata._cost
 
   return (
-    <div>
-      <EventCardBase className="font-base flex flex-col gap-y-2 p-4 text-sm">
-        <span className="-mt-0.5 mb-1 flex flex-row items-center font-mono text-[11px] font-medium tracking-wider text-gray-500 uppercase">
-          <BracesIcon className="mr-1.5 inline-block size-4" />
-          Metadata
-        </span>
-
+    <div className="@container flex flex-col gap-2">
+      <DataCard Icon={BracesIcon} title="Metadata">
         <pre className="font-mono text-xs whitespace-pre-wrap select-text">
           {JSON.stringify(metadataToRender, null, 2)}
         </pre>
-      </EventCardBase>
+      </DataCard>
 
-      {llmMetadata && (
-        <EventCardBase className="font-base flex flex-col gap-y-2 p-4 text-sm">
-          <span className="-mt-0.5 mb-1 flex flex-row items-center font-mono text-[11px] font-medium tracking-wider text-gray-500 uppercase">
-            <BotIcon className="mr-1.5 inline-block size-4" />
-            LLM
-          </span>
-
-          <DataRow label="Vendor" value={llmMetadata.vendor} />
-          <DataRow label="Model" value={llmMetadata.model} />
-          <DataRow label="Input Tokens" value={llmMetadata.input_tokens} />
-          {typeof llmMetadata.cached_input_tokens === 'number' && (
-            <DataRow
-              label="Cached Input Tokens"
-              value={llmMetadata.cached_input_tokens}
-            />
+      {(llmMetadata || costMetadata) && (
+        <div className="grid gap-2 @xl:grid-cols-2">
+          {llmMetadata && (
+            <DataCard title="LLM" Icon={BotIcon}>
+              <dl className="flex flex-col gap-y-2">
+                <DataRow label="Vendor" value={llmMetadata.vendor} />
+                <DataRow label="Model" value={llmMetadata.model} />
+                <DataRow
+                  label="Input Tokens"
+                  value={llmMetadata.input_tokens}
+                />
+                {typeof llmMetadata.cached_input_tokens === 'number' && (
+                  <DataRow
+                    label="Cached Input Tokens"
+                    value={llmMetadata.cached_input_tokens}
+                  />
+                )}
+                <DataRow
+                  label="Output Tokens"
+                  value={llmMetadata.output_tokens}
+                />
+                <DataRow
+                  label="Total Tokens"
+                  value={llmMetadata.total_tokens}
+                />
+              </dl>
+            </DataCard>
           )}
-          <DataRow label="Output Tokens" value={llmMetadata.output_tokens} />
-          <DataRow label="Total Tokens" value={llmMetadata.total_tokens} />
-        </EventCardBase>
-      )}
-      {costMetadata && (
-        <EventCardBase className="font-base flex flex-col gap-y-2 p-4 text-sm">
-          <span className="-mt-0.5 mb-1 flex flex-row items-center font-mono text-[11px] font-medium tracking-wider text-gray-500 uppercase">
-            <BadgeDollarSignIcon className="mr-1.5 inline-block size-4" />
-            Cost
-          </span>
-          <DataRow
-            label="Cost"
-            value={formatSubCentCurrency(
-              Number(costMetadata.amount),
-              costMetadata.currency ?? 'usd',
-            )}
-          />
-        </EventCardBase>
+
+          {costMetadata && (
+            <DataCard title="Costs" Icon={BadgeDollarSignIcon}>
+              <dl className="flex flex-col gap-y-2">
+                <DataRow
+                  label="Cost"
+                  value={formatSubCentCurrency(
+                    Number(costMetadata.amount),
+                    costMetadata.currency ?? 'usd',
+                  )}
+                />
+              </dl>
+            </DataCard>
+          )}
+        </div>
       )}
     </div>
   )

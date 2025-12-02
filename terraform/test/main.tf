@@ -11,3 +11,9 @@ provider "aws" {
 
 provider "render" {
 }
+
+module "s3_buckets" {
+  source          = "../modules/s3_buckets"
+  environment     = "test"
+  allowed_origins = ["https://test.polar.sh"]
+}

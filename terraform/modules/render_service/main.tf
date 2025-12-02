@@ -198,10 +198,7 @@ resource "render_web_service" "api" {
     }
   }
 
-  custom_domains = [
-    { name = "api.polar.sh" },
-    { name = "backoffice.polar.sh" }
-  ]
+  custom_domains = var.api_service_config.custom_domains
 
   env_vars = {
     WEB_CONCURRENCY              = { value = var.api_service_config.web_concurrency }

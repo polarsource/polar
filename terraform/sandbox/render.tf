@@ -78,6 +78,7 @@ module "sandbox" {
   api_service_config = {
     allowed_hosts          = "[\"sandbox.polar.sh\", \"backoffice.sandbox.polar.sh\"]"
     cors_origins           = "[\"https://sandbox.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
+    custom_domains         = [{ name = "sandbox-api.polar.sh" }]
     web_concurrency        = "2"
     forwarded_allow_ips    = "*"
     database_pool_size     = "20"

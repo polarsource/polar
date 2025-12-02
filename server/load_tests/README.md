@@ -65,6 +65,7 @@ load_tests/
 ├── scenarios/               # Load test scenarios
 │   ├── __init__.py
 │   ├── checkout.py          # Checkout flow scenarios
+│   ├── event_ingestion.py   # Event ingestion scenarios
 └── regression/              # Performance regression tests (pytest)
     ├── __init__.py
     ├── conftest.py
@@ -89,6 +90,48 @@ load_tests/
 - Get checkout status (weight: 3)
 - Confirm checkout
 
+### 2. Event Ingestion (`scenarios/event_ingestion.py`)
+
+**EventIngestionUser**: Simulates event ingestion patterns
+
+**Understanding RPS vs Events:**
+
+Each HTTP request sends a batch of events (default: 7 events per request).
+- 1 HTTP RPS = 1 × 7 = 7 events/sec = 420 events/min
+- 5 HTTP RPS = 5 × 7 = 35 events/sec = 2,100 events/min
+
+**Scaling Guide:**
+
+| Target Events/Min | Users | HTTP RPS |
+|-------------------|-------|----------|
+| ~420              | 1     | ~1       |
+| ~840              | 2     | ~2       |
+| ~1680             | 4     | ~4       |
+| ~2940             | 7     | ~7       |
+
+**Required Environment Variables:**
+```bash
+LOAD_TEST_API_TOKEN=polar_oat_...                           # Organization access token (required)
+LOAD_TEST_EVENT_EXTERNAL_CUSTOMER_IDS=id1,id2,id3,...       # External customer IDs (required, comma-separated)
+LOAD_TEST_EVENT_BATCH_SIZE=7                                # Events per batch (optional, default: 7)
+```
+
+**Running Event Ingestion Tests:**
+```bash
+# Pre-provision test customers in your organization first, then:
+
+# Interactive mode
+LOAD_TEST_EVENT_EXTERNAL_CUSTOMER_IDS="id1,id2,id3" \
+LOAD_TEST_API_TOKEN="polar_oat_..." \
+uv run task loadtest
+
+# Select "EventIngestionUser" in the web UI
+
+# Headless mode
+locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000 \
+       --users 2 --spawn-rate 1 --run-time 5m EventIngestionUser
+```
+
 
 ## Configuration
 
@@ -102,5 +145,11 @@ All configuration is managed via environment variables. See `load_tests/config.p
 LOAD_TEST_HOST=https://staging.polar.sh
 LOAD_TEST_API_TOKEN=polar_pat_...          # Personal access token
 LOAD_TEST_PRODUCT_ID=uuid-here             # Product for checkout tests
-LOAD_TEST_ORG_ID=uuid-here                 # Organization ID
+```
+
+#### Required (for event ingestion tests)
+
+```bash
+LOAD_TEST_EVENT_EXTERNAL_CUSTOMER_IDS=id1,id2,id3  # Comma-separated external customer IDs
+LOAD_TEST_EVENT_BATCH_SIZE=7                       # Events per batch (default: 7)
 ```

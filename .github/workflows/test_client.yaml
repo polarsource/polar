@@ -14,8 +14,25 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: "Detect changes"
+    runs-on: ubuntu-latest
+    outputs:
+      clients: ${{ steps.filter.outputs.clients }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            clients:
+              - 'clients/**'
+              - '.github/workflows/test_client.yaml'
+
   build:
     name: "Client: Tests 🎨"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
     timeout-minutes: 15
     runs-on: ubuntu-latest
 

@@ -1,3 +1,4 @@
+import urllib.parse
 import uuid
 from typing import Annotated, Any
 
@@ -19,6 +20,15 @@ from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from ..components import button, datatable, input, modal
 from ..layout import layout
 from ..toast import add_toast
+
+
+def _get_logfire_url(event: ExternalEvent) -> str:
+    params = {
+        "q": f"attributes->>'actor' = '{event.task_name}' AND attributes->'message'->'args'->>0 = '{event.id}'",
+        "since": event.created_at.isoformat(),
+    }
+    return f"https://logfire-us.pydantic.dev/polar/production-worker?{urllib.parse.urlencode(params)}"
+
 
 router = APIRouter()
 
@@ -83,6 +93,11 @@ async def list(
             with datatable.Datatable[ExternalEvent, ExternalEventSortProperty](
                 datatable.DatatableActionsColumn(
                     "",
+                    datatable.DatatableActionLink[ExternalEvent](
+                        "View in Logfire",
+                        lambda _, i: _get_logfire_url(i),
+                        target="_blank",
+                    ),
                     datatable.DatatableActionHTMX[ExternalEvent](
                         "Resend",
                         lambda r, i: str(r.url_for("external_events:resend", id=i.id)),

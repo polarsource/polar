@@ -115,7 +115,7 @@ resource "aws_s3_bucket" "backups" {
   bucket = "polar-sh-backups"
 }
 
-resource "aws_s3_bucket_lifecycle_configuration" "backups-lifecycle" {
+resource "aws_s3_bucket_lifecycle_configuration" "backups_lifecycle" {
   bucket = aws_s3_bucket.backups.id
 
   rule {

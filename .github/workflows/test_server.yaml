@@ -10,8 +10,25 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: "Detect changes"
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'server/**'
+              - '.github/workflows/test_server.yaml'
+
   linters:
     name: "Server: Linters 📝"
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
@@ -50,6 +67,8 @@ jobs:
 
   test:
     name: "Server: Tests 🐍"
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

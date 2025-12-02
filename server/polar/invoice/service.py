@@ -15,6 +15,7 @@ from .generator import (
     InvoiceGenerator,
     InvoiceHeadingItem,
     InvoiceItem,
+    InvoiceTotalsItem,
 )
 
 
@@ -134,6 +135,15 @@ class InvoiceService:
                 ),
                 InvoiceHeadingItem(label="Payout ID", value=str(payout.id)),
             ],
+            extra_totals_items=[
+                InvoiceTotalsItem(
+                    label="Payout Amount",
+                    amount=payout.account_amount,
+                    currency=payout.account_currency,
+                )
+            ]
+            if payout.account_currency != payout.currency
+            else [],
         )
 
         generator = InvoiceGenerator(invoice, heading_title="Reverse Invoice")

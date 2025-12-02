@@ -101,7 +101,9 @@ export function NotificationNewSale({
         <Text className="m-0 text-sm font-semibold text-gray-900">
           Customer
         </Text>
-        <Text className="m-0 text-sm text-gray-600">{displayName}</Text>
+        {customer_name && (
+          <Text className="m-0 text-sm text-gray-600">{customer_name}</Text>
+        )}
         {customer_email && (
           <Text className="m-0 text-sm text-gray-600">{customer_email}</Text>
         )}

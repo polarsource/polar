@@ -101,9 +101,9 @@ variable "openai_secrets" {
 variable "backend_config" {
   description = "Backend environment configuration (non-sensitive)"
   type = object({
-    base_url                             = string # "https://api.polar.sh"
-    backoffice_host                      = string # "backoffice.polar.sh"
-    user_session_cookie_domain           = string # "polar.sh"
+    base_url                             = string                 # "https://api.polar.sh"
+    backoffice_host                      = optional(string, null) # "backoffice.polar.sh"
+    user_session_cookie_domain           = string                 # "polar.sh"
     user_session_cookie_key              = optional(string, "")
     debug                                = string               # "0"
     email_sender                         = string               # "resend"

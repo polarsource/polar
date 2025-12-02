@@ -27,7 +27,6 @@ resource "render_env_group" "backend" {
     POLAR_USER_SESSION_COOKIE_DOMAIN           = { value = var.backend_config.user_session_cookie_domain }
     POLAR_USER_SESSION_COOKIE_KEY              = { value = var.backend_config.user_session_cookie_key }
     POLAR_BASE_URL                             = { value = var.backend_config.base_url }
-    POLAR_BACKOFFICE_HOST                      = { value = var.backend_config.backoffice_host }
     POLAR_DEBUG                                = { value = var.backend_config.debug }
     POLAR_EMAIL_SENDER                         = { value = var.backend_config.email_sender }
     POLAR_EMAIL_FROM_NAME                      = { value = var.backend_config.email_from_name }
@@ -64,6 +63,7 @@ resource "render_env_group" "backend_production" {
   environment_id = var.render_environment_id
   name           = "backend-production-only"
   env_vars = {
+    POLAR_BACKOFFICE_HOST              = { value = var.backend_config.backoffice_host }
     POLAR_DISCORD_WEBHOOK_URL          = { value = var.backend_secrets.discord_webhook_url }
     POLAR_LOOPS_API_KEY                = { value = var.backend_secrets.loops_api_key }
     POLAR_POSTHOG_PROJECT_API_KEY      = { value = var.backend_secrets.posthog_project_api_key }

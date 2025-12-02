@@ -10,6 +10,7 @@ import stdnum.cl.rut
 import stdnum.exceptions
 import stdnum.in_.gstin
 import stdnum.tr.vkn
+import stdnum.vn.mst
 import stripe as stripe_lib
 import structlog
 from pydantic import Field
@@ -276,6 +277,15 @@ class INGSTValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class VNTINValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.vn.mst.compact(number)
+        try:
+            return stdnum.vn.mst.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
     match tax_id_type:
         case TaxIDFormat.ca_gst_hst:
@@ -286,6 +296,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return TRTINValidator()
         case TaxIDFormat.in_gst:
             return INGSTValidator()
+        case TaxIDFormat.vn_tin:
+            return VNTINValidator()
         case _:
             return StdNumValidator(tax_id_type)
 

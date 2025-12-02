@@ -239,6 +239,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 <DateRangePicker
                   date={dateRange}
                   onDateChange={onDateRangeChange}
+                  className="w-full"
                 />
               </div>
               <div className="flex flex-col gap-y-2">

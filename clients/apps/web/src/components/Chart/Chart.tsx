@@ -2,7 +2,6 @@ import {
   CartesianGrid,
   ChartContainer,
   ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   Line,
   LineChart,
@@ -10,7 +9,7 @@ import {
   YAxis,
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Spinner from '../Shared/Spinner'
 
 export interface ChartSeries {
@@ -50,6 +49,11 @@ export const Chart = <T extends Record<string, unknown>>({
 }: ChartProps<T>) => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
+  const [activeSeries, setActiveSeries] = useState<string | null>(null)
+
+  const handleLegendClick = (key: string) => {
+    setActiveSeries(activeSeries === key ? null : key)
+  }
 
   const config = useMemo(
     () =>
@@ -174,7 +178,37 @@ export const Chart = <T extends Record<string, unknown>>({
                 )
               }}
             />
-            {showLegend && <ChartLegend content={<ChartLegendContent />} />}
+            {showLegend && (
+              <ChartLegend
+                content={
+                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-3">
+                    {series.map((s) => (
+                      <div
+                        key={s.key}
+                        className={`flex items-center gap-1.5 whitespace-nowrap transition-opacity ${series.length > 1 ? 'cursor-pointer' : ''}`}
+                        style={{
+                          opacity:
+                            activeSeries === null || activeSeries === s.key
+                              ? 1
+                              : 0.3,
+                        }}
+                        onClick={
+                          series.length > 1
+                            ? () => handleLegendClick(s.key)
+                            : undefined
+                        }
+                      >
+                        <div
+                          className="h-2 w-2 shrink-0 rounded-[2px]"
+                          style={{ backgroundColor: s.color }}
+                        />
+                        {s.label}
+                      </div>
+                    ))}
+                  </div>
+                }
+              />
+            )}
             {series.map((s) => (
               <Line
                 key={s.key}
@@ -183,6 +217,9 @@ export const Chart = <T extends Record<string, unknown>>({
                 type="linear"
                 dot={false}
                 strokeWidth={1.5}
+                strokeOpacity={
+                  activeSeries === null || activeSeries === s.key ? 1 : 0.3
+                }
               />
             ))}
           </LineChart>

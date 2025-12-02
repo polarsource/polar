@@ -31,6 +31,7 @@ from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.file import File, FileServiceTypes
 from polar.models.organization import OrganizationDetails, OrganizationStatus
+from polar.models.organization_review import OrganizationReview
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate
@@ -439,7 +440,26 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "admin@polar.sh",
             "website": "https://polar.sh",
             "bio": "The admin organization of Polar",
+            "status": OrganizationStatus.ACTIVE,
             "is_admin": True,
+            "details": {
+                "about": "Polar is an open source payment infrastructure platform for developers",
+                "intended_use": "We provide payment processing and subscription management for developers and creators.",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "SaaS platform for payment infrastructure",
+                "customer_acquisition": ["website"],
+                "future_annual_revenue": 1000000,
+                "previous_annual_revenue": 0,
+            },
+            "products": [
+                {
+                    "name": "Polar Pro",
+                    "description": "Monthly subscription to Polar Pro features",
+                    "price": 2000,
+                    "recurring": SubscriptionRecurringInterval.month,
+                },
+            ],
         },
     ]
 
@@ -520,6 +540,22 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "subscriptions_billing_engine", False
         )
         session.add(organization)
+
+        # Create OrganizationReview with PASS verdict for ACTIVE organizations
+        if organization.status == OrganizationStatus.ACTIVE:
+            organization.initially_reviewed_at = utc_now()
+            organization_review = OrganizationReview(
+                organization_id=organization.id,
+                verdict=OrganizationReview.Verdict.PASS,
+                risk_score=0.0,
+                violated_sections=[],
+                reason="Seed data - automatically approved",
+                timed_out=False,
+                model_used="seed",
+                validated_at=utc_now(),
+                organization_details_snapshot=org_data.get("details", {}),
+            )
+            session.add(organization_review)
 
         # Create an Account for all organizations except Widget Industries
         if org_data["slug"] != "widget-industries":

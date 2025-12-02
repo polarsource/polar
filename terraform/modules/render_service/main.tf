@@ -182,7 +182,7 @@ resource "render_web_service" "api" {
     ]
   }
 
-  autoscaling = {
+  autoscaling = var.environment == "production" ? {
     enabled = true
     min     = 1
     max     = 2
@@ -196,7 +196,7 @@ resource "render_web_service" "api" {
         percentage = 90
       }
     }
-  }
+  } : null
 
   custom_domains = var.api_service_config.custom_domains
 

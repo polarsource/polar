@@ -239,6 +239,12 @@ resource "render_web_service" "worker" {
     )
   }
 
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.tag,
+    ]
+  }
+
   custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null
 
   env_vars = {

@@ -108,6 +108,7 @@ resource "render_env_group" "stripe" {
 }
 
 resource "render_env_group" "logfire_server" {
+  count          = var.logfire_config != null ? 1 : 0
   environment_id = var.render_environment_id
   name           = "logfire-server"
   env_vars = {
@@ -117,6 +118,7 @@ resource "render_env_group" "logfire_server" {
 }
 
 resource "render_env_group" "logfire_worker" {
+  count          = var.logfire_config != null ? 1 : 0
   environment_id = var.render_environment_id
   name           = "logfire-worker"
   env_vars = {
@@ -289,12 +291,14 @@ resource "render_env_group_link" "stripe" {
 }
 
 resource "render_env_group_link" "logfire_server" {
-  env_group_id = render_env_group.logfire_server.id
+  count        = var.logfire_config != null ? 1 : 0
+  env_group_id = render_env_group.logfire_server[0].id
   service_ids  = [render_web_service.api.id]
 }
 
 resource "render_env_group_link" "logfire_worker" {
-  env_group_id = render_env_group.logfire_worker.id
+  count        = var.logfire_config != null ? 1 : 0
+  env_group_id = render_env_group.logfire_worker[0].id
   service_ids  = local.worker_ids
 }
 

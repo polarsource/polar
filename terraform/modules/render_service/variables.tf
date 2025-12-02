@@ -126,18 +126,18 @@ variable "backend_secrets" {
     discord_bot_token            = string
     discord_client_id            = string
     discord_client_secret        = string
-    discord_webhook_url          = string
-    loops_api_key                = string
-    posthog_project_api_key      = string
+    discord_webhook_url          = optional(string, "")
+    loops_api_key                = optional(string, "")
+    posthog_project_api_key      = optional(string, "")
     resend_api_key               = string
     secret                       = string
     sentry_dsn                   = string
-    plain_request_signing_secret = string
-    plain_token                  = string
-    plain_chat_secret            = string
+    plain_request_signing_secret = optional(string, "")
+    plain_token                  = optional(string, "")
+    plain_chat_secret            = optional(string, "")
     jwks                         = string
-    app_review_email             = string
-    app_review_otp_code          = string
+    app_review_email             = optional(string, "")
+    app_review_otp_code          = optional(string, "")
   })
   sensitive = true
 }
@@ -190,13 +190,14 @@ variable "stripe_secrets" {
 }
 
 variable "logfire_config" {
-  description = "Logfire configuration"
+  description = "Logfire configuration (optional)"
   type = object({
     server_project_name = string # "production"
     worker_project_name = string # "production-worker"
     server_token        = string
     worker_token        = string
   })
+  default   = null
   sensitive = true
 }
 variable "apple_secrets" {

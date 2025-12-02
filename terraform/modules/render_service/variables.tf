@@ -218,5 +218,6 @@ variable "prometheus_config" {
     username = string
     password = string
   })
+  default   = null
   sensitive = true
 }

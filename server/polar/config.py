@@ -1,4 +1,5 @@
 import os
+import tempfile
 from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
@@ -54,6 +55,13 @@ class Settings(BaseSettings):
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
     WORKER_MAX_RETRIES: int = 20
     WORKER_MIN_BACKOFF_MILLISECONDS: int = 2_000
+    WORKER_PROMETHEUS_DIR: Path = Path(tempfile.gettempdir()) / "prometheus_multiproc"
+
+    # Prometheus Remote Write (for pushing metrics to Prometheus or Grafana Cloud)
+    PROMETHEUS_REMOTE_WRITE_URL: str | None = None
+    PROMETHEUS_REMOTE_WRITE_USERNAME: str | None = None
+    PROMETHEUS_REMOTE_WRITE_PASSWORD: str | None = None
+    PROMETHEUS_REMOTE_WRITE_INTERVAL: Annotated[int, Ge(1)] = 15  # seconds
 
     WEBHOOK_MAX_RETRIES: int = 10
     WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=30)
@@ -103,6 +111,10 @@ class Settings(BaseSettings):
     # Login code
     LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
     LOGIN_CODE_LENGTH: int = 6
+
+    # App Review bypass (for testing login flow during Apple/Google app reviews)
+    APP_REVIEW_EMAIL: str | None = None
+    APP_REVIEW_OTP_CODE: str | None = None
 
     # Email verification
     EMAIL_VERIFICATION_TTL_SECONDS: int = 60 * 30  # 30 minutes

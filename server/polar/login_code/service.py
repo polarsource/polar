@@ -97,6 +97,12 @@ class LoginCodeService:
         *,
         signup_attribution: UserSignupAttribution | None = None,
     ) -> tuple[User, bool]:
+        app_review_bypass = await self._try_app_review_bypass(
+            session, code, email, signup_attribution
+        )
+        if app_review_bypass is not None:
+            return app_review_bypass
+
         code_hash = get_token_hash(code, secret=settings.SECRET)
 
         statement = (
@@ -131,6 +137,29 @@ class LoginCodeService:
 
         await session.delete(login_code)
 
+        return user, is_signup
+
+    async def _try_app_review_bypass(
+        self,
+        session: AsyncSession,
+        code: str,
+        email: str,
+        signup_attribution: UserSignupAttribution | None,
+    ) -> tuple[User, bool] | None:
+        if not (settings.APP_REVIEW_EMAIL and settings.APP_REVIEW_OTP_CODE):
+            return None
+
+        if email.lower() != settings.APP_REVIEW_EMAIL.lower():
+            return None
+
+        if code != settings.APP_REVIEW_OTP_CODE:
+            return None
+
+        user, is_signup = await user_service.get_by_email_or_create(
+            session,
+            email,
+            signup_attribution=signup_attribution,
+        )
         return user, is_signup
 
     def _generate_code_hash(self) -> tuple[str, str]:

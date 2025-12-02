@@ -409,3 +409,16 @@ variable "apple_key_value" {
   type        = string
   sensitive   = true
 }
+
+# App Review
+variable "backend_app_review_email" {
+  description = "App Review Email for testing"
+  type        = string
+  sensitive   = true
+}
+
+variable "backend_app_review_otp_code" {
+  description = "App Review OTP Code for testing"
+  type        = string
+  sensitive   = true
+}

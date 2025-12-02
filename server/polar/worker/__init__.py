@@ -16,11 +16,17 @@ from dramatiq.brokers.redis import RedisBroker
 from polar.config import settings
 from polar.logfire import instrument_httpx
 
+# Import metrics FIRST to set PROMETHEUS_MULTIPROC_DIR before prometheus_client is imported
+from polar.observability import metrics as _prometheus_metrics
+
 from ._encoder import JSONEncoder
 from ._enqueue import JobQueueManager, enqueue_events, enqueue_job
 from ._health import HealthMiddleware
+from ._metrics import PrometheusMiddleware
 from ._redis import RedisMiddleware
 from ._sqlalchemy import AsyncSessionMaker, SQLAlchemyMiddleware
+
+_ = _prometheus_metrics  # for mypy and ruff: ensure import is used
 
 
 class MaxRetriesMiddleware(dramatiq.Middleware):
@@ -188,6 +194,7 @@ broker.add_middleware(RedisMiddleware())
 broker.add_middleware(scheduler_middleware)
 broker.add_middleware(LogfireMiddleware())
 broker.add_middleware(LogContextMiddleware())
+broker.add_middleware(PrometheusMiddleware())
 dramatiq.set_broker(broker)
 dramatiq.set_encoder(JSONEncoder())
 

@@ -95,11 +95,13 @@ async def list(
     ),
     parent_id: EventID | None = Query(
         None,
-        description="Filter events by parent event ID when hierarchical is set to true. When not specified or null, returns root events only.",
+        description="When combined with depth, use this event as the anchor instead of root events.",
     ),
-    hierarchical: bool = Query(
-        False,
-        description="When true, filters by parent_id (root events if not specified). When false, returns all events regardless of hierarchy.",
+    depth: int | None = Query(
+        None,
+        ge=0,
+        le=5,
+        description="Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events.",
     ),
     aggregate_fields: Sequence[str] = Query(
         default=[],
@@ -147,7 +149,7 @@ async def list(
         sorting=sorting,
         query=query,
         parent_id=parent_id,
-        hierarchical=hierarchical,
+        depth=depth,
         aggregate_fields=aggregate_fields,
     )
 

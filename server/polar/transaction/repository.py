@@ -83,8 +83,8 @@ class BalanceTransactionRepository(TransactionRepository):
 
 
 class RefundTransactionRepository(TransactionRepository):
-    async def get_by_refund_id(self, refund_id: str) -> Transaction | None:
-        statement = self.get_base_statement().where(Transaction.refund_id == refund_id)
+    async def get_by_refund_id(self, refund: UUID) -> Transaction | None:
+        statement = self.get_base_statement().where(Transaction.refund_id == refund)
         return await self.get_one_or_none(statement)
 
     def get_base_statement(

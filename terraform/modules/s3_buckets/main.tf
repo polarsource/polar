@@ -57,7 +57,7 @@ resource "aws_s3_bucket" "payout_invoices" {
 }
 
 resource "aws_s3_bucket" "files" {
-  bucket = "${local.full_name_prefix}--files"
+  bucket = "${local.full_name_prefix}-files"
 }
 
 resource "aws_s3_bucket_cors_configuration" "files" {

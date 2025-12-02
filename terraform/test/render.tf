@@ -206,4 +206,10 @@ module "test" {
     key_id    = var.apple_key_id
     key_value = var.apple_key_value
   }
+
+  prometheus_config = {
+    url      = var.prometheus_remote_write_url
+    username = var.prometheus_remote_write_username
+    password = var.prometheus_remote_write_password
+  }
 }

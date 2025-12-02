@@ -199,3 +199,20 @@ variable "apple_key_value" {
   sensitive   = true
 }
 
+variable "prometheus_remote_write_url" {
+  description = "Prometheus Remote Write URL"
+  type        = string
+  sensitive   = true
+}
+
+variable "prometheus_remote_write_username" {
+  description = "Prometheus Remote Write Username"
+  type        = string
+  sensitive   = true
+}
+
+variable "prometheus_remote_write_password" {
+  description = "Prometheus Remote Write Password"
+  type        = string
+  sensitive   = true
+}

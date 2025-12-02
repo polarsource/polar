@@ -174,4 +174,10 @@ module "sandbox" {
   }
 
   logfire_config = null
+
+  prometheus_config = {
+    url      = var.prometheus_remote_write_url
+    username = var.prometheus_remote_write_username
+    password = var.prometheus_remote_write_password
+  }
 }

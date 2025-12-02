@@ -2007,7 +2007,16 @@ class OrderService:
                 order, update_dict={"next_payment_attempt_at": None}
             )
 
-        if order.subscription.payment_method_id is None:
+        payment_method_repository = PaymentMethodRepository.from_session(session)
+        if (
+            order.subscription.payment_method_id is None
+            or (
+                await payment_method_repository.get_by_id(
+                    order.subscription.payment_method_id
+                )
+            )
+            is None
+        ):
             log.warning(
                 "Order subscription has no payment method, skipping dunning",
                 order_id=order.id,

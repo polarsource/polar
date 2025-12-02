@@ -9,7 +9,6 @@ from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Checkout, Customer, Order, PaymentMethod, Subscription
-from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 
 from .repository import PaymentMethodRepository
@@ -132,15 +131,12 @@ class PaymentMethodService:
 
         return None
 
-    async def _get_active_subscription_ids(
-        self,
-        session: AsyncSession,
-        payment_method: PaymentMethod,
+    async def _get_billable_subscription_ids(
+        self, session: AsyncSession, payment_method: PaymentMethod
     ) -> list[uuid.UUID]:
-        repository = PaymentMethodRepository.from_session(session)
         stmt = select(Subscription.id).where(
             Subscription.payment_method_id == payment_method.id,
-            Subscription.status.in_(SubscriptionStatus.active_statuses()),
+            Subscription.billable.is_(True),
         )
         result = await session.execute(stmt)
         return [row[0] for row in result.fetchall()]
@@ -204,11 +200,11 @@ class PaymentMethodService:
         session: AsyncSession,
         payment_method: PaymentMethod,
     ) -> None:
-        active_subscription_ids = await self._get_active_subscription_ids(
+        billable_subscription_ids = await self._get_billable_subscription_ids(
             session, payment_method
         )
 
-        if active_subscription_ids:
+        if billable_subscription_ids:
             alternative_payment_method = await self._get_alternative_payment_method(
                 session, payment_method
             )
@@ -218,11 +214,11 @@ class PaymentMethodService:
                     session,
                     from_payment_method=payment_method,
                     to_payment_method=alternative_payment_method,
-                    subscription_ids=active_subscription_ids,
+                    subscription_ids=billable_subscription_ids,
                 )
             else:
                 # No alternative payment method available, raise exception
-                raise PaymentMethodInUseByActiveSubscription(active_subscription_ids)
+                raise PaymentMethodInUseByActiveSubscription(billable_subscription_ids)
 
         if payment_method.processor == PaymentProcessor.stripe:
             await stripe_service.delete_payment_method(payment_method.processor_id)

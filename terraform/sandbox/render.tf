@@ -106,7 +106,6 @@ module "sandbox" {
 
   backend_config = {
     base_url                             = "https://sandbox-api.polar.sh"
-    backoffice_host                      = "sandbox-api.polar.sh"
     user_session_cookie_domain           = "polar.sh"
     user_session_cookie_key              = "polar_sandbox_session"
     debug                                = "0"

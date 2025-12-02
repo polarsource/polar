@@ -133,7 +133,6 @@ module "test" {
 
   backend_config = {
     base_url                             = "https://api.test.polar.sh"
-    backoffice_host                      = "backoffice.test.polar.sh"
     user_session_cookie_domain           = "test.polar.sh"
     debug                                = "0"
     email_sender                         = "resend"

@@ -1,0 +1,6 @@
+# Used for local development
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+# No scrape_configs needed - metrics are pushed via remote write
+# The worker pushes metrics directly to Prometheus at /api/v1/write

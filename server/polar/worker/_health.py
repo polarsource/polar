@@ -98,11 +98,13 @@ async def lifespan(app: Starlette) -> AsyncGenerator[Mapping[str, Any]]:
     else:
         async_engine = create_async_engine("worker")
     async_sessionmaker = create_async_sessionmaker(async_engine)
-    redis = await create_redis("worker")
+    redis = create_redis("worker")
+
     yield {
         "redis": redis,
         "async_sessionmaker": async_sessionmaker,
     }
+
     await redis.close()
     await async_engine.dispose()
 

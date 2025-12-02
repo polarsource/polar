@@ -47,6 +47,10 @@ resource "render_project" "polar" {
       id               = "evm-crkmmujv2p9s73e47bn0"
       name             = "Sandbox"
       protected_status = "unprotected"
+    },
+    "Test" : {
+      name             = "Test"
+      protected_status = "unprotected"
     }
   }
 }

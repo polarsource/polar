@@ -68,6 +68,30 @@ resource "tfe_variable" "backend_discord_client_secret_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
+resource "tfe_variable" "backend_discord_webhook_url_test" {
+  key             = "backend_discord_webhook_url"
+  category        = "terraform"
+  description     = "Discord Webhook URL for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "backend_loops_api_key_test" {
+  key             = "backend_loops_api_key"
+  category        = "terraform"
+  description     = "Loops API Key for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "backend_posthog_project_api_key_test" {
+  key             = "backend_posthog_project_api_key"
+  category        = "terraform"
+  description     = "PostHog Project API Key for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
 resource "tfe_variable" "backend_resend_api_key_test" {
   key             = "backend_resend_api_key"
   category        = "terraform"
@@ -88,6 +112,30 @@ resource "tfe_variable" "backend_sentry_dsn_test" {
   key             = "backend_sentry_dsn"
   category        = "terraform"
   description     = "Sentry DSN for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "backend_plain_request_signing_secret_test" {
+  key             = "backend_plain_request_signing_secret"
+  category        = "terraform"
+  description     = "Plain Request Signing Secret for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "backend_plain_token_test" {
+  key             = "backend_plain_token"
+  category        = "terraform"
+  description     = "Plain Token for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "backend_plain_chat_secret_test" {
+  key             = "backend_plain_chat_secret"
+  category        = "terraform"
+  description     = "Plain Chat Secret for test"
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }

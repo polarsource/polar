@@ -1,0 +1,133 @@
+---
+title: "How to disable email editing in checkout"
+sidebarTitle: "Disable email editing in checkout"
+description: "Learn how to prevent customers from editing their email address during checkout by linking to existing customers."
+---
+
+When you want to prevent customers from changing their email address during the checkout process, you can link the checkout session to an existing customer. This is useful when customers are already authenticated in your application and you want to ensure the purchase is associated with their verified account.
+
+## Overview
+
+By passing either `customer_id` or `external_customer_id` when creating a checkout session, Polar will:
+
+- Pre-fill the customer's information in the checkout form
+- **Disable the email field** so it cannot be edited
+- Link the resulting order to the specified customer
+
+## Using Customer ID
+
+If you've already created a customer in Polar and have their Polar customer ID, you can use it directly.
+
+<Steps>
+    <Step title = "Get the Customer ID">
+        Retrieve the customer ID from your Polar dashboard or through the [Customers API](/api-reference/customers/list).
+        
+        The customer ID is a UUID format like: `992fae2a-2a17-4b7a-8d9e-e287cf90131b`
+    </Step>
+    <Step title = "Create Checkout Session with customer_id">
+        Pass the `customer_id` parameter when creating the checkout session.
+
+<CodeGroup>
+```ts TypeScript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({ accessToken: process.env["POLAR_ACCESS_TOKEN"] });
+
+const checkout = await polar.checkouts.create({
+    products: ["<product_id>"],
+    customerId: "992fae2a-2a17-4b7a-8d9e-e287cf90131b", // [!code ++]
+});
+
+console.log(checkout.url);
+```
+
+```py Python
+from polar_sdk import Polar
+
+with Polar(
+    access_token="<YOUR_BEARER_TOKEN_HERE>",
+) as polar:
+
+    checkout = polar.checkouts.create(request={
+        "products": ["<product_id>"],
+        "customer_id": "992fae2a-2a17-4b7a-8d9e-e287cf90131b",  # [!code ++]
+    })
+
+    print(checkout.url)
+```
+
+```bash cURL
+curl --request POST \
+  --url https://api.polar.sh/v1/checkouts/ \
+  --header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "products": ["<product_id>"],
+    "customer_id": "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
+  }'
+```
+</CodeGroup>
+    </Step>
+    <Step title = "Redirect to Checkout">
+        Redirect your customer to the checkout URL returned in the response. The email field will be pre-filled and disabled for editing.
+    </Step>
+</Steps>
+
+## Using External Customer ID
+
+If you have your own user management system, you can use your internal customer ID. This is the recommended approach as it makes reconciliation between your system and Polar easier.
+
+<Steps>
+    <Step title = "Use Your Internal Customer ID">
+        When creating a checkout session, pass your application's user ID as the `external_customer_id`.
+        
+        Polar will:
+        - Look for an existing customer with this external ID
+        - If found, link to that customer and pre-fill their data
+    </Step>
+    <Step title = "Create Checkout Session with external_customer_id">
+<CodeGroup>
+```ts TypeScript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({ accessToken: process.env["POLAR_ACCESS_TOKEN"] });
+
+const checkout = await polar.checkouts.create({
+    products: ["<product_id>"],
+    externalCustomerId: "user_12345", // Your application's user ID // [!code ++]
+});
+
+console.log(checkout.url);
+```
+
+```py Python
+from polar_sdk import Polar
+
+with Polar(
+    access_token="<YOUR_BEARER_TOKEN_HERE>",
+) as polar:
+
+    checkout = polar.checkouts.create(request={
+        "products": ["<product_id>"],
+        "external_customer_id": "user_12345",  # Your application's user ID # [!code ++]
+    })
+
+    print(checkout.url)
+```
+
+```bash cURL
+curl --request POST \
+  --url https://api.polar.sh/v1/checkouts/ \
+  --header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "products": ["<product_id>"],
+    "external_customer_id": "user_12345"
+  }'
+```
+</CodeGroup>
+    </Step>
+    <Step title = "Redirect to Checkout">
+        Redirect your customer to the checkout URL. The email field will be disabled from editing.
+    </Step>
+</Steps>

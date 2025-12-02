@@ -98,3 +98,23 @@ import {
   to = module.sandbox.render_web_service.worker["worker-sandbox"]
   id = "srv-d089jj7diees73934kgg"
 }
+
+import {
+  to = module.s3_buckets.aws_s3_bucket.public_files
+  id = "polar-public-sandbox-files"
+}
+
+import {
+  to = module.s3_buckets.aws_s3_bucket_cors_configuration.public_files
+  id = "polar-public-sandbox-files"
+}
+
+import {
+  to = module.s3_buckets.aws_s3_bucket_policy.public_files
+  id = "polar-public-sandbox-files"
+}
+
+import {
+  to = module.s3_buckets.aws_s3_bucket_public_access_block.public_files
+  id = "polar-public-sandbox-files"
+}

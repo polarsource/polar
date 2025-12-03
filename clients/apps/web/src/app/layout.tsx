@@ -11,6 +11,7 @@ import { GeistSans } from 'geist/font/sans'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Metadata } from 'next/types'
 import {
+  NavigationHistoryProvider,
   PolarNuqsProvider,
   PolarPostHogProvider,
   PolarQueryClientProvider,
@@ -147,8 +148,10 @@ export default async function RootLayout({
           <PolarPostHogProvider>
             <PolarQueryClientProvider>
               <PolarNuqsProvider>
-                <SandboxBanner />
-                {children}
+                <NavigationHistoryProvider>
+                  <SandboxBanner />
+                  {children}
+                </NavigationHistoryProvider>
               </PolarNuqsProvider>
             </PolarQueryClientProvider>
           </PolarPostHogProvider>

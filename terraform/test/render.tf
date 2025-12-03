@@ -240,10 +240,10 @@ resource "cloudflare_dns_record" "record" {
     "test-api.polar.sh" = { content = module.test.api_service_url }
   }
 
-  zone_id = "d3c5f1ee8b73650ded9a7e1be922ecc1"
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
   name    = each.key
   type    = try(each.value.type, "CNAME")
   content = each.value.content
-  proxied = try(each.value.proxied, true)
+  proxied = try(each.value.proxied, false)
   ttl     = try(each.value.ttl, 1)
 }

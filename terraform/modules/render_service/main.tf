@@ -3,6 +3,10 @@
 # Sets up a service, and the specified workers.
 # Includes the environment groups
 
+locals {
+  environment = var.backend_config.environment == null ? var.environment : var.backend_config.environment
+}
+
 resource "render_env_group" "google" {
   environment_id = var.render_environment_id
   name           = "google-${var.environment}"
@@ -31,7 +35,7 @@ resource "render_env_group" "backend" {
       POLAR_EMAIL_SENDER                         = { value = var.backend_config.email_sender }
       POLAR_EMAIL_FROM_NAME                      = { value = var.backend_config.email_from_name }
       POLAR_EMAIL_FROM_DOMAIN                    = { value = var.backend_config.email_from_domain }
-      POLAR_ENV                                  = { value = var.environment }
+      POLAR_ENV                                  = { value = local.environment }
       POLAR_FRONTEND_BASE_URL                    = { value = var.backend_config.frontend_base_url }
       POLAR_CHECKOUT_BASE_URL                    = { value = var.backend_config.checkout_base_url }
       POLAR_JWKS                                 = { value = var.backend_config.jwks_path }

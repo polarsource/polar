@@ -90,7 +90,7 @@ resource "render_redis" "redis" {
 module "test" {
   source = "../modules/render_service"
 
-  environment            = "test"
+  environment            = "sandbox"
   render_environment_id  = local.environment_id
   registry_credential_id = render_registry_credential.ghcr.id
 

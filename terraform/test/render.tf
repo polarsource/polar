@@ -25,19 +25,6 @@ data "tfe_outputs" "production" {
 }
 
 locals {
-  # Database connection info (derived from postgres resource)
-  db_internal_host = render_postgres.db.id
-  db_port          = "5432"
-  db_user          = render_postgres.db.database_user
-  db_password      = render_postgres.db.connection_info.password
-
-  # Read replica connection info
-  read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read-test"][0]
-
-  # Redis connection info
-  redis_host = render_redis.redis.id
-  redis_port = "6379"
-
   environment_id = data.tfe_outputs.production.values.test_environment_id
 }
 
@@ -86,6 +73,20 @@ resource "render_redis" "redis" {
 # =============================================================================
 # Test
 # =============================================================================
+locals {
+  # Database connection info (derived from postgres resource)
+  db_internal_host = render_postgres.db.id
+  db_port          = "5432"
+  db_user          = render_postgres.db.database_user
+  db_password      = render_postgres.db.connection_info.password
+
+  # Read replica connection info
+  read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read-test"][0]
+
+  # Redis connection info
+  redis_host = render_redis.redis.id
+  redis_port = "6379"
+}
 
 module "test" {
   source = "../modules/render_service"
@@ -117,8 +118,8 @@ module "test" {
     web_concurrency        = "2"
     forwarded_allow_ips    = "*"
     database_pool_size     = "20"
-    postgres_database      = "polar_cpit"
-    postgres_read_database = "polar_cpit"
+    postgres_database      = render_postgres.db.database_name
+    postgres_read_database = render_postgres.db.database_name
     redis_db               = "0"
   }
 

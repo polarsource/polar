@@ -216,3 +216,16 @@ variable "prometheus_remote_write_password" {
   type        = string
   sensitive   = true
 }
+
+# Logfire
+variable "logfire_token_server" {
+  description = "Logfire Token for server"
+  type        = string
+  sensitive   = true
+}
+
+variable "logfire_token_worker" {
+  description = "Logfire Token for worker"
+  type        = string
+  sensitive   = true
+}

@@ -306,6 +306,6 @@ resource "cloudflare_dns_record" "worker" {
   name    = "worker.polar.sh"
   type    = "CNAME"
   content = replace(module.production.worker_urls["worker"], "https://", "")
-  proxied = false
+  proxied = true
   ttl     = 1
 }

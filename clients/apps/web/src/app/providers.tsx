@@ -1,6 +1,7 @@
 'use client'
 
 import { cookieConsentGiven } from '@/components/Privacy/CookieConsent'
+import { NavigationHistoryProvider } from '@/providers/navigationHistory'
 import { getQueryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -10,6 +11,8 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'
 import { PropsWithChildren, useEffect } from 'react'
+
+export { NavigationHistoryProvider }
 
 export function PolarPostHogProvider({
   children,

@@ -3,6 +3,7 @@
 import { EventCostCreationGuideModal } from '@/components/Events/EventCostCreationGuideModal'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
+import { useNavigationHistory } from '@/providers/navigationHistory'
 import { schemas } from '@polar-sh/client'
 import { ChevronRightIcon, CircleQuestionMarkIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -27,11 +28,15 @@ export function SpansTitle({
     hide: hideEventCostCreationGuide,
   } = useModal()
 
+  const { withPotentialPreviousParams } = useNavigationHistory()
   const searchParams = useSearchParams()
   const startDate = searchParams.get('startDate') ?? getDefaultStartDate()
   const endDate = searchParams.get('endDate') ?? getDefaultEndDate()
   const interval = searchParams.get('interval') ?? DEFAULT_INTERVAL
   const searchString = getCostsSearchParams(startDate, endDate, interval)
+
+  const spanIdPath = `/dashboard/${organization.slug}/analytics/costs/${eventType?.id}`
+  const backLink = withPotentialPreviousParams(spanIdPath)
 
   return (
     <div className="flex flex-row items-center justify-between gap-1.5">
@@ -44,11 +49,7 @@ export function SpansTitle({
         {eventType && (
           <>
             <ChevronRightIcon className="dark:text-polar-500 size-5 text-gray-400" />
-            <Link
-              href={`/dashboard/${organization.slug}/analytics/costs/${eventType.id}${searchString ? `?${searchString}` : ''}`}
-            >
-              {eventType.label}
-            </Link>
+            <Link href={backLink}>{eventType.label}</Link>
           </>
         )}
       </h2>

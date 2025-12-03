@@ -13,6 +13,7 @@ import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
 import TrendingUp from '@mui/icons-material/TrendingUp'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import { schemas } from '@polar-sh/client'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { ShoppingCart } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'
@@ -22,6 +23,7 @@ export type SubRoute = {
   readonly link: string
   readonly icon?: React.ReactNode
   readonly if?: boolean | (() => boolean)
+  readonly extra?: React.ReactNode
 }
 
 export type Route = {
@@ -220,6 +222,13 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         title: 'Costs',
         link: `/dashboard/${org?.slug}/analytics/costs`,
         if: () => org?.feature_settings?.revops_enabled ?? false,
+        extra: (
+          <Status
+            status="Beta"
+            size="small"
+            className="bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
+          />
+        ),
       },
     ],
   },

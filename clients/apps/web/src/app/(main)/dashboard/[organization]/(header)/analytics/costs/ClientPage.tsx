@@ -182,7 +182,9 @@ function EventStatisticsCard({
       className="dark:bg-polar-700 dark:hover:border-polar-600 dark:border-polar-700 @container flex cursor-pointer flex-col gap-4 rounded-2xl border border-gray-100 p-4 transition-colors hover:border-gray-200"
     >
       <div className="flex flex-col justify-between gap-3 @xl:flex-row">
-        <h2 className="text-lg font-medium">{eventStatistics.name}</h2>
+        <h2 className="text-lg font-medium">
+          {eventStatistics.label ?? eventStatistics.name}
+        </h2>
         <dl className="dark:text-polar-500 flex max-w-sm flex-1 items-center gap-5 font-mono text-gray-500">
           <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
             <dt>

@@ -17,6 +17,11 @@ terraform {
       version = "1.8.0"
     }
 
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.13"
+    }
+
     tfe = {
       source  = "hashicorp/tfe"
       version = "0.71.0"

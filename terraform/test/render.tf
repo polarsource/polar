@@ -230,3 +230,20 @@ module "test" {
 
   depends_on = [render_registry_credential.ghcr, render_postgres.db, render_redis.redis]
 }
+
+# =============================================================================
+# Cloudflare DNS
+# =============================================================================
+
+resource "cloudflare_dns_record" "record" {
+  for_each = {
+    "test-api.polar.sh" = { content = module.test.api_service_url }
+  }
+
+  zone_id = "d3c5f1ee8b73650ded9a7e1be922ecc1"
+  name    = each.key
+  type    = try(each.value.type, "CNAME")
+  content = each.value.content
+  proxied = try(each.value.proxied, true)
+  ttl     = try(each.value.ttl, 1)
+}

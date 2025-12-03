@@ -12,6 +12,9 @@ provider "aws" {
 provider "render" {
 }
 
+provider "cloudflare" {
+}
+
 module "s3_buckets" {
   source          = "../modules/s3_buckets"
   environment     = "test"

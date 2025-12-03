@@ -1,10 +1,21 @@
 import contextlib
+import urllib.parse
 from collections.abc import Generator
 from typing import Any
+from uuid import UUID
 
 from tagflow import tag, text
 
 from ..schemas import SetupVerdictData
+
+
+def _get_logfire_url(organization_id: UUID) -> str:
+    """Generate logfire URL to view API logs for this organization."""
+    params = {
+        "q": f"attributes->>'subject_id' = '{organization_id}'",
+        "last": "30d",
+    }
+    return f"https://logfire-us.pydantic.dev/polar/production?{urllib.parse.urlencode(params)}"
 
 
 class SetupVerdict:
@@ -108,5 +119,18 @@ class SetupVerdict:
                         "Account Charges & Payouts Enabled", account_enabled
                     ):
                         pass
+
+            # API Logs link
+            if self.organization:
+                with tag.div(classes="mt-4 pt-4 border-t border-gray-200"):
+                    with tag.a(
+                        href=_get_logfire_url(self.organization.id),
+                        target="_blank",
+                        rel="noopener noreferrer",
+                        classes="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300",
+                    ):
+                        text("View API Logs in Logfire")
+                        with tag.div(classes="icon-external-link"):
+                            pass
 
         yield

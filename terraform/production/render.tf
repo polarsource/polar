@@ -263,3 +263,49 @@ module "production" {
 
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db, render_redis.redis]
 }
+
+# =============================================================================
+# Cloudflare DNS
+# =============================================================================
+
+import {
+  to = cloudflare_dns_record.api
+  id = "22bcd1b07ec25452aab472486bc8df94/4207c475d8046532273c9ebec88fb55e"
+}
+
+import {
+  to = cloudflare_dns_record.backoffice
+  id = "22bcd1b07ec25452aab472486bc8df94/26980a2206bce3385e7567ce64174c37"
+}
+
+import {
+  to = cloudflare_dns_record.worker
+  id = "22bcd1b07ec25452aab472486bc8df94/52370ab4a0fbc82b3dd10bdd340682d7"
+}
+
+resource "cloudflare_dns_record" "api" {
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "api.polar.sh"
+  type    = "CNAME"
+  content = replace(module.production.api_service_url, "https://", "")
+  proxied = false
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "backoffice" {
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "backoffice.polar.sh"
+  type    = "CNAME"
+  content = replace(module.production.api_service_url, "https://", "")
+  proxied = false
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "worker" {
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "worker.polar.sh"
+  type    = "CNAME"
+  content = replace(module.production.worker_urls["worker"], "https://", "")
+  proxied = false
+  ttl     = 1
+}

@@ -184,3 +184,20 @@ module "sandbox" {
 
   depends_on = [render_registry_credential.ghcr, data.render_postgres.db, data.render_redis.redis]
 }
+
+# =============================================================================
+# Cloudflare DNS
+# =============================================================================
+import {
+  to = cloudflare_dns_record.api
+  id = "22bcd1b07ec25452aab472486bc8df94/f8b90a8fea314be71490f0b4805807cf"
+}
+
+resource "cloudflare_dns_record" "api" {
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "sandbox-api.polar.sh"
+  type    = "CNAME"
+  content = replace(module.sandbox.api_service_url, "https://", "")
+  proxied = false
+  ttl     = 1
+}

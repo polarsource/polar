@@ -32776,8 +32776,8 @@ export interface operations {
         query?: string | null
         /** @description When combined with depth, use this event as the anchor instead of root events. */
         parent_id?: string | null
-        /** @description Fetch descendants up to this depth. 0=anchor only (default), 1=anchor+children, etc. Max 5. */
-        depth?: number
+        /** @description Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events. */
+        depth?: number | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

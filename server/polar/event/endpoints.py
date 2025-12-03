@@ -336,9 +336,16 @@ async def get(
     id: EventID,
     auth_subject: auth.EventRead,
     session: AsyncSession = Depends(get_db_session),
+    aggregate_fields: Sequence[str] = Query(
+        default=[],
+        description="Metadata field paths to aggregate from descendants into ancestors (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
+        include_in_schema=False,
+    ),
 ) -> Event:
     """Get an event by ID."""
-    event = await event_service.get(session, auth_subject, id)
+    event = await event_service.get(
+        session, auth_subject, id, aggregate_fields=aggregate_fields
+    )
 
     if event is None:
         raise ResourceNotFound()

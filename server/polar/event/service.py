@@ -284,8 +284,15 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
+        aggregate_fields: Sequence[str] = (),
     ) -> Event | None:
         repository = EventRepository.from_session(session)
+
+        if aggregate_fields:
+            return await repository.get_with_aggregation(
+                auth_subject, id, aggregate_fields
+            )
+
         statement = (
             repository.get_readable_statement(auth_subject)
             .where(Event.id == id)

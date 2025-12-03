@@ -235,15 +235,11 @@ module "test" {
 # Cloudflare DNS
 # =============================================================================
 
-resource "cloudflare_dns_record" "record" {
-  for_each = {
-    "test-api.polar.sh" = { content = module.test.api_service_url }
-  }
-
+resource "cloudflare_dns_record" "test_api" {
   zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = each.key
-  type    = try(each.value.type, "CNAME")
-  content = each.value.content
-  proxied = try(each.value.proxied, false)
-  ttl     = try(each.value.ttl, 1)
+  name    = "test-api.polar.sh"
+  type    = "CNAME"
+  content = replace(module.test.api_service_url, "https://", "")
+  proxied = false
+  ttl     = 1
 }

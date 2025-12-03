@@ -12,7 +12,7 @@ import {
   getCostsSearchParams,
   getDefaultEndDate,
   getDefaultStartDate,
-} from './utils'
+} from '../utils'
 
 export function SpansTitle({
   organization,

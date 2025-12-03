@@ -1,3 +1,4 @@
+import Spinner from '@/components/Shared/Spinner'
 import {
   CartesianGrid,
   ChartContainer,
@@ -10,7 +11,6 @@ import {
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
 import { useMemo, useState } from 'react'
-import Spinner from '../Shared/Spinner'
 
 export interface ChartSeries {
   key: string

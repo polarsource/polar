@@ -67,13 +67,14 @@ export const useEvents = (
 export const useEvent = (
   organizationId: string,
   eventId: string,
-  parameters?: NonNullable<operations['events:get']['parameters']['query']>,
+  parameters?: { aggregate_fields?: string[] }, // This isn't added to the generated schema while in beta
 ) => {
   return useQuery({
     queryKey: ['event', organizationId, eventId, { ...(parameters || {}) }],
     queryFn: () =>
       unwrap(
         api.GET('/v1/events/{id}', {
+          // @ts-expect-error aggregate_fields isn't in the generated schema while in beta
           params: { path: { id: eventId }, query: parameters },
         }),
       ),

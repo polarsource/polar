@@ -15,8 +15,8 @@ import {
 import Link from 'next/link'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
-import { SpansHeader } from './SpansHeader'
-import { SpansTitle } from './SpansTitle'
+import { SpansHeader } from './components/SpansHeader'
+import { SpansTitle } from './components/SpansTitle'
 import {
   DEFAULT_INTERVAL,
   getCostsSearchParams,

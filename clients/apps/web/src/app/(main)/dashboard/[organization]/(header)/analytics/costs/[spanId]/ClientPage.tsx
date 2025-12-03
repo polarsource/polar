@@ -1,6 +1,5 @@
 'use client'
 
-import { Chart } from '@/components/Chart/Chart'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -25,8 +24,9 @@ import {
 import Link from 'next/link'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
-import { SpansHeader } from '../SpansHeader'
-import { SpansTitle } from '../SpansTitle'
+import { Chart } from '../components/Chart/Chart'
+import { SpansHeader } from '../components/SpansHeader'
+import { SpansTitle } from '../components/SpansTitle'
 import {
   DEFAULT_INTERVAL,
   getDefaultEndDate,

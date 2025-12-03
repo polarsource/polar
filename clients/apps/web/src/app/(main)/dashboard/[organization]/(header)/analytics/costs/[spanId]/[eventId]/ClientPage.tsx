@@ -1,16 +1,20 @@
 'use client'
 
+import { AnonymousCustomerAvatar } from '@/components/Customer/AnonymousCustomerAvatar'
+import { useMetadata } from '@/components/Events/EventCard/UserEventCard'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
+import { getAnonymousCustomerName } from '@/utils/anonymousCustomer'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import type { LucideIcon } from 'lucide-react'
+import { BadgeDollarSignIcon, BotIcon, BracesIcon } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
-import { SpansTitle } from '../../SpansTitle'
-
-import type { LucideIcon } from 'lucide-react'
+import { twMerge } from 'tailwind-merge'
+import { SpansTitle } from '../../components/SpansTitle'
 
 const PAGE_SIZE = 50
 
@@ -30,12 +34,7 @@ export default function EventDetailPage({
   })
   const searchParams = useSearchParams()
 
-  const {
-    data: childrenData,
-    isFetching,
-    fetchNextPage,
-    hasNextPage,
-  } = useInfiniteEvents(organization.id, {
+  const { data: childrenData } = useInfiniteEvents(organization.id, {
     parent_id: eventId,
     limit: PAGE_SIZE,
     sorting: ['timestamp'],
@@ -194,12 +193,6 @@ export default function EventDetailPage({
   )
 }
 
-import { AnonymousCustomerAvatar } from '@/components/Customer/AnonymousCustomerAvatar'
-import { useMetadata } from '@/components/Events/EventCard/UserEventCard'
-import { getAnonymousCustomerName } from '@/utils/anonymousCustomer'
-import { BadgeDollarSignIcon, BotIcon, BracesIcon } from 'lucide-react'
-import { twMerge } from 'tailwind-merge'
-
 const DataRow = ({
   label,
   value,
@@ -244,11 +237,7 @@ function DataCard({
   )
 }
 
-export interface LLMInferenceEventCardProps {
-  event: schemas['UserEvent']
-}
-
-export const SpanEventDetailsCard = ({ event }: LLMInferenceEventCardProps) => {
+const SpanEventDetailsCard = ({ event }: { event: schemas['UserEvent'] }) => {
   const metadataToRender = useMetadata(event)
 
   const llmMetadata = '_llm' in event.metadata && event.metadata._llm

@@ -32,7 +32,7 @@ locals {
   db_password      = render_postgres.db.connection_info.password
 
   # Read replica connection info
-  read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
+  read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read-test"][0]
 
   # Redis connection info
   redis_host = render_redis.redis.id
@@ -58,8 +58,7 @@ resource "render_postgres" "db" {
   high_availability_enabled = true
 
   read_replicas = [
-    { name = "polar-read" },
-    { name = "polar-replica" }
+    { name = "polar-read-test" },
   ]
 
   lifecycle {

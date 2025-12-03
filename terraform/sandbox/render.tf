@@ -174,7 +174,12 @@ module "sandbox" {
     key_value = var.apple_key_value
   }
 
-  logfire_config = null
+  logfire_config = {
+    server_project_name = "sandbox"
+    worker_project_name = "sandbox-worker"
+    server_token        = var.logfire_token_server
+    worker_token        = var.logfire_token_worker
+  }
 
   prometheus_config = {
     url      = var.prometheus_remote_write_url

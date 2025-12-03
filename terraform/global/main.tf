@@ -155,3 +155,11 @@ resource "tfe_variable" "cloudflare_api_token" {
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
 }
+
+resource "tfe_variable" "vercel_api_token" {
+  key             = "VERCEL_API_TOKEN"
+  category        = "env"
+  description     = "Vercel API token"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}

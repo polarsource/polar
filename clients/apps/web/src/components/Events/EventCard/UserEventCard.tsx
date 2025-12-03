@@ -2,7 +2,7 @@ import { schemas } from '@polar-sh/client'
 import { useMemo } from 'react'
 import { EventCardBase } from './EventCardBase'
 
-const useMetadata = (event: schemas['Event']) => {
+export const useMetadata = (event: schemas['Event']) => {
   return useMemo(() => {
     const metadata = { ...event.metadata }
     const metadataWithoutPrivateFields = Object.entries(metadata).reduce(
@@ -27,7 +27,7 @@ export const UserEventCard = ({ event }: { event: schemas['Event'] }) => {
 
   return (
     <EventCardBase>
-      <pre className="flex p-2 select-text">
+      <pre className="flex p-2 font-mono select-text">
         {JSON.stringify(metadataToRender, null, 2)}
       </pre>
     </EventCardBase>

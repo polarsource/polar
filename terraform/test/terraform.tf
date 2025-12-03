@@ -2,7 +2,7 @@ terraform {
   cloud {
     organization = "polar-sh"
     workspaces {
-      name = "polar"
+      name = "test"
     }
   }
 

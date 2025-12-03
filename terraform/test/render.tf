@@ -80,6 +80,11 @@ locals {
   db_user          = render_postgres.db.database_user
   db_password      = render_postgres.db.connection_info.password
 
+  # Extract actual database name from internal connection string
+  # Render appends a suffix to database_name, so we parse it from the connection string
+  # Format: postgresql://user:pass@host/dbname
+  db_name = regex("[^/]+$", render_postgres.db.connection_info.internal_connection_string)
+
   # Read replica connection info
   read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read-test"][0]
 
@@ -118,8 +123,8 @@ module "test" {
     web_concurrency        = "2"
     forwarded_allow_ips    = "*"
     database_pool_size     = "20"
-    postgres_database      = render_postgres.db.database_name
-    postgres_read_database = render_postgres.db.database_name
+    postgres_database      = local.db_name
+    postgres_read_database = local.db_name
     redis_db               = "0"
   }
 

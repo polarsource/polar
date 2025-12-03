@@ -1,10 +1,21 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.enums import AccountType
-from polar.models import Account, Transaction, User
+from polar.integrations.stripe.service import StripeService
+from polar.models import (
+    Account,
+    Customer,
+    Order,
+    Organization,
+    Payment,
+    Transaction,
+    User,
+)
+from polar.models.dispute import DisputeStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.balance import BalanceTransactionService
@@ -13,7 +24,7 @@ from polar.transaction.service.balance import (
 )
 from polar.transaction.service.dispute import (  # type: ignore[attr-defined]
     DisputeNotResolved,
-    DisputeUnknownPaymentTransaction,
+    DisputeTransactionAlreadyExistsError,
     platform_fee_transaction_service,
     processor_fee_transaction_service,
 )
@@ -23,6 +34,7 @@ from polar.transaction.service.dispute import (
 from polar.transaction.service.platform_fee import PlatformFeeTransactionService
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_dispute, create_order, create_payment
 from tests.fixtures.stripe import (
     build_stripe_balance_transaction,
     build_stripe_charge,
@@ -60,18 +72,56 @@ def create_dispute_fees_balances_mock(mocker: MockerFixture) -> AsyncMock:
     )
 
 
+@pytest.fixture(autouse=True)
+def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch(
+        "polar.transaction.service.dispute.stripe_service", spec=StripeService
+    )
+
+
+@pytest_asyncio.fixture
+async def order(save_fixture: SaveFixture, customer: Customer) -> Order:
+    return await create_order(save_fixture, customer=customer)
+
+
+@pytest_asyncio.fixture
+async def payment(
+    save_fixture: SaveFixture, order: Order, organization: Organization
+) -> Payment:
+    return await create_payment(save_fixture, organization, order=order)
+
+
 @pytest.mark.asyncio
 class TestCreateDispute:
-    async def test_not_resolved(self, session: AsyncSession) -> None:
-        dispute = build_stripe_dispute(status="needs_response", balance_transactions=[])
+    async def test_not_resolved(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        order: Order,
+        payment: Payment,
+    ) -> None:
+        dispute = await create_dispute(
+            save_fixture, order, payment, status=DisputeStatus.needs_response
+        )
 
         with pytest.raises(DisputeNotResolved):
             await dispute_transaction_service.create_dispute(session, dispute=dispute)
 
-    async def test_unknown_payment_transaction(self, session: AsyncSession) -> None:
-        dispute = build_stripe_dispute(status="won", balance_transactions=[])
+    async def test_transaction_already_exists(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        order: Order,
+        payment: Payment,
+    ) -> None:
+        dispute = await create_dispute(
+            save_fixture, order, payment, status=DisputeStatus.won
+        )
+        await create_transaction(
+            save_fixture, type=TransactionType.dispute, dispute=dispute
+        )
 
-        with pytest.raises(DisputeUnknownPaymentTransaction):
+        with pytest.raises(DisputeTransactionAlreadyExistsError):
             await dispute_transaction_service.create_dispute(session, dispute=dispute)
 
     async def test_valid_lost(
@@ -79,12 +129,18 @@ class TestCreateDispute:
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
+        order: Order,
+        payment: Payment,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
         create_dispute_fees_balances_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
-        charge = build_stripe_charge()
-        dispute = build_stripe_dispute(
+        charge = build_stripe_charge(id=payment.processor_id)
+        dispute = await create_dispute(
+            save_fixture, order, payment, status=DisputeStatus.lost, amount=1000
+        )
+        stripe_service_mock.get_dispute.return_value = build_stripe_dispute(
             status="lost",
             amount=1000,
             charge_id=charge.id,
@@ -183,6 +239,7 @@ class TestCreateDispute:
         assert dispute_transaction.type == TransactionType.dispute
         assert dispute_transaction.processor == Processor.stripe
         assert dispute_transaction.amount == -dispute.amount
+        assert dispute_transaction.dispute == dispute
 
         assert dispute_reversal_transaction is None
 
@@ -214,12 +271,18 @@ class TestCreateDispute:
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
+        order: Order,
+        payment: Payment,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
         create_dispute_fees_balances_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
-        charge = build_stripe_charge()
-        dispute = build_stripe_dispute(
+        charge = build_stripe_charge(id=payment.processor_id)
+        dispute = await create_dispute(
+            save_fixture, order, payment, status=DisputeStatus.won, amount=1000
+        )
+        stripe_service_mock.get_dispute.return_value = build_stripe_dispute(
             status="won",
             amount=1000,
             charge_id=charge.id,
@@ -323,11 +386,13 @@ class TestCreateDispute:
         assert dispute_transaction.type == TransactionType.dispute
         assert dispute_transaction.processor == Processor.stripe
         assert dispute_transaction.amount == -dispute.amount
+        assert dispute_transaction.dispute == dispute
 
         assert dispute_reversal_transaction is not None
         assert dispute_reversal_transaction.type == TransactionType.dispute_reversal
         assert dispute_reversal_transaction.processor == Processor.stripe
         assert dispute_reversal_transaction.amount == dispute.amount
+        assert dispute_reversal_transaction.dispute == dispute
 
         balance_transaction_service_mock.create_reversal_balance.assert_not_called()
 
@@ -341,19 +406,33 @@ class TestCreateDispute:
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
+        order: Order,
+        payment: Payment,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
         create_dispute_fees_balances_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         charge_balance_transaction = build_stripe_balance_transaction(
             amount=1800, currency="usd", exchange_rate=1.5
         )
         charge = build_stripe_charge(
+            id=payment.processor_id,
             amount=1200,
             currency="eur",
             balance_transaction=charge_balance_transaction.id,
         )
-        dispute = build_stripe_dispute(
+        dispute = await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            status=DisputeStatus.won,
+            amount=1000,
+            tax_amount=200,
+            currency="eur",
+        )
+
+        stripe_service_mock.get_dispute.return_value = build_stripe_dispute(
             status="won",
             currency="eur",
             amount=1200,
@@ -472,6 +551,7 @@ class TestCreateDispute:
         assert dispute_transaction.presentment_currency == "eur"
         assert dispute_transaction.presentment_amount == -1000
         assert dispute_transaction.presentment_tax_amount == -200
+        assert dispute_transaction.dispute == dispute
 
         assert dispute_reversal_transaction is not None
         assert dispute_reversal_transaction.type == TransactionType.dispute_reversal
@@ -482,6 +562,7 @@ class TestCreateDispute:
         assert dispute_reversal_transaction.presentment_currency == "eur"
         assert dispute_reversal_transaction.presentment_amount == 1000
         assert dispute_reversal_transaction.presentment_tax_amount == 200
+        assert dispute_reversal_transaction.dispute == dispute
 
         balance_transaction_service_mock.create_reversal_balance.assert_not_called()
 
@@ -495,19 +576,32 @@ class TestCreateDispute:
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
+        order: Order,
+        payment: Payment,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
         create_dispute_fees_balances_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         charge_balance_transaction = build_stripe_balance_transaction(
             amount=1800, currency="usd", exchange_rate=1.5
         )
         charge = build_stripe_charge(
+            id=payment.processor_id,
             amount=1200,
             currency="eur",
             balance_transaction=charge_balance_transaction.id,
         )
-        dispute = build_stripe_dispute(
+        dispute = await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            status=DisputeStatus.lost,
+            amount=1000,
+            tax_amount=200,
+            currency="eur",
+        )
+        stripe_service_mock.get_dispute.return_value = build_stripe_dispute(
             status="lost",
             currency="eur",
             amount=1200,

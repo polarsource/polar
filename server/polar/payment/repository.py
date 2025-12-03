@@ -6,6 +6,7 @@ from sqlalchemy import Select, func, select
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.enums import PaymentProcessor
 from polar.kit.repository import (
+    Options,
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
@@ -39,10 +40,12 @@ class PaymentRepository(
         return await self.get_all(statement)
 
     async def get_by_processor_id(
-        self, processor: PaymentProcessor, processor_id: str
+        self, processor: PaymentProcessor, processor_id: str, *, options: Options = ()
     ) -> Payment | None:
-        statement = self.get_base_statement().where(
-            Payment.processor == processor, Payment.processor_id == processor_id
+        statement = (
+            self.get_base_statement()
+            .where(Payment.processor == processor, Payment.processor_id == processor_id)
+            .options(*options)
         )
         return await self.get_one_or_none(statement)
 

@@ -4,7 +4,7 @@ from typing import Literal
 from polar.enums import PaymentProcessor
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.models import Refund, Transaction
+from polar.models import Dispute, Refund, Transaction
 from polar.models.transaction import Processor, ProcessorFeeType, TransactionType
 from polar.postgres import AsyncSession
 
@@ -154,19 +154,20 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         self,
         session: AsyncSession,
         *,
+        dispute: Dispute,
         dispute_transaction: Transaction,
         category: Literal["dispute", "dispute_reversal"],
     ) -> list[Transaction]:
         fee_transactions: list[Transaction] = []
 
-        if dispute_transaction.processor != Processor.stripe:
+        if dispute.payment_processor != PaymentProcessor.stripe:
             return fee_transactions
 
-        if dispute_transaction.dispute_id is None:
+        if dispute.payment_processor_id is None:
             return fee_transactions
 
-        dispute = await stripe_service.get_dispute(dispute_transaction.dispute_id)
-        for balance_transaction in dispute.balance_transactions:
+        stripe_dispute = await stripe_service.get_dispute(dispute.payment_processor_id)
+        for balance_transaction in stripe_dispute.balance_transactions:
             if (
                 balance_transaction.reporting_category == category
                 and balance_transaction.fee > 0

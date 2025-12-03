@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from polar.models import (
         Account,
         Customer,
+        Dispute,
         IssueReward,
         Order,
         Organization,
@@ -253,8 +254,6 @@ class Transaction(RecordModel):
     """ID of the customer in the payment processor system."""
     charge_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     """ID of the charge (payment) in the payment processor system."""
-    dispute_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
-    """ID of the dispute in the payment processor system."""
     transfer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     """ID of the transfer in the payment processor system."""
     transfer_reversal_id: Mapped[str | None] = mapped_column(
@@ -396,6 +395,18 @@ class Transaction(RecordModel):
     @declared_attr
     def refund(cls) -> Mapped["Refund | None"]:
         return relationship("Refund", lazy="raise")
+
+    dispute_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("disputes.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+    """ID of the `Dispute` related to this transaction."""
+
+    @declared_attr
+    def dispute(cls) -> Mapped["Dispute | None"]:
+        return relationship("Dispute", lazy="raise")
 
     payout_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("payouts.id"), nullable=True, index=True

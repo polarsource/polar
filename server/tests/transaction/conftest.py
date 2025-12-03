@@ -7,6 +7,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.models import (
     Account,
     Customer,
+    Dispute,
     IssueReward,
     Order,
     Organization,
@@ -46,6 +47,7 @@ async def create_transaction(
     issue_reward: IssueReward | None = None,
     order: Order | None = None,
     refund: Refund | None = None,
+    dispute: Dispute | None = None,
     payout_transaction: Transaction | None = None,
     payment_transaction: Transaction | None = None,
     payout: Payout | None = None,
@@ -73,6 +75,7 @@ async def create_transaction(
         issue_reward=issue_reward,
         order=order,
         refund=refund,
+        dispute=dispute,
         payout_transaction=payout_transaction,
         payment_transaction=payment_transaction,
         payout=payout,

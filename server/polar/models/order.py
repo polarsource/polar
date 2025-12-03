@@ -356,3 +356,17 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         if self.product is not None:
             return self.product.name
         return self.items[0].label
+
+    def calculate_refunded_tax(self, total_refund_amount: int) -> tuple[int, int]:
+        if total_refund_amount == self.remaining_balance:
+            return self.refundable_amount, self.refundable_tax_amount
+
+        if not self.taxed:
+            return total_refund_amount, 0
+
+        # Reverse engineer taxes from Stripe amount (always inclusive)
+        refunded_tax_amount = abs(
+            round((self.tax_amount * total_refund_amount) / self.total_amount)
+        )
+        refunded_amount = total_refund_amount - refunded_tax_amount
+        return refunded_amount, refunded_tax_amount

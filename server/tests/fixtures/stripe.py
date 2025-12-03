@@ -289,6 +289,7 @@ def build_stripe_payment_method(
 
 def build_stripe_charge(
     *,
+    id: str = "STRIPE_CHARGE_ID",
     status: str = "succeeded",
     amount: int = 1000,
     currency: str = "usd",
@@ -305,7 +306,7 @@ def build_stripe_charge(
 ) -> stripe_lib.Charge:
     metadata = metadata or {}
     obj: dict[str, Any] = {
-        "id": "STRIPE_CHARGE_ID",
+        "id": id,
         "status": status,
         "customer": customer,
         "currency": currency,

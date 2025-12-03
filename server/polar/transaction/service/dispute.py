@@ -1,16 +1,17 @@
 import math
 
-import stripe as stripe_lib
 import structlog
 from sqlalchemy import select
 
-from polar.integrations.stripe.utils import get_expandable_id
+from polar.enums import PaymentProcessor
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.math import polar_round
 from polar.logging import Logger
-from polar.models import Transaction
+from polar.models import Dispute, Transaction
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 
+from ..repository import DisputeTransactionRepository, PaymentTransactionRepository
 from .balance import balance_transaction as balance_transaction_service
 from .base import BaseTransactionService, BaseTransactionServiceError
 from .platform_fee import platform_fee_transaction as platform_fee_transaction_service
@@ -24,29 +25,17 @@ log: Logger = structlog.get_logger()
 class DisputeTransactionError(BaseTransactionServiceError): ...
 
 
-class DisputeClosed(DisputeTransactionError):
-    def __init__(self, dispute_id: str) -> None:
-        self.dispute_id = dispute_id
-        message = f"Dispute {dispute_id} is closed."
-        super().__init__(message)
-
-
 class DisputeNotResolved(DisputeTransactionError):
-    def __init__(self, dispute_id: str) -> None:
-        self.dispute_id = dispute_id
-        message = f"Dispute {dispute_id} is not resolved."
+    def __init__(self, dispute: Dispute) -> None:
+        self.dispute = dispute
+        message = f"Dispute {dispute.id} is not resolved."
         super().__init__(message)
 
 
-class DisputeUnknownPaymentTransaction(DisputeTransactionError):
-    def __init__(self, dispute_id: str, charge_id: str) -> None:
-        self.dispute_id = dispute_id
-        self.charge_id = charge_id
-        message = (
-            f"Dispute {dispute_id} created for charge {charge_id}, "
-            "but the payment transaction is unknown."
-        )
-        super().__init__(message)
+class DisputeTransactionAlreadyExistsError(DisputeTransactionError):
+    def __init__(self, dispute: Dispute) -> None:
+        self.dispute = dispute
+        super().__init__(f"Dispute transaction already exists for {dispute.id}")
 
 
 class BalanceTransactionNotAvailableError(DisputeTransactionError):
@@ -67,39 +56,43 @@ class NotBalancedPaymentTransaction(DisputeTransactionError):
 
 class DisputeTransactionService(BaseTransactionService):
     async def create_dispute(
-        self, session: AsyncSession, *, dispute: stripe_lib.Dispute
+        self, session: AsyncSession, *, dispute: Dispute
     ) -> tuple[Transaction, Transaction | None]:
-        if dispute.status in {"warning_closed"}:
-            raise DisputeClosed(dispute.id)
+        if not dispute.closed:
+            raise DisputeNotResolved(dispute)
 
-        if dispute.status not in {"won", "lost"}:
-            raise DisputeNotResolved(dispute.id)
+        repository = DisputeTransactionRepository.from_session(session)
+        if await repository.get_by_dispute_id(dispute.id) is not None:
+            raise DisputeTransactionAlreadyExistsError(dispute)
 
-        charge_id: str = get_expandable_id(dispute.charge)
-        payment_transaction = await self.get_by(
-            session, type=TransactionType.payment, charge_id=charge_id
-        )
-        if payment_transaction is None:
-            raise DisputeUnknownPaymentTransaction(dispute.id, charge_id)
-
-        try:
-            balance_transaction = next(
-                bt
-                for bt in dispute.balance_transactions
-                if bt.reporting_category == "dispute"
+        if dispute.payment_processor == PaymentProcessor.stripe:
+            assert dispute.payment_processor_id is not None
+            stripe_dispute = await stripe_service.get_dispute(
+                dispute.payment_processor_id, expand=["balance_transactions"]
             )
-        except StopIteration as e:
-            raise BalanceTransactionNotAvailableError(dispute.id) from e
+            try:
+                balance_transaction = next(
+                    bt
+                    for bt in stripe_dispute.balance_transactions
+                    if bt.reporting_category == "dispute"
+                )
+            except StopIteration as e:
+                raise BalanceTransactionNotAvailableError(stripe_dispute.id) from e
 
-        settlement_amount = balance_transaction.amount
-        settlement_currency = balance_transaction.currency
-        settlement_tax_amount = int(
-            math.floor(payment_transaction.tax_amount * settlement_amount)
-            / (payment_transaction.amount + payment_transaction.tax_amount)
+            settlement_amount = balance_transaction.amount
+            settlement_currency = balance_transaction.currency
+            exchange_rate = -settlement_amount / (dispute.amount + dispute.tax_amount)
+            settlement_tax_amount = -polar_round(dispute.tax_amount * exchange_rate)
+        else:
+            raise NotImplementedError()
+
+        payment_transaction_repository = PaymentTransactionRepository.from_session(
+            session
         )
-
-        exchange_rate = abs(dispute.amount) / abs(settlement_amount)
-        dispute_tax_amount = -polar_round(settlement_tax_amount * exchange_rate)
+        payment_transaction = await payment_transaction_repository.get_by_payment_id(
+            dispute.payment_id
+        )
+        assert payment_transaction is not None
 
         # Create the dispute, i.e. the transaction withdrawing the amount
         dispute_transaction = Transaction(
@@ -113,11 +106,11 @@ class DisputeTransactionService(BaseTransactionService):
             tax_country=payment_transaction.tax_country,
             tax_state=payment_transaction.tax_state,
             presentment_currency=dispute.currency,
-            presentment_amount=-dispute.amount + dispute_tax_amount,
-            presentment_tax_amount=-dispute_tax_amount,
+            presentment_amount=-dispute.amount,
+            presentment_tax_amount=-dispute.tax_amount,
+            dispute=dispute,
             customer_id=payment_transaction.customer_id,
-            charge_id=charge_id,
-            dispute_id=dispute.id,
+            charge_id=payment_transaction.charge_id,
             payment_customer_id=payment_transaction.payment_customer_id,
             payment_organization_id=payment_transaction.payment_organization_id,
             payment_user_id=payment_transaction.payment_user_id,
@@ -128,7 +121,10 @@ class DisputeTransactionService(BaseTransactionService):
         )
         session.add(dispute_transaction)
         dispute_fees = await processor_fee_transaction_service.create_dispute_fees(
-            session, dispute_transaction=dispute_transaction, category="dispute"
+            session,
+            dispute=dispute,
+            dispute_transaction=dispute_transaction,
+            category="dispute",
         )
         dispute_transaction.incurred_transactions = dispute_fees
 
@@ -146,11 +142,11 @@ class DisputeTransactionService(BaseTransactionService):
                 tax_country=payment_transaction.tax_country,
                 tax_state=payment_transaction.tax_state,
                 presentment_currency=dispute.currency,
-                presentment_amount=dispute.amount - dispute_tax_amount,
-                presentment_tax_amount=dispute_tax_amount,
+                presentment_amount=dispute.amount,
+                presentment_tax_amount=dispute.tax_amount,
                 customer_id=payment_transaction.customer_id,
-                charge_id=charge_id,
-                dispute_id=dispute.id,
+                charge_id=payment_transaction.charge_id,
+                dispute=dispute,
                 payment_customer_id=payment_transaction.payment_customer_id,
                 payment_organization_id=payment_transaction.payment_organization_id,
                 payment_user_id=payment_transaction.payment_user_id,
@@ -163,6 +159,7 @@ class DisputeTransactionService(BaseTransactionService):
             dispute_reversal_fees = (
                 await processor_fee_transaction_service.create_dispute_fees(
                     session,
+                    dispute=dispute,
                     dispute_transaction=dispute_reversal_transaction,
                     category="dispute_reversal",
                 )
@@ -204,7 +201,7 @@ class DisputeTransactionService(BaseTransactionService):
 
         Mostly useful when releasing held balances: if a payment transaction has
         been disputed before the Account creation, we need to create the reversal
-        balances so the refund is correctly accounted for.
+        balances so the dispute is correctly accounted for.
         """
         statement = select(Transaction).where(
             Transaction.type == TransactionType.dispute,
@@ -247,15 +244,15 @@ class DisputeTransactionService(BaseTransactionService):
         )
         for balance_transactions_couple in balance_transactions_couples:
             outgoing, _ = balance_transactions_couple
-            # Refund each balance proportionally
-            balance_refund_amount = abs(
+            # dispute each balance proportionally
+            balance_dispute_amount = abs(
                 int(math.floor(outgoing.amount * dispute_amount) / payment_amount)
             )
             reversal_balances.append(
                 await balance_transaction_service.create_reversal_balance(
                     session,
                     balance_transactions=balance_transactions_couple,
-                    amount=balance_refund_amount,
+                    amount=balance_dispute_amount,
                 )
             )
 

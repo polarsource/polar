@@ -96,58 +96,6 @@ def assert_order_updated_webhook_called(send_webhook_mock: MagicMock) -> None:
     assert len(order_updated_calls) >= 1, "order.updated webhook should be called"
 
 
-@pytest.mark.parametrize(
-    "order_amount,order_tax_amount,order_applied_balance_amount,stripe_refund_amount,expected_refund_amount,expected_refund_tax_amount",
-    [
-        pytest.param(
-            1000, 250, 1000, 1250, 1000, 250, id="refund subtotal amount with tax"
-        ),
-        pytest.param(
-            1000,
-            250,
-            1000,
-            2250,
-            2000,
-            250,
-            id="refund subtotal + balance with tax",
-        ),
-        pytest.param(
-            1000, 250, -500, 750, 500, 250, id="full refund with negative balance"
-        ),
-    ],
-)
-@pytest.mark.asyncio
-async def test_calculate_tax_from_stripe(
-    order_amount: int,
-    order_tax_amount: int,
-    order_applied_balance_amount: int,
-    stripe_refund_amount: int,
-    expected_refund_amount: int,
-    expected_refund_tax_amount: int,
-    save_fixture: SaveFixture,
-    product: Product,
-    customer: Customer,
-) -> None:
-    order, payment = await create_order_and_payment(
-        save_fixture,
-        product=product,
-        customer=customer,
-        subtotal_amount=order_amount,
-        tax_amount=order_tax_amount,
-        applied_balance_amount=order_applied_balance_amount,
-    )
-    assert payment.amount == order_amount + order_applied_balance_amount
-    assert order.refunded_amount == 0
-    assert order.refunded_tax_amount == 0
-
-    refund_amount, refund_tax_amount = refund_service.calculate_tax_from_stripe(
-        order, stripe_refund_amount
-    )
-
-    assert refund_amount == expected_refund_amount
-    assert refund_tax_amount == expected_refund_tax_amount
-
-
 class StripeRefund:
     async def calculate_and_create(
         self,

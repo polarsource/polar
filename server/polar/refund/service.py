@@ -58,8 +58,6 @@ RefundedResources: TypeAlias = tuple[
     ChargeID, RefundTransaction, Order | None, Pledge | None
 ]
 Created: TypeAlias = bool
-RefundAmount: TypeAlias = int
-RefundTaxAmount: TypeAlias = int
 FullRefund: TypeAlias = bool
 
 
@@ -388,24 +386,6 @@ class RefundService(ResourceServiceReader[Refund]):
         tax_amount = round(refund_amount * ratio)
         return tax_amount
 
-    def calculate_tax_from_stripe(
-        self,
-        order: Order,
-        stripe_amount: int,
-    ) -> tuple[RefundAmount, RefundTaxAmount]:
-        if stripe_amount == order.remaining_balance:
-            return order.refundable_amount, order.refundable_tax_amount
-
-        if not order.taxed:
-            return stripe_amount, 0
-
-        # Reverse engineer taxes from Stripe amount (always inclusive)
-        refunded_tax_amount = abs(
-            round((order.tax_amount * stripe_amount) / order.total_amount)
-        )
-        refunded_amount = stripe_amount - refunded_tax_amount
-        return refunded_amount, refunded_tax_amount
-
     def build_create_schema_from_stripe(
         self,
         stripe_refund: stripe_lib.Refund,
@@ -426,9 +406,8 @@ class RefundService(ResourceServiceReader[Refund]):
             subscription_id = order.subscription_id
             customer_id = order.customer_id
             organization_id = order.organization.id
-            refunded_amount, refunded_tax_amount = self.calculate_tax_from_stripe(
-                order,
-                stripe_amount=stripe_refund.amount,
+            refunded_amount, refunded_tax_amount = order.calculate_refunded_tax(
+                stripe_refund.amount
             )
 
         schema = InternalRefundCreate.from_stripe(

@@ -111,7 +111,7 @@ module "test" {
   }
 
   api_service_config = {
-    allowed_hosts          = "[\"test.polar.sh\", \"backoffice.test.polar.sh\"]"
+    allowed_hosts          = "[\"test.polar.sh\"]"
     cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "test-api.polar.sh" }]
     web_concurrency        = "2"
@@ -140,14 +140,15 @@ module "test" {
   }
 
   backend_config = {
-    base_url                             = "https://api.test.polar.sh"
-    user_session_cookie_domain           = "test.polar.sh"
+    base_url                             = "https://test-api.polar.sh"
+    user_session_cookie_domain           = "polar.sh"
+    user_session_cookie_key              = "polar_test_session"
     debug                                = "0"
     email_sender                         = "resend"
-    email_from_name                      = "Polar"
-    email_from_domain                    = "notifications.polar.sh"
+    email_from_name                      = "[TEST] Polar"
+    email_from_domain                    = "notifications.test.polar.sh"
     frontend_base_url                    = "https://test.polar.sh"
-    checkout_base_url                    = "https://buy.test.polar.sh/{client_secret}"
+    checkout_base_url                    = "https://test-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
     jwks_path                            = "/etc/secrets/jwks.json"
     log_level                            = "INFO"
     testing                              = "0"

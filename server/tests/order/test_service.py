@@ -32,6 +32,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Discount,
+    PaymentMethod,
     Product,
     ProductPriceFixed,
     Subscription,
@@ -787,6 +788,7 @@ class TestCreateSubscriptionOrder:
         session: AsyncSession,
         product: Product,
         organization: Organization,
+        payment_method: PaymentMethod,
     ) -> None:
         customer = await create_customer(
             save_fixture,
@@ -794,7 +796,10 @@ class TestCreateSubscriptionOrder:
             billing_address=Address(country=CountryAlpha2("FR")),
         )
         subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
         )
         price = product.prices[0]
         assert is_fixed_price(price)
@@ -843,6 +848,7 @@ class TestCreateSubscriptionOrder:
         session: AsyncSession,
         product: Product,
         organization: Organization,
+        payment_method: PaymentMethod,
     ) -> None:
         discount = await create_discount(
             save_fixture,
@@ -857,7 +863,11 @@ class TestCreateSubscriptionOrder:
             billing_address=Address(country=CountryAlpha2("FR")),
         )
         subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer, discount=discount
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+            discount=discount,
         )
         price = product.prices[0]
         assert is_fixed_price(price)
@@ -944,6 +954,7 @@ class TestCreateSubscriptionOrder:
         session: AsyncSession,
         product: Product,
         organization: Organization,
+        payment_method: PaymentMethod,
     ) -> None:
         customer = await create_customer(
             save_fixture,
@@ -951,7 +962,11 @@ class TestCreateSubscriptionOrder:
             billing_address=Address(country=CountryAlpha2("FR")),
         )
         subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer, tax_exempted=True
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+            tax_exempted=True,
         )
         price = product.prices[0]
         assert is_fixed_price(price)
@@ -979,6 +994,48 @@ class TestCreateSubscriptionOrder:
             True,
         )
 
+    async def test_cycle_no_payment_method(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
+        )
+
+        enqueued_jobs = [call[0][0] for call in enqueue_job_mock.call_args_list]
+        assert "order.trigger_payment" not in enqueued_jobs
+
+        assert order.next_payment_attempt_at is not None
+        assert subscription.status == SubscriptionStatus.past_due
+
     async def test_cycle_proration(
         self,
         calculate_tax_mock: MagicMock,
@@ -988,6 +1045,7 @@ class TestCreateSubscriptionOrder:
         session: AsyncSession,
         organization: Organization,
         product: Product,
+        payment_method: PaymentMethod,
     ) -> None:
         customer = await create_customer(
             save_fixture,
@@ -995,7 +1053,10 @@ class TestCreateSubscriptionOrder:
             billing_address=Address(country=CountryAlpha2("FR")),
         )
         subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
         )
 
         old_product = await create_product(
@@ -1248,6 +1309,7 @@ class TestCreateSubscriptionOrder:
         organization: Organization,
         product: Product,
         setup: ProrationFixture,
+        payment_method: PaymentMethod,
     ) -> None:
         customer = await create_customer(
             save_fixture,
@@ -1255,7 +1317,10 @@ class TestCreateSubscriptionOrder:
             billing_address=Address(country=CountryAlpha2("FR")),
         )
         subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
         )
 
         products = {}

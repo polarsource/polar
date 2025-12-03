@@ -16,6 +16,7 @@ import { useCreateNotificationRecipient } from '@/hooks/polar/notifications'
 import { useOrders } from '@/hooks/polar/orders'
 import { useSubscriptions } from '@/hooks/polar/subscriptions'
 import { useTheme } from '@/hooks/theme'
+import { useStoreReview } from '@/hooks/useStoreReview'
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -103,6 +104,18 @@ export default function Index() {
       createNotificationRecipient(expoPushToken)
     }
   }, [expoPushToken, createNotificationRecipient])
+
+  const { requestReview, shouldShow } = useStoreReview()
+
+  useEffect(() => {
+    const hasOrders = flatOrders.length > 0
+    if (shouldShow(hasOrders)) {
+      const timer = setTimeout(() => {
+        requestReview()
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [shouldShow, flatOrders.length, requestReview])
 
   async function onFetchUpdateAsync() {
     try {

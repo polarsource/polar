@@ -6,10 +6,12 @@ import {
   usePayoutEstimate,
   useTransactionsSummary,
 } from '@/hooks/polar/finance'
+import { useOrders } from '@/hooks/polar/orders'
+import { useStoreReview } from '@/hooks/useStoreReview'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { Stack, useRouter } from 'expo-router'
-import React, { useContext, useRef } from 'react'
+import React, { useContext, useMemo, useRef } from 'react'
 import { SafeAreaView, ScrollView, StyleSheet } from 'react-native'
 
 export default function Index() {
@@ -18,10 +20,16 @@ export default function Index() {
   const { data: account } = useOrganizationAccount(organization?.id)
   const { data: estimate } = usePayoutEstimate(account?.id)
   const { data: summary } = useTransactionsSummary(account?.id)
+  const { data: orders } = useOrders(organization?.id, { limit: 1 })
 
   const router = useRouter()
 
   const { mutateAsync: withdrawFunds, isPending } = useCreatePayout(account?.id)
+  const { requestReview, shouldShow } = useStoreReview()
+
+  const hasOrders = useMemo(() => {
+    return (orders?.pages?.[0]?.items?.length ?? 0) > 0
+  }, [orders])
 
   return (
     <>
@@ -69,6 +77,12 @@ export default function Index() {
           }}
           onSlideComplete={async () => {
             await withdrawFunds({ accountId: account?.id })
+
+            if (shouldShow(hasOrders)) {
+              setTimeout(() => {
+                requestReview()
+              }, 1500)
+            }
 
             router.replace(`/finance`)
           }}

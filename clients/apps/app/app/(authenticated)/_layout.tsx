@@ -1,5 +1,6 @@
 import { ErrorFallback } from '@/components/Errors/Fallback'
 import { useTheme } from '@/hooks/theme'
+import { useAppOpenTracking } from '@/hooks/useAppOpenTracking'
 import NotificationsProvider from '@/providers/NotificationsProvider'
 import { PolarOrganizationProvider } from '@/providers/OrganizationProvider'
 import { PolarClientProvider } from '@/providers/PolarClientProvider'
@@ -18,6 +19,8 @@ const RootLayout = () => {
   const { session } = useSession()
   const queryClient = useQueryClient()
   const router = useRouter()
+
+  useAppOpenTracking()
 
   if (!session) {
     return <Redirect href="/" />

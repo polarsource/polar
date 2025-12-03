@@ -3,6 +3,11 @@
 # Registry Credential
 # =============================================================================
 
+import {
+  to = render_registry_credential.ghcr
+  id = "rgc-d4jjclili9vc738h3eu0"
+}
+
 resource "render_registry_credential" "ghcr" {
   name       = "Registry Credentials for GHCR"
   registry   = "GITHUB"
@@ -27,7 +32,7 @@ locals {
   db_password      = render_postgres.db.connection_info.password
 
   # Read replica connection info
-  read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
+  read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read-test"][0]
 
   # Redis connection info
   redis_host = render_redis.redis.id
@@ -53,8 +58,7 @@ resource "render_postgres" "db" {
   high_availability_enabled = true
 
   read_replicas = [
-    { name = "polar-read" },
-    { name = "polar-replica" }
+    { name = "polar-read-test" },
   ]
 
   lifecycle {
@@ -62,6 +66,8 @@ resource "render_postgres" "db" {
       ip_allow_list,
     ]
   }
+
+  depends_on = [render_registry_credential.ghcr]
 }
 
 resource "render_redis" "redis" {
@@ -73,6 +79,8 @@ resource "render_redis" "redis" {
 
   # Empty IP allow list means only private network connections
   ip_allow_list = []
+
+  depends_on = [render_registry_credential.ghcr]
 }
 
 # =============================================================================
@@ -115,7 +123,7 @@ module "test" {
   }
 
   workers = {
-    worker = {
+    worker-test = {
       start_command      = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
       tag                = "latest"
       dramatiq_prom_port = "10000"
@@ -211,4 +219,6 @@ module "test" {
     username = var.prometheus_remote_write_username
     password = var.prometheus_remote_write_password
   }
+
+  depends_on = [render_registry_credential.ghcr, render_postgres.db, render_redis.redis]
 }

@@ -217,7 +217,7 @@ class TestEventLabel:
         )
 
         assert loaded_event is not None
-        assert loaded_event.label == "Support Request → Billing complaint"
+        assert loaded_event.label == "Billing complaint"
 
     async def test_label_without_property_selector(
         self,
@@ -279,7 +279,7 @@ class TestEventLabel:
         )
 
         assert loaded_event is not None
-        assert loaded_event.label == "LLM Call → gpt-4"
+        assert loaded_event.label == "gpt-4"
 
     async def test_label_with_missing_metadata_value(
         self,

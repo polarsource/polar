@@ -3,22 +3,26 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Sparkline } from '@/components/Sparkline/Sparkline'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
-// import { parseSearchParams, serializeSearchParams } from '@/utils/datatable'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { endOfToday, subMonths } from 'date-fns'
+import { subMonths } from 'date-fns'
 import {
   BadgeDollarSignIcon,
   CircleUserRound,
   MousePointerClickIcon,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
-import { SpansHeader } from './SpansHeader'
-import { SpansTitle } from './SpansTitle'
+import { SpansHeader } from './components/SpansHeader'
+import { SpansTitle } from './components/SpansTitle'
+import {
+  DEFAULT_INTERVAL,
+  getCostsSearchParams,
+  getDefaultEndDate,
+  getDefaultStartDate,
+} from './utils'
 
 type TimeSeriesField = 'average' | 'p95' | 'p99'
 
@@ -47,15 +51,13 @@ const getTimeSeriesValues = (
 }
 
 export default function ClientPage({ organization }: ClientPageProps) {
-  const router = useRouter()
-
   const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
-    parseAsString.withDefault(toISODate(subMonths(endOfToday(), 1))),
+    parseAsString.withDefault(getDefaultStartDate()),
   )
   const [endDateISOString, setEndDateISOString] = useQueryState(
     'endDate',
-    parseAsString.withDefault(toISODate(endOfToday())),
+    parseAsString.withDefault(getDefaultEndDate()),
   )
 
   const [startDate, endDate] = useMemo(() => {
@@ -75,7 +77,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
       'week',
       'month',
       'year',
-    ] as const).withDefault('day'),
+    ] as const).withDefault(DEFAULT_INTERVAL),
   )
 
   const { data: costData, isLoading } = useEventHierarchyStats(
@@ -112,7 +114,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
   return (
     <DashboardBody
       title={<SpansTitle organization={organization} />}
-      wide
       header={
         <SpansHeader
           dateRange={dateRange}
@@ -136,6 +137,9 @@ export default function ClientPage({ organization }: ClientPageProps) {
             periods={costData?.periods || []}
             eventStatistics={totals}
             organization={organization}
+            startDate={startDateISOString}
+            endDate={endDateISOString}
+            interval={interval}
           />
         ))}
       </div>
@@ -147,10 +151,16 @@ function EventStatisticsCard({
   periods,
   eventStatistics,
   organization,
+  startDate,
+  endDate,
+  interval,
 }: {
   periods: schemas['StatisticsPeriod'][]
   eventStatistics: schemas['EventStatistics']
   organization: schemas['Organization']
+  startDate: string
+  endDate: string
+  interval: string
 }) {
   const averageCostValues = useMemo(() => {
     return getTimeSeriesValues(periods, eventStatistics.name, 'average')
@@ -164,9 +174,11 @@ function EventStatisticsCard({
     return getTimeSeriesValues(periods, eventStatistics.name, 'p99')
   }, [periods, eventStatistics.name])
 
+  const searchString = getCostsSearchParams(startDate, endDate, interval)
+
   return (
     <Link
-      href={`/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}`}
+      href={`/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}${searchString ? `?${searchString}` : ''}`}
       className="dark:bg-polar-700 dark:hover:border-polar-600 dark:border-polar-700 @container flex cursor-pointer flex-col gap-4 rounded-2xl border border-gray-100 p-4 transition-colors hover:border-gray-200"
     >
       <div className="flex flex-col justify-between gap-3 @xl:flex-row">

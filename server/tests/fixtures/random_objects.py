@@ -959,6 +959,7 @@ async def create_subscription(
     product: Product,
     prices: Sequence[ProductPrice] | None = None,
     customer: Customer,
+    payment_method: PaymentMethod | None = None,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     tax_exempted: bool = False,
     started_at: datetime | None = None,
@@ -1024,6 +1025,7 @@ async def create_subscription(
         ends_at=ends_at,
         customer=customer,
         product=product,
+        payment_method=payment_method,
         subscription_product_prices=[
             SubscriptionProductPrice.from_price(price, seats=seats) for price in prices
         ],
@@ -1080,6 +1082,7 @@ async def create_active_subscription(
     product: Product,
     prices: Sequence[ProductPrice] | None = None,
     customer: Customer,
+    payment_method: PaymentMethod | None = None,
     tax_exempted: bool = False,
     discount: Discount | None = None,
     started_at: datetime | None = None,
@@ -1098,6 +1101,7 @@ async def create_active_subscription(
         customer=customer,
         tax_exempted=tax_exempted,
         discount=discount,
+        payment_method=payment_method,
         status=SubscriptionStatus.active,
         started_at=started_at or utc_now(),
         ended_at=ended_at,

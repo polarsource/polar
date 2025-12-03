@@ -799,6 +799,8 @@ class OrderService:
             order = await repository.update(
                 order, update_dict={"status": OrderStatus.paid}
             )
+        elif subscription.payment_method_id is None:
+            order = await self.handle_payment_failure(session, order)
         else:
             enqueue_job(
                 "order.trigger_payment",

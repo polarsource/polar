@@ -7,6 +7,7 @@ export enum UpsellKey {
 
 export enum LocalStorageKey {
   DISABLED_UPSELLS = 'disabled_upsells',
+  IOS_APP_BANNER_DISMISSED = 'ios_app_banner_dismissed',
 }
 
 interface DisabledUpsellsStorage {

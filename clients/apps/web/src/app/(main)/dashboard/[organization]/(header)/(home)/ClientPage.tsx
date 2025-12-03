@@ -1,9 +1,9 @@
 'use client'
 
-import LogoIcon from '@/components/Brand/LogoIcon'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import PaymentOnboardingStepper from '@/components/Onboarding/PaymentOnboardingStepper'
+import { IOSAppBanner } from '@/components/Upsell/IOSAppBanner'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
 import { MonthWidget } from '@/components/Widgets/MonthWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
@@ -11,10 +11,8 @@ import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { useMetrics, useOrganizationPaymentStatus } from '@/hooks/queries'
 import { getChartRangeParams, getPreviousParams } from '@/utils/metrics'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import { motion } from 'framer-motion'
-import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -92,18 +90,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
 
   return (
     <DashboardBody className="gap-y-8 pb-16 md:gap-y-12">
-      <div className="dark:bg-polar-900 dark:border-polar-800 flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-3 text-sm md:hidden">
-        <LogoIcon size={24} />
-        <span>Polar for iOS is now available on TestFlight!</span>
-        <Link
-          href="https://testflight.apple.com/join/CwVdc1Jt"
-          target="_blank"
-          className="dark:bg-polar-800 dark:hover:bg-polar-700 self-start rounded-xs bg-gray-100 p-1 text-xs transition-colors hover:bg-gray-200"
-        >
-          <span>Join Beta</span>
-          <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
-        </Link>
-      </div>
+      <IOSAppBanner />
       {paymentStatus && !paymentStatus.payment_ready && (
         <PaymentOnboardingStepper organization={organization} />
       )}

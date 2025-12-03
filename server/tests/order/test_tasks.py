@@ -222,7 +222,7 @@ class TestProcessDunningOrder:
 
         # Then
         assert (
-            "Order subscription has no payment method, skipping dunning" in caplog.text
+            "Order subscription has no payment method, record a failure" in caplog.text
         )
 
     async def test_valid_order_triggers_payment_retry(

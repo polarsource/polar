@@ -1,5 +1,7 @@
+import functools
+import operator
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import TYPE_CHECKING, Self
 from uuid import UUID
@@ -21,6 +23,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.orm.attributes import OP_BULK_REPLACE, Event
 
+from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
@@ -329,6 +332,16 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return type_coerce(
             cls.status.in_(SubscriptionStatus.billable_statuses()),
             Boolean,
+        )
+
+    @property
+    def past_due_deadline(self) -> datetime | None:
+        if self.past_due_at is None:
+            return None
+        return (
+            self.past_due_at
+            + functools.reduce(operator.add, settings.DUNNING_RETRY_INTERVALS)
+            + timedelta(minutes=1)  # Add a minute to make sure we are past the deadline
         )
 
     def can_cancel(self, immediately: bool = False) -> bool:

@@ -123,3 +123,27 @@ resource "tfe_variable" "tfc_aws_run_role_arn" {
   description     = "AWS IAM Role ARN for Terraform Cloud runs"
   variable_set_id = tfe_variable_set.global.id
 }
+
+resource "tfe_variable" "prometheus_remote_write_url" {
+  key             = "prometheus_remote_write_url"
+  category        = "terraform"
+  description     = "Prometheus Remote Write URL"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}
+
+resource "tfe_variable" "prometheus_remote_write_username" {
+  key             = "prometheus_remote_write_username"
+  category        = "terraform"
+  description     = "Prometheus Remote Write Username"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}
+
+resource "tfe_variable" "prometheus_remote_write_password" {
+  key             = "prometheus_remote_write_password"
+  category        = "terraform"
+  description     = "Prometheus Remote Write Password"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}

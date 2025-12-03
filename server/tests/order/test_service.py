@@ -2874,6 +2874,7 @@ class TestProcessDunningOrder:
 
     async def test_process_dunning_order_no_payment_method(
         self,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
@@ -2897,6 +2898,42 @@ class TestProcessDunningOrder:
         order = await order_service.process_dunning_order(session, order)
 
         # Then
+        enqueue_job_mock.assert_not_called()
+        assert (
+            "Order subscription has no payment method, skipping dunning" in caplog.text
+        )
+
+    async def test_process_dunning_order_soft_deleted_payment_method(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        subscription: Subscription,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test that process_dunning_order logs warning for subscriptions with a soft deleted payment method"""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        payment_method.set_deleted_at()
+        await save_fixture(payment_method)
+
+        subscription.payment_method = payment_method
+        await save_fixture(subscription)
+
+        # When
+        order = await order_service.process_dunning_order(session, order)
+
+        # Then
+        enqueue_job_mock.assert_not_called()
         assert (
             "Order subscription has no payment method, skipping dunning" in caplog.text
         )

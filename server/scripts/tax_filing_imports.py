@@ -71,7 +71,7 @@ async def load_transactions_batch(
         .join(Order, Transaction.order_id == Order.id, isouter=True)
         .join(
             Refund,
-            Transaction.polar_refund_id == Refund.id,
+            Transaction.refund_id == Refund.id,
             isouter=True,
         )
         .where(

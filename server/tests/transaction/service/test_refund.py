@@ -98,7 +98,7 @@ class TestCreate:
             ),
         )
         refund_transaction = await create_transaction(
-            save_fixture, type=TransactionType.refund, refund_id="REFUND_ID"
+            save_fixture, type=TransactionType.refund, refund=refund
         )
 
         with pytest.raises(RefundTransactionAlreadyExistsError):
@@ -555,7 +555,7 @@ class TestRevert:
         refund_transaction = await create_transaction(
             save_fixture,
             type=TransactionType.refund,
-            refund_id="REFUND_ID",
+            refund=refund,
             amount=-refund.amount,
         )
 
@@ -740,7 +740,7 @@ class TestRevert:
         refund_transaction = await create_transaction(
             save_fixture,
             type=TransactionType.refund,
-            refund_id="REFUND_ID",
+            refund=refund,
             currency="usd",
             amount=-1500,
             tax_amount=-300,

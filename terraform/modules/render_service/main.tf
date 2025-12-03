@@ -25,8 +25,8 @@ resource "render_env_group" "backend" {
   name           = "backend-${var.environment}"
   env_vars = {
     POLAR_USER_SESSION_COOKIE_DOMAIN           = { value = var.backend_config.user_session_cookie_domain }
+    POLAR_USER_SESSION_COOKIE_KEY              = { value = var.backend_config.user_session_cookie_key }
     POLAR_BASE_URL                             = { value = var.backend_config.base_url }
-    POLAR_BACKOFFICE_HOST                      = { value = var.backend_config.backoffice_host }
     POLAR_DEBUG                                = { value = var.backend_config.debug }
     POLAR_EMAIL_SENDER                         = { value = var.backend_config.email_sender }
     POLAR_EMAIL_FROM_NAME                      = { value = var.backend_config.email_from_name }
@@ -39,29 +39,39 @@ resource "render_env_group" "backend" {
     POLAR_TESTING                              = { value = var.backend_config.testing }
     POLAR_ORGANIZATIONS_BILLING_ENGINE_DEFAULT = { value = var.backend_config.organizations_billing_engine_default }
     POLAR_AUTH_COOKIE_DOMAIN                   = { value = var.backend_config.auth_cookie_domain }
+    POLAR_AUTH_COOKIE_KEY                      = { value = var.backend_config.auth_cookie_key }
     POLAR_INVOICES_ADDITIONAL_INFO             = { value = var.backend_config.invoices_additional_info }
     POLAR_STRIPE_PUBLISHABLE_KEY               = { value = var.backend_secrets.stripe_publishable_key }
     POLAR_CURRENT_JWK_KID                      = { value = var.backend_secrets.current_jwk_kid }
     POLAR_DISCORD_BOT_TOKEN                    = { value = var.backend_secrets.discord_bot_token }
     POLAR_DISCORD_CLIENT_ID                    = { value = var.backend_secrets.discord_client_id }
     POLAR_DISCORD_CLIENT_SECRET                = { value = var.backend_secrets.discord_client_secret }
-    POLAR_DISCORD_WEBHOOK_URL                  = { value = var.backend_secrets.discord_webhook_url }
-    POLAR_LOOPS_API_KEY                        = { value = var.backend_secrets.loops_api_key }
-    POLAR_POSTHOG_PROJECT_API_KEY              = { value = var.backend_secrets.posthog_project_api_key }
     POLAR_RESEND_API_KEY                       = { value = var.backend_secrets.resend_api_key }
     POLAR_SECRET                               = { value = var.backend_secrets.secret }
     POLAR_SENTRY_DSN                           = { value = var.backend_secrets.sentry_dsn }
-    POLAR_PLAIN_REQUEST_SIGNING_SECRET         = { value = var.backend_secrets.plain_request_signing_secret }
-    POLAR_PLAIN_TOKEN                          = { value = var.backend_secrets.plain_token }
-    POLAR_PLAIN_CHAT_SECRET                    = { value = var.backend_secrets.plain_chat_secret }
-    POLAR_APP_REVIEW_EMAIL                     = { value = var.backend_secrets.app_review_email }
-    POLAR_APP_REVIEW_OTP_CODE                  = { value = var.backend_secrets.app_review_otp_code }
   }
 
   secret_files = {
     "jwks.json" = {
       content = var.backend_secrets.jwks
     }
+  }
+}
+
+resource "render_env_group" "backend_production" {
+  count          = var.environment == "production" ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "backend-production-only"
+  env_vars = {
+    POLAR_BACKOFFICE_HOST              = { value = var.backend_config.backoffice_host }
+    POLAR_DISCORD_WEBHOOK_URL          = { value = var.backend_secrets.discord_webhook_url }
+    POLAR_LOOPS_API_KEY                = { value = var.backend_secrets.loops_api_key }
+    POLAR_POSTHOG_PROJECT_API_KEY      = { value = var.backend_secrets.posthog_project_api_key }
+    POLAR_PLAIN_REQUEST_SIGNING_SECRET = { value = var.backend_secrets.plain_request_signing_secret }
+    POLAR_PLAIN_TOKEN                  = { value = var.backend_secrets.plain_token }
+    POLAR_PLAIN_CHAT_SECRET            = { value = var.backend_secrets.plain_chat_secret }
+    POLAR_APP_REVIEW_EMAIL             = { value = var.backend_secrets.app_review_email }
+    POLAR_APP_REVIEW_OTP_CODE          = { value = var.backend_secrets.app_review_otp_code }
   }
 }
 
@@ -108,8 +118,9 @@ resource "render_env_group" "stripe" {
 }
 
 resource "render_env_group" "logfire_server" {
+  count          = var.logfire_config != null ? 1 : 0
   environment_id = var.render_environment_id
-  name           = "logfire-server"
+  name           = "logfire-server${local.env_suffix}"
   env_vars = {
     POLAR_LOGFIRE_PROJECT_NAME = { value = var.logfire_config.server_project_name }
     POLAR_LOGFIRE_TOKEN        = { value = var.logfire_config.server_token }
@@ -117,8 +128,9 @@ resource "render_env_group" "logfire_server" {
 }
 
 resource "render_env_group" "logfire_worker" {
+  count          = var.logfire_config != null ? 1 : 0
   environment_id = var.render_environment_id
-  name           = "logfire-worker"
+  name           = "logfire-worker${local.env_suffix}"
   env_vars = {
     POLAR_LOGFIRE_PROJECT_NAME = { value = var.logfire_config.worker_project_name }
     POLAR_LOGFIRE_TOKEN        = { value = var.logfire_config.worker_token }
@@ -137,12 +149,23 @@ resource "render_env_group" "apple" {
   }
 }
 
+resource "render_env_group" "prometheus" {
+  count          = var.prometheus_config != null ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "prometheus-${var.environment}"
+  env_vars = {
+    POLAR_PROMETHEUS_REMOTE_WRITE_URL      = { value = var.prometheus_config.url }
+    POLAR_PROMETHEUS_REMOTE_WRITE_USERNAME = { value = var.prometheus_config.username }
+    POLAR_PROMETHEUS_REMOTE_WRITE_PASSWORD = { value = var.prometheus_config.password }
+  }
+}
+
 # Services
 
 
 resource "render_web_service" "api" {
   environment_id     = var.render_environment_id
-  name               = "api"
+  name               = "api${local.env_suffix}"
   plan               = "standard"
   region             = "ohio"
   health_check_path  = "/healthz"
@@ -158,12 +181,13 @@ resource "render_web_service" "api" {
 
   lifecycle {
     ignore_changes = [
+      runtime_source.image.image_url,
       runtime_source.image.digest,
       runtime_source.image.tag,
     ]
   }
 
-  autoscaling = {
+  autoscaling = var.environment == "production" ? {
     enabled = true
     min     = 1
     max     = 2
@@ -177,12 +201,9 @@ resource "render_web_service" "api" {
         percentage = 90
       }
     }
-  }
+  } : null
 
-  custom_domains = [
-    { name = "api.polar.sh" },
-    { name = "backoffice.polar.sh" }
-  ]
+  custom_domains = var.api_service_config.custom_domains
 
   env_vars = {
     WEB_CONCURRENCY              = { value = var.api_service_config.web_concurrency }
@@ -227,6 +248,13 @@ resource "render_web_service" "worker" {
     )
   }
 
+  lifecycle {
+    ignore_changes = [
+      runtime_source.image.image_url,
+      runtime_source.image.tag,
+    ]
+  }
+
   custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null
 
   env_vars = {
@@ -248,6 +276,7 @@ resource "render_web_service" "worker" {
 }
 
 locals {
+  env_suffix      = var.environment == "production" ? "" : "-${var.environment}"
   worker_ids      = [for w in render_web_service.worker : w.id]
   all_service_ids = concat([render_web_service.api.id], local.worker_ids)
 }
@@ -273,18 +302,26 @@ resource "render_env_group_link" "backend" {
   service_ids  = local.all_service_ids
 }
 
+resource "render_env_group_link" "backend_production" {
+  count        = var.environment == "production" ? 1 : 0
+  env_group_id = render_env_group.backend_production[0].id
+  service_ids  = local.all_service_ids
+}
+
 resource "render_env_group_link" "stripe" {
   env_group_id = render_env_group.stripe.id
   service_ids  = local.all_service_ids
 }
 
 resource "render_env_group_link" "logfire_server" {
-  env_group_id = render_env_group.logfire_server.id
+  count        = var.logfire_config != null ? 1 : 0
+  env_group_id = render_env_group.logfire_server[0].id
   service_ids  = [render_web_service.api.id]
 }
 
 resource "render_env_group_link" "logfire_worker" {
-  env_group_id = render_env_group.logfire_worker.id
+  count        = var.logfire_config != null ? 1 : 0
+  env_group_id = render_env_group.logfire_worker[0].id
   service_ids  = local.worker_ids
 }
 
@@ -296,4 +333,10 @@ resource "render_env_group_link" "openai" {
 resource "render_env_group_link" "apple" {
   env_group_id = render_env_group.apple.id
   service_ids  = [render_web_service.api.id]
+}
+
+resource "render_env_group_link" "prometheus" {
+  count        = var.prometheus_config != null ? 1 : 0
+  env_group_id = render_env_group.prometheus[0].id
+  service_ids  = local.all_service_ids
 }

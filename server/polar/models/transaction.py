@@ -253,8 +253,6 @@ class Transaction(RecordModel):
     """ID of the customer in the payment processor system."""
     charge_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     """ID of the charge (payment) in the payment processor system."""
-    refund_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
-    """ID of the refund in the payment processor system."""
     dispute_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     """ID of the dispute in the payment processor system."""
     transfer_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
@@ -387,9 +385,7 @@ class Transaction(RecordModel):
             back_populates="balance_transactions",
         )
 
-    # TODO: Hopefully temporary naming. Want to prefix all processor IDs
-    # with `processor_` here and be able to rename this then to `refund_id`
-    polar_refund_id: Mapped[UUID | None] = mapped_column(
+    refund_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("refunds.id", ondelete="set null"),
         nullable=True,

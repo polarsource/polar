@@ -12,6 +12,7 @@ from polar.models import (
     Organization,
     Payout,
     Pledge,
+    Refund,
     Transaction,
     User,
 )
@@ -44,11 +45,11 @@ async def create_transaction(
     pledge: Pledge | None = None,
     issue_reward: IssueReward | None = None,
     order: Order | None = None,
+    refund: Refund | None = None,
     payout_transaction: Transaction | None = None,
     payment_transaction: Transaction | None = None,
     payout: Payout | None = None,
     charge_id: str | None = None,
-    refund_id: str | None = None,
     dispute_id: str | None = None,
     created_at: datetime | None = None,
 ) -> Transaction:
@@ -71,11 +72,11 @@ async def create_transaction(
         pledge=pledge,
         issue_reward=issue_reward,
         order=order,
+        refund=refund,
         payout_transaction=payout_transaction,
         payment_transaction=payment_transaction,
         payout=payout,
         charge_id=charge_id,
-        refund_id=refund_id,
         dispute_id=dispute_id,
         incurred_transactions=[],
     )

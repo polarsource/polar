@@ -25,9 +25,16 @@ variable "allowed_origins" {
   type        = list(string)
 }
 
+variable "public_files_bucket_name" {
+  description = "Override the public files bucket name"
+  type        = string
+  default     = null
+}
+
 locals {
-  name_prefix      = (var.environment == "production" ? "polar" : "polar-${var.environment}")
-  full_name_prefix = "polar-${var.environment}"
+  name_prefix         = (var.environment == "production" ? "polar" : "polar-${var.environment}")
+  full_name_prefix    = "polar-${var.environment}"
+  public_files_bucket = coalesce(var.public_files_bucket_name, "${local.name_prefix}-public-files")
 }
 
 
@@ -101,7 +108,7 @@ resource "aws_s3_bucket_policy" "public_assets" {
 }
 
 resource "aws_s3_bucket" "public_files" {
-  bucket = "${local.name_prefix}-public-files"
+  bucket = local.public_files_bucket
 }
 
 resource "aws_s3_bucket_public_access_block" "public_files" {

@@ -26,6 +26,7 @@ variable "api_service_config" {
   type = object({
     allowed_hosts          = string # "[\"polar.sh\", \"backoffice.polar.sh\"]"
     cors_origins           = string # "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
+    custom_domains         = list(object({ name = string }))
     web_concurrency        = optional(string, "2")
     forwarded_allow_ips    = optional(string, "*")
     database_pool_size     = optional(string, "20")
@@ -100,21 +101,23 @@ variable "openai_secrets" {
 variable "backend_config" {
   description = "Backend environment configuration (non-sensitive)"
   type = object({
-    base_url                             = string # "https://api.polar.sh"
-    backoffice_host                      = string # "backoffice.polar.sh"
-    user_session_cookie_domain           = string # "polar.sh"
-    debug                                = string # "0"
-    email_sender                         = string # "resend"
-    email_from_name                      = string # "Polar"
-    email_from_domain                    = string # "notifications.polar.sh"
-    frontend_base_url                    = string # "https://polar.sh"
-    checkout_base_url                    = string # "https://buy.polar.sh/{client_secret}"
-    jwks_path                            = string # "/etc/secrets/jwks.json"
-    log_level                            = string # "INFO"
-    testing                              = string # "0"
-    organizations_billing_engine_default = string # "1"
-    auth_cookie_domain                   = string # "polar.sh"
-    invoices_additional_info             = string # "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
+    base_url                             = string                 # "https://api.polar.sh"
+    backoffice_host                      = optional(string, null) # "backoffice.polar.sh"
+    user_session_cookie_domain           = string                 # "polar.sh"
+    user_session_cookie_key              = optional(string, "")
+    debug                                = string               # "0"
+    email_sender                         = string               # "resend"
+    email_from_name                      = string               # "Polar"
+    email_from_domain                    = string               # "notifications.polar.sh"
+    frontend_base_url                    = string               # "https://polar.sh"
+    checkout_base_url                    = string               # "https://buy.polar.sh/{client_secret}"
+    jwks_path                            = string               # "/etc/secrets/jwks.json"
+    log_level                            = string               # "INFO"
+    testing                              = string               # "0"
+    organizations_billing_engine_default = string               # "1"
+    auth_cookie_domain                   = string               # "polar.sh"
+    auth_cookie_key                      = optional(string, "") # "polar.sh"
+    invoices_additional_info             = string               # "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
   })
 }
 
@@ -126,18 +129,18 @@ variable "backend_secrets" {
     discord_bot_token            = string
     discord_client_id            = string
     discord_client_secret        = string
-    discord_webhook_url          = string
-    loops_api_key                = string
-    posthog_project_api_key      = string
+    discord_webhook_url          = optional(string, "")
+    loops_api_key                = optional(string, "")
+    posthog_project_api_key      = optional(string, "")
     resend_api_key               = string
     secret                       = string
     sentry_dsn                   = string
-    plain_request_signing_secret = string
-    plain_token                  = string
-    plain_chat_secret            = string
+    plain_request_signing_secret = optional(string, "")
+    plain_token                  = optional(string, "")
+    plain_chat_secret            = optional(string, "")
     jwks                         = string
-    app_review_email             = string
-    app_review_otp_code          = string
+    app_review_email             = optional(string, "")
+    app_review_otp_code          = optional(string, "")
   })
   sensitive = true
 }
@@ -190,13 +193,14 @@ variable "stripe_secrets" {
 }
 
 variable "logfire_config" {
-  description = "Logfire configuration"
+  description = "Logfire configuration (optional)"
   type = object({
     server_project_name = string # "production"
     worker_project_name = string # "production-worker"
     server_token        = string
     worker_token        = string
   })
+  default   = null
   sensitive = true
 }
 variable "apple_secrets" {
@@ -206,6 +210,16 @@ variable "apple_secrets" {
     team_id   = string
     key_id    = string
     key_value = string
+  })
+  sensitive = true
+}
+
+variable "prometheus_config" {
+  description = "Prometheus Remote Write configuration"
+  type = object({
+    url      = string
+    username = string
+    password = string
   })
   sensitive = true
 }

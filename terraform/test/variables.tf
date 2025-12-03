@@ -1,9 +1,3 @@
-# tflint-ignore-file: terraform_unused_declarations
-
-# =============================================================================
-# Variables
-# =============================================================================
-
 variable "ghcr_auth_token" {
   description = "GitHub Container Registry auth token (Personal Access Token with read:packages scope)"
   type        = string
@@ -61,23 +55,6 @@ variable "backend_discord_client_secret" {
   sensitive   = true
 }
 
-variable "backend_discord_webhook_url" {
-  description = "Discord Webhook URL for production"
-  type        = string
-  sensitive   = true
-}
-
-variable "backend_loops_api_key" {
-  description = "Loops API Key for production"
-  type        = string
-  sensitive   = true
-}
-
-variable "backend_posthog_project_api_key" {
-  description = "PostHog Project API Key for production"
-  type        = string
-  sensitive   = true
-}
 
 variable "backend_resend_api_key" {
   description = "Resend API Key for production"
@@ -97,23 +74,6 @@ variable "backend_sentry_dsn" {
   sensitive   = true
 }
 
-variable "backend_plain_request_signing_secret" {
-  description = "Plain Request Signing Secret for production"
-  type        = string
-  sensitive   = true
-}
-
-variable "backend_plain_token" {
-  description = "Plain Token for production"
-  type        = string
-  sensitive   = true
-}
-
-variable "backend_plain_chat_secret" {
-  description = "Plain Chat Secret for production"
-  type        = string
-  sensitive   = true
-}
 
 variable "backend_jwks" {
   description = "Backend JWKS content for production"
@@ -248,6 +208,24 @@ variable "apple_key_id" {
 
 variable "apple_key_value" {
   description = "Apple Key Value"
+  type        = string
+  sensitive   = true
+}
+
+variable "prometheus_remote_write_url" {
+  description = "Prometheus Remote Write URL"
+  type        = string
+  sensitive   = true
+}
+
+variable "prometheus_remote_write_username" {
+  description = "Prometheus Remote Write Username"
+  type        = string
+  sensitive   = true
+}
+
+variable "prometheus_remote_write_password" {
+  description = "Prometheus Remote Write Password"
   type        = string
   sensitive   = true
 }

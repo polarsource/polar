@@ -3,11 +3,12 @@ from typing import Literal
 from unittest.mock import MagicMock
 
 import pytest
+import pytest_asyncio
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
-from polar.models import Customer, Product, Transaction
+from polar.models import Customer, Order, Organization, Payment, Product, Transaction
 from polar.models.transaction import Processor, ProcessorFeeType, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.processor_fee import (
@@ -18,8 +19,10 @@ from polar.transaction.service.processor_fee import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_dispute,
     create_dispute_transaction,
     create_order,
+    create_payment,
     create_payment_transaction,
     create_refund,
     create_refund_transaction,
@@ -32,6 +35,18 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.transaction.service.processor_fee.stripe_service", new=mock)
     return mock
+
+
+@pytest_asyncio.fixture
+async def order(save_fixture: SaveFixture, customer: Customer) -> Order:
+    return await create_order(save_fixture, customer=customer)
+
+
+@pytest_asyncio.fixture
+async def payment(
+    save_fixture: SaveFixture, order: Order, organization: Organization
+) -> Payment:
+    return await create_payment(save_fixture, organization, order=order)
 
 
 @pytest.mark.asyncio
@@ -193,33 +208,23 @@ class TestCreateRefundFees:
 
 @pytest.mark.asyncio
 class TestCreateDisputeFees:
-    async def test_not_stripe(
-        self, session: AsyncSession, save_fixture: SaveFixture
+    async def test_stripe_no_processor_id(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        order: Order,
+        payment: Payment,
     ) -> None:
-        dispute_transaction = await create_dispute_transaction(
-            save_fixture, processor=Processor.open_collective
+        dispute = await create_dispute(
+            save_fixture, order, payment, payment_processor_id=None
         )
-
-        # then
-        session.expunge_all()
+        dispute_transaction = await create_dispute_transaction(save_fixture, dispute)
 
         fee_transactions = await processor_fee_transaction_service.create_dispute_fees(
-            session, dispute_transaction=dispute_transaction, category="dispute"
-        )
-        assert len(fee_transactions) == 0
-
-    async def test_stripe_no_dispute_id(
-        self, session: AsyncSession, save_fixture: SaveFixture
-    ) -> None:
-        dispute_transaction = await create_dispute_transaction(
-            save_fixture, dispute_id=None
-        )
-
-        # then
-        session.expunge_all()
-
-        fee_transactions = await processor_fee_transaction_service.create_dispute_fees(
-            session, dispute_transaction=dispute_transaction, category="dispute"
+            session,
+            dispute=dispute,
+            dispute_transaction=dispute_transaction,
+            category="dispute",
         )
         assert len(fee_transactions) == 0
 
@@ -230,8 +235,11 @@ class TestCreateDisputeFees:
         session: AsyncSession,
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
+        order: Order,
+        payment: Payment,
     ) -> None:
-        dispute_transaction = await create_dispute_transaction(save_fixture)
+        dispute = await create_dispute(save_fixture, order, payment)
+        dispute_transaction = await create_dispute_transaction(save_fixture, dispute)
 
         stripe_service_mock.get_dispute.return_value = (
             stripe_lib.Dispute.construct_from(
@@ -252,11 +260,11 @@ class TestCreateDisputeFees:
             )
         )
 
-        # then
-        session.expunge_all()
-
         fee_transactions = await processor_fee_transaction_service.create_dispute_fees(
-            session, dispute_transaction=dispute_transaction, category=category
+            session,
+            dispute=dispute,
+            dispute_transaction=dispute_transaction,
+            category=category,
         )
         assert len(fee_transactions) == 1
 

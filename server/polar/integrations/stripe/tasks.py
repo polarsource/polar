@@ -9,6 +9,7 @@ from dramatiq import Retry
 
 from polar.account.service import account as account_service
 from polar.checkout.service import NotConfirmedCheckout
+from polar.dispute.service import dispute as dispute_service
 from polar.exceptions import PolarTaskError
 from polar.external_event.service import external_event as external_event_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook, ProductType
@@ -31,12 +32,6 @@ from polar.pledge.service import pledge as pledge_service
 from polar.refund.service import refund as refund_service
 from polar.subscription.service import SubscriptionDoesNotExist, SubscriptionLocked
 from polar.subscription.service import subscription as subscription_service
-from polar.transaction.service.dispute import (
-    DisputeClosed,
-)
-from polar.transaction.service.dispute import (
-    dispute_transaction as dispute_transaction_service,
-)
 from polar.transaction.service.payment import (
     BalanceTransactionNotAvailableError,
 )
@@ -312,20 +307,31 @@ async def refund_failed(event_id: uuid.UUID) -> None:
             await refund_service.upsert_from_stripe(session, stripe_refund=refund)
 
 
+@actor(actor_name="stripe.webhook.charge.dispute.created", priority=TaskPriority.HIGH)
+@stripe_api_connection_error_retry
+async def charge_dispute_created(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
+            await dispute_service.upsert_from_stripe(session, dispute)
+
+
+@actor(actor_name="stripe.webhook.charge.dispute.updated", priority=TaskPriority.HIGH)
+@stripe_api_connection_error_retry
+async def charge_dispute_updated(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
+            await dispute_service.upsert_from_stripe(session, dispute)
+
+
 @actor(actor_name="stripe.webhook.charge.dispute.closed", priority=TaskPriority.HIGH)
 @stripe_api_connection_error_retry
 async def charge_dispute_closed(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
-
-            try:
-                await dispute_transaction_service.create_dispute(
-                    session, dispute=dispute
-                )
-            except DisputeClosed:
-                # The dispute was closed without any action, do nothing
-                pass
+            await dispute_service.upsert_from_stripe(session, dispute)
 
 
 @actor(

@@ -9,7 +9,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Order, Transaction
+from polar.models import Order, Payment, Transaction
 from polar.models.transaction import TransactionType
 
 
@@ -45,6 +45,14 @@ class TransactionRepository(
 
 
 class PaymentTransactionRepository(TransactionRepository):
+    async def get_by_payment_id(self, payment_id: UUID) -> Transaction | None:
+        statement = (
+            self.get_base_statement()
+            .join(Payment, onclause=Transaction.charge_id == Payment.processor_id)
+            .where(Payment.id == payment_id)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_base_statement(
         self, *, include_deleted: bool = False
     ) -> Select[tuple[Transaction]]:
@@ -94,6 +102,23 @@ class RefundTransactionRepository(TransactionRepository):
             super()
             .get_base_statement(include_deleted=include_deleted)
             .where(Transaction.type == TransactionType.refund)
+        )
+
+
+class DisputeTransactionRepository(TransactionRepository):
+    async def get_by_dispute_id(self, dispute_id: UUID) -> Transaction | None:
+        statement = self.get_base_statement().where(
+            Transaction.dispute_id == dispute_id
+        )
+        return await self.get_one_or_none(statement)
+
+    def get_base_statement(
+        self, *, include_deleted: bool = False
+    ) -> Select[tuple[Transaction]]:
+        return (
+            super()
+            .get_base_statement(include_deleted=include_deleted)
+            .where(Transaction.type == TransactionType.dispute)
         )
 
 

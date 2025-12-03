@@ -4,6 +4,7 @@ from sqlalchemy import Select, select
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.enums import PaymentProcessor
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -18,6 +19,15 @@ class DisputeRepository(
     RepositoryBase[Dispute],
 ):
     model = Dispute
+
+    async def get_by_payment_processor_id(
+        self, processor: PaymentProcessor, processor_id: str
+    ) -> Dispute | None:
+        statement = self.get_base_statement().where(
+            Dispute.payment_processor == processor,
+            Dispute.payment_processor_id == processor_id,
+        )
+        return await self.get_one_or_none(statement)
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

@@ -31,6 +31,7 @@ from polar.models import (
     CustomField,
     Discount,
     DiscountProduct,
+    Dispute,
     Event,
     EventType,
     IssueReward,
@@ -90,6 +91,7 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
+from polar.models.dispute import DisputeStatus
 from polar.models.event import EventSource
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
@@ -1678,6 +1680,7 @@ async def create_refund_transaction(
 
 async def create_dispute_transaction(
     save_fixture: SaveFixture,
+    dispute: Dispute,
     *,
     processor: Processor = Processor.stripe,
     currency: str = "usd",
@@ -1697,7 +1700,7 @@ async def create_dispute_transaction(
         account_amount=amount,
         tax_amount=0,
         charge_id=charge_id,
-        dispute_id=dispute_id,
+        dispute=dispute,
         pledge=pledge,
         order=order,
         issue_reward=issue_reward,
@@ -2195,3 +2198,29 @@ async def create_webhook_endpoint(
     )
     await save_fixture(webhook_endpoint)
     return webhook_endpoint
+
+
+async def create_dispute(
+    save_fixture: SaveFixture,
+    order: Order,
+    payment: Payment,
+    *,
+    status: DisputeStatus = DisputeStatus.needs_response,
+    amount: int = 1000,
+    tax_amount: int = 0,
+    currency: str = "usd",
+    payment_processor: PaymentProcessor | None = PaymentProcessor.stripe,
+    payment_processor_id: str | None = "STRIPE_DISPUTE_ID",
+) -> Dispute:
+    dispute = Dispute(
+        status=status,
+        amount=amount,
+        tax_amount=tax_amount,
+        currency=currency,
+        payment_processor=payment_processor,
+        payment_processor_id=payment_processor_id,
+        order=order,
+        payment=payment,
+    )
+    await save_fixture(dispute)
+    return dispute

@@ -1985,20 +1985,26 @@ class OrderService:
         self, session: AsyncSession, order: Order
     ) -> Order:
         """Handle consecutive dunning attempts for an order."""
+        repository = OrderRepository.from_session(session)
+
         payment_repository = PaymentRepository.from_session(session)
         failed_attempts = await payment_repository.count_failed_payments_for_order(
             order.id
         )
 
-        repository = OrderRepository.from_session(session)
+        now = utc_now()
+        subscription = order.subscription
 
-        if failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS):
+        if failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS) or (
+            subscription is not None
+            and subscription.past_due_deadline
+            and subscription.past_due_deadline < now
+        ):
             # No more retries, mark subscription as unpaid and clear retry date
             order = await repository.update(
                 order, update_dict={"next_payment_attempt_at": None}
             )
 
-            subscription = order.subscription
             if subscription is not None and subscription.can_cancel(immediately=True):
                 await subscription_service.revoke(session, subscription)
 
@@ -2006,7 +2012,7 @@ class OrderService:
 
         # Schedule next retry using the appropriate interval
         next_interval = settings.DUNNING_RETRY_INTERVALS[failed_attempts]
-        next_retry_date = utc_now() + next_interval
+        next_retry_date = now + next_interval
 
         order = await repository.update(
             order, update_dict={"next_payment_attempt_at": next_retry_date}
@@ -2051,11 +2057,11 @@ class OrderService:
             is None
         ):
             log.warning(
-                "Order subscription has no payment method, skipping dunning",
+                "Order subscription has no payment method, record a failure",
                 order_id=order.id,
                 subscription_id=order.subscription.id,
             )
-            return order
+            return await self.handle_payment_failure(session, order)
 
         log.info(
             "Processing dunning order",

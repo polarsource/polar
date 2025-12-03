@@ -2876,6 +2876,48 @@ class TestHandlePaymentFailure:
 
         mock_mark_past_due.assert_not_called()
 
+    @freeze_time("2025-01-22 01:00:00")
+    async def test_past_due_deadline_reached(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """
+        Test that order service cancels subscription
+        after the subscription's past due deadline is reached,
+        even if we didn't record enough failed payments.
+        """
+        # Given
+        subscription = await create_subscription(
+            save_fixture,
+            status=SubscriptionStatus.past_due,
+            past_due_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
+        await save_fixture(order)
+
+        mock_revoke = mocker.patch("polar.subscription.service.subscription.revoke")
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is None
+        mock_revoke.assert_called_once()
+
 
 @pytest.mark.asyncio
 class TestProcessDunningOrder:
@@ -2965,7 +3007,7 @@ class TestProcessDunningOrder:
         # Then
         enqueue_job_mock.assert_not_called()
         assert (
-            "Order subscription has no payment method, skipping dunning" in caplog.text
+            "Order subscription has no payment method, record a failure" in caplog.text
         )
 
     async def test_process_dunning_order_soft_deleted_payment_method(
@@ -3000,7 +3042,7 @@ class TestProcessDunningOrder:
         # Then
         enqueue_job_mock.assert_not_called()
         assert (
-            "Order subscription has no payment method, skipping dunning" in caplog.text
+            "Order subscription has no payment method, record a failure" in caplog.text
         )
 
     async def test_process_dunning_order_success(

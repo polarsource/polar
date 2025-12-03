@@ -15,7 +15,14 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
-import { eachDayOfInterval, endOfDay, format, startOfDay, subMonths } from 'date-fns'
+import {
+  eachDayOfInterval,
+  endOfDay,
+  format,
+  startOfDay,
+  subMonths,
+} from 'date-fns'
+import Link from 'next/link'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { SpansHeader } from '../SpansHeader'
@@ -25,6 +32,7 @@ import {
   getDefaultEndDate,
   getDefaultStartDate,
 } from '../utils'
+import { CostEventCustomer } from './components/CostEventCustomer'
 import { EditEventTypeModal } from './EditEventTypeModal'
 
 const PAGE_SIZE = 50
@@ -582,9 +590,6 @@ export default function SpanDetailPage({
   )
 }
 
-import { EventCustomer } from '@/components/Events/EventCustomer'
-import Link from 'next/link'
-
 function getEventCostDeviation(
   eventCost: number,
   averageCost: number,
@@ -655,7 +660,7 @@ function EventRow({
       </td>
 
       <td className="p-2">
-        <EventCustomer event={event} />
+        <CostEventCustomer event={event} />
       </td>
 
       <td className="dark:text-polar-500 p-2 text-sm text-gray-600">

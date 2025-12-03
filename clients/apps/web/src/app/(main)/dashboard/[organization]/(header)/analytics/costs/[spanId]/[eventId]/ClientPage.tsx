@@ -1,11 +1,9 @@
 'use client'
 
-import { AnonymousCustomerAvatar } from '@/components/Customer/AnonymousCustomerAvatar'
 import { useMetadata } from '@/components/Events/EventCard/UserEventCard'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
-import { getAnonymousCustomerName } from '@/utils/anonymousCustomer'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -137,13 +135,10 @@ export default function EventDetailPage({
               </div>
             ) : event.external_customer_id ? (
               <div className="flex flex-row items-center gap-3">
-                <AnonymousCustomerAvatar
-                  externalId={event.external_customer_id}
-                  className="size-11"
-                />
+                <div className="size-11 rounded-full bg-gray-50" />
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-sm">
-                    {getAnonymousCustomerName(event.external_customer_id)[0]}
+                  <span className="dark:text-polar-500 text-sm text-gray-500">
+                    Anonymous
                   </span>
                   <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
                     {event.external_customer_id}

@@ -1,5 +1,6 @@
 'use client'
 
+import { EventCustomer } from '@/components/Events/EventCustomer'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -32,7 +33,6 @@ import {
   getDefaultEndDate,
   getDefaultStartDate,
 } from '../utils'
-import { CostEventCustomer } from './components/CostEventCustomer'
 import { EditEventTypeModal } from './EditEventTypeModal'
 
 const PAGE_SIZE = 50
@@ -660,7 +660,7 @@ function EventRow({
       </td>
 
       <td className="p-2">
-        <CostEventCustomer event={event} />
+        <EventCustomer event={event} />
       </td>
 
       <td className="dark:text-polar-500 p-2 text-sm text-gray-600">

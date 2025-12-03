@@ -61,7 +61,7 @@ const Avatar = ({
   return (
     <div
       className={cn(
-        'dark:bg-polar-900 dark:border-polar-700 dark:text-polar-500 relative z-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-50 text-[10px] text-gray-700',
+        'dark:bg-polar-900 dark:border-polar-700 dark:text-polar-500 relative z-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-50 font-sans text-[10px] text-gray-700',
         className,
       )}
     >
@@ -101,7 +101,8 @@ export default AvatarWrapper
 
 const getInitials = (fullName: string) => {
   const allNames = fullName
-    .replace(/[^a-zA-Z ]/g, '')
+    .split('@')[0] // In case it's passed an email
+    .replace(/[^a-zA-Z ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .split(' ')

@@ -3,6 +3,11 @@
 # Registry Credential
 # =============================================================================
 
+import {
+  to = render_registry_credential.ghcr
+  id = "rgc-d4jjclili9vc738h3eu0"
+}
+
 resource "render_registry_credential" "ghcr" {
   name       = "Registry Credentials for GHCR"
   registry   = "GITHUB"

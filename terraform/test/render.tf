@@ -66,6 +66,8 @@ resource "render_postgres" "db" {
       ip_allow_list,
     ]
   }
+
+  depends_on = [render_registry_credential.ghcr]
 }
 
 resource "render_redis" "redis" {
@@ -77,6 +79,8 @@ resource "render_redis" "redis" {
 
   # Empty IP allow list means only private network connections
   ip_allow_list = []
+
+  depends_on = [render_registry_credential.ghcr]
 }
 
 # =============================================================================
@@ -215,4 +219,6 @@ module "test" {
     username = var.prometheus_remote_write_username
     password = var.prometheus_remote_write_password
   }
+
+  depends_on = [render_registry_credential.ghcr, render_postgres.db, render_redis.redis]
 }

@@ -181,4 +181,6 @@ module "sandbox" {
     username = var.prometheus_remote_write_username
     password = var.prometheus_remote_write_password
   }
+
+  depends_on = [render_registry_credential.ghcr, data.render_postgres.db, data.render_redis.redis]
 }

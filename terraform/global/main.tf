@@ -147,3 +147,11 @@ resource "tfe_variable" "prometheus_remote_write_password" {
   sensitive       = true
   variable_set_id = tfe_variable_set.global.id
 }
+
+resource "tfe_variable" "cloudflare_api_token" {
+  key             = "CLOUDFLARE_API_TOKEN"
+  category        = "env"
+  description     = "Cloudflare API token for handling domain configuration"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+}

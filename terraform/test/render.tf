@@ -90,7 +90,7 @@ resource "render_redis" "redis" {
 module "test" {
   source = "../modules/render_service"
 
-  environment            = "sandbox"
+  environment            = "test"
   render_environment_id  = local.environment_id
   registry_credential_id = render_registry_credential.ghcr.id
 
@@ -140,6 +140,7 @@ module "test" {
   }
 
   backend_config = {
+    environment                          = "sandbox"
     base_url                             = "https://test-api.polar.sh"
     user_session_cookie_domain           = "polar.sh"
     user_session_cookie_key              = "polar_test_session"

@@ -91,6 +91,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
+from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import is_custom_price, is_seat_price, is_static_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -1038,25 +1039,30 @@ class OrderService:
                     raise CardPaymentFailed(order, e) from e
                 except stripe_lib.InvalidRequestError as e:
                     error = e.error
-                    if (
-                        error is not None
-                        and error.message
-                        and (
-                            "requires a mandate" in error.message.lower()
-                            or "detached from a customer" in error.message.lower()
-                        )
-                    ):
-                        log.info(
-                            "Invalid or expired payment method",
-                            order_id=order.id,
-                            error_code=e.code,
-                            error_message=e.user_message,
-                        )
+                    if error is not None and error.message:
+                        message = error.message.lower()
+                        if (
+                            "requires a mandate" in message
+                            or "detached from a customer" in message
+                            or "does not belong to the customer"
+                        ):
+                            log.info(
+                                "Invalid or expired payment method",
+                                order_id=order.id,
+                                error_code=e.code,
+                                error_message=e.user_message,
+                            )
 
-                        # Mark the payment as failed to trigger dunning
-                        await self.handle_payment_failure(session, order)
+                            # Delete the payment method as it's no longer valid
+                            await payment_method_service.delete(
+                                session, payment_method, force=True
+                            )
 
-                        raise CardPaymentFailed(order, e) from e
+                            # Mark the payment as failed to trigger dunning
+                            await self.handle_payment_failure(session, order)
+
+                            raise CardPaymentFailed(order, e) from e
+
                     raise
 
     async def process_retry_payment(

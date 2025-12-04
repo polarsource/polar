@@ -199,6 +199,7 @@ class PaymentMethodService:
         self,
         session: AsyncSession,
         payment_method: PaymentMethod,
+        force: bool = False,
     ) -> None:
         billable_subscription_ids = await self._get_billable_subscription_ids(
             session, payment_method
@@ -216,7 +217,7 @@ class PaymentMethodService:
                     to_payment_method=alternative_payment_method,
                     subscription_ids=billable_subscription_ids,
                 )
-            else:
+            elif not force:
                 # No alternative payment method available, raise exception
                 raise PaymentMethodInUseByActiveSubscription(billable_subscription_ids)
 

@@ -24,8 +24,9 @@ import {
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { CellContext } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import React, { useCallback } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { WebhookStatusFilterValue } from './WebhookStatusFilter'
 
 interface DeliveriesTableProps {
   organization: schemas['Organization']
@@ -33,6 +34,7 @@ interface DeliveriesTableProps {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   dateRange?: DateRange
+  statusFilter?: WebhookStatusFilterValue
 }
 
 type DeliveryRow = schemas['WebhookDelivery'] & {
@@ -45,6 +47,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   pagination,
   sorting,
   dateRange,
+  statusFilter,
 }) => {
   const getSearchParams = (
     pagination: DataTablePaginationState,
@@ -99,7 +102,16 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
     ...(dateRange?.to ? { end_timestamp: dateRange.to } : {}),
   })
 
-  const deliveries: DeliveryRow[] = deliveriesHook.data?.items || []
+  const deliveries: DeliveryRow[] = useMemo(() => {
+    const items = deliveriesHook.data?.items || []
+    if (!statusFilter || statusFilter === 'all') {
+      return items
+    }
+    return items.filter((delivery) =>
+      statusFilter === 'succeeded' ? delivery.succeeded : !delivery.succeeded,
+    )
+  }, [deliveriesHook.data?.items, statusFilter])
+
   const rowCount = deliveriesHook.data?.pagination.total_count ?? 0
   const pageCount = deliveriesHook.data?.pagination.max_page ?? 1
 

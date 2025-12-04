@@ -151,7 +151,7 @@ module "test" {
     user_session_cookie_domain           = "polar.sh"
     user_session_cookie_key              = "polar_test_session"
     debug                                = "0"
-    email_sender                         = "resend"
+    email_sender                         = "logger"
     email_from_name                      = "[TEST] Polar"
     email_from_domain                    = "notifications.test.polar.sh"
     frontend_base_url                    = "https://test.polar.sh"

@@ -1,4 +1,5 @@
 import { useInfiniteEvents } from '@/hooks/queries/events'
+import { getAnonymousCustomerName } from '@/utils/anonymous-customer'
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
 import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
 import { schemas } from '@polar-sh/client'
@@ -13,6 +14,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { AnonymousCustomerAvatar } from '../Customer/AnonymousCustomerAvatar'
 import { EventCustomer } from './EventCustomer'
 import { EventSourceBadge } from './EventSourceBadge'
 import { useEventCard, useEventCostBadge } from './utils'
@@ -170,7 +172,7 @@ export const EventRow = ({
                   </Button>
                 </Link>
               ) : null
-            ) : (
+            ) : event.customer ? (
               <Tooltip>
                 <TooltipTrigger>
                   <Link
@@ -181,7 +183,7 @@ export const EventRow = ({
                     }}
                   >
                     <Avatar
-                      className="text-xxs h-6 w-6 font-sans"
+                      className="text-xxs size-6"
                       name={
                         event.customer?.name ?? event.customer?.email ?? '—'
                       }
@@ -192,7 +194,7 @@ export const EventRow = ({
                 <TooltipContent side="top" align="end">
                   <div className="flex flex-row items-center gap-x-2 font-sans">
                     <Avatar
-                      className="text-xxs h-8 w-8 font-sans"
+                      className="text-xxs size-8"
                       name={
                         event.customer?.name ?? event.customer?.email ?? '—'
                       }
@@ -209,7 +211,36 @@ export const EventRow = ({
                   </div>
                 </TooltipContent>
               </Tooltip>
-            )}
+            ) : event.external_customer_id ? (
+              <Tooltip>
+                <TooltipTrigger>
+                  <AnonymousCustomerAvatar
+                    externalId={event.external_customer_id}
+                    className="size-6"
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end">
+                  <div className="flex flex-row items-center gap-x-2 font-sans">
+                    <AnonymousCustomerAvatar
+                      className="text-xxs size-8"
+                      externalId={event.external_customer_id}
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-xs">
+                        {
+                          getAnonymousCustomerName(
+                            event.external_customer_id,
+                          )[0]
+                        }
+                      </span>
+                      <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
+                        {event.external_customer_id}
+                      </span>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : null}
           </div>
         </div>
         {isExpanded ? eventCard : null}

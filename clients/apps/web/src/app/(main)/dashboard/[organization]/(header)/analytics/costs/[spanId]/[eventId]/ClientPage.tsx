@@ -93,7 +93,7 @@ export default function EventDetailPage({
       header={<div className="h-10" />}
       className="flex flex-col gap-y-8"
     >
-      <div className="dark:border-polar-700 dark:bg-polar-900 flex flex-col gap-y-6 rounded-2xl border border-gray-200 bg-gray-50 p-6">
+      <div className="animate-in fade-in slide-in-from-bottom-2 dark:border-polar-700 dark:bg-polar-900 flex flex-col gap-y-6 rounded-2xl border border-gray-200 bg-gray-50 p-6 duration-300">
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-row items-start justify-between gap-x-4">
             <div className="flex flex-col gap-y-1">
@@ -113,7 +113,7 @@ export default function EventDetailPage({
               </span>
             </div>
             {'_cost' in event.metadata && event.metadata._cost && (
-              <span className="dark:text-polar-400 font-mono text-3xl text-gray-600">
+              <span className="dark:text-polar-400 font-mono text-3xl text-gray-600 tabular-nums">
                 {formatSubCentCurrency(
                   Number(event.metadata._cost?.amount ?? 0),
                   event.metadata._cost?.currency ?? 'usd',
@@ -176,6 +176,7 @@ export default function EventDetailPage({
               event={child}
               parentEvent={event}
               isLast={index === eventTree.childEvents.length - 1}
+              index={index}
             />
           ))}
         </div>
@@ -215,7 +216,7 @@ function DataCard({
   return (
     <div
       className={twMerge(
-        'dark:border-polar-700 flex flex-col gap-4 rounded-2xl border border-gray-200 px-4 pt-3.5 pb-4 text-sm',
+        'dark:border-polar-700 dark:hover:border-polar-600 flex flex-col gap-4 rounded-2xl border border-gray-200 px-4 pt-3.5 pb-4 text-sm transition-colors duration-150 hover:border-gray-300',
         variant === 'muted' && 'opacity-50',
       )}
     >
@@ -306,11 +307,13 @@ function TreeNode({
   parentEvent,
   depth = 0,
   isLast = false,
+  index = 0,
 }: {
   event: EventTreeNode
   parentEvent?: schemas['Event']
   depth?: number
   isLast?: boolean
+  index?: number
 }) {
   const formattedTimestamp = useMemo(() => {
     if (parentEvent) {
@@ -365,8 +368,14 @@ function TreeNode({
 
   const showEventType = event.label !== event.name
 
+  // Staggered animation delay based on index and depth
+  const animationDelay = `${index * 50 + depth * 25}ms`
+
   return (
-    <div className="relative flex gap-x-4">
+    <div
+      className="animate-in fade-in slide-in-from-bottom-2 group relative flex gap-x-4"
+      style={{ animationDelay, animationFillMode: 'backwards' }}
+    >
       <div className="flex flex-col items-center pt-1.5">
         <div className="dark:bg-polar-500 h-3 w-3 shrink-0 rounded-full bg-gray-400" />
         {!isLast && (
@@ -375,7 +384,7 @@ function TreeNode({
       </div>
 
       <div className="flex flex-1 flex-col gap-y-4 pb-8">
-        <div className="flex flex-col gap-y-1">
+        <div className="-ml-1 flex flex-col gap-y-1 rounded-lg p-1 transition-colors duration-150">
           <div className="flex flex-row items-center justify-between gap-2">
             <div className="flex flex-row items-center gap-2">
               <span className="text-base font-medium">{event.label}</span>
@@ -392,7 +401,7 @@ function TreeNode({
             </div>
 
             {costDisplay && (
-              <span className="dark:text-polar-500 font-mono text-base text-gray-500">
+              <span className="dark:text-polar-500 dark:group-hover:text-polar-300 font-mono text-base text-gray-500 tabular-nums transition-colors duration-150 group-hover:text-gray-700">
                 {costDisplay}
               </span>
             )}
@@ -408,13 +417,14 @@ function TreeNode({
 
         {event.childEvents.length > 0 && (
           <div className="flex flex-col">
-            {event.childEvents.map((child, index) => (
+            {event.childEvents.map((child, childIndex) => (
               <TreeNode
                 key={child.id}
                 event={child}
                 parentEvent={event}
                 depth={depth + 1}
-                isLast={index === event.childEvents.length - 1}
+                isLast={childIndex === event.childEvents.length - 1}
+                index={childIndex}
               />
             ))}
           </div>

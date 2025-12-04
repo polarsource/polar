@@ -278,9 +278,6 @@ importers:
       '@hookform/error-message':
         specifier: ^2.0.1
         version: 2.0.1(react-dom@19.2.1(react@19.2.1))(react-hook-form@7.66.1(react@19.2.1))(react@19.2.1)
-      '@lucide/lab':
-        specifier: ^0.1.2
-        version: 0.1.2
       '@mdx-js/loader':
         specifier: ^3.1.1
         version: 3.1.1(webpack@5.102.1)
@@ -2450,9 +2447,6 @@ packages:
     peerDependenciesMeta:
       zod-to-json-schema:
         optional: true
-
-  '@lucide/lab@0.1.2':
-    resolution: {integrity: sha512-VprF2BJa7ZuTGOhUd5cf8tHJXyL63wdxcGieAiVVoR9hO0YmPsnZO0AGqDiX2/br+/MC6n8BoJcmPilltOXIJA==}
 
   '@manypkg/cli@0.25.1':
     resolution: {integrity: sha512-lag906FyiNxzZjsRErkUD5/to174I2JzPk5bZubuJp6loMKKJn73zrtqeU7nHlVkHBg3tgXDTJj22HxUDxLRXw==}
@@ -12861,8 +12855,6 @@ snapshots:
     transitivePeerDependencies:
       - react
       - react-dom
-
-  '@lucide/lab@0.1.2': {}
 
   '@manypkg/cli@0.25.1':
     dependencies:

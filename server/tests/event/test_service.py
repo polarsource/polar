@@ -17,18 +17,40 @@ from polar.event.schemas import (
 )
 from polar.event.service import event as event_service
 from polar.event.sorting import EventNamesSortProperty
+from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.time_queries import TimeInterval
 from polar.kit.utils import utc_now
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
-from polar.models import Customer, EventType, Organization, User, UserOrganization
+from polar.models import (
+    Customer,
+    EventType,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
+from polar.models.checkout import CheckoutStatus
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.event import EventSource
+from polar.models.order import OrderStatus
+from polar.models.subscription import CustomerCancellationReason
+from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
+from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_event
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_checkout,
+    create_customer,
+    create_discount,
+    create_event,
+    create_order,
+    create_payment,
+)
 
 
 @pytest.fixture
@@ -1234,3 +1256,211 @@ class TestIngested:
 
         await session.refresh(organization)
         assert organization.feature_settings.get("revops_enabled", False) is False
+
+
+@pytest.mark.asyncio
+class TestSystemEvents:
+    @pytest.fixture
+    def stripe_service_mock(self, mocker: Any) -> Any:
+        mock = mocker.patch("polar.order.service.stripe_service")
+        mock.create_tax_transaction.return_value = None
+        return mock
+
+    async def test_order_paid_one_time(
+        self,
+        stripe_service_mock: Any,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_one_time: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product_one_time,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        await order_service.handle_payment(session, order, payment)
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(SystemEvent.order_paid)
+        assert len(events) == 1
+        event = events[0]
+
+        assert event.customer_id == customer.id
+        assert event.organization_id == organization.id
+        assert event.user_metadata["order_id"] == str(order.id)
+        assert event.user_metadata["amount"] == order.total_amount
+        assert event.user_metadata["currency"] == order.currency
+        assert event.user_metadata["net_amount"] == order.net_amount
+        assert event.user_metadata["tax_amount"] == order.tax_amount
+        assert (
+            event.user_metadata["applied_balance_amount"]
+            == order.applied_balance_amount
+        )
+        assert event.user_metadata["discount_amount"] == order.discount_amount
+        assert event.user_metadata["platform_fee"] == order.platform_fee_amount
+        assert "subscription_id" not in event.user_metadata
+        assert "subscription_type" not in event.user_metadata
+        assert "discount_id" not in event.user_metadata
+
+    async def test_order_paid_subscription(
+        self,
+        stripe_service_mock: Any,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        await order_service.handle_payment(session, order, payment)
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(SystemEvent.order_paid)
+        assert len(events) == 1
+        event = events[0]
+
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["subscription_type"] == "month"
+
+    async def test_order_paid_with_discount(
+        self,
+        stripe_service_mock: Any,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amount=1000,
+            currency="usd",
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            status=OrderStatus.pending,
+        )
+
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        await order_service.handle_payment(session, order, payment)
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(SystemEvent.order_paid)
+        assert len(events) == 1
+        event = events[0]
+
+        assert event.user_metadata["discount_id"] == str(discount.id)
+
+    async def test_subscription_created(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+        )
+
+        subscription, _ = await subscription_service.create_or_update_from_checkout(
+            session, checkout
+        )
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_created
+        )
+        assert len(events) == 1
+        event = events[0]
+
+        assert event.customer_id == customer.id
+        assert event.organization_id == organization.id
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["product_id"] == str(product.id)
+        assert event.user_metadata["amount"] == subscription.amount
+        assert event.user_metadata["currency"] == subscription.currency
+        assert event.user_metadata["recurring_interval"] == "month"
+        assert event.user_metadata["recurring_interval_count"] == 1
+        assert "started_at" in event.user_metadata
+
+    async def test_subscription_canceled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        await subscription_service.cancel(
+            session,
+            subscription,
+            customer_reason=CustomerCancellationReason.too_expensive,
+            customer_comment="Too pricey for me",
+        )
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_canceled
+        )
+        assert len(events) == 1
+        event = events[0]
+
+        assert event.customer_id == customer.id
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["customer_cancellation_reason"] == "too_expensive"
+        assert (
+            event.user_metadata["customer_cancellation_comment"] == "Too pricey for me"
+        )
+        assert "canceled_at" in event.user_metadata
+        assert "ends_at" in event.user_metadata

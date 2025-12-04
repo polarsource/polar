@@ -976,6 +976,16 @@ class TestCycle:
         assert len(events) == 1
         event = events[0]
         assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["amount"] == subscription.amount
+        assert event.user_metadata["currency"] == subscription.currency
+        assert (
+            event.user_metadata["recurring_interval"]
+            == subscription.recurring_interval.value
+        )
+        assert (
+            event.user_metadata["recurring_interval_count"]
+            == subscription.recurring_interval_count
+        )
         assert event.customer_id == customer.id
         assert event.organization_id == customer.organization_id
 

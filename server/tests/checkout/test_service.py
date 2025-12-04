@@ -35,6 +35,8 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
 from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
+from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent
 from polar.exceptions import PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
@@ -4533,3 +4535,32 @@ class TestHandleFailure:
             await discount_redemption_repository.get_by_id(discount_redemption.id)
             is None
         )
+
+
+@pytest.mark.asyncio
+class TestCheckoutCreatedEvent:
+    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
+    async def test_event_created(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(product_price_id=price.id),
+            auth_subject,
+        )
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(SystemEvent.checkout_created)
+
+        assert len(events) == 1
+        event = events[0]
+        assert event.organization_id == checkout.organization_id
+        assert event.customer_id is None
+        assert event.user_metadata["checkout_id"] == str(checkout.id)
+        assert event.user_metadata["checkout_status"] == checkout.status
+        assert event.user_metadata["product_id"] == str(checkout.product_id)

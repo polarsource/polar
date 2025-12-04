@@ -3,6 +3,10 @@
 import { AnonymousCustomerAvatar } from '@/components/Customer/AnonymousCustomerAvatar'
 import { useMetadata } from '@/components/Events/EventCard/UserEventCard'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import {
+  SyntaxHighlighterClient,
+  SyntaxHighlighterProvider,
+} from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
 import { getAnonymousCustomerName } from '@/utils/anonymous-customer'
@@ -253,9 +257,14 @@ const SpanEventDetailsCard = ({
           variant={hasMetadata ? 'default' : 'muted'}
         >
           {hasMetadata ? (
-            <pre className="font-mono text-xs whitespace-pre-wrap select-text">
-              {JSON.stringify(metadataToRender, null, 2)}
-            </pre>
+            <div className="text-xs [&_code]:bg-transparent! [&_pre]:bg-transparent!">
+              <SyntaxHighlighterProvider>
+                <SyntaxHighlighterClient
+                  lang="javascript"
+                  code={JSON.stringify(metadataToRender, null, 2)}
+                />
+              </SyntaxHighlighterProvider>
+            </div>
           ) : (
             <p className="dark:text-polar-500 text-center text-sm text-gray-500 italic">
               Assign metadata to your events for improved analytics.

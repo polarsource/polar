@@ -236,6 +236,9 @@ class Settings(BaseSettings):
     # Loops
     LOOPS_API_KEY: str | None = None
 
+    # Logo.dev (for company logo avatars)
+    LOGO_DEV_TOKEN: str | None = None
+
     # Logfire
     LOGFIRE_TOKEN: str | None = None
     LOGFIRE_IGNORED_ACTORS: set[str] = {

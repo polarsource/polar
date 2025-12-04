@@ -6,6 +6,7 @@ from annotated_types import MaxLen
 from fastapi import Path
 from pydantic import UUID4, Field, computed_field
 
+from polar.config import settings
 from polar.kit.address import Address, AddressInput
 from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
@@ -39,6 +40,23 @@ _email_description = (
 _email_example = "customer@example.com"
 _name_description = "The name of the customer."
 _name_example = "John Doe"
+
+_personal_email_domains: set[str] = {
+    "gmail.com",
+    "yahoo.com",
+    "hotmail.com",
+    "outlook.com",
+    "aol.com",
+    "icloud.com",
+    "mail.com",
+    "protonmail.com",
+    "zoho.com",
+    "gmx.com",
+    "yandex.com",
+    "msn.com",
+    "live.com",
+    "qq.com",
+}
 
 CustomerNameInput = Annotated[
     str,
@@ -127,8 +145,13 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
 
     @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])
     def avatar_url(self) -> str:
-        email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
-        return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
+        domain = self.email.split("@")[-1].lower()
+
+        if not settings.LOGO_DEV_TOKEN or domain in _personal_email_domains:
+            email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
+            return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
+
+        return f"https://img.logo.dev/{domain}?token={settings.LOGO_DEV_TOKEN}&fallback=404"
 
 
 class Customer(CustomerBase):

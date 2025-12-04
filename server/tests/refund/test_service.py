@@ -15,6 +15,7 @@ from polar.models import (
     Product,
     Transaction,
 )
+from polar.models.dispute import DisputeAlertProcessor
 from polar.models.order import OrderStatus
 from polar.models.pledge import PledgeState
 from polar.models.refund import RefundReason, RefundStatus
@@ -24,13 +25,15 @@ from polar.order.service import order as order_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
-from polar.refund.service import RefundedAlready
+from polar.refund.service import MissingRelatedDispute, RefundedAlready
 from polar.refund.service import refund as refund_service
 from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_dispute,
     create_order,
     create_order_and_payment,
+    create_payment,
     create_payment_transaction,
     create_pledge,
     create_refund,
@@ -619,6 +622,71 @@ class TestCreate(StripeRefund):
         assert updated_order.status == OrderStatus.partially_refunded
         assert updated_order.refunded_amount == 600
         assert updated_order.refunded_tax_amount == 150
+
+    async def test_missing_related_dispute(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order, payment = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+
+        stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=100,
+            id="re_stripe_refund_1337",
+            charge_id=payment.charge_id,
+            metadata={"cbs_related_alert_id": "CHARGEBACK_STOP_ALERT_ID"},
+        )
+
+        with pytest.raises(MissingRelatedDispute):
+            await refund_service.create_from_stripe(session, stripe_refund)
+
+    async def test_existing_related_dispute(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order, transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+        payment = await create_payment(
+            save_fixture, organization, processor_id=transaction.charge_id
+        )
+        dispute = await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            payment_processor_id=None,
+            alert_processor=DisputeAlertProcessor.chargeback_stop,
+            alert_processor_id="CHARGEBACK_STOP_ALERT_ID",
+        )
+
+        stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=100,
+            id="re_stripe_refund_1337",
+            charge_id=payment.processor_id,
+            metadata={"cbs_related_alert_id": "CHARGEBACK_STOP_ALERT_ID"},
+        )
+
+        refund = await refund_service.create_from_stripe(session, stripe_refund)
+
+        assert dispute.refund == refund
 
 
 @pytest.mark.asyncio

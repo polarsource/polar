@@ -91,7 +91,7 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
-from polar.models.dispute import DisputeStatus
+from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.models.event import EventSource
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
@@ -2211,6 +2211,8 @@ async def create_dispute(
     currency: str = "usd",
     payment_processor: PaymentProcessor | None = PaymentProcessor.stripe,
     payment_processor_id: str | None = "STRIPE_DISPUTE_ID",
+    alert_processor: DisputeAlertProcessor | None = None,
+    alert_processor_id: str | None = None,
 ) -> Dispute:
     dispute = Dispute(
         status=status,
@@ -2219,8 +2221,11 @@ async def create_dispute(
         currency=currency,
         payment_processor=payment_processor,
         payment_processor_id=payment_processor_id,
+        dispute_alert_processor=alert_processor,
+        dispute_alert_processor_id=alert_processor_id,
         order=order,
         payment=payment,
+        refund=None,
     )
     await save_fixture(dispute)
     return dispute

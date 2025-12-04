@@ -10,6 +10,7 @@ from sqlalchemy.dialects import postgresql
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.customer.repository import CustomerRepository
+from polar.dispute.repository import DisputeRepository
 from polar.event.service import event as event_service
 from polar.event.system import OrderRefundedMetadata, SystemEvent, build_system_event
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
@@ -21,6 +22,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
+    Dispute,
     Order,
     Organization,
     Pledge,
@@ -28,6 +30,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.dispute import DisputeAlertProcessor
 from polar.models.refund import Refund, RefundReason, RefundStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
@@ -100,6 +103,14 @@ class RefundsBlocked(RefundError):
         self.order = order
         message = f"Refunds are blocked for order: {order.id}"
         super().__init__(message, 403)
+
+
+class MissingRelatedDispute(RefundError):
+    def __init__(self, id: str, related_dispute_id: str) -> None:
+        self.id = id
+        self.related_dispute_id = related_dispute_id
+        message = f"Refund {id} is missing related dispute {related_dispute_id}"
+        super().__init__(message)
 
 
 class RefundService(ResourceServiceReader[Refund]):
@@ -263,7 +274,21 @@ class RefundService(ResourceServiceReader[Refund]):
             order=order,
             pledge=pledge,
         )
-        return await self._create(
+
+        # Check if there are disputes to link
+        dispute_repository = DisputeRepository.from_session(session)
+        dispute: Dispute | None = None
+        if stripe_refund.metadata and (
+            alert_id := stripe_refund.metadata.get("cbs_related_alert_id")
+        ):
+            dispute = await dispute_repository.get_by_alert_processor_id(
+                DisputeAlertProcessor.chargeback_stop, alert_id
+            )
+            # Dispute is missing, raise error, the task will be retried later
+            if dispute is None:
+                raise MissingRelatedDispute(stripe_refund.id, alert_id)
+
+        refund = await self._create(
             session,
             internal_create_schema,
             charge_id=charge_id,
@@ -271,6 +296,11 @@ class RefundService(ResourceServiceReader[Refund]):
             order=order,
             pledge=pledge,
         )
+
+        if dispute is not None:
+            await dispute_repository.update(dispute, update_dict={"refund": refund})
+
+        return refund
 
     async def update_from_stripe(
         self,

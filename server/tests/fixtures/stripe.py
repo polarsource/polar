@@ -339,6 +339,7 @@ def build_stripe_refund(
     charge_id: str | None = None,
     payment_intent: str | None = None,
     balance_transaction: str | None = None,
+    metadata: dict[str, str] | None = None,
 ) -> stripe_lib.Refund:
     if not id:
         id = str(generate_uuid()).replace("-", "")
@@ -360,6 +361,7 @@ def build_stripe_refund(
             "balance_transaction": balance_transaction,
             "receipt_number": None,
             "payment_intent": payment_intent,
+            "metadata": metadata or {},
         },
         None,
     )

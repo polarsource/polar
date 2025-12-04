@@ -14,7 +14,6 @@ import { BadgeDollarSignIcon, BotIcon, BracesIcon } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { SpansTitle } from '../../components/SpansTitle'
 
 const PAGE_SIZE = 50
 
@@ -100,72 +99,98 @@ export default function EventDetailPage({
 
   return (
     <DashboardBody
-      title={<SpansTitle organization={organization} eventType={eventType} />}
-      header={<div className="h-10" />}
+      title=""
       className="flex flex-col gap-y-12"
-    >
-      <div className="flex flex-col gap-y-4">
-        <div className="flex flex-row items-center justify-between gap-x-4">
-          <h3 className="text-3xl font-medium">{event.label}</h3>
-          {'_cost' in event.metadata && event.metadata._cost && (
-            <h3 className="dark:text-polar-500 font-mono text-4xl text-gray-400">
-              {formatSubCentCurrency(
-                Number(event.metadata._cost?.amount ?? 0),
-                event.metadata._cost?.currency ?? 'usd',
-              )}
-            </h3>
-          )}
-        </div>
-
-        <div className="flex flex-row items-start justify-between gap-x-4">
-          <div>
-            {event.customer ? (
-              <div className="flex flex-row items-center gap-3">
-                <Avatar
-                  className="size-11"
-                  name={event.customer.name ?? event.customer.email}
-                  avatar_url={event.customer.avatar_url ?? null}
-                />
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm">
-                    {event.customer.name ?? event.customer.email}
-                  </span>
-                  <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
-                    {event.external_customer_id ?? ''}
-                  </span>
-                </div>
-              </div>
-            ) : event.external_customer_id ? (
-              <div className="flex flex-row items-center gap-3">
-                <AnonymousCustomerAvatar
-                  externalId={event.external_customer_id}
-                  className="size-11"
-                />
-                <div className="flex flex-col gap-0.5">
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
-                    {getAnonymousCustomerName(event.external_customer_id)[0]}
-                  </span>
-                  <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
-                    {event.external_customer_id}
-                  </span>
-                </div>
-              </div>
-            ) : null}
+      contextViewPlacement="left"
+      contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
+      contextView={
+        <div className="flex h-full flex-col gap-y-4">
+          <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
+            <div>Costs</div>
           </div>
 
-          <span className="dark:text-polar-500 pt-[3px] text-sm text-gray-500 capitalize">
-            {new Date(event.timestamp).toLocaleDateString('en-US', {
-              hour: '2-digit',
-              minute: 'numeric',
-              second: 'numeric',
-              month: 'short',
-              day: '2-digit',
-              year: 'numeric',
-            })}
-          </span>
+          <div
+            className={twMerge(
+              'flex flex-col gap-y-6 overflow-y-auto px-4 pt-2 pb-4',
+            )}
+          >
+            <h3 className="font-medium">support_request</h3>
+
+            <div className="dark:border-polar-700 mt-2 border-b border-gray-200" />
+
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-col gap-x-4">
+                <h3 className="text-2xl font-medium">{event.label}</h3>
+                {'_cost' in event.metadata && event.metadata._cost && (
+                  <h3 className="dark:text-polar-500 font-mono text-xl text-gray-400">
+                    {formatSubCentCurrency(
+                      Number(event.metadata._cost?.amount ?? 0),
+                      event.metadata._cost?.currency ?? 'usd',
+                    )}
+                  </h3>
+                )}
+              </div>
+
+              <div className="flex flex-col items-start justify-between gap-4">
+                <div>
+                  {event.customer ? (
+                    <div className="flex flex-row items-center gap-3">
+                      <div className="w-8">
+                        <Avatar
+                          className="size-8"
+                          name={event.customer.name ?? event.customer.email}
+                          avatar_url={event.customer.avatar_url ?? null}
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm">
+                          {event.customer.name ?? event.customer.email}
+                        </span>
+                        <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
+                          {event.external_customer_id ?? ''}
+                        </span>
+                      </div>
+                    </div>
+                  ) : event.external_customer_id ? (
+                    <div className="flex flex-row items-center gap-3">
+                      <AnonymousCustomerAvatar
+                        externalId={event.external_customer_id}
+                        className="flex size-8 shrink-0"
+                      />
+                      <div className="flex flex-col gap-0.5">
+                        <span className="dark:text-polar-500 text-sm text-gray-500">
+                          {
+                            getAnonymousCustomerName(
+                              event.external_customer_id,
+                            )[0]
+                          }
+                        </span>
+                        <span className="dark:text-polar-500 font-mono text-xs text-gray-500">
+                          {event.external_customer_id}
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <span className="dark:text-polar-500 pt-[3px] text-sm text-gray-500 capitalize">
+                  {new Date(event.timestamp).toLocaleDateString('en-US', {
+                    hour: '2-digit',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    month: 'short',
+                    day: '2-digit',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="flex flex-col gap-y-3"></div>
+      }
+      wide
+    >
       <div className="flex w-full items-start justify-between gap-8">
         <div className="w-96 flex-none">
           <div className="rounded-2xl border p-4">

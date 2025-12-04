@@ -1,11 +1,22 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import DateRangePicker from '@/components/Metrics/DateRangePicker'
+import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import { Sparkline } from '@/components/Sparkline/Sparkline'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
+import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
+import Input from '@polar-sh/ui/components/atoms/Input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
 import { subMonths } from 'date-fns'
 import {
   BadgeDollarSignIcon,
@@ -15,8 +26,7 @@ import {
 import Link from 'next/link'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
-import { SpansHeader } from './components/SpansHeader'
-import { SpansTitle } from './components/SpansTitle'
+import { twMerge } from 'tailwind-merge'
 import {
   DEFAULT_INTERVAL,
   getCostsSearchParams,
@@ -113,17 +123,66 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
   return (
     <DashboardBody
-      title={<SpansTitle organization={organization} />}
-      header={
-        <SpansHeader
-          dateRange={dateRange}
-          interval={interval}
-          startDate={startDate}
-          endDate={endDate}
-          onDateRangeChange={onDateRangeChange}
-          onIntervalChange={onIntervalChange}
-        />
+      title={''}
+      contextViewPlacement="left"
+      contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
+      contextView={
+        <div className="flex h-full flex-col gap-y-4">
+          <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
+            <div>Costs</div>
+          </div>
+          <div
+            className={twMerge(
+              'flex flex-col gap-y-6 overflow-y-auto px-4 pt-2 pb-4',
+            )}
+          >
+            <div className="flex h-full grow flex-col gap-y-6">
+              <div className="flex flex-col gap-y-2">
+                <div className="flex flex-row items-center gap-2">
+                  <div className="w-full">
+                    <DateRangePicker
+                      date={dateRange}
+                      onDateChange={onDateRangeChange}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <IntervalPicker
+                    interval={interval}
+                    onChange={onIntervalChange}
+                    startDate={startDate}
+                    endDate={endDate}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="dark:border-polar-700 mt-2 border-b border-gray-200" />
+            <div className="flex flex-col gap-y-2">
+              <h3 className="text-sm">Search</h3>
+              <Input
+                placeholder="Search Events"
+                value=""
+                preSlot={<Search fontSize="small" />}
+              />
+            </div>
+            <div className="flex flex-col gap-y-2">
+              <h3 className="text-sm">Sort</h3>
+              <Select value="-timestamp" onValueChange={() => {}}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="-timestamp">
+                    Number of events (high to low)
+                  </SelectItem>
+                  <SelectItem value="timestamp">Oldest</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
       }
+      wide
     >
       <div className="flex flex-col gap-y-6">
         {!isLoading && costData?.totals.length === 0 && (

@@ -1,7 +1,10 @@
 'use client'
 
+import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import { EventCustomer } from '@/components/Events/EventCustomer'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import DateRangePicker from '@/components/Metrics/DateRangePicker'
+import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useEventTypes } from '@/hooks/queries/event_types'
@@ -11,10 +14,12 @@ import {
 } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, getTimestampFormatter, toISODate } from '@/utils/metrics'
+import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   eachDayOfInterval,
   endOfDay,
@@ -25,9 +30,8 @@ import {
 import Link from 'next/link'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { Chart } from '../components/Chart/Chart'
-import { SpansHeader } from '../components/SpansHeader'
-import { SpansTitle } from '../components/SpansTitle'
 import {
   DEFAULT_INTERVAL,
   getDefaultEndDate,
@@ -309,17 +313,64 @@ export default function SpanDetailPage({
 
   return (
     <DashboardBody
-      title={<SpansTitle organization={organization} />}
-      header={
-        <SpansHeader
-          dateRange={dateRange}
-          interval={interval}
-          startDate={startDate}
-          endDate={endDate}
-          onDateRangeChange={onDateRangeChange}
-          onIntervalChange={onIntervalChange}
-        />
+      title=""
+      contextViewPlacement="left"
+      contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
+      contextView={
+        <div className="flex h-full flex-col gap-y-4">
+          <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
+            <div>Costs</div>
+          </div>
+
+          <div
+            className={twMerge(
+              'flex flex-col gap-y-6 overflow-y-auto px-4 pt-2 pb-4',
+            )}
+          >
+            <div className="flex flex-col gap-y-2">
+              <div className="flex flex-row items-center gap-2">
+                <div className="w-full">
+                  <DateRangePicker
+                    date={dateRange}
+                    onDateChange={onDateRangeChange}
+                    className="w-full"
+                  />
+                </div>
+
+                <IntervalPicker
+                  interval={interval}
+                  onChange={onIntervalChange}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+              </div>
+            </div>
+
+            <div className="dark:border-polar-700 mt-2 border-b border-gray-200" />
+
+            <div className="gap-6pt-4 flex flex-row items-center justify-between">
+              <div>support_request</div>
+            </div>
+
+            <div className="flex flex-col gap-y-2">
+              <h3 className="text-sm">Events</h3>
+              <Input
+                placeholder="Search Events"
+                value=""
+                preSlot={<Search fontSize="small" />}
+              />
+            </div>
+            <div className="flex h-full grow flex-col gap-y-6">
+              <CustomerSelector
+                organizationId={organization.id}
+                selectedCustomerIds={[]}
+                onSelectCustomerIds={[]}
+              />
+            </div>
+          </div>
+        </div>
       }
+      wide
     >
       <div className="mb-12 flex flex-row items-center justify-between gap-y-4">
         <h3 className="text-4xl">{eventType?.label ?? ''}</h3>

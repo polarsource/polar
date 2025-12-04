@@ -39,10 +39,18 @@ async def check_diff(email: tuple[str, str]) -> None:
 async def test_MaintainerNewPaidSubscriptionNotification() -> None:
     n = MaintainerNewPaidSubscriptionNotificationPayload(
         subscriber_name="John Doe",
+        subscriber_email="john@example.com",
         tier_name="My Paid Tier",
         tier_price_amount=500,
         tier_organization_name="myorg",
         tier_price_recurring_interval="month",
+        subscription_id="sub_123456",
+        subscription_date="2024-11-05T20:41:00Z",
+        organization_slug="myorg",
+        billing_address_country="US",
+        billing_address_city="San Francisco",
+        billing_address_line1="123 Main St",
+        product_image_url=None,
     )
 
     await check_diff(n.render())
@@ -137,6 +145,38 @@ async def test_MaintainerNewProductSaleNotification_backwards_compatibility() ->
 
     subject, body = n.render()
     assert "Old Product" in body
+    assert "$10.00" in subject
+
+
+@pytest.mark.asyncio
+async def test_MaintainerNewPaidSubscriptionNotification_backwards_compatibility() -> (
+    None
+):
+    old_notification_data = {
+        "tier_name": "Old Tier",
+        "tier_price_amount": 1000,
+        "tier_price_recurring_interval": "month",
+        "tier_organization_name": "Old Org",
+    }
+
+    n = MaintainerNewPaidSubscriptionNotificationPayload.model_validate(
+        old_notification_data
+    )
+
+    assert n.tier_name == "Old Tier"
+    assert n.tier_price_amount == 1000
+    assert n.subscriber_name == ""
+    assert n.subscriber_email is None
+    assert n.subscription_id is None
+    assert n.subscription_date is None
+    assert n.organization_slug is None
+    assert n.billing_address_country is None
+    assert n.billing_address_city is None
+    assert n.billing_address_line1 is None
+    assert n.product_image_url is None
+
+    subject, body = n.render()
+    assert "Old Tier" in body
     assert "$10.00" in subject
 
 

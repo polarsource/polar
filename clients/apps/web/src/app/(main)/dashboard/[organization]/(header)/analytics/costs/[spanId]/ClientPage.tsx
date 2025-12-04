@@ -319,7 +319,9 @@ export default function SpanDetailPage({
       contextView={
         <div className="flex h-full flex-col gap-y-4">
           <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
-            <div>Costs</div>
+            <Link href={`/dashboard/${organization.slug}/analytics/costs/`}>
+              Costs
+            </Link>
           </div>
 
           <div
@@ -348,8 +350,15 @@ export default function SpanDetailPage({
 
             <div className="dark:border-polar-700 mt-2 border-b border-gray-200" />
 
-            <div className="gap-6pt-4 flex flex-row items-center justify-between">
-              <div>support_request</div>
+            <div className="gap-6pt-4 flex flex-row items-center justify-between gap-2">
+              <div>{eventType.label}</div>
+              <Button
+                variant="outline"
+                onClick={showEditEventTypeModal}
+                size="sm"
+              >
+                Configure
+              </Button>
             </div>
 
             <div className="flex flex-col gap-y-2">
@@ -364,7 +373,7 @@ export default function SpanDetailPage({
               <CustomerSelector
                 organizationId={organization.id}
                 selectedCustomerIds={[]}
-                onSelectCustomerIds={[]}
+                onSelectCustomerIds={() => []}
               />
             </div>
           </div>
@@ -372,13 +381,6 @@ export default function SpanDetailPage({
       }
       wide
     >
-      <div className="mb-12 flex flex-row items-center justify-between gap-y-4">
-        <h3 className="text-4xl">{eventType?.label ?? ''}</h3>
-        <Button variant="secondary" onClick={showEditEventTypeModal}>
-          Edit
-        </Button>
-      </div>
-
       {events.length > 0 && chartData.length > 0 && (
         <div className="mb-8 flex flex-col gap-y-6">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">

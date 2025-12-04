@@ -1,19 +1,34 @@
 'use client'
 
 import { AnonymousCustomerAvatar } from '@/components/Customer/AnonymousCustomerAvatar'
+import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import { useMetadata } from '@/components/Events/EventCard/UserEventCard'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import DateRangePicker from '@/components/Metrics/DateRangePicker'
+import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
 import { getAnonymousCustomerName } from '@/utils/anonymous-customer'
 import { formatSubCentCurrency } from '@/utils/formatters'
+import { fromISODate, toISODate } from '@/utils/metrics'
+import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Input from '@polar-sh/ui/components/atoms/Input'
+import { endOfDay } from 'date-fns/endOfDay'
+import { subMonths } from 'date-fns/subMonths'
 import type { LucideIcon } from 'lucide-react'
 import { BadgeDollarSignIcon, BotIcon, BracesIcon } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  DEFAULT_INTERVAL,
+  getDefaultEndDate,
+  getDefaultStartDate,
+} from '../../utils'
 
 const PAGE_SIZE = 50
 
@@ -93,6 +108,57 @@ export default function EventDetailPage({
     return childEvents.find(({ id }) => id === expandedEventId) || event
   }, [searchParams, event, childEvents])
 
+  const [startDateISOString, setStartDateISOString] = useQueryState(
+    'startDate',
+    parseAsString.withDefault(getDefaultStartDate()),
+  )
+  const [endDateISOString, setEndDateISOString] = useQueryState(
+    'endDate',
+    parseAsString.withDefault(getDefaultEndDate()),
+  )
+
+  const [startDate, endDate] = useMemo(() => {
+    const today = new Date()
+    const startDate = startDateISOString
+      ? fromISODate(startDateISOString)
+      : subMonths(today, 1)
+    const endDate = endDateISOString
+      ? endOfDay(fromISODate(endDateISOString))
+      : today
+    return [startDate, endDate]
+  }, [startDateISOString, endDateISOString])
+
+  const [interval, setInterval] = useQueryState(
+    'interval',
+    parseAsStringLiteral([
+      'hour',
+      'day',
+      'week',
+      'month',
+      'year',
+    ] as const).withDefault(DEFAULT_INTERVAL),
+  )
+
+  const dateRange = useMemo(
+    () => ({ from: startDate, to: endDate }),
+    [startDate, endDate],
+  )
+
+  const onDateRangeChange = useCallback(
+    (dateRange: { from: Date; to: Date }) => {
+      setStartDateISOString(toISODate(dateRange.from))
+      setEndDateISOString(toISODate(dateRange.to))
+    },
+    [setStartDateISOString, setEndDateISOString],
+  )
+
+  const onIntervalChange = useCallback(
+    (newInterval: schemas['TimeInterval']) => {
+      setInterval(newInterval)
+    },
+    [setInterval],
+  )
+
   if (!event) {
     return null
   }
@@ -106,7 +172,9 @@ export default function EventDetailPage({
       contextView={
         <div className="flex h-full flex-col gap-y-4">
           <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
-            <div>Costs</div>
+            <Link href={`/dashboard/${organization.slug}/analytics/costs/`}>
+              Costs
+            </Link>
           </div>
 
           <div
@@ -114,8 +182,50 @@ export default function EventDetailPage({
               'flex flex-col gap-y-6 overflow-y-auto px-4 pt-2 pb-4',
             )}
           >
-            <h3 className="font-medium">support_request</h3>
+            <div className="pointer-events-none flex flex-col gap-y-2 opacity-50">
+              <div className="flex flex-row items-center gap-2">
+                <div className="w-full">
+                  <DateRangePicker
+                    date={dateRange}
+                    onDateChange={onDateRangeChange}
+                    className="w-full"
+                  />
+                </div>
 
+                <IntervalPicker
+                  interval={interval}
+                  onChange={onIntervalChange}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+              </div>
+            </div>
+
+            <div className="dark:border-polar-700 mt-2 border-b border-gray-200" />
+
+            <div className="gap-6pt-4 flex flex-row items-center justify-between gap-2">
+              <Link
+                href={`/dashboard/${organization.slug}/analytics/costs/${eventType?.id}`}
+              >
+                {eventType?.label}
+              </Link>
+            </div>
+
+            <div className="pointer-events-none flex flex-col gap-y-2 opacity-50">
+              <h3 className="text-sm">Events</h3>
+              <Input
+                placeholder="Search Events"
+                value=""
+                preSlot={<Search fontSize="small" />}
+              />
+            </div>
+            <div className="pointer-events-none flex h-full grow flex-col gap-y-6 opacity-50">
+              <CustomerSelector
+                organizationId={organization.id}
+                selectedCustomerIds={[]}
+                onSelectCustomerIds={() => []}
+              />
+            </div>
             <div className="dark:border-polar-700 mt-2 border-b border-gray-200" />
 
             <div className="flex flex-col gap-y-4">

@@ -84,6 +84,7 @@ async def account_updated(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             stripe_account = cast(stripe_lib.Account, event.stripe_data.data.object)
+            log.info(f"Processing Stripe Account {stripe_account.id}")
             await account_service.update_account_from_stripe(
                 session, stripe_account=stripe_account
             )

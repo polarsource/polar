@@ -15,10 +15,10 @@ from polar.kit.jwk import JWKSFile
 
 class Environment(StrEnum):
     development = "development"
-    testing = "testing"
+    testing = "testing"  # Used for running tests
     sandbox = "sandbox"
     production = "production"
-    test = "test"
+    test = "test"  # Used for the test environment in Render
 
 
 class EmailSender(StrEnum):

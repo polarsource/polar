@@ -53,18 +53,18 @@
     "countries-list": "^3.2.0",
     "date-fns": "^4.1.0",
     "input-otp": "^1.4.2",
-    "lucide-react": "^0.554.0",
-    "react-day-picker": "^9.11.2",
+    "lucide-react": "^0.555.0",
+    "react-day-picker": "^9.11.3",
     "react-hook-form": "^7.66.1",
     "react-timeago": "^8.3.0",
-    "recharts": "^3.5.0",
+    "recharts": "^3.5.1",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "@polar-sh/typescript-config": "workspace:*",
     "tsup": "^8.5.1",
     "typescript": "5.9.3"

@@ -40,7 +40,7 @@
     "@stripe/react-stripe-js": "^4.0.2",
     "@stripe/stripe-js": "^7.9.0",
     "@types/react": "^19.2.7",
-    "react": "^19.2.0",
+    "react": "^19.2.1",
     "terser": "^5.44.1",
     "@polar-sh/typescript-config": "workspace:*",
     "tsup": "^8.5.1",

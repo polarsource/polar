@@ -146,7 +146,7 @@ module "test" {
   }
 
   backend_config = {
-    environment                          = "sandbox"
+    environment                          = "test"
     base_url                             = "https://test-api.polar.sh"
     user_session_cookie_domain           = "polar.sh"
     user_session_cookie_key              = "polar_test_session"

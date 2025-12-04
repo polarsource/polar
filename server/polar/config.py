@@ -15,9 +15,10 @@ from polar.kit.jwk import JWKSFile
 
 class Environment(StrEnum):
     development = "development"
-    testing = "testing"
+    testing = "testing"  # Used for running tests
     sandbox = "sandbox"
     production = "production"
+    test = "test"  # Used for the test environment in Render
 
 
 class EmailSender(StrEnum):
@@ -41,7 +42,12 @@ def _validate_email_renderer_binary_path(value: Path) -> Path:
 
 
 env = Environment(os.getenv("POLAR_ENV", Environment.development))
-env_file = ".env.testing" if env == Environment.testing else ".env"
+if env == Environment.testing:
+    env_file = ".env.testing"
+elif env == Environment.test:
+    env_file = ".env.test"
+else:
+    env_file = ".env"
 file_extension = ".exe" if os.name == "nt" else ""
 
 
@@ -418,6 +424,9 @@ class Settings(BaseSettings):
 
     def is_production(self) -> bool:
         return self.is_environment({Environment.production})
+
+    def is_test(self) -> bool:
+        return self.is_environment({Environment.test})
 
     def generate_external_url(self, path: str) -> str:
         return f"{self.BASE_URL}{path}"

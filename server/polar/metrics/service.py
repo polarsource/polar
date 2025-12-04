@@ -13,9 +13,160 @@ from polar.models import Organization, User
 from polar.models.product import ProductBillingType
 from polar.postgres import AsyncReadSession, AsyncSession
 
-from .metrics import METRICS, METRICS_POST_COMPUTE, METRICS_SQL
-from .queries import QUERIES
+from .metrics import (
+    METRICS,
+    METRICS_POST_COMPUTE,
+    METRICS_SQL,
+    MetaMetric,
+    Metric,
+    SQLMetric,
+)
+from .queries import (
+    QUERIES,
+    QUERY_TO_FUNCTION,
+    MetricQuery,
+    QueryCallable,
+)
 from .schemas import MetricsPeriod, MetricsResponse
+
+
+def _expand_focus_metrics_with_dependencies(
+    focus_metrics: Sequence[str] | None,
+) -> tuple[set[str], set[str]]:
+    """
+    Expand focus_metrics to include all dependencies.
+
+    Returns a tuple of:
+    - sql_metric_slugs: Set of SQL metric slugs needed (including dependencies)
+    - meta_metric_slugs: Set of MetaMetric slugs needed (including dependencies)
+
+    This handles recursive dependencies (e.g., ltv depends on churn_rate which
+    depends on other metrics).
+    """
+    if focus_metrics is None:
+        return set(), set()
+
+    sql_metric_slugs: set[str] = set()
+    meta_metric_slugs: set[str] = set()
+
+    # Build lookups
+    sql_metrics_by_slug = {m.slug: m for m in METRICS_SQL}
+    meta_metrics_by_slug = {m.slug: m for m in METRICS_POST_COMPUTE}
+
+    def resolve_dependencies(metric_slug: str, visited: set[str]) -> None:
+        """Recursively resolve dependencies for a metric."""
+        if metric_slug in visited:
+            return
+        visited.add(metric_slug)
+
+        # If it's an SQL metric, add it
+        if metric_slug in sql_metrics_by_slug:
+            sql_metric_slugs.add(metric_slug)
+            return
+
+        # If it's a meta metric, add it and resolve its dependencies
+        if metric_slug in meta_metrics_by_slug:
+            meta_metric_slugs.add(metric_slug)
+            meta_cls = meta_metrics_by_slug[metric_slug]
+            for dep_slug in getattr(meta_cls, "dependencies", []):
+                resolve_dependencies(dep_slug, visited)
+
+    # Resolve dependencies for each requested metric
+    for metric_slug in focus_metrics:
+        resolve_dependencies(metric_slug, set())
+
+    return sql_metric_slugs, meta_metric_slugs
+
+
+def _get_required_queries(
+    focus_metrics: Sequence[str] | None,
+) -> set[MetricQuery] | None:
+    """
+    Determine which query types are needed based on the requested focus metrics.
+
+    Returns None if all queries should be executed (backward compatible behavior).
+    Returns a set of MetricQuery values if only specific queries are needed.
+    """
+    if focus_metrics is None:
+        return None
+
+    sql_metric_slugs, _ = _expand_focus_metrics_with_dependencies(focus_metrics)
+
+    if not sql_metric_slugs:
+        return None
+
+    # Build a lookup for SQL metrics by slug
+    sql_metrics_by_slug = {m.slug: m for m in METRICS_SQL}
+
+    required: set[MetricQuery] = set()
+    for slug in sql_metric_slugs:
+        if slug in sql_metrics_by_slug:
+            required.add(sql_metrics_by_slug[slug].query)
+
+    return required if required else None
+
+
+def _get_filtered_queries(
+    required_queries: set[MetricQuery] | None,
+) -> list[QueryCallable]:
+    """
+    Filter the QUERIES list to only include the query functions needed.
+    """
+    if required_queries is None:
+        return list(QUERIES)
+
+    return [
+        query_fn
+        for query_type, query_fn in QUERY_TO_FUNCTION.items()
+        if query_type in required_queries
+    ]
+
+
+def _get_filtered_metrics(
+    focus_metrics: Sequence[str] | None,
+) -> list[type[SQLMetric]]:
+    """
+    Filter the METRICS_SQL list to only include the metrics needed.
+
+    This includes both directly requested metrics and their dependencies
+    (e.g., gross_margin depends on cumulative_revenue and cumulative_costs).
+    """
+    if focus_metrics is None:
+        return list(METRICS_SQL)
+
+    sql_metric_slugs, _ = _expand_focus_metrics_with_dependencies(focus_metrics)
+    return [m for m in METRICS_SQL if m.slug in sql_metric_slugs]
+
+
+def _get_filtered_post_compute_metrics(
+    focus_metrics: Sequence[str] | None,
+) -> list[type[MetaMetric]]:
+    """
+    Filter the METRICS_POST_COMPUTE list to only include the metrics needed.
+
+    This includes both directly requested metrics and their dependencies
+    (e.g., ltv depends on churn_rate which is also a MetaMetric).
+
+    The order is preserved from METRICS_POST_COMPUTE to ensure dependencies
+    are computed before dependents.
+    """
+    if focus_metrics is None:
+        return list(METRICS_POST_COMPUTE)
+
+    _, meta_metric_slugs = _expand_focus_metrics_with_dependencies(focus_metrics)
+    return [m for m in METRICS_POST_COMPUTE if m.slug in meta_metric_slugs]
+
+
+def _get_filtered_all_metrics(
+    focus_metrics: Sequence[str] | None,
+) -> list[type[Metric]]:
+    """
+    Filter the METRICS list to only include the metrics needed.
+    """
+    if focus_metrics is None:
+        return list(METRICS)
+
+    return [m for m in METRICS if m.slug in focus_metrics]
 
 
 class MetricsService:
@@ -32,6 +183,7 @@ class MetricsService:
         product_id: Sequence[uuid.UUID] | None = None,
         billing_type: Sequence[ProductBillingType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
+        focus_metrics: Sequence[str] | None = None,
         now: datetime | None = None,
     ) -> MetricsResponse:
         await session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
@@ -58,21 +210,36 @@ class MetricsService:
         )
         timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-        queries = [
-            query(
-                timestamp_series,
-                interval,
-                auth_subject,
-                METRICS_SQL,
-                now or datetime.now(tz=timezone),
-                bounds=(original_start_timestamp, original_end_timestamp),
-                organization_id=organization_id,
-                product_id=product_id,
-                billing_type=billing_type,
-                customer_id=customer_id,
-            )
-            for query in QUERIES
-        ]
+        # Determine which queries to run based on focus_metrics
+        required_queries = _get_required_queries(focus_metrics)
+        filtered_query_fns = _get_filtered_queries(required_queries)
+        filtered_metrics_sql = _get_filtered_metrics(focus_metrics)
+        filtered_post_compute = _get_filtered_post_compute_metrics(focus_metrics)
+        filtered_all_metrics = _get_filtered_all_metrics(focus_metrics)
+
+        with logfire.span(
+            "Build metrics query",
+            focus_metrics=focus_metrics,
+            required_queries=[q.value for q in required_queries]
+            if required_queries
+            else None,
+            num_query_functions=len(filtered_query_fns),
+        ):
+            queries = [
+                query_fn(
+                    timestamp_series,
+                    interval,
+                    auth_subject,
+                    filtered_metrics_sql,
+                    now or datetime.now(tz=timezone),
+                    bounds=(original_start_timestamp, original_end_timestamp),
+                    organization_id=organization_id,
+                    product_id=product_id,
+                    billing_type=billing_type,
+                    customer_id=customer_id,
+                )
+                for query_fn in filtered_query_fns
+            ]
 
         from_query: FromClause = timestamp_series
         for query in queries:
@@ -95,6 +262,7 @@ class MetricsService:
             "Stream and process metrics query",
             start_date=str(start_date),
             end_date=str(end_date),
+            focus_metrics=focus_metrics,
         ):
             result = await session.stream(
                 statement,
@@ -102,6 +270,11 @@ class MetricsService:
             )
 
             row_count = 0
+            # Get the set of explicitly requested metric slugs (not dependencies)
+            requested_slugs = (
+                set(focus_metrics) if focus_metrics else {m.slug for m in METRICS}
+            )
+
             with logfire.span("Fetch and process rows"):
                 async for row in result:
                     row_count += 1
@@ -112,18 +285,26 @@ class MetricsService:
                     temp_period_dict = dict(period_dict)
 
                     # Initialize all computed metrics to 0 first to satisfy Pydantic schema
-                    for meta_metric in METRICS_POST_COMPUTE:
+                    for meta_metric in filtered_post_compute:
                         temp_period_dict[meta_metric.slug] = 0
 
                     # Now compute each metric, updating the dict as we go
                     # This allows later metrics to depend on earlier computed metrics
-                    for meta_metric in METRICS_POST_COMPUTE:
-                        temp_period = MetricsPeriod(**temp_period_dict)
+                    for meta_metric in filtered_post_compute:
+                        temp_period = MetricsPeriod.model_validate(temp_period_dict)
                         computed_value = meta_metric.compute_from_period(temp_period)
                         temp_period_dict[meta_metric.slug] = computed_value
                         period_dict[meta_metric.slug] = computed_value
 
-                    periods.append(MetricsPeriod(**period_dict))
+                    # Filter to only include explicitly requested metrics (not dependencies)
+                    # Always include timestamp
+                    filtered_period_dict = {
+                        k: v
+                        for k, v in period_dict.items()
+                        if k == "timestamp" or k in requested_slugs
+                    }
+
+                    periods.append(MetricsPeriod.model_validate(filtered_period_dict))
 
             logfire.info("Processed {row_count} rows", row_count=row_count)
 
@@ -133,14 +314,14 @@ class MetricsService:
             start_date=str(start_date),
             end_date=str(end_date),
         ):
-            for metric in METRICS:
+            for metric in filtered_all_metrics:
                 totals[metric.slug] = metric.get_cumulative(periods)
 
         return MetricsResponse.model_validate(
             {
                 "periods": periods,
                 "totals": totals,
-                "metrics": {m.slug: m for m in METRICS},
+                "metrics": {m.slug: m for m in filtered_all_metrics},
             }
         )
 

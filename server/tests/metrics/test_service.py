@@ -1743,3 +1743,355 @@ class TestGetMetrics:
         assert len(metrics_all.periods) == 1
         jan_1_all = metrics_all.periods[0]
         assert jan_1_all.costs == 0.60  # Both events: 0.10 + 0.50
+
+
+@pytest.mark.asyncio
+class TestFocusMetrics:
+    """Tests for the focus_metrics parameter functionality."""
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_focus_metrics_filters_response(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        """Test that focus_metrics filters the metrics in the response."""
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            focus_metrics=["revenue", "orders"],
+        )
+
+        assert len(metrics.periods) == 31
+
+        # Requested metrics should have values
+        jan_1 = metrics.periods[0]
+        assert jan_1.orders == 3
+        assert jan_1.revenue == 1200_00
+
+        # Non-requested metrics should be None
+        assert jan_1.checkouts is None
+        assert jan_1.active_subscriptions is None
+
+        # Totals: requested metrics have values, others are None
+        assert metrics.totals.revenue is not None
+        assert metrics.totals.orders is not None
+        assert metrics.totals.checkouts is None
+
+        # Metrics info should be populated for requested metrics
+        assert metrics.metrics.revenue is not None
+        assert metrics.metrics.orders is not None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_focus_metrics_single_metric(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        """Test that a single focus_metric works correctly."""
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            focus_metrics=["active_subscriptions"],
+        )
+
+        assert len(metrics.periods) == 31
+
+        jan_1 = metrics.periods[0]
+        assert jan_1.active_subscriptions == 2
+
+        assert metrics.metrics.active_subscriptions is not None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    @pytest.mark.parametrize(
+        "focus_metrics,expected_metric",
+        [
+            (["gross_margin"], "gross_margin"),
+            (["gross_margin_percentage"], "gross_margin_percentage"),
+            (["cashflow"], "cashflow"),
+            (["churn_rate"], "churn_rate"),
+            (["ltv"], "ltv"),
+        ],
+    )
+    async def test_focus_metrics_meta_metrics(
+        self,
+        focus_metrics: list[str],
+        expected_metric: str,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        """Test that meta metrics (post-compute) can be requested and computed."""
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            focus_metrics=focus_metrics,
+        )
+
+        assert len(metrics.periods) == 12
+        assert getattr(metrics.metrics, expected_metric) is not None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_focus_metrics_gross_margin_dependencies(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        """Test that gross_margin properly resolves its dependencies (revenue, costs)."""
+        # Using the standard fixtures which have orders with revenue
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            focus_metrics=["gross_margin"],
+        )
+
+        assert len(metrics.periods) == 12
+        # gross_margin metric info should be populated
+        assert metrics.metrics.gross_margin is not None
+        # The first period should have gross_margin computed from fixtures
+        jan = metrics.periods[0]
+        # Requested metric should have value
+        assert jan.gross_margin is not None
+        # Dependencies are computed internally but should be None in response
+        assert jan.cumulative_revenue is None
+        # gross_margin should be positive (fixtures have revenue, no costs)
+        assert jan.gross_margin > 0
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_focus_metrics_churn_rate_dependencies(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that churn_rate properly resolves its dependencies."""
+        subscriptions: dict[str, SubscriptionFixture] = {
+            "subscription_1": {
+                "started_at": date(2024, 1, 1),
+                "product": "free_subscription",
+            },
+            "subscription_2": {
+                "started_at": date(2024, 1, 1),
+                "ended_at": date(2024, 1, 15),
+                "product": "free_subscription",
+            },
+        }
+        await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, subscriptions, {}
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            focus_metrics=["churn_rate"],
+        )
+
+        assert len(metrics.periods) == 1
+        assert metrics.metrics.churn_rate is not None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_focus_metrics_none_returns_all(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        """Test that focus_metrics=None returns all metrics (backward compatible)."""
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            focus_metrics=None,
+        )
+
+        assert len(metrics.periods) == 31
+
+        # All metrics should be populated
+        assert metrics.metrics.revenue is not None
+        assert metrics.metrics.orders is not None
+        assert metrics.metrics.active_subscriptions is not None
+        assert metrics.metrics.gross_margin is not None
+        assert metrics.metrics.churn_rate is not None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_focus_metrics_ltv_recursive_dependencies(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that LTV properly resolves recursive dependencies.
+
+        LTV depends on churn_rate (a meta metric), which depends on
+        active_subscriptions, new_subscriptions, churned_subscriptions,
+        and canceled_subscriptions.
+        """
+        subscriptions: dict[str, SubscriptionFixture] = {
+            "subscription_1": {
+                "started_at": date(2024, 1, 1),
+                "product": "monthly_subscription",
+            },
+        }
+        orders: dict[str, OrderFixture] = {
+            "order_1": {
+                "created_at": date(2024, 1, 1),
+                "product": "monthly_subscription",
+                "subscription": "subscription_1",
+                "amount": 100_00,
+                "status": OrderStatus.paid,
+            }
+        }
+        await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, subscriptions, orders
+        )
+
+        await create_event(
+            save_fixture,
+            timestamp=datetime(2024, 1, 15, 12, 0, tzinfo=UTC),
+            organization=organization,
+            customer=customer,
+            metadata={
+                "_cost": {
+                    "amount": 5.00,
+                    "currency": "usd",
+                }
+            },
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            focus_metrics=["ltv"],
+        )
+
+        assert len(metrics.periods) == 1
+        assert metrics.metrics.ltv is not None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    @pytest.mark.parametrize(
+        "focus_metrics",
+        [
+            ["revenue"],
+            ["orders"],
+            ["active_subscriptions"],
+            ["checkouts"],
+            ["canceled_subscriptions"],
+            ["churned_subscriptions"],
+        ],
+    )
+    async def test_focus_metrics_sql_metrics(
+        self,
+        focus_metrics: list[str],
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        """Test that different SQL metrics can be individually requested."""
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            focus_metrics=focus_metrics,
+        )
+
+        assert len(metrics.periods) == 31
+        assert getattr(metrics.metrics, focus_metrics[0]) is not None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_focus_metrics_multiple_different_queries(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        """Test requesting metrics from different query sources."""
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            focus_metrics=[
+                "revenue",  # orders query
+                "active_subscriptions",  # subscriptions query
+                "checkouts",  # checkouts query
+            ],
+        )
+
+        assert len(metrics.periods) == 31
+
+        # All requested metrics should be available
+        assert metrics.metrics.revenue is not None
+        assert metrics.metrics.active_subscriptions is not None
+        assert metrics.metrics.checkouts is not None
+
+        # Verify data is correct
+        jan_1 = metrics.periods[0]
+        assert jan_1.revenue == 1200_00
+        assert jan_1.active_subscriptions == 2

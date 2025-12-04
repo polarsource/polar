@@ -22,13 +22,19 @@ from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
 from . import auth
+from .metrics import METRICS
 from .schemas import MetricsLimits, MetricsResponse
 from .service import metrics as metrics_service
 
 router = APIRouter(prefix="/metrics", tags=["metrics", APITag.public, APITag.mcp])
 
 
-@router.get("/", summary="Get Metrics", response_model=MetricsResponse)
+@router.get(
+    "/",
+    summary="Get Metrics",
+    response_model=MetricsResponse,
+    response_model_exclude_none=True,
+)
 async def get(
     auth_subject: auth.MetricsRead,
     start_date: date = Query(
@@ -60,6 +66,15 @@ async def get(
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
     ),
+    focus_metrics: list[str] | None = Query(
+        None,
+        title="Focus Metrics",
+        description=(
+            "List of metric slugs to focus on. "
+            "When provided, only the queries needed for these metrics will be executed, "
+            "improving performance. If not provided, all metrics are returned."
+        ),
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> MetricsResponse:
     """
@@ -82,6 +97,21 @@ async def get(
             ]
         )
 
+    if focus_metrics is not None:
+        valid_slugs = {m.slug for m in METRICS}
+        invalid_slugs = set(focus_metrics) - valid_slugs
+        if invalid_slugs:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("query", "focus_metrics"),
+                        "msg": f"Invalid metric slugs: {', '.join(sorted(invalid_slugs))}",
+                        "type": "value_error",
+                        "input": focus_metrics,
+                    }
+                ]
+            )
+
     return await metrics_service.get_metrics(
         session,
         auth_subject,
@@ -93,6 +123,7 @@ async def get(
         product_id=product_id,
         billing_type=billing_type,
         customer_id=customer_id,
+        focus_metrics=focus_metrics,
     )
 
 

@@ -17,11 +17,10 @@ import {
   FieldTOS,
 } from './OAuthForm'
 
-export interface EnhancedOAuth2ClientConfiguration
-  extends Omit<
-    schemas['OAuth2ClientConfiguration'],
-    'redirect_uris' | 'scope'
-  > {
+export interface EnhancedOAuth2ClientConfiguration extends Omit<
+  schemas['OAuth2ClientConfiguration'],
+  'redirect_uris' | 'scope'
+> {
   redirect_uris: { uri: string }[]
   scope: string[]
 }

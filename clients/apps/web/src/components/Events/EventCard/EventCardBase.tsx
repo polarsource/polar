@@ -1,11 +1,10 @@
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export interface EventCardBaseProps
-  extends React.DetailedHTMLProps<
-    React.HTMLAttributes<HTMLDivElement>,
-    HTMLDivElement
-  > {
+export interface EventCardBaseProps extends React.DetailedHTMLProps<
+  React.HTMLAttributes<HTMLDivElement>,
+  HTMLDivElement
+> {
   children: React.ReactNode
   loading?: boolean
 }

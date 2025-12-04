@@ -14,6 +14,7 @@ from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.math import polar_round
 
 if TYPE_CHECKING:
+    from .account_credit import AccountCredit
     from .organization import Organization
     from .user import User
 
@@ -132,6 +133,10 @@ class Account(RecordModel):
             ),
             viewonly=True,
         )
+
+    @declared_attr
+    def credits(cls) -> Mapped[list["AccountCredit"]]:
+        return relationship("AccountCredit", lazy="raise", back_populates="account")
 
     def is_active(self) -> bool:
         return self.status == Account.Status.ACTIVE

@@ -289,7 +289,11 @@ class PaymentAlreadyInProgress(OrderError):
 class CardPaymentFailed(OrderError):
     """Exception for card-related payment failures that should not be retried."""
 
-    def __init__(self, order: Order, stripe_error: stripe_lib.CardError) -> None:
+    def __init__(
+        self,
+        order: Order,
+        stripe_error: stripe_lib.CardError | stripe_lib.InvalidRequestError,
+    ) -> None:
         self.order = order
         self.stripe_error = stripe_error
         message = f"Card payment failed for order {order.id}: {stripe_error.user_message or stripe_error.code}"
@@ -1032,6 +1036,28 @@ class OrderService:
                         error_message=e.user_message,
                     )
                     raise CardPaymentFailed(order, e) from e
+                except stripe_lib.InvalidRequestError as e:
+                    error = e.error
+                    if (
+                        error is not None
+                        and error.message
+                        and (
+                            "requires a mandate" in error.message.lower()
+                            or "detached from a customer" in error.message.lower()
+                        )
+                    ):
+                        log.info(
+                            "Invalid or expired payment method",
+                            order_id=order.id,
+                            error_code=e.code,
+                            error_message=e.user_message,
+                        )
+
+                        # Mark the payment as failed to trigger dunning
+                        await self.handle_payment_failure(session, order)
+
+                        raise CardPaymentFailed(order, e) from e
+                    raise
 
     async def process_retry_payment(
         self,

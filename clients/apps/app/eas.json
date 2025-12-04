@@ -9,11 +9,11 @@
       "distribution": "internal",
       "channel": "development"
     },
-    "ios-simulator": {
+    "simulator": {
       "ios": {
         "simulator": true
       },
-      "channel": "ios-simulator",
+      "channel": "simulator",
       "extends": "development"
     },
     "preview": {

@@ -14,12 +14,12 @@
     "release-packages": "turbo run build lint test --filter='./packages/*' && changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.7",
+    "@changesets/cli": "^2.29.8",
     "@manypkg/cli": "^0.25.1",
-    "only-allow": "1.2.1",
-    "prettier": "^3.6.2",
+    "only-allow": "1.2.2",
+    "prettier": "^3.7.4",
     "prettier-plugin-organize-imports": "^4.3.0",
-    "prettier-plugin-tailwindcss": "^0.7.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "turbo": "^2.6.1"
   },
   "resolutions": {
@@ -31,7 +31,7 @@
       "@types/react-dom": "19.2.3"
     }
   },
-  "packageManager": "pnpm@10.23.0",
+  "packageManager": "pnpm@10.24.0",
   "manypkg": {
     "ignoredRules": [
       "INTERNAL_MISMATCH"

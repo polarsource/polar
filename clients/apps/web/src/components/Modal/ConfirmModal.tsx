@@ -11,8 +11,10 @@ import { MouseEvent, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { Modal, ModalProps } from '.'
 
-export interface ConfirmModalProps
-  extends Omit<ModalProps, 'title' | 'modalContent'> {
+export interface ConfirmModalProps extends Omit<
+  ModalProps,
+  'title' | 'modalContent'
+> {
   title: string
   description?: string
   body?: React.ReactNode

@@ -13,3 +13,11 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - react
+  - 'react-dom'
+  - next
+  - '@next/bundle-analyzer'
+  - '@next/third-parties'
+  - '@next/mdx'
+  - '@next/env'

@@ -4,8 +4,10 @@ import { MoveDown, MoveUp } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import Button from '../Button'
 
-interface DataTableColumnHeaderProps<TData, TValue>
-  extends React.HTMLAttributes<HTMLDivElement> {
+interface DataTableColumnHeaderProps<
+  TData,
+  TValue,
+> extends React.HTMLAttributes<HTMLDivElement> {
   column: Column<TData, TValue>
   title: string
 }

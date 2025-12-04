@@ -21,6 +21,7 @@ from polar.kit.extensions.sqlalchemy.types import StrEnumType
 
 class ExternalEventSource(StrEnum):
     stripe = "stripe"
+    chargeback_stop = "chargeback_stop"
 
 
 class ExternalEvent(RecordModel):

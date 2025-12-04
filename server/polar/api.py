@@ -19,6 +19,9 @@ from polar.event_type.endpoints import router as event_type_router
 from polar.eventstream.endpoints import router as stream_router
 from polar.file.endpoints import router as files_router
 from polar.integrations.apple.endpoints import router as apple_router
+from polar.integrations.chargeback_stop.endpoints import (
+    router as chargeback_stop_router,
+)
 from polar.integrations.discord.endpoints import router as discord_router
 from polar.integrations.github.endpoints import router as github_router
 from polar.integrations.github_repository_benefit.endpoints import (
@@ -145,3 +148,5 @@ router.include_router(payment_router)
 router.include_router(payout_router)
 # /wallets
 router.include_router(wallet_router)
+# /integrations/chargeback-stop
+router.include_router(chargeback_stop_router)

@@ -307,9 +307,11 @@ const UpdateAccessTokenModal = ({
 const AccessTokenItem = ({
   token,
   rawToken,
+  minimal,
 }: {
   token: schemas['OrganizationAccessToken']
   rawToken?: string
+  minimal?: boolean
 }) => {
   const {
     isShown: updateModalShown,
@@ -347,33 +349,35 @@ const AccessTokenItem = ({
         <div className="flex flex-row">
           <div className="gap-y flex flex-col">
             <h3 className="text-md">{token.comment}</h3>
-            <p className="dark:text-polar-400 text-sm text-gray-500">
-              {token.expires_at ? (
-                <>
-                  Expires on{' '}
-                  <FormattedDateTime
-                    datetime={token.expires_at}
-                    dateStyle="long"
-                  />
-                </>
-              ) : (
-                <span className="text-red-500 dark:text-red-400">
-                  Never expires
-                </span>
-              )}{' '}
-              —{' '}
-              {token.last_used_at ? (
-                <>
-                  Last used on{' '}
-                  <FormattedDateTime
-                    datetime={token.last_used_at}
-                    dateStyle="long"
-                  />
-                </>
-              ) : (
-                'Never used'
-              )}
-            </p>
+            {!minimal && (
+              <p className="dark:text-polar-400 text-sm text-gray-500">
+                {token.expires_at ? (
+                  <>
+                    Expires on{' '}
+                    <FormattedDateTime
+                      datetime={token.expires_at}
+                      dateStyle="long"
+                    />
+                  </>
+                ) : (
+                  <span className="text-red-500 dark:text-red-400">
+                    Never expires
+                  </span>
+                )}{' '}
+                —{' '}
+                {token.last_used_at ? (
+                  <>
+                    Last used on{' '}
+                    <FormattedDateTime
+                      datetime={token.last_used_at}
+                      dateStyle="long"
+                    />
+                  </>
+                ) : (
+                  'Never used'
+                )}
+              </p>
+            )}
           </div>
         </div>{' '}
         <div className="dark:text-polar-400 flex flex-row items-center gap-2 text-gray-500">
@@ -429,11 +433,19 @@ const AccessTokenItem = ({
   )
 }
 
+interface OrganizationAccessTokensSettingsProps {
+  organization: schemas['Organization']
+  singleTokenMode?: boolean
+  onTokenCreated?: (token: string) => void
+  minimal?: boolean
+}
+
 const OrganizationAccessTokensSettings = ({
   organization,
-}: {
-  organization: schemas['Organization']
-}) => {
+  singleTokenMode = false,
+  onTokenCreated,
+  minimal = false,
+}: OrganizationAccessTokensSettingsProps) => {
   const tokens = useOrganizationAccessTokens(organization.id)
   const [createdToken, setCreatedToken] =
     useState<schemas['OrganizationAccessTokenCreateResponse']>()
@@ -449,12 +461,60 @@ const OrganizationAccessTokensSettings = ({
   ) => {
     hideCreateModal()
     setCreatedToken(token)
+    onTokenCreated?.(token.token)
+  }
+
+  const hasTokens =
+    (tokens.data?.items && tokens.data.items.length > 0) || createdToken
+  const showNewTokenButton = !singleTokenMode || !hasTokens
+
+  const hasExistingTokens = tokens.data?.items && tokens.data.items.length > 0
+
+  // Minimal mode: just show a button or the created token
+  if (minimal) {
+    return (
+      <div className="flex w-full flex-col items-start gap-y-4">
+        {hasExistingTokens
+          ? tokens.data?.items.map((token) => {
+              const isNewToken =
+                token.id === createdToken?.organization_access_token.id
+              return (
+                <div
+                  key={token.id}
+                  className="dark:ring-polar-700 dark:bg-polar-800 w-full rounded-2xl bg-transparent p-5 ring-1 ring-gray-200"
+                >
+                  <AccessTokenItem
+                    token={token}
+                    minimal={minimal}
+                    rawToken={isNewToken ? createdToken?.token : undefined}
+                  />
+                </div>
+              )
+            })
+          : showNewTokenButton && (
+              <Button onClick={showCreateModal} size="sm">
+                Create Access Token
+              </Button>
+            )}
+        <InlineModal
+          isShown={createModalShown}
+          hide={hideCreateModal}
+          modalContent={
+            <CreateAccessTokenModal
+              organization={organization}
+              onSuccess={onCreate}
+              onHide={hideCreateModal}
+            />
+          }
+        />
+      </div>
+    )
   }
 
   return (
     <div className="flex w-full flex-col">
       <ShadowListGroup>
-        {tokens.data?.items && tokens.data.items.length > 0 ? (
+        {hasExistingTokens ? (
           tokens.data?.items.map((token) => {
             const isNewToken =
               token.id === createdToken?.organization_access_token.id
@@ -475,13 +535,15 @@ const OrganizationAccessTokensSettings = ({
             </p>
           </ShadowListGroup.Item>
         )}
-        <ShadowListGroup.Item>
-          <div className="flex flex-row items-center gap-x-4">
-            <Button asChild onClick={showCreateModal} size="sm">
-              New Token
-            </Button>
-          </div>
-        </ShadowListGroup.Item>
+        {showNewTokenButton && (
+          <ShadowListGroup.Item>
+            <div className="flex flex-row items-center gap-x-4">
+              <Button asChild onClick={showCreateModal} size="sm">
+                New Token
+              </Button>
+            </div>
+          </ShadowListGroup.Item>
+        )}
         <InlineModal
           isShown={createModalShown}
           hide={hideCreateModal}

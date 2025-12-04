@@ -2,6 +2,7 @@ import { OrganizationContext } from '@/providers/maintainerOrganization'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import Link from 'next/link'
 import { useContext, useMemo, useState } from 'react'
 import slugify from 'slugify'
@@ -17,6 +18,25 @@ import {
   SyntaxHighlighterProvider,
 } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 
+const packageManagers = ['pnpm', 'npm', 'yarn', 'bun'] as const
+type PackageManager = (typeof packageManagers)[number]
+
+const getInstallCommand = (
+  packages: string,
+  packageManager: PackageManager,
+): string => {
+  switch (packageManager) {
+    case 'pnpm':
+      return `pnpm add ${packages}`
+    case 'npm':
+      return `npm install ${packages}`
+    case 'yarn':
+      return `yarn add ${packages}`
+    case 'bun':
+      return `bun add ${packages}`
+  }
+}
+
 const frameworks = (products: schemas['Product'][]) =>
   [
     {
@@ -24,7 +44,7 @@ const frameworks = (products: schemas['Product'][]) =>
       name: 'Next.js',
       link: 'https://polar.sh/docs/integrate/sdk/adapters/nextjs',
       icon: <NextJsIcon size={24} />,
-      install: 'pnpm add @polar-sh/nextjs',
+      packages: '@polar-sh/nextjs',
       code: `import { Checkout } from "@polar-sh/nextjs";
 
 export const GET = Checkout({
@@ -37,7 +57,7 @@ export const GET = Checkout({
       name: 'BetterAuth',
       link: 'https://polar.sh/docs/integrate/sdk/adapters/better-auth',
       icon: <BetterAuthIcon size={24} />,
-      install: 'pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk',
+      packages: 'better-auth @polar-sh/better-auth @polar-sh/sdk',
       code: `import { betterAuth } from "better-auth";
 import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
 import { Polar } from "@polar-sh/sdk";
@@ -77,7 +97,7 @@ ${products
       name: 'Node.js',
       link: 'https://polar.sh/docs/integrate/sdk/typescript',
       icon: <NodeJsIcon size={24} />,
-      install: 'pnpm add @polar-sh/sdk',
+      packages: '@polar-sh/sdk',
       code: `import { Polar } from "@polar-sh/sdk";
 
 const polar = new Polar({
@@ -98,7 +118,7 @@ redirect(checkout.url)`,
       name: 'Python',
       link: 'https://polar.sh/docs/integrate/sdk/python',
       icon: <PythonIcon size={24} />,
-      install: 'pip install polar-sdk',
+      pythonInstall: 'pip install polar-sdk',
       code: `import os
 from polar_sdk import Polar
 
@@ -126,6 +146,8 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
   const [selectedFramework, setSelectedFramework] = useState<string | null>(
     'nextjs',
   )
+  const [createdToken, setCreatedToken] = useState<string | null>(null)
+  const [packageManager, setPackageManager] = useState<PackageManager>('pnpm')
 
   const { organization } = useContext(OrganizationContext)
 
@@ -138,6 +160,19 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
       ),
     [parsedFrameworks, selectedFramework],
   )
+
+  const installCommand = useMemo(() => {
+    if (!currentFramework) return ''
+    if ('pythonInstall' in currentFramework && currentFramework.pythonInstall) {
+      return currentFramework.pythonInstall
+    }
+    if ('packages' in currentFramework && currentFramework.packages) {
+      return getInstallCommand(currentFramework.packages, packageManager)
+    }
+    return ''
+  }, [currentFramework, packageManager])
+
+  const isPython = currentFramework?.slug === 'python'
 
   return (
     <div className="flex h-full flex-col md:flex-row">
@@ -186,24 +221,47 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
         <div className="dark:bg-polar-950 hidden flex-1 grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
           <div className="dark:bg-polar-900 flex w-full max-w-3xl flex-col gap-y-12 rounded-3xl bg-white p-12">
             <div className="flex flex-col gap-y-6">
-              <h2 className="text-lg">1. Install Dependencies</h2>
+              <div className="flex flex-row items-center justify-between">
+                <h2 className="text-lg">1. Install Dependencies</h2>
+                {!isPython && (
+                  <Tabs
+                    value={packageManager}
+                    onValueChange={(v) =>
+                      setPackageManager(v as PackageManager)
+                    }
+                  >
+                    <TabsList className="dark:bg-polar-800 rounded-sm bg-gray-100 p-0.5">
+                      {packageManagers.map((pm) => (
+                        <TabsTrigger
+                          key={pm}
+                          value={pm}
+                          className="dark:data-[state=active]:bg-polar-700 !rounded-sm px-2.5 py-1 text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                        >
+                          {pm}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                )}
+              </div>
               <CodeWrapper>
-                <SyntaxHighlighterClient
-                  lang="bash"
-                  code={currentFramework?.install ?? ''}
-                />
+                <SyntaxHighlighterClient lang="bash" code={installCommand} />
               </CodeWrapper>
             </div>
 
             <div className="flex flex-col gap-y-6">
               <h2 className="text-lg">2. Add Environment Variables</h2>
-              <OrganizationAccessTokensSettings organization={organization} />
+              <OrganizationAccessTokensSettings
+                organization={organization}
+                singleTokenMode
+                minimal
+                onTokenCreated={setCreatedToken}
+              />
               <CodeWrapper>
                 <SyntaxHighlighterClient
                   lang="bash"
-                  code={`# .env
-POLAR_ACCESS_TOKEN=XXX
-POLAR_SUCCESS_URL=https://my-app.com/success?checkout_id={CHECKOUT_ID}`}
+                  code={`POLAR_ACCESS_TOKEN=${createdToken ?? 'XXX'}
+POLAR_SUCCESS_URL=https://example.com/success?checkout_id={CHECKOUT_ID}`}
                 />
               </CodeWrapper>
             </div>

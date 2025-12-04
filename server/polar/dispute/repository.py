@@ -11,6 +11,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import Dispute, Payment, UserOrganization
+from polar.models.dispute import DisputeAlertProcessor
 
 
 class DisputeRepository(
@@ -20,12 +21,43 @@ class DisputeRepository(
 ):
     model = Dispute
 
-    async def get_by_payment_processor_id(
+    async def get_by_payment_processor_dispute_id(
         self, processor: PaymentProcessor, processor_id: str
     ) -> Dispute | None:
         statement = self.get_base_statement().where(
             Dispute.payment_processor == processor,
             Dispute.payment_processor_id == processor_id,
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_matching_by_dispute_alert(
+        self,
+        processor: PaymentProcessor,
+        processor_payment_id: str,
+        total_amount: int,
+        currency: str,
+    ) -> Dispute | None:
+        statement = (
+            self.get_base_statement()
+            .join(Dispute.payment)
+            .where(
+                Dispute.closed.is_(False),
+                Dispute.amount + Dispute.tax_amount == total_amount,
+                Dispute.currency == currency,
+                Payment.processor == processor,
+                Payment.processor_id == processor_payment_id,
+            )
+            .order_by(Dispute.created_at.asc())
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_by_alert_processor_id(
+        self, processor: DisputeAlertProcessor, processor_id: str
+    ) -> Dispute | None:
+        statement = self.get_base_statement().where(
+            Dispute.dispute_alert_processor == processor,
+            Dispute.dispute_alert_processor_id == processor_id,
         )
         return await self.get_one_or_none(statement)
 

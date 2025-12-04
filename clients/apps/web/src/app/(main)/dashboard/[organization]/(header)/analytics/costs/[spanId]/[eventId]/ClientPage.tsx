@@ -97,7 +97,7 @@ export default function EventDetailPage({
       header={<div className="h-10" />}
       className="flex flex-col gap-y-8"
     >
-      <div className="animate-in fade-in slide-in-from-bottom-2 dark:border-polar-700 dark:bg-polar-900 flex flex-col gap-y-6 rounded-2xl border border-gray-200 bg-gray-50 p-6 duration-300">
+      <div className="dark:border-polar-700 dark:bg-polar-900 flex flex-col gap-y-6 rounded-2xl border border-gray-200 bg-gray-50 p-6">
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-row items-start justify-between gap-x-4">
             <div className="flex flex-col gap-y-1">
@@ -180,7 +180,6 @@ export default function EventDetailPage({
               event={child}
               parentEvent={event}
               isLast={index === eventTree.childEvents.length - 1}
-              index={index}
             />
           ))}
         </div>
@@ -224,7 +223,7 @@ function DataCard({
         variant === 'muted' && 'opacity-50',
       )}
     >
-      <span className="dark:text-polar-600 flex flex-row items-center font-mono text-[11px] font-medium tracking-wider text-gray-500 uppercase">
+      <span className="dark:text-polar-500 flex flex-row items-center font-mono text-[11px] font-medium tracking-wider text-gray-500 uppercase">
         <Icon className="mr-1.5 inline-block size-4" />
         {title}
       </span>
@@ -316,13 +315,11 @@ function TreeNode({
   parentEvent,
   depth = 0,
   isLast = false,
-  index = 0,
 }: {
   event: EventTreeNode
   parentEvent?: schemas['Event']
   depth?: number
   isLast?: boolean
-  index?: number
 }) {
   const formattedTimestamp = useMemo(() => {
     if (parentEvent) {
@@ -377,18 +374,12 @@ function TreeNode({
 
   const showEventType = event.label !== event.name
 
-  // Staggered animation delay based on index and depth
-  const animationDelay = `${index * 50 + depth * 25}ms`
-
   return (
-    <div
-      className="animate-in fade-in slide-in-from-bottom-2 group relative flex gap-x-4"
-      style={{ animationDelay, animationFillMode: 'backwards' }}
-    >
-      <div className="flex flex-col items-center pt-1.5">
-        <div className="dark:bg-polar-500 h-3 w-3 shrink-0 rounded-full bg-gray-400" />
+    <div className="group relative flex gap-x-4">
+      <div className="relative flex w-3 justify-center">
+        <div className="dark:bg-polar-500 absolute top-[10px] z-10 h-3 w-3 rounded-full bg-gray-400" />
         {!isLast && (
-          <div className="dark:bg-polar-700 w-0.5 grow bg-gray-200" />
+          <div className="dark:bg-polar-700 absolute top-[16px] bottom-[-16px] w-0.5 bg-gray-200" />
         )}
       </div>
 
@@ -433,7 +424,6 @@ function TreeNode({
                 parentEvent={event}
                 depth={depth + 1}
                 isLast={childIndex === event.childEvents.length - 1}
-                index={childIndex}
               />
             ))}
           </div>

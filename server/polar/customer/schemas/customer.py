@@ -151,7 +151,7 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
             email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
             return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
 
-        return f"https://img.logo.dev/{domain}?token={settings.LOGO_DEV_TOKEN}&fallback=404"
+        return f"https://img.logo.dev/{domain}?size=64&retina=true&token={settings.LOGO_DEV_TOKEN}&fallback=404"
 
 
 class Customer(CustomerBase):

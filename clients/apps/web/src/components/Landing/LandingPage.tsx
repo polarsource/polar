@@ -11,14 +11,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { Adapters } from './Adapters'
-import { Benefits } from './Benefits'
 import { Checkout } from './Checkout'
 import { Events } from './Events'
 import Features from './Features'
 import { Pricing } from './Pricing'
-import SDKs from './SDKs'
 import { Section } from './Section'
-import { SeedRound } from './SeedRound'
 import { Usage } from './Usage'
 
 export default function Page() {
@@ -68,7 +65,6 @@ export const PageContent = () => {
         )}
         <Events />
         <Adapters />
-        <SDKs />
         <Usage />
         <Link
           href="https://x.com/rauchg/status/1909810055622672851"
@@ -100,12 +96,10 @@ export const PageContent = () => {
             </div>
           </div>
         </Link>
-        <SeedRound />
       </Section>
       <Section className="flex flex-col gap-y-24">
         <Checkout />
         <MerchantOfRecord />
-        <Benefits />
         <Testimonials />
       </Section>
       <Section className="flex flex-col gap-y-24">

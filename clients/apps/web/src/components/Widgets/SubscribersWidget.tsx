@@ -35,7 +35,7 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
   const maxPeriod =
     subscriberMetrics.data?.periods.reduce(
       (acc, curr) =>
-        curr.active_subscriptions > acc ? curr.active_subscriptions : acc,
+        (curr.active_subscriptions ?? 0) > acc ? (curr.active_subscriptions ?? 0) : acc,
       0,
     ) ?? 0
 
@@ -79,7 +79,7 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
                 <TooltipTrigger
                   style={{
                     height: `${Math.max(
-                      (period.active_subscriptions / maxPeriod) * 100 || 0,
+                      ((period.active_subscriptions ?? 0) / maxPeriod) * 100 || 0,
                       8,
                     )}%`,
                   }}

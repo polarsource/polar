@@ -31,11 +31,11 @@ export const useRevenueTrend = (
   const previousIntervalData = previousIntervalMetrics.data?.periods
 
   const currentIntervalCumulativeRevenue = currentIntervalData?.reduce(
-    (acc, period) => acc + period.revenue,
+    (acc, period) => acc + (period.revenue ?? 0),
     0,
   )
   const previousIntervalCumulativeRevenue = previousIntervalData?.reduce(
-    (acc, period) => acc + period.revenue,
+    (acc, period) => acc + (period.revenue ?? 0),
     0,
   )
 

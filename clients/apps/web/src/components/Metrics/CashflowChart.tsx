@@ -54,7 +54,7 @@ const CashflowChart = ({
   const maxDailyCost = useMemo(
     () =>
       (metricsData?.periods ?? []).reduce(
-        (max, period) => Math.max(max, Math.abs(period.costs), 0),
+        (max, period) => Math.max(max, Math.abs(period.costs ?? 0), 0),
         0,
       ),
     [metricsData],
@@ -109,7 +109,7 @@ const CashflowChart = ({
           </div>
           <h3 className="text-5xl font-light">
             {formatAccountingFriendlyCurrency(
-              metricsData ? metricsData.totals.cashflow : 0,
+              metricsData ? (metricsData.totals.cashflow ?? 0) : 0,
               'usd',
             )}
           </h3>
@@ -149,12 +149,12 @@ const CashflowChart = ({
                         className="flex h-full min-w-fit items-center justify-start rounded-full bg-red-500 px-[7px] text-right text-sm text-white data-empty:text-black/20"
                         style={{
                           width: maxDailyCost
-                            ? `${(Math.abs(period.costs) / maxDailyCost) * 100}%`
+                            ? `${(Math.abs(period.costs ?? 0) / maxDailyCost) * 100}%`
                             : '0%',
                         }}
                         data-empty={period.costs === 0 ? true : undefined}
                       >
-                        {formatSubCentCurrency(Math.abs(period.costs), 'usd')}
+                        {formatSubCentCurrency(Math.abs(period.costs ?? 0), 'usd')}
                       </div>
                     </div>
                     {dayOrders.length > 0 && (

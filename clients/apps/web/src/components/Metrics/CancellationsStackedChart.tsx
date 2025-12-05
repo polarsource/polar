@@ -67,7 +67,7 @@ export default function CancellationsStackedChart({
   const maxValue = useMemo(() => {
     return Math.max(
       ...chartData.map((period) =>
-        CANCELLATION_REASONS.reduce((sum, reason) => sum + period[reason], 0),
+        CANCELLATION_REASONS.reduce((sum, reason) => sum + (period[reason] ?? 0), 0),
       ),
     )
   }, [chartData])

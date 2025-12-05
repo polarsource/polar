@@ -32,7 +32,7 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
   })
 
   const maxRevenue = Math.max(
-    ...(revenueMetrics.data?.periods.map((period) => period.revenue) ?? []),
+    ...(revenueMetrics.data?.periods.map((period) => period.revenue ?? 0) ?? []),
   )
 
   return (
@@ -89,14 +89,14 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                           : 'dark:bg-polar-600 bg-gray-300',
                       )}
                       style={{
-                        height: `${(period.revenue / maxRevenue) * 100}%`,
+                        height: `${((period.revenue ?? 0) / maxRevenue) * 100}%`,
                       }}
                     />
                   )}
                 </TooltipTrigger>
                 <TooltipContent>
                   <span>
-                    {formatCurrencyAndAmount(period.revenue, 'usd', 0)} in{' '}
+                    {formatCurrencyAndAmount(period.revenue ?? 0, 'usd', 0)} in{' '}
                     {format(period.timestamp, 'MMMM')}
                   </span>
                 </TooltipContent>
@@ -108,7 +108,7 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                 <div className="flex flex-row items-center justify-between gap-x-2">
                   <span className="dark:text-polar-500 text-sm text-gray-500">
                     $
-                    {(period.revenue / 100).toLocaleString('en-US', {
+                    {((period.revenue ?? 0) / 100).toLocaleString('en-US', {
                       style: 'decimal',
                       compactDisplay: 'short',
                       notation: 'compact',

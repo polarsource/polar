@@ -54,7 +54,7 @@ export const Chart = ({
   }, [previousPeriodData])
 
   const previousPeriodFormattedTotal = useMemo(() => {
-    return previousPeriodTotalValue !== undefined
+    return previousPeriodTotalValue != null
       ? getFormattedMetricValue(metric, previousPeriodTotalValue)
       : null
   }, [previousPeriodTotalValue, metric])

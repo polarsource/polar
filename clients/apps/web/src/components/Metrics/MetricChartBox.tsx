@@ -127,7 +127,7 @@ const MetricChartBox = ({
 
     const value = hoveredPeriod ? currentPeriod[metric] : data.totals[metric]
 
-    return getFormattedMetricValue(metricInfo, value)
+    return getFormattedMetricValue(metricInfo, value ?? 0)
   }, [hoveredPeriod, data, metric])
 
   const trend = useMemo(() => {
@@ -139,8 +139,8 @@ const MetricChartBox = ({
       hoveredPreviousPeriod ??
       previousData?.periods[previousData?.periods.length - 1]
 
-    const currentValue = currentPeriod[metric]
-    const previousValue = previousPeriod[metric]
+    const currentValue = currentPeriod[metric] ?? 0
+    const previousValue = previousPeriod[metric] ?? 0
 
     return ((currentValue - previousValue) / previousValue) * 100
   }, [data, previousData, hoveredPeriod, hoveredPreviousPeriod, metric])

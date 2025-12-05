@@ -65,3 +65,14 @@ class StripeEvent(ExternalEvent):
         "polymorphic_identity": ExternalEventSource.stripe,
         "polymorphic_load": "inline",
     }
+
+
+class ChargebackStopEvent(ExternalEvent):
+    source: Mapped[Literal[ExternalEventSource.chargeback_stop]] = mapped_column(  # pyright: ignore
+        use_existing_column=True, default=ExternalEventSource.chargeback_stop
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": ExternalEventSource.chargeback_stop,
+        "polymorphic_load": "inline",
+    }
